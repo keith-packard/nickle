@@ -652,27 +652,27 @@ TypeAdd (Type *old, Type *new)
 {
     TypeElt **last;
     
-    if (!old)
-	return new;
-    if (old == new)
-	return old;
-    if (old->base.tag != type_types)
-    {
-	old = NewTypeTypes (NewTypeElt (old, 0));
-    }
-    for (last = &old->types.elt; *last; last = &(*last)->next)
-    {
-	if ((*last)->type == new)
-	    return old;
-    }
     if (new->base.tag == type_types)
     {
-	*last = new->types.elt;
-	new->types.elt = 0;
+	TypeElt	*elt;
+
+	for (elt = new->types.elt; elt; elt = elt->next)
+	    old = TypeAdd (old, elt->type);
     }
     else
     {
-	*last = NewTypeElt (new, 0);
+	if (!old)
+	    old = new;
+	else if (old != new)
+	{
+	    if (old->base.tag != type_types)
+		old = NewTypeTypes (NewTypeElt (old, 0));
+	    for (last = &old->types.elt; *last; last = &(*last)->next)
+		if ((*last)->type == new)
+		    break;
+	    if (!*last)
+		*last = NewTypeElt (new, 0);
+	}
     }
     return old;
 }

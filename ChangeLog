@@ -1,4 +1,10 @@
 2004-06-17  Keith Packard  <keithp@keithp.com>
+2.39
+	* compile.c: (CompileLvalue):
+	Generalize the previous fix to handle the remaining cases,
+	including names.
+
+2004-06-17  Keith Packard  <keithp@keithp.com>
 
 	* gram.y:
 	Update conflict comment to note new reduce/reduce

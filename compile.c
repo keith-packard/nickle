@@ -452,6 +452,8 @@ CompileIndexType (ExprPtr expr)
 /*
  * Compile the left side of an assignment statement.
  * The result is a 'ref' left in the value register
+ * The type is the type of the refered value, not a reference
+ * to that type.
  */
 ObjPtr
 CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
@@ -634,14 +636,7 @@ isName:
 		expr->base.type = NewTypeRef (t, True);
 		if (assign)
 		    inst->base.opCode++;
-	    }
-	    else
-	    {
-		/*
-		 * reference to a non-reference type.  Error
-		 */
-		CompileError (obj, stat, "Object right of '&' is not of ref type");
-		expr->base.type = typePoly;
+		amper = False;
 	    }
 	}
 	else
@@ -667,15 +662,27 @@ isName:
 	    }
 	}
     }
-    else
+    /*
+     * Handle any remaining & from above
+     */
+    if (amper)
     {
-	if (amper && auto_reference)
+	if (auto_reference)
 	{
 	    BuildInst (obj, OpUnFunc, inst, stat);
 	    inst->unfunc.func = do_reference;
 	    expr->base.type = NewTypeRef (expr->base.type, True);
 	}
+	else
+	{
+	    /*
+	     * reference to a non-reference type.  Error
+	     */
+	    CompileError (obj, stat, "Object right of '&' is not of ref type");
+	    expr->base.type = typePoly;
+	}
     }
+	
     assert (expr->base.type);
     RETURN (obj);
 }

@@ -969,6 +969,47 @@ extend namespace Math {
 	}
 	return below;
     }
+
+    public exception lsb_0();
+
+    public int lsb(int b)
+	/*
+	 * return the bit position of
+	 * the least significant bit of the int argument
+	 * via binary search
+	 */
+    {
+	global bool mask(int b, int ul) {
+	    return (b & ((1 << (ul + 1)) - 1)) != 0;
+	}
+
+	if (b == 0)
+	    raise lsb_0();
+	if (b == -1)
+	    return 0;
+	/* doubling phase */
+	int ul = 1;
+	for (!mask(b, ul); ul *= 2)
+	    /* do nothing */;
+	/* binary search phase */
+	int ll = 0;
+	while (ul > ll + 1) {
+	    int step = (ul - ll) // 2;
+	    if (mask(b, ul - step)) {
+		ul -= step;
+		continue;
+	    }
+	    if (!mask(b, ll + step)) {
+		ll += step;
+		continue;
+	    }
+	    abort("error in binary search");
+	}
+	if (mask(b, ll))
+	    return ll;
+	return ul;
+    }
+
 }
 
 /* XXX these shouldn't be here, but it was *convenient* */

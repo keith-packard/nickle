@@ -108,6 +108,7 @@ Rehash (BoxPtr old, HashTablePtr ht)
     HashValue	h;
     
     o = BoxElements (old);
+    ht->count = 0;
     for (h = old->nvalues / HashEltSize; h > 0; h--)
     {
 	if (HashEltCounted (o))
@@ -115,6 +116,7 @@ Rehash (BoxPtr old, HashTablePtr ht)
 	    /* XXX must rewrite references */
 	    n = Find (ht, HashEltHash(o), HashEltKey(o));
 	    HashEltCopy (n, o);
+	    ht->count++;
 	}
 	HashEltStep (o);
     }
@@ -136,96 +138,6 @@ Resize (HashTablePtr ht, const HashSetPtr hs)
     if (old)
 	Rehash (old, ht);
     EXIT ();
-}
-
-static void
-Set (Value hv, Value key, Value hash, Value value)
-{
-    HashTablePtr    ht = &hv->hash;
-    Value	    *he;
-
-    if (ht->count == ht->hashSet->entries && 
-	ht->hashSet != &hashSets[NHASHSETS - 1])
-    {
-	Resize (ht, ht->hashSet + 1);
-    }
-    he = Find (ht, hash, key);
-    if (!HashEltCounted (he))
-	ht->count++;
-    HashEltHash (he) = hash;
-    HashEltKey (he) = key;
-    HashEltValue (he) = value;
-}
-
-static Value
-Get (Value hv, Value key, Value hash)
-{
-    HashTablePtr    ht = &hv->hash;
-    Value	    *he;
-
-    he = Find (ht, hash, key);
-    if (!HashEltValid (he))
-    {
-	RaiseStandardException (exception_uninitialized_value,
-				"uninitialized hash element", 0);
-	return (Void);
-    }
-    return HashEltValue (he);
-}
-
-static Value
-Refer (Value hv, Value key, Value hash)
-{
-    ENTER ();
-    HashTablePtr    ht = &hv->hash;
-    Value	    *he;
-
-    if (ht->count == ht->hashSet->entries && 
-	ht->hashSet != &hashSets[NHASHSETS - 1])
-    {
-	Resize (ht, ht->hashSet + 1);
-    }
-    he = Find (ht, hash, key);
-    if (!HashEltCounted (he))
-    {
-	ht->count++;
-	HashEltHash (he) = hash;
-	HashEltKey (he) = key;
-    }
-    RETURN (NewRef (ht->elts, 
-		    &HashEltValue(he) - BoxElements (ht->elts)));
-}
-
-static void
-Delete (Value hv, Value key, Value hash)
-{
-    HashTablePtr    ht = &hv->hash;
-    Value	    *he;
-
-    he = Find (ht, hash, key);
-    if (HashEltCounted (he))
-    {
-	/* mark this entry as deleted -- value Void, key NULL */
-	HashEltValue (he) = Void;
-	HashEltKey (he) = 0;
-	HashEltHash (he) = 0;
-	--ht->count;
-	if (ht->count < ht->hashSet->entries / 4 &&
-	    ht->hashSet != &hashSets[0])
-	{
-	    Resize (ht, ht->hashSet - 1);
-	}
-    }
-}
-
-static Value
-Test (Value hv, Value key, Value hash)
-{
-    HashTablePtr    ht = &hv->hash;
-    Value	    *he;
-
-    he = Find (ht, hash, key);
-    return HashEltValid (he) ? TrueVal : FalseVal;
 }
 
 int
@@ -268,30 +180,65 @@ HashPrint (Value f, Value av, char format, int base, int width, int prec, int fi
     HashValue	h;
     Value	*e;
     Bool	first = True;
+    Bool	pretty = format == 'v' || format == 'g';
     
-    FilePuts (f, "{ ");
+    if (pretty)
+    {
+	FilePuts (f, "(");
+	FilePutBaseType (f, ht->type, False);
+	FilePuts (f, " ");
+	FilePuts (f, "[");
+	FilePutType (f, ht->keyType, False);
+	FilePuts (f, "]");
+	FilePutSubscriptType (f, ht->type, False);
+	FilePuts (f, ") {");
+    }
     e = BoxElements (ht->elts);
     for (h = ht->hashSet->size; h-- > 0; )
     {
 	if (HashEltValid (e))
 	{
-	    if (!first)
-		FilePuts (f, ", ");
-	    first = False;
-	    Print (f, HashEltKey (e), format, base, width, prec, fill);
-	    FilePuts (f, " : ");
+	    if (pretty)
+	    {
+		if (!first)
+		    FilePuts (f, ", ");
+		else
+		    FilePuts (f, " ");
+		Print (f, HashEltKey (e), format, base, width, prec, fill);
+		FilePuts (f, " => ");
+	    }
+	    else if (!first)
+		FilePuts (f, " ");
 	    Print (f, HashEltValue (e), format, base, width, prec, fill);
+	    first = False;
 	}
 	HashEltStep (e);
     }
-    FilePuts (f, " }");
+    if (pretty)
+    {
+	if (!first)
+	    FilePuts (f, " ");
+	FilePuts (f, "}");
+    }
     return True;
 }
 
 static HashValue
 HashHash (Value av)
 {
-    return 0;
+    HashTable	*ht = &av->hash;
+    HashValue	h;
+    Value	*e;
+    HashValue	hash = 0;
+    
+    e = BoxElements (ht->elts);
+    for (h = ht->hashSet->size; h-- > 0; )
+    {
+	if (HashEltValue (e))
+	    hash ^= ValueInt (HashEltHash (e));
+	HashEltStep (e);
+    }
+    return hash;
 }
 
 static void
@@ -346,31 +293,121 @@ NewHash (Bool constant, TypePtr keyType, TypePtr type)
 Value
 HashGet (Value hv, Value key)
 {
-    return Get (hv, key, ValueHash (key));
+    HashTablePtr    ht = &hv->hash;
+    Value	    hash = ValueHash (key);
+    Value	    *he;
+
+    he = Find (ht, hash, key);
+    if (!HashEltValid (he))
+    {
+	RaiseStandardException (exception_uninitialized_value,
+				"uninitialized hash element", 0);
+	return (Void);
+    }
+    return HashEltValue (he);
 }
 
 void
 HashSet (Value hv, Value key, Value value)
 {
-    Set (hv, key, ValueHash (key), value);
+    HashTablePtr    ht = &hv->hash;
+    Value	    hash = ValueHash (key);
+    Value	    *he;
+
+    if (ht->count == ht->hashSet->entries && 
+	ht->hashSet != &hashSets[NHASHSETS - 1])
+    {
+	Resize (ht, ht->hashSet + 1);
+    }
+    he = Find (ht, hash, key);
+    if (!HashEltCounted (he))
+	ht->count++;
+    HashEltHash (he) = hash;
+    HashEltKey (he) = key;
+    HashEltValue (he) = value;
 }
 
 Value
 HashRef (Value hv, Value key)
 {
-    return Refer (hv, key, ValueHash (key));
+    ENTER ();
+    HashTablePtr    ht = &hv->hash;
+    Value	    *he;
+    Value	    hash = ValueHash (key);
+
+    if (ht->count == ht->hashSet->entries && 
+	ht->hashSet != &hashSets[NHASHSETS - 1])
+    {
+	Resize (ht, ht->hashSet + 1);
+    }
+    he = Find (ht, hash, key);
+    if (!HashEltCounted (he))
+    {
+	ht->count++;
+	HashEltHash (he) = hash;
+	HashEltKey (he) = key;
+    }
+    RETURN (NewRef (ht->elts, 
+		    &HashEltValue(he) - BoxElements (ht->elts)));
 }
 
 Value
 HashTest (Value hv, Value key)
 {
-    return Test (hv, key, ValueHash (key));
+    HashTablePtr    ht = &hv->hash;
+    Value	    *he;
+    Value	    hash = ValueHash (key);
+
+    he = Find (ht, hash, key);
+    return HashEltValid (he) ? TrueVal : FalseVal;
 }
 
 void
 HashDelete (Value hv, Value key)
 {
-    Delete (hv, key, ValueHash (key));
+    HashTablePtr    ht = &hv->hash;
+    Value	    *he;
+    Value	    hash = ValueHash (key);
+
+    he = Find (ht, hash, key);
+    if (HashEltCounted (he))
+    {
+	/* mark this entry as deleted -- value Void, key NULL */
+	HashEltValue (he) = Void;
+	HashEltKey (he) = 0;
+	HashEltHash (he) = 0;
+	--ht->count;
+	if (ht->count < ht->hashSet->entries / 4 &&
+	    ht->hashSet != &hashSets[0])
+	{
+	    Resize (ht, ht->hashSet - 1);
+	}
+    }
+}
+
+Value
+HashKeys (Value hv)
+{
+    ENTER ();
+    HashTablePtr    ht = &hv->hash;
+    int		    dim = ht->count;
+    Value	    keys = NewArray (False, True, ht->keyType, 1, &dim);
+    HashValue	    h;
+    int		    i = 0;
+    Value	    *e = BoxElements (ht->elts);
+
+    for (h = ht->hashSet->size; h > 0; h--)
+    {
+	if (HashEltValid (e)) 
+	{
+	    BoxValueSet (keys->array.values, i, HashEltKey (e));
+	    i++;
+	}
+	HashEltStep (e);
+    }
+    if (i != dim)
+	ArrayResize (keys, 0, i);
+    RETURN (keys);
 }
 
 Value

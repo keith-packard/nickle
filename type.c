@@ -385,9 +385,8 @@ TypeIsSupertype (Type *super, Type *sub)
 	    return TypeIsSupertype (super->array.type, sub->array.type);
 	return False;
     case type_hash:
-	/* contravariant */
 	return (TypeIsSupertype (super->hash.type, sub->hash.type) &&
-		TypeIsSupertype (sub->hash.keyType, super->hash.keyType));
+		TypeIsOrdered (super->hash.keyType, sub->hash.keyType));
     case type_struct:
     case type_union:
         super_st = super->structs.structs;

@@ -347,6 +347,7 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 "..."		{ yylval.ints = DOTS; return DOTS; }
 "."		{ yylval.ints = DOT; return DOT; }
 "->"		{ yylval.ints = ARROW; return ARROW; }
+"=>"		{ yylval.ints = DARROW; return DARROW; }
 "<>"		{ yylval.value = Void; return VOIDVAL; }
 \n		{ 
 		    if (!ignorenl) { yylval.ints = NL; return NL; } 

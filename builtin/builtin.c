@@ -118,7 +118,9 @@ BuiltinType (char *format, Type **type)
     Type   *t;
     Bool    ref = False;
     Bool    array = False;
+    Bool    hash = False;
     Expr    *dims = 0;
+    Type    *k;
     
     ref = False;
     if (*format == '*')
@@ -135,6 +137,11 @@ BuiltinType (char *format, Type **type)
 	    dims = NewExprTree (COMMA, 0, dims);
 	    format++;
 	}
+    }
+    if (*format == 'H')
+    {
+	hash = True;
+	format = BuiltinType (format + 1, &k);
     }
     switch (*format++) {
     case 'p': t = typePoly; break;
@@ -161,6 +168,8 @@ BuiltinType (char *format, Type **type)
 	t = NewTypeRef (t, False);
     if (array)
 	t = NewTypeArray (t, dims);
+    if (hash)
+	t = NewTypeHash (t, k);
     *type = t;
     return format;
 }

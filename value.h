@@ -897,6 +897,7 @@ void	ArraySetDimensions (Value av, int *dims);
 Value	NewHash (Bool constant, TypePtr keyType, TypePtr valueType);
 Value	HashGet (Value hv, Value key);
 void	HashSet (Value hv, Value key, Value value);
+Value	HashKeys (Value hv);
 Value	HashRef (Value hv, Value key);
 Value	HashTest (Value hv, Value key);
 void	HashDelete (Value hv, Value key);

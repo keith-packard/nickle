@@ -24,7 +24,7 @@ import_Toplevel_namespace()
     static const struct fbuiltin_0 funcs_0[] = {
         { do_getbyte, "getbyte", "i", "" },
         { do_time, "time", "i", "" },
-	{ do_hash_new, "hash_new", "p", "" },
+	{ do_hash_new, "hash_new", "Hpp", "" },
         { 0 }
     };
 
@@ -63,6 +63,7 @@ import_Toplevel_namespace()
         { do_sleep, "sleep", "v", "i" },
         { do_string_to_real, "string_to_real", "R", "s" },
 	{ do_hash, "hash", "i", "p" },
+	{ do_hash_keys, "hash_keys", "Ap", "Hpp" },
         { 0 }
     };
 
@@ -72,9 +73,9 @@ import_Toplevel_namespace()
         { do_xor, "xor", "i", "ii" },
 	{ do_setdims, "setdims", "v", "ApAi" },
 	{ do_setdim, "setdim", "v", "Api" },
-	{ do_hash_get, "hash_get", "p", "pp" },
-	{ do_hash_del, "hash_del", "v", "pp" },
-	{ do_hash_test, "hash_test", "b", "pp" },
+	{ do_hash_get, "hash_get", "p", "Hppp" },
+	{ do_hash_del, "hash_del", "v", "Hppp" },
+	{ do_hash_test, "hash_test", "b", "Hppp" },
         { 0 }
     };
 
@@ -84,7 +85,7 @@ import_Toplevel_namespace()
     };
 
     static const struct fbuiltin_3 funcs_3[] = {
-	{ do_hash_set, "hash_set", "v", "ppp" },
+	{ do_hash_set, "hash_set", "v", "Hpppp" },
 	{ 0 }
     };
 
@@ -773,6 +774,11 @@ Value	do_hash_test (Value hv, Value key)
     return HashTest (hv, key);
 }
    
+Value	do_hash_keys (Value hv)
+{
+    return HashKeys (hv);
+}
+
 Value	do_hash_set (Value hv, Value key, Value value)
 {
     HashSet (hv, key, value);

@@ -1055,3 +1055,4 @@ Value	do_hash_get (Value, Value);
 Value	do_hash_del (Value, Value);
 Value	do_hash_test (Value, Value);
 Value	do_hash_set (Value, Value, Value);
+Value	do_hash_keys (Value);

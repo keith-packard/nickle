@@ -206,7 +206,7 @@ PrettyHashInit (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
     while (e)
     {
 	PrettyExpr (f, e->tree.left->tree.left, -1, level, nest, pd);
-	FilePuts (f, " : ");
+	FilePuts (f, " => ");
 	PrettyExpr (f, e->tree.left->tree.right, -1, level, nest, pd);
 	e = e->tree.right;
 	if (e)

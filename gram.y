@@ -158,6 +158,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %token <value>	    TEN_FLOAT OCTAL0_FLOAT OCTAL_FLOAT BINARY_FLOAT HEX_FLOAT
 %token <value>	    CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
 %token <value>	    VOIDVAL BOOLVAL
+%token		    DARROW
 
 %nonassoc 	POUND
 %right		COMMA
@@ -1452,8 +1453,8 @@ hashelts	: hashelts COMMA hashelt
 		| hashelt
 		    { $$ = NewExprTree (COMMA, 0, $1); }
 		;
-hashelt		: hashvalue COLON hashvalue
-		    { $$ = NewExprTree (COLON, $1, $3); }
+hashelt		: hashvalue DARROW hashvalue
+		    { $$ = NewExprTree (DARROW, $1, $3); }
 		;
 hashvalue	: simpleexpr
 		| init

@@ -342,12 +342,14 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePuts (f, " }");
 	break;
     case UNION:
-	FilePrintf (f, "%T.%A ", e->base.type, e->tree.left->atom.atom);
 	if (e->tree.right)
 	{
-	    FilePuts (f, "(");
+	    FilePrintf (f, "(%T.%A) ", e->base.type, e->tree.left->atom.atom);
 	    PrettyExpr (f, e->tree.right, selfPrec, level, nest);
-	    FilePuts (f, ")");
+	}
+	else
+	{
+	    FilePrintf (f, "%T.%A", e->base.type, e->tree.left->atom.atom);
 	}
 	break;
     case OCTAL_NUM:

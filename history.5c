@@ -6,45 +6,52 @@
  */
 
 namespace History {
-    typedef list;
+    typedef listrec;
 
-    typedef struct {
-	*list	next;
-	poly	value;
+    typedef union {
+	*listrec    ref;
+	void	    end;
     } list;
 
-    *list   head = 0;
+    typedef struct {
+	poly	value;
+	list	next;
+    } listrec;
+
+    list   head = list.end;
     int	    count = 0;
-    * *list  tail = &head;
+    *list  tail = &head;
     
     public void insert (poly v)
     {
 	if (is_void (v))
 	    return;
-	*list	new = reference ((list) { next = 0, value = v });
+	list	new = (list.ref) reference ((listrec) { 
+	    next = list.end,
+	    value = v });
 	*tail = new;
-	tail = &new->next;
+	tail = &new.ref->next;
 	++count;
     }
 
-    *list elt (*list l, int id)
+    list elt (list l, int id)
     {
 	if (id <= 0) return l;
-	return elt (l->next, id-1);
+	return elt (l.ref->next, id-1);
     }
 
     public poly fetch (int id)
     {
 	if (id <= 0)
-	    return elt (head, count+id-1)->value;
+	    return elt (head, count+id-1).ref->value;
 	else
-	    return elt (head, id-1)->value;
+	    return elt (head, id-1).ref->value;
     }
 
     public void show (string format, int args...)
     {
-	int from = 10, to = count;
-	*list	f, t;
+	int	from = 10, to = count;
+	list	f, t;
 	
 	if (count == 0)
 	    return;
@@ -61,13 +68,13 @@ namespace History {
 		from = 1;
 	}
 	f = elt (head, from - 1);
-	t = elt (head, to - 1)->next;
+	t = elt (head, to - 1).ref->next;
 	while (f != t)
 	{
 	    printf ("$%-4d\t", from);
-	    printf (format, f->value);
+	    printf (format, f.ref->value);
 	    printf ("\n");
-	    f = f->next;
+	    f = f.ref->next;
 	    from++;
 	}
     }

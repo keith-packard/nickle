@@ -19,7 +19,6 @@ Type		*typePoly;
 Type		*typeGroup;
 Type		*typeField;
 Type		*typeRefPoly;
-Type		*typeNil;
 Type		*typePrim[rep_void + 1];
 
 static void
@@ -73,6 +72,13 @@ TypeStructMark (void *object)
     MemReference (ts->structs);
 }
 
+static void
+TypeTypesMark (void *object)
+{
+    TypeTypes	*type = object;
+    MemReference (type->elt);
+}
+
 DataType    TypePrimType = { 0, 0 };
 DataType    TypeNameType = { TypeNameMark, 0 };
 DataType    TypeRefType = { TypeRefMark, 0 };
@@ -81,6 +87,7 @@ DataType    TypeFuncType = { TypeFuncMark, 0 };
 DataType    TypeArrayType = { TypeArrayMark, 0 };
 DataType    TypeStructType = { TypeStructMark, 0 };
 DataType    TypeUnitType = { 0, 0 };
+DataType    TypeTypesType = { TypeTypesMark, 0 };
 
 static Type *
 NewTypePrim (Rep prim)
@@ -188,6 +195,18 @@ NewTypeUnion (StructType *structs, Bool enumeration)
     RETURN (t);
 }
 
+Type *
+NewTypeTypes (TypeElt *elt)
+{
+    ENTER ();
+    Type    *t;
+
+    t = ALLOCATE (&TypeTypesType, sizeof (TypeTypes));
+    t->base.tag = type_types;
+    t->types.elt = elt;
+    RETURN (t);
+}
+
 SymbolPtr
 TypeNameName (Type *t)
 {
@@ -226,16 +245,6 @@ TypeIntegral (Type *t)
     return False;
 }
 
-Bool
-TypeString (Type *t)
-{
-    if (t->base.tag != type_prim)
-	return False;
-    if (t->prim.prim == rep_string)
-	return True;
-    return False;
-}
-
 int
 TypeCountDimensions (ExprPtr dims)
 {
@@ -268,22 +277,22 @@ TypeCompatible (Type *a, Type *b, Bool contains)
     if (b->base.tag == type_name)
 	return TypeCompatible (a, b->name.type, contains);
     
-    if (a->base.tag == type_union)
+    if (a->base.tag == type_types)
     {
-	StructType  *st = a->structs.structs;
-	for (n = 0; n < st->nelements; n++)
-	    if (!StructTypeElements(st)[n].name && 
-		TypeCompatible (StructTypeElements(st)[n].type, b, contains))
+	TypeElt	*elt;
+	for (elt = a->types.elt; elt; elt = elt->next)
+	    if (TypeCompatible (elt->type, b, contains))
 		return True;
+	return False;
     }
 
-    if (b->base.tag == type_union)
+    if (b->base.tag == type_types)
     {
-	StructType  *st = b->structs.structs;
-	for (n = 0; n < st->nelements; n++)
-	    if (!StructTypeElements(st)[n].name && 
-		TypeCompatible (a, StructTypeElements(st)[n].type, contains))
+	TypeElt	*elt;
+	for (elt = b->types.elt; elt; elt = elt->next)
+	    if (TypeCompatible (a, elt->type, contains))
 		return True;
+	return False;
     }
     
     if (TypePoly (a))
@@ -584,14 +593,14 @@ static Type *
 TypeUnaryString (Type *type)
 {
     if (TypePoly (type))
-	type = typePrim[rep_string];
+	return typePrim[rep_string];
     if (TypeString (type))
 	return typePrim[rep_integer];
     return 0;
 }
 		
 /*
- * Rep of an array reference
+ * Type of an array reference
  */
 static Type *
 TypeUnaryArray (Type *type)
@@ -603,99 +612,109 @@ TypeUnaryArray (Type *type)
     return 0;
 }
 
-static void
-TypeRemove (Type **ts, int i, int *n)
+/*
+ * Comparison a logical operator type
+ */
+static Type *
+TypeUnaryBool (Type *type)
 {
-    int	remain = *n - (i+1);
-    memmove (ts + i, ts + (i+1), remain * sizeof (ts[0]));
-    (*n)--;
+    if (TypePoly (type))
+	return typePrim[rep_bool];
+    if (TypeBool (type))
+	return type;
+    return 0;
 }
 
-static Type **
-TypeAdd (Type **ts, Type *t, int *n, int *size)
+static void
+TypeEltMark (void *object)
 {
-    if (*n >= *size) 
-    {
-	int ns = *n + 10;
-	ts = memmove (AllocateTemp (ns * sizeof (ts[0])),
-		      ts,
-		      *size * sizeof (ts[0]));
-	*size = ns;
-    }
-    ts[(*n)++] = t;
-    return ts;
+    TypeElt *elt = object;
+    MemReference (elt->next);
+    MemReference (elt->type);
+}
+
+DataType    TypeEltType = { TypeEltMark, 0 };
+
+static TypeElt *
+NewTypeElt (Type *type, TypeElt *next)
+{
+    ENTER ();
+    TypeElt *elt;
+
+    elt = ALLOCATE (&TypeEltType, sizeof (TypeElt));
+    elt->type = type;
+    elt->next = next;
+    RETURN (elt);
 }
 
 static Type *
-TypeCombineFlatten (Type **rets, int nret, int sret)
+TypeAdd (Type *old, Type *new)
+{
+    TypeElt **last;
+    
+    if (!old)
+	return new;
+    if (old == new)
+	return old;
+    if (old->base.tag != type_types)
+    {
+	old = NewTypeTypes (NewTypeElt (old, 0));
+    }
+    for (last = &old->types.elt; *last; last = &(*last)->next)
+    {
+	if ((*last)->type == new)
+	    return old;
+    }
+    if (new->base.tag == type_types)
+    {
+	*last = new->types.elt;
+	new->types.elt = 0;
+    }
+    else
+    {
+	*last = NewTypeElt (new, 0);
+    }
+    return old;
+}
+
+static Type *
+TypeCombineFlatten (Type *type)
 {
     ENTER ();
-    Type	*ret;
-    StructType	*st;
-    int		n, m;
 
-    /*
-     * Flatten anonymous unions
-     */
-    for (n = 0; n < nret; n++)
+    if (type && type->base.tag == type_types)
     {
-	Type	*ut;
+	TypeElt	*n, **p, *m;
 
-	ut = rets[n];
-	if (ut->base.tag == type_union && 
-	    (ut->structs.structs->nelements == 0 ||
-	     !StructTypeElements(ut->structs.structs)[0].name))
+	/*
+	 * Remove obvious duplicates
+	 */
+	for (n = type->types.elt; n; n = n->next)
 	{
-	    st = ut->structs.structs;
-	    
-	    TypeRemove (rets, n, &nret);
-	    for (m = 0; m < st->nelements; m++)
-		rets = TypeAdd (rets, StructTypeElements(st)[m].type, &nret, &sret);
+	    p = &n->next;
+	    while ((m = *p))
+	    {
+		if (m->type == n->type)
+		    *p = m->next;
+		else
+		    p = &m->next;
+	    }
 	}
+	/*
+	 * Check for a single type and return just that
+	 */
+	if (!type->types.elt->next)
+	    type = type->types.elt->type;
     }
-
-    /*
-     * Remove obvious duplicates
-     */
-    for (n = 0; n < nret-1; n++)
-	for (m = n+1; m < nret;)
-	{
-	    if (rets[n] == rets[m])
-		TypeRemove (rets,m,&nret);
-	    else
-		m++;
-	}
-
-    /*
-     * Check for quick bail
-     */
-    for (n = 0; n < nret; n++)
-	if (TypePoly (rets[n]))
-	    RETURN (typePoly);
-
-    if (nret == 0)
-	RETURN (0);
-    if (nret == 1)
-	RETURN (rets[0]);
-    
-    ret = NewTypeUnion (NewStructType (nret), False);
-    st = ret->structs.structs;
-    for (nret = 0; nret < st->nelements; nret++)
-	StructTypeElements(st)[nret].type = rets[nret];
-    RETURN(ret);
+    RETURN(type);
 }
 
 Type *
 TypeCombineBinary (Type *left, int tag, Type *right)
 {
     ENTER ();
-#define NUM_TYPE_STACK	100
-    Type    *retsStack[NUM_TYPE_STACK];
-    Type    **rets = retsStack;
-    Type    *ret;
-    int	    nret = 0;
-    int	    sret = NUM_TYPE_STACK;
-    int	    n;
+    Type    *type;
+    Type    *ret = 0;
 
     if (!left || !right)
 	RETURN(0);
@@ -705,81 +724,66 @@ TypeCombineBinary (Type *left, int tag, Type *right)
     if (right->base.tag == type_name)
 	RETURN (TypeCombineBinary (left, tag, right->name.type));
     
-    if (left->base.tag == type_union)
+    if (left->base.tag == type_types)
     {
-        StructType  *st = left->structs.structs;
-	for (n = 0; n < st->nelements; n++)
-	{
-	    if (!StructTypeElements(st)[n].name)
-	    {
-		ret = TypeCombineBinary (StructTypeElements(st)[n].type, tag, right);
-		if (ret)
-		    rets = TypeAdd (rets, ret, &nret, &sret);
-	    }
-	}
+	TypeElt	*elt;
+	for (elt = left->types.elt; elt; elt = elt->next)
+	    if ((type = TypeCombineBinary (elt->type, tag, right)))
+		ret = TypeAdd (ret, type);
     }
-
-    if (right->base.tag == type_union)
+    else if (right->base.tag == type_types)
     {
-        StructType  *st = right->structs.structs;
-	for (n = 0; n < st->nelements; n++)
-	{
-	    if (!StructTypeElements(st)[n].name)
-	    {
-		ret = TypeCombineBinary (left, tag, StructTypeElements(st)[n].type);
-		if (ret)
-		    rets = TypeAdd (rets, ret, &nret, &sret);
-	    }
-	}
+	TypeElt	*elt;
+	for (elt = right->types.elt; elt; elt = elt->next)
+	    if ((type = TypeCombineBinary (left, tag, elt->type)))
+		ret = TypeAdd (ret, type);
     }
-    switch (tag) {
+    else switch (tag) {
     case ASSIGN:
 	if (TypeCompatible (left, right, True))
 	{
 	    if (TypePoly (left))
-		rets = TypeAdd (rets, right, &nret, &sret);
+		ret = TypeAdd (ret, right);
 	    else
-		rets = TypeAdd (rets, left, &nret, &sret);
+		ret = TypeAdd (ret, left);
 	}
 	break;
     case PLUS:
     case ASSIGNPLUS:
-	if ((ret = TypeBinaryString (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((type = TypeBinaryString (left, right)))
+	    ret = TypeAdd (ret, type);
 	/* fall through ... */
     case MINUS:
     case ASSIGNMINUS:
-	if ((ret = TypeBinaryRefOff (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
-	if (tag == MINUS && (ret = TypeBinaryRefMinus (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
-	if (tag == MINUS || tag == PLUS)
-	{
-	    if ((ret = TypeBinaryRefOff (right, left)))
-		rets = TypeAdd (rets, ret, &nret, &sret);
-	}
+	if ((type = TypeBinaryRefOff (left, right)))
+	    ret = TypeAdd (ret, type);
+	if (tag == MINUS && (type = TypeBinaryRefMinus (left, right)))
+	    ret = TypeAdd (ret, type);
+	if ((tag == MINUS || tag == PLUS) && 
+	    (type = TypeBinaryRefOff (right, left)))
+	    ret = TypeAdd (ret, type);
 	/* fall through ... */
     case TIMES:
     case MOD:
     case ASSIGNTIMES:
     case ASSIGNMOD:
-	if ((ret = TypeBinaryGroup (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((type = TypeBinaryGroup (left, right)))
+	    ret = TypeAdd (ret, type);
 	break;
     case DIV:
     case ASSIGNDIV:
-	if ((ret = TypeBinaryDiv (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((type = TypeBinaryDiv (left, right)))
+	    ret = TypeAdd (ret, type);
 	break;
     case POW:
     case ASSIGNPOW:
-	if ((ret = TypeBinaryPow (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((type = TypeBinaryPow (left, right)))
+	    ret = TypeAdd (ret, type);
 	break;
     case DIVIDE:
     case ASSIGNDIVIDE:
-	if ((ret = TypeBinaryField (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((type = TypeBinaryField (left, right)))
+	    ret = TypeAdd (ret, type);
 	break;
     case SHIFTL:
     case SHIFTR:
@@ -791,63 +795,45 @@ TypeCombineBinary (Type *left, int tag, Type *right)
     case ASSIGNLXOR:
     case ASSIGNLAND:
     case ASSIGNLOR:
-	if ((ret = TypeBinaryIntegral (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((type = TypeBinaryIntegral (left, right)))
+	    ret = TypeAdd (ret, type);
 	break;
     case COLON:
-	if (TypePoly (left))
-	{
-	    rets = TypeAdd (rets, typePoly, &nret, &sret);
-	}
-	else if (TypePoly (right))
-	{
-	    rets = TypeAdd (rets, typePoly, &nret, &sret);
-	}
+	if (TypePoly (left) || TypePoly (right))
+	    ret = TypeAdd (ret, typePoly);
 	else if (TypeCompatible (left, right, False))
 	{
 	    if (TypeNumeric (left) && TypeNumeric (right) &&
 		left->prim.prim < right->prim.prim)
-		rets = TypeAdd (rets, right, &nret, &sret);
+		ret = TypeAdd (ret, right);
 	    else
-		rets = TypeAdd (rets, left, &nret, &sret);
+		ret = TypeAdd (ret, left);
 	}
 	break;
     case AND:
     case OR:
-	if ((TypePoly (left) || TypeBool (left)) &&
-	    (TypePoly (right) || TypeBool (right)))
-	{
-	    rets = TypeAdd (rets, typePrim[rep_bool], &nret, &sret);
-	}
+	if (TypeUnaryBool (left) && TypeUnaryBool (right))
+	    ret = TypeAdd (ret, typePrim[rep_bool]);
 	break;
     case EQ:
     case NE:
-#if 0
-    	rets = TypeAdd (rets, typePrim[rep_bool], &nret, &sret);
-	break;
-#endif
     case LT:
     case GT:
     case LE:
     case GE:
 	if (TypeCompatible (left, right, False))
-	    rets = TypeAdd (rets, typePrim[rep_bool], &nret, &sret);
+	    ret = TypeAdd (ret, typePrim[rep_bool]);
 	break;
     }
-    RETURN (TypeCombineFlatten (rets, nret, sret));
+    RETURN (TypeCombineFlatten (ret));
 }
 
 Type *
 TypeCombineUnary (Type *type, int tag)
 {
     ENTER ();
-#define NUM_TYPE_STACK	100
-    Type    *retsStack[NUM_TYPE_STACK];
-    Type    **rets = retsStack;
-    Type    *ret;
-    int	    nret = 0;
-    int	    sret = NUM_TYPE_STACK;
-    int	    n;
+    Type    *ret = 0;
+    Type    *t;
 
     /* Avoid error cascade */
     if (!type)
@@ -856,67 +842,50 @@ TypeCombineUnary (Type *type, int tag)
     if (type->base.tag == type_name)
 	RETURN(TypeCombineUnary (type->name.type, tag));
     
-    if (type->base.tag == type_union)
+    if (type->base.tag == type_types)
     {
-	StructType  *st = type->structs.structs;
-	for (n = 0; n < st->nelements; n++)
-	{
-	    if (!StructTypeElements(st)[n].name)
-	    {
-		ret = TypeCombineUnary (StructTypeElements(st)[n].type, tag);
-		if (ret)
-		    rets = TypeAdd (rets, ret, &nret, &sret);
-	    }
-	}
+	TypeElt	*elt;
+	for (elt = type->types.elt; elt; elt = elt->next)
+	    if ((t = TypeCombineUnary (elt->type, tag)))
+		ret = TypeAdd (ret, t);
     }
-    switch (tag) {
+    else switch (tag) {
     case STAR:
-	ret = TypeUnaryRef (type);
-	if (ret)
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((t = TypeUnaryRef (type)))
+	    ret = TypeAdd (ret, t);
 	break;
     case LNOT:
-	ret = TypeUnaryIntegral (type);
-	if (ret)
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((t = TypeUnaryIntegral (type)))
+	    ret = TypeAdd (ret, t);
 	break;
     case UMINUS:
-	ret = TypeUnaryGroup (type);
-	if (ret)
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((t = TypeUnaryGroup (type)))
+	    ret = TypeAdd (ret, t);
 	break;
     case BANG:
-	if (TypePoly (type) || TypeBool (type))
-	    rets = TypeAdd (rets, typePrim[rep_bool], &nret, &sret);
+	if ((t = TypeUnaryBool (type)))
+	    ret = TypeAdd (ret, t);
 	break;
     case FACT:
-	ret = TypeUnaryIntegral (type);
-	if (ret)
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((t = TypeUnaryIntegral (type)))
+	    ret = TypeAdd (ret, t);
 	break;
     case OS:
-	ret = TypeUnaryString (type);
-	if (ret)
-	    rets = TypeAdd (rets, ret, &nret, &sret);
-	ret = TypeUnaryArray (type);
-	if (ret)
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if ((t = TypeUnaryString (type)))
+	    ret = TypeAdd (ret, t);
+	if ((t = TypeUnaryArray (type)))
+	    ret = TypeAdd (ret, t);
 	break;
     }
-    RETURN (TypeCombineFlatten (rets, nret, sret));
+    RETURN (TypeCombineFlatten (ret));
 }
 
 Type *
 TypeCombineArray (Type *type, int ndim, Bool lvalue)
 {
     ENTER ();
-#define NUM_TYPE_STACK	100
-    Type    *retsStack[NUM_TYPE_STACK];
-    Type    **rets = retsStack;
-    Type    *ret;
-    int	    nret = 0;
-    int	    sret = NUM_TYPE_STACK;
-    int	    n;
+    Type    *ret = 0;
+    Type    *t;
 
     /* Avoid error cascade */
     if (!type)
@@ -925,34 +894,29 @@ TypeCombineArray (Type *type, int ndim, Bool lvalue)
     if (type->base.tag == type_name)
 	RETURN(TypeCombineArray (type->name.type, ndim, lvalue));
     
-    if (type->base.tag == type_union)
+    if (type->base.tag == type_types)
     {
-	StructType  *st = type->structs.structs;
-	for (n = 0; n < st->nelements; n++)
+	TypeElt	*elt;
+	for (elt = type->types.elt; elt; elt = elt->next)
+	    if ((t = TypeCombineArray (elt->type, ndim, lvalue)))
+		ret = TypeAdd (ret, t);
+    }
+    else 
+    {
+	if ((t = TypeUnaryString (type)))
+	    ret = TypeAdd (ret, t);
+	
+	if (TypePoly (type))
+	    ret = TypeAdd (ret, typePoly);
+
+	if (type->base.tag == type_array)
 	{
-	    if (!StructTypeElements(st)[n].name)
-	    {
-		ret = TypeCombineArray (StructTypeElements(st)[n].type, ndim, lvalue);
-		if (ret)
-		    rets = TypeAdd (rets, ret, &nret, &sret);
-	    }
+	    int n = TypeCountDimensions (type->array.dimensions);
+	    if (n == 0 || n == ndim)
+		ret = TypeAdd (ret, type->array.type);
 	}
     }
-
-    ret = TypeUnaryString (type);
-    if (ret)
-        rets = TypeAdd (rets, ret, &nret, &sret);
-
-    if (TypePoly (type))
-	rets = TypeAdd (rets, typePoly, &nret, &sret);
-
-    if (type->base.tag == type_array)
-    {
-	n = TypeCountDimensions (type->array.dimensions);
-	if (n == 0 || n == ndim)
-	    rets = TypeAdd (rets, type->array.type, &nret, &sret);
-    }
-    RETURN (TypeCombineFlatten (rets, nret, sret));
+    RETURN (TypeCombineFlatten (ret));
 }
 
 Type *
@@ -1024,13 +988,13 @@ TypeCompatibleAssign (TypePtr a, Value b)
     if (!a || !b)
 	return True;
 
-    if (a->base.tag == type_union)
+    if (a->base.tag == type_types)
     {
-	StructType  *st = a->structs.structs;
-	for (n = 0; n < st->nelements; n++)
-	    if (!StructTypeElements(st)[n].name && 
-		TypeCompatibleAssign (StructTypeElements(st)[n].type, b))
+	TypeElt	*elt;
+	for (elt = a->types.elt; elt; elt = elt->next)
+	    if (TypeCompatibleAssign (elt->type, b))
 		return True;
+	return False;
     }
 
     if (TypePoly (a))
@@ -1056,8 +1020,6 @@ TypeCompatibleAssign (TypePtr a, Value b)
 	    else
 		return TypeCompatible (a->ref.ref, RefType (b), True);
 	}
-	if (ValueIsInt(b) && b->ints.value == 0)
-	    return True;
 	break;
     case type_func:
 	if (ValueIsFunc(b))
@@ -1150,7 +1112,6 @@ TypeInit (void)
 {
     ENTER ();
     Rep	t;
-    StructType	*st;
 
     for (t = rep_int; t <= rep_void; t++)
     {
@@ -1162,23 +1123,13 @@ TypeInit (void)
     typeRefPoly = NewTypeRef (typePoly);
     MemAddRoot (typeRefPoly);
     
-    st = NewStructType (3);
-    StructTypeElements(st)[0].type = typePrim[rep_integer];
-    StructTypeElements(st)[1].type = typePrim[rep_rational];
-    StructTypeElements(st)[2].type = typePrim[rep_float];
-    typeGroup = NewTypeUnion (st, False);
+    typeGroup = NewTypeTypes (NewTypeElt (typePrim[rep_integer],
+					  NewTypeElt (typePrim[rep_rational],
+						      NewTypeElt (typePrim[rep_float], 0))));
     MemAddRoot (typeGroup);
     
-    st = NewStructType (2);
-    StructTypeElements(st)[0].type = typePrim[rep_rational];
-    StructTypeElements(st)[1].type = typePrim[rep_float];
-    typeField = NewTypeUnion (st, False);
-    MemAddRoot (typeField);
-    
-    st = NewStructType (2);
-    StructTypeElements(st)[0].type = typePrim[rep_int];
-    StructTypeElements(st)[1].type = typeRefPoly;
-    typeNil = NewTypeUnion (st, False);
+    typeField = NewTypeTypes (NewTypeElt (typePrim[rep_rational],
+					  NewTypeElt (typePrim[rep_float], 0)));
     MemAddRoot (typeField);
     
     TypeCheckStack = StackCreate ();

@@ -310,7 +310,7 @@ ArgType *NewArgType (TypePtr type, Bool varargs, Atom name,
 
 typedef enum _typeTag {
     type_prim, type_name, type_ref, type_func, type_array, 
-    type_struct, type_union
+    type_struct, type_union, type_types
 } TypeTag;
     
 typedef struct _typeBase {
@@ -352,6 +352,17 @@ typedef struct _typeStruct {
     Bool	    enumeration;
 } TypeStruct;    
 
+typedef struct _typeElt {
+    DataType	    *data;
+    struct _typeElt *next;
+    union _type	    *type;
+} TypeElt;
+
+typedef struct _typeTypes {
+    TypeBase	    base;
+    TypeElt	    *elt;
+} TypeTypes;
+
 typedef union _type {
     TypeBase	base;
     TypePrim	prim;
@@ -360,6 +371,7 @@ typedef union _type {
     TypeFunc	func;
     TypeArray	array;
     TypeStruct	structs;
+    TypeTypes	types;
 } Type;
 
 typedef struct _argDecl {
@@ -376,14 +388,8 @@ extern Type	    *typePoly;
 extern Type	    *typeGroup;
 extern Type	    *typeField;
 extern Type	    *typeRefPoly;
-extern Type	    *typeNil;
 extern Type	    *typeFileError;
 extern Type	    *typePrim[rep_void + 1];
-
-#define typeEnum   ((Type *) 1)
-
-#define TypePoly(t) ((t)->base.tag == type_prim && (t)->prim.prim == rep_undef)
-#define TypeBool(t) ((t)->base.tag == type_prim && (t)->prim.prim == rep_bool)
 
 Type	*NewTypeName (ExprPtr expr, Type *type);
 Type	*NewTypeRef (Type *ref);
@@ -391,7 +397,11 @@ Type	*NewTypeFunc (Type *ret, ArgType *args);
 Type	*NewTypeArray (Type *type, ExprPtr dimensions);
 Type	*NewTypeStruct (StructTypePtr structs);
 Type	*NewTypeUnion (StructTypePtr structs, Bool enumeration);
+Type	*NewTypeTypes (TypeElt *elt);
 Type	*TypeCanon (Type *type);
+void	TypeTypesAdd (Type *list, Type *type);
+void	TypeTypesRemove (Type *list, Type *type);
+Bool	TypeTypesMember (Type *list, Type *type);
 int	TypeInit (void);
 SymbolPtr   TypeNameName (Type *t);
 
@@ -405,9 +415,13 @@ Type	*TypeCombineFunction (Type *type);
 Type	*TypeCombineArray (Type *array, int ndim, Bool lvalue);
 Bool	TypeCompatibleAssign (Type *dest, Value v);
 Bool	TypeCompatible (Type *a, Type *b, Bool contains);
+
+#define TypePoly(t)	((t)->base.tag == type_prim && (t)->prim.prim == rep_undef)
+#define TypeBool(t)	((t)->base.tag == type_prim && (t)->prim.prim == rep_bool)
+#define TypeString(t)	((t)->base.tag == type_prim && (t)->prim.prim == rep_string)
+
 Bool	TypeNumeric (Type *t);
 Bool	TypeIntegral (Type *t);
-Bool	TypeString (Type *t);
 int	TypeCountDimensions (ExprPtr dims);
 
 /*

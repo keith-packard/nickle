@@ -646,7 +646,41 @@ ThreadsRun (Value thread, Value lex)
 		    break;
 		}
 		if (value->unions.tag == inst->tagcase.tag)
+		{
 		    next = inst + inst->tagcase.offset;
+		    v = UnionValue (value, inst->tagcase.tag);
+		    if (!v)
+		    {
+			if (StructMemType (value->unions.type, inst->atom.atom))
+			    RaiseStandardException (exception_invalid_struct_member,
+						    "requested union tag not current",
+						    2, value,
+						    NewStrString (AtomName (inst->atom.atom)));
+			else
+			    RaiseStandardException (exception_invalid_struct_member,
+						    "no such union tag",
+						    2, value, 
+						    NewStrString (AtomName (inst->atom.atom)));
+			break;
+		    }
+		    value = v;
+		}
+		break;
+	    case OpTagStore:
+		box = 0;
+		if (inst->var.name->symbol.class == class_global)
+		{
+		    box = inst->var.name->global.value;
+		    i = 0;
+		}
+		else
+		{
+		    box = thread->thread.continuation.frame->frame;
+		    i = inst->var.name->local.element;
+		}
+		if (!box)
+		    break;
+		ThreadAssign (NewRef (box, i), value, True);
 		break;
 	    case OpReturnVoid:
 		value = Void;

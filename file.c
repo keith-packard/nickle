@@ -190,7 +190,7 @@ FileInitErrors (void)
     for (i = 0; i < NUM_FILE_ERRORS; i++)
     {
 	fileErrorMap[i].atom = AtomId (fileErrorMap[i].name);
-	se[i].type = typeEnum;
+	se[i].type = typePrim[rep_void];
 	se[i].name = fileErrorMap[i].atom;
     }
     typeFileError = NewTypeUnion (st, True);
@@ -1099,6 +1099,7 @@ FilePutType (Value f, Type *t, Bool minimal)
     StructType	    *st;
     StructElement   *se;
     Bool	    spaceit = minimal;
+    TypeElt	    *elt;
     
     if (!t)
     {
@@ -1140,8 +1141,7 @@ FilePutType (Value f, Type *t, Bool minimal)
 	    {
 		if (i)
 		    FilePuts (f, ", ");
-		if (se[i].name)
-		    FilePuts (f, AtomName (se[i].name));
+		FilePuts (f, AtomName (se[i].name));
 	    }
 	    FilePuts (f, " }");
 	}
@@ -1155,15 +1155,19 @@ FilePutType (Value f, Type *t, Bool minimal)
 	    se = StructTypeElements (st);
 	    for (i = 0; i < st->nelements; i++)
 	    {
-		if (se[i].type == typeEnum)
-		    FilePuts (f, "enum ");
-		else
-		    FilePutType (f, se[i].type, se[i].name != 0);
-		if (se[i].name)
-		    FilePuts (f, AtomName (se[i].name));
+		FilePutType (f, se[i].type, True);
+		FilePuts (f, AtomName (se[i].name));
 		FilePuts (f, "; ");
 	    }
 	    FilePuts (f, "}");
+	}
+	break;
+    case type_types:
+	for (elt = t->types.elt; elt; elt = elt->next)
+	{
+	    FilePutType (f, elt->type, False);
+	    if (elt->next)
+		FilePuts (f, ", ");
 	}
 	break;
     }

@@ -17,7 +17,7 @@
 /* A mutex is either owned by a thread or nobody */
 typedef union { 
     thread  owner; 
-    enum    nobody; 
+    void    nobody; 
 } mutex_owner;
 
 public typedef struct { 
@@ -36,26 +36,26 @@ namespace Mutex {
 
     public bool acquire (mutex m)
     {
-	if (m->owner == mutex_owner.owner (Thread::current()))
+	if (m->owner == (mutex_owner.owner) Thread::current())
 	    raise deadlock (m, Thread::current ());
 	Semaphore::wait(m->sem);
-	m->owner = mutex_owner.owner (Thread::current ());
+	m->owner = (mutex_owner.owner) Thread::current ();
 	return true;
     }
 
     public bool try_acquire (mutex m)
     {
-	if (m->owner == mutex_owner.owner (Thread::current()))
+	if (m->owner == (mutex_owner.owner) Thread::current())
 	    raise deadlock (m, Thread::current());
         bool ret = Semaphore::test (m->sem);
         if (ret)
-	    m->owner = mutex_owner.owner (Thread::current());
+	    m->owner = (mutex_owner.owner) Thread::current();
 	return ret;
     }
 
     public void release (mutex m)
     {
-	if (m->owner != mutex_owner.owner (Thread::current()))
+	if (m->owner != (mutex_owner.owner) Thread::current())
 	    raise notowned (m, Thread::current (), m->owner);
 	m->owner = mutex_owner.nobody;
 	Semaphore::signal (m->sem);

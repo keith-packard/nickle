@@ -659,10 +659,8 @@ extend namespace Math {
 	a = limit_angle_to_pi (a);
 	c = cos (a);
 	s = sign(a) * abs (cos_to_sin(c));
-	if (cosp != 0)
-	    *cosp = c;
-	if (sinp != 0)
-	    *sinp = s;
+        *cosp = c;
+        *sinp = s;
     }
     
     public real tan (real a)

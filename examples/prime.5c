@@ -72,7 +72,7 @@ namespace Factor {
 
     typedef union {
 	int[*]  array;
-	enum	none;
+	void	none;
     } array_or_none;
 
     public array_or_none function factor (int i)

@@ -63,12 +63,12 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    namespace
 %type  <atomList>   atoms
 %type  <declList>   initnames typenames
-%type  <symbol>	    name
+%type  <symbol>	    name opt_name
 %type  <funcDecl>   func_decl func_name
 %type  <atom>	    typename
 %type  <expr>	    opt_init
 %type  <fulltype>   decl next_decl
-%type  <type>	    opt_type type opt_type_or_enum
+%type  <type>	    opt_type type
 %type  <expr>	    opt_stars stars
 %type  <type>	    basetype
 %type  <expr>	    dims
@@ -85,7 +85,6 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 
 %type  <expr>	    opt_expr expr opt_exprs exprs simpleexpr primary
 %type  <expr>	    comma_expr
-%type  <expr>	    opt_cast_arg
 %type  <ints>	    assignop
 %type  <value>	    opt_integer integer
 %type  <expr>	    opt_arrayinit arrayinit arrayelts  arrayelt
@@ -600,10 +599,33 @@ union_cases	: union_case union_cases
 		|
 		    { $$ = 0; }
 		;
-union_case	: CASE NAME COLON statements
-		    { $$ = NewExprTree (CASE, NewExprAtom ($2, 0, False), $4); }
+union_case	: CASE namespace_start NAME opt_name COLON statements namespace_end
+		    { 
+			SymbolPtr   sym = $4;
+			Atom	    sym_atom = sym ? sym->symbol.name : 0;
+			ExprPtr	    name = 0;
+			
+			if (sym)
+			    name = NewExprAtom (sym_atom, sym, False);
+			    
+			$$ = NewExprTree (CASE, 
+					  NewExprTree (CASE,
+						       NewExprAtom ($3, 0, False),
+						       name),
+					  $6);
+		    }
 		| DEFAULT COLON statements
 		    { $$ = NewExprTree (CASE, 0, $3); }
+		;
+opt_name	: NAME
+		    {
+			$$ = ParseNewSymbol (publish_private,
+					     class_undef,
+					     typePoly,
+					     $1);
+		    }
+		|
+		    { $$ = 0; }
 		;
 /*
 * Identifiers
@@ -827,7 +849,7 @@ type		: basetype
 			nelements = 0;
 			for (al = $3; al; al = al->next)
 			{
-			    se[nelements].type = typeEnum;
+			    se[nelements].type = typePrim[rep_void];
 			    se[nelements].name = al->atom;
 			    nelements++;
 			}
@@ -878,16 +900,10 @@ struct_members	: opt_type atoms SEMI struct_members
 		|
 		    { $$ = 0; }
 		;
-union_members	: opt_type_or_enum atoms SEMI union_members
+union_members	: opt_type atoms SEMI union_members
 		    { $$ = NewMemList ($2, $1, $4); }
 		|
 		    { $$ = 0; }
-		;
-opt_type_or_enum: type
-		| ENUM
-		    { $$ = typeEnum; }
-		|
-		    { $$ = typePoly; }
 		;
 /*
 * Declaration modifiers
@@ -1201,17 +1217,17 @@ primary		: fullname
 			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = NewTypeArray (typePoly, $2); 
 		    }
-		| OP type DOT NAME CP primary				%prec UNIONCAST
+		| type DOT NAME						%prec UNIONCAST
 		    {
+			ParseCanonType ($1, False);
+			$$ = NewExprTree (UNION, NewExprAtom ($3, 0, False), 0); 
+			$$->base.type = $1;
+		    }
+		| OP type DOT NAME CP primary 				%prec UNIONCAST
+		    { 
 			ParseCanonType ($2, False);
 			$$ = NewExprTree (UNION, NewExprAtom ($4, 0, False), $6); 
 			$$->base.type = $2;
-		    }
-		| type DOT NAME opt_cast_arg				%prec UNIONCAST
-		    {
-			ParseCanonType ($1, False);
-			$$ = NewExprTree (UNION, NewExprAtom ($3, 0, False), $4); 
-			$$->base.type = $1;
 		    }
 		| DOLLAR opt_integer
 		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_NUM, $2)); }
@@ -1244,11 +1260,6 @@ integer		: TEN_NUM
 		| OCTAL0_NUM
 		| BINARY_NUM
 		| HEX_NUM
-		;
-opt_cast_arg	: OP expr CP
-		    { $$ = $2; }
-		|
-		    { $$ = 0; }
 		;
 /*
  * Array initializers
@@ -1645,15 +1656,10 @@ ParseCanonType (TypePtr type, Bool forwardAllowed)
 	    StructElement   *se;
 
 	    se = &StructTypeElements(type->structs.structs)[n];
-	    if (se->type != typeEnum)
-	    {
-		t = ParseCanonType (se->type, True);
-		if (t < ret)
-		    ret = t;
-		if (t == CanonTypeDefined)
-		    anyResolved = True;
-	    }
-	    else
+	    t = ParseCanonType (se->type, True);
+	    if (t < ret)
+		ret = t;
+	    if (t == CanonTypeDefined)
 		anyResolved = True;
 	}
 	if (ret == CanonTypeForward)
@@ -1663,6 +1669,8 @@ ParseCanonType (TypePtr type, Bool forwardAllowed)
 	    else if (!forwardAllowed)
 		ParseError ("No member of '%T' defined yet", type);
 	}
+	break;
+    case type_types:
 	break;
     }
     return ret;

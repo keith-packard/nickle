@@ -148,6 +148,7 @@ ObjPtr	CompileFuncCode (CodePtr	code,
 			 CodePtr	previous,
 			 NonLocalPtr	nonLocal);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
+static Bool CompileIsReachable (ObjPtr obj, int i);
 
 /*
  * Set storage information for new symbols
@@ -1515,6 +1516,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	if (t && t->base.tag == type_union)
 	{
 	    StructType	*st = t->structs.structs;
+	    Type	*mt;
 	    
 	    expr->tree.left->base.type = StructMemType (st, expr->tree.left->atom.atom);
 	    if (!expr->tree.left->base.type)
@@ -1524,22 +1526,14 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 			      expr->tree.left->atom.atom);
 		break;
 	    }
+	    mt = TypeCanon (expr->tree.left->base.type);
 	    BuildInst (obj, OpBuildUnion, inst, stat);
 	    inst->structs.structs = st;
-	    if (expr->tree.left->base.type == typeEnum)
+	    if (expr->tree.right)
 	    {
-		if (expr->tree.right)
+		if (mt == typePrim[rep_void])
 		{
-		    CompileError (obj, stat, "enum member '%A' takes no constructor argument",
-				  expr->tree.left->atom.atom);
-		    break;
-		}
-	    }
-	    else
-	    {
-		if (!expr->tree.right)
-		{
-		    CompileError (obj, stat, "union member '%A' requires constructor argument",
+		    CompileError (obj, stat, "Union member '%A' requires no constructor value",
 				  expr->tree.left->atom.atom);
 		    break;
 		}
@@ -1550,6 +1544,15 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 		    CompileError (obj, stat, "Incompatible types '%T', '%T' in union constructor",
 				  expr->tree.left->base.type,
 				  expr->tree.right->base.type);
+		    break;
+		}
+	    }
+	    else 
+	    {
+		if (mt != typePrim[rep_void])
+		{
+		    CompileError (obj, stat, "Union member '%A' requires constructor value",
+				  expr->tree.left->atom.atom);
 		    break;
 		}
 	    }
@@ -1571,16 +1574,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case CHAR_CONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
-	/*
-	 * Magic - 0 is both integer and *poly
-	 */
-	if (ValueIsInt(expr->constant.constant) &&
-	    expr->constant.constant->ints.value == 0)
-	{
-	    expr->base.type = typeNil;
-	}
-	else
-	    expr->base.type = typePrim[rep_integer];
+        expr->base.type = typePrim[rep_integer];
 	break;
     case TEN_FLOAT:
     case OCTAL_FLOAT:
@@ -2106,8 +2100,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
     int		start_inst, top_inst, continue_inst, test_inst, middle_inst;
     ExprPtr	c;
     int		ncase, *case_inst, icase;
-    Bool	has_default;
+    Bool	has_default, need_default;
     InstPtr	inst;
+    StructType	*st;
     
     switch (expr->base.tag) {
     case IF:
@@ -2136,19 +2131,40 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 */
 	obj = _CompileBoolExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
+	/*
+	 * Compile b
+	 */
 	obj = _CompileStat (obj, expr->tree.right->tree.left, last, code);
-	NewInst (middle_inst, obj);
+	/*
+	 * Branch around else if reachable
+	 */
+	if (CompileIsReachable (obj, obj->used))
+	    NewInst (middle_inst, obj);
+	else
+	    middle_inst = -1;
+	/*
+	 * Fix up branch on a
+	 */
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpBranchFalse;
 	inst->base.stat = expr;
 	inst->branch.offset = obj->used - test_inst;
 	inst->branch.mod = BranchModNone;
+	/*
+	 * Compile c
+	 */
 	obj = _CompileStat (obj, expr->tree.right->tree.right, last, code);
-	inst = ObjCode (obj, middle_inst);
-	inst->base.opCode = OpBranch;
-	inst->base.stat = expr;
-	inst->branch.offset = obj->used - middle_inst;
-	inst->branch.mod = BranchModNone;
+	/*
+	 * Fix up branch around else if necessary
+	 */
+	if (middle_inst != -1)
+	{
+	    inst = ObjCode (obj, middle_inst);
+	    inst->base.opCode = OpBranch;
+	    inst->base.stat = expr;
+	    inst->branch.offset = obj->used - middle_inst;
+	    inst->branch.mod = BranchModNone;
+	}
 	break;
     case WHILE:
 	/*
@@ -2275,8 +2291,25 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 *                     +--------+
 	 */
 	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
+	st = 0;
 	if (expr->base.tag == SWITCH)
 	    SetPush (obj);
+	else
+	{
+	    if (expr->tree.left->base.type)
+	    {
+		Type	*t;
+		
+		t = TypeCanon (expr->tree.left->base.type);
+		if (t->base.tag == type_union)
+		    st = t->structs.structs;
+		else if (!TypePoly (t))
+		{
+		    CompileError (obj, expr, "Union switch type '%T' not union",
+				  expr->tree.left->base.type);
+		}
+	    }
+	}
 	c = expr->tree.right;
 	has_default = False;
 	ncase = 0;
@@ -2287,6 +2320,45 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    else
 		ncase++;
 	    c = c->tree.right;
+	}
+	/*
+	 * Check to see if the union switch covers
+	 * all possible values
+	 */
+	need_default = True;
+	if (expr->base.tag == UNION)
+	{
+	    Bool	    missing = False;
+	    int		    i;
+	    StructElement   *se = StructTypeElements(st);
+	    
+	    /*
+	     * See if every member of the union has a case
+	     */
+	    for (i = 0; i < st->nelements; i++)
+	    {
+		c = expr->tree.right;
+		while (c)
+		{
+		    ExprPtr	pair = c->tree.left->tree.left;
+		    Atom	tag = pair->tree.left->atom.atom;
+
+		    if (tag == se[i].name)
+			break;
+		    c = c->tree.right;
+		}
+		if (!c)
+		{
+		    missing = True;
+		    break;
+		}
+	    }
+	    if (!missing)
+	    {
+		need_default = False;
+		if (has_default)
+		    CompileError (obj, expr, "Union case has unreachable default");
+	    }
 	}
 	case_inst = AllocateTemp (ncase * sizeof (int));
 	/*
@@ -2306,8 +2378,11 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    c = c->tree.right;
 	}
 	/* add default case at the bottom */
-    	NewInst (test_inst, obj);
-	top_inst = obj->used;
+	if (need_default)
+	{
+	    NewInst (test_inst, obj);
+	    top_inst = obj->used;
+	}
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
 				     NON_LOCAL_BREAK);
 	/*
@@ -2333,14 +2408,56 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		}
 		else
 		{
+		    ExprPtr	pair = c->tree.left->tree.left;
+		    Atom	tag = pair->tree.left->atom.atom;
+		    Type	*mt = typePoly;
+		    
+		    /*
+		     * Find the member type
+		     */
+		    if (st)
+		    {
+			mt = StructMemType (st, tag);
+			if (!mt)
+			{
+			    mt = typePoly;
+			    CompileError (obj, expr, "Union case tag '%A' not in type '%T'",
+					  tag, expr->tree.left->base.type);
+			}
+		    }
+		    
+		    /*
+		     * Make sure there's no fall-through
+		     */
+		    if (icase > 0 && pair->tree.right &&
+			CompileIsReachable (obj, obj->used))
+		    {
+			CompileError (obj, expr, 
+				      "Fall through case with varient value");
+		    }
 		    inst->base.opCode = OpTagCase;
 		    inst->tagcase.offset = obj->used - case_inst[icase];
-		    inst->tagcase.tag = c->tree.left->tree.left->atom.atom;
+		    inst->tagcase.tag = tag;
+		    /*
+		     * this side holds the name to assign the
+		     * switch value to.  Set it's type and
+		     * build the assignment
+		     */
+		    if (pair->tree.right)
+		    {
+			SymbolPtr   name = pair->tree.right->atom.symbol;
+			InstPtr	    assign;
+
+			name->symbol.type = mt;
+			CompileStorage (obj, expr, name, code);
+			BuildInst (obj, OpTagStore, assign, expr);
+			assign->var.name = name;
+		    }
 		}
 		inst->base.stat = expr;
 		icase++;
 	    }
-	    else
+	    else if (need_default)
 	    {
 		inst = ObjCode (obj, test_inst);
 		if (expr->base.tag == SWITCH)
@@ -2359,7 +2476,10 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    c = c->tree.right;
 	}
 	obj->nonLocal = obj->nonLocal->prev;
-	if (!has_default)
+	/*
+	 * Add a default branch if necessary
+	 */
+	if (!has_default && need_default)
 	{
 	    inst = ObjCode (obj, test_inst);
 	    if (expr->base.tag == SWITCH)
@@ -2449,6 +2569,24 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 }
 
 static Bool
+CompileIsUnconditional (InstPtr inst)
+{
+    switch (inst->base.opCode) {
+    case OpBranch:
+    case OpFarJump:
+    case OpDefault:
+    case OpLeaveDone:
+    case OpCatch:
+    case OpReturn:
+    case OpReturnVoid:
+    case OpTailCall:
+	return True;
+    default:
+	return False;
+    }
+}
+
+static Bool
 CompileIsBranch (InstPtr inst)
 {
     switch (inst->base.opCode) {
@@ -2468,9 +2606,20 @@ CompileIsBranch (InstPtr inst)
 }
 
 static Bool
-CompileOpIsReturn (OpCode op)
+CompileIsReachable (ObjPtr obj, int target)
 {
-    return (op == OpReturn || op == OpReturnVoid || op == OpTailCall);
+    InstPtr inst;
+    int	    i;
+
+    for (i = 0; i < obj->used; i++)
+    {
+	inst = ObjCode (obj, i);
+	if (CompileIsBranch (inst) && i + inst->branch.offset == target)
+	    return True;
+	if (i == target - 1 && !CompileIsUnconditional (inst))
+	    return True;
+    }
+    return False;
 }
 
 ObjPtr
@@ -2482,7 +2631,6 @@ CompileFuncCode (CodePtr	code,
     ENTER ();
     ObjPtr  obj;
     InstPtr inst;
-    int	    i;
     Bool    needReturn;
     
     code->base.previous = previous;
@@ -2490,23 +2638,18 @@ CompileFuncCode (CodePtr	code,
     obj->nonLocal = nonLocal;
     obj = _CompileStat (obj, code->func.code, True, code);
     needReturn = False;
-    if (!obj->used || !CompileOpIsReturn (ObjCode (obj, ObjLast(obj))->base.opCode))
+    if (!obj->used || CompileIsReachable (obj, obj->used))
 	needReturn = True;
-    else
-    {
-	for (i = 0; i < obj->used; i++)
-	{
-	    inst = ObjCode (obj, i);
-	    if (CompileIsBranch (inst))
-		if (i + inst->branch.offset == obj->used)
-		{
-		    needReturn = True;
-		    break;
-		}
-	}
-    }
     if (needReturn)
+    {
+	if (!TypeCombineBinary (code->base.func->base.type, ASSIGN,
+				typePrim[rep_void]))
+	{
+	    CompileError (obj, stat, "Control reaches end of function with type '%T'",
+			  code->base.func->base.type);
+	}
 	BuildInst (obj, OpReturnVoid, inst, stat);
+    }
 #ifdef DEBUG
     ObjDump (obj, 0);
 #endif
@@ -2727,6 +2870,7 @@ char *OpNames[] = {
     "BranchTrue",
     "Case",
     "TagCase",
+    "TagStore",
     "Default",
     "Return",
     "ReturnVoid",
@@ -2865,7 +3009,7 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 		inst->base.push ? '^' : ' ');
     switch (inst->base.opCode) {
     case OpTagCase:
-	FilePrintf (FileStdout, "(%T)", inst->tagcase.tag);
+	FilePrintf (FileStdout, "(%A) ", inst->tagcase.tag);
 	goto branch;
     case OpCatch:
 	FilePrintf (FileStdout, "\"%A\" ", 
@@ -2927,6 +3071,7 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
     case OpLocal:
     case OpLocalRef:
     case OpLocalRefStore:
+    case OpTagStore:
 	if (inst->var.name)
 	{
 	    SymbolPtr	s = inst->var.name;

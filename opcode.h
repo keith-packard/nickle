@@ -19,6 +19,7 @@ typedef enum _OpCode {
     OpBranchTrue,
     OpCase,
     OpTagCase,
+    OpTagStore,
     OpDefault,
     OpReturn,
     OpReturnVoid,

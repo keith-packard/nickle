@@ -100,6 +100,32 @@ RefMinus (Value av, Value bv, int expandOk)
     RETURN (NewRef (ref->box, i));
 }
 
+Value
+RefLess (Value av, Value bv, int expandOk)
+{
+    Ref	*aref = &av->ref, *bref = &bv->ref;
+
+    if (aref->box != bref->box)
+    {
+	RaiseError ("Attempt to order references to different objects %v < %v",
+		    av, bv);
+	return Zero;
+    }
+    if (aref->element < bref->element)
+	return One;
+    return Zero;
+}
+
+Value
+RefEqual (Value av, Value bv, int expandOk)
+{
+    Ref	*aref = &av->ref, *bref = &bv->ref;
+
+    if (aref->box != bref->box || aref->element != bref->element)
+	return Zero;
+    return One;
+}
+
 ValueType *
 RefTypeCheck (BinaryOp op, Value av, Value bv, int expandOk)
 {
@@ -111,6 +137,11 @@ RefTypeCheck (BinaryOp op, Value av, Value bv, int expandOk)
 	if (av->value.tag == type_int)
 	    return bv->value.type;
 	if (bv->value.tag == type_int)
+	    return av->value.type;
+	break;
+    case LessOp:
+    case EqualOp:
+	if (av->value.tag == type_ref && bv->value.tag == type_ref)
 	    return av->value.type;
 	break;
     default:
@@ -144,8 +175,8 @@ ValueType RefType = {
 	0,
 	0,
 	0,
-	0,
-	0,
+	RefLess,
+	RefEqual,
 	0,
 	0,
     },

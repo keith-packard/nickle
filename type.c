@@ -369,7 +369,10 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 		return True;
     }
     
-    if (TypePoly (a) || TypePoly (b))
+    if (TypePoly (a))
+	return True;
+
+    if (/* !contains && */ TypePoly (b))
 	return True;
 
     if (a->base.tag != b->base.tag)
@@ -1103,7 +1106,12 @@ TypeCompatibleAssign (TypesPtr a, Value b)
 	return TypeCompatibleAssign (a->name.type, b);
     case types_ref:
 	if (b->value.tag == type_ref)
-	    return TypeCompatible (a->ref.ref, RefType (b), True);
+	{
+	    if (RefValueGet (b))
+		return TypeCompatibleAssign (a->ref.ref, RefValueGet (b));
+	    else
+		return TypeCompatible (a->ref.ref, RefType (b), True);
+	}
 	if (b->value.tag == type_int && b->ints.value == 0)
 	    return True;
 	break;
@@ -1136,7 +1144,26 @@ TypeCompatibleAssign (TypesPtr a, Value b)
 	    adim = TypeCountDimensions (a->array.dimensions);
 	    bdim = b->array.ndim;
 	    if (adim == 0 || adim == bdim)
-		return TypeCompatible (a->array.type, b->array.type, True);
+	    {
+		if (TypePoly (a->array.type))
+		    return True;
+		if (TypePoly (b->array.type))
+		{
+		    int	i;
+		    BoxPtr  box = b->array.values;
+
+		    for (i = 0; i < b->array.ents; i++)
+			if (BoxValueGet (box, i) &&
+			    !TypeCompatibleAssign (a->array.type,
+						   BoxValueGet (box, i)))
+			{
+			    return False;
+			}
+		    return True;
+		}
+		else
+		    return TypeCompatible (a->array.type, b->array.type, True);
+	    }
 	}
 	break;
     case types_struct:

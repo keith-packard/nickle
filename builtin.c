@@ -294,8 +294,9 @@ static struct fbuiltin_2 funcs_2[] = {
 };
 
 static struct fbuiltin_3 funcs_3[] = {
+    { do_File_vfprintf,	    "vfprintf",		    "i",    "fsA*p",&FileNamespace},
     { do_String_substr,	    "substr",		    "s",    "sii",  &StringNamespace },
-    { do_File_pipe,	    "pipe",		    "f",    "sA*ss", &FileNamespace },
+    { do_File_pipe,	    "pipe",		    "f",    "sA*ss",&FileNamespace },
     { 0,		    0 },
 };
 
@@ -829,6 +830,25 @@ do_fprintf (int n, Value *p)
     n--;
     callformat (f, fmt, n, p);
     return Zero;
+}
+
+Value
+do_File_vfprintf (Value file, Value format, Value args)
+{
+    ENTER ();
+    Value   *a;
+    int	    i;
+    char    *fmt = StringChars (&format->string);
+    
+    a = AllocateTemp (args->array.ents * sizeof (Value));
+    for (i = 0; i < args->array.ents; i++)
+    {
+	a[i] = BoxValue (args->array.values, i);
+	if (aborting)
+	    RETURN (Zero);
+    }
+    callformat (file, fmt, args->array.ents, a);
+    RETURN (Zero);
 }
 
 Value

@@ -793,6 +793,7 @@ Value	do_Gcd_kary_reduction (Value, Value);
 Value	do_Environ_set (Value, Value);
 
 /* three argument builtins */
+Value	do_File_vfprintf (Value, Value, Value);
 Value	do_String_substr (Value, Value, Value);
 Value	do_File_pipe (Value, Value, Value);
 

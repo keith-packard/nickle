@@ -468,6 +468,8 @@ yyprompt (void)
     {
 	if (ignorenl)
 	    v = lookupVar ("prompt2");
+	else if (CurrentFrame)
+	    v = lookupVar ("prompt3");
 	else
 	    v = lookupVar ("prompt");
 	dofformat (FileStdout, "%s", 1, &v);

@@ -22,26 +22,88 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include    <stdarg.h>
-#include    <stdio.h>
+#include "nick.h"
 
-void
-debug (char *format, ...)
+Bool
+DebugSetFrame (Value thread, int offset)
 {
-    va_list	ap;
-
-    va_start (ap, format);
-    vfprintf (stderr, format, ap);
-    va_end (ap);
+    ENTER ();
+    FramePtr	frame;
+    ScopePtr	scope;
+    int		n = offset;
+    Bool	ret;
+    ExprPtr	stat;
+    
+    frame = thread->thread.frame;
+    stat = thread->thread.pc->base.stat;
+    while (frame && frame->function->func.code->base.builtin)
+    {
+	stat = frame->savePc->base.stat;
+	frame = frame->previous;
+    }
+    while (frame && frame->previous && n--)
+    {
+	stat = frame->savePc->base.stat;
+	frame = frame->previous;
+    }
+    if (stat)
+	scope = stat->base.scope;
+    else
+	scope = GlobalScope;
+    ret = False;
+    if (frame && scope)
+    {
+	ret = True;
+	CurrentScope = NewScope (scope);
+	CurrentFrame = frame;
+	ScopeImport (CurrentScope, DebugScope, publish_public);
+	setVar ("thread", thread);
+	setVar ("frame", NewInt (offset));
+    }
+    EXIT ();
+    return ret;
 }
 
-void
-panic (char *format, ...)
+Value
+DebugDone (void)
 {
-    va_list	ap;
+    ENTER ();
+    CurrentScope = GlobalScope;
+    CurrentFrame = 0;
+    RETURN (Zero);
+}
 
-    va_start (ap, format);
-    vfprintf (stderr, format, ap);
-    va_end (ap);
-    abort (1);
+Value
+DebugUp (void)
+{
+    ENTER ();
+    Value   frame;
+    Value   thread;
+    
+    thread = lookupVar ("thread");
+    frame = lookupVar ("frame");
+    if (thread->value.tag == type_thread && frame->value.tag == type_int)
+    {
+	if (DebugSetFrame (thread, frame->ints.value + 1))
+	    RETURN (One);
+    }
+    RETURN (Zero);
+}
+
+Value
+DebugDown (void)
+{
+    ENTER ();
+    Value   frame;
+    Value   thread;
+    
+    thread = lookupVar ("thread");
+    frame = lookupVar ("frame");
+    if (thread->value.tag == type_thread && frame->value.tag == type_int &&
+	frame->ints.value > 0)
+    {
+	if (DebugSetFrame (thread, frame->ints.value - 1))
+	    RETURN (One);
+    }
+    RETURN (Zero);
 }

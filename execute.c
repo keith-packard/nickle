@@ -655,7 +655,7 @@ ThreadStep (Value thread)
 	{
 	    abortError = False;
 	    ThreadSetState (thread, ThreadError);
-	    setVar ("thread", thread);
+	    DebugSetFrame (thread, 0);
 	}
     }
     EXIT ();

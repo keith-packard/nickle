@@ -374,12 +374,14 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 		}
 		if (carry)
 		{
+#if 0
 		    printf ("add back 0x%x\n",
 			    (unsigned int) d);
 		    prs ("a", a);
 		    prs ("b", b);
 		    prs ("rem", rem);
 		    prs ("partial", partial);
+#endif
 		    add (rem, b, offset);
 		    d--;
 		}

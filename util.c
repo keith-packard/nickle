@@ -35,3 +35,27 @@ AllocateTemp (int size)
     b = ALLOCATE (0, sizeof (DataType *) + size);
     return b + 1;
 }
+
+#include    <stdarg.h>
+#include    <stdio.h>
+
+void
+debug (char *format, ...)
+{
+    va_list	ap;
+
+    va_start (ap, format);
+    vfprintf (stderr, format, ap);
+    va_end (ap);
+}
+
+void
+panic (char *format, ...)
+{
+    va_list	ap;
+
+    va_start (ap, format);
+    vfprintf (stderr, format, ap);
+    va_end (ap);
+    abort ();
+}

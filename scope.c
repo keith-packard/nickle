@@ -23,6 +23,7 @@
  */
 
 #include "nick.h"
+#include "ref.h"
 
 static void
 ScopeMark (void *object)
@@ -74,7 +75,8 @@ NewScopeChain (ScopeChainPtr next, SymbolPtr symbol, Publish publish)
     RETURN (chain);
 }
 
-ScopePtr	GlobalScope;
+ScopePtr	GlobalScope, CurrentScope;
+ReferencePtr	CurrentScopeReference;
 
 void
 ScopeInit (void)
@@ -83,6 +85,9 @@ ScopeInit (void)
 
     GlobalScope = NewScope (0);
     MemAddRoot (GlobalScope);
+    CurrentScope = GlobalScope;
+    CurrentScopeReference = NewReference ((void **) &CurrentScope);
+    MemAddRoot (CurrentScopeReference);
     EXIT ();
 }
 

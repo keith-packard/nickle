@@ -107,8 +107,16 @@ AssignTypeCompatiblep (Type dest, Value v)
     {
 	if (!Numericp (dest))
 	{
-	    if (dest == type_ref && Zerop (v))
-		return True;
+	    switch (dest) {
+	    case type_string:
+	    case type_array:
+	    case type_struct:
+		break;
+	    default:
+		if (Zerop (v))
+		    return True;
+		break;
+	    }
 	    return False;
 	}
 	if (dest < v->value.tag)
@@ -529,8 +537,6 @@ Default (Type t)
 	return Zero;
     case type_string:
 	return Blank;
-    case type_file:
-	return Zero;
     case type_array:
 	return Empty;
     case type_struct:

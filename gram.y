@@ -701,6 +701,9 @@ arglist	:	arglist COMMA sexpr
 
 # include	<stdio.h>
 
+ScopePtr    CurrentScope;
+FramePtr    CurrentFrame;
+
 Value
 lookupVar (char *name)
 {
@@ -709,7 +712,7 @@ lookupVar (char *name)
     int		depth;
     Value	v;
 
-    s = ScopeFindSymbol (GlobalScope, AtomId (name), &depth);
+    s = ScopeFindSymbol (CurrentScope, AtomId (name), &depth);
     if (s && s->symbol.class == class_global)
 	v = BoxValue (s->global.value, 0);
     else
@@ -726,9 +729,9 @@ setVar (char *name, Value v)
     int		depth;
 
     n = AtomId (name);
-    s = ScopeFindSymbol (GlobalScope, n, &depth);
+    s = ScopeFindSymbol (CurrentScope, n, &depth);
     if (!s)
-	s = ScopeAddSymbol (GlobalScope, NewSymbolGlobal (n, type_undef,
+	s = ScopeAddSymbol (CurrentScope, NewSymbolGlobal (n, type_undef,
 							  publish_private));
     if (s->symbol.class == class_global)
 	BoxValue (s->global.value, 0) = v;
@@ -738,36 +741,8 @@ setVar (char *name, Value v)
 void
 GetScope (ScopePtr *scope, FramePtr *fp)
 {
-    Value	thread;
-    FramePtr    frame;
-    ExprPtr	stat;
-
-    thread = lookupVar ("thread");
-    if (thread->value.tag == type_thread)
-    {
-	if ((thread->thread.state & ThreadFinished) == 0)
-	{
-	    frame = thread->thread.frame;
-	    while (frame && frame->function->func.code->base.builtin)
-		frame = frame->previous;
-	    stat = thread->thread.pc->base.stat;
-	    if (stat)
-		*scope = stat->base.scope;
-	    else
-		*scope = GlobalScope;
-	    if (frame)
-		*fp = frame;
-	    else
-		*fp = 0;
-	    return;
-	}
-	else
-	{
-	    setVar ("thread", Zero);
-	}
-    }
-    *fp = 0;
-    *scope = GlobalScope;
+    *scope = CurrentScope;
+    *fp = CurrentFrame;
 }
 
 ExprPtr

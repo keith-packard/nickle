@@ -127,7 +127,8 @@ extern SymbolPtr    ScopeFindSymbol (ScopePtr scope, Atom name, int *depth);
 extern SymbolPtr    ScopeAddSymbol (ScopePtr scope, SymbolPtr symbol);
 extern Bool	    ScopeRemoveSymbol (ScopePtr scope, SymbolPtr symbol);
 extern SymbolPtr    ScopeImport (ScopePtr scope, ScopePtr import, Publish publish);
-extern ScopePtr	    GlobalScope;
+extern ScopePtr	    GlobalScope, CurrentScope, DebugScope;
+extern FramePtr	    CurrentFrame;
 extern void	    ScopeInit (void);
 
 typedef struct _DeclList    *DeclListPtr;
@@ -379,6 +380,11 @@ Symbol	*insertSym (char *);
 void	SymbolInit (void);
 
 void	BuiltinInit (void);
+
+Bool	DebugSetFrame (Value thread, int offset);
+Value	DebugDone (void);
+Value	DebugUp (void);
+Value	DebugDown (void);
 
 Value	History (Value, Value);
 void	HistorySet (Value, Value);

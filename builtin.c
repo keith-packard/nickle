@@ -20,66 +20,86 @@
 # define PI	3.14159265358979323846
 #endif
 
+ScopePtr    PrimitiveScope;
+ScopePtr    DebugScope;
+
 struct fbuiltin_v {
     Value	(*bf_func) (int, Value *);
     char	*bf_name;
+    ScopePtr	*bf_scope;
 };
 
 struct fbuiltin_0 {
     Value	(*bf_func) (void);
     char	*bf_name;
+    ScopePtr	*bf_scope;
 };
 
 struct fbuiltin_1 {
     Value	(*bf_func) (Value);
     char	*bf_name;
+    ScopePtr	*bf_scope;
 };
 
 struct fbuiltin_2 {
     Value	(*bf_func) (Value, Value);
     char	*bf_name;
+    ScopePtr	*bf_scope;
 };
 
 struct fbuiltin_3 {
     Value	(*bf_func) (Value, Value, Value);
     char	*bf_name;
+    ScopePtr	*bf_scope;
 };
 
 struct fbuiltin_4 {
     Value	(*bf_func) (Value, Value, Value, Value);
     char	*bf_name;
+    ScopePtr	*bf_scope;
 };
 
 struct fbuiltin_5 {
     Value	(*bf_func) (Value, Value, Value, Value, Value);
     char	*bf_name;
+    ScopePtr	*bf_scope;
 };
 
 struct fbuiltin_6 {
     Value	(*bf_func) (Value, Value, Value, Value, Value, Value);
     char	*bf_name;
+    ScopePtr	*bf_scope;
 };
 
 struct fbuiltin_7 {
     Value	(*bf_func) (Value, Value, Value, Value, Value, Value, Value);
     char	*bf_name;
+    ScopePtr	*bf_scope;
 };
 
 struct dbuiltin {
-	double	bd_value;
-	char	*bd_name;
+    double	bd_value;
+    char	*bd_name;
+    ScopePtr	*bd_scope;
 };
 
 struct sbuiltin {
-	char	*bs_value;
-	char	*bs_name;
+    char	*bs_value;
+    char	*bs_name;
+    ScopePtr	*bs_scope;
 };
 
 struct ibuiltin {
-    char    *is_name;
-    int	    is_file;
+    char	*is_name;
+    int		is_file;
+    ScopePtr	*is_scope;
 };
 
+struct nbuiltin {
+    char	*bn_name;
+    ScopePtr	*bn_value;
+    ScopePtr	*bn_scope;
+};
 
 Value	Atof (Value);
 Value	Atoi (Value);
@@ -130,6 +150,8 @@ Value	tanhD(Value);
 Value	y0D(Value);
 Value	y1D(Value);
 Value	ynD(Value,Value);
+Value	_random(Value);
+Value	_srandom(Value);
 
 struct fbuiltin_v funcs_v[] = {
     { doprintf,		"printf" },
@@ -137,6 +159,7 @@ struct fbuiltin_v funcs_v[] = {
     { dofprintf,	"fprintf" },
     { Kill,		"Kill" },
     { Trace,		"Trace" },
+    { Trace,		"trace", &DebugScope },
     { doHistoryShow,    "HistoryShow" },
     { 0,		0 },
 };
@@ -147,6 +170,9 @@ struct fbuiltin_0 funcs_0[] = {
     { NewSemaphore,	"NewSemaphore" },
     { ThreadsList,	"ThreadsList" },
     { dogetchar,	"getchar" },
+    { DebugUp,		"up", &DebugScope, },
+    { DebugDown,	"down", &DebugScope },
+    { DebugDone,	"done", &DebugScope },
     { 0,		0 },
 };
 struct fbuiltin_1 funcs_1[] = {
@@ -187,6 +213,8 @@ struct fbuiltin_1 funcs_1[] = {
     { tanhD,		"tanh" },
     { y0D,		"y0" },
     { y1D,		"y1" },
+    { _random,		"random", &PrimitiveScope },
+    { _srandom,		"srandom", &PrimitiveScope },
     { 0,		0 },
 };
 struct fbuiltin_2 funcs_2[] = {
@@ -215,6 +243,7 @@ struct dbuiltin dvars[] = {
 struct sbuiltin svars[] = {
     { "> ",	"prompt" },
     { "+ ",	"prompt2" },
+    { "- ",	"prompt3" },
     { "%g",	"format" },
     { VERSION,	"version" },
     { BUILD,	"build" },
@@ -228,6 +257,59 @@ struct ibuiltin ivars[] = {
     { 0,	0 },
 };
 
+struct nbuiltin nvars[] = {
+    { "primitive",  &PrimitiveScope },
+    { "debugger",   &DebugScope },
+    { 0,	    0 },
+};
+
+SymbolPtr
+BuiltinSymbol (ScopePtr *scopep,
+	       char	*name,
+	       Type	type)
+{
+    ENTER ();
+    ScopePtr	scope;
+
+    if (scopep)
+	scope = *scopep;
+    else
+	scope = GlobalScope;
+    RETURN (ScopeAddSymbol (scope,
+			    NewSymbolGlobal (AtomId (name), type,
+					     publish_public)));
+}
+
+SymbolPtr
+BuiltinScope (ScopePtr	*scopep,
+	      char	*name)
+{
+    ENTER ();
+    ScopePtr	scope;
+
+    if (scopep)
+	scope = *scopep;
+    else
+	scope = GlobalScope;
+    RETURN (ScopeAddSymbol (scope,
+			    NewSymbolScope (AtomId (name), 
+					    NewScope (0),
+					    publish_public)));
+}
+
+void
+BuiltinAddFunction (ScopePtr *scopep, char *name,
+		    int argc, BuiltinFunc f)
+{
+    ENTER ();
+    Value	func;
+    SymbolPtr	sym;
+    sym = BuiltinSymbol (scopep, name, type_func);
+    func =  NewFunc (NewBuiltinCode (type_undef, argc, f), 0);
+    BoxValue (sym->global.value, 0) = func;
+    EXIT ();
+}
+
 void
 BuiltinInit (void)
 {
@@ -240,54 +322,33 @@ BuiltinInit (void)
     struct dbuiltin	*d;
     struct sbuiltin	*s;
     struct ibuiltin	*i;
+    struct nbuiltin	*n;
     BuiltinFunc		f;
     SymbolPtr		sym;
 
+    for (n = nvars; n->bn_name; n++) {
+	sym = BuiltinScope (n->bn_scope, n->bn_name);
+	*n->bn_value = sym->scope.scope;
+    }
     for (f_v = funcs_v; f_v->bf_name; f_v++) {
-	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_v->bf_name), 
-					       type_func, publish_private));
 	f.builtinN = f_v->bf_func;
-	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
-								   -1,
-								   f),
-						   0);
+	BuiltinAddFunction (f_v->bf_scope, f_v->bf_name, -1, f);
     }
     for (f_0 = funcs_0; f_0->bf_name; f_0++) {
-	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_0->bf_name), 
-					       type_func, publish_private));
 	f.builtin0 = f_0->bf_func;
-	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
-								   0, f),
-						   0);
+	BuiltinAddFunction (f_0->bf_scope, f_0->bf_name, 0, f);
     }
     for (f_1 = funcs_1; f_1->bf_name; f_1++) {
-	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_1->bf_name), 
-					       type_func, publish_private));
 	f.builtin1 = f_1->bf_func;
-	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
-								   1, f),
-						   0);
+	BuiltinAddFunction (f_1->bf_scope, f_1->bf_name, 1, f);
     }
     for (f_2 = funcs_2; f_2->bf_name; f_2++) {
-	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_2->bf_name), 
-					       type_func, publish_private));
 	f.builtin2 = f_2->bf_func;
-	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
-								   2, f),
-						   0);
+	BuiltinAddFunction (f_2->bf_scope, f_2->bf_name, 2, f);
     }
     for (f_7 = funcs_7; f_7->bf_name; f_7++) {
-	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_7->bf_name), 
-					       type_func, publish_private));
 	f.builtin7 = f_7->bf_func;
-	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
-								   7, f),
-						   0);
+	BuiltinAddFunction (f_7->bf_scope, f_7->bf_name, 7, f);
     }
     for (d = dvars; d->bd_name; d++) {
 	sym = ScopeAddSymbol (GlobalScope, 
@@ -297,9 +358,7 @@ BuiltinInit (void)
 	BoxValue (sym->global.value, 0) = NewDouble (d->bd_value);
     }
     for (s = svars; s->bs_name; s++) {
-	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (s->bs_name),
-					       type_string, publish_private));
+	sym = BuiltinSymbol (s->bs_scope, s->bs_name, type_string);
 	BoxValue (sym->global.value, 0) = NewStrString (s->bs_value);
     }
     for (i = ivars; i->is_name; i++) {
@@ -310,14 +369,9 @@ BuiltinInit (void)
         case 1: f = FileStdout; break;
 	default: f = FileStderr;  break;
 	}
-	sym = ScopeAddSymbol (GlobalScope, 
-			    NewSymbolGlobal (AtomId (i->is_name), 
-					     type_file, publish_private));
+	sym = BuiltinSymbol (i->is_scope, i->is_name, type_file);
 	BoxValue (sym->global.value, 0) = f;
     }
-    (void) ScopeAddSymbol (GlobalScope,
-			   NewSymbolGlobal (AtomId ("thread"), 
-					    type_thread, publish_private));
     EXIT ();
 }
 
@@ -972,3 +1026,29 @@ tanhD (Value a)
     RETURN (NewDouble (tanh (DoublePart (a))));
 }
 
+Value
+_random (Value bits)
+{
+    ENTER();
+    int n = IntPart (bits, "non-integer");
+    Value ret = Zero;
+
+    if (n > 31)
+	RaiseError ("random: modulus 2^%v exceeds 2^31", bits);
+    else if (n <= 0)
+	RaiseError ("random: bad modulus 2^%v", bits);
+    else
+	ret = NewInt (random () & ((1 << n) - 1));
+    RETURN (ret);
+}
+
+Value
+_srandom (Value seed)
+{
+    ENTER();
+    int n = IntPart (seed, "srandom: non-integer seed");
+
+    srandom ((unsigned int) n);
+    RETURN (Zero);
+}
+    

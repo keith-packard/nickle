@@ -1309,12 +1309,14 @@ primary		: fullname
 			$7->base.type = NewTypeArray (typePoly, $3); 
 			ParseCanonType ($7->base.type, False);
 			$$ = NewExprTree (NEW, $7, 0); 
+			$$->base.type = $7->base.type;
 		    }
 		| OP OS dims CS CP namespace_start opt_arrayinit namespace_end
 		    { 
 			$7->base.type = NewTypeArray (typePoly, $3);
 			ParseCanonType ($7->base.type, False);
 			$$ = NewExprTree (NEW, $7, 0); 
+			$$->base.type = $7->base.type;
 		    }
 		| type DOT NAME						%prec UNIONCAST
 		    {

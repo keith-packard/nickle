@@ -2100,7 +2100,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
     int		start_inst, top_inst, continue_inst, test_inst, middle_inst;
     ExprPtr	c;
     int		ncase, *case_inst, icase;
-    Bool	has_default, need_default;
+    Bool	has_default;
     InstPtr	inst;
     StructType	*st;
     
@@ -2325,7 +2325,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 * Check to see if the union switch covers
 	 * all possible values
 	 */
-	need_default = True;
+	test_inst = 0;
 	if (expr->base.tag == UNION)
 	{
 	    Bool	    missing = False;
@@ -2341,10 +2341,13 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		while (c)
 		{
 		    ExprPtr	pair = c->tree.left->tree.left;
-		    Atom	tag = pair->tree.left->atom.atom;
 
-		    if (tag == se[i].name)
-			break;
+		    if (pair)
+		    {
+			Atom	tag = pair->tree.left->atom.atom;
+			if (tag == se[i].name)
+			    break;
+		    }
 		    c = c->tree.right;
 		}
 		if (!c)
@@ -2355,7 +2358,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    }
 	    if (!missing)
 	    {
-		need_default = False;
+		test_inst = -1;
 		if (has_default)
 		    CompileError (obj, expr, "Union case has unreachable default");
 	    }
@@ -2378,11 +2381,11 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    c = c->tree.right;
 	}
 	/* add default case at the bottom */
-	if (need_default)
+	if (test_inst == 0)
 	{
 	    NewInst (test_inst, obj);
-	    top_inst = obj->used;
 	}
+        top_inst = obj->used;
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
 				     NON_LOCAL_BREAK);
 	/*
@@ -2457,7 +2460,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		inst->base.stat = expr;
 		icase++;
 	    }
-	    else if (need_default)
+	    else if (test_inst >= 0)
 	    {
 		inst = ObjCode (obj, test_inst);
 		if (expr->base.tag == SWITCH)
@@ -2467,6 +2470,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		inst->base.stat = expr;
 		inst->branch.offset = obj->used - test_inst;
 		inst->branch.mod = BranchModNone;
+		test_inst = -1;
 	    }
 	    while (s->tree.left)
 	    {
@@ -2479,7 +2483,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	/*
 	 * Add a default branch if necessary
 	 */
-	if (!has_default && need_default)
+	if (test_inst >= 0)
 	{
 	    inst = ObjCode (obj, test_inst);
 	    if (expr->base.tag == SWITCH)

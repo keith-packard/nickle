@@ -1,23 +1,33 @@
 /*
  * Takes degrees lat/long pairs,
- * returns miles + compass degrees
+ * Returns miles + compass degrees
  * Bart Massey 2000
  * From Javascript by Jeff Waldock 1997
  * http://jeff.sci.shu.ac.uk/jw/javascript/js2.html
+ * 
+ * XXX Appears to need some angle reductions: the bearing
+ * may be off by a multiple of 90 degrees.
  */
 
-real[] function great_circle
-  (real start_lat, real start_lon, real end_lat, real end_lon) {
+typedef struct {
+  real lat, lon;
+} loc;
+
+typedef struct {
+  real dist, bearing;
+} course;
+
+course function great_circle (loc start, loc end) {
 	real rad = pi / 180;
 	/* real earth_radius = 6371.2 km ; */
 	real earth_radius = 3958.9; /* miles */
-	real a = (90 - start_lat) * rad;
-	real b = (90 - end_lat) * rad;
-	real phi = (end_lon - start_lon) * rad;
+	real a = (90 - start.lat) * rad;
+	real b = (90 - end.lat) * rad;
+	real phi = (end.lon - start.lon) * rad;
 	real cosr = cos(a) * cos(b) + sin(a) * sin(b) * cos(phi);
 	real r = acos(cosr);
 	real rdist = earth_radius * r;
 	real sinth = sin(phi) * sin(b) / sin(r);
 	real th = asin(sinth) / rad;
-	return [*]{rdist, th};
+	return (course){dist = rdist, bearing = th};
 }

@@ -1,10 +1,9 @@
 /*
  * Basic combinatorics
  * Bart Massey 1995..2001
- * Provides a nice namespaces demo also.
  */
 
-namespace Combinatorics {
+namespace Comb {
 
   public int function perm(n, r) {
     return n! // r!;

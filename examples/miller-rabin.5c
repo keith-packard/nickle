@@ -2,8 +2,10 @@
  * Miller-Rabin probabilistic test for composite numbers
  * as described in Corman/Leiserson/Rivest
  *
- * notprime(n,d): returns nonzero for most composite n (accuracy 1/2**d)
- * primebits(n,d): returns a random n-bit number k where !notprime(k,d)
+ * composite(n,d): returns zero for all prime n,
+ *                 and nonzero for most composite n
+ *                 (failure probability 1/2**d)
+ * primebits(n,d): returns a random n-bit number k where !composite(k,d)
  *
  * Bart Massey 1999/1
  */
@@ -13,7 +15,7 @@ namespace Miller_Rabin {
   import Numbers;
 
   global int nprimes = 10;
-  global int[] primes = [nprimes] {
+  global int[nprimes] primes = {
     2, 3, 5, 7, 11,
     13, 17, 19, 23, 29
   };
@@ -21,8 +23,8 @@ namespace Miller_Rabin {
   typedef struct { int pow, wit; } witness_result;
 
   /*
-   * Modified version of bigpowmod above.
-   * Computes core of Miller-Rabin test,
+   * Modified version of bigpowmod() from numbers.5c.
+   * Computes core of Miller-Rabin test
    * as suggested by Cormen/Leiserson/Rivest.
    */
   witness_result function witnessexp(int b, int e, int m) {
@@ -57,7 +59,7 @@ namespace Miller_Rabin {
   }
 
   /* Try small primes, then Miller-Rabin */
-  public int function notprime(int n, int d) {
+  public int function composite(int n, int d) {
     int i, j;
     for (i = 0; i < nprimes && primes[i] < n; i++)
       if (n % primes[i] == 0)
@@ -74,7 +76,7 @@ namespace Miller_Rabin {
   public int function primebits(int n, int d) {
     while (1) {
       int q = PRNG::randbits(n - 1) + 2**(n - 1);
-      int why = notprime(q, d);
+      int why = composite(q, d);
       if (!why)
         return q;
 #     printf("*\n");

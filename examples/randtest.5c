@@ -5,8 +5,8 @@
 
 import PRNG;
 
-int[] function t(int n) {
-  int[] s = (int[2]){0, 0};
+int[*] function t(int n) {
+  int[2] s = {0, 0};
   int i;
   for (i = 0; i < n; i++)
     s[randint(2)]++;

@@ -34,3 +34,5 @@ DONE
 + bitwise operators
 + add log2 function
 + xor builtin
++ deeper typechecking on assignment (of all kinds)
++ forward declarations of typenames

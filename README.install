@@ -1,0 +1,20 @@
+How to install Nickle:
+
++ You may need to say "sh autogen.sh" to get a configure script
+  that works for you.  But try the shipped one first.
+
++ Say "./configure --help".  There's extensive help.  In particular,
+  "--prefix=/foo" installs the Nickle files in subdirectories of /foo.
+
++ Say "./configure" with whatever options you have chosen.
+
++ Say "make"
+
++ Say "make install".  Make sure you are a user that has
+  write permissions to your destination first.
+
+Let us know if there are problems.
+
+	Bart Massey
+	bart@nickle.org
+	2003/10/15

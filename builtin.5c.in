@@ -1,7 +1,7 @@
-Command::lex_library ("command.5c");
-library "math.5c"
+Command::lex_file ("@nicklelib@/command.5c");
+load "@nicklelib@/math.5c"
 import Math;
-library "scanf.5c"
-library "mutex.5c"
-library "arc4.5c"
-library "prng.5c"
+load "@nicklelib@/scanf.5c"
+load "@nicklelib@/mutex.5c"
+load "@nicklelib@/arc4.5c"
+load "@nicklelib@/prng.5c"

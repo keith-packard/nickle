@@ -68,4 +68,10 @@ if test "x$prefix" = xNONE; then
     prefix="$ac_default_prefix"
 fi
 
+nicklelib=`eval echo ${datadir}`/nickle
+
+AC_SUBST(nicklelib)
+
+AC_DEFINE_UNQUOTED([NICKLELIB], "$nicklelib", [Nickle data directory])
+
 AC_OUTPUT(Makefile date-sh nickle.1 builtin.5c, , [chmod +x ${srcdir}/date-sh])

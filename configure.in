@@ -6,12 +6,9 @@ dnl for licensing information.
 
 AC_PREREQ(2.59)
 
-sinclude([version.m4])
-ifdef([VERSION_NUMBER],,[define([VERSION_NUMBER],[0.00])])
-
 AC_INIT
 AC_CONFIG_SRCDIR([nickle.h])
-AM_INIT_AUTOMAKE(nickle,VERSION_NUMBER)
+AM_INIT_AUTOMAKE(nickle,0.0)
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(.)
@@ -91,6 +88,7 @@ AC_CONFIG_FILES(
  test/Makefile
  bench/Makefile
  date-sh
+ version-sh
  nickle.1
  nickle.spec)
 

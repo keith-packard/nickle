@@ -6,6 +6,9 @@
 
 SUBDIRS = bench test
 
+VERSION = $(shell sh $(top_builddir)/version-sh $(top_srcdir)/ChangeLog)
+BUILD_DATE = $(shell sh $(top_builddir)/date-sh)
+
 NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c \
 	arc4.5c prng.5c command.5c abort.5c \
         printf.5c history.5c ctype.5c string.5c socket.5c \
@@ -39,19 +42,20 @@ nickle_SOURCES = \
 	builtin-thread.c builtin-toplevel.c builtin.c builtin.h \
 	gram.y lex.l
 
-CLEANFILES=version.h
-
 pkgdata_DATA = $(NICKLEFILES)
 
 man_MANS = nickle.1
 
 AM_YFLAGS = -d
 
-DEFINES = -DBUILD=\""`sh $(top_builddir)/date-sh`"\"
+AM_CPPFLAGS = \
+	-DBUILD=\""$(BUILD_DATE)"\" \
+	-DBUILD_VERSION=\""$(VERSION)"\"
 
-AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes \
+AM_CFLAGS = \
+	-Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
-	-Wnested-externs -fno-strict-aliasing $(DEFINES)
+	-Wnested-externs -fno-strict-aliasing
 
 USES_GRAM_H = \
 	compile.o \
@@ -65,10 +69,7 @@ USES_GRAM_H = \
 
 $(USES_GRAM_H): gram.h
 
-builtin.o: version.h
-
-version.h: $(top_srcdir)/make-version.sh $(top_srcdir)/ChangeLog
-	sh $(top_srcdir)/make-version.sh $(top_srcdir)/ChangeLog
+builtin.o: ChangeLog
 
 debuild debuild-signed: debuild-dirs
 	(cd $(distdir)/debian && debuild)

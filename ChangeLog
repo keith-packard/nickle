@@ -1,5 +1,13 @@
 2004-05-25  Keith Packard  <keithp@keithp.com>
 
+	* Makefile.am:
+	* builtin.c:
+	* configure.in:
+	Completely ignore VERSION support from configure and grub it
+	out of the ChangeLog using $(shell) from the Makefile.
+
+2004-05-25  Keith Packard  <keithp@keithp.com>
+
 	* debian/changelog:
 	Add comments for version 2.35
 

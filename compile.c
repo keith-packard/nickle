@@ -2761,21 +2761,15 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    obj->used = continue_inst;
 	    if (t)
 	    {
-		obj->used = continue_inst;
 		BuildInst (obj, OpBranch, inst, expr);
 		inst->branch.offset = top_inst - ObjLast(obj);
 		inst->branch.mod = BranchModNone;
-	    }
-	    else
-	    {
-		/* strip out the constant */
-		obj->used = continue_inst;
 	    }
 	}
 	else
 	{
 	    BuildInst (obj, OpBranchTrue, inst, expr);
-	    inst->branch.offset = continue_inst - ObjLast(obj);
+	    inst->branch.offset = top_inst - ObjLast(obj);
 	    inst->branch.mod = BranchModNone;
 	}
 	CompilePatchLoop (obj, top_inst, continue_inst, obj->used);

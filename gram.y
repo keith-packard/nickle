@@ -37,7 +37,7 @@ void yyerror (char *fmt, ...);
     CodePtr	    fval;
 }
 
-%type  <nsval>	dotnames
+%type  <nsval>	colonnames
 %type  <eval>	history
 %type  <eval>	block func_body statements statement catches catch
 %type  <dval>	enames names opt_initnames initnames
@@ -239,7 +239,7 @@ command		: QUIT NL
 			t = NewThread (0, CompileExpr ($2, GlobalNamespace));
 			ThreadsRun (t, 0);
 		    }
-		| PRINT dotnames name NL
+		| PRINT colonnames name NL
 		    { 
 			SymbolPtr	sym;
 			int		depth;
@@ -258,7 +258,7 @@ command		: QUIT NL
 		| EDIT edit
 		| NL
 		;
-dotnames	: dotnames name DOT
+colonnames	: colonnames name COLON
 		    {
 			SymbolPtr   sym;
 			int	    depth;
@@ -859,7 +859,7 @@ primary		: NAME
 		| primary DOT NAME
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3)); }
 		| primary COLON NAME
-		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3)); }
+		    { $$ = NewExprTree(COLON, $1, NewExprAtom ($3)); }
 		| primary ARROW NAME
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3)); }
 		;
@@ -1023,7 +1023,7 @@ BuildCall (char *scope, char *name, int nargs, ...)
     va_end (alist);
     f = BuildName (name);
     if (scope)
-	f = NewExprTree (DOT, BuildName (scope), f);
+	f = NewExprTree (COLON, BuildName (scope), f);
     e = NewExprTree (OP, f, args);
 #ifdef DEBUG
     printExpr (stdout, e, -1, 0);

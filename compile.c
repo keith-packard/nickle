@@ -359,27 +359,26 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	inst->var.staticLink = depth;
 	expr->base.type = s->symbol.type;
 	break;
+    case COLON:
+	s = CompileNamespace (expr->tree.left, namespace);
+	if (!s)
+	{
+	    CompileError (obj, stat, "Object left of ':' is not a namespace");
+	    break;
+	}
+	obj = CompileLvalue (obj, expr->tree.right,
+			     s->namespace.namespace, stat, False);
+	expr->base.type = expr->tree.right->base.type;
+        break;
     case DOT:
-	/*
-	 * Yurg -- check for namespace reference
-	 */
-	if ((s = CompileNamespace (expr->tree.left, namespace)))
-	{
-	    obj = CompileLvalue (obj, expr->tree.right,
-				  s->namespace.namespace, stat, False);
-	    expr->base.type = expr->tree.right->base.type;
-	}
-	else
-	{
-	    obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
-	    expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
-						 expr->base.tag,
-						 expr->tree.right->atom.atom);
-	    if (!expr->base.type)
-		CompileError (obj, stat, "Object left of '.' is not a struct");
-	    BuildInst (obj, OpDotRef, inst, stat);
-	    inst->atom.atom = expr->tree.right->atom.atom;
-	}
+	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
+	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
+					     expr->base.tag,
+					     expr->tree.right->atom.atom);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Object left of '.' is not a struct");
+	BuildInst (obj, OpDotRef, inst, stat);
+	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case ARROW:
 	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
@@ -943,7 +942,7 @@ CompileNamespace (ExprPtr expr, NamespacePtr namespace)
     int		depth;
     
     switch (expr->base.tag) {
-    case DOT:
+    case COLON:
 	s = CompileNamespace (expr->tree.left, namespace);
 	if (s)
 	    return CompileNamespace (expr->tree.right, s->namespace.namespace);
@@ -1060,31 +1059,28 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     case OP:	    /* function call */
 	obj = CompileCall (obj, expr, namespace, stat);
 	break;
+    case COLON:
+	s = CompileNamespace (expr->tree.left, namespace);
+	if (!s)
+	{
+	    CompileError (obj, stat, "Object left of ':' is not a namespace");
+	    break;
+	}
+	obj = _CompileExpr (obj, expr->tree.right,
+			    s->namespace.namespace, stat);
+	expr->base.type = expr->tree.right->base.type;
+        break;
     case DOT:
-	/*
-	 * Yurg -- check for namespace reference -- syntatically
-	 * identical to structure member reference, but
-	 * semantically backwards
-	 */
-	if ((s = CompileNamespace (expr->tree.left, namespace)))
-	{
-	    obj = _CompileExpr (obj, expr->tree.right,
-				s->namespace.namespace, stat);
-	    expr->base.type = expr->tree.right->base.type;
-	}
-	else
-	{
-	    obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
-	    expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
-						 expr->base.tag,
-						 expr->tree.right->atom.atom);
-	    if (!expr->base.type)
-		CompileError (obj, stat, "%t is not a struct containing \"%A\"",
-			      expr->tree.left->base.type,
-			      expr->tree.left->atom.atom);
-	    BuildInst (obj, OpDot, inst, stat);
-	    inst->atom.atom = expr->tree.right->atom.atom;
-	}
+	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
+	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
+					     expr->base.tag,
+					     expr->tree.right->atom.atom);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "%t is not a struct containing \"%A\"",
+			  expr->tree.left->base.type,
+			  expr->tree.left->atom.atom);
+	BuildInst (obj, OpDot, inst, stat);
+	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case ARROW:
 	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
@@ -1168,7 +1164,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
 	SetPush (obj);
-	obj = _CompileExpr (obj, NewExprTree (DOT, BuildName ("Math"), BuildName ("pow")),
+	obj = _CompileExpr (obj, NewExprTree (COLON, BuildName ("Math"), BuildName ("pow")),
 			    namespace, stat);
 	expr->base.type = NewTypesPrim (type_float);
 	BuildInst (obj, OpCall, inst, stat);
@@ -1264,7 +1260,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	SetPush (obj);
 	obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False);
 	SetPush (obj);
-	obj = _CompileExpr (obj, NewExprTree (DOT, BuildName ("Math"), BuildName ("assign_pow")),
+	obj = _CompileExpr (obj, NewExprTree (COLON, BuildName ("Math"), BuildName ("assign_pow")),
 			    namespace, stat);
 	expr->base.type = NewTypesPrim (type_float);
 	BuildInst (obj, OpCall, inst, stat);

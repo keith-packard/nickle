@@ -331,6 +331,11 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePuts (f, "&");
 	printExpr (f, e->tree.left, selfPrec, level, nest);
 	break;
+    case COLON:
+	printExpr (f, e->tree.left, selfPrec, level, nest);
+	FileOutput (f, ':');
+	FilePuts (f, AtomName (e->tree.right->atom.atom));
+	break;
     case DOT:
 	printExpr (f, e->tree.left, selfPrec, level, nest);
 	FileOutput (f, '.');

@@ -388,17 +388,14 @@ ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
 {
     ENTER ();
     BoxPtr	args = 0;
+    int i;
 
 #ifdef DEBUG_JUMP
     FilePrintf (FileStdout, "    Raise: %A\n", exception->symbol.name);
 #endif
-    if (argc)
-    {
-	int i;
-	args = NewBox (True, argc);
-	for (i = 0; i < argc; i++)
-	    BoxValueSet (args, i, STACK_POP (thread->thread.stack));
-    }
+    args = NewBox (True, argc);
+    for (i = 0; i < argc; i++)
+        BoxValueSet (args, i, STACK_POP (thread->thread.stack));
     (void) RaiseException (thread, exception, args, next);
     EXIT ();
 }

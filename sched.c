@@ -470,6 +470,7 @@ NewThread (FramePtr frame, ObjPtr code)
     ret->thread.next = 0;
     
     ContinuationInit (&ret->thread.continuation);
+    ret->thread.continuation.obj = code;
     ret->thread.continuation.pc = ObjCode (code, 0);
     
     complete = True;
@@ -497,8 +498,9 @@ ContinuationMark (void *object)
 {
     ContinuationPtr	continuation = object;
 
-    assert (ObjCode (continuation->obj, 0) <= continuation->pc &&
-	    continuation->pc <= ObjCode (continuation->obj, ObjLast(continuation->obj))); 
+    assert (!continuation->pc || 
+	    (ObjCode (continuation->obj, 0) <= continuation->pc &&
+	     continuation->pc <= ObjCode (continuation->obj, ObjLast(continuation->obj))));
     MemReference (continuation->obj);
     MemReference (continuation->frame);
     MemReference (continuation->stack);

@@ -2123,7 +2123,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	{
 	    NewInst (test_inst, obj);
 	    inst = ObjCode (obj, test_inst);
-	    inst->base.opCode = OpBranchTrue;
+	    inst->base.opCode = OpBranch;
 	}
 	inst->base.stat = expr;
 	inst->branch.offset = top_inst - test_inst;

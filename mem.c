@@ -46,7 +46,7 @@
 #include	"mem.h"
 #include	"avl.h"
 #include	"memp.h"
-
+#include	<stdlib.h>
 
 static void	*allocBlock (void);
 static void	*gimmeBlock (void);
@@ -57,8 +57,6 @@ static void	checkBlockRef (struct block *);
 #ifdef DEBUG
 static void	verifyBlock (void);
 #endif
-extern void	*malloc (unsigned);
-extern void	free (void *);
 
 int		GarbageTime = GARBAGETIME;
 

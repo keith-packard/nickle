@@ -32,6 +32,7 @@ import_File_namespace()
     ENTER ();
     static const struct fbuiltin_0 funcs_0[] = {
         { do_File_string_write, "string_write", "f", "" },
+	{ do_File_mkpipe, "mkpipe", "A*f", "" },
         { 0 }
     };
 
@@ -60,7 +61,7 @@ import_File_namespace()
     };
 
     static const struct fbuiltin_3 funcs_3[] = {
-        { do_File_pipe, "pipe", "f", "sA*ss" },
+        { do_File_filter, "filter", "i", "sA*sA*f" },
 	{ do_File_reopen, "reopen", "f", "ssf" },
         { 0 }
     };
@@ -198,7 +199,7 @@ do_File_close (Value f)
 }
 
 Value
-do_File_pipe (Value file, Value argv, Value mode)
+do_File_filter (Value path, Value argv, Value filev)
 {
     ENTER ();
     char    **args;
@@ -207,6 +208,7 @@ do_File_pipe (Value file, Value argv, Value mode)
     Value   ret;
     int	    err;
 
+    /* set up arguments */
     args = AllocateTemp ((ArrayDims(&argv->array)[0] + 1) * sizeof (char *));
     for (argc = 0; argc < ArrayDims(&argv->array)[0]; argc++)
     {
@@ -214,18 +216,38 @@ do_File_pipe (Value file, Value argv, Value mode)
 	args[argc] = StringChars (&arg->string);
     }
     args[argc] = 0;
+
+    /* run the filter */
     if (aborting)
 	RETURN(Void);
-    ret = FilePopen (StringChars (&file->string), args, 
-		     StringChars (&mode->string), &err);
+    ret = FileFilter (StringChars (&path->string), args, 
+		      filev, &err);
     if (!ret)
     {
 	RaiseStandardException (exception_open_error,
 				FileGetErrorMessage (err),
-				2, FileGetError (err), file);
+				2, FileGetError (err), path);
 	ret = Void;
     }
     complete = True;
+    RETURN (ret);
+}
+
+Value do_File_mkpipe (void) {
+    ENTER ();
+    int err;
+    Value ret;
+    
+    if (aborting)
+	RETURN (Void);
+    ret = FileMakePipe (&err);
+    if (!ret)
+    {
+	RaiseStandardException (exception_open_error,
+				FileGetErrorMessage (err),
+				2, FileGetError (err), Void);
+	RETURN (Void);
+    }
     RETURN (ret);
 }
 

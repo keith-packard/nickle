@@ -947,6 +947,7 @@ Value	do_Debug_down (void);
 Value	do_Debug_done (void);
 Value	do_Debug_collect (void);
 Value   do_Debug_help (void);
+Value	do_File_mkpipe (void);
 
 /* one argument builtins */
 Value	do_putbyte (Value);
@@ -1043,8 +1044,8 @@ Value	do_Environ_set (Value, Value);
 /* three argument builtins */
 Value	do_File_vfprintf (Value, Value, Value);
 Value	do_String_substr (Value, Value, Value);
-Value	do_File_pipe (Value, Value, Value);
 Value	do_File_reopen (Value, Value, Value);
+Value	do_File_filter (Value file, Value argv, Value filev);
 
 /* four argument builtins */
 Value	do_Command_lex_input (Value file, Value name, Value after, Value interactive);

@@ -14,6 +14,7 @@
 #include	<sys/wait.h>
 #include	<errno.h>
 #include	<sys/socket.h>
+#include        <assert.h>
 #include	"nickle.h"
 #include	"ref.h"
 #include	"gram.h"
@@ -748,93 +749,103 @@ FileReopen (char *name, char *mode, Value file, int *errp)
 }
 
 Value
-FilePopen (char *program, char *argv[], char *mode, int *errp)
+FileFilter (char *program, char *args[], Value filev, int *errp)
 {
     ENTER ();
-    int	    fd, fds[2], errfds[2];
     int	    pid;
-    Value   file;
-    int	    flags = 0;
     int     errcode, nread;
+    int	    i;
+    int     errpipe[2];
+    int     fdlimit;
+    int     fds[3];
 
-    switch (mode[0]) {
-    case 'r':
-	if (mode[1] == '+')
-	    flags |= FileWritable;
-	flags |= FileReadable;
-	break;
-    case 'w':
-    case 'a':
-	if (mode[1] == '+')
-	    flags |= FileReadable;
-	flags |= FileWritable;
-	break;
-    }
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0)
-    {
-	*errp = errno;
-	RETURN(0);
-    }
-    if (pipe(errfds) < 0) {
-	*errp = errno;
-	RETURN(0);
-    }
-    switch ((pid = fork ())) {
-    case -1:
-	close (fds[0]);
-	close (fds[1]);
-	close (errfds[0]);
-	close (errfds[1]);
-	*errp = errno;
-	fd = -1;
-	break;
-    case 0:
-	if (flags & FileReadable)
-	    dup2 (fds[1], 1);
-	else
-	    shutdown (fds[1], SHUT_WR);
-	if (flags & FileWritable)
-	    dup2 (fds[1], 0);
-	else
-	    shutdown (fds[1], SHUT_RD);
-	close (fds[0]);
-	close (fds[1]);
-	close (errfds[0]);
-	fcntl (errfds[1], F_SETFD, FD_CLOEXEC);
-	execvp (program, argv);
-	errcode = errno & 0xff;
-	write(errfds[1], &errcode, 1);
-	close(errfds[1]);
-	exit (1);
-    default:
-	close(errfds[1]);
-	nread = read(errfds[0], &errcode, 1);
-	if (nread != 0) {
-	    if (nread == 1)
-		*errp = errcode;
-	    close(errfds[0]);
-	    RETURN(0);
+    /* set up process files */
+    for (i = 0; i < 3; i++) {
+	Value f = BoxValue (filev->array.values, i);
+	if (i == 0 && !(f->file.flags & FileReadable)) {
+	    RaiseStandardException (exception_invalid_argument,
+				    "File::filter: process input not readable",
+				    2, f, Void);
+	    RETURN (Void);
 	}
-	close(errfds[0]);
-        if (!(flags & FileReadable))
-	    shutdown (fds[0], SHUT_RD);
-	if (!(flags & FileWritable))
-	    shutdown (fds[0], SHUT_WR);
-	fd = fds[0];
-	break;
+	if (i == 1 && !(f->file.flags & FileWritable)) {
+	    RaiseStandardException (exception_invalid_argument,
+				    "File::filter: process output not writable",
+				    2, f, Void);
+	    RETURN (Void);
+	}
+	if (i == 2 && !(f->file.flags & FileWritable)) {
+	    RaiseStandardException (exception_invalid_argument,
+				    "File::filter: process error not writable",
+				    2, f, Void);
+	    RETURN (Void);
+	}
+	fds[i] = f->file.fd;
     }
-    if (fd >= 0)
-    {
-	file = FileCreate (fd, flags);
-	file->file.flags |= FilePipe;
-	file->file.pid = pid;
-    }
-    else
-    {
+
+    if (pipe (errpipe) < 0) {
 	*errp = errno;
-	file = 0;
+	RETURN (0);
     }
-    RETURN (file);
+    pid = fork ();
+    if (pid == -1) {
+	*errp = errno;
+	RETURN (0);
+    }
+    if (pid == 0) {
+	/* child */
+	for (i = 0; i < 3; i++)
+	    dup2 (fds[i], i);
+	fdlimit = sysconf(_SC_OPEN_MAX);
+	for (; i < fdlimit; i++)
+	    if (i != errpipe[1])
+		close (i);
+	fcntl (errpipe[1], F_SETFD, FD_CLOEXEC);
+	execvp (program, args);
+	errcode = errno & 0xff;
+	write (errpipe[1], &errcode, 1);
+	exit (1);
+    }
+    /* parent */
+    close (errpipe[1]);
+    nread = read(errpipe[0], &errcode, 1);
+    if (nread != 0) {
+	*errp = errcode;
+	assert (nread == 1);
+	close (errpipe[0]);
+	RETURN(0);
+    }
+    close (errpipe[0]);
+    for (i = 0; i < 3; i++) {
+	Value f = BoxValue (filev->array.values, i);
+	if (f->file.flags & FilePipe)
+	    f->file.pid = pid;
+    }
+    RETURN (NewInt(pid));
+}
+
+Value
+FileMakePipe (int *errp)
+{
+    ENTER ();
+    Value   file, files;
+    int	    two = 2;
+    int     fds[2];
+
+    if (pipe (fds) < 0) {
+	*errp = errno;
+	RETURN (0);
+    }
+
+    /* gather and return results */
+    files = NewArray (False, False, typePrim[rep_file], 1, &two);
+    file = FileCreate (fds[0], FileReadable);
+    file->file.flags |= FilePipe;
+    BoxValueSet (files->array.values, 0, file);
+    file = FileCreate (fds[1], FileWritable);
+    file->file.flags |= FilePipe;
+    BoxValueSet (files->array.values, 1, file);
+    RETURN (files);
 }
 
 int

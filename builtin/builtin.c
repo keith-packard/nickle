@@ -47,7 +47,11 @@ static const struct sbuiltin svars[] = {
     { "+ ",	    "prompt2" },
     { "- ",	    "prompt3" },
     { "%g",	    "format" },
-    { VERSION,	    "version" },
+#ifdef BUILD_VERSION
+    { BUILD_VERSION, "version" },
+#else
+    { VERSION, "version" },
+#endif
 #ifdef BUILD
     { BUILD,	    "build" },
 #else

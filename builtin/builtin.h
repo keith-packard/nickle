@@ -14,6 +14,7 @@
 
 #include	"nickle.h"
 #include	"gram.h"
+#include        "version.h"
 
 SymbolPtr
 BuiltinAddName (NamespacePtr	*namespacep,

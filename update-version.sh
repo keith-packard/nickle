@@ -11,10 +11,14 @@ then
     OLDHEADER="$CURHEADER"
 fi
 
-echo dnl 'This file is maintained automatically by update-version.sh'
-echo dnl 'The file format is finicky, so do not hand-edit lightly.'
-echo dnl 'Last updated' "`date`"
-echo dnl CURHEADER "\$$CURHEADER\$"
-echo dnl OLDHEADER "<$OLDHEADER>"
-echo dnl CURVERSION $CURVERSION
-echo "define([VERSION_NUMBER],[$CURVERSION])"
+( echo dnl 'This file is maintained automatically by update-version.sh'
+  echo dnl 'The file format is finicky, so do not hand-edit lightly.'
+  echo dnl 'Last updated' "`date`"
+  echo dnl CURHEADER "\$$CURHEADER\$"
+  echo dnl OLDHEADER "<$OLDHEADER>"
+  echo dnl CURVERSION $CURVERSION
+  echo "define([VERSION_NUMBER],[$CURVERSION])" ) > version.m4.new &&
+/bin/mv -f version.m4.new version.m4
+
+( echo '/* This file is maintained automatically by update-version.sh */'
+  echo "#define BUILD_VERSION \"$CURVERSION\"" ) > builtin/version.h

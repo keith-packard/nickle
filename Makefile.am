@@ -69,7 +69,4 @@ lex.c: lex.l
 
 version.m4: update-version.sh \
   $(nickle_SOURCES) $(NICKLEFILES) $(NICKLEBUILTINSOURCES)
-	sh update-version.sh > version.m4.new && \
-	/bin/mv -f version.m4.new version.m4
-	sh ./autogen.sh
-	./config.status
+	sh update-version.sh

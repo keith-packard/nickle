@@ -16,3 +16,7 @@ $(libbuiltin_a_OBJECTS): builtin.h namespaces.h ../gram.h
 
 ../gram.h:
 	$(MAKE) -C .. gram.h
+
+version.h: ../version.m4
+	( cd .. && sh update-version.sh )
+

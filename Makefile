@@ -13,7 +13,7 @@ ROOT=/local
 BINDIR=$(ROOT)/bin
 MANEXT=1
 MANDIR=$(ROOT)/man/man$(MANEXT)
-VERSION=1.0.6
+VERSION=1.1.0
 
 LEX=flex -I
 YACC=yacc -d

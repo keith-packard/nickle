@@ -341,7 +341,7 @@ type	:	INT
 	|	STRING
 	|	ARRAY
 	|	REF
-	|	STRUCT NAME
+	|	STRUCT
 	|	FUNC
 	|	POLYMORPH
 	|	STRUCT OC memlist CC o_publish NAME

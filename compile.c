@@ -1165,6 +1165,7 @@ CompileExpr (ExprPtr expr, ScopePtr scope)
     ExprPtr stat;
 
     stat = NewExprTree (EXPR, expr, 0);
+    stat->base.scope = scope;
     obj = NewObj (OBJ_INCR);
     obj = _CompileExpr (obj, expr, scope, stat);
     BuildInst (obj, OpEnd, inst, stat);

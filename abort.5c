@@ -1,12 +1,22 @@
 namespace Abort {
     public exception aborting(string);
 
-    public void abort(string reason) {
-	raise aborting(reason);
+    public void abort(string reason, args ...) {
+	string reasonmsg = File::vsprintf(reason, args);
+	raise aborting(reasonmsg);
     }
 
-    public void assert(bool ok, string failmsg) {
-	if (!ok)
+    public void assert(bool ok, string failure, args ...) {
+	if (!ok) {
+	    string failmsg = File::vsprintf(failure, args);
 	    abort(failmsg);
+	}
+    }
+
+    public bool do_debug = true;
+
+    public void debug(string fmt, args ...) {
+	if (do_debug)
+	    File::vfprintf(stderr, fmt + "\n", args);
     }
 }

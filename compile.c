@@ -1107,6 +1107,7 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
     InstPtr inst;
     int	    argc;
     Bool    varactual;
+    TypePtr t;
 
     obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
     obj = CompileArgs (obj, &argc, &varactual, expr->tree.right, True, stat, code);
@@ -1117,6 +1118,9 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
 	RETURN (obj);
     }
     expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
+    t = CompileRefType (obj, expr, expr->base.type);
+    if (t)
+	tail = TailNever;
     if ((tail == TailAlways &&
 	 !TypePoly (expr->base.type) &&
 	 TypeIsSupertype (code->base.type, expr->base.type)) ||
@@ -1130,7 +1134,14 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
     {
 	BuildInst (obj, OpCall, inst, stat);
 	inst->ints.value = varactual ? -argc : argc;
-	BuildInst (obj, OpNoop, inst, stat);
+	if (t)
+	{
+	    BuildInst (obj, OpUnFunc, inst, stat);
+	    inst->unfunc.func = Dereference;
+	    expr->base.type = t;
+	}
+	else
+	    BuildInst (obj, OpNoop, inst, stat);
     }
     RETURN (obj);
 }

@@ -1,3 +1,9 @@
+2005-01-14  Keith Packard  <keithp@keithp.com>
+
+	* compile.c: (CompileCall):
+	Functions returning reference type need auto-dereference on
+	return value
+
 2005-01-13  Keith Packard  <keithp@keithp.com>
 version 2.46
 

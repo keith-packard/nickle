@@ -534,7 +534,7 @@ Copy (Value v, Type t)
     default:
 	break;
     }
-    if (t > type_undef && valueTypes[t]->promote)
+    if (t == type_double)
 	v = valueTypes[t]->promote(v);
     RETURN (v);
 }

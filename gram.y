@@ -1220,19 +1220,20 @@ primary		: fullname
 		| OP type CP namespace_start init namespace_end
 		    { 
 			ParseCanonType ($2, False);
-			$$ = NewExprTree (NEW, $5, 0); 
-			$$->base.type = $2;
+			$5->base.type = $2;
+			$$ = NewExprTree (NEW, $5, 0);
 		    }
 		| OP OS stars CS CP namespace_start arrayinit namespace_end
 		    { 
+			$7->base.type = NewTypeArray (typePoly, $3); 
+			ParseCanonType ($7->base.type, False);
 			$$ = NewExprTree (NEW, $7, 0); 
-			$$->base.type = NewTypeArray (typePoly, $3); 
-			ParseCanonType ($$->base.type, False);
 		    }
 		| OP OS dims CS CP namespace_start opt_arrayinit namespace_end
 		    { 
+			$7->base.type = NewTypeArray (typePoly, $3);
+			ParseCanonType ($7->base.type, False);
 			$$ = NewExprTree (NEW, $7, 0); 
-			$$->base.type = NewTypeArray (typePoly, $3); 
 		    }
 		| type DOT NAME						%prec UNIONCAST
 		    {

@@ -1265,23 +1265,10 @@ CompileInit (ObjPtr obj, ExprPtr expr, Type *type,
     default:
 	break;
     }
-    switch (expr->base.tag) {
-    case ARRAY:
-    case COMP:
-	CompileError (obj, stat, "Array initializer for '%T'", type);
-	break;
-    case STRUCT:
-	CompileError (obj, stat, "Struct initializer for '%T'", type);
-	break;
-    default:
-        obj = _CompileExpr (obj, expr, True, stat, code);
-        if (!TypeCombineBinary (type, ASSIGN, expr->base.type))
-        {
-	    CompileError (obj, stat, "Incompatible types, storage '%T', value '%T', for initializer",
-			  type, expr->base.type);
-        }
-	break;
-    }
+    obj = _CompileExpr (obj, expr, True, stat, code);
+    if (!TypeCombineBinary (type, ASSIGN, expr->base.type))
+        CompileError (obj, stat, "Incompatible types, storage '%T', value '%T', for initializer",
+    		  type, expr->base.type);
     return obj;
 }
 
@@ -1369,13 +1356,7 @@ CompileComprehension (ObjPtr	obj,
      * Convert a single expression into a block containing a 
      * return statement
      */
-    switch (body->base.tag) {
-    case ARRAY:
-    case STRUCT:
-	body = NewExprTree (NEW, body, 0);
-	body->base.type = type;
-	break;
-    }
+    body->base.type = type;
     if (body->base.tag != OC)
 	body = NewExprTree (OC,
 			    NewExprTree (RETURNTOK, 0, body),
@@ -1431,6 +1412,7 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
     if (expr && expr->base.tag == COMP)
     {
 	ExprPtr	args = CompileArrayInitArgs (ndim);
+	Type	*retType;
 	
 	obj = CompileComprehension (obj, sub, expr, stat, code);
 	if (!CompileTypecheckArgs (obj, expr->tree.left->base.type,
@@ -1438,8 +1420,8 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 	{
 	    RETURN(obj);
 	}
-	expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
-	if (!TypeCombineBinary (sub, ASSIGN, expr->base.type))
+	retType = TypeCombineReturn (expr->tree.left->base.type);
+	if (!TypeCombineBinary (sub, ASSIGN, retType))
 	{
 	    CompileError (obj, stat, "Incompatible types, array '%T', return '%T', for initializer",
 			  sub, expr->base.type);
@@ -1832,9 +1814,14 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	obj = CompileDecl (obj, expr, evaluate, stat, code);
 	break;
     case NEW:
+	obj = _CompileExpr (obj, expr->tree.left, evaluate, stat, code);
+	expr->base.type = expr->tree.left->base.type;
+	break;
+    case ARRAY:
+    case STRUCT:
+    case COMP:
 	t = TypeCanon (expr->base.type);
-	obj = CompileInit (obj, expr->tree.left, t, stat, code);
-        expr->base.type = t;
+	obj = CompileInit (obj, expr, t, stat, code);
 	break;
     case UNION:
 	if (expr->tree.right)

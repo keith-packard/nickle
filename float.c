@@ -1058,8 +1058,7 @@ NewValueFloat (Value av, unsigned prec)
 	av = NewRationalFloat (&av->rational, prec);
 	break;
     case type_float:
-	if (av->floats.prec > prec)
-	    av = NewFloat (av->floats.mant, av->floats.exp, prec);
+        av = NewFloat (av->floats.mant, av->floats.exp, prec);
 	break;
     default:
 	break;

@@ -18,7 +18,7 @@ extern ValueType    RefType, structType, FuncType, ThreadType;
 extern ValueType    MutexType, SemaphoreType, ContinuationType;
 
 volatile Bool	aborting;
-volatile Bool	exception;
+volatile Bool	signaling;
 
 /* must be synchronized with Type enum */
 ValueType   *valueTypes[] = {
@@ -322,10 +322,10 @@ Factorial (Value av)
     ENTER ();
     Value   tv;
 
-    if (exception || !Zerop (Less (av, One))) 
+    if (aborting || !Zerop (Less (av, One))) 
 	RETURN (One);
     tv = Factorial (Minus (av, One));
-    if (!exception)
+    if (!aborting)
 	tv = Times (av, tv);
     RETURN (tv);
 }
@@ -376,7 +376,7 @@ Pow (Value av, Value bv)
 	    p = av;
 	    result = One;
 	    while (i) {
-		if (exception)
+		if (aborting)
 		    RETURN (Zero);
 		if (i & 1)
 		    result = Times (result, p);
@@ -403,7 +403,7 @@ Pow (Value av, Value bv)
 	    p = av;
 	    result = One;
 	    while (!NaturalZero (i)) {
-		if (exception)
+		if (aborting)
 		    RETURN (Zero);
 		if (!NaturalEven (i))
 		    result = Times (result, p);

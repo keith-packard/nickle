@@ -397,10 +397,14 @@ typedef struct _obj {
 ObjPtr	CompileStat (ExprPtr expr, NamespacePtr namespace);
 ObjPtr	CompileExpr (ExprPtr expr, NamespacePtr namespace);
 
+typedef enum _wakeKind {
+    WakeAll, WakeOne
+} WakeKind;
+
 Value	    NewThread (FramePtr frame, ObjPtr code);
 void	    ThreadSleep (Value thread, Value sleep, int priority);
 void	    ThreadStepped (Value thread);
-void	    ThreadsWakeup (Value sleep);
+void	    ThreadsWakeup (Value sleep, WakeKind wake);
 void	    ThreadsRun (Value thread, Value lex);
 void	    ThreadsInterrupt (void);
 void	    ThreadsContinue (void);
@@ -524,6 +528,14 @@ extern int	interactive, stdin_interactive;
 void	intr(int);
 void	stop (int), die (int), segv (int);
 
+#define HAS_SIGACTION
+
+void
+catchSignal (int sig, RETSIGTYPE (*func) (int sig));
+
+void
+resetSignal (int sig, RETSIGTYPE (*func) (int sig));
+
 extern Value    yyinput;
 
 /* Standard exceptions */
@@ -563,12 +575,12 @@ Value	do_Thread_trace (int, Value *);
 Value	do_Thread_trace (int, Value *);
 Value	do_History_show (int, Value *);
 Value	do_string_to_integer (int, Value *);
+Value	do_Semaphore_new (int, Value *);
 
 /* zero argument builtins */
 Value	do_Thread_cont (void);
 Value	do_Thread_current (void);
 Value	do_Mutex_new (void);
-Value	do_Semaphore_new (void);
 Value	do_Thread_list (void);
 Value	do_getchar (void);
 Value	do_time (void);
@@ -612,8 +624,8 @@ Value	do_Mutex_acquire (Value);
 Value	do_Mutex_release (Value);
 Value	do_Mutex_try_acquire (Value);
 Value	do_Semaphore_signal (Value);
-Value	do_Semaphore_test (Value);
 Value	do_Semaphore_wait (Value);
+Value	do_Semaphore_test (Value);
 Value	do_History_insert (Value);
 Value	do_File_close (Value);
 Value	do_File_flush (Value);

@@ -70,7 +70,7 @@ do_Mutex_release (Value m)
     {
 	complete = True;
 	m->mutex.owner = One;
-	ThreadsWakeup (m);
+	ThreadsWakeup (m, WakeOne);
     }
     RETURN (One);
 }
@@ -131,19 +131,19 @@ Value
 do_Semaphore_wait (Value s)
 {
     ENTER ();
-    if (s->value.tag != type_semaphore)
+    if (aborting)
+	RETURN (Zero);
+    if (!running->thread.partial)
     {
-	RaiseError ("SemaphoreWait: %v not semaphore", s);
+	--s->semaphore.count;
+	if (s->semaphore.count < 0)
+	{
+	    running->thread.partial = 1;
+	    ThreadSleep (running, s, PrioritySync);
+	    RETURN (One);
+	}
     }
-    else if (s->semaphore.locked)
-    {
-	ThreadSleep (running, s, PrioritySync);
-    }
-    else if (!aborting)
-    {
-	complete = True;
-	s->semaphore.locked = 1;
-    }
+    complete = True;
     RETURN (One);
 }
 
@@ -151,40 +151,22 @@ Value
 do_Semaphore_test (Value s)
 {
     ENTER ();
-    if (s->value.tag != type_semaphore)
-    {
-	RaiseError ("SemaphoreWait: %v not semaphore", s);
-    }
-    else if (s->semaphore.locked)
-    {
+    if (s->semaphore.count <= 0)
 	RETURN (Zero);
-    }
-    else if (!aborting)
-    {
-	complete = True;
-	s->semaphore.locked = 1;
-    }
-    RETURN (One);
+    RETURN (do_Semaphore_wait (s));
 }
 
 Value
 do_Semaphore_signal (Value s)
 {
     ENTER ();
-    int	old = 0;
-    if (s->value.tag != type_semaphore)
-    {
-	RaiseError ("SemaphoreSignal: %v not semaphore", s);
+    if (aborting)
 	RETURN (Zero);
-    }
-    if (!aborting)
-    {
-	complete = True;
-	old = s->semaphore.locked;
-	s->semaphore.locked = 0;
-	ThreadsWakeup (s);
-    }
-    RETURN (old ? One : Zero);
+    ++s->semaphore.count;
+    if (s->semaphore.count <= 0)
+	ThreadsWakeup (s, WakeOne);
+    complete = True;
+    RETURN (One);
 }
 
 static void
@@ -195,8 +177,7 @@ SemaphoreMark (void *object)
 static Bool
 SemaphorePrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
-    FilePuts (f, "semaphore");
-    FilePuts (f, av->semaphore.locked ? "locked" : "unlocked");
+    FilePrintf (f, "semaphore %d (%d)", av->semaphore.id, av->semaphore.count);
     return True;
 }
 
@@ -226,14 +207,32 @@ ValueType   SemaphoreType = {
 };
 
 Value
-do_Semaphore_new (void)
+do_Semaphore_new (int n, Value *value)
 {
     ENTER ();
     Value   ret;
+    int	    count;
+    static int	id;
 
+    switch (n) {
+    case 0:
+	count = 0;
+	break;
+    case 1:
+	count = IntPart (value[0], "Illegal initial semaphore count");
+	break;
+    default:
+	RaiseStandardException (exception_invalid_argument,
+				"new: wrong number of arguments",
+				2,
+				NewInt (1),
+				NewInt (n));
+	RETURN(Zero);
+    }
     ret = ALLOCATE (&SemaphoreType.data, sizeof (Semaphore));
     ret->value.tag = type_semaphore;
-    ret->semaphore.locked = 0;
+    ret->semaphore.count = count;
+    ret->semaphore.id = ++id;
     RETURN (ret);
 }
 

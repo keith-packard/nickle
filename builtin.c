@@ -172,14 +172,14 @@ static struct fbuiltin_v funcs_v[] = {
     { do_Thread_trace,	    "trace",		    type_integer,   ".p",   &DebugNamespace },
     { do_History_show,	    "show",		    type_integer,   "s.i",  &HistoryNamespace },
     { do_string_to_integer, "string_to_integer",    type_integer,   "s.i"   },
+    { do_Semaphore_new,	    "new",		    type_semaphore, ".i",   &SemaphoreNamespace },
     { 0,		    0 },
 };
 
 static struct fbuiltin_0 funcs_0[] = {
     { do_Thread_cont,	    "cont",		    type_integer,   "",	    &ThreadNamespace },
-    { do_Thread_current,    "current",		    type_integer,   "",	    &ThreadNamespace },
+    { do_Thread_current,    "current",		    type_thread,    "",	    &ThreadNamespace },
     { do_Mutex_new,	    "new",		    type_mutex,	    "",	    &MutexNamespace },
-    { do_Semaphore_new,	    "new",		    type_semaphore, "",	    &SemaphoreNamespace },
     { do_Thread_list,	    "list",		    type_integer,   "",	    &ThreadNamespace },
     { do_getchar,	    "getchar",		    type_integer,   ""	    },
     { do_time,		    "time",		    type_integer,   ""	    },
@@ -225,8 +225,8 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_Mutex_release,	    "release",		    type_integer,   "m",    &MutexNamespace },
     { do_Mutex_try_acquire, "try_acquire",	    type_integer,   "m",    &MutexNamespace },
     { do_Semaphore_signal,  "signal",		    type_integer,   "S",    &SemaphoreNamespace },
-    { do_Semaphore_test,    "test",		    type_integer,   "S",    &SemaphoreNamespace },
     { do_Semaphore_wait,    "wait",		    type_integer,   "S",    &SemaphoreNamespace },
+    { do_Semaphore_test,    "test",		    type_integer,   "S",    &SemaphoreNamespace },
     { do_History_insert,    "insert",		    type_undef,	    "p",    &HistoryNamespace },
     { do_File_close,	    "close",		    type_integer,   "f",    &FileNamespace },
     { do_File_flush,	    "flush",		    type_integer,   "f",    &FileNamespace },
@@ -694,7 +694,7 @@ dofformat (Value f, char *fmt, int n, Value *p)
 		    return -1;
 		}
 		width = IntPart (p[pn], "Illegal format width");
-		if (exception)
+		if (aborting)
 		    return -1;
 		++pn;
 		c = *++fm;
@@ -738,7 +738,7 @@ dofformat (Value f, char *fmt, int n, Value *p)
 			    return -1;
 			}
 			prec = IntPart (p[pn], "Illegal format precision");
-			if (exception)
+			if (aborting)
 			    return -1;
 			++pn;
 			c = *++fm;
@@ -818,7 +818,7 @@ callformat (Value f, char *fmt, int n, Value *p)
 	nr = dofformat (f, fmt, n, p);
 	if (nr >= 0)
 	    running->thread.partial += nr;
-	else if (!abortError)	/* only complete if no errors */
+	else if (!aborting)	/* only complete if no errors */
 	    complete = True;
     }
 }
@@ -858,13 +858,13 @@ do_File_print (Value file, Value value, Value format,
     int	    ibase, iwidth, iprec;
     
     ibase = IntPart (base, "Illegal base");
-    if (exception)
+    if (aborting)
 	return Zero;
     iwidth = IntPart (width, "Illegal width");
-    if (exception)
+    if (aborting)
 	return Zero;
     iprec = IntPart (prec, "Illegal precision");
-    if (exception)
+    if (aborting)
 	return Zero;
     if (file->file.flags & FileOutputBlocked)
 	ThreadSleep (running, file, PriorityIo);
@@ -883,7 +883,7 @@ do_File_open (Value name, Value mode)
 
     n = StringChars (&name->string);
     m = StringChars (&mode->string);
-    if (exception)
+    if (aborting)
 	RETURN (Zero);
     complete = True;
     ret = FileFopen (n, m);
@@ -1136,7 +1136,7 @@ do_string_to_integer (int n, Value *p)
 	break;
     }
     ibase = IntPart (base, "string_to_integer: invalid base");
-    if (!exception)
+    if (!aborting)
     {
 	if (ibase == 0)
 	{
@@ -1169,7 +1169,7 @@ do_string_to_integer (int n, Value *p)
 	    break;
 	}
 	ret = atov (s, ibase);
-	if (!exception)
+	if (!aborting)
 	{
 	    if (negative)
 		ret = Negate (ret);

@@ -14,17 +14,22 @@
 #include	"nickle.h"
 #include	"ref.h"
 
-volatile Bool	abortIo;
+volatile Bool	signalIo;
 Bool		ownTty[3];
 Bool		anyTtyUnowned;
 Bool		ioTimeoutQueued;
 
+#ifdef HAS_SIGACTION
+#define RESTART_SIGNAL(sig,func)
+#else
+#define RESTART_SIGNAL(sig,func) (void) signal (sig,func)
+#endif
+
 static RETSIGTYPE
 sigio (int sig)
 {
-    (void) signal (SIGIO, sigio);
-    aborting = True;
-    abortIo = True;
+    resetSignal (SIGIO, sigio);
+    SetSignalIo ();
 }
 
 void
@@ -139,7 +144,7 @@ void
 IoInit (void)
 {
     ENTER ();
-    (void) signal (SIGIO, sigio);
+    catchSignal (SIGIO, sigio);
     FileStdin = FileCreate (0);
     FileStdout = FileCreate (1);
     FileStderr = FileCreate (2);

@@ -432,7 +432,7 @@ NaturalFactor (Natural *n, Natural *max)
 	(void) NaturalDivide (n, v, &rem);
 	if (zerop (rem))
 	    RETURN (v);
-	if (exception)
+	if (aborting)
 	    break;
 	if (max && NaturalLess (max, v))
 	    RETURN (0);
@@ -454,7 +454,7 @@ NaturalIntPow (Natural *n, int p)
 	p >>= 1;
 	if (p)
 	    n = NaturalTimes (n, n);
-	if (exception)
+	if (aborting)
 	    break;
     }
     RETURN (result);
@@ -474,7 +474,7 @@ NaturalPow (Natural *n, Natural *p)
 	p = NaturalRsl(p, 1);
 	if (!zerop (p))
 	    n = NaturalTimes (n, n);
-	if (exception)
+	if (aborting)
 	    break;
     }
     RETURN (result);
@@ -497,7 +497,7 @@ NaturalPowMod (Natural *n, Natural *p, Natural *m)
 	p = NaturalDivide (p, two_natural, &rem);
 	if (!zerop(p))
 	    (void) NaturalDivide (NaturalTimes (n, n), m, &n);
-	if (exception)
+	if (aborting)
 	    break;
     }
     RETURN (result);
@@ -555,7 +555,7 @@ NaturalSplit (char *result, Natural *a, Natural **divisors, int base, int digits
     Natural *q, *r;
     Bool    rfill;
 
-    if (exception)
+    if (aborting)
 	return 0;
     if (zerop (a))
     {
@@ -652,7 +652,7 @@ NaturalSprint (char *result, Natural *a, int base, int *width)
 	t = data(a);
 	while (len)
 	{
-	    if (exception)
+	    if (aborting)
 	    {
 		r = 0;
 		break;

@@ -584,7 +584,7 @@ GenerateFactors (Natural *n, Natural *p, Natural *max)
     for (;;)
     {
 	d = NaturalDivide (n, p, &rem);
-	if (exception)
+	if (aborting)
 	    RETURN (0);
 	if (NaturalZero (rem))
 	{
@@ -677,7 +677,7 @@ RationalRepeatLength (int prec, Natural *nden, int ibase)
 	    if (NaturalEqual (NaturalPowMod (nbase, factor, nden),
 			      one_natural))
 		break;
-	    if (exception)
+	    if (aborting)
 		break;
 	    if (NaturalLess (max, factor))
 	    {
@@ -689,7 +689,7 @@ RationalRepeatLength (int prec, Natural *nden, int ibase)
     else
     {
 	factors = GenerateFactors (ndigits, two_natural, max);
-	if (exception)
+	if (aborting)
 	    return 0;
 	factor = one_natural;
 	while (factor)
@@ -697,7 +697,7 @@ RationalRepeatLength (int prec, Natural *nden, int ibase)
 	    if (NaturalEqual (NaturalPowMod (nbase, factor, nden),
 			      one_natural))
 		break;
-	    if (exception)
+	    if (aborting)
 		break;
 	    factor = FactorBump (factors);
 	    if (max && factor && NaturalLess (max, factor))
@@ -730,7 +730,7 @@ CheckDecimalLength (int prec, Natural *nden, int ibase, int *initial, int *repea
     offset = 0;
     while (!NaturalEqual ((g = NaturalGcd (nden, nbase)), one_natural))
     {
-	if (exception)
+	if (aborting)
 	{
 	    EXIT ();
 	    return;
@@ -795,7 +795,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     else if (prec == INFINITE_OUTPUT_PRECISION)
 	prec = -1;
     CheckDecimalLength (prec, r->den, base, &initial_width, &repeat_width);
-    if (exception)
+    if (aborting)
     {
 	EXIT ();
 	return False;
@@ -854,7 +854,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 					    NaturalIntPow (dig, initial_width)),
 			      r->den,
 			      &partial);
-	if (exception)
+	if (aborting)
 	{
 	    free (initial);
 	    EXIT ();
@@ -894,7 +894,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 					   NaturalIntPow (dig, rep_width)),
 			     r->den, 
 			     &partial);
-	if (exception)
+	if (aborting)
 	{
 	    free (initial);
 	    free (repeat);

@@ -12,6 +12,7 @@
 Value   running;
 Value   stopped;
 int	runnable;
+Bool	signalException;
 
 extern void dumpSleep (void), dumpThreads (void);
 
@@ -29,7 +30,7 @@ _ThreadInsert (Value thread)
     else
 	prev = &stopped;
     for (; (t = *prev); prev = &t->thread.next)
-	if (t->thread.priority <= thread->thread.priority)
+	if (t->thread.priority < thread->thread.priority)
 	    break;
     thread->thread.next = t;
     *prev = thread;
@@ -73,9 +74,7 @@ ThreadSleep (Value thread, Value sleep, int priority)
 {
     thread->thread.priority = priority;
     thread->thread.sleep = sleep;
-    aborting = True;
-    exception = True;
-    abortSuspend = True;
+    SetSignalSuspend ();
 }
 
 void
@@ -97,7 +96,7 @@ ThreadStepped (Value thread)
 }
 
 void
-ThreadsWakeup (Value sleep)
+ThreadsWakeup (Value sleep, WakeKind kind)
 {
     Value	thread, next;
 
@@ -109,6 +108,8 @@ ThreadsWakeup (Value sleep)
 	{
 	    thread->thread.sleep = 0;
 	    ThreadClearState (thread, ThreadSuspended);
+	    if (kind == WakeOne)
+		break;
 	}
     }
 }
@@ -117,7 +118,7 @@ void
 ThreadFinish (Value thread)
 {
     ThreadSetState (thread, ThreadFinished);
-    ThreadsWakeup (thread);
+    ThreadsWakeup (thread, WakeAll);
 }
 
 void
@@ -236,7 +237,7 @@ do_Thread_id_to_thread (Value id)
     Value   t;
 
     i = IntPart (id, "Invalid thread id");
-    if (exception)
+    if (aborting)
 	RETURN (Zero);
     for (t = running; t; t = t->thread.next)
 	if (t->thread.id == i)
@@ -270,7 +271,7 @@ do_Thread_set_priority (Value thread, Value priority)
 	RETURN (Zero);
     }
     i = IntPart (priority, "Invalid thread priority");
-    if (exception)
+    if (aborting)
 	RETURN (Zero);
     if (i != thread->thread.priority)
     {
@@ -971,9 +972,7 @@ RaiseException (Value thread, SymbolPtr except, BoxPtr args, InstPtr *next)
 	    for (i = 0; i < args->nvalues; i++)
 		PrintError ("\t%v", BoxValueGet (args, i));
 	}
-	aborting = True;
-	exception = True;
-	abortError = True;
+	SetSignalError ();
     }
     EXIT ();
 }
@@ -1019,8 +1018,7 @@ RaiseStandardException (StandardException   se,
     }
     standardException = se;
     standardExceptionArgs = args;
-    abortException = True;
-    exception = True;
+    SetSignalException ();
     EXIT ();
 }
 
@@ -1031,8 +1029,6 @@ JumpStandardException (Value thread, InstPtr *next)
     SymbolPtr		except = standardExceptions[standardException];
     
     aborting = False;
-    abortException = False;
-    exception = False;
     if (except)
 	RaiseException (thread, except, standardExceptionArgs, next);
     standardException = exception_none;

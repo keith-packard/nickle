@@ -573,7 +573,7 @@ FileCheckBlocked (void)
 	    if (blocked->file.flags & FileInputBlocked)
 		readBlocked = True;
 	    if (ready)
-		ThreadsWakeup (blocked);
+		ThreadsWakeup (blocked, WakeAll);
 	    if ((blocked->file.flags & (FileOutputBlocked|FileInputBlocked)) == 0)
 		*prev = blocked->file.next;
 	    else

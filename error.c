@@ -9,7 +9,7 @@
 #include	"nickle.h"
 #include	"gram.h"
 
-Bool	abortError;
+Bool	signalError;
 
 static void
 fprintType (Value f, Type tag)
@@ -357,7 +357,5 @@ RaiseError (char *s, ...)
     va_start (args, s);
     vPrintError (s, args);
     va_end (args);
-    aborting = True;
-    exception = True;
-    abortError = True;
+    SetSignalError ();
 }

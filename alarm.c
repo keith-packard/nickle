@@ -11,7 +11,7 @@
 #include	<sys/time.h>
 #include	<signal.h>
 
-volatile Bool	abortTimer;	/* Timer signal received */
+volatile Bool	signalTimer;	/* Timer signal received */
 
 typedef struct _sleepQ {
     DataType	    *data;
@@ -133,14 +133,13 @@ do_sleep (Value ms)
     if (running->thread.partial)
 	RETURN (One);
     delta = IntPart (ms, "Invalid sleep value");
-    if (exception)
+    /* don't queue if instruction is aborting */
+    if (aborting)
 	RETURN (Zero);
     TimerInsert (running, _sleepDone, delta, 0);
     /* This primitive has been partially executed */
     running->thread.partial = 1;
-    aborting = True;
-    exception = True;
-    abortSuspend = True;
+    SetSignalSuspend();
     RETURN (Zero);
 }
 
@@ -149,9 +148,8 @@ ReferencePtr	SleepingReference;
 static RETSIGTYPE
 _CatchAlarm (int sig)
 {
-    signal (SIGALRM, _CatchAlarm);
-    aborting = True;
-    abortTimer = True;
+    resetSignal (SIGALRM, _CatchAlarm);
+    SetSignalTimer();
 }
 
 void
@@ -160,6 +158,6 @@ TimerInit (void)
     ENTER ();
     SleepingReference = NewReference ((void **) &sleeping);
     MemAddRoot (SleepingReference);
-    signal (SIGALRM, _CatchAlarm);
+    catchSignal (SIGALRM, _CatchAlarm);
     EXIT ();
 }

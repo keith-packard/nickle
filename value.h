@@ -474,7 +474,8 @@ typedef struct _mutex {
 
 typedef struct _semaphore {
     BaseValue	value;
-    int		locked;
+    int		count;
+    int		id;
 } Semaphore;
 
 typedef struct _continuation {
@@ -651,28 +652,50 @@ Value	Default (TypesPtr);
 Value	ValueEqual (Value a, Value b, int expandOk);
 
 /*
- * Some abort has occured
+ * There are two kinds of signals:
+ *
+ *  aborting	    current instruction should be suspended
+ *  non-aborting    current instruction should be completed
+ *
+ *  SIGIO and SIGALRM are non-aborting; otherwise computation would probably
+ *  never make progress
+ *
+ *  SIGINTR is aborting
+ *  All internal signals are aborting
+ *
+ *  An aborting signal marks 'aborting, signaling' and itself, this way
+ *  low-level computations can check 'aborting' and the interpreter can
+ *  check 'signaling' and then check the individual signals
  */
 
-extern volatile Bool aborting;	/* some exception has occured */
-extern volatile Bool exception;	/* abort the current computation */
+extern volatile Bool aborting;	/* abort current instruction */
+extern volatile Bool signaling;	/* some signal is pending */
 
 /*
- * Any abort state set by an signal handler must be volatile
+ * Any signal state set by an signal handler must be volatile
  */
 
-extern volatile Bool abortInterrupt;	/* keyboard interrupt */
-extern volatile Bool abortTimer;	/* timer interrupt */
-extern volatile Bool abortIo;		/* i/o interrupt */
+extern volatile Bool signalInterrupt;	/* keyboard interrupt */
+extern volatile Bool signalTimer;	/* timer interrupt */
+extern volatile Bool signalIo;		/* i/o interrupt */
+
+#define SetSignalInterrupt()(aborting = signaling = signalInterrupt = True)
+#define SetSignalTimer()    (signaling = signalTimer = True)
+#define SetSignalIo()	    (signaling = signalIo = True)
 
 /*
- * Any abort state set by regular code doesn't need to be volatile
+ * Any signal state set by regular code doesn't need to be volatile
  */
 
-extern Bool abortSuspend;	/* current thread suspend */
-extern Bool abortFinished;	/* current thread done */
-extern Bool abortError;		/* current thread run time error */
-extern volatile Bool abortException;	/* current thread floating point exception */
+extern Bool signalSuspend;	/* current thread suspend */
+extern Bool signalFinished;	/* current thread done */
+extern Bool signalException;	/* current thread exception pending */
+extern Bool signalError;	/* current thread run time error */
+
+#define SetSignalSuspend()  (aborting = signaling = signalSuspend = True)
+#define SetSignalFinished() (aborting = signaling = signalFinished = True)
+#define SetSignalException()(aborting = signaling = signalException = True)
+#define SetSignalError()    (aborting = signaling = signalError = True)
 
 int	NaturalToInt (Natural *);
 int	IntegerToInt (Integer *);

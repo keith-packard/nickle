@@ -17,13 +17,13 @@
 
 Bool	complete;
 
-Bool	abortFinished;	    /* current thread is finished */
-Bool	abortSuspend;	    /* current thread is suspending */
+Bool	signalFinished;	    /* current thread is finished */
+Bool	signalSuspend;	    /* current thread is suspending */
 
 static ThreadState ThreadStep (Value thread);
 
 static FramePtr
-BuildFrame (Value thread, Value func, Bool varargs, int nformal, 
+BuildFrame (Value thread, Value func, Bool varargs, int nformal, int off,
 	    int nargs, InstPtr savePc)
 {
     ENTER ();
@@ -39,16 +39,16 @@ BuildFrame (Value thread, Value func, Bool varargs, int nformal,
     for (fe = 0; fe < nformal; fe++)
     {
 	type = BoxTypesValue (code->func.dynamics, fe);
-	if (!TypeCompatibleAssign (type, Stack(fe), False))
+	if (!TypeCompatibleAssign (type, Stack(fe+off), False))
 	{
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Incompatible argument",
-				    2, NewInt (fe), Stack(fe));
+				    2, NewInt (fe), Stack(fe+off));
 	    RETURN (0);
 	}
-	if (!Stack(fe))
+	if (!Stack(fe+off))
 	    abort ();
-	BoxValueSet (frame->frame, fe, Copy (Stack(fe)));
+	BoxValueSet (frame->frame, fe, Copy (Stack(fe+off)));
     }
     if (varargs)
     {
@@ -59,9 +59,9 @@ BuildFrame (Value thread, Value func, Bool varargs, int nformal,
 	BoxValueSet (frame->frame, fe, array);
 	for (; fe < nargs; fe++)
 	{
-	    if (!Stack(fe))
+	    if (!Stack(fe+off))
 		abort ();
-	    BoxValueSet (array->array.values, fe-nformal, Stack(fe));
+	    BoxValueSet (array->array.values, fe-nformal, Stack(fe+off));
 	}
     }
     frame->function = func;
@@ -78,14 +78,22 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
     CodePtr	code = value->func.code;
     FramePtr	frame;
     int		argc = *stack;
+    int		off = 0;
     
+    if (argc == -1)
+    {
+	off = 1;
+	argc = Stack(0)->ints.value;
+	*stack = argc+1;
+    }
+	
     if (code->base.varargs)
     {
 	if (argc < code->base.argc)
 	{
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Too few arguments",
-				    2, NewInt (argc), Stack(code->base.argc));
+				    2, NewInt (argc), NewInt(code->base.argc));
 	    RETURN (value);
 	}
     }
@@ -95,7 +103,7 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
 	{
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Wrong number of arguments",
-				    2, NewInt (argc), Stack(code->base.argc));
+				    2, NewInt (argc), NewInt(code->base.argc));
 	    RETURN (value);
 	}
     }
@@ -109,6 +117,8 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
 	if (code->base.varargs)
 	    formal = -1;
 
+#define Arg(n)  Stack((n)+off)
+
 	if (code->builtin.needsNext) 
 	{
 	    /*
@@ -119,17 +129,17 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
 	    case -1:
 		values = AllocateTemp (argc * sizeof (Value));
 		for (arg = 0; arg < argc; arg++)
-		    values[arg] = Stack(arg);
+		    values[arg] = Arg(arg);
 		value = (*code->builtin.b.builtinNJ)(next, argc, values);
 		break;
 	    case 0:
 		value = (*code->builtin.b.builtin0J)(next);
 		break;
 	    case 1:
-		value = (*code->builtin.b.builtin1J)(next, Stack(0));
+		value = (*code->builtin.b.builtin1J)(next, Arg(0));
 		break;
 	    case 2:
-		value = (*code->builtin.b.builtin2J)(next, Stack(0), Stack(1));
+		value = (*code->builtin.b.builtin2J)(next, Arg(0), Arg(1));
 		break;
 	    }
 	}
@@ -139,49 +149,50 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
 	    case -1:
 		values = AllocateTemp (argc * sizeof (Value));
 		for (arg = 0; arg < argc; arg++)
-		    values[arg] = Stack(arg);
+		    values[arg] = Arg(arg);
 		value = (*code->builtin.b.builtinN)(argc, values);
 		break;
 	    case 0:
 		value = (*code->builtin.b.builtin0)();
 		break;
 	    case 1:
-		value = (*code->builtin.b.builtin1)(Stack(0));
+		value = (*code->builtin.b.builtin1)(Arg(0));
 		break;
 	    case 2:
-		value = (*code->builtin.b.builtin2)(Stack(0), Stack(1));
+		value = (*code->builtin.b.builtin2)(Arg(0), Arg(1));
 		break;
 	    case 3:
-		value = (*code->builtin.b.builtin3)(Stack(0), Stack(1), Stack(2));
+		value = (*code->builtin.b.builtin3)(Arg(0), Arg(1), Arg(2));
 		break;
 	    case 4:
-		value = (*code->builtin.b.builtin4)(Stack(0), Stack(1), Stack(2),
-						    Stack(3));
+		value = (*code->builtin.b.builtin4)(Arg(0), Arg(1), Arg(2),
+						    Arg(3));
 		break;
 	    case 5:
-		value = (*code->builtin.b.builtin5)(Stack(0), Stack(1), Stack(2),
-						    Stack(3), Stack(4));
+		value = (*code->builtin.b.builtin5)(Arg(0), Arg(1), Arg(2),
+						    Arg(3), Arg(4));
 		break;
 	    case 6:
-		value = (*code->builtin.b.builtin6)(Stack(0), Stack(1), Stack(2),
-						    Stack(3), Stack(4), Stack(5));
+		value = (*code->builtin.b.builtin6)(Arg(0), Arg(1), Arg(2),
+						    Arg(3), Arg(4), Arg(5));
 		break;
 	    case 7:
-		value = (*code->builtin.b.builtin7)(Stack(0), Stack(1), Stack(2),
-						    Stack(3), Stack(4), Stack(5),
-						    Stack(6));
+		value = (*code->builtin.b.builtin7)(Arg(0), Arg(1), Arg(2),
+						    Arg(3), Arg(4), Arg(5),
+						    Arg(6));
 		break;
 	    default:
 		value = Zero;
 		break;
 	    }
 	}
+#undef Arg
     }
     else
     {
-	frame = BuildFrame (thread, value, code->base.varargs, 
-			    code->base.argc, argc, *next);
-	if (exception)
+	frame = BuildFrame (thread, value, code->base.varargs,
+			    code->base.argc, off, argc, *next);
+	if (aborting)
 	    RETURN (value);
 	complete = True;
 	thread->thread.frame = frame;
@@ -242,7 +253,7 @@ ThreadAssign (Value ref, Value v)
 	if (!v)
 	    abort ();
 	v = Copy (v);
-	if (!exception)
+	if (!aborting)
 	{
 	    complete = True;
 	    RefValueSet (ref, v);
@@ -262,7 +273,7 @@ ThreadArray (Value thread, int ndim)
     for (i = 0; i < ndim; i++)
     {
 	dims[i] = IntPart (Stack(i), "Invalid array dimension");
-	if (exception)
+	if (aborting)
 	    RETURN (0);
     }
     RETURN (NewArray (False, typesPoly, ndim, dims));
@@ -294,7 +305,7 @@ ThreadInitArray (Value thread, Value a, int ninit)
 	    }
 	    i++;
 	}
-	if (!exception)
+	if (!aborting)
 	{
 	    j = ninit;
 	    i = 0;
@@ -322,7 +333,7 @@ ThreadArrayIndex (Value thread, int ndim)
     for (dim = 0; dim < ndim; dim++)
     {
 	part = IntPart (Stack(dim), "Invalid array index");
-	if (exception)
+	if (aborting)
 	    break;
 	if (part < 0 || a->array.dim[dim] <= part)
 	{
@@ -486,9 +497,7 @@ ThreadStep (Value thread)
         next = inst + inst->branch.offset;
 	break;
     case OpEnd:
-	aborting = True;
-	exception = True;
-	abortFinished = True;
+	SetSignalFinished ();
 	break;
     case OpReturn:
 	if (!thread->thread.frame)
@@ -496,7 +505,7 @@ ThreadStep (Value thread)
 	    RaiseError ("return outside of function");
 	    break;
 	}
-	if (exception)
+	if (aborting)
 	    break;
 	complete = True;
 	next = thread->thread.frame->savePc;
@@ -587,7 +596,7 @@ ThreadStep (Value thread)
 	    }
 	    stack = 0;
 	    i = IntPart (Stack(stack), "Invalid string index"); stack++;
-	    if (exception)
+	    if (aborting)
 		break;
 	    s = StringChars (&value->string);
 	    if (i > strlen (s))
@@ -606,7 +615,7 @@ ThreadStep (Value thread)
 	    }
 	    stack = inst->ints.value;
 	    i = ThreadArrayIndex (thread, stack);
-	    if (!exception)
+	    if (!aborting)
 	    {
 		if (inst->base.opCode != OpArrayRefStore)
 		    ThreadBoxCheck (value->array.values, i, value->array.type);
@@ -628,11 +637,6 @@ ThreadStep (Value thread)
 	    break;
 	}
         stack = inst->ints.value;
-	if (stack == -1)
-	{
-	    v = STACK_POP (thread->thread.stack);
-	    stack = v->ints.value;
-	}
 	value = ThreadCall (thread, &next, &stack);
 	break;
     case OpArrow:
@@ -682,7 +686,7 @@ ThreadStep (Value thread)
 	    RaiseError ("StaticInitDone outside of function");
 	    break;
 	}
-	if (exception)
+	if (aborting)
 	    break;
 	complete = True;
 	next = thread->thread.frame->savePc;
@@ -831,7 +835,7 @@ ThreadStep (Value thread)
     case OpFork:
 	value = NewThread (thread->thread.frame, inst->obj.obj); break;
     case OpCatch:
-	if (exception)
+	if (aborting)
 	    break;
 	ThreadCatch (thread, inst->catch.exception, inst->catch.offset);
 	complete = True;
@@ -841,26 +845,26 @@ ThreadStep (Value thread)
 	next = inst + inst->branch.offset;
 	break;
     case OpEndCatch:
-	if (exception)
+	if (aborting)
 	    break;
 	thread->thread.catches = thread->thread.catches->previous;
 	complete = True;
 	break;
     case OpRaise:
-	if (exception)
+	if (aborting)
 	    break;
 	ThreadRaise (thread, inst->raise.argc, inst->raise.exception, &next);
-	if (!exception)
+	if (!aborting)
 	    complete = True;
 	break;
     case OpTwixt:
-	if (exception)
+	if (aborting)
 	    break;
 	ThreadTwixt (thread, inst->twixt.enter, inst->twixt.leave);
 	complete = True;
 	break;
     case OpTwixtDone:
-	if (exception)
+	if (aborting)
 	    break;
 	thread->thread.twixts = thread->thread.twixts->previous;
 	complete = True;
@@ -873,7 +877,7 @@ ThreadStep (Value thread)
 	}
 	else
 	{
-	    if (exception)
+	    if (aborting)
 		break;
 	    if (thread->thread.jump)
 	    {
@@ -885,7 +889,7 @@ ThreadStep (Value thread)
     case OpLeaveDone:
 	if (thread->thread.jump)
 	{
-	    if (exception)
+	    if (aborting)
 		break;
 	    value = JumpContinuation (thread->thread.jump, &next);
 	    complete = True;
@@ -894,10 +898,8 @@ ThreadStep (Value thread)
 	    next = inst + inst->branch.offset;
 	break;
     }
-    if (!exception || complete)
+    if (!aborting || complete)
     {
-	if (!value)
-	    abort ();
 	/* this instruction has been completely executed */
 	thread->thread.partial = 0;
 	thread->thread.v = value;
@@ -911,24 +913,28 @@ ThreadStep (Value thread)
     }
     else
     {
-	if (abortSuspend)
+	/*
+	 * Check for pending execution signals
+	 */
+	if (signalSuspend)
 	{
-	    abortSuspend = False;
+	    signalSuspend = False;
 	    ThreadSetState (thread, ThreadSuspended);
 	}
-	if (abortFinished)
+	if (signalFinished)
 	{
-	    abortFinished = False;
+	    signalFinished = False;
 	    ThreadFinish (thread);
 	}
-	if (abortException)
+	if (signalException)
 	{
+	    signalException = False;
 	    JumpStandardException (thread, &next);
 	    thread->thread.pc = next;
 	}
-	if (abortError)
+	if (signalError)
 	{
-	    abortError = False;
+	    signalError = False;
 	    DebugSetFrame (NewContinuation (thread->thread.frame,
 					    inst,
 					    thread->thread.stack,
@@ -947,28 +953,31 @@ ThreadStep (Value thread)
 void
 ThreadsRun (Value thread, Value lex)
 {
-    abortInterrupt = False;
+    signalInterrupt = False;
     for (;;)
     {
-	if (aborting)
+	if (signaling)
 	{
+	    signaling = False;
 	    aborting = False;
-	    exception = False;
-	    if (abortInterrupt)
+	    /*
+	     * Check for pending external signals
+	     */
+	    if (signalInterrupt)
 	    {
-		abortInterrupt = False;
+		signalInterrupt = False;
 		if (thread)
 		    ThreadSetState (thread, ThreadInterrupted);
 		(void) write (2, "<abort>\n", 8);
 	    }
-	    if (abortTimer)
+	    if (signalTimer)
 	    {
-		abortTimer = False;
+		signalTimer = False;
 		TimerInterrupt ();
 	    }
-	    if (abortIo)
+	    if (signalIo)
 	    {
-		abortIo = False;
+		signalIo = False;
 		IoInterrupt ();
 	    }
 	    if (lex && !(lex->file.flags & FileInputBlocked))
@@ -984,7 +993,7 @@ ThreadsRun (Value thread, Value lex)
 
 	    sigfillset (&set);
 	    sigprocmask (SIG_SETMASK, &set, &oset);
-	    if (!aborting)
+	    if (!signaling)
 		sigsuspend (&oset);
 	    sigprocmask (SIG_SETMASK, &oset, &set);
 	}

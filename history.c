@@ -75,7 +75,7 @@ History (Value thread, Value h)
     int	i;
 
     i = IntPart (h, "Invalid history offset");
-    if (exception)
+    if (aborting)
 	return Zero;
     if (i == 0)
     {
@@ -118,7 +118,7 @@ HistoryDisplay (Value format, Value *from, Value *to)
 	t = hist->index;
     else
 	t = IntPart (*to, "bad history value");
-    if (!exception)
+    if (!aborting)
     {
 	if (f <= 0)
 	    f = 1;

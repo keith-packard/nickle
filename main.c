@@ -79,17 +79,17 @@ RETSIGTYPE	stop (int), die (int), segv (int);
 int
 main (int argc, char **argv)
 {
-    (void) signal (SIGHUP, die);
-    (void) signal (SIGINT, intr);
-    (void) signal (SIGQUIT, die);
-    (void) signal (SIGILL, die);
-    (void) signal (SIGABRT, die);
-    (void) signal (SIGSEGV, segv);
-    (void) signal (SIGPIPE, SIG_IGN);
-    (void) signal (SIGTERM, die);
-    (void) signal (SIGTSTP, stop);
-    (void) signal (SIGTTIN, stop);
-    (void) signal (SIGTTOU, stop);
+    (void) catchSignal (SIGHUP, die);
+    (void) catchSignal (SIGINT, intr);
+    (void) catchSignal (SIGQUIT, die);
+    (void) catchSignal (SIGILL, die);
+    (void) catchSignal (SIGABRT, die);
+    (void) catchSignal (SIGSEGV, segv);
+    (void) catchSignal (SIGPIPE, SIG_IGN);
+    (void) catchSignal (SIGTERM, die);
+    (void) catchSignal (SIGTSTP, stop);
+    (void) catchSignal (SIGTTIN, stop);
+    (void) catchSignal (SIGTTOU, stop);
     stdin_interactive = isatty(0);
     init ();
     lexstdin ();
@@ -125,26 +125,36 @@ init (void)
     TimerInit ();
 }
 
-volatile Bool	abortInterrupt;
-volatile Bool	abortException;
+void
+catchSignal (int sig, RETSIGTYPE (*func) (int sig))
+{
+#ifdef HAS_SIGACTION
+    struct sigaction sa;
+
+    memset (&sa, '\0', sizeof (struct sigaction));
+    sa.sa_handler = func;
+    sa.sa_flags = SA_RESTART;
+    sigaction (sig, &sa, 0);
+#else
+    signal (sig, func);
+#endif
+}
+
+void
+resetSignal (int sig, RETSIGTYPE (*func) (int sig))
+{
+#ifndef HAS_SIGACTION
+    signal (sig, func);
+#endif
+}
+
+volatile Bool	signalInterrupt;
 
 RETSIGTYPE
 intr (int sig)
 {
-    void	intr(int);
-
-    (void) signal (SIGINT, intr);
-    aborting = True;
-    exception = True;
-    abortInterrupt = True;
-}
-
-RETSIGTYPE
-ferr(int sig)
-{
-    aborting = True;
-    exception = True;
-    abortException = True;
+    resetSignal (SIGINT, intr);
+    SetSignalInterrupt ();
 }
 
 RETSIGTYPE
@@ -155,14 +165,14 @@ stop (int sig)
     sigfillset (&set);
     sigprocmask (SIG_SETMASK, &set, &oset);
     IoStop ();
-    (void) signal (sig, SIG_DFL);
+    catchSignal (sig, SIG_DFL);
     sigfillset (&set);
     sigdelset (&set, sig);
     sigprocmask (SIG_SETMASK, &set, &set);
     kill (getpid(), sig);
     sigprocmask (SIG_SETMASK, &oset, &set);
     IoStart ();
-    (void) signal (sig, stop);
+    catchSignal (sig, stop);
 }
 
 RETSIGTYPE
@@ -176,6 +186,6 @@ RETSIGTYPE
 segv (int sig)
 {
     IoStop ();
-    (void) signal (SIGSEGV, SIG_DFL);
+    catchSignal (SIGSEGV, SIG_DFL);
     /* return and reexecute the fatal instruction */
 }

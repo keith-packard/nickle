@@ -21,12 +21,12 @@ Bool	complete;
 Bool	signalFinished;	    /* current thread is finished */
 Bool	signalSuspend;	    /* current thread is suspending */
 
-#define Arg(n)  Stack((argc - 1) - (n))
+#define Arg(n)	Stack(base - (n))
 
 static FramePtr
 BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,
 	    Bool varargs, int nformal,
-	    int argc, InstPtr savePc, ObjPtr saveObj)
+	    int base, int argc, InstPtr savePc, ObjPtr saveObj)
 {
     ENTER ();
     CodePtr	    code = func->func.code;
@@ -76,9 +76,29 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
     FramePtr	frame;
     ArgType	*argt;
     int		fe;
+    int		base;
     
     argt = code->base.args;
+    /*
+     * Typecheck actuals
+     */
     fe = 0;
+    base = argc - 1;
+    if (argc < 0)
+    {
+	Value	numvar = Stack(0);
+	
+	if (!ValueIsInt (numvar))
+	{
+	    RaiseStandardException (exception_invalid_argument, 
+				    "Incompatible argument",
+				    2, NewInt(-1), Stack(0));
+	    RETURN (value);
+	}
+	argc = -argc - 1 + numvar->ints.value;
+	base = argc;
+	*stack = 1 + argc;  /* count + args */
+    }
     while (fe < argc || (argt && !argt->varargs))
     {
 	if (!argt)
@@ -115,7 +135,12 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 
 	formal = code->base.argc;
 	if (code->base.varargs)
+	{
 	    formal = -1;
+	    values = AllocateTemp (argc * sizeof (Value));
+	    for (arg = 0; arg < argc; arg++)
+		values[arg] = Arg(arg);
+	}
 
 	if (code->builtin.needsNext) 
 	{
@@ -125,9 +150,6 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 	    *stack = 0;
 	    switch (formal) {
 	    case -1:
-		values = AllocateTemp (argc * sizeof (Value));
-		for (arg = 0; arg < argc; arg++)
-		    values[arg] = Arg(arg);
 		value = (*code->builtin.b.builtinNJ)(next, argc, values);
 		break;
 	    case 0:
@@ -141,13 +163,10 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 		break;
 	    }
 	}
-	else 
+	else
 	{
 	    switch (formal) {
 	    case -1:
-		values = AllocateTemp (argc * sizeof (Value));
-		for (arg = 0; arg < argc; arg++)
-		    values[arg] = Arg(arg);
 		value = (*code->builtin.b.builtinN)(argc, values);
 		break;
 	    case 0:
@@ -196,7 +215,7 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
     else
     {
 	frame = BuildFrame (thread, value, False, tail, code->base.varargs,
-			    code->base.argc, argc, *next, thread->thread.continuation.obj);
+			    code->base.argc, base, argc, *next, thread->thread.continuation.obj);
 	if (aborting)
 	    RETURN (value);
 	complete = True;
@@ -218,7 +237,7 @@ ThreadStaticInit (Value thread, InstPtr *next)
     CodePtr	code = value->func.code;
     FramePtr	frame;
     
-    frame = BuildFrame (thread, value, True, False, False, 0, 0, 
+    frame = BuildFrame (thread, value, True, False, False, 0, 0, 0,
 			*next, thread->thread.continuation.obj);
     if (aborting)
 	return;
@@ -854,6 +873,37 @@ ThreadsRun (Value thread, Value lex)
 		    break;
 		}
 		break;
+	    case OpVarActual:
+		if (!ValueIsArray(value))
+		{
+		    RaiseStandardException (exception_invalid_unop_value,
+					    "Not an array",
+					    1, value);
+		    break;
+		}
+		if (value->array.ndim != 1)
+		{
+		    RaiseStandardException (exception_invalid_unop_value,
+					    "Array not one dimension",
+					    1, value);
+		    break;
+		}
+		for (i = 0; i < value->array.dim[0]; i++)
+		{
+		    STACK_PUSH (thread->thread.continuation.stack,
+				BoxValue (value->array.values, i));
+		    if (aborting)
+		    {
+			STACK_DROP (thread->thread.continuation.stack,
+				    i + 1);
+			break;
+		    }
+		}
+		if (i != value->array.dim[0])
+		    break;
+		complete = True;
+		value = NewInt (value->array.dim[0]);
+		break;
 	    case OpCall:
 	    case OpTailCall:
 		if (!ValueIsFunc(value))
@@ -1025,22 +1075,7 @@ ThreadsRun (Value thread, Value lex)
 		complete = True;
 		break;
 	    case OpEnterDone:
-		if (!ValueIsBool(value))
-		{
-		    RaiseStandardException (exception_invalid_argument,
-					    "conditional expression not bool",
-					    2, value, Void);
-		    break;
-		}
-		if (!True (value))
-		{
-		    if (aborting)
-			break;
-		    next = inst + inst->branch.offset;
-		    thread->thread.jump = 0;
-		    complete = True;
-		}
-		else if (thread->thread.jump)
+		if (thread->thread.jump)
 		{
 		    if (aborting)
 			break;
@@ -1056,8 +1091,6 @@ ThreadsRun (Value thread, Value lex)
 		    value = JumpContinue (thread, &next);
 		    complete = True;
 		}
-		else
-		    next = inst + inst->branch.offset;
 		break;
 	    case OpFarJump:
 		ThreadFarJump (thread, value, inst->farJump.farJump, &next);

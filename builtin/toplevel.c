@@ -37,6 +37,7 @@ import_Toplevel_namespace()
         { do_exit, "exit", "v", "i" },
         { do_exponent, "exponent", "i", "R" },
         { do_floor, "floor", "i", "R" },
+	{ do_func_args, "func_args", "i", "p" },
         { do_is_array, "is_array", "b", "p" },
         { do_is_continuation, "is_continuation", "b", "p" },
         { do_is_file, "is_file", "b", "p" },
@@ -245,6 +246,20 @@ Value
 do_floor (Value a)
 {
     return Floor (a);
+}
+
+Value
+do_func_args (Value a)
+{
+    ENTER ();
+    if (!ValueIsFunc (a))
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"func_args: argument must be function",
+				2, NewInt (0), a);
+	RETURN (Void);
+    }
+    RETURN (NewInt (a->func.code->base.argc));
 }
 
 Value 

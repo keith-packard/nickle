@@ -697,16 +697,27 @@ CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, Code
 }
 
 static ObjPtr
-CompileArgs (ObjPtr obj, int *argcp, ExprPtr arg, ExprPtr stat, CodePtr code)
+CompileArgs (ObjPtr obj, int *argcp, Bool *varactualp, ExprPtr arg, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     int	argc;
     
     argc = 0;
+    *varactualp = False;
     while (arg)
     {
-	obj = _CompileExpr (obj, arg->tree.left, True, stat, code);
-	SetPush (obj);
+	if (arg->tree.left->base.tag == DOTS)
+	{
+	    InstPtr inst;
+	    obj = _CompileExpr (obj, arg->tree.left->tree.left, True, stat, code);
+	    BuildInst (obj, OpVarActual, inst, stat);
+	    *varactualp = True;
+	}
+	else
+	{
+	    obj = _CompileExpr (obj, arg->tree.left, True, stat, code);
+	}
+        SetPush (obj);
 	arg = arg->tree.right;
 	argc++;
     }
@@ -729,7 +740,9 @@ CompileTypecheckArgs (ObjPtr	obj,
     ArgType	*argt;
     ExprPtr	arg;
     Type	*func_type;
+    Type	*actual_type;
     int		i;
+    Bool	varactual;
     
     func_type = TypeCombineFunction (type);
     if (!func_type)
@@ -759,16 +772,21 @@ CompileTypecheckArgs (ObjPtr	obj,
 		ret = False;
 		break;
 	    }
-	    if (!TypeCompatible (argt->type, arg->tree.left->base.type, True))
+	    varactual = arg->tree.left->base.tag == DOTS;
+	    if (varactual)
+		actual_type = TypeCombineArray (arg->tree.left->tree.left->base.type, 1, False);
+	    else
+		actual_type = arg->tree.left->base.type;
+	    if (!TypeCompatible (argt->type, actual_type, True))
 	    {
 		CompileError (obj, stat, "Incompatible types '%T', '%T' argument %d",
 			      argt->type, arg->tree.left->base.type, i);
 		ret = False;
 	    }
-	    if (arg)
-		arg = arg->tree.right;
 	    if (!argt->varargs)
 		argt = argt->next;
+	    if (arg && (!varactual || !argt))
+		arg = arg->tree.right;
 	}
     }
     EXIT ();
@@ -818,8 +836,9 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
     ENTER ();
     InstPtr inst;
     int	    argc;
+    Bool    varactual;
 
-    obj = CompileArgs (obj, &argc, expr->tree.right, stat, code);
+    obj = CompileArgs (obj, &argc, &varactual, expr->tree.right, stat, code);
     obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
     if (!CompileTypecheckArgs (obj, expr->tree.left->base.type,
 			       expr->tree.right, argc, stat))
@@ -833,12 +852,12 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
 	 TypeCanon (expr->base.type) == typePrim[rep_void]))
     {
 	BuildInst (obj, OpTailCall, inst, stat);
-	inst->ints.value = argc;
+	inst->ints.value = varactual ? -argc : argc;
     }
     else
     {
 	BuildInst (obj, OpCall, inst, stat);
-	inst->ints.value = argc;
+	inst->ints.value = varactual ? -argc : argc;
 	BuildInst (obj, OpNoop, inst, stat);
     }
     RETURN (obj);
@@ -860,6 +879,7 @@ CompileRaise (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     ExprPtr	name;
     SymbolPtr	sym;
     InstPtr	inst;
+    Bool	varactual;
     
     if (expr->tree.left->base.tag == COLONCOLON)
 	name = expr->tree.left->tree.right;
@@ -880,12 +900,12 @@ CompileRaise (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 		      name->atom.atom);
 	RETURN (obj);
     }
-    obj = CompileArgs (obj, &argc, expr->tree.right, stat, code);
+    obj = CompileArgs (obj, &argc, &varactual, expr->tree.right, stat, code);
     if (!CompileTypecheckArgs (obj, sym->symbol.type, expr->tree.right, argc, stat))
 	RETURN(obj);
     expr->base.type = typePoly;
     BuildInst (obj, OpRaise, inst, stat);
-    inst->raise.argc = argc;
+    inst->raise.argc = varactual ? -argc : argc;
     inst->raise.exception = sym;
     RETURN (obj);
 }
@@ -894,20 +914,17 @@ CompileRaise (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 /*
  * Compile a  twixt --
  *
- *  twixt (enter; leave) body else _else
+ *  twixt (enter; leave) body
  *
  *  enter:
  *		enter
- *	OpEnterDone	else:
+ *	OpEnterDone
  *	OpTwixt		enter: leave:
  *		body
  *	OpTwixtDone
  *  leave:
  *		leave
- *	OpLeaveDone	done:
- *  else:
- *		_else
- *  done:
+ *	OpLeaveDone
  *
  */
 
@@ -915,32 +932,22 @@ static ObjPtr
 CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 {
     ENTER ();
-    int	    enter_inst, twixt_inst, twixt_body_inst,
-	    enter_done_inst, leave_done_inst;
+    int	    enter_inst, twixt_inst;
     InstPtr inst;
     
     enter_inst = obj->used;
 
     /* Compile enter expression */
     if (expr->tree.left->tree.left)
-	obj = _CompileBoolExpr (obj, expr->tree.left->tree.left, True, stat, code);
-    else
-    {
-	BuildInst (obj, OpConst, inst, stat);
-	inst->constant.constant = TrueVal;
-    }
-    NewInst (enter_done_inst, obj);
+	obj = _CompileExpr (obj, expr->tree.left->tree.left, True, stat, code);
+    BuildInst (obj, OpEnterDone, inst, stat);
     
     /* here's where the twixt instruction goes */
     NewInst (twixt_inst, obj);
 
     /* Compile the body */
-    twixt_body_inst = obj->used;
-    obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTwixt,
-				 NON_LOCAL_BREAK);
     obj = _CompileStat (obj, expr->tree.right->tree.left, False, code);
-    obj->nonLocal = obj->nonLocal->prev;
-    CompilePatchLoop (obj, twixt_body_inst, -1, obj->used);
+    
     BuildInst (obj, OpTwixtDone, inst, stat);
     
     /* finish the twixt instruction */
@@ -953,25 +960,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     /* Compile leave expression */
     if (expr->tree.left->tree.right)
 	obj = _CompileExpr (obj, expr->tree.left->tree.right, False, stat, code);
-    NewInst (leave_done_inst, obj);
-
-    /* finish the enter_done instruction */
-    inst = ObjCode (obj, enter_done_inst);
-    inst->base.opCode = OpEnterDone;
-    inst->base.stat = stat;
-    inst->branch.offset = obj->used - enter_done_inst;
-    inst->branch.mod = BranchModNone;
-    
-    /* Compile else */
-    if (expr->tree.right->tree.right)
-	obj = _CompileStat (obj, expr->tree.right->tree.right, False, code);
-    
-    /* finish the leave_done instruction */
-    inst = ObjCode (obj, leave_done_inst);
-    inst->base.opCode = OpLeaveDone;
-    inst->base.stat = stat;
-    inst->branch.offset = obj->used - leave_done_inst;
-    inst->branch.mod = BranchModNone;
+    BuildInst (obj, OpLeaveDone, inst, stat);
 
     RETURN (obj);
 }
@@ -2095,6 +2084,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	obj = _CompileExpr (obj, expr->tree.left, evaluate, expr, code);
 	expr->base.type = expr->tree.left->base.type;
 	break;
+    case OC:
+	/* statement block embedded in an expression */
+	obj = _CompileStat (obj, expr, True, code);
+	BuildInst (obj, OpConst, inst, stat);
+	inst->constant.constant = Void;
+	expr->base.type = typePrim[rep_void];
+	break;
     }
     assert (!evaluate || expr->base.type);
     RETURN (obj);
@@ -2831,7 +2827,6 @@ CompileIsUnconditional (InstPtr inst)
     case OpBranch:
     case OpFarJump:
     case OpDefault:
-    case OpLeaveDone:
     case OpCatch:
     case OpReturn:
     case OpReturnVoid:
@@ -2854,7 +2849,6 @@ CompileIsBranch (InstPtr inst)
     case OpCase:
     case OpTagCase:
     case OpDefault:
-    case OpLeaveDone:
     case OpCatch:
 	return True;
     default:
@@ -3169,6 +3163,7 @@ char *OpNames[] = {
     "Array",
     "ArrayRef",
     "ArrayRefStore",
+    "VarActual",
     "Call",
     "TailCall",
     "ExceptionCall",
@@ -3283,7 +3278,6 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
     case OpBranchTrue:
     case OpCase:
     case OpDefault:
-    case OpLeaveDone:
 	realBranch = True;
     branch:
 	if (branch)
@@ -3314,8 +3308,24 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	FilePrintf (FileStdout, " argc %d", inst->raise.argc);
 	break;
     case OpTwixt:
-	FilePrintf (FileStdout, "enter %d leave %d",
-		    inst->twixt.enter, inst->twixt.leave);
+	if (branch)
+	{
+	    j = i + inst->twixt.enter;
+	    if (0 <= j && j < maxbranch)
+		FilePrintf (FileStdout, "enter L%d", branch[j]);
+	    else
+		FilePrintf (FileStdout, "Broken enter %d", inst->branch.offset);
+	    j = i + inst->twixt.leave;
+	    if (0 <= j && j < maxbranch)
+		FilePrintf (FileStdout, " leave L%d", branch[j]);
+	    else
+		FilePrintf (FileStdout, " Broken leave %d", inst->branch.offset);
+	}
+	else
+	{
+	    FilePrintf (FileStdout, "enter %d leave %d",
+			inst->twixt.enter, inst->twixt.leave);
+	}
 	break;
     case OpFarJump:
 	FilePrintf (FileStdout, "twixt %d catch %d frame %d inst %d mod %s\n",
@@ -3433,6 +3443,17 @@ ObjDump (ObjPtr obj, int indent)
 	if (CompileIsBranch (inst))
 	{
 	    j = i + inst->branch.offset;
+	    if (0 <= j && j < obj->used)
+		if (!branch[j])
+		    branch[j] = ++b;
+	}
+	if (inst->base.opCode == OpTwixt)
+	{
+	    j = i + inst->twixt.enter;
+	    if (0 <= j && j < obj->used)
+		if (!branch[j])
+		    branch[j] = ++b;
+	    j = i + inst->twixt.leave;
 	    if (0 <= j && j < obj->used)
 		if (!branch[j])
 		    branch[j] = ++b;

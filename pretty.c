@@ -142,7 +142,15 @@ PrettyParameters (Value f, Expr *e, Bool nest)
 {
     while (e) 
     {
-	PrettyExpr (f, e->tree.left, -1, 0, nest);
+	if (e->tree.left->base.tag == DOTS)
+	{
+	    PrettyExpr (f, e->tree.left->tree.left, -1, 0, nest);
+	    FilePuts (f, "...");
+	}
+	else
+	{
+	    PrettyExpr (f, e->tree.left, -1, 0, nest);
+	}
 	e = e->tree.right;
 	if (e)
 	    FilePuts (f, ", ");
@@ -688,16 +696,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	PrettyExpr (f, e->tree.left->tree.right, -1, level, nest);
 	FilePuts (f, ")\n");
 	if (nest)
-	{
 	    PrettyStatement (f, e->tree.right->tree.left, level+1, level, nest);
-	    if (e->tree.right->tree.right)
-	    {
-		PrettyProf (f, 0);
-		PrettyIndent (f, level);
-		FilePuts (f, "else\n");
-		PrettyStatement (f, e->tree.right->tree.right, level+1, level, nest);
-	    }
-	}
 	break;
     case CATCH:
 	PrettyIndent (f, level);

@@ -761,6 +761,7 @@ Value	do_reference (Value);
 Value	do_string_to_real (Value);
 Value	do_abs (Value);
 Value	do_floor (Value);
+Value	do_func_args (Value);
 Value	do_ceil (Value);
 Value	do_exponent (Value);
 Value	do_mantissa (Value);

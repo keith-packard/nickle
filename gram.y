@@ -84,6 +84,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <bool>	    opt_dots
 
 %type  <expr>	    opt_expr expr opt_exprs exprs simpleexpr primary
+%type  <expr>	    opt_actuals actuals
 %type  <expr>	    comma_expr
 %type  <ints>	    assignop
 %type  <value>	    opt_integer integer
@@ -559,11 +560,6 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 		    { $$ = NewExprTree (TWIXT, 
 					NewExprTree (TWIXT, $5, $7),
 					NewExprTree (TWIXT, $9, 0));
-		    }
-		| TWIXT ignorenl namespace_start OP opt_expr SEMI opt_expr CP statement ELSE statement namespace_end attendnl
-		    { $$ = NewExprTree (TWIXT, 
-					NewExprTree (TWIXT, $5, $7),
-					NewExprTree (TWIXT, $9, $11));
 		    }
 		;
 catches		:   catch catches
@@ -1047,6 +1043,18 @@ exprs		: simpleexpr COMMA exprs
 		| simpleexpr
 		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
+opt_actuals	: actuals
+		|
+		    { $$ = 0; }
+		;
+actuals		: simpleexpr COMMA actuals
+		    { $$ = NewExprTree (COMMA, $1, $3); }
+		| simpleexpr opt_dots
+		    {	
+			ExprPtr	arg = $2 ? NewExprTree (DOTS, $1, 0) : $1;
+			$$ = NewExprTree (COMMA, arg, 0); 
+		    }
+		;
 /*
 * Fundemental expression production
 */
@@ -1235,11 +1243,13 @@ primary		: fullname
 		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_NUM, Zero)); }
 		| OP expr CP
 		    { $$ = $2; }
+		| OP block CP
+		    { $$ = $2; }
 		| primary STAROS dims CS
 		    { $$ = NewExprTree (OS, NewExprTree (STAR, $1, (Expr *) 0), $3); }
 		| primary OS dims CS
 		    { $$ = NewExprTree(OS, $1, $3); }
-		| primary OP opt_exprs CP				%prec CALL
+		| primary OP opt_actuals CP				%prec CALL
 		    { $$ = NewExprTree (OP, $1, $3); }
 		| primary DOT NAME
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0, False)); }

@@ -699,7 +699,7 @@ atov (char *s, int base)
     result = NewInt (0);
     for (;;) {
 	c = *s++;
-	if ('0' <= c  && c < '9')
+	if ('0' <= c  && c <= '9')
 	    i = c - '0';
 	else if ('a' <= c && c <= 'z')
 	    i = c - 'a' + 10;

@@ -77,7 +77,7 @@ Value
 Popcount (Value av)
 {
     ENTER ();
-    Natural	*i, *count;
+    Natural	*i;
     Value	ret;
     digit	*d;
     int		n;
@@ -112,10 +112,9 @@ Popcount (Value av)
 	}
 	else
 	{
-	    count = zero_natural;
+	    ret = Zero;
 	    while (n--)
-		count = NaturalPlus (count, NewNatural (count_bits (*d++)));
-	    ret = Reduce (NewInteger (Positive, count));
+		ret = Plus (ret, NewInt (count_bits (*d++)));
 	}
 	break;
     default:

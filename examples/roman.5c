@@ -1,0 +1,44 @@
+public string function roman (integer i)
+{
+    if (i < 0)
+	return "-" + roman (-i);
+
+    typedef struct {
+	string	ones, five, tens;
+	integer	base;
+    } digit;
+
+    digit[*]	digits = (digit)[*] {
+	(digit) { ones = "C", five = "D", tens = "M", base = 100 },
+	(digit) { ones = "X", five = "L", tens = "C", base = 10 },
+	(digit) { ones = "I", five = "V", tens = "X", base = 1 }
+    };
+
+    string function place (integer i, digit dig)
+    {
+	string function lots (integer i, string s)
+	{
+	    if (i)
+		return s + lots (i-1,s);
+	    return "";
+	}
+	
+	if (i < 4)
+	    return lots (i, dig.ones);
+	if (i == 4)
+	    return dig.ones + dig.five;
+	if (i < 9)
+	    return dig.five + lots (i-5, dig.ones);
+	if (i == 9)
+	    return dig.ones + dig.tens;
+	return lots (i // 10, dig.tens) + place (i % 10, dig);
+    }
+
+    integer	d;
+
+    for (d = 0; d < dim(digits); d++)
+	if (i >= digits[d].base)
+	    return (place (i // digits[d].base, digits[d]) + 
+		    roman(i % digits[d].base));
+    return "";
+}

@@ -10,6 +10,10 @@
 
 # define sign(i)	((i) < 0 ? Negative : Positive)
 
+#define MIN_SMALL   -100
+#define MAX_SMALL   100
+BoxPtr	SmallInts;
+
 Value	One, Zero;
 
 static Value
@@ -358,9 +362,23 @@ NewInt (int value)
     ENTER ();
     Value	ret;
 
-    ret = ALLOCATE (&IntType.data, sizeof (Int));
-    ret->value.tag = type_int;
-    ret->ints.value = value;
+    if (MIN_SMALL <= value && value <= MAX_SMALL)
+    {
+	ret = BoxValueGet (SmallInts, value - MIN_SMALL);
+	if (!ret)
+	{
+	    ret = ALLOCATE (&IntType.data, sizeof (Int));
+	    ret->value.tag = type_int;
+	    ret->ints.value = value;
+	    BoxValueSet (SmallInts, value - MIN_SMALL, ret);
+	}
+    }
+    else
+    {
+	ret = ALLOCATE (&IntType.data, sizeof (Int));
+	ret->value.tag = type_int;
+	ret->ints.value = value;
+    }
     RETURN (ret);
 }
 
@@ -368,6 +386,8 @@ int
 IntInit (void)
 {
     ENTER ();
+    SmallInts = NewBox (True, MAX_SMALL - MIN_SMALL + 2);
+    MemAddRoot (SmallInts);
     Zero = NewInt (0);
     MemAddRoot (Zero);
     One = NewInt (1);

@@ -575,6 +575,22 @@ TypeBinaryRefOff (Types *ref, Types *off)
 }
 		
 /*
+ * Return reference type resulting from subtraction
+ */
+static Types *
+TypeBinaryRefMinus (Types *aref, Types *bref)
+{
+    if (TypePoly (aref))
+	aref = typesRefPoly;
+    if (TypePoly (bref))
+	bref = typesRefPoly;
+    if (aref->base.tag == types_ref && bref->base.tag == types_ref)
+	if (TypeCompatible (aref->ref.ref, bref->ref.ref, False))
+	    return typesPrim[type_integer];
+    return 0;
+}
+		
+/*
  * Return type referenced by ref
  */
 static Types *
@@ -783,6 +799,8 @@ TypeCombineBinary (Types *left, int tag, Types *right)
     case MINUS:
     case ASSIGNMINUS:
 	if ((ret = TypeBinaryRefOff (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if (tag == MINUS && (ret = TypeBinaryRefMinus (left, right)))
 	    rets = TypeAdd (rets, ret, &nret, &sret);
 	if (tag == MINUS || tag == PLUS)
 	{

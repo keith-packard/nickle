@@ -425,6 +425,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			    if ($2)
 			    {
 				symbol->symbol.forward = False;
+				ParseCanonType (ret);
 				decl->init = NewExprCode (NewFuncCode (ret,
 								       argType,
 								       $2),
@@ -1220,7 +1221,10 @@ primary		: fullname
 		| primary ARROW NAME
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3, 0, False)); }
 		| opt_type FUNC namespace_start args block namespace_end
-		    { $$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); }
+		    { 
+			ParseCanonType ($1);
+			$$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); 
+		    }
 		;
 opt_integer	: integer
 		|

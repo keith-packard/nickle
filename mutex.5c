@@ -28,6 +28,9 @@ public typedef struct {
 public typedef *mutex_struct mutex;
 
 namespace Mutex {
+
+    public typedef *mutex_struct mutex;
+
     public exception deadlock (mutex m, thread self);
     public exception notowned (mutex m, thread self, mutex_owner owner);
 

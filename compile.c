@@ -1025,6 +1025,7 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
     int	    n;
     
     dims = AllocateTemp (ndim * sizeof (int));
+    memset (dims, '\0', ndim * sizeof (int));
     if (!CompileSizeDimensions (inits, dims, ndim))
     {
 	CompileError (obj, stat, "Implicit dimensioned array with variable initializers");

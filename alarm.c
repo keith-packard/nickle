@@ -33,7 +33,7 @@ SleepQMark (void *object)
     MemReference (sleep->closure);
 }
 
-DataType SleepQType = { SleepQMark, 0 };
+DataType SleepQType = { SleepQMark, 0, "SleepQType" };
 
 unsigned long
 TimeInMs (void)

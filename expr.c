@@ -76,11 +76,11 @@ ExprDeclMark (void *object)
 	ed->expr.ticks = ed->expr.sub_ticks = 0;
 }
 
-DataType    ExprTreeType = { ExprTreeMark, 0 };
-DataType    ExprConstType = { ExprConstMark, 0 };
-DataType    ExprAtomType = { ExprAtomMark, 0 };
-DataType    ExprCodeType = { ExprCodeMark, 0 };
-DataType    ExprDeclType = { ExprDeclMark, 0 };
+DataType    ExprTreeType = { ExprTreeMark, 0, "ExprTreeType" };
+DataType    ExprConstType = { ExprConstMark, 0, "ExprConstType" };
+DataType    ExprAtomType = { ExprAtomMark, 0, "ExprAtomType" };
+DataType    ExprCodeType = { ExprCodeMark, 0, "ExprCodeType" };
+DataType    ExprDeclType = { ExprDeclMark, 0, "ExprDeclType" };
 
 static void
 ExprBaseInit (Expr *e, int tag)

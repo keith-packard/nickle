@@ -157,7 +157,7 @@ RefMark (void *object)
 }
 
 ValueRep RefRep = { 
-    { RefMark, 0 },	/* data */
+    { RefMark, 0, "RefRep" },	/* data */
     rep_ref,		/* tag */
     {			/* binary */
 	RefPlus,

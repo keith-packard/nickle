@@ -840,6 +840,8 @@ Value	do_String_new (Value);
 Value	do_Primitive_random (Value);
 Value	do_Primitive_srandom (Value);
 Value	do_Debug_dump (Value);
+Value	do_Debug_dump_active (void);
+Value	do_Debug_mem_collect (void);
 Value	do_Command_delete (Value);
 Value	do_Command_lex_file (Value);
 Value	do_Command_lex_library (Value);

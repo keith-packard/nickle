@@ -155,7 +155,7 @@ StringCharSize (int c)
 }
 
 ValueRep   StringRep = {
-    { 0, 0 },		/* base */
+    { 0, 0, "StringRep" },		/* base */
     rep_string,	/* tag */
     {			/* binary */
 	StringPlus,

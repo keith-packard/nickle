@@ -275,7 +275,7 @@ FilePrint (Value f, Value av, char format, int base, int width, int prec, unsign
 }
 
 ValueRep FileRep = {
-    { FileMark, FileFree },
+    { FileMark, FileFree, "FileRep" },
     rep_file, 
     {
 	0, 0, 0, 0, 0, 0,
@@ -343,7 +343,7 @@ FileChainMark (void *object)
     MemReference (chain->next);
 }
 
-DataType    FileChainType = { FileChainMark, 0 };
+DataType    FileChainType = { FileChainMark, 0, "FileChainType" };
 
 static FileChainPtr
 NewFileChain (FileChainPtr next, int size)

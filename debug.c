@@ -200,3 +200,20 @@ do_Debug_dump (Value f)
     ObjDump (code->func.body.obj, 1);
     RETURN (Void);
 }
+
+Value
+do_Debug_mem_collect (void)
+{
+    MemCollect ();
+    return Void;
+}
+
+#ifdef MEM_TRACE
+Value
+do_Debug_dump_active (void)
+{
+    MemCollect ();
+    MemActiveDump ();
+    return Void;
+}
+#endif

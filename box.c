@@ -23,7 +23,7 @@ BoxMark (void *object)
     }
 }
 
-DataType BoxType = { BoxMark, 0 };
+DataType BoxType = { BoxMark, 0, "BoxType" };
 
 BoxPtr
 NewBox (Bool constant, Bool array, int nvalues)
@@ -86,7 +86,7 @@ static void MarkBoxTypes (void *object)
 	MemReference (BoxTypesValue(bt,i));
 }
 
-DataType    BoxTypesType = { MarkBoxTypes, 0 };
+DataType    BoxTypesType = { MarkBoxTypes, 0, "BoxTypesType" };
 
 #define BT_INCR	4
 

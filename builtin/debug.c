@@ -19,6 +19,11 @@
 
 NamespacePtr DebugNamespace;
 
+#ifdef MEM_TRACE
+Value
+do_Debug_dump_active (void);
+#endif
+    
 void
 import_Debug_namespace()
 {
@@ -29,6 +34,10 @@ import_Debug_namespace()
         { do_Debug_down, "down", "b", "" },
         { do_Debug_up, "up", "b", "" },
 	{ do_Debug_help, "help", "v", ""},
+	{ do_Debug_mem_collect, "mem_collect", "v", "" },
+#ifdef MEM_TRACE
+	{ do_Debug_dump_active, "dump_active", "v", "" },
+#endif
         { 0 }
     };
 

@@ -385,7 +385,7 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
 }
 
 ValueRep IntRep = {
-    { 0, 0 },	    /* data */
+    { 0, 0, "IntRep" },	    /* data */
     rep_int,	    /* tag */
     {		    /* binary */
 	IntPlus,

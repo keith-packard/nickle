@@ -467,7 +467,7 @@ typedef struct _rational {
 } Rational;
 
 typedef struct _fpart {
-    DataType	data;
+    DataType	*data;
     Natural	*mag;
     Sign	sign;
 } Fpart;
@@ -554,7 +554,7 @@ typedef struct _structElement {
 } StructElement;
 
 typedef struct _structType {
-    DataType	data;
+    DataType	*data;
     int		nelements;
 } StructType;
 
@@ -748,7 +748,7 @@ extern int	AddBoxType (BoxTypesPtr *btp, TypePtr t);
 extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr type);
 			     
 typedef struct {
-    DataType	data;
+    DataType	*data;
     int		size;
 } ValueCache, *ValueCachePtr;
 

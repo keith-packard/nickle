@@ -106,7 +106,7 @@ StructEqual (Value a, Value b, int expandOk)
 }
 
 ValueRep    StructRep = { 
-    { StructMark, 0 },	    /* base */
+    { StructMark, 0, "StructRep" },	    /* base */
     rep_struct,	    /* tag */
     {			    /* binary */
 	0,
@@ -161,7 +161,7 @@ StructTypeMark (void *object)
 	MemReference (se[i].type);
 }
 
-DataType StructTypeType = { StructTypeMark, 0 };
+DataType StructTypeType = { StructTypeMark, 0, "StructTypeType" };
 
 StructType *
 NewStructType (int nelements)

@@ -1014,7 +1014,7 @@ NaturalSprint (char *result, Natural *a, int base, int *width)
     return r;
 }
 
-DataType NaturalType = { 0, 0 };
+DataType NaturalType = { 0, 0, "NaturalType" };
 
 Natural *
 AllocNatural (int size)
@@ -1022,7 +1022,7 @@ AllocNatural (int size)
     ENTER();
     Natural *result;
 
-    result = ALLOCATE (0, sizeof (Natural) + size * sizeof (digit));
+    result = ALLOCATE (&NaturalType, sizeof (Natural) + size * sizeof (digit));
     result->length = size;
     RETURN (result);
 }

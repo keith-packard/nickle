@@ -13,9 +13,9 @@
 
 static void	stackMark (void *);
 
-static DataType stackType = { stackMark, 0 };
+static DataType stackType = { stackMark, 0, "stackType" };
 
-static DataType stackChunkType = { 0, 0 };
+static DataType stackChunkType = { 0, 0, "stackChunkType" };
 
 static void
 addChunk (StackObject *stack)

@@ -24,7 +24,7 @@ FrameMark (void *object)
     } while (MemReferenceNoRecurse (frame) == 0);
 }
 
-DataType FrameType = { FrameMark, 0 };
+DataType FrameType = { FrameMark, 0, "FrameType" };
 
 FramePtr
 NewFrame (Value		function,

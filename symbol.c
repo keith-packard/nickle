@@ -46,10 +46,10 @@ SymbolNamespaceMark (void *object)
     MemReference (sn->namespace);
 }
 
-DataType    SymbolTypeType = { SymbolTypeMark, 0 };
-DataType    SymbolGlobalType = { SymbolGlobalMark, 0 };
-DataType    SymbolLocalType = { SymbolLocalMark, 0 };
-DataType    SymbolNamespaceType = { SymbolNamespaceMark, 0 };
+DataType    SymbolTypeType = { SymbolTypeMark, 0, "SymbolTypeType" };
+DataType    SymbolGlobalType = { SymbolGlobalMark, 0, "SymbolGlobalType" };
+DataType    SymbolLocalType = { SymbolLocalMark, 0, "SymbolLocalType" };
+DataType    SymbolNamespaceType = { SymbolNamespaceMark, 0, "SymbolNamespaceType" };
 
 SymbolPtr
 NewSymbolType (Atom name, Type *type)

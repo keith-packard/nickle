@@ -391,7 +391,7 @@ IntegerMark (void *object)
 }
 
 ValueRep    IntegerRep = { 
-    { IntegerMark, 0 },	    /* base */
+    { IntegerMark, 0, "IntegerRep" },	    /* base */
     rep_integer,	    /* tag */
     {			    /* binary */
 	IntegerPlus,

@@ -24,7 +24,7 @@ ReferenceMark (void *object)
     MemReference (*reference->object);
 }
 
-static DataType referenceType = { ReferenceMark, 0 };
+static DataType referenceType = { ReferenceMark, 0, "referenceType" };
 
 ReferencePtr
 NewReference (void **object)

@@ -699,7 +699,7 @@ UnitPrint (Value f, Value av, char format, int base, int width, int prec, unsign
 }
 
 ValueRep UnitRep = {
-    { 0, 0 },	    /* data */
+    { 0, 0, "UnitRep" },	    /* data */
     rep_void,	    /* tag */
     { 
 	0,	    /* Plus */
@@ -742,7 +742,7 @@ BoolPrint (Value f, Value av, char format, int base, int width, int prec, unsign
 }
 
 ValueRep BoolRep = {
-    { 0, 0 },	    /* data */
+    { 0, 0, "BoolRep" },	    /* data */
     rep_bool,	    /* tag */
     { 
 	0,	    /* Plus */
@@ -783,7 +783,7 @@ ValueCacheMark (void *object)
     memset (ValueCacheValues (vc), '\0', sizeof (Value) * vc->size);
 }
 
-static DataType ValueCacheType = { ValueCacheMark, 0 };
+static DataType ValueCacheType = { ValueCacheMark, 0, "ValueCacheType" };
 
 ValueCachePtr 
 NewValueCache (int size)

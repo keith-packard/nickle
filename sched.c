@@ -430,7 +430,7 @@ ThreadPrint (Value f, Value av, char format, int base, int width, int prec, unsi
 }
 
 ValueRep    ThreadRep = {
-    { ThreadMark, 0 },	/* base */
+    { ThreadMark, 0, "ThreadRep" },	/* base */
     rep_thread,	/* tag */
     {			/* binary */
 	0,
@@ -498,7 +498,7 @@ ThreadInit (void)
     EXIT ();
 }
 
-DataType FarJumpType = { 0, 0 };
+DataType FarJumpType = { 0, 0, "FarJumpType" };
 
 FarJumpPtr
 NewFarJump (int inst, int twixt, int catch, int frame)
@@ -605,7 +605,7 @@ ContinuationPrint (Value f, Value av, char format, int base, int width, int prec
 }
 
 ValueRep    ContinuationRep = {
-    { ContinuationMark, 0 },	/* base */
+    { ContinuationMark, 0, "ContinuationRep" },	/* base */
     rep_continuation,		/* tag */
     {				/* binary */
 	0,
@@ -727,7 +727,7 @@ MarkJump (void *object)
     MemReference (jump->ret);
 }
 
-DataType    JumpType = { MarkJump, 0 };
+DataType    JumpType = { MarkJump, 0, "JumpType" };
 
 JumpPtr
 NewJump (TwixtPtr leave, TwixtPtr enter, TwixtPtr parent,
@@ -916,7 +916,7 @@ CatchMark (void *object)
     MemReference (catch->exception);
 }
 
-DataType    CatchType = { CatchMark, 0 };
+DataType    CatchType = { CatchMark, 0, "CatchType" };
 
 CatchPtr
 NewCatch (Value thread, SymbolPtr exception)
@@ -940,7 +940,7 @@ TwixtMark (void *object)
     MemReference (twixt->leave);
 }
 
-DataType    TwixtType = { TwixtMark, 0 };
+DataType    TwixtType = { TwixtMark, 0, "TwixtType" };
 
 TwixtPtr
 NewTwixt (ContinuationPtr	continuation,

@@ -1437,7 +1437,7 @@ DeclListMark (void *object)
     MemReference (dl->init);
 }
 
-DataType DeclListType = { DeclListMark, 0 };
+DataType DeclListType = { DeclListMark, 0, "DeclListType" };
 
 DeclListPtr
 NewDeclList (Atom name, ExprPtr init, DeclListPtr next)
@@ -1463,7 +1463,7 @@ MemListMark (void *object)
     MemReference (ml->atoms);
 }
 
-DataType MemListType = { MemListMark, 0 };
+DataType MemListType = { MemListMark, 0, "MemListType" };
 
 MemListPtr
 NewMemList (AtomListPtr atoms, Type *type, MemListPtr next)

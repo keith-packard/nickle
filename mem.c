@@ -166,6 +166,60 @@ MemAllocateHuge (DataType *type, int size)
     return huge->data;
 }
 
+
+#ifdef MEM_TRACE
+DataType	*allDataTypes;
+
+void
+MemAddType (DataType *type)
+{
+    DataType	**prev;
+
+    for (prev = &allDataTypes; *prev; prev =&(*prev)->next)
+	if (strcmp ((*prev)->name, type->name) >= 0)
+	    break;
+    type->next = *prev;
+    type->added = 1;
+    *prev = type;
+}
+
+static void
+MemActiveReference (DataType *type, int size)
+{
+    type->active++;
+    type->active_bytes += size;
+}
+
+static void
+MemActiveReset (void)
+{
+    DataType	*type;
+
+    for (type = allDataTypes; type; type = type->next)
+    {
+	type->active = 0;
+	type->active_bytes = 0;
+    }
+}
+
+void
+MemActiveDump (void)
+{
+    DataType	*type;
+
+    debug ("Active memory dump\n");
+    debug ("%20.20s: %9s %12s %9s %12s\n",
+	   "name", "total", "bytes", "active", "bytes");
+    for (type = allDataTypes; type; type = type->next)
+    {
+	debug ("%20.20s: %9d %12lld %9d %12lld\n",
+	       type->name, type->total, type->total_bytes,
+	       type->active, type->active_bytes);
+    }
+}
+
+#endif
+
 /*
  * address->(block,index) translation scheme.  three routines:
  *
@@ -272,6 +326,12 @@ setReference (void *address)
 	    } else
 		old = b->ref;
 	    b->ref = 1;
+#ifdef MEM_TRACE
+	    if (!old)
+		MemActiveReference (TYPE(address),
+				    map ? HUNKSIZE(b->sizeIndex) :
+				    b->datasize);
+#endif
 	    return old;
 	}
     }
@@ -513,6 +573,7 @@ MemAddRoot (void *object)
     Roots[RootCount++] = object;
 }
 
+
 void
 MemCollect (void)
 {
@@ -529,6 +590,9 @@ MemCollect (void)
     totalBytesUsed = 0;
     totalObjectsUsed = 0;
     sinceGarbage = 0;
+#ifdef MEM_TRACE
+    MemActiveReset ();
+#endif
     clearRef ();
     tossFree ();
 #ifdef DEBUG

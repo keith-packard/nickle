@@ -86,7 +86,7 @@ UnionEqual (Value av, Value bv, int expandOk)
 }
 
 ValueRep    UnionRep = { 
-    { UnionMark, 0 },	    /* base */
+    { UnionMark, 0, "UnionRep" },	    /* base */
     rep_union,		    /* tag */
     {			    /* binary */
 	0,

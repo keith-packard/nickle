@@ -110,7 +110,7 @@ ArrayMark (void *object)
 }
 
 ValueRep    ArrayRep = { 
-    { ArrayMark, 0 },
+    { ArrayMark, 0, "ArrayRep" },
     rep_array,
     {
 	0,

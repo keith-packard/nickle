@@ -477,7 +477,7 @@ static void PartialMark (void *object)
     MemReference (p->down);
 }
 
-DataType PartialType = { PartialMark, 0 };
+DataType PartialType = { PartialMark, 0, "PartialType" };
 
 static PartialPtr
 NewPartial (Natural *partial)
@@ -511,7 +511,7 @@ static void FactorMark (void *object)
     MemReference (f->partials);
 }
 
-DataType    FactorType = { FactorMark, 0 };
+DataType    FactorType = { FactorMark, 0, "FactorType" };
 
 static FactorPtr
 NewFactor (Natural *prime, int power, FactorPtr next)
@@ -1105,7 +1105,7 @@ RationalMark (void *object)
 }
 
 ValueRep    RationalRep = { 
-    { RationalMark, 0 },    /* base */
+    { RationalMark, 0, "RationalRep" },    /* base */
     rep_rational,	    /* tag */
     {			    /* binary */
 	RationalPlus,

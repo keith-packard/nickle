@@ -68,7 +68,7 @@ ObjMark (void *object)
 	MemReference (ObjStat (obj, i)->stat);
 }
 
-DataType    ObjType = { ObjMark, 0 };
+DataType    ObjType = { ObjMark, 0, "ObjType" };
 
 static ObjPtr
 NewObj (int size, int size_stat)
@@ -896,7 +896,7 @@ MarkNonLocal (void *object)
     MemReference (nl->prev);
 }
 
-DataType    NonLocalType = { MarkNonLocal, 0 };
+DataType    NonLocalType = { MarkNonLocal, 0, "NonLocalType" };
 
 static NonLocal *
 NewNonLocal (NonLocal *prev, NonLocalKind kind, int target)

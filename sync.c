@@ -61,7 +61,7 @@ SemaphorePrint (Value f, Value av, char format, int base, int width, int prec, u
 }
 
 ValueRep   SemaphoreRep = {
-    { 0, 0 },   /* base */
+    { 0, 0, "SemaphoreRep" },   /* base */
     rep_semaphore,	    /* tag */
     {			    /* binary */
 	0,

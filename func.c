@@ -22,7 +22,7 @@ static void MarkFuncCode (void *object)
     MemReference (fc->statics);
 }
 
-DataType    FuncCodeType = { MarkFuncCode, 0 };
+DataType    FuncCodeType = { MarkFuncCode, 0, "FuncCodeType" };
 
 static Bool
 HasVarargs (ArgType *args)
@@ -73,7 +73,7 @@ static void MarkBuiltinCode (void *object)
     MemReference (bc->base.args);
 }
 
-DataType BuiltinCodeType = { MarkBuiltinCode, 0 };
+DataType BuiltinCodeType = { MarkBuiltinCode, 0, "BuiltinCodeType" };
 
 CodePtr
 NewBuiltinCode (Type *type, ArgType *args, int argc, 
@@ -116,7 +116,7 @@ FuncPrint (Value f, Value av, char format, int base, int width, int prec, unsign
 }
 
 ValueRep   FuncRep = {
-    { FuncMark, 0 },	/* base */
+    { FuncMark, 0, "FuncRep" },	/* base */
     rep_func,		/* tag */
     {			/* binary */
 	0,

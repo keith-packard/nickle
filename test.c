@@ -6,7 +6,7 @@ typedef struct _Stuff {
     int		v;
 } Stuff;
 
-static DataType stuffType = { 0, 0 };
+static DataType stuffType = { 0, 0, "stuffType" };
 
 main ()
 {

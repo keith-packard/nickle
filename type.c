@@ -79,15 +79,15 @@ TypeTypesMark (void *object)
     MemReference (type->elt);
 }
 
-DataType    TypePrimType = { 0, 0 };
-DataType    TypeNameType = { TypeNameMark, 0 };
-DataType    TypeRefType = { TypeRefMark, 0 };
-DataType    ArgTypeType = { ArgTypeMark, 0 };
-DataType    TypeFuncType = { TypeFuncMark, 0 };
-DataType    TypeArrayType = { TypeArrayMark, 0 };
-DataType    TypeStructType = { TypeStructMark, 0 };
-DataType    TypeUnitType = { 0, 0 };
-DataType    TypeTypesType = { TypeTypesMark, 0 };
+DataType    TypePrimType = { 0, 0, "TypePrimType" };
+DataType    TypeNameType = { TypeNameMark, 0, "TypeNameType" };
+DataType    TypeRefType = { TypeRefMark, 0, "TypeRefType" };
+DataType    ArgTypeType = { ArgTypeMark, 0, "ArgTypeType" };
+DataType    TypeFuncType = { TypeFuncMark, 0, "TypeFuncType" };
+DataType    TypeArrayType = { TypeArrayMark, 0, "TypeArrayType" };
+DataType    TypeStructType = { TypeStructMark, 0, "TypeStructType" };
+DataType    TypeUnitType = { 0, 0, "TypeUnitType" };
+DataType    TypeTypesType = { TypeTypesMark, 0, "TypeTypesType" };
 
 static Type *
 NewTypePrim (Rep prim)
@@ -633,7 +633,7 @@ TypeEltMark (void *object)
     MemReference (elt->type);
 }
 
-DataType    TypeEltType = { TypeEltMark, 0 };
+DataType    TypeEltType = { TypeEltMark, 0, "TypeEltType" };
 
 static TypeElt *
 NewTypeElt (Type *type, TypeElt *next)

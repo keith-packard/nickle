@@ -18,7 +18,7 @@ NamespaceMark (void *object)
     MemReference (namespace->names);
 }
 
-DataType namespaceType = { NamespaceMark, 0 };
+DataType namespaceType = { NamespaceMark, 0, "namespaceType" };
 
 NamespacePtr
 NewNamespace (NamespacePtr previous)
@@ -42,7 +42,7 @@ NamelistMark (void *object)
     MemReference (namelist->symbol);
 }
 
-DataType namelistType = { NamelistMark, 0 };
+DataType namelistType = { NamelistMark, 0, "namelistType" };
 
 static NamelistPtr
 NewNamelist (NamelistPtr next, SymbolPtr symbol, Publish publish)
@@ -176,7 +176,7 @@ CommandMark (void *object)
     MemReference (command->func);
 }
 
-DataType commandType = { CommandMark, 0 };
+DataType commandType = { CommandMark, 0, "commandType" };
 
 CommandPtr
 NewCommand (CommandPtr previous, Atom name, Value func, Bool names)

@@ -8,10 +8,23 @@
 
 #ifndef _MEM_H_
 #define _MEM_H_
-typedef struct {
+typedef struct _DataType DataType;
+
+#define MEM_TRACE
+
+struct _DataType {
     void    (*Mark) (void *);
     void    (*Free) (void *);
-} DataType;
+    char    *name;
+#ifdef MEM_TRACE
+    int	    added;
+    int	    total;
+    int	    active;
+    long long	    total_bytes;
+    long long	    active_bytes;
+    DataType	*next;
+#endif
+};
 
 struct bfree {
 	DataType	*type;
@@ -44,6 +57,10 @@ extern DataType	*MemType (void *object);
 extern void	MemAddRoot (void *object);
 extern void	MemCollect (void);
 extern void	MemCheckPointer (void *base, void *address, int size);
+#ifdef MEM_TRACE
+extern void	MemAddType (DataType *type);
+extern void	MemActiveDump (void);
+#endif
 
 extern void	debug (char *, ...);
 extern void	panic (char *, ...);
@@ -83,6 +100,14 @@ MemAllocate (DataType *type, int size)
     
 #if NUMSIZES > 16
     bad NUMSIZES
+#endif
+#ifdef MEM_TRACE
+    if (!type->added)
+	MemAddType (type);
+    type->total++;
+    type->total_bytes += size;
+    type->active++;
+    type->active_bytes += size;
 #endif
     if (size > HUNKSIZE(7))
 	sizeIndex += 8;

@@ -37,7 +37,7 @@ FpartMark (void *object)
     MemReference (f->mag);
 }
 
-DataType    FpartType = { FpartMark, 0 };
+DataType    FpartType = { FpartMark, 0, "FpartType" };
 
 static Fpart *
 NewFpart (Sign sign, Natural *mag)
@@ -959,7 +959,7 @@ FloatMark (void *object)
 }
 
 ValueRep   FloatRep = {
-    { FloatMark, 0 },	/* base */
+    { FloatMark, 0, "FloatRep" },	/* base */
     rep_float,		/* tag */
     {			/* binary */
 	FloatPlus,

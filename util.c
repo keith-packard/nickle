@@ -27,12 +27,14 @@ double	x0, y0, x1, y1;
 }
 #endif
 
+DataType    TempType = { 0, 0, "TempType" };
+
 void *
 AllocateTemp (int size)
 {
     DataType	**b;
     
-    b = ALLOCATE (0, sizeof (DataType *) + size);
+    b = ALLOCATE (&TempType, sizeof (DataType *) + size);
     return b + 1;
 }
 

@@ -42,7 +42,7 @@ static void lexInputMark (void *object)
 }
 
 static DataType lexInputType = {
-    lexInputMark, 0
+    lexInputMark, 0, "lexInputType"
 };
 
 static void

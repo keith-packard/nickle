@@ -2355,9 +2355,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case ASSIGNPOW:
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	SetPush (obj);
-	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
-	SetPush (obj);
 	obj = CompileLvalue (obj, expr->tree.right->tree.left, stat, code, False, False, False);
+	SetPush (obj);
+	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
 	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
 					     expr->base.tag,
 					     expr->tree.right->tree.right->base.type);

@@ -585,6 +585,7 @@ typedef struct _foreign {
     BaseValue	    base;
     const char	    *id;
     void	    *data;
+    void	    (*mark)(void *);
     void	    (*free)(void *);
 } Foreign;
 
@@ -966,7 +967,7 @@ Value	NewRationalFloat (Rational *r, unsigned prec);
 Value	NewValueFloat (Value av, unsigned prec);
 Value	NewDoubleFloat (double d);
 Value	NewContinuation (ContinuationPtr continuation, InstPtr pc);
-Value	NewForeign (const char *id, void *data, void (*free)(void *data));
+Value	NewForeign (const char *id, void *data, void (*mark)(void *data), void (*free)(void *data));
 
 unsigned    FpartLength (Fpart *a);
 

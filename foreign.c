@@ -32,6 +32,10 @@ ForeignHash (Value av)
 static void
 ForeignMark (void *object)
 {
+    Foreign *foreign = object;
+
+    if (foreign->mark)
+	(*foreign->mark) (foreign->data);
 }
 
 static int
@@ -77,7 +81,7 @@ ForeignInit (void)
 }
 
 Value
-NewForeign (const char *id, void *data, void (*free) (void *data))
+NewForeign (const char *id, void *data, void (*mark) (void *data), void (*free) (void *data))
 {
     ENTER ();
     Value   ret;
@@ -86,5 +90,6 @@ NewForeign (const char *id, void *data, void (*free) (void *data))
     ret->foreign.id = id;
     ret->foreign.data = data;
     ret->foreign.free = free;
+    ret->foreign.mark = mark;
     RETURN (ret);
 }

@@ -105,9 +105,16 @@ extend namespace File {
 
 	    whitespace();
 	    s = "";
-	    while (Ctype::isgraph (c = File::getc(f)) && !File::end(f))
+	    while (!File::end (f)) 
+	    {
+		c = File::getc(f);
+		if (!Ctype::isgraph (c))
+		{
+		    File::ungetc (c, f);
+		    break;
+		}
 		s = s + String::new(c);
-	    File::ungetc (c, f);
+	    }
 	    return s;
 	}
 

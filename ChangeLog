@@ -1,3 +1,14 @@
+2004-12-23  Keith Packard  <keithp@keithp.com>
+
+	* foreign.c: (ForeignMark), (NewForeign):
+	* value.h:
+	Change foreign API to include mark so that foreign objects can
+	use nickle allocator if they like.  Note this is an ABI incompatible
+	change.
+	
+	* scanf.5c:
+	EOF not handled correctly in '%s' scanf formats
+
 2004-12-18  Keith Packard  <keithp@keithp.com>
 
 	* Makefile.am:

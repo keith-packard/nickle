@@ -24,18 +24,35 @@ import_String_namespace()
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_String_length, "length", "i", "s" },
-        { do_String_new, "new", "s", "p" },
+        { do_String_length, "length", "i", "s", "\n"
+	    " int length (string s)\n"
+	    "\n"
+	    " Return the number of characters in 's'.\n" },
+        { do_String_new, "new", "s", "p", "\n"
+	    " string new (int c)\n"
+	    " string new (int[*] a)\n"
+	    "\n"
+	    " With 'c', return a single character string containing it.\n"
+	    " With 'a', return a string constructed from the list of\n"
+	    " characters in 'a'.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_String_index, "index", "i", "ss" },
+        { do_String_index, "index", "i", "ss", "\n"
+	    " int index (string str, string substr)\n"
+	    "\n"
+	    " Return the index of the first location of 'substr'\n"
+	    " within 'str', -1 if not found.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_3 funcs_3[] = {
-        { do_String_substr, "substr", "s", "sii" },
+        { do_String_substr, "substr", "s", "sii", "\n" 
+	    " string substr (string str, int first, int len)\n"
+	    "\n"
+	    " Return a string containing characters in 'str' starting at\n"
+	    " 'first' for 'len' characters.\n" },
         { 0 }
     };
 

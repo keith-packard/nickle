@@ -24,27 +24,63 @@ import_Command_namespace()
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_Command_delete, "delete", "b", "s" },
-        { do_Command_edit, "edit", "v", "A*s" },
-	{ do_Command_display, "display", "v", "p" },
-	{ do_Command_valid_name, "valid_name", "b", "A*s" },
+        { do_Command_delete, "delete", "b", "s", "\n"
+	    " bool delete(string command)\n"
+	    "\n"
+	    " Remove 'command' from the set of valid commands\n" },
+        { do_Command_edit, "edit", "v", "A*s", "\n"
+	    " void edit(string[*] function)\n"
+	    "\n"
+	    " Invoke $EDITOR on 'function', parse the file when done\n" },
+	{ do_Command_display, "display", "v", "p", "\n"
+	    " void display (poly value)\n"
+	    "\n"
+	    " Built-in display primitive for read/eval/print loop" },
+	{ do_Command_valid_name, "valid_name", "b", "A*s", "\n"
+	    " bool valid_name (string[*] name)\n"
+	    "\n"
+	    " Check for a symbol table entry\n" },
         { 0 }
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_Command_new, "new", "v", "sp" },
-        { do_Command_new_names, "new_names", "v", "sp" },
+        { do_Command_new, "new", "v", "sp", "\n"
+	    " void new (string name, poly f)\n"
+	    "\n"
+	    " Create a new command which calls 'f'.\n"
+	    " 'f' will be invoked with an array of values\n" },
+        { do_Command_new_names, "new_names", "v", "sp", "\n"
+	    " void new_names (string name, poly f)\n"
+	    "\n"
+	    " Create a new command which calls 'f' with literal arguments.\n"
+	    " 'f' will be invoked with an array of strings\n" },
         { 0 }
     };
 
     static const struct fbuiltin_4 funcs_4[] = {
-	{ do_Command_lex_input, "lex_input", "b", "fsbb" },
+	{ do_Command_lex_input, "lex_input", "b", "fsbb", "\n"
+	    " bool lex_input (file f, string name, bool after, bool interactive)"
+	    "\n"
+	    " Add 'f' to the list of files to be read by the lexer.\n"
+	    " 'name' will be used when reporting parse errors.\n"
+	    " If 'after', the specified file will be read when all other\n"
+	    " input sources are exhausted.\n"
+	    " If 'interactive', the lexer will display prompts as if\n"
+	    " input was coming from a terminal.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_v funcs_v[] = {
-        { do_Command_undefine, "undefine", "v", ".A*s" },
-        { do_Command_pretty_print, "pretty_print", "v", "f.A*s" },
+        { do_Command_undefine, "undefine", "v", ".A*s", "\n"
+	    " void undefine (string[*] ... name)\n"
+	    "\n"
+	    " removes 'name' from its namespace\n" },
+        { do_Command_pretty_print, "pretty_print", "v", "f.A*s", "\n"
+	    " void pretty_print (file f, string[*] ... name)\n"
+	    "\n"
+	    " Prints the variable and value in a format capable of\n"
+	    " reproducing the value if fed back to the parser\n" },
+	
         { 0 }
     };
 
@@ -148,6 +184,8 @@ do_Command_pretty_print (int argc, Value *args)
 	names = args[i];
 	if (NamespaceLocate (names, &namespace, &symbol, &publish, True))
 	    PrettyPrint (f, publish, symbol);
+	else
+	    PrettyPrint (f, publish_public, 0);
     }
     RETURN (Void);
 }

@@ -19,61 +19,167 @@
 
 NamespacePtr FileNamespace;
 
-struct ebuiltin {
-    char		*name;
-    StandardException	exception;
-    char		*args;
-};
-
-
 void
 import_File_namespace()
 {
     ENTER ();
     static const struct fbuiltin_0 funcs_0[] = {
-        { do_File_string_write, "string_write", "f", "" },
-	{ do_File_mkpipe, "mkpipe", "A*f", "" },
+        { do_File_string_write, "string_write", "f", "", "\n"
+	    " file string_write ()\n"
+	    "\n"
+	    " Returns a writable file which can be converted to\n"
+	    " a string with string_string.\n"
+	},
+	{ do_File_mkpipe, "mkpipe", "A*f", "", "\n"
+	    " file[*] mkpipe ()\n"
+	    "\n"
+	    " Returns an array of two file objects representing\n"
+	    " the endpoints of a pipe.\n"
+	    " Data written to [1] will be available for reading on [0].\n" },
         { 0 }
     };
 
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_File_clear_error, "clear_error", "v", "f" },
-        { do_File_close, "close", "v", "f" },
-        { do_File_end, "end", "b", "f" },
-        { do_File_error, "error", "b", "f" },
-        { do_File_flush, "flush", "v", "f" },
-        { do_File_getb, "getb", "i", "f" },
-	{ do_File_getc, "getc", "i", "f" },
-        { do_File_string_read, "string_read", "f", "s" },
-        { do_File_string_string, "string_string", "s", "f" },
-	{ do_File_isatty, "isatty", "b", "f" },
+        { do_File_clear_error, "clear_error", "v", "f", "\n"
+	    " void clear_error (file f)\n"
+	    "\n"
+	    " Clear any error or end-of-file condition on 'f'.\n" },
+        { do_File_close, "close", "v", "f", "\n"
+	    " void close (file f)\n"
+	    "\n"
+	    " Close 'f'.  Note that files will automatically be closed\n"
+	    " at some point after they become unreachable.  This function\n"
+	    " simply provides a mechanism for causing it to happen at\n"
+	    " a specific point in time.\n" },
+        { do_File_end, "end", "b", "f", "\n"
+	    " bool end (file f)\n"
+	    "\n"
+	    " Returns true if 'f' is at the end of file.\n"
+	    " This often entails attempting to read a character from 'f'\n"
+	    " if the end has not already been discovered.\n" },
+        { do_File_error, "error", "b", "f", "\n"
+	    " bool error (file f)\n"
+	    "\n"
+	    " Returns true if 'f' has an error condition set.\n" },
+        { do_File_flush, "flush", "v", "f", "\n"
+	    " void flush (file f)\n"
+	    "\n"
+	    " Force any pending output to be delivered to the OS.\n" },
+        { do_File_getb, "getb", "i", "f", "\n"
+	    " int getb (file f)\n"
+	    "\n"
+	    " Return the next byte of data from 'f'.\n" },
+	{ do_File_getc, "getc", "i", "f", "\n"
+	    " int getc (file f)\n"
+	    "\n"
+	    " Return the next character from 'f'.\n" },
+        { do_File_string_read, "string_read", "f", "s", "\n"
+	    " file string_read (string s)\n"
+	    "\n"
+	    " Create a file which when read will return successive"
+	    " characters from 's'.\n" },
+        { do_File_string_string, "string_string", "s", "f", "\n"
+	    " string string_string (file f)\n"
+	    "\n"
+	    " Returns the contents 'f', which must be a file that was\n"
+	    " created with string_write.\n" },
+	{ do_File_isatty, "isatty", "b", "f", "\n"
+	    " bool isatty (file f)\n"
+	    "\n"
+	    " Return whether 'f' is associated with an interactive\n"
+	    " terminal device\n" },
         { 0 }
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_File_open, "open", "f", "ss" },
-        { do_File_putb, "putb", "i", "if" },
-	{ do_File_putc, "putc", "i", "if" },
-        { do_File_setbuf, "setbuffer", "i", "fi" },
-        { do_File_ungetb, "ungetb", "i", "if" },
-	{ do_File_ungetc, "ungetc", "i", "if" },
+        { do_File_open, "open", "f", "ss", "\n"
+	    " file open (string name, string mode)\n"
+	    "\n"
+	    " Open file 'name' where 'mode' is one of:\n"
+	    "   \"r\":  read only\n"
+	    "   \"r+\": read-write\n"
+	    "   \"w\":  write only (created or truncated)\n"
+	    "   \"w+\": read-write (created or truncated)\n"
+	    "   \"a\":  write-only for appending (created if needed)\n"
+	    "   \"a+\": read-write for appending (created if needed)\n"
+	    " Raises open_error if the file cannot be opened.\n" },
+        { do_File_putb, "putb", "i", "if", "\n"
+	    " int putb (int b, file f)\n"
+	    "\n"
+	    " Write the byte 'b' to 'f'.\n" },
+	{ do_File_putc, "putc", "i", "if", "\n"
+	    " int putc (int c, file f)\n"
+	    "\n"
+	    " Write the character 'c' to 'f'.\n" },
+        { do_File_setbuf, "setbuffer", "i", "fi", "\n"
+	    " int setbuffer (file f, int mode)\n"
+	    "\n"
+	    " Change buffering of 'f' to 'mode', which is one of:\n"
+	    "   0:    normal block buffering.\n"
+	    "   1:    line buffering.\n"
+	    "   2:    unbuffered.\n"
+	    " Returns 'mode'.\n" },
+        { do_File_ungetb, "ungetb", "i", "if", "\n"
+	    " int ungetb (int b, file f)\n"
+	    "\n"
+	    " Pushes the byte 'b' back on file 'f'.\n" },
+	{ do_File_ungetc, "ungetc", "i", "if", "\n"
+	    " int ungetc (int c, file f)\n"
+	    "\n"
+	    " Pushes the character 'c' back on file 'f'.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_3 funcs_3[] = {
-        { do_File_filter, "filter", "i", "sA*sA*f" },
-	{ do_File_reopen, "reopen", "f", "ssf" },
+        { do_File_filter, "filter", "i", "sA*sA*f", "\n"
+	    " int filter (string program, string[*] argv, file[3] f)\n"
+	    "\n"
+	    " Fork and execute 'program' using 'argv' for arguments and\n"
+	    " f as stdin, stdout and stderr (respectively).\n" },
+	{ do_File_reopen, "reopen", "f", "ssf", "\n"
+	    " file reopen (string name, string mode, file f)\n"
+	    "\n"
+	    " Change which file 'f' is associated with to 'name',\n"
+	    " opening it with 'mode' as in the open function.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_7 funcs_7[] = {
-        { do_File_print, "print", "v", "fpsiiis" },
+        { do_File_print, "print", "v", "fpsiiis", "\n"
+	    " void print (file f, poly v, string format, int base,\n"
+	    "             int width, int precision, string fill)\n"
+	    "\n"
+	    " Print 'v' to 'f'.\n"
+	    " 'format' is one of:\n"
+	    "    \"v\":   Reparsable representation.\n"
+	    "    \"g\":   Human readable representation.\n"
+	    "    \"d\":   Integer portion of a number.\n"
+	    "    \"f\":   iii.fff format floating point.\n"
+	    "    \"e\":   i.fff'e'ee format floating point.\n"
+	    "    \"c\":   Integer printed as a character.\n"
+	    "    \"s\":   String printed without quotes.\n"
+	    " Any number will be represented using 'base' numerals.\n"
+	    " The output will be at most 'width' characters unless it\n"
+	    " won't fit in that size.\n"
+	    " Any decimal part will be limited to 'precision' characters.\n"
+	    " If 'precision' is -1, sufficient characters will be printed\n"
+	    " to precisely represent the number.\n"
+	    " Any extra characters will be filled with 'fill'.\n" },
         { 0 }
     };
 
     static const struct ebuiltin excepts[] = {
-	{"open_error",		exception_open_error,		"sEs" },
-	{"io_error",		exception_io_error,		"sEf" },
+	{"open_error",		exception_open_error,		"sEs", "\n"
+	    " open_error (string message, error_type error, string name)\n"
+	    "\n"
+	    " Raised when an open attempt fails.\n"
+	    " 'message' is a printable error string.\n"
+	    " 'error' is a symbolic error code.\n"
+	    " 'name' is the filename which failed.\n" },
+	{"io_error",		exception_io_error,		"sEf", "\n"
+	    " io_error (string message, error_type error, file f)\n"
+	    "\n"
+	    " Raised when an i/o error occurs.\n" },
 	{0,			0 },
     };
 
@@ -89,7 +195,7 @@ import_File_namespace()
     BuiltinFuncs7 (&FileNamespace, funcs_7);
 
     for (e = excepts; e->name; e++)
-	BuiltinAddException (&FileNamespace, e->exception, e->name, e->args);
+	BuiltinAddException (&FileNamespace, e->exception, e->name, e->args, e->doc);
 
     s = NewSymbolType (AtomId("errorType"), typeFileError);
     NamespaceAddName (FileNamespace, s, publish_public);

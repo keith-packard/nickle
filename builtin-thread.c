@@ -24,26 +24,54 @@ import_Thread_namespace()
 {
     ENTER ();
     static const struct fbuiltin_0 funcs_0[] = {
-        { do_Thread_cont, "cont", "i", "" },
-        { do_Thread_current, "current", "t", "" },
-        { do_Thread_list, "list", "v", "" },
+        { do_Thread_cont, "cont", "i", "", "\n"
+	    " int cont ()\n"
+	    "\n"
+	    " Restarts any interrupted threads.\n" },
+        { do_Thread_current, "current", "t", "", "\n"
+	    " thread current ()\n"
+	    "\n"
+	    " Return the current thread\n" },
+        { do_Thread_list, "list", "v", "", "\n"
+	    " void list ()\n"
+	    "\n"
+	    " Display a list of the known threads.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_Thread_get_priority, "get_priority", "i", "t" },
-        { do_Thread_id_to_thread, "id_to_thread", "t", "i" },
-        { do_Thread_join, "join", "p", "t" },
+        { do_Thread_get_priority, "get_priority", "i", "t", "\n"
+	    " int get_priority (thread t)\n"
+	    "\n"
+	    " Return the scheduling priority for 't'.\n" },
+        { do_Thread_id_to_thread, "id_to_thread", "t", "i", "\n"
+	    " thread id_to_thread (int id)\n"
+	    "\n"
+	    " Return the thread identified by 'id'.\n" },
+        { do_Thread_join, "join", "p", "t", "\n"
+	    " poly join (thread t)\n"
+	    "\n"
+	    " Await the completion of 't' and return its return value.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_Thread_set_priority, "set_priority", "i", "ti" },
+        { do_Thread_set_priority, "set_priority", "i", "ti", "\n"
+	    " int set_priority (thread t, int priority)\n"
+	    "\n"
+	    " Set 't's scheduling priority to 'priority'.\n"
+	    " Return 'priority.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_v funcs_v[] = {
-        { do_Thread_kill, "kill", "i", ".t" },
+        { do_Thread_kill, "kill", "i", ".t", "\n"
+	    " int kill (thread t ...)\n"
+	    "\n"
+	    " If no threads are provided, kill a thread being debugged.\n"
+	    " Otherwise, kill all of the threads provided.\n"
+	    " Return the number of threads killed that weren't already\n"
+	    " finished.\n" },
         { 0 }
     };
 

@@ -6,28 +6,35 @@
 
 namespace Ctype {
 
-    /*
-     * As with C ctype.h, things outside the ASCII range
-     * are not handled here.  Unlike C ctype.h, we handle
-     * this case cleanly.
-     */
-    public bool isascii(int ch) {
+    public bool isascii(int ch) 
+	/*
+	 * As with C ctype.h, things outside the ASCII range
+	 * are not handled here.  Unlike C ctype.h, we handle
+	 * this case cleanly.
+	 */
+    {
 	return ch >= 0 && ch <= 127;
     }
     
     /* The characteristic vector of sets of ASCII chars. */
     public typedef bool[128] charset;
 
-    /* Make a characteristic vector from a characteristic function. */
-    public charset make_charset(bool(int) cfun) {
+    public charset make_charset(bool(int) cfun) 
+	/*
+	 * Make a characteristic vector from a characteristic function. 
+	 */
+    {
 	charset result;
 	for (int i = 0; i < 128; i++)
 	    result[i] = cfun(i);
 	return result;
     }
 
-    /* Test whether a particular char is in a charset. */
-    public bool member(charset v, int ch) {
+    public bool member(charset v, int ch) 
+	/*
+	 * Test whether a particular char is in a charset. 
+	 */
+    {
 	return isascii(ch) && v[ch];
     }
 
@@ -38,7 +45,11 @@ namespace Ctype {
      */
 
 
-    public bool isupper(int ch) {
+    public bool isupper(int ch) 
+	/*
+	 * Return whether 'ch' is uppercase.
+	 */
+    {
 	static bool cfun(int ch) {
 	    return ch >= 'A' && ch <= 'Z';
 	}
@@ -46,7 +57,11 @@ namespace Ctype {
 	return member(v, ch);
     }
 
-    public bool islower(int ch) {
+    public bool islower(int ch) 
+	/*
+	 * Return whether 'ch' is lowercase.
+	 */
+    {
 	static bool cfun(int ch) {
 	    return ch >= 'a' && ch <= 'z';
 	}
@@ -54,7 +69,11 @@ namespace Ctype {
 	return member(v, ch);
     }
 
-    public bool isdigit(int ch) {
+    public bool isdigit(int ch) 
+	/*
+	 * Return whether 'ch' is a digit
+	 */
+    {
 	static bool cfun(int ch) {
 	    return ch >= '0' && ch <= '9';
 	}
@@ -62,11 +81,19 @@ namespace Ctype {
 	return member(v, ch);
     }
 
-    public bool isblank(int ch) {
+    public bool isblank(int ch) 
+	/*
+	 * Return whether 'ch' is a space or tab
+	 */
+    {
 	return ch == ' ' || ch == '\t';
     }
 
-    public bool iscntrl(int ch) {
+    public bool iscntrl(int ch)
+	/*
+	 * Return whether 'ch' is a control character
+	 */
+    {
 	static bool cfun(int ch) {
 	    return ch >= 0 && ch <= 31;
 	}
@@ -74,7 +101,11 @@ namespace Ctype {
 	return member(v, ch);
     }
 
-    public bool isgraph(int ch) {
+    public bool isgraph(int ch) 
+	/*
+	 * Return whether 'ch' is a visible character
+	 */	
+    {
 	static bool cfun(int ch) {
 	    return ch > ' ' && ch < 127;
 	}
@@ -82,7 +113,11 @@ namespace Ctype {
 	return member(v, ch);
     }
 
-    public bool isprint(int ch) {
+    public bool isprint(int ch) 
+	/*
+	 * Return whether 'ch' is a printable character
+	 */	
+    {
 	static bool cfun(int ch) {
 	    return ch >= ' ' && ch < 127;
 	}
@@ -90,7 +125,11 @@ namespace Ctype {
 	return member(v, ch);
     }
 	
-    public bool isspace(int ch) {
+    public bool isspace(int ch)
+	/*
+	 * Return whether 'ch' is whitespace
+	 */	
+    {
 	static bool cfun(int ch) {
 	       int[*] sc = {' ', '\f', '\n', '\r', '\t', '\v'};
 	       for (int i = 0; i < dim(sc); i++)
@@ -102,7 +141,11 @@ namespace Ctype {
 	return member(v, ch);
     }
 
-    public bool isalpha(int ch) {
+    public bool isalpha(int ch) 
+	/*
+	 * Return whether 'ch' is a latin letter
+	 */	
+    {
 	static bool cfun(int ch) {
 	    return islower(ch) || isupper(ch);
 	}
@@ -110,7 +153,11 @@ namespace Ctype {
 	return member(v, ch);
     }
 
-    public bool isalnum(int ch) {
+    public bool isalnum(int ch)
+	/*
+	 * Return whether 'ch' is a letter or digit
+	 */
+    {
 	static bool cfun(int ch) {
 	    return isalpha(ch) || isdigit(ch);
 	}
@@ -118,7 +165,11 @@ namespace Ctype {
 	return member(v, ch);
     }
     
-    public bool ispunct(int ch) {
+    public bool ispunct(int ch)
+	/*
+	 * Return whether 'ch' is punctuation
+	 */
+    {
 	static bool cfun(int ch) {
 	    return isgraph(ch) && !isalnum(ch);
 	}
@@ -126,19 +177,33 @@ namespace Ctype {
 	return member(v, ch);
     }
 
-    public int tolower(int ch) {
+    public int tolower(int ch) 
+	/*
+	 * If 'ch' is upper case, return the lower case version
+	 * else return 'ch'
+	 */
+    {
 	if (isupper(ch))
 	    return ch - 'A' + 'a';
 	return ch;
     }
 
-    public int toupper(int ch) {
+    public int toupper(int ch) 
+	/*
+	 * If 'ch' is lower case, return the upper case version
+	 * else return 'ch'
+	 */
+    {
 	if (islower(ch))
 	    return ch - 'a' + 'A';
 	return ch;
     }
 
-    public bool isxdigit(int ch) {
+    public bool isxdigit(int ch) 
+	/*
+	 * Return whether 'ch' is a hexidecimal digit
+	 */
+    {
 	static bool cfun(int ch) {
 	    if (isdigit(ch))
 		return true;

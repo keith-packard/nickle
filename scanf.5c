@@ -3,6 +3,9 @@
  */
 extend namespace File {
     public int vfscanf (file f, string format, (*poly)[*] args)
+	/*
+	 * According to 'format', read from 'f' to 'args'
+	 */
     {
 	/* Skip whitespace */
 	void whitespace ()
@@ -169,11 +172,17 @@ extend namespace File {
     }
 
     public int fscanf (file f, string format, *poly args...)
+	/*
+	 * According to 'format', read from 'f' to 'args'
+	 */
     {
 	return vfscanf (f, format, args);
     }
 
     public int sscanf (string s, string format, *poly args...)
+	/*
+	 * According to 'format', read from 's' to 'args'
+	 */
     {
         file sf = string_read(s);
         int n = vfscanf (sf, format, args);
@@ -184,11 +193,17 @@ extend namespace File {
     public namespace ScanfGlobals {
 	
 	public int scanf (string format, *poly args...)
+	    /*
+	     * According to 'format', read from stdin to 'args'
+	     */
 	{
 	    return File::vfscanf (stdin, format, args);
 	}
 
 	public int vscanf (string format, (*poly)[*] args)
+	    /*
+	     * According to 'format', read from stdin to 'args'
+	     */
 	{
 	    return File::vfscanf (stdin, format, args);
 	}

@@ -1610,7 +1610,8 @@ CompileComprehension (ObjPtr	obj,
      */
     lambda = NewExprCode (NewFuncCode (type,
 				       args,
-				       body),
+				       body,
+				       Void),
 			  0);
     obj = _CompileExpr (obj, lambda, True, stat, code);
     expr->tree.left->base.type = lambda->base.type;

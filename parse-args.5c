@@ -50,14 +50,22 @@ namespace ParseArgs {
     void print_options(&(arg[*]) a) {
     }
 
-    public string basename(string path) {
+    public string basename(string path) 
+	/*
+	 * Return the filename part of 'path'
+	 */
+    {
 	int p = rindex(path, "/");
 	if (p == -1)
 	    return path;
 	return substr(path, p + 1, length(path) - p - 1);
     }
 
-    public void parseargs(&argdesc argd, &(string[*]) argv) {
+    public void parseargs(&argdesc argd, &(string[*]) argv) 
+	/*
+	 * Parse arguments in 'argv' according to 'argd'
+	 */
+    {
 	argd.prog_name = basename(argv[0]);
 
 	arg[int] arg_abbr_hash = {};

@@ -6,56 +6,39 @@
  */
 
 namespace History {
-    typedef listrec;
-
-    typedef union {
-	*listrec    ref;
-	void	    end;
-    } list;
-
-    typedef struct {
-	poly	value;
-	list	next;
-    } listrec;
-
-    list   head = list.end;
-    int	    count = 0;
-    *list  tail = &head;
+    
+    poly[...]	hist = {};
     
     public void insert (poly v)
+	/*
+	 * Insert 'v' in the history list
+	 */
     {
-	if (is_void (v))
-	    return;
-	list	new = (list.ref) reference ((listrec) { 
-	    next = list.end,
-	    value = v });
-	*tail = new;
-	tail = &new.ref->next;
-	++count;
-    }
-
-    list elt (list l, int id)
-    {
-	if (id <= 0) return l;
-	return elt (l.ref->next, id-1);
+	hist[dim(hist)] = v;
     }
 
     public poly fetch (int id)
+	/*
+	 * Fetch history element 'id'
+	 */
     {
-	if (count == 0)
+	if (dim(hist) == 0)
 	    return <>;
 	if (id <= 0)
-	    return elt (head, count+id-1).ref->value;
+	    return hist[dim(hist)+id-1];
 	else
-	    return elt (head, id-1).ref->value;
+	    return hist[id-1];
     }
 
     public void show (string format, int args...)
+	/*
+	 * show history elements
+	 */
     {
-	int	from = 10, to = count;
-	list	f, t;
+	int	from = 10, to = dim(hist);
+	int	id;
 	
-	if (count == 0)
+	if (dim(hist) == 0)
 	    return;
 
 	if (dim(args) >= 1)
@@ -65,18 +48,15 @@ namespace History {
 	    to = args[1];
 	else
 	{
-	    from = count - from;
+	    from = dim(hist) - from;
 	    if (from < 1)
 		from = 1;
 	}
-	f = elt (head, from - 1);
-	t = elt (head, to - 1).ref->next;
-	while (f != t)
+	for (id = from; id <= to; id++)
 	{
 	    printf ("$%-4d\t", from);
-	    printf (format, f.ref->value);
+	    printf (format, fetch (id));
 	    printf ("\n");
-	    f = f.ref->next;
 	    from++;
 	}
     }

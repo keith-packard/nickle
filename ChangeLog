@@ -1,3 +1,50 @@
+2004-06-08  Keith Packard  <keithp@keithp.com>
+version 2.40
+
+	* abort.5c:
+	* arc4.5c:
+	* builtin-command.c: (import_Command_namespace),
+	(do_Command_pretty_print):
+	* builtin-debug.c: (import_Debug_namespace):
+	* builtin-environ.c: (import_Environ_namespace):
+	* builtin-file.c: (import_File_namespace):
+	* builtin-math.c: (import_Math_namespace):
+	* builtin-semaphore.c: (import_Semaphore_namespace):
+	* builtin-sockets.c: (import_Socket_namespace):
+	* builtin-string.c: (import_String_namespace):
+	* builtin-thread.c: (import_Thread_namespace):
+	* builtin-toplevel.c: (import_Toplevel_namespace):
+	* builtin.5c:
+	* builtin.c: (BuiltinType), (BuiltinException),
+	(BuiltinAddException), (BuiltinAddFunction), (BuiltinInit):
+	* builtin.h:
+	* command.5c:
+	* compile.c: (CompileComprehension):
+	* ctype.5c:
+	* debug.c: (do_Debug_dump):
+	* file.5c:
+	* file.c: (FileFopen):
+	* func.c: (MarkFuncCode), (NewFuncCode), (MarkBuiltinCode),
+	(NewBuiltinCode):
+	* gram.y:
+	* history.5c:
+	* lex.l:
+	* math.5c:
+	* mutex.5c:
+	* nickle.h:
+	* parse-args.5c:
+	* pretty.c: (PrettyDoc), (PrettyBody), (doPrettyPrint),
+	(PrettyPrint):
+	* printf.5c:
+	* prng.5c:
+	* scanf.5c:
+	* socket.5c:
+	* string.5c:
+	* string.c: (NewCharString):
+	* symbol.c: (SymbolExceptionMark), (NewSymbolException):
+	* value.h:
+	Add doc strings to all functions and exceptions.
+
 2004-06-03  Keith Packard  <keithp@keithp.com>
 version 2.39
 

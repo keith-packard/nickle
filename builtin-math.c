@@ -24,12 +24,21 @@ import_Math_namespace()
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_Math_popcount, "popcount", "i", "i" },
+        { do_Math_popcount, "popcount", "i", "i", "\n"
+	    " int popcount (int i)\n"
+	    "\n"
+	    " Return the number of '1' bits in 'i'.\n" },
         { 0 }
     };
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_Math_assignpow, "assign_pow", "n", "*Ri" },
-        { do_Math_pow, "pow", "n", "Ri" },
+        { do_Math_assignpow, "assign_pow", "n", "*Ri", "\n"
+	    " real assign_pow (*real a, int b)\n"
+	    "\n"
+	    " Return *a ** b, also storing that result back in *a.\n" },
+        { do_Math_pow, "pow", "n", "Ri", "\n"
+	    " real pow (real a, int b)\n"
+	    "\n"
+	    " Return a ** b.\n" },
         { 0 }
     };
 

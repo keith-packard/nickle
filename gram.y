@@ -58,6 +58,7 @@
  */
 int ignorenl;
 int notCommand;
+int seeComment;
 NamespacePtr	LexNamespace;
 int funcDepth;
 
@@ -139,6 +140,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    comma_expr
 %type  <ints>	    assignop
 %type  <value>	    opt_integer integer
+%type  <value>	    doc_string opt_comment
 %type  <expr>	    opt_arrayinit arrayinit arrayelts  arrayelt
 %type  <expr>	    opt_hashinit hashinit hashelts hashelt hashvalue
 %type  <expr>	    structinit structelts structelt
@@ -161,6 +163,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %token <value>	    TEN_NUM OCTAL0_NUM OCTAL_NUM BINARY_NUM HEX_NUM
 %token <value>	    TEN_FLOAT OCTAL0_FLOAT OCTAL_FLOAT BINARY_FLOAT HEX_FLOAT
 %token <value>	    CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
+%token <value>	    COMMENT_CONST
 %token <value>	    VOIDVAL BOOLVAL
 %token		    DARROW
 
@@ -481,7 +484,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 		| block
 		| SEMI
 		    { $$ = NewExprTree(SEMI, (Expr *) 0, (Expr *) 0); }
-		| func_decl opt_func_body namespace_end
+		| func_decl doc_string opt_func_body namespace_end
 		    { 
 			DeclList    *decl = $1.decl;
 			SymbolPtr   symbol = decl->symbol;
@@ -493,12 +496,13 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 
 			if (symbol)
 			{
-			    if ($2)
+			    if ($3)
 			    {
 				symbol->symbol.forward = False;
 				ParseCanonType (ret, False);
 				decl->init = NewExprCode (NewFuncCode (ret,
 								       argType,
+								       $3,
 								       $2),
 							  NewExprAtom (symbol->symbol.name, symbol, False));
 			    }
@@ -507,7 +511,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			}
 			$$ = NewExprDecl (FUNC, decl, class, type, publish);
 		    }
-		| opt_publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end SEMI attendnl
+		| opt_publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end doc_string SEMI attendnl
 		    { 
 			DeclListPtr decl;
 
@@ -515,6 +519,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			decl->symbol = ParseNewSymbol ($1, 
 						       class_exception, 
 						       typePoly, $4);
+			decl->symbol->exception.doc = $8;
 			$$ = NewExprDecl (EXCEPTION,
 					  decl,
 					  class_exception,
@@ -641,8 +646,11 @@ catches		:   catches catch
 		|   
 		    { $$ = 0; }
 		;
-catch		: CATCH fullname namespace_start args block namespace_end
-		    { $$ = NewExprCode (NewFuncCode (typePrim[rep_void], $4, $5), $2); }
+catch		: CATCH fullname namespace_start args doc_string block namespace_end
+		    { $$ = NewExprCode (NewFuncCode (typePrim[rep_void],
+						     $4, $6, $5),
+					$2); 
+		    }
 		;
 opt_func_body	: func_body
 		| SEMI
@@ -658,6 +666,16 @@ block_or_expr	: block
 					  NewExprTree (RETURNTOK, 0, $3),
 					  NewExprTree (OC, 0, 0));
 		    }
+		;
+see_comment	:
+		    { seeComment = 1; }
+		;
+doc_string	: see_comment opt_comment 
+		    { seeComment = 0; $$ = $2; }
+		;
+opt_comment	: COMMENT_CONST
+		|
+		    { $$ = Void; }
 		;
 case_block	: block_start cases block_end
 		    { $$ = $2; }
@@ -1204,10 +1222,10 @@ simpleexpr	: simpleexpr assignop simpleexpr    		%prec ASSIGN
 			    $$ = NewExprTree($2, $1, $3); 
 			}
 		    }
-		| opt_type FUNC namespace_start args func_right namespace_end	    	%prec ASSIGN
+		| opt_type FUNC namespace_start args doc_string func_right namespace_end	    	%prec ASSIGN
 		    {
 			ParseCanonType ($1, False);
-			$$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); 
+			$$ = NewExprCode (NewFuncCode ($1, $4, $6, $5), 0); 
 		    }
 		| MOD integer						%prec THREADID
 		    {   Value	t;
@@ -1940,7 +1958,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name)
 	    s = NewSymbolAuto (name, type);
 	    break;
 	case class_exception:
-	    s = NewSymbolException (name, type);
+	    s = NewSymbolException (name, type, Void);
 	    break;
 	case class_typedef:
 	    /*

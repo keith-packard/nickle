@@ -24,14 +24,29 @@ import_Environ_namespace()
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_Environ_check, "check", "b", "s" },
-        { do_Environ_get, "get", "s", "s" },
-        { do_Environ_unset, "unset", "b", "s" },
+        { do_Environ_check, "check", "b", "s", "\n"
+	    " bool check (string name)\n"
+	    "\n"
+	    " Test whether 'name' is in the environment\n" },
+        { do_Environ_get, "get", "s", "s", "\n"
+	    " string get (string name)\n"
+	    "\n"
+	    " Return a value from the environment.\n"
+	    " raise invalid_argument if 'name' isn't in the environment.\n" },
+        { do_Environ_unset, "unset", "b", "s", "\n"
+	    " bool unset (string name)\n"
+	    "\n"
+	    " Remove 'name' from the environment.\n"
+	    " Returns 'true' if 'name' was in the environment.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_Environ_set, "set", "b", "ss" },
+        { do_Environ_set, "set", "b", "ss", "\n"
+	    " bool set (string name, string value)\n"
+	    "\n"
+	    " Places 'name' with 'value' in the environment.\n"
+	    " Returns false if it didn't work for some reason.\n" },
         { 0 }
     };
 

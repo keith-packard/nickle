@@ -47,26 +47,55 @@ import_Socket_namespace()
     ENTER ();
 
     static const struct fbuiltin_0 funcs_0[] = {
-	{ do_Socket_gethostname, "gethostname", "s", "" },
+	{ do_Socket_gethostname, "gethostname", "s", "", "\n"
+	    " string gethostname ()\n"
+	    "\n"
+	    " Get the current hostname.\n" },
 	{ 0 },
     };
 
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_Socket_create, "create", "f", "i" },
-        { do_Socket_accept, "accept", "f", "f" },
-	{ do_Socket_getsockname, "getsockname", "a", "f" },
+        { do_Socket_create, "create", "f", "i", "\n"
+	    " file create (int type)\n"
+	    "\n"
+	    " Create a socket where 'type' is one of:\n"
+	    "   SOCK_STREAM:	a stream socket.\n"
+	    "   SOCK_DGRAM:	a datagram socket.\n" },
+        { do_Socket_accept, "accept", "f", "f", "\n"
+	    " file accept (file listen)\n"
+	    "\n"
+	    " Return a socket for the next connection on 'listen'.\n" },
+	{ do_Socket_getsockname, "getsockname", "a", "f", "\n"
+	    " sockaddr getsockname (file socket)\n"
+	    "\n"
+	    " Returns the address and port of 'socket'.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_Socket_listen, "listen", "v", "fi" },
-        { do_Socket_shutdown, "shutdown", "v", "fi" },
+        { do_Socket_listen, "listen", "v", "fi", "\n"
+	    " void listen (file socket, int length)\n"
+	    "\n"
+	    " Establish a listen queue on 'f' of length 'i' (max 5).\n"	},
+        { do_Socket_shutdown, "shutdown", "v", "fi", "\n"
+	    " void shutdown (file socket, int dir)\n"
+	    "\n"
+	    " Shut communication in 'dir' direction:\n"
+	    "   SHUT_RD:    shut down reading.\n"
+	    "   SHUT_WR:    shut down writing.\n"
+	    "   SHUT_RDWR:  shut down reading and writing.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_3 funcs_3[] = {
-        { do_Socket_connect, "connect", "v", "fss" },
-        { do_Socket_bind, "bind", "v", "fss" },
+        { do_Socket_connect, "connect", "v", "fss", "\n"
+	    " void connect (file socket, string host, string port)\n"
+	    "\n"
+	    " Connect 'socket' to 'host', 'port'.\n" },
+        { do_Socket_bind, "bind", "v", "fss", "\n"
+	    " void bind (file socket, string host, string port)\n"
+	    "\n"
+	    " Bind 'socket' to 'host', 'port'.\n" },
         { 0 }
     };
 

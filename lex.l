@@ -31,6 +31,7 @@ typedef struct _lexInput {
 LexInput    *lexInput;
 extern int  ignorenl;
 extern int  notCommand;
+extern int  seeComment;
 #define	    FILE_END_CHAR	-2
     
 static void lexInputMark (void *object)
@@ -292,7 +293,15 @@ void unput (char c)
 
 %}
 %%
-"/\052"		skipcomment();
+"/\052"		{   
+		    if (seeComment) 
+		    {
+			yylval.value = lexdoc ();
+			return COMMENT_CONST;
+		    }
+		    else
+			skipcomment (); 
+		}
 ^[ \t]*#	skipline();
 auto		{ yylval.class = class_auto; return AUTO; }
 const		{ yylval.class = class_const; return CONST; }
@@ -607,6 +616,45 @@ lexEscape (int c)
     default:
 	return c;
     }
+}
+
+
+Value
+lexdoc (void)
+{
+    int	    c;
+    Value   s = NewStrString ("");
+
+    c = input();
+    if (lexInput->at_eof)
+    {
+bail:	
+        yyerror ("Missing */ at end of file");
+        return Void;
+    }
+    for (;;) {
+	Bool skip = False;
+	while (c != EOF && c != '*')
+	{
+	    if (skip && c != ' ' && c != '\t')
+		skip = False;
+	    if (!skip)
+		s = Plus (s, NewCharString (c));
+	    if (c == '\n')
+		skip = True;
+	    c = input();
+	    if (c == EOF || lexInput->at_eof)
+		goto bail;
+	}
+	c = input();
+	if (c == EOF || lexInput->at_eof)
+	    goto bail;
+	if (c == '/')
+	    break;
+	if (!skip)
+	    s = Plus (s, NewCharString ('*'));
+    }
+    return s;
 }
 
 void

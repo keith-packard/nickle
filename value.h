@@ -961,6 +961,7 @@ extern DataCachePtr	refCache;
 
 Value	NewString (long length);
 Value	NewStrString (char *);
+Value	NewCharString (int c);
 Value	NewArray (Bool constant, Bool resizable, TypePtr type, int ndim, int *dims);
 void	ArrayResize (Value av, int dim, int size);
 void	ArraySetDimensions (Value av, int *dims);

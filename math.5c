@@ -8,6 +8,10 @@ extend namespace Math {
      256);
 
     public real sqrt (real v)
+	/*
+	 * Returns square root of v to the same precision as 'v'.
+	 * If v is precise and has a precise square root, returns that.
+	 */
     {
 	if (v < 0)
 	    raise invalid_argument ("sqrt of negative number", 0, v);
@@ -51,6 +55,10 @@ extend namespace Math {
     }
 
     public real cbrt (real v)
+	/*
+	 * Returns cube root of v to the same precision as 'v'.
+	 * If v is precise and has a precise cube root, returns that.
+	 */
     {
 	real real_cbrt(real v)
 	{
@@ -94,6 +102,9 @@ extend namespace Math {
     }
 
     public real exp (real v)
+	/*
+	 * Return e ** v;
+	 */
     {
 	if (v < 0)
 	    return 1/exp(-v);
@@ -151,6 +162,9 @@ extend namespace Math {
     }
 
     public real log (real a)
+	/*
+	 * Return natural logarithm of 'a'
+	 */
     {
 	/*
 	 * Copyright (c) 1985 Regents of the University of California.
@@ -390,6 +404,9 @@ extend namespace Math {
      * log10(e) = log(e) / log(10) = 1/log(10)
      */
     public real log10 (real a)
+	/*
+	 * Return base-10 log of 'a'
+	 */
     {
 	static real	loge = 0;
 
@@ -405,6 +422,9 @@ extend namespace Math {
      * log2(e) = log(e) / log(2) = 1/log(2)
      */
     public real log2 (real a)
+	/*
+	 * Return base-2 log of 'a'
+	 */
     {
 	static real	loge = 0;
 
@@ -414,13 +434,12 @@ extend namespace Math {
 	return loge * log(a);
     }
     
-    /*
-     * Calculate pi using the formula:
-     *
-     *  PI = 24*atan (1/8) + 8*atan (1/57) + 4*atan (1/239);
-     */
-    
     real calculate_pi (int prec)
+	/*
+	 * Calculate pi using the formula:
+	 *
+	 *  PI = 24*atan (1/8) + 8*atan (1/57) + 4*atan (1/239);
+	 */
     {
 	/*
 	 * Estimate the number of digits available for
@@ -513,6 +532,9 @@ extend namespace Math {
     }
     
     public real pi_value (int prec)
+	/*
+	 * Return pi at least as precise as 'prec'
+	 */
     {
 	static real local_pi = pi;
     
@@ -533,6 +555,9 @@ extend namespace Math {
     }
     
     public real sin (real a)
+	/*
+	 * return sine (a)
+	 */
     {
 	/*
 	 * sin(x) = x - x**3/3! + x**5/5! ... 
@@ -592,6 +617,9 @@ extend namespace Math {
     }
 
     public real cos (real a)
+	/*
+	 * return cosine (a)
+	 */
     {
 	/*
 	 * cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ... 
@@ -653,6 +681,9 @@ extend namespace Math {
     }
     
     public void sin_cos (real a, *real sinp, *real cosp)
+	/*
+	 * Compute sine and cosine of 'a' simultaneously
+	 */
     {
 	real	c, s;
 
@@ -664,6 +695,9 @@ extend namespace Math {
     }
     
     public real tan (real a)
+	/*
+	 * return tangent (a)
+	 */
     {
 	real	c, s;
 
@@ -673,6 +707,9 @@ extend namespace Math {
     }
     
     public real atan (real v)
+	/*
+	 * return arctangent (v)
+	 */
     {
 	/* 
 	 * atan(x) = x - x**3/3 + x**5/5 - ...
@@ -749,6 +786,9 @@ extend namespace Math {
      */
     
     public real asin (real v)
+	/*
+	 * return arcsine (v)
+	 */
     {
 	v = imprecise (v);
 	if (abs (v) > 1)
@@ -767,6 +807,9 @@ extend namespace Math {
      *		= atan (sqrt(1-v**2) / v)
      */
     public real acos (real v)
+	/*
+	 * return arccosine (v)
+	 */
     {
 	v = imprecise(v);
 	if (abs (v) > 1)
@@ -784,6 +827,9 @@ extend namespace Math {
      * atan (y/x)
      */
     public real atan2 (real y, real x)
+	/*
+	 * return atan (y/x), but adjust for quadrant correctly
+	 */
     {
 	y = imprecise (y);
 	x = imprecise (x);
@@ -813,6 +859,9 @@ extend namespace Math {
      * These two are used for the '**' and '**=' operators
      */
     public real pow (real a, real b)
+	/*
+	 * return a ** b;
+	 */
     {
 	real    result;
 	if (is_int (b))
@@ -852,18 +901,29 @@ extend namespace Math {
     }
 
     public real assign_pow (*real a, real b)
+	/*
+	 * return *a = *a ** b;
+	 */
     {
 	return *a = pow (*a, b);
     }
 
-    public real max(real arg, real args ...) {
+    public real max(real arg, real args ...) 
+	/*
+	 * Return maximum of all arguments
+	 */
+    {
 	for (int i = 0; i < dim(args); i++)
 	    if (arg < args[i])
 		arg = args[i];
 	return arg;
     }
 
-    public real min(real arg, real args ...) {
+    public real min(real arg, real args ...)
+	/*
+	 * Return minimum of all arguments
+	 */
+    {
 	for (int i = 0; i < dim(args); i++)
 	    if (arg > args[i])
 		arg = args[i];
@@ -875,7 +935,12 @@ extend namespace Math {
      * Fast integer logarithm via binary search from below (no division).
      * Returns floor(log(n)/log(base)) with no rounding error
      */
-    public int ilog(int base, int n) {
+    public int ilog(int base, int n) 
+	/*
+	 * Fast integer logarithm via binary search from below (no division).
+	 * Returns floor(log(n)/log(base)) with no rounding error
+	 */
+    {
 	if (base <= 1)
 	    raise invalid_argument("ilog of bad base", 0, base);
 	if (n <= 0)

@@ -1,6 +1,11 @@
 extend namespace String {
 
-    public int rindex(string target, string pattern) {
+    public int rindex(string target, string pattern) 
+	/*
+	 * Return the right-most location of 'pattern'
+	 * in 'target'
+	 */
+    {
 	int pl = length(pattern);
 	for (int i = length(target) - pl; i >= 0; --i) {
 	    bool match_here() {
@@ -15,14 +20,23 @@ extend namespace String {
 	return -1;
     }
 
-    public string dirname(string name) {
-	int n = rindex(name, "/");
+    public string dirname(string path) 
+	/*
+	 * Return the directory portion of 'path'
+	 */
+    {
+	int n = rindex(path, "/");
 	if (n == -1)
 	    return ".";
-	return (substr(name, 0, n));
+	return (substr(path, 0, n));
     }
 
-    public string[*] split(string s, string sep) {
+    public string[*] split(string s, string sep) 
+	/*
+	 * Split 's' at 'sep' boundaries, returning
+	 * an array of the resulting pieces
+	 */
+    {
 	string[...] ss = {};
 	int i = -1;
 	int j = 0;
@@ -37,7 +51,11 @@ extend namespace String {
 	return ss;
     }
 
-    public string chomp(string s) {
+    public string chomp(string s) 
+	/*
+	 * Trim whitespace from begining and end of 's'
+	 */
+    {
 	int l = length(s);
 	int i = 0;
 	while(i < l && Ctype::isspace(s[i]))
@@ -48,7 +66,11 @@ extend namespace String {
 	return substr(s, i, j - i + 1);
     }
 
-    public bool inchars(int c, string s) {
+    public bool inchars(int c, string s) 
+	/*
+	 * Return whether 'c' is in 's'
+	 */
+    {
 	return index(String::new(c), s) >= 0;
     }
 
@@ -60,7 +82,11 @@ extend namespace String {
 
     typedef string(string) dequote_t;
     
-    public dequote_t make_dequote(quote_context q) {
+    public dequote_t make_dequote(quote_context q) 
+	/*
+	 * Construct a quote parsing function based on 'q'
+	 */
+    {
 	public string _dequote(string s) {
 	    string result = "";
 	    qstate t = qstate.normal;
@@ -106,7 +132,11 @@ extend namespace String {
 
     typedef (string[*])(string) parse_csv_t;
 
-    public parse_csv_t make_parse_csv(quote_context q) {
+    public parse_csv_t make_parse_csv(quote_context q) 
+	/*
+	 * Construct a CSV file parsing context from 'q'
+	 */
+    {
 	dequote_t dq = make_dequote(q);
 	public string[*] _parse_csv(string s) {
 	    string[...] ss = {};

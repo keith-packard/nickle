@@ -255,3 +255,15 @@ NewStrString (char *str)
     strcpy (StringChars (&ret->string), str);
     RETURN (ret);
 }
+
+Value
+NewCharString (int c)
+{
+    ENTER ();
+    int	    size = StringCharSize (c);
+    Value   ret = NewString (size);
+
+    StringPutChar (c, StringChars (&ret->string));
+    RETURN (ret);
+}
+

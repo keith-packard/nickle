@@ -11,12 +11,20 @@ namespace PRNG {
 
   global bool setkey = false;
 
-  public void srandom(int s) {
+  public void srandom(int s) 
+    /*
+     * Seed the PRNG with 's'
+     */
+  {
     ARC4::nsetkey(10, s);
     setkey = true;
   }
 
-  public void dev_srandom(int nbits) {
+  public void dev_srandom(int nbits) 
+    /*
+     * Use 'nbits' of /dev/urandom to seed the PRNG
+     */
+  {
     twixt(file f = open("/dev/urandom", "r"); close(f)) {
       int seed = 0;
       while (nbits >= 8) {
@@ -29,8 +37,11 @@ namespace PRNG {
     }
   }
 
-  /* returns an n-*bit* random number in 0..(2**n)-1 */
-  public int randbits(int n) {
+  public int randbits(int n) 
+    /*
+     * returns an 'n'-*bit* random number in 0..(2**'n')-1 
+     */
+  {
     int q = n >> 3;
     int r = n & 7;
     if (!setkey)
@@ -43,12 +54,19 @@ namespace PRNG {
     return acc;
   }
 
-  /* returns a random integer in the range 0..n-1 */
-  public int randint(int n) {
+  public int randint(int n) 
+    /* 
+     * Returns a random integer in the range 0..'n'-1 
+     */
+  {
     return randbits(32 + bit_width (n)) % n;
   }
 
-  public void shuffle(&poly[*] a) {
+  public void shuffle(&poly[*] a) 
+    /*
+     * Randomly shuffle 'a' in place
+     */
+  {
     int na = dim(a);
     for (int i = 0; i < na - 1; i++) {
       int j = randint(na - i) + i;

@@ -47,6 +47,7 @@ static void PrettyParameters (Value f, Expr *e, Bool nest, ProfileData *pd);
 static void PrettyArrayInit (Value f, Expr *e, int level, Bool nest, ProfileData *pd);
 static void PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest, ProfileData *pd);
 static void PrettyBody (Value f, CodePtr code, int level, Bool nest, ProfileData *pd);
+static void PrettyDoc (Value f, int level, Value doc, ProfileData *pd);
 
 static void
 PrettyIndent (Value f, Expr *e, int level, ProfileData *pd)
@@ -817,16 +818,51 @@ PrintArgs (Value f, ArgType *args)
 }
 
 static void
+PrettyDoc (Value f, int level, Value doc, ProfileData *pd)
+{
+    char	*s = StringChars (&doc->string);
+    long    	len = doc->string.length;
+    unsigned	c;
+    Bool	newline = False;
+
+    PrettyIndent (f, 0, level, pd);
+    FilePuts (f, "/""*");
+    while ((s = StringNextChar (s, &c, &len)))
+    {
+	if (newline)
+	{
+	    PrettyIndent (f, 0, level, pd);
+	    FilePuts (f, " *");
+	    newline = False;
+	}
+	FileOutput (f, c);
+	if (c == '\n')
+	    newline = True;
+    }
+    if (newline)
+    {
+	PrettyIndent (f, 0, level, pd);
+	FileOutput (f, ' ');
+    }
+    FilePuts (f, "*""/");
+}
+
+static void
 PrettyBody (Value f, CodePtr code, int level, Bool nest, ProfileData *pd)
 {
     PrintArgs (f, code->base.args);
-    if (code->base.builtin)
+    if (code->base.doc != Void)
     {
-	FilePuts (f, " <builtin>");
+	FilePuts (f, "\n");
+	PrettyDoc (f, level + 1, code->base.doc, pd);
     }
-    else
+    if (nest)
     {
-	if (nest)
+	if (code->base.builtin)
+	{
+	    FilePuts (f, " <builtin>");
+	}
+	else
 	{
 	    FilePuts (f, "\n");
 	    PrettyIndent (f, 0, level, pd);
@@ -835,9 +871,9 @@ PrettyBody (Value f, CodePtr code, int level, Bool nest, ProfileData *pd)
 	    PrettyIndent (f, 0, level, pd);
 	    FilePuts (f, "}");
 	}
-	else
-	    FilePuts (f, ";");
     }
+    else
+	FilePuts (f, ";");
 }
 
 void
@@ -920,15 +956,26 @@ doPrettyPrint (Value f, Publish publish, SymbolPtr symbol, int level, Bool nest)
 	FilePuts (f, "\n");
 	break;
     case class_namespace:
-	FilePrintf (f, "%p%C %A {\n", publish, symbol->symbol.class, symbol->symbol.name);
-	PrintNamespace (f, symbol->namespace.namespace, level + 1);
-	PrettyIndent (f, 0, level, 0);
-	FilePuts (f, "}\n");
+	FilePrintf (f, "%p%C %A", publish, symbol->symbol.class, symbol->symbol.name);
+	if (nest)
+	{
+	    FilePuts (f, " {\n");
+	    PrintNamespace (f, symbol->namespace.namespace, level + 1);
+	    PrettyIndent (f, 0, level, 0);
+	    FilePuts (f, "}\n");
+	}
+	else
+	    FilePuts (f, ";\n");
 	break;
     case class_exception:
 	FilePrintf (f, "%p%C %A ", publish, 
 		    symbol->symbol.class, symbol->symbol.name);
 	PrintArgs (f, symbol->symbol.type->func.args);
+	if (symbol->exception.doc != Void)
+	{
+	    FilePuts (f, "\n");
+	    PrettyDoc (f, level + 1, symbol->exception.doc, 0);
+	}
 	FilePuts (f, ";\n");
 	break;
     default:
@@ -942,6 +989,9 @@ doPrettyPrint (Value f, Publish publish, SymbolPtr symbol, int level, Bool nest)
 void
 PrettyPrint (Value f, Publish publish, SymbolPtr name)
 {
-    doPrettyPrint (f, publish, name, 0, True);
+    if (!name)
+	PrintNamespace (f, TopNamespace, 0);
+    else
+	doPrettyPrint (f, publish, name, 0, True);
 }
 

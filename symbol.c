@@ -46,10 +46,21 @@ SymbolNamespaceMark (void *object)
     MemReference (sn->namespace);
 }
 
+static void
+SymbolExceptionMark (void *object)
+{
+    SymbolException *se = object;
+
+    MemReference (se->symbol.next);
+    MemReference (se->symbol.type);
+    MemReference (se->doc);
+}
+
 DataType    SymbolTypeType = { SymbolTypeMark, 0, "SymbolTypeType" };
 DataType    SymbolGlobalType = { SymbolGlobalMark, 0, "SymbolGlobalType" };
 DataType    SymbolLocalType = { SymbolLocalMark, 0, "SymbolLocalType" };
 DataType    SymbolNamespaceType = { SymbolNamespaceMark, 0, "SymbolNamespaceType" };
+DataType    SymbolExceptionType = { SymbolExceptionMark, 0, "SymbolExceptionType" };
 
 SymbolPtr
 NewSymbolType (Atom name, Type *type)
@@ -67,17 +78,18 @@ NewSymbolType (Atom name, Type *type)
 }
 
 SymbolPtr
-NewSymbolException (Atom name, Type *type)
+NewSymbolException (Atom name, Type *type, Value doc)
 {
     ENTER ();
     SymbolPtr	s;
 
-    s = ALLOCATE (&SymbolTypeType, sizeof (SymbolType));
+    s = ALLOCATE (&SymbolExceptionType, sizeof (SymbolException));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_exception;
     s->symbol.type = type;
     s->symbol.forward = False;
+    s->exception.doc = doc;
     RETURN (s);
 }
 

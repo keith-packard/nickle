@@ -11,13 +11,14 @@ namespace ARC4 {
   global int[256] state = {};
   global int p1, p2;
 
-  /*
-   * First argument is number of times to iterate the
-   * initial scramble.  10 seems good for most apps.
-   * Second argument is integer key: largest useful key is
-   * 8 * 62 bits.
-   */
-  public void nsetkey(int nn, int k) {
+  public void nsetkey(int nn, int k) 
+    /*
+     * First argument is number of times to iterate the
+     * initial scramble.  10 seems good for most apps.
+     * Second argument is integer key: largest useful key is
+     * 8 * 62 bits.
+     */
+  {
     int i, j, n, ii;
     int[64] key = {};
 
@@ -43,8 +44,11 @@ namespace ARC4 {
     p1 = p2 = 0;
   }
 
-  /* Get the next byte from the stream */
-  public int streambyte() {
+  public int streambyte() 
+    /*
+     * Get the next byte from the stream 
+     */
+  {
     p1 = (p1 + 1) & 0xff;
     p2 = (p2 + state[p1]) & 0xff;
     int tmp = state[p1];
@@ -55,4 +59,3 @@ namespace ARC4 {
   }
   
 }
-

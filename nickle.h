@@ -47,6 +47,7 @@ typedef struct _symbolNamespace {
 
 typedef struct _symbolException {
     SymbolBase	    symbol;
+    Value	    doc;
 } SymbolException;
 
 typedef union _symbol {
@@ -59,7 +60,7 @@ typedef union _symbol {
 } Symbol;
 
 extern SymbolPtr    NewSymbolType (Atom name, Type *type);
-extern SymbolPtr    NewSymbolException (Atom name, Type *type);
+extern SymbolPtr    NewSymbolException (Atom name, Type *type, Value doc);
 extern SymbolPtr    NewSymbolConst (Atom name, Type *type);
 extern SymbolPtr    NewSymbolGlobal (Atom name, Type *type);
 extern SymbolPtr    NewSymbolArg (Atom name, Type *type);
@@ -253,6 +254,7 @@ typedef struct _codeBase {
     ExprPtr	name;
     CodePtr	previous;
     CodePtr	func;	    /* function context, usually self */
+    Value	doc;	    /* documentation */
 } CodeBase;
 
 /*
@@ -340,9 +342,9 @@ typedef union _code {
     BuiltinCode	builtin;
 } Code;
 
-CodePtr	NewFuncCode (Type *type, ArgType *args, ExprPtr code);
+CodePtr	NewFuncCode (Type *type, ArgType *args, ExprPtr code, Value doc);
 CodePtr	NewBuiltinCode (Type *type, ArgType *args, int argc, 
-			BuiltinFunc func, Bool needsNext);
+			BuiltinFunc func, Bool needsNext, char *doc);
 Value	NewFunc (CodePtr, FramePtr);
 
 typedef struct _farJump {
@@ -711,6 +713,7 @@ Bool	LexFile (char *file, Bool complain, Bool after);
 Value	atov (char *, int), aetov (char *, int);
 extern int  ignorenl;
 void	skipcomment (void);
+Value	lexdoc (void);
 void	skipline (void);
 int	lexEscape (int);
 
@@ -942,7 +945,6 @@ Value	do_Command_pretty_print (int , Value *);
 Value	do_Thread_cont (void);
 Value	do_Thread_current (void);
 Value	do_Thread_list (void);
-Value	do_getbyte (void);
 Value	do_time (void);
 Value	do_File_string_write (void);
 Value	do_Debug_up (void);
@@ -953,7 +955,6 @@ Value   do_Debug_help (void);
 Value	do_File_mkpipe (void);
 
 /* one argument builtins */
-Value	do_putbyte (Value);
 Value	do_sleep (Value);
 Value	do_exit (Value);
 Value	do_dim (Value);
@@ -1010,7 +1011,6 @@ Value	do_Primitive_random (Value);
 Value	do_Primitive_srandom (Value);
 Value	do_Debug_dump (Value);
 Value	do_Debug_dump_active (void);
-Value	do_Debug_mem_collect (void);
 Value	do_Command_delete (Value);
 Value	do_Command_edit (Value);
 Value	do_Command_display (Value);

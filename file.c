@@ -686,7 +686,7 @@ FileFopen (char *name, char *mode, int *errp)
 	}
 	else
 	    oflags = 1;
-	oflags |= O_TRUNC|O_CREAT|O_APPEND;
+	oflags |= O_CREAT|O_APPEND;
 	flags |= FileWritable;
 	break;
     }

@@ -9,9 +9,16 @@ extend namespace File {
     int default_output_precision = -1;
     int infinite_output_precision = -2;
 
-    public exception invalid_format (string format);
-    public exception too_many_arguments (string format, poly[*] args);
-    public exception too_few_arguments (string format, poly[*] args);
+    public exception too_many_arguments (string format, poly[*] args)
+	/*
+	 * Raised when too many arguments are passed to a printf
+	 * function
+	 */;
+    public exception too_few_arguments (string format, poly[*] args)
+	/*
+	 * Raised when too few arguments are passed to a printf
+	 * function
+	 */;
     
     void to_utf8 (int c, void(int c) f)
     {
@@ -31,6 +38,9 @@ extend namespace File {
     }
     
     public void vfprintf (file f, string format, poly[*] args)
+	/*
+	 * print 'args' to 'f' according to 'format'
+	 */
     {
 	/*
 	 * A private namespace to walk the format string 
@@ -189,16 +199,25 @@ extend namespace File {
     }
 
     public void fprintf (file f, string format, poly args...)
+	/*
+	 * print 'args' to 'f' according to 'format'
+	 */
     {
 	vfprintf (f, format, args);
     }
 
     public void vprintf (string format, poly[*] args)
+	/*
+	 * print 'args' to stdout according to 'format'
+	 */
     {
 	vfprintf (stdout, format, args);
     }
 
     public string vsprintf (string format, poly[*] args)
+	/*
+	 * print 'args' to a string according to 'format'
+	 */
     {
 	file	f = File::string_write ();
 	vfprintf (f, format, args);
@@ -208,11 +227,17 @@ extend namespace File {
     public namespace PrintfGlobals {
 
 	public void printf (string format, poly args...)
+	    /*
+	     * print 'args' to stdout according to 'format'
+	     */
 	{
 	    vprintf (format, args);
 	}
 
 	public string sprintf (string format, poly args...)
+	    /*
+	     * print 'args' to a string according to 'format'
+	     */
 	{
 	    return vsprintf (format, args);
 	}

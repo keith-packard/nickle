@@ -35,13 +35,6 @@ struct filebuiltin {
     NamespacePtr    *namespace;
 };
 
-struct ebuiltin {
-    char		*name;
-    StandardException	exception;
-    char		*args;
-    NamespacePtr	*namespace;
-};
-
 static const struct sbuiltin svars[] = {
     { "> ",	    "prompt" },
     { "+ ",	    "prompt2" },
@@ -80,14 +73,46 @@ static const struct filebuiltin fvars[] = {
 };
 
 static const struct ebuiltin excepts[] = {
-    {"uninitialized_value",	exception_uninitialized_value,	"s" },
-    {"invalid_argument",	exception_invalid_argument,	"sip" },
-    {"readonly_box",		exception_readonly_box,		"sp" },
-    {"invalid_array_bounds",	exception_invalid_array_bounds,	"spp" },
-    {"divide_by_zero",		exception_divide_by_zero,	"snn" },
-    {"invalid_struct_member",	exception_invalid_struct_member,"sps" },
-    {"invalid_binop_values",	exception_invalid_binop_values,	"spp" },
-    {"invalid_unop_value",	exception_invalid_unop_value,	"sp" },
+    {"uninitialized_value",	exception_uninitialized_value,	"s", "\n"
+	" uninitialized_value (string message)\n"
+	"\n"
+	" Attempting to fetch from uninitialized storage.\n"
+	" 'message' indicates the error context.\n" },
+    {"invalid_argument",	exception_invalid_argument,	"sip", "\n"
+	" invalid_argument (string message, int id, poly value)\n"
+	"\n"
+	" Function argument 'id' couldn't accept 'value'.\n"
+	" 'message' indicates the error context.\n" },
+    {"readonly_box",		exception_readonly_box,		"sp", "\n"
+	" readonly_box (string message, poly value)\n"
+	"\n"
+	" Attempting to store 'value' in const storage.\n"
+	" 'message' indicates the error context.\n" },
+    {"invalid_array_bounds",	exception_invalid_array_bounds,	"spp", "\n"
+	" invalid_array_bounds (string message, poly box, poly index)\n"
+	"\n"
+	" Attempt to index outside of array or do pointer arithmetic\n"
+	" on a pointer not referencing an array.\n"
+	" 'message' indicates the error context.\n" },
+    {"divide_by_zero",		exception_divide_by_zero,	"sRR", "\n"
+	" divide_by_zero (string message, real num, real den)\n"
+	"\n"
+	" Division or modulus by zero.\n"
+	" 'message' indicates the error context.\n" },
+    {"invalid_struct_member",	exception_invalid_struct_member,"sps", "\n"
+	" invalid_struct_member (string message, poly struct, string member)\n"
+	"\n"
+	" 'member' is not in 'value'.\n" },
+    {"invalid_binop_values",	exception_invalid_binop_values,	"spp",
+	" invalid_binop_values (string message, poly left, poly right)\n"
+	"\n"
+	" 'left' and 'right' aren't compatible with a binary operator.\n"
+	" 'message' indicates which operator is problematic.\n" },
+    {"invalid_unop_value",	exception_invalid_unop_value,	"sp", "\n"
+	" invalid_unop_value (string message, poly value)\n"
+	"\n"
+	" 'value' isn't compatible with a unary operator.\n"
+	" 'message' indicates which operator is problematic.\n" },
     {0,				0 },
 };
 
@@ -123,6 +148,7 @@ BuiltinType (char *format, Type **type)
     Bool    ref = False;
     Bool    array = False;
     Bool    hash = False;
+    Bool    resizable = False;
     Expr    *dims = 0;
     Type    *k;
     
@@ -136,8 +162,10 @@ BuiltinType (char *format, Type **type)
     {
 	array = True;
 	format++;
-	while (*format == '*')
+	while (*format == '*' || *format == '.')
 	{
+	    if (*format == '.')
+		resizable = True;
 	    dims = NewExprComma (0, dims);
 	    format++;
 	}
@@ -171,7 +199,7 @@ BuiltinType (char *format, Type **type)
     if (ref)
 	t = NewTypeRef (t, False);
     if (array)
-	t = NewTypeArray (t, dims, False);
+	t = NewTypeArray (t, dims, resizable);
     if (hash)
 	t = NewTypeHash (t, k);
     *type = t;
@@ -222,18 +250,23 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 SymbolPtr
 BuiltinException (NamespacePtr  *namespacep,
 		  char		*string,
-		  Type		*type)
+		  Type		*type,
+		  char		*doc)
 {
     ENTER ();
+    Value   doc_value = doc ? NewStrString (doc) : Void;
+    
     RETURN (BuiltinAddName (namespacep, 
-			    NewSymbolException (AtomId (string), type)));
+			    NewSymbolException (AtomId (string),
+						type, doc_value)));
 }
 
 void
 BuiltinAddException (NamespacePtr	*namespacep, 
 		     StandardException	exception,
 		     char		*name,
-		     char		*format)
+		     char		*format,
+		     char		*doc)
 {
     ENTER ();
     SymbolPtr	sym;
@@ -243,14 +276,16 @@ BuiltinAddException (NamespacePtr	*namespacep,
 
     args = BuiltinArgType (format, &argc);
     type = NewTypeFunc (typePoly, args);
-    sym = BuiltinException (namespacep, name, NewTypeFunc (typePoly, args));
+    sym = BuiltinException (namespacep, name,
+			    NewTypeFunc (typePoly, args),
+			    doc);
     RegisterStandardException (exception, sym);
     EXIT ();
 }
 
 void
 BuiltinAddFunction (NamespacePtr *namespacep, char *name, char *ret_format,
-		    char *format, BuiltinFunc f, Bool jumping)
+		    char *format, BuiltinFunc f, Bool jumping, char *doc)
 {
     ENTER ();
     Value	func;
@@ -262,7 +297,7 @@ BuiltinAddFunction (NamespacePtr *namespacep, char *name, char *ret_format,
     args = BuiltinArgType (format, &argc);
     BuiltinType (ret_format, &ret);
     sym = BuiltinSymbol (namespacep, name, NewTypeFunc (ret, args));
-    func =  NewFunc (NewBuiltinCode (ret, args, argc, f, jumping), 0);
+    func =  NewFunc (NewBuiltinCode (ret, args, argc, f, jumping, doc), 0);
     BoxValueSet (sym->global.value, 0, func);
     EXIT ();
 }
@@ -347,7 +382,7 @@ BuiltinInit (void)
 
     /* Import standard exceptions */
     for (e = excepts; e->name; e++)
-	BuiltinAddException (e->namespace, e->exception, e->name, e->args);
+	BuiltinAddException (0, e->exception, e->name, e->args, e->doc);
 
     EXIT ();
 }

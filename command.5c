@@ -5,7 +5,14 @@ extend namespace Command {
      * interpreter
      */
     
-    public void display (poly v) {
+    public void display (poly v) 
+	/*
+	 * Used by the top-level read/eval/print loop.
+	 * For non-void 'v', 
+	 *   Prints out 'v' in the current default format.
+	 *   Inserts 'v' into the history.
+	 */
+    {
 	if (is_void (v))
 	    return;
 	History::insert (v);
@@ -13,7 +20,17 @@ extend namespace Command {
 	putchar ('\n');
     }
 
-    public void display_base (poly v, int base) {
+    public void display_base (poly v, int base) 
+	/*
+	 * Used by the top-level read/eval/print loop
+	 * when '# base' is appended to an expression.
+	 * For non-void 'v',
+	 *  Prints out 'v' in 'base'.
+	 *  Inserts 'v' into the history.
+	 */
+    {
+	if (is_void (v))
+	    return;
 	History::insert (v);
 	File::print (stdout, v, "g", base, 0, -1, " ");
 	putchar ('\n');

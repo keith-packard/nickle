@@ -14,6 +14,7 @@ static void MarkFuncCode (void *object)
 
     MemReference (fc->base.type);
     MemReference (fc->base.args);
+    MemReference (fc->base.doc);
     MemReference (fc->code);
     MemReference (fc->body.obj);
     MemReference (fc->body.dynamics);
@@ -37,7 +38,7 @@ HasVarargs (ArgType *args)
 }
 
 CodePtr
-NewFuncCode (Type *type, ArgType *args, ExprPtr code)
+NewFuncCode (Type *type, ArgType *args, ExprPtr code, Value doc)
 {
     ENTER ();
     CodePtr	fc;
@@ -51,6 +52,7 @@ NewFuncCode (Type *type, ArgType *args, ExprPtr code)
     fc->base.name = 0;
     fc->base.previous = 0;
     fc->base.func = fc;
+    fc->base.doc = doc;
     
     fc->func.code = code;
     
@@ -71,13 +73,14 @@ static void MarkBuiltinCode (void *object)
 
     MemReference (bc->base.type);
     MemReference (bc->base.args);
+    MemReference (bc->base.doc);
 }
 
 DataType BuiltinCodeType = { MarkBuiltinCode, 0, "BuiltinCodeType" };
 
 CodePtr
 NewBuiltinCode (Type *type, ArgType *args, int argc, 
-		BuiltinFunc builtin, Bool needsNext)
+		BuiltinFunc builtin, Bool needsNext, char *doc)
 {
     ENTER ();
     CodePtr bc;
@@ -90,6 +93,7 @@ NewBuiltinCode (Type *type, ArgType *args, int argc,
     bc->base.args = args;
     bc->base.name = 0;
     bc->base.previous = 0;
+    bc->base.doc = doc ? NewStrString (doc) : Void;
     
     bc->builtin.needsNext = needsNext;
     bc->builtin.b = builtin;

@@ -184,6 +184,14 @@ do_Debug_dump (Value f)
     ENTER ();
     CodePtr code;
     
+    if (!ValueIsFunc (f))
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"dump: not a function",
+				1,
+				NewInt (0), f);
+	RETURN (Void);
+    }
     code = f->func.code;
     if (code->base.builtin)
     {
@@ -199,13 +207,6 @@ do_Debug_dump (Value f)
     FilePuts (FileStdout, "Function body\n");
     ObjDump (code->func.body.obj, 1);
     RETURN (Void);
-}
-
-Value
-do_Debug_mem_collect (void)
-{
-    MemCollect ();
-    return Void;
 }
 
 #ifdef MEM_TRACE

@@ -31,10 +31,19 @@ namespace Mutex {
 
     public typedef *mutex_struct mutex;
 
-    public exception deadlock (mutex m, thread self);
-    public exception notowned (mutex m, thread self, mutex_owner owner);
+    public exception deadlock (mutex m, thread self)
+	/*
+	 * raised when attempting to lock a mutex locked by self
+	 */;
+    public exception notowned (mutex m, thread self, mutex_owner owner)
+	/*
+	 * raised when attempting to release a mutex which is not locked
+	 */;
 
     public bool acquire (mutex m)
+	/*
+	 * Lock 'm'
+	 */
     {
 	if (m->owner == (mutex_owner.owner) Thread::current())
 	    raise deadlock (m, Thread::current ());
@@ -44,6 +53,10 @@ namespace Mutex {
     }
 
     public bool try_acquire (mutex m)
+	/*
+	 * If 'm' is unlocked, acquire (m) and return true
+	 * else return false
+	 */
     {
 	if (m->owner == (mutex_owner.owner) Thread::current())
 	    raise deadlock (m, Thread::current());
@@ -54,6 +67,9 @@ namespace Mutex {
     }
 
     public void release (mutex m)
+	/*
+	 * Unlock 'm'
+	 */
     {
 	if (m->owner != (mutex_owner.owner) Thread::current())
 	    raise notowned (m, Thread::current (), m->owner);
@@ -62,11 +78,17 @@ namespace Mutex {
     }
 
     public mutex_owner owner (mutex m)
+	/*
+	 * Return owner of 'm'
+	 */
     {
 	return m->owner;
     }
     
     public mutex new ()
+	/*
+	 * Create new (unlocked) mutex
+	 */
     {
 	return reference ((mutex_struct) { 
 	    sem = Semaphore::new (1),

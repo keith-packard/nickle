@@ -22,101 +22,223 @@ import_Toplevel_namespace()
 {
     ENTER ();
     static const struct fbuiltin_0 funcs_0[] = {
-        { do_getbyte, "getbyte", "i", "" },
-        { do_time, "time", "i", "" },
-	{ do_hash_new, "hash_new", "Hpp", "" },
+        { do_time, "time", "i", "", "\n"
+	    " int time ()\n"
+	    "\n"
+	    " Return seconds since Jan 1, 1970 00:00 GMT\n" },
         { 0 }
     };
 
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_abs, "abs", "n", "R" },
-        { do_bit_width, "bit_width", "i", "i" },
-        { do_ceil, "ceil", "i", "R" },
-        { do_denominator, "denominator", "i", "R" },
-        { do_dim, "dim", "i", "A*p" },
-        { do_dims, "dims", "A*i", "Ap" },
-        { do_exit, "exit", "v", "i" },
-        { do_exponent, "exponent", "i", "R" },
-        { do_floor, "floor", "i", "R" },
-	{ do_func_args, "func_args", "i", "p" },
-        { do_is_array, "is_array", "b", "p" },
-        { do_is_continuation, "is_continuation", "b", "p" },
-        { do_is_file, "is_file", "b", "p" },
-        { do_is_func, "is_func", "b", "p" },
-        { do_is_int, "is_int", "b", "p" },
-        { do_is_number, "is_number", "b", "p" },
-        { do_is_rational, "is_rational", "b", "p" },
-        { do_is_ref, "is_ref", "b", "p" },
-        { do_is_semaphore, "is_semaphore", "b", "p" },
-        { do_is_string, "is_string", "b", "p" },
-        { do_is_struct, "is_struct", "b", "p" },
-        { do_is_thread, "is_thread", "b", "p" },
-        { do_is_bool, "is_bool", "b", "p" },
-        { do_is_void, "is_void", "b", "p" },
-        { do_is_uninit, "is_uninit", "b", "*p" },
-        { do_mantissa, "mantissa", "r", "R" },
-        { do_numerator, "numerator", "i", "R" },
-        { do_precision, "precision", "i", "R" },
-        { do_profile, "profile", "b", "b" },
-        { do_putbyte, "putbyte", "i", "i" },
-        { do_reference, "reference", "*p", "p" },
-        { do_sign, "sign", "i", "R" },
-        { do_sleep, "sleep", "v", "i" },
-        { do_string_to_real, "string_to_real", "R", "s" },
-	{ do_hash, "hash", "i", "p" },
-	{ do_hash_keys, "hash_keys", "Ap", "Hpp" },
+        { do_abs, "abs", "R", "R", "\n"
+	    " real abs (real r)\n"
+	    "\n"
+	    " Return absolute value of 'r'.\n" },
+        { do_bit_width, "bit_width", "i", "i", "\n"
+	    " int bit_width (int i)\n"
+	    "\n"
+	    " Return width of binary representation of abs('i').\n" },
+        { do_ceil, "ceil", "i", "R", "\n"
+	    " int ceil (real r)\n"
+	    "\n"
+	    " Return the nearest integer no smaller than 'r'.\n" },
+        { do_denominator, "denominator", "i", "r",
+	    " int denominator (rational r)\n"
+	    "\n"
+	    " Return the denominator of 'r'\n" },
+        { do_dim, "dim", "i", "A*p", "\n"
+	    " int dim (poly[*] a)\n"
+	    "\n"
+	    " Return the dimension of 'a'.\n" },
+        { do_dims, "dims", "A*i", "Ap", "\n"
+	    " int[*] dims (poly[] a)\n"
+	    "\n"
+	    " Return an array containing the list of dimensions of 'a'.\n" },
+        { do_exit, "exit", "v", "i", "\n"
+	    " void exit (int i)\n"
+	    "\n"
+	    " Exit from the nickle environment with code 'i'.\n" },
+        { do_exponent, "exponent", "i", "R", "\n"
+	    " int exponent (real r)\n"
+	    "\n"
+	    " Return the exponent of the imprecise value 'r'.\n" },
+        { do_floor, "floor", "i", "R", "\n"
+	    " int floor (real r)\n"
+	    "\n"
+	    " Return the nearest integer no larger than 'r'.\n" },
+	{ do_func_args, "func_args", "i", "p", "\n"
+	    " int func_args (poly f)\n"
+	    "\n"
+	    " Return the number of arguments required by function 'f'.\n" },
+        { do_is_array, "is_array", "b", "p", "\n"
+	    " bool is_array (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an array value.\n" },
+        { do_is_continuation, "is_continuation", "b", "p" , "\n"
+	    " bool is_continuation (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an continuation value.\n" },
+        { do_is_file, "is_file", "b", "p" , "\n"
+	    " bool is_file (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an file value.\n" },
+        { do_is_func, "is_func", "b", "p" , "\n"
+	    " bool is_func (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an func value.\n" },
+        { do_is_int, "is_int", "b", "p" , "\n"
+	    " bool is_int (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an int value.\n" },
+        { do_is_number, "is_number", "b", "p" , "\n"
+	    " bool is_number (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an numeric value.\n" },
+        { do_is_rational, "is_rational", "b", "p" , "\n"
+	    " bool is_rational (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an rational value.\n" },
+        { do_is_ref, "is_ref", "b", "p" , "\n"
+	    " bool is_ref (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an ref value.\n" },
+        { do_is_semaphore, "is_semaphore", "b", "p" , "\n"
+	    " bool is_semaphore (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an semaphore value.\n" },
+        { do_is_string, "is_string", "b", "p" , "\n"
+	    " bool is_string (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an string value.\n" },
+        { do_is_struct, "is_struct", "b", "p" , "\n"
+	    " bool is_struct (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an struct value.\n" },
+        { do_is_thread, "is_thread", "b", "p" , "\n"
+	    " bool is_thread (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an thread value.\n" },
+        { do_is_bool, "is_bool", "b", "p" , "\n"
+	    " bool is_bool (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an bool value.\n" },
+        { do_is_void, "is_void", "b", "p" , "\n"
+	    " bool is_void (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an void value.\n" },
+        { do_is_uninit, "is_uninit", "b", "*p", "\n"
+	    " bool is_uninit (*poly r)\n"
+	    "\n"
+	    " Return whether 'r' references uninitialized storage.\n" },
+        { do_mantissa, "mantissa", "r", "R", "\n"
+	    " rational mantissa (real r)\n"
+	    "\n"
+	    " Return the mantissa of 'r' as a rational between 0 and 1.\n" },
+        { do_numerator, "numerator", "i", "r", "\n"
+	    " int numerator (rational r)\n"
+	    "\n"
+	    " Return the numerator of 'r'.\n" },
+        { do_precision, "precision", "i", "R", "\n"
+	    " int precision (real r)\n"
+	    "\n"
+	    " Return the number of bits in the\n"
+	    " representation of the mantissa of 'r'.\n"	},
+        { do_profile, "profile", "b", "b", "\n"
+	    " bool profile (bool enable)\n"
+	    "\n"
+	    " Set profiling on/off.\n"
+	    " Returns previous profiling state.\n" },
+        { do_reference, "reference", "*p", "p", "\n"
+	    " *poly reference (poly value)\n"
+	    "\n"
+	    " Returns &value.\n" },
+        { do_sign, "sign", "i", "R", "\n"
+	    " int sign (real r)\n"
+	    " Return -1, 0, 1 for negative, zero or positive 'r'.\n" },
+        { do_sleep, "sleep", "v", "i", "\n"
+	    " void sleep (int milliseconds)\n"
+	    "\n"
+	    " Pause thread execution for 'milliseconds'.\n" },
+        { do_string_to_real, "string_to_real", "R", "s", "\n"
+	    " real string_to_real (string s)\n"
+	    "\n"
+	    " Parse a string representation of a numeric value.\n" },
+	{ do_hash, "hash", "i", "p", "\n"
+	    " int hash (poly p)\n"
+	    "\n"
+	    " Return an integer based on 'p' such that any value equal\n"
+	    " to 'p' will return the same integer.\n" },
+	{ do_hash_keys, "hash_keys", "Ap", "Hpp", "\n"
+	    " poly[] hash_keys (poly[poly] h)\n"
+	    "\n"
+	    " Return an array containing all of the key in 'h'.\n"
+	    " The order within the array is undefined.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_gcd, "gcd", "i", "ii" },
-        { do_setjmp, "setjmp", "p", "*cp" },
-        { do_xor, "xor", "i", "ii" },
-	{ do_setdims, "setdims", "v", "ApAi" },
-	{ do_setdim, "setdim", "v", "Api" },
-	{ do_hash_get, "hash_get", "p", "Hppp" },
-	{ do_hash_del, "hash_del", "v", "Hppp" },
-	{ do_hash_test, "hash_test", "b", "Hppp" },
+        { do_gcd, "gcd", "i", "ii", "\n"
+	    " int gcd (int a, int b)\n"
+	    "\n"
+	    " Return the greatest common divisor of 'a' and 'b'.\n" },
+        { do_setjmp, "setjmp", "p", "*cp", "\n"
+	    " poly setjmp (*continuation c, poly v)\n"
+	    "\n"
+	    " On direct invocation, create a continuation and store\n"
+	    " that in *'c'.  Then return 'v'.\n"
+	    " Subsequent invocations of longjmp with *'c' will appear\n"
+	    " to return from 'setjmp' with the value passed to longjmp.\n" },
+	{ do_setdims, "setdims", "v", "ApA*i", "\n"
+	    " void setdims (poly[] a, int[*] dimensions)\n"
+	    "\n"
+	    " Set the dimensions of resizable array 'a' to 'dimensions'.\n"
+	    " dim(dimensionss) must be the same as dim(dims(a)).\n" },
+	{ do_setdim, "setdim", "v", "A.pi", "\n"
+	    " void setdim (poly[...] a, int dimension)\n"
+	    "\n"
+	    " Set the dimension of 'a' to 'dimension'.\n" },
+	{ do_hash_del, "hash_del", "v", "Hppp", "\n"
+	    " void hash_del (poly[poly] h, poly key)\n"
+	    "\n"
+	    " Delete any hash value in 'h' associated with 'key'.\n" },
+	{ do_hash_test, "hash_test", "b", "Hppp", "\n"
+	    " bool hash_test (poly[poly] h, poly key)\n"
+	    "\n"
+	    " Return whether 'h' contains 'key'.\n" },
         { 0 }
     };
 
     static const struct fbuiltin_2j funcs_2j[] = {
-        { do_longjmp, "longjmp", "p", "cp" },
+        { do_longjmp, "longjmp", "v", "cp", "\n"
+	    " void longjmp (continuation c, poly v)\n"
+	    "\n"
+	    " Relocate execution to that saved in 'c', making the\n"
+	    " setjmp call there appear to return 'v'.\n" },
         { 0 }
     };
 
-    static const struct fbuiltin_3 funcs_3[] = {
-	{ do_hash_set, "hash_set", "v", "Hpppp" },
-	{ 0 }
-    };
-
     static const struct fbuiltin_v funcs_v[] = {
-        { do_imprecise, "imprecise", "R", "R.i" },
-        { do_string_to_integer, "string_to_integer", "i", "s.i" },
+        { do_imprecise, "imprecise", "R", "R.i", "\n"
+	    " real imprecise (real r)\n"
+	    " real imprecise (real r, int precision)\n"
+	    "\n"
+	    " Return an imprecise number.\n"
+	    " The precision will be 'precision' if supplied, else 256.\n" },
+        { do_string_to_integer, "string_to_integer", "i", "s.i", "\n"
+	    " int string_to_integer (string s)\n"
+	    " int string_to_integer (string s, int base)\n"
+	    "\n"
+	    " Parse 's' as an integer.\n"
+	    " Use 'base' if supplied, else autodetect.\n" },
         { 0 }
     };
 
     BuiltinFuncs0 (/*parent*/ 0, funcs_0);
     BuiltinFuncs1 (/*parent*/ 0, funcs_1);
     BuiltinFuncs2 (/*parent*/ 0, funcs_2);
-    BuiltinFuncs3 (/*parent*/ 0, funcs_3);
     BuiltinFuncs2J (/*parent*/ 0, funcs_2j);
     BuiltinFuncsV (/*parent*/ 0, funcs_v);
     EXIT ();
-}
-
-Value 
-do_getbyte ()
-{
-    ENTER ();
-    RETURN (do_File_getb (FileStdin));
-}
-
-Value 
-do_putbyte (Value v)
-{
-    ENTER ();
-    RETURN (do_File_putb (v, FileStdout));
 }
 
 Value 
@@ -124,13 +246,6 @@ do_gcd (Value a, Value b)
 {
     ENTER ();
     RETURN (Gcd (a, b));
-}
-
-Value
-do_xor (Value a, Value b)
-{
-    ENTER ();
-    RETURN (Lxor (a, b));
 }
 
 Value
@@ -790,11 +905,6 @@ Value	do_hash_new (void)
     return NewHash (False, typePoly, typePoly);
 }
 
-Value	do_hash_get (Value hv, Value key)
-{
-    return HashGet (hv, key);
-}
-
 Value	do_hash_del (Value hv, Value key)
 {
     HashDelete (hv, key);
@@ -811,8 +921,3 @@ Value	do_hash_keys (Value hv)
     return HashKeys (hv);
 }
 
-Value	do_hash_set (Value hv, Value key, Value value)
-{
-    HashSet (hv, key, value);
-    return Void;
-}

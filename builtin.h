@@ -30,17 +30,26 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 SymbolPtr
 BuiltinException (NamespacePtr  *namespacep,
 		  char		*string,
-		  Type		*type);
+		  Type		*type,
+		  char		*doc);
+
+struct ebuiltin {
+    char		*name;
+    StandardException	exception;
+    char		*args;
+    char		*doc;
+};
 
 void
 BuiltinAddException (NamespacePtr	*namespacep, 
 		     StandardException	exception,
 		     char		*name,
-		     char		*format);
+		     char		*format,
+		     char		*doc);
 
 void
 BuiltinAddFunction (NamespacePtr *namespacep, char *name, char *ret_format,
-		    char *format, BuiltinFunc f, Bool jumping);
+		    char *format, BuiltinFunc f, Bool jumping, char *doc);
 
 #define BuiltinFuncStructDef(stype, functype) \
     struct stype { \
@@ -48,13 +57,14 @@ BuiltinAddFunction (NamespacePtr *namespacep, char *name, char *ret_format,
         char *name; \
         char *ret; \
         char *args; \
+	char *doc; \
     }
 
 #define BuiltinFuncsGeneric(ns, funcs, stype, bitem, jump) do { \
     BuiltinFunc f; const struct stype *fi; \
     for (fi = (funcs); fi->name; fi++) { \
 	f.bitem = fi->func; \
-	BuiltinAddFunction ((ns), fi->name, fi->ret, fi->args, f, jump); \
+	BuiltinAddFunction ((ns), fi->name, fi->ret, fi->args, f, jump, fi->doc); \
     } } while (0)
 
 typedef Value (*fbuiltin_v_func) (int, Value *);

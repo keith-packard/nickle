@@ -14,12 +14,23 @@ extend namespace Command {
     if (Environ::check("NICKLEPATH"))
 	nickle_path = Environ::get("NICKLEPATH");
 
-    public bool lex_file (string name) {
+    public bool lex_file (string name) 
+	/*
+	 * Push the file 'name' into the lexer and read input
+	 * from there until exhausted.  Then return to the current
+	 * file.
+	 */
+    {
 	return Command::lex_input (File::open (name, "r"), name, false, false);
     }
 	
     /* currently just does ~ expansion */
-    public string glob(string filename) {
+    public string glob(string filename) 
+	/*
+	 * Expand any leading ~/ in 'filename' to the value of the
+	 * HOME environment variable and return the resulting string
+	 */
+    {
 	if (filename[0] == '~' && filename[1] == '/') {
 	    exception bad_glob();
 	    if (!Environ::check("HOME"))
@@ -53,7 +64,13 @@ extend namespace Command {
 	return String::substr (path, i + 1, l - i - 1);
     }
     
-    public bool lex_library (string name) {
+    public bool lex_library (string name) 
+	/*
+	 * Search 'nickle_path' for the file 'name' and push any
+	 * found file into the lexer.  Returns whether any
+	 * file was found and read.
+	 */
+    {
 	for (string path = nickle_path;
 	     path != "";
 	     path = path_rest (path))
@@ -69,7 +86,11 @@ extend namespace Command {
 	return false;
     }
     
-    public bool lex_string (string s) {
+    public bool lex_string (string s) 
+	/*
+	 * Push 's' into the lexer input stack
+	 */
+    {
 	return Command::lex_input (File::string_read (s), s, false, false);
     }
 

@@ -61,7 +61,7 @@ try_nicklerc (void)
 static void
 try_nicklelib (void)
 {
-    LexLibrary ("builtin.5c", True, False);
+    LexFile (NICKLELIB "/builtin.5c", True, False);
 }    
 
 RETSIGTYPE	intr(int), ferr(int);

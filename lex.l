@@ -151,6 +151,7 @@ LexLibrary (char *filename, Bool complain, Bool after)
     char    *nicklelib;
     char    *lib;
     char    *colon;
+    Bool    found = False;
 
     library_path = lookupVar ("Command", "library_path");
     if (library_path == Zero || library_path->value.tag != type_string)
@@ -172,13 +173,18 @@ LexLibrary (char *filename, Bool complain, Bool after)
 	strcat (nicklelib, "/");
 	strcat (nicklelib, filename);
         if (LexFile (nicklelib, False, after))
+	{
+	    found = True;
 	    break;
+	}
 	lib = colon;
 	if (*lib == ':')
 	    lib++;
     }
+    if (complain && !found)
+	(void) FilePrintf (FileStderr, "cannot locate library %s\n", filename);
     EXIT ();
-    return True;
+    return found;
 }
 
 void

@@ -948,7 +948,7 @@ A colon-separated path whose elements are directories
 containing Nickle code.  The library command and the -l flag,
 described above, search this path for a filename matching the
 given file.  The default library path in the
-absence of this variable is @datadir@.
+absence of this variable is @datadir@/nickle.
 .\"
 .SH EXAMPLES
 .PP

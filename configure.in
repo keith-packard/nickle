@@ -69,4 +69,6 @@ if test "x$prefix" = xNONE; then
 fi
 datadir=`eval echo ${datadir}`/nickle
 
+AC_DEFINE_UNQUOTED([NICKLELIB], "$datadir", [Nickle data directory])
+
 AC_OUTPUT(Makefile date-sh nickle.1 builtin.5c, , [chmod +x ${srcdir}/date-sh])

@@ -1,3 +1,10 @@
+2004-09-16  Keith Packard  <keithp@keithp.com>
+
+	* examples/google-puzzle.5c:
+	Avoid having leading 0's convert in octal.
+	Reformat to reasonable line lengths.
+	Note that this still gets the wrong answer.
+
 2004-08-22  Keith Packard  <keithp@keithp.com>
 
 	* builtin-file.c: (do_File_print):

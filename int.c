@@ -386,7 +386,7 @@ int
 IntInit (void)
 {
     ENTER ();
-    SmallInts = NewBox (True, MAX_SMALL - MIN_SMALL + 2);
+    SmallInts = NewBox (True, False, MAX_SMALL - MIN_SMALL + 2);
     MemAddRoot (SmallInts);
     Zero = NewInt (0);
     MemAddRoot (Zero);

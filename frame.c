@@ -38,7 +38,7 @@ NewFrame (Value		function,
     frame->staticLink = staticLink;
     frame->function = function;
     if (dynamics)
-	frame->frame = NewTypedBox (False, dynamics);
+	frame->frame = NewTypedBox (False, False, dynamics);
     frame->statics = statics;
     RETURN (frame);
 }

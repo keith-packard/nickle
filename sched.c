@@ -1007,7 +1007,7 @@ RaiseStandardException (StandardException   se,
     va_list	va;
     
     va_start (va, argc);
-    args = NewBox (True, argc + 1);
+    args = NewBox (True, False, argc + 1);
     BoxValueSet (args, 0, NewStrString (string));
     if (argc)
     {

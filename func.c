@@ -143,6 +143,6 @@ NewFunc (CodePtr code, FramePtr staticLink)
      * Create the box containing static variables for this closure
      */
     if (!code->base.builtin && code->func.statics)
-	ret->func.statics = NewTypedBox (False, code->func.statics);
+	ret->func.statics = NewTypedBox (False, False, code->func.statics);
     RETURN (ret);
 }

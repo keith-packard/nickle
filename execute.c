@@ -372,7 +372,7 @@ ThreadArrayIndex (Value thread, int ndim)
 	{
 	    RaiseStandardException (exception_invalid_array_bounds,
 				    "Array index out of bounds",
-				    2, a, NewInt (dim));
+				    2, a, Stack(dim));
 	    break;
 	}
 	i = i * a->array.dim[dim] + part;
@@ -411,7 +411,7 @@ ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
 #ifdef DEBUG_JUMP
     FilePrintf (FileStdout, "    Raise: %A\n", exception->symbol.name);
 #endif
-    args = NewBox (True, argc);
+    args = NewBox (True, False, argc);
     for (i = 0; i < argc; i++)
         BoxValueSet (args, i, STACK_POP (thread->thread.stack));
     (void) RaiseException (thread, exception, args, next);

@@ -116,7 +116,7 @@ NewUnion (StructType *type, Bool constant)
     ret->value.tag = type_union;
     ret->unions.type = type;
     ret->unions.tag = 0;
-    ret->unions.value = NewBox (constant, 1);
+    ret->unions.value = NewBox (constant, False, 1);
     BoxType (ret->unions.value, 0) = 0;
     RETURN (ret);
 }

@@ -90,7 +90,7 @@ NewSymbolGlobal (Atom name, Types *type, Publish publish)
     s->symbol.class = class_global;
     s->symbol.type = type;
     s->symbol.publish = publish;
-    s->global.value = NewBox (False, 1);
+    s->global.value = NewBox (False, False, 1);
     BoxType (s->global.value, 0) = type;
     RETURN (s);
 }

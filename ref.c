@@ -32,7 +32,8 @@ RefPlus (Value av, Value bv, int expandOk)
     else
 	RETURN (Zero);
     i = i + ref->element;
-    if (i < 0 || i >= ref->box->nvalues)
+    if (i < 0 || i >= ref->box->nvalues ||
+	(!ref->box->array && i != ref->element))
     {
 	RaiseStandardException (exception_invalid_array_bounds,
 				"Element out of range in reference addition",
@@ -78,7 +79,7 @@ RefMinus (Value av, Value bv, int expandOk)
 	RETURN (NewInt (ref->element - bref->element));
     }
     i = i + element;
-    if (i < 0 || i >= ref->box->nvalues)
+    if (i < 0 || i >= ref->box->nvalues || (!ref->box->array && i != ref->element))
     {
 	RaiseStandardException (exception_invalid_array_bounds,
 				"Element out of range in reference subtraction",
@@ -93,7 +94,8 @@ RefLess (Value av, Value bv, int expandOk)
 {
     Ref	*aref = &av->ref, *bref = &bv->ref;
 
-    if (aref->box != bref->box)
+    if (aref->box != bref->box || 
+	(!aref->box->array && aref->element != bref->element))
     {
 	RaiseError ("Attempt to order references to different objects %v < %v",
 		    av, bv);

@@ -26,7 +26,7 @@ BoxMark (void *object)
 DataType BoxType = { BoxMark, 0 };
 
 BoxPtr
-NewBox (Bool constant, int nvalues)
+NewBox (Bool constant, Bool array, int nvalues)
 {
     ENTER ();
     BoxPtr  box;
@@ -34,6 +34,7 @@ NewBox (Bool constant, int nvalues)
 
     box = ALLOCATE (&BoxType, sizeof (Box) + nvalues * sizeof (BoxElement));
     box->constant = constant;
+    box->array = array;
     box->nvalues = nvalues;
     for (i = 0; i < nvalues; i++)
 	BoxType(box, i) = typesPoly;
@@ -41,14 +42,14 @@ NewBox (Bool constant, int nvalues)
 }
 
 BoxPtr
-NewTypedBox (Bool constant, BoxTypesPtr bt)
+NewTypedBox (Bool constant, Bool array, BoxTypesPtr bt)
 {
     ENTER ();
     BoxPtr  box;
     int	    i;
     Types   *t;
 
-    box = NewBox (constant, bt->count);
+    box = NewBox (constant, array, bt->count);
     for (i = 0; i < bt->count; i++)
     {
 	t = BoxTypesValue (bt, i);

@@ -563,6 +563,7 @@ typedef struct _boxElement {
 typedef struct _box {
     DataType	*data;
     Bool	constant;
+    Bool	array;
     int		nvalues;
 } Box;
 
@@ -572,7 +573,7 @@ typedef struct _box {
 #define BoxConstant(box)	((box)->constant)
 #define BoxType(box,e)		(BoxElements(box)[e].type)
 
-extern BoxPtr	NewBox (Bool constant, int nvalues);
+extern BoxPtr	NewBox (Bool constant, Bool array, int nvalues);
 extern Value	BoxValue (BoxPtr box, int e);
 
 typedef struct _boxTypes {
@@ -588,7 +589,7 @@ extern BoxTypesPtr NewBoxTypes (int size);
 
 extern int	AddBoxTypes (BoxTypesPtr *btp, TypesPtr t);
 
-extern BoxPtr	NewTypedBox (Bool constant, BoxTypesPtr types);
+extern BoxPtr	NewTypedBox (Bool constant, Bool array, BoxTypesPtr types);
 			     
 Value	NewVoid (void);
 Value	NewInt (int value);

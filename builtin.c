@@ -1540,7 +1540,7 @@ do_reference (Value av)
     ENTER ();
     Value   ret;
 
-    ret = NewRef (NewBox (False, 1), 0);
+    ret = NewRef (NewBox (False, False, 1), 0);
     RefValueSet (ret, av);
     RETURN (ret);
 }

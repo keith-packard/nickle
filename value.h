@@ -24,7 +24,7 @@
 #include	"mem.h"
 #include	"opcode.h"
 
-typedef enum _Bool { False = 0, True = 1 }  	Bool;
+typedef enum { False = 0, True = 1 }  	Bool;
 typedef char		*Atom;
 typedef struct _valueType   ValueType;
 typedef struct _box	*BoxPtr;

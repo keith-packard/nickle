@@ -4,7 +4,7 @@
 ## All Rights Reserved.  See the file COPYING in this directory
 ## for licensing information.
 
-EXTRA_DIST = README.name gram.h
+EXTRA_DIST = README.name
 
 bin_PROGRAMS = nickle
 
@@ -34,4 +34,4 @@ builtin.o: builtin.c config.status $(srcdir)/date-sh
 main.o: main.c
 	$(CC) -c -DNICKLELIB=\""$(datadir)/builtin.5c"\" -I. -I$(srcdir) $(CPPFLAGS) $(CFLAGS) main.c
 
-lex.o compile.o expr.o pretty.o: gram.h
+compile.o error.o expr.o lex.o pretty.o type.o: gram.h

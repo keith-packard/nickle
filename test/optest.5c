@@ -1,0 +1,211 @@
+/* 
+ * Nickle Testing Suite v1.0
+ * Operator Testing Code
+ * Written by Erin Chapman
+ */
+
+/* Assigns a value to x for testing. */
+int x = 1;
+
+/* Tests unary increment and decrememnt. */
+++x
+x++;
+x
+--x
+x--;
+x
+
+/* Tests Unary negate */
+-x
+
+/* Tests logical negation */
+!true
+
+/* Assigns a different value to x for testing. */
+x = 4;
+
+/* Test Factorial. */
+x!
+
+/* Tests pointer construction and dereference. */
+*int z;
+z = &x
+*z
+
+/* Tests construction and evaluation of a union. */
+union {int a; string b;} test;
+test
+test.a = 1;
+test
+test.b = "hello";
+test
+try {
+  test.a;
+} catch invalid_struct_member (string msg, poly test, string name) {
+  printf("test.a appropriately failed.\n");
+};
+
+/* Tests exponentiation. */
+x**2
+x**.5
+(x/3)**2
+(x/3)**.5
+(-x)**2
+try {
+  (-x)**.5;
+} catch invalid_argument (msg, int i, poly value) {
+  printf("(-x)**.5 appropriately failed.\n");
+};
+
+/* Tests multiplication. */
+x*2
+
+/* Tests division. */
+x/2
+
+/* Tests integer division. */
+x//3
+x//3 == floor(x/3)
+(x//3)*3+(x%3) == x
+
+/* Tests remainder. */
+x%3
+
+/* Tests addition and subtraction. */
+x+3
+x-3
+
+/* Tests bitwise left shift. */
+x<<1
+x<<-1
+x<<1 == x*2**1
+
+/* Tests bitwise right shift. */
+x>>1
+x>>-1
+x>>1 == x//2**1
+
+/* Tests relational operators. */
+x<=10
+x>=-10
+x < 15
+x > -15
+
+/* Tests equality operators. */
+x == x
+x != x - 1
+
+/* Tests bitwise AND. */
+1&2
+2&3
+3&3
+
+/* Tests bitwsie XOR. */
+1^2
+2^3
+3^3
+
+/* Tests bitwise OR. */
+0|0
+0|1
+
+/* Tests short-circuit logical AND. */
+true&&false
+true&&true
+false&&false
+false&&true
+
+/* Tests short-circuit logical OR. */
+true||true
+true||false
+false||false
+false||true
+
+/* Assigns a value to y for testing. */
+int y = 0;
+
+/* Tests conditional expressions. */
+y == 0 ? 1 : 2
+y == 1 ? 1 : 2
+
+/* Tests assignment operators. */
+try {
+  x = 3;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Equals assignment failed (x = 3).\n");
+};
+x
+try {
+  x += 1;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Plus equals assignment failed (x += 1).\n");
+};
+x
+try {
+  x -= 1;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Minus equals assignment failed (x -= 1).\n");
+};
+x
+try {
+  x *= 2;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Times equals assignment failed (x *= 2).\n");
+};
+x
+try {
+  x /= 2;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Divide equals assignment failed (x /= 2).\n");
+};
+x
+try {
+  x //= 2;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Integer divide equals assignment failed (x //= 2).\n");
+};
+x
+try {
+  x %= 3;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Remainder equals assignment failed (x %= 3).\n");
+};
+x
+x = 2;
+try {
+  x **= 2;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Exponentiation equals assignment failed (x **= 2).\n");
+};
+x
+try {
+  x <<= 1;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Bitwise left shift equals assignment failed (x <<= 1).\n");
+};
+x
+try {
+  x >>= 1;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Bitwise right shift equals assignment failed (x >>= 1).\n");
+};
+x
+try {
+  x ^= 2;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Bitwise XOR equals assignment failed (x ^= 2).\n");
+};
+x
+try {
+  x &= 2;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Bitwise AND equals assignment failed (x &= 2).\n");
+};
+x
+try {
+  x |= 2;
+} catch invalid_argument (string msg, int i, poly value) {
+  printf("Bitwise OR assignment failed (x |= 2).\n");
+};
+x
+quit

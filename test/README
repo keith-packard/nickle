@@ -1,0 +1,4 @@
+These files are used to make sure that everything in Nickle is working as it should be, or at least how we hope it should work.  Each file tests specific items within Nickle such as order of operations.
+
+optest.5c - tests the operators to make sure they are calculating properly
+orderofoptest.5c - tests to make sure that Nickle evaluates in the correct order

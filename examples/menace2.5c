@@ -32,17 +32,23 @@ typedef position[8] poslist;
 
 /* transposition table (memory) entry */
 typedef ttent;
+
+typedef union {
+    *ttent  ref;
+    void    end;
+} ttentref;
+
 typedef struct {
     piece on_move;
     poslist posns;
     int nmoves;
     int tweight;
     weights val;
-    *ttent next;
+    ttentref next;
 } ttent;
 
 /* the transposition table (memory) */
-*ttent ttable = 0;
+ttentref ttable = ttentref.end;
 
 /* whose turn it is: piece.none == board full  */
 piece side_on_move(*position b) {
@@ -63,7 +69,7 @@ int nttstates = 0;
 
 
 /* lookup or create the current pos in the ttable */
-*ttent ttable_lookup(position pos) {
+ttentref ttable_lookup(position pos) {
 
     /* return all rotations/reflections of pos */
     poslist all_posns(position pos) {
@@ -90,9 +96,9 @@ int nttstates = 0;
     }
 
     /* first, try to look up an old entry */
-    for (*ttent t = ttable; t != 0; t = t->next)
+    for (ttentref t = ttable; t != ttentref.end; t = t.ref->next)
 	for (int i = 0; i < 8; i++)
-	    if (t->posns[i] == pos)
+	    if (t.ref->posns[i] == pos)
 		return t;
     /* nope: create a new entry */
     nttstates++;
@@ -121,7 +127,7 @@ int nttstates = 0;
 	}
     }
     /* insert the new entry into the table */
-    ttable = &t;
+    ttable = (ttentref.ref) (&t);
     return ttable;
 }
 
@@ -164,7 +170,7 @@ piece menace2(position b) {
     piece us = side_on_move(&b);
     if (us == piece.none)
 	return us;
-    *ttent t = ttable_lookup(b);
+    *ttent t = ttable_lookup(b).ref;
     b = t->posns[0];
     int r = PRNG::randint(t->tweight) + 1;
     for (int i = 0; i < 3; i++) {
@@ -212,7 +218,7 @@ void go(int n) {
     }
     for(int i = 0; i < n; i++)
 	piece w = menace2(b);
-    *ttent t = ttable_lookup(b);
+    *ttent t = ttable_lookup(b).ref;
     for(int j = 0; j < 3; j++) {
     	for(int i = 0; i < 3; i++) {
 	    string label(piece p) {

@@ -24,6 +24,7 @@ public namespace Lexc {
 	char	    ch;
 
 	ch.c = File::getc (in);
+	printf ("got %d\n", ch.c);
 	if (ch.c == '<')
 	    ch.id = Left;
 	else if (ch.c == '>')
@@ -168,6 +169,8 @@ public namespace Parse {
 	*context    ctxt;
     } element;
 
+    public *element element_end = reference ((element){});
+    
     public typedef c_list;
     public typedef struct {
 	string   active_tag;
@@ -175,9 +178,11 @@ public namespace Parse {
 	*c_list  prev;
     } c_list;
 
+    public *c_list   c_list_end = reference ((c_list) {});
+
     function clist_show(*c_list c) {
 	printf ("clist show...\n");
-	while (c != 0 && c->ctxt != 0) {
+	while (c != c_list_end && c->ctxt != no_context) {
 	    context_dump(*c->ctxt);
 	    printf("\n");
 	    c = c->prev;
@@ -186,14 +191,15 @@ public namespace Parse {
 
     public *element function get (file in)
     {
-	*element    first = 0;
-	* *element   p = &first;
-	*c_list     c = reference ( (c_list) { ctxt=&root_context, prev=0});
+	*element    first = element_end;
+	* *element  p = &first;
+	*c_list	    c = reference ( (c_list) { ctxt=&root_context, prev=c_list_end});
 
 	for (;;)
 	{
 	    Lex::token  t = Lex::get (in);
 
+	    printf ("lexed: %v\n", t);
 	    switch (t.id) {
 	    case Lex::Eof:
 		if (c->ctxt != &root_context)
@@ -201,14 +207,14 @@ public namespace Parse {
 		return first;
 	    case Lex::Text:
 		*p = reference ((element) { 
-		    next = 0, 
+		    next = element_end, 
 		    data = t.value,
 		    ctxt = c->ctxt });
 		p = &(*p)->next;
 		break;
 	    case Lex::Space:
 		*p = reference ((element) { 
-		    next = 0, 
+		    next = element_end, 
 		    data = t.value,
 		    ctxt = c->ctxt });
 		p = &(*p)->next;
@@ -233,7 +239,7 @@ public namespace Parse {
 
     public void function dump (*element e)
     {
-	if (e != 0)
+	if (e != element_end)
 	{
 	    context_dump (*e->ctxt);
 	    printf ("%v\n", e->data);

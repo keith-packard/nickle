@@ -50,3 +50,5 @@ string function roman (int i)
 		    roman(i % digits[d].base));
     return "";
 }
+
+printf ("%s\n", roman (string_to_integer (argv[1])));

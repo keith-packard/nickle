@@ -13,7 +13,7 @@ void function int_random (int ubits, int vbits)
     int	    u = randbits (ubits);
     int	    v = randbits (vbits);
 
-    if (!v) v++;
+    if (v == 0) v = 1;
     int_check (u, v);
 }
 

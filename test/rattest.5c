@@ -13,8 +13,8 @@ void function rat_random (int ubits, int vbits)
     int	    u = randbits (ubits);
     int	    v = randbits (vbits);
 
-    if (!u) u++;
-    if (!v) v++;
+    if (u == 0) u = 1;
+    if (v == 0) v = 1;
     rat_check (u, v);
 }
 

@@ -1,9 +1,9 @@
 int function gcd_euclid (int u, int v)
 {
     int steps = 0;
-    if (!u || !v)
+    if (u == 0 || v == 0)
 	return 0;
-    while (v)
+    while (v > 0)
     {
 	int t = u % v;
 	u = v;
@@ -15,7 +15,7 @@ int function gcd_euclid (int u, int v)
 
 import PRNG;
 
-int gcd_verify = 1;
+bool gcd_verify = true;
 
 exception bad_gcd (int u, int v);
 

@@ -669,13 +669,12 @@ public namespace Rijndael {
 	int[4,MAXBC]	block = {};
 
         /* check parameter consistency: */
-        if (key == 0 || key->direction != DIR_ENCRYPT ||
+        if (key->direction != DIR_ENCRYPT ||
 	    (key->keyLen != 128 && key->keyLen != 192 && key->keyLen != 256)) 
 	{
 	    raise bad_key_material ("");
         }
-        if (cipher == 0 ||
-	    (cipher->mode != MODE_ECB && cipher->mode != MODE_CBC && cipher->mode != MODE_CFB1) ||
+        if ((cipher->mode != MODE_ECB && cipher->mode != MODE_CBC && cipher->mode != MODE_CFB1) ||
 	    (cipher->blockLen != 128 && cipher->blockLen != 192 && cipher->blockLen != 256)) 
 	{
 	    raise bad_cipher_state (cipher);
@@ -745,24 +744,20 @@ public namespace Rijndael {
 	int		i, j, t, numBlocks;
 	int[4,MAXBC]    block = {};
 
-	if (cipher == 0 ||
-	    key == 0 ||
-	    key->direction == DIR_ENCRYPT ||
+	if (key->direction == DIR_ENCRYPT ||
 	    cipher->blockLen != key->blockLen) 
 	{
 	    raise bad_cipher_state (cipher);
 	}
 
 	/* check parameter consistency: */
-	if (key == 0 ||
-	    key->direction != DIR_DECRYPT ||
+	if (key->direction != DIR_DECRYPT ||
 	    (key->keyLen != 128 && key->keyLen != 192 && key->keyLen != 256)) 
 	{
 	    raise bad_key_material ("");
 	}
 
-	if (cipher == 0 ||
-	    (cipher->mode != MODE_ECB && cipher->mode != MODE_CBC && cipher->mode != MODE_CFB1) ||
+	if ((cipher->mode != MODE_ECB && cipher->mode != MODE_CBC && cipher->mode != MODE_CFB1) ||
 	    (cipher->blockLen != 128 && cipher->blockLen != 192 && cipher->blockLen != 256)) 
 	{
 	    raise bad_cipher_state (cipher);
@@ -858,9 +853,7 @@ public namespace Rijndael {
 	int		j, t;
 	int[4,MAXBC]    block = {};
 
-	if (cipher == 0 ||
-	    key == 0 ||
-	    cipher->blockLen != key->blockLen) 
+	if (cipher->blockLen != key->blockLen) 
 	{
 	    raise bad_cipher_state (cipher);
 	}

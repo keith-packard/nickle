@@ -13,6 +13,7 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AM_PROG_LEX
+AC_PROG_RANLIB
 dnl AC_PROG_YACC
 AC_CHECK_PROGS([YACC], byacc yacc bison, yacc)
 case "$YACC" in
@@ -74,4 +75,4 @@ AC_SUBST(nicklelib)
 
 AC_DEFINE_UNQUOTED([NICKLELIB], "$nicklelib", [Nickle data directory])
 
-AC_OUTPUT(Makefile date-sh nickle.1 builtin.5c, , [chmod +x ${srcdir}/date-sh])
+AC_OUTPUT(Makefile builtin/Makefile date-sh nickle.1 builtin.5c, , [chmod +x ${srcdir}/date-sh])

@@ -4,6 +4,8 @@
 ## All Rights Reserved.  See the file COPYING in this directory
 ## for licensing information.
 
+SUBDIRS = builtin
+
 NICKLEFILES = math.5c scanf.5c mutex.5c arc4.5c prng.5c command.5c
 EXAMPLES = examples/circle.5c examples/comb.5c examples/kaiser.5c \
 	examples/miller-rabin.5c examples/numbers.5c examples/prime.5c \
@@ -17,7 +19,7 @@ EXTRA_DIST = README.name autoconfigure.sh $(NICKLEFILES) \
 
 bin_PROGRAMS = nickle
 
-nickle_SOURCES = alarm.c array.c atom.c avl.c box.c builtin.c \
+nickle_SOURCES = alarm.c array.c atom.c avl.c box.c \
 	compile.c debug.c divide.c edit.c \
 	error.c execute.c expr.c file.c float.c frame.c func.c \
 	gcd.c history.c int.c integer.c io.c main.c mem.c \
@@ -26,6 +28,7 @@ nickle_SOURCES = alarm.c array.c atom.c avl.c box.c builtin.c \
 	symbol.c sync.c type.c union.c util.c value.c \
 	avl.h mem.h memp.h nickle.h opcode.h ref.h stack.h value.h \
 	gram.y lex.l
+nickle_LDADD = -Lbuiltin -lbuiltin
 
 pkgdata_DATA = builtin.5c $(NICKLEFILES)
 

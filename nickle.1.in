@@ -76,14 +76,14 @@ denotes one or more comma-separated Xs, unless
 otherwise indicated.
 .\"
 .LP
-Comments:
+.B "Comments:"
 .PP
 C-style comments are enclosed in /* and */,
 and shell-style comments are
 denoted by a leading # at the start of a line.
 .\"
 .LP
-Operands:
+.B "Operands:"
 .IP "real number"
 Can include exponent, need not
 include decimal point or sign.
@@ -143,7 +143,7 @@ as in C, to indicate details of programmatic behavior.
 Unlike in C, these qualifiers, while optional, must appear in the
 given order.
 .LP
-Visibility:
+.B "Visibility:"
 .IP public
 Any definition expression (function definition,
 variable definition, type definition) can be qualified
@@ -159,7 +159,7 @@ be visible outside the current namespace, but
 should not be made available by import declarations.  See Namespaces
 below for further info.
 .LP
-Lifetime:
+.B "Lifetime:"
 .IP auto
 An auto object is local to a particular block: its lifetime
 is at least the lifetime of that block. 
@@ -332,7 +332,7 @@ default type in most situations where a type need not appear.
 Also builtin base types, but integral to
 the File and Thread ADTs: see below.
 .LP
-More About Types:
+.B "More About Types:"
 .PP
 \fINickle\fP supports polymorphic data: As an expresion is evaluated, a
 data type is chosen to fit the result.  Any Nickle object may be
@@ -405,7 +405,7 @@ which applies to a given value at a given time.
 .IP "(T)"
 Parentheses for grouping.
 .LP
-Typedef:
+.B "Typedef:"
 .PP
 As in C, new type names may be created with the typedef
 statement.  The syntax is
@@ -432,7 +432,7 @@ uninitialized (unless otherwise specified).  Attempts
 to use an uninitialized value will result
 in either a compile-time error or a runtime exception.
 .LP
-Arrays:
+.B "Arrays:"
 .IP "[E]"
 creates a (zero-based) array with E elements.
 E must be non-negative.
@@ -476,7 +476,7 @@ Creates arrays of type T, with each dimension's size given
 by the maximum number of initializers in any subarray
 in that dimension.
 .LP
-Pointers:
+.B "Pointers:"
 .IP 0
 The null pointer, in contexts where a pointer
 is required.
@@ -488,7 +488,7 @@ be *T, where T is the type of the object pointed to.
 The value pointed to by pointer P.  This can
 be viewed or modified as in C.
 .LP
-Functions:
+.B "Functions:"
 .IP "(T func(){S;S;...S;}) (T func(T name,T name,...T name){S;S;...S;})"
 Function expression: denotes a function of zero or more
 formal parameters with the given types and names, returning
@@ -512,14 +512,14 @@ are packaged into the array formal of
 the given name, and typechecked against the
 optional type T of the last argument (default poly).
 .LP
-Structures:
+.B "Structures:"
 .IP "(struct { T name; T name; ...T name; }){name = E; name = E; ...name=E;}"
 Create a value of a structured type. The named fields
 are initialized to the given values, with
 the remainder uninitialized.  As indicated, initialization is
 by label rather than positional as in C.
 .LP
-Unions:
+.B "Unions:"
 .IP "(union { T name; T name; ...T name; }.name) E"
 Create a value of the given union type, the variant
 given by .name, and the value given by E.
@@ -593,7 +593,7 @@ for/do/while statement.
 Return value E from the nearest enclosing function.
 .\"
 .LP
-Namespaces:
+.B "Namespaces:"
 .PP
 Like Java and C++ Nickle has a notion of
 .IR namespace ,
@@ -644,7 +644,7 @@ Several collections of
 functions have associated builtin datatypes: their namespaces,
 together with their types, should be viewed as ADTs.
 .LP
-Top-Level Builtins:
+.B "Top-Level Builtins:"
 .IP "int printf(string fmt, poly args...)"
 Calls File::fprintf(stdout, fmt, args ...) and
 returns its result.
@@ -805,7 +805,7 @@ Bound to the standard output stream.
 .IP "file stderr"
 Bound to the standard error stream.
 .LP
-Exceptions:
+.B "Exceptions:"
 .PP
 A few standard exceptions are predeclared
 and used internally by Nickle.
@@ -830,7 +830,7 @@ where at least one of these values is invalid.
 .IP "exception invalid_unop_values(string msg, poly arg)"
 Attempt to evaluate a unary operator with invalid argument arg.
 .LP
-Builtin Namespaces:
+.B "Builtin Namespaces:"
 .IP Math
 The math functions available in the Math
 namespace
@@ -920,7 +920,7 @@ to modify formatting.  There are a lot of known bugs with
 input and output formatting.
 .RS
 .LP
-Format Letters:
+.B "Format Letters:"
 .IP "%c"
 Requires a small integer argument (0..255), and formats as
 an ASCII character.
@@ -944,7 +944,7 @@ Requires a string argument, and emits the string literally.
 Requires a number, and tries to pick a precise and readable
 representation to format it.
 .LP
-Format Modifiers:
+.B "Format Modifiers:"
 .IP "digits"
 All format characters will take an integer format modifier
 indicating the number of blanks in the format field for the
@@ -1296,29 +1296,29 @@ is to load @datadir@/nickle/builtin.5c.
 An example (taken from the \fIbc\fP manual:
 .nf
 
-	real function exponent(real x) {
-		real a = 1;
-		int b = 1;
-		real s = 1;
-	        int i = 1;
-		while (1) {
-			a = a * x;
-			b = b * i;
-			real c = a / b;
-			if (abs(c) < 1e-6)
-				return s;
-			s = s + c;
-			i++;
-		}
-	}
+  real function exponent(real x) {
+      real a = 1;
+      int b = 1;
+      real s = 1;
+      int i = 1;
+      while (1) {
+          a = a * x;
+          b = b * i;
+          real c = a / b;
+          if (abs(c) < 1e-6)
+              return s;
+          s = s + c;
+          i++;
+      }
+  }
 
 .fi
 defines a function to compute an approximate value of the exponential
 function e ** x and
 .nf
 
-	for (i = 1; i < 10; i++)
-		printf ("%g\\n", exponent (i));
+  for (i = 1; i < 10; i++)
+      printf ("%g\\n", exponent (i));
 
 .fi
 prints approximate values of the exponential function of the first
@@ -1326,7 +1326,8 @@ ten integers.
 .\"
 .SH VERSION
 .PP
-This document describes version 1.99.2 of nickle, and
+This document describes version 1.99.2 of nickle,
+as well as some newer features.  It
 was distributed with version @VERSION@ of nickle.
 .SH BUGS
 .PP

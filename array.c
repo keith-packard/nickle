@@ -96,6 +96,12 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 
     if (pretty)
     {
+	FilePuts (f, "(");
+	if (!TypePoly (ArrayType(a)))
+	{
+	    FilePutType (f, ArrayType (a), False);
+	    FilePuts (f, " ");
+	}
 	FilePuts (f, "[");
 	for (i = a->ndim - 1; i >= 0; i--)
 	{
@@ -103,7 +109,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 	    if (i)
 		FilePuts (f, ",");
 	}
-	FilePuts (f, "] ");
+	FilePuts (f, "]) ");
 	for (i = 0; i < a->ndim; i++)
 	    FileOutput (f, '{');
     }

@@ -53,8 +53,9 @@ StructPrint (Value f, Value av, char format, int base, int width, int prec, int 
     Struct	    *s = &av->structs;
     StructType	    *st = s->type;
     int		    i;
+    Bool	    pretty = format == 'v' || format == 'g';
 
-    if (format == 'v')
+    if (pretty)
 	FileOutput (f, '{');
     for (i = 0; i < st->nelements; i++)
     {
@@ -64,12 +65,12 @@ StructPrint (Value f, Value av, char format, int base, int width, int prec, int 
 	    return False;
 	if (i < st->nelements - 1)
 	{
-	    if (format == 'v')
+	    if (pretty)
 		FileOutput (f, ',');
 	    FileOutput (f, ' ');
 	}
     }
-    if (format == 'v')
+    if (pretty)
 	FileOutput (f, '}');
     return True;
 }

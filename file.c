@@ -567,8 +567,9 @@ FileInput (Value file)
 	}
 	if (file->file.flags & FileString)
 	{
+	    file->file.flags |= FileEnd;
 	    EXIT ();
-	    return FileEnd;
+	    return FileEOF;
 	}
 	file->file.input = NewFileChain (0, FileBufferSize);
     }
@@ -584,6 +585,12 @@ FileInput (Value file)
 	{
 	    if (ic->next)
 		ic = ic->next;
+	    else if (file->file.flags & FileString)
+	    {
+		file->file.flags |= FileEnd;
+		c = FileEOF;
+		break;
+	    }
 	    else
 	    {
 		buf = FileBuffer (ic);

@@ -19,6 +19,7 @@ extern void	MemReference (void *object);
 extern DataType	*MemType (void *object);
 extern void	MemAddRoot (void *object);
 extern void	MemCollect (void);
+extern void	MemCheckPointer (void *base, void *address, int size);
 
 extern void	debug (char *, ...);
 extern void	panic (char *, ...);

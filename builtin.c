@@ -259,7 +259,6 @@ static struct fbuiltin_2 funcs_2[] = {
     { do_File_open,	    "open",		    "f",    "ss",   &FileNamespace },
     { do_gcd,		    "gcd",		    "i",    "ii"    },
     { do_xor,		    "xor",		    "i",    "ii"    },
-    { do_bdivmod,	    "bdivmod",		    "i",    "ii"    },
     { do_Math_pow,	    "pow",		    "n",    "Ri",   &MathNamespace },
     { do_Math_assignpow,    "assign_pow",	    "n",    "*Ri",  &MathNamespace },
     { do_File_putc,	    "putc",		    "i",    "if",   &FileNamespace },
@@ -1146,13 +1145,6 @@ do_xor (Value a, Value b)
 {
     ENTER ();
     RETURN (Lxor (a, b));
-}
-
-Value
-do_bdivmod (Value a, Value b)
-{
-    ENTER ();
-    RETURN (Bdivmod (a, b));
 }
 
 Value

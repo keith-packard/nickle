@@ -548,18 +548,11 @@ FilePuts (Value file, char *s)
 }
 
 void
-FilePutIntBase (Value file, int a, int base)
+FilePutUIntBase (Value file, unsigned int a, int base)
 {
     int	    digit;
     char    space[64], *s;
-    int	    neg;
 
-    neg = 0;
-    if (a < 0)
-    {
-	a = -a;
-	neg = 1;
-    }
     s = space + sizeof (space);
     *--s = '\0';
     if (!a)
@@ -576,10 +569,19 @@ FilePutIntBase (Value file, int a, int base)
 	    *--s = digit;
 	    a /= base;
 	}
-	if (neg)
-	    *--s = '-';
     }
     FilePuts (file, s);
+}
+
+void
+FilePutIntBase (Value file, int a, int base)
+{
+    if (a < 0)
+    {
+	FileOutput (file, '-');
+	a = -a;
+    }
+    FilePutUIntBase (file, a, base);
 }
 
 void	FilePutInt (Value file, int a)
@@ -858,11 +860,14 @@ FileVPrintf (Value file, char *fmt, va_list args)
 	    case 'd':
 		FilePutIntBase (file, va_arg (args, int), 10);
 		break;
+	    case 'u':
+		FilePutUIntBase (file, va_arg (args, unsigned int), 10);
+		break;
 	    case 'o':
-		FilePutIntBase (file, va_arg (args, int), 8);
+		FilePutUIntBase (file, va_arg (args, unsigned int), 8);
 		break;
 	    case 'x':
-		FilePutIntBase (file, va_arg (args, int), 16);
+		FilePutUIntBase (file, va_arg (args, unsigned int), 16);
 		break;
 	    case 'v':
 	    case 'g':

@@ -349,6 +349,39 @@ setReference (void *address)
 }
 
 /*
+ * Verify that address through address+size are in
+ * same object as base
+ */
+void
+MemCheckPointer (void *base, void *address, int size)
+{
+    struct block    *b;
+    int		    dist;
+    int		    datasize;
+
+    for (b = root; b;) {
+	if ((dist = ((PtrInt) base) - ((PtrInt) b->data)) < 0)
+	    b = b->left;
+	else if (dist >= b->datasize)
+	    b = b->right;
+	else
+	{
+	    if (b->bitmap)
+		datasize = sizeMap[b->sizeIndex];
+	    else
+		datasize = b->datasize;
+	    if (base <= address && 
+		(char *) address + size <= (char *) base + datasize)
+	    {
+		return;
+	    }
+	    abort ();
+	}
+    }
+    abort ();
+}
+
+/*
  * clearRef: zero's the reference bit for all objects
  */
 

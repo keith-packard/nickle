@@ -1,0 +1,41 @@
+/*
+ * Cribbage scoring aid
+ * Counts only runs and 15s
+ * Bart Massey (1997?)
+ */
+
+namespace Cribbage {
+
+  int function countsum(int c, int[*] v, int n) {
+    if (c < 0)
+      return 0;
+    int t = 0;
+    for (int i = 0; i < n; i++)
+      t += v[i];
+    if (t == c)
+      return 1;
+    if (t < c)
+      return 0;
+    return countsum(c, v, n - 1) + countsum(c - v[n - 1], v, n - 1);
+  }
+
+  int function countpairs(int[*] v, int n) {
+    if (n < 2)
+      return 0;
+    int c = 0;
+    for (int i = 1; i < n; i++)
+	if (v[i] == v[0])
+	  c++;
+    int[n - c - 1] w;
+    int j = 0;
+    for (int i = 1; i < n; i++)
+      if (v[i] != v[0])
+	w[j++] = v[i];
+    return c * (c + 1) // 2 + countpairs(w, n - c - 1);
+  }
+
+  public int function score(int[*] v) {
+    int n = dim(v);
+    return 2 * countsum(15, v, n) + 2 * countpairs(v, n);
+  }
+}

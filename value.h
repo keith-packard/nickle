@@ -109,6 +109,12 @@ Natural	*NaturalDivide (Natural *a, Natural *b, Natural **remp);
 Natural	*NaturalGcd (Natural *a, Natural *b);
 char	*NaturalSprint (char *, Natural *, int base, int *width);
 Natural	*NaturalSqrt (Natural *);
+#ifdef LBASE2
+Natural	*NaturalRsl (Natural *v, int shift);
+Natural	*NaturalLsl (Natural *v, int shift);
+Natural	*NaturalMask (Natural *v, int bits);
+int	NaturalPowerOfTwo (Natural *v);
+#endif
 int	NaturalEstimateLength (Natural *, int base);
 void	NaturalCopy (Natural *, Natural *);
 Bool	NaturalZero (Natural *);

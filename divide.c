@@ -177,6 +177,7 @@ multiply (Natural *a, digit i, Natural *result)
     }
 }
 
+#if 0
 static __inline Bool
 greaterequal (Natural *a, Natural *b, int offset)
 {
@@ -201,6 +202,7 @@ greaterequal (Natural *a, Natural *b, int offset)
     }
     return True;
 }
+#endif
 
 Natural *
 NaturalDivide (Natural *a, Natural *b, Natural **remp)
@@ -236,6 +238,11 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
     } else if (oneNp (b)) {
 	quo = a;
 	rem = zero_natural;
+#ifdef LBASE2
+    } else if ((offset = NaturalPowerOfTwo (b)) >= 0) {
+	quo = NaturalRsl (a, offset);
+	rem = NaturalMask (a, offset);
+#endif
     } else {
 	quolen = a->length - b->length + 1;
 	quo = AllocNatural (quolen);

@@ -671,3 +671,181 @@ NewDoubleNatural (double d)
 	length(new)--;
     RETURN(new);
 }
+
+#ifdef LBASE2
+Natural *
+NaturalRsl (Natural *v, int shift)
+{
+    ENTER ();
+    Natural *r;
+    digit   *vt, *rt;
+    digit   d1, d2;
+    int	    length;
+    int	    dshift;
+    int	    index, last;
+
+#ifdef LLBASE2
+    dshift = (shift >> LLBASE2);
+    shift = (shift & (LBASE2 - 1));
+#else
+    dshift = shift / LBASE2;
+    shift = shift % LBASE2;
+#endif
+    length = v->length - dshift;
+    index = length;
+    last = 1;
+    if ((NaturalDigits(v)[v->length - 1] >> shift) == 0)
+    {
+	length--;
+	last = 0;
+    }
+    r = AllocNatural (length);
+    rt = NaturalDigits (r);
+    vt = NaturalDigits (v) + dshift;
+    if (shift)
+    {
+	d2 = *vt++;
+	while (--index)
+	{
+	    d1 = d2;
+	    d2 = *vt++;
+	    *rt++ = (d1 >> shift) | (d2 << (LBASE2 - shift));
+	}
+	if (last)
+	    *rt++ = (d2 >> shift);
+    }
+    else
+    {
+	while (length--)
+	{
+	    *rt++ = *vt++;
+	}
+    }
+    RETURN (r);
+}
+
+Natural *
+NaturalLsl (Natural *v, int shift)
+{
+    ENTER ();
+    Natural *r;
+    digit   *vt, *rt;
+    digit   d1, d2;
+    int	    length;
+    int	    dshift;
+    int	    index;
+    int	    last;
+
+#ifdef LLBASE2
+    dshift = (shift >> LLBASE2);
+    shift = (shift & (LBASE2 - 1));
+#else
+    dshift = shift / LBASE2;
+    shift = shift % LBASE2;
+#endif
+    length = v->length + dshift;
+    index = v->length;
+    last = 0;
+    if (shift)
+    {
+	if ((NaturalDigits(v)[v->length - 1] >> (LBASE2 - shift)) != 0)
+	{
+	    length++;
+	    last = 1;
+	}
+    }
+    r = AllocNatural (length);
+    rt = NaturalDigits (r);
+    while (dshift--)
+	*rt++ = 0;
+    vt = NaturalDigits (v);
+    if (shift)
+    {
+	d2 = *vt++;
+	*rt++ = d2 << shift;
+	while (--index)
+	{
+	    d1 = d2;
+	    d2 = *vt++;
+	    *rt++ = (d1 >> (LBASE2 - shift)) | (d2 << shift);
+	}
+	if (last)
+	    *rt++ = (d2 >> (LBASE2 - shift));
+    }
+    else
+    {
+	while (index--)
+	    *rt++ = *vt++;
+    }
+    RETURN (r);
+}
+
+Natural *
+NaturalMask (Natural *v, int bits)
+{
+    ENTER ();
+    Natural *r;
+    digit   *vt, *rt;
+    digit   mask;
+    int	    length;
+
+#ifdef LLBASE2
+    length = (bits + LBASE2) >> LLBASE2;
+    mask = bits & (LBASE2 - 1);
+#else
+    length = (bits + LBASE2) / LBASE2;
+    mask = bits % LBASE2;
+#endif
+    mask = (1 << mask) - 1;
+    if (length > v->length)
+    {
+	length = v->length;
+	mask = (digit) ~0;
+    }
+    while (NaturalDigits(v)[length] == 0)
+    {
+	length--;
+	mask = (digit) ~0;
+    }
+    r = AllocNatural (length);
+    rt = NaturalDigits (r);
+    vt = NaturalDigits (v);
+    if (length)
+    {
+	length--;
+	while (length--)
+	    *rt++ = *vt++;
+	*rt = *vt & mask;
+    }
+    RETURN (r);
+}
+
+int
+NaturalPowerOfTwo (Natural *v)
+{
+    int	    bit;
+    int	    l;
+    digit   *vt, last;
+    
+    if (!v->length)
+	return -1;
+    vt = NaturalDigits(v);
+    l = v->length - 1;
+    while (l--)
+    {
+	if (*vt++ != 0)
+	    return -1;
+    }
+    last = *vt;
+    if (last & (last - 1))
+	return -1;
+    bit = (v->length - 1) * LBASE2;
+    while (!(last & 1))
+    {
+	bit++;
+	last >>= 1;
+    }
+    return bit;
+}
+
+#endif

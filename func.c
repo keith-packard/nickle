@@ -14,6 +14,9 @@ static void MarkFuncCode (void *object)
 
     MemReference (fc->base.type);
     MemReference (fc->base.args);
+    MemReference (fc->base.name);
+    MemReference (fc->base.previous);
+    MemReference (fc->base.func);
     MemReference (fc->base.doc);
     MemReference (fc->code);
     MemReference (fc->body.obj);
@@ -73,6 +76,9 @@ static void MarkBuiltinCode (void *object)
 
     MemReference (bc->base.type);
     MemReference (bc->base.args);
+    MemReference (bc->base.name);
+    MemReference (bc->base.previous);
+    MemReference (bc->base.func);
     MemReference (bc->base.doc);
 }
 

@@ -1076,6 +1076,11 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 	if (catch->exception == except)
 	{
 	    continuation = &catch->continuation;
+	    /*
+	     * Hold a reference to this nested value because
+	     * ContinuationJump is about to smash the thread
+	     */
+	    REFERENCE (catch);
 	    break;
 	}
     }

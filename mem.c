@@ -586,6 +586,10 @@ checkRef (void)
 void
 MemInitialize (void)
 {
+#ifdef DEBUG
+    if (getenv ("NICKLE_MEM_DEBUG"))
+	GCdebug=1;
+#endif
     if (!MemStack)
     {
 	MemStack = StackCreate ();

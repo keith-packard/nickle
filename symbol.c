@@ -34,6 +34,7 @@ SymbolLocalMark (void *object)
 
     MemReference (sl->symbol.next);
     MemReference (sl->symbol.type);
+    MemReference (sl->code);
 }
 
 static void

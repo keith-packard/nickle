@@ -1,3 +1,24 @@
+2004-07-09  Keith Packard  <keithp@keithp.com>
+
+	* func.c: (MarkFuncCode), (MarkBuiltinCode):
+	* symbol.c: (SymbolLocalMark):
+	Missed a few pointers in mark code
+	
+	* mem.c: (MemInitialize):
+	* sched.c: (RaiseException):
+	A nasty one -- jumping into a continuation that is referenced
+	from the thread object itself (catch) drops the reference to the
+	continuation before finishing the jump.  Combined with careful
+	MemCollect timing, this can break the resulting thread state.
+	
+	* stack.c: (StackPush), (StackPop), (StackDrop), (StackReset),
+	(StackReturn), (StackElt), (StackCopy), (stackMark):
+	* stack.h:
+	Add assertions to make sure the stack pointer is in range
+	
+	* util.c: (wait_write), (debug), (panic):
+	Deal with non-blocking file descriptors
+
 2004-07-07  Keith Packard  <keithp@keithp.com>
 
 	* compile.c: (CompileCountCatches), (CompileCatch), (InstDump):

@@ -57,6 +57,16 @@ extern StackElement StackElt (StackObject *stack, int i);
 			 STACK_TOP(s)[i] : StackElt(s,i))
 
 #if 0
+#define STACK_VALID(s)	((!(s)->stackPointer && !(s)->current) || \
+			 (STACK_MIN(s) <= STACK_TOP(s) && \
+			  STACK_TOP(s) <= STACK_MAX(s)))
+
+#define STACK_ASSERT(s)	if (!STACK_VALID(s)) panic ("invalid stack\n");
+#else
+#define STACK_ASSERT(s)
+#endif
+
+#if 0
 /*
  * Can't work -- o gets evaluated after the stack overflow check, 
  * if o also uses the stack, this will break
@@ -69,6 +79,7 @@ extern StackElement StackElt (StackObject *stack, int i);
 static inline StackElement
 StackPushInline(StackObject *s, StackElement o)
 {
+    STACK_ASSERT (s);
     if (STACK_TOP(s) == STACK_MIN(s))
 	return StackPush (s, o);
     return *--STACK_TOP(s) = o;
@@ -77,7 +88,9 @@ StackPushInline(StackObject *s, StackElement o)
 static inline StackElement
 StackReturnInline(StackObject *s, StackPointer sp, StackElement o)
 {
+    STACK_ASSERT(s);
     STACK_RESET(s, sp);
+    STACK_ASSERT(s);
     if (STACK_TOP(s) == STACK_MIN(s))
 	return StackPush (s, o);
     return *--STACK_TOP(s) = o;

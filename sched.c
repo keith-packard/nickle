@@ -368,7 +368,7 @@ TraceFrame (FramePtr frame, InstPtr pc)
     EXIT ();
 }
 
-#ifdef DEBUG_JUMPS
+#ifdef DEBUG_JUMP
 static void
 TraceIndent (int indent)
 {
@@ -397,7 +397,7 @@ TraceContinuation (char	    *where,
     {
 	if (s)
 	    FilePuts (FileStdout, ", ");
-	print (FileStdout, STACK_ELT(stack, s));
+	FilePrintf (FileStdout, "%v", STACK_ELT(stack, s));
     }
     FilePuts (FileStdout, "\n");
     TraceIndent (indent);
@@ -406,12 +406,12 @@ TraceContinuation (char	    *where,
     {
 	if (s)
 	    FilePuts (FileStdout, ", ");
-	FilePuts (FileStdout, AtomName (catches->exception->symbol.name));
+	FilePrintf (FileStdout, "%A", catches->exception->symbol.name);
     }
     FilePuts (FileStdout, "\n");
     TraceIndent (indent);
     FilePuts (FileStdout, "statement: ");
-    PrintStat (FileStdout, pc->base.stat, False);
+    PrettyStat (FileStdout, pc->base.stat, False);
     for (s = 0; twixts; twixts = twixts->previous, s++)
     {
 	TraceContinuation ("twixt",

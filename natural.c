@@ -172,39 +172,363 @@ NaturalEqual (Natural *a, Natural *b)
     return 0;
 }
 
+/*
+ * Primitive functions that operate on sequences
+ * of digits
+ */
+
+static int
+DigitsLen (digit *x, int len)
+{
+    x += (len - 1);
+    while (len && *x == 0)
+    {
+	len--;
+	x--;
+    }
+    return len;
+}
+
+static int
+DigitsAdd (digit *x, int xlen, digit *y, int ylen, digit *r_orig)
+{
+    digit   *r = r_orig;
+    int	    rlen;
+    digit   carry = 0;
+    digit   xv, yv, rv;
+    
+    while (xlen && ylen)
+    {
+	xlen--;
+	ylen--;
+	rv = xv = *x++;
+	yv = *y++ + carry;
+	if (yv)
+	{
+	    carry = 0;
+	    if ((rv = xv + yv) < xv)
+		carry = 1;
+	}
+	*r++ = rv;
+    }
+    while (ylen)
+    {
+	ylen--;
+	yv = *y++ + carry;
+	if (yv)
+	    carry = 0;
+	*r++ = yv;
+    }
+    while (xlen)
+    {
+	xlen--;
+	rv = xv = *x++;
+	if (carry)
+	{
+	    yv = carry;
+	    carry = 0;
+	    if ((rv = xv + yv) < xv)
+		carry = 1;
+	}
+	*r++ = rv;
+    }
+    if (carry)
+	*r++ = carry;
+    rlen = r - r_orig;
+    r--;
+    while (rlen && *r == 0)
+    {
+	r--;
+	rlen--;
+    }
+    return rlen;
+}
+
+static int
+DigitsAddInPlace (digit *x_orig, int xlen, digit *y, int ylen, int off)
+{
+    digit   *x = x_orig;
+    digit   carry = 0;
+    digit   xv, yv;
+
+    x += off;
+    xlen -= off;
+    if (xlen < 0)
+    {
+	x += xlen;
+	while (xlen++)
+	    *x++ = 0;
+    }
+    while (xlen && ylen)
+    {
+	xlen--;
+	ylen--;
+	xv = *x;
+	yv = *y++ + carry;
+	if (yv)
+	{
+	    carry = 0;
+	    if ((*x = xv + yv) < xv)
+		carry = 1;
+	}
+	x++;
+    }
+    while (ylen)
+    {
+	ylen--;
+	yv = *y++ + carry;
+	if (yv)
+	    carry = 0;
+	*x++ = yv;
+    }
+    while (xlen && carry)
+    {
+	xlen--;
+	xv = *x;
+	yv = carry;
+	carry = 0;
+	if ((*x = xv + yv) < xv)
+	    carry = 1;
+	x++;
+    }
+    if (carry)
+    {
+	*x = carry;
+	x++;
+    }
+    return xlen + (x - x_orig);
+}
+
+static int
+DigitsSubInPlace (digit *x_orig, int xlen, digit *y, int ylen, int off)
+{
+    digit   *x = x_orig;
+    digit   carry = 0;
+    digit   xv, yv;
+
+    x += off;
+    xlen -= off;
+    while (ylen--)
+    {
+	xlen--;
+	xv = *x;
+	yv = *y++ + carry;
+	if (yv)
+	{
+	    carry = 0;
+	    if ((*x = xv - yv) > xv)
+		carry = 1;
+	}
+	x++;
+    }
+    while (carry)
+    {
+	xlen--;
+	xv = *x;
+	yv = carry;
+	carry = 0;
+	if ((*x = xv - yv) > xv)
+	    carry = 1;
+	x++;
+    }
+    return xlen + (x - x_orig);
+}
+
+static int
+DigitTimes (digit *x, int xlen, digit y, digit *result)
+{
+    double_digit    q;
+    digit	    carry;
+    int		    rlen = xlen;
+
+    if (y == 1)
+    {
+	memcpy (x, result, xlen * sizeof (digit));
+	return xlen;
+    }
+    carry = 0;
+    while (xlen--) 
+    {
+	q = (double_digit) y * (double_digit) *x++ + (double_digit) carry;
+	carry = DivBase (q);
+	*result++ = ModBase (q);
+    }
+    if (carry)
+    {
+	*result++ = carry;
+	rlen++;
+    }
+    return rlen;
+}
+
+static int
+DigitsGradeSchool (digit *x, int xlen, digit *y, int ylen, digit *result)
+{
+    double_digit    temp;
+    digit	    carry;
+    digit	    xd;
+    int		    xindex, yindex, rindex;
+
+    if (xlen == 0 || ylen == 0)
+	return 0;
+    if (xlen == 1)
+	return DigitTimes (y, ylen, *x, result);
+    if (ylen == 1)
+	return DigitTimes (x, xlen, *y, result);
+    memset (result, 0, (xlen + ylen) * sizeof (digit));
+    for (xindex = 0; xindex < xlen; xindex++)
+    {
+	carry = 0;
+	xd = *x++;
+	for (yindex = 0; yindex < ylen; yindex++)
+	{
+	    temp = xd * (double_digit) y[yindex] + (double_digit) carry;
+	    carry = DivBase (temp);
+	    temp = ModBase (temp);
+	    rindex = yindex + xindex;
+	    while (temp)
+	    {
+		temp += result[rindex];
+		result[rindex] = ModBase (temp);
+		temp = DivBase (temp);
+		rindex++;
+	    }
+	}
+	if (carry)
+	{
+	    rindex = yindex + xindex;
+	    temp = carry;
+	    while (temp) 
+	    {
+		temp += result[rindex];
+		result[rindex] = ModBase (temp);
+		temp = DivBase (temp);
+		rindex++;
+	    }
+	}
+    }
+    rindex = xlen + ylen;
+    if (result[rindex - 1] == 0)
+	rindex--;
+    return rindex;
+}
+
+#define KARATSUBA_LIMIT	16
+
+static int
+DigitsKaratsuba (digit *x, int xlen, digit *y, int ylen, digit *result, digit *tmp)
+{
+    /*
+     * x * y = (x1 * b + x0) * (y1 * b + y0);
+     *       = b^2 x1 y1 + b (x1 y0 + x0 y1) + x0 y0
+     *	     = b^2 x1 y1 + b (x1 y0 + x0 y1 + x1 y1 + x0 y0) + x0 y0 - b x1 y1 - b x0 y0
+     *	     = (b^2 - b) x1 y1 + b (x1 + x0) (y0 + y1) + (1 - b) x0 y0
+     */
+    int	    off;
+    int	    off2;
+    digit   *x1, *x0, *y1, *y0;
+    digit   *f, *m1, *m2;
+    digit   *next_tmp;
+    int	    x1len, x0len, y1len, y0len;
+    int	    flen, m1len, m2len;
+    int	    rlen;
+    
+    if (xlen < KARATSUBA_LIMIT || ylen < KARATSUBA_LIMIT)
+	return DigitsGradeSchool (x, xlen, y, ylen, result);
+
+    off = xlen > ylen ? (xlen >> 1) : (ylen >> 1);
+    off2 = off << 1;
+    /*
+     * Normalize partial quotients
+     */
+    x0 = x;
+    x0len = xlen;
+    if (x0len > off)
+	x0len = DigitsLen (x0, off);
+    if (off < xlen)
+    {
+	x1 = x + off;
+	x1len = DigitsLen (x1, xlen - off);
+    }
+    else
+    {
+	x1 = x0;
+	x1len = 0;
+    }
+    
+    y0 = y;
+    y0len = ylen;
+    if (y0len > off)
+	y0len = DigitsLen (y0, off);
+    if (off < ylen)
+    {
+	y1 = y + off;
+	y1len = DigitsLen (y1, ylen - off);
+    }
+    else
+    {
+	y1 = y0;
+	y1len = 0;
+    }
+    
+    /*
+     * Allocate temp space
+     */
+    m1 = tmp;
+    m2 = m1 + off + 1;
+    f = tmp;		    /* overlay first factor on minuends */
+    next_tmp = m2 + off + 1;
+     
+    /*
+     * Generate middle factor first
+     */
+    m1len = DigitsAdd (x0, x0len, x1, x1len, m1);
+    m2len = DigitsAdd (y0, y0len, y1, y1len, m2);
+    
+    /*
+     * Compute middle factor
+     */
+    rlen = 0;
+    if (m1len && m2len)
+    {
+	memset (result, 0, off * sizeof (digit));
+	rlen = DigitsKaratsuba (m1, m1len, m2, m2len, result + off, next_tmp) + off;
+    }
+    
+    /*
+     * Compute first factor
+     */
+    if (x1len && y1len)
+    {
+	flen = DigitsKaratsuba (x1, x1len, y1, y1len, f, next_tmp);
+	rlen = DigitsAddInPlace (result, rlen, f, flen, off2);
+	rlen = DigitsSubInPlace (result, rlen, f, flen, off);
+    }
+    
+    /*
+     * Compute third factor
+     */
+    
+    if (x0len && y0len)
+    {
+	flen = DigitsKaratsuba (x0, x0len, y0, y0len, f, next_tmp);
+	rlen = DigitsAddInPlace (result, rlen, f, flen, 0);
+	rlen = DigitsSubInPlace (result, rlen, f, flen, off);
+    }
+    return rlen;
+}
+
 Natural *
 NaturalPlus (Natural *a, Natural *b)
 {
     ENTER ();
-    int		    resultlen;
     Natural	    *result;
-    double_digit    temp;
-    int		    index;
-    digit	    *at, *bt, *rt;
-    digit	    carry;
 
-    resultlen = max(length(a), length(b)) + 1;
-    result = AllocNatural (resultlen);
-    at = data(a);
-    bt = data(b);
-    rt = data(result);
-    carry = 0;
-    temp = 0;
-    for (index = 0; index < resultlen; index++) {
-	temp = (double_digit) (index < length(a) ? *at++ : 0) +
-	(double_digit) (index < length(b) ? *bt++ : 0) +
-	(double_digit) carry;
-	carry = DivBase (temp);
-	temp = ModBase (temp);
-	*rt++ = temp;
-    }
-    /*
-     * if the last digit was zero (i.e. no carry),
-     * shorten the number
-     */
-    if (temp == 0)
-	length(result) = length(result) - 1;
-    RETURN(result);
+    result = AllocNatural (max(length(a), length(b)) + 1);
+    result->length = DigitsAdd (data(a), length(a), 
+				data(b), length(b),
+				data(result));
+    RETURN (result);
 }
 
 Natural *
@@ -246,62 +570,40 @@ Natural *
 NaturalTimes (Natural *a, Natural *b)
 {
     ENTER ();
-    register int	    cindex;
-    register double_digit   temp;
-    register digit	    carry;
-    register digit	    *rt;
-    register digit	    *at, *bt;
-    Natural		    *result;
-    int			    resultlen;
-    digit		    *aend, *bend;
-    int			    aindex, bindex;
+    Natural *result;
+    int	    rlen;
+    digit   *tmp;
+    int	    tmp_len;
 
-    if (oneNp (a)) {
-	RETURN (b);
-    } else if (oneNp (b)) {
-	RETURN (a);
+    if (length (a) < KARATSUBA_LIMIT || length (b) < KARATSUBA_LIMIT)
+    {
+	if (zeroNp (a) || zeroNp (b))
+	    RETURN (zero_natural);
+	if (oneNp (a))
+	    RETURN(b);
+	if (oneNp (b))
+	    RETURN (a);
+	result = AllocNatural (length(a) + length (b) + 1);
+	result->length = DigitsGradeSchool (data(a), length(a), data(b), length (b), data(result));
     }
-    resultlen = length(a) + length(b) + 1;
-    result = AllocNatural (resultlen);
-    rt = data(result);
-    aindex = 0;
-    aend = data(a) + length(a);
-    bend = data(b) + length(b);
-    for (at = data(a); at < aend; at++) {
-	carry = 0;
-	bindex = aindex;
-	for (bt = data(b); bt < bend; bt++) {
-	    temp = (double_digit) *at * (double_digit) *bt + (double_digit) carry;
-	    carry = DivBase (temp);
-	    temp = ModBase (temp);
-	    cindex = bindex;
-	    while (temp) {
-		temp += rt[cindex];
-		rt[cindex] = ModBase (temp);
-		temp = DivBase (temp);
-		cindex++;
-	    }
-	    bindex++;
+    else
+    {
+	if (length (a) > length (b))
+	    rlen = length (a) << 1;
+	else
+	    rlen = length (b) << 1;
+	result = AllocNatural (rlen);
+	tmp_len = rlen << 3;
+	tmp = AllocateTemp (tmp_len * sizeof (digit));
+	rlen = DigitsKaratsuba (data(a), length (a), data(b), length (b), data(result), tmp);
+	tmp = data(result) + (rlen - 1);
+	while (rlen && *tmp == 0)
+	{
+	    rlen--;
+	    tmp--;
 	}
-	if (carry) {
-	    cindex = bindex;
-	    temp = carry;
-	    while (temp) {
-		temp += rt[cindex];
-		rt[cindex] = ModBase (temp);
-		temp = DivBase (temp);
-		cindex++;
-	    }
-	}
-	aindex++;
+	result->length = rlen;
     }
-    cindex = resultlen - 1;
-    while (cindex >= 0) {
-	if (rt[cindex] != 0)
-	    break;
-	--cindex;
-    }
-    length(result) = cindex + 1;
     RETURN (result);
 }
 
@@ -916,26 +1218,8 @@ NaturalPowerOfTwo (Natural *v)
 void
 NaturalDigitMultiply (Natural *a, digit i, Natural *result)
 {
-    double_digit    q;
-    digit	    carry;
-    digit	    *at, *rt;
-    int		    index;
-
-    at = NaturalDigits(a);
-    rt = NaturalDigits(result);
-    carry = 0;
-    index = a->length;
-    while (index--) {
-	q = (double_digit) i * (double_digit) *at++ + (double_digit) carry;
-	carry = DivBase (q);
-	*rt++ = ModBase (q);
-    }
-    result->length = a->length;
-    if (carry)
-    {
-	*rt++ = carry;
-	result->length++;
-    }
+    result->length = DigitTimes (data(a), length(a), i,
+				 data(result));
 }
 
 /*
@@ -1026,37 +1310,9 @@ NaturalSubtractOffsetReverse (Natural *a, Natural *b, int offset)
 void
 NaturalAddOffset (Natural *a, Natural *b, int offset)
 {
-    int	    index;
-    digit   carry;
-    digit   *at, *bt;
-    digit   av, bv;
-
-    carry = 0;
-    at = NaturalDigits(a) + offset;
-    bt = NaturalDigits(b);
-    index = b->length;
-    while (index--)
-    {
-	av = *at;
-	bv = *bt++ + carry;
-	if (bv)
-	{
-	    carry = 0;
-	    if ((*at = av + bv) < av)
-		carry = 1;
-	}
-	at++;
-    }
-    if (carry)
-	*at = *at + carry;
-    if (at == NaturalDigits(a) + a->length - 1)
-    {
-	while (a->length && *at == 0)
-	{
-	    at--;
-	    a->length--;
-	}
-    }
+    a->length = DigitsAddInPlace (data(a), length (a),
+				  data(b), length (b),
+				  offset);
 }
 
 Bool

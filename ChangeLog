@@ -1,6 +1,10 @@
 2004-05-27  Keith Packard  <keithp@keithp.com>
+version 2.37
 
-	reviewed by: <delete if not using a buddy>
+	* debian/changelog:
+	Update for 2.37
+
+2004-05-27  Keith Packard  <keithp@keithp.com>
 
 	* int.c: (IntPlus), (IntMinus):
 	* nickle.h:
@@ -9,7 +13,6 @@
 	broken.
 
 2004-05-27  Keith Packard  <keithp@keithp.com>
-version 2.37
 
 	* value.c: (ShiftR):
 	Ceiling, not Round for negative left operand in shift right

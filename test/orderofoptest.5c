@@ -4,244 +4,254 @@
  * Written by Erin Chapman
  */
 
+void check (poly value, poly correct)
+{
+    if (is_number (value) && !is_rational (value))
+    {
+	real	error = abs (value - correct);
+	if (error < abs(value) / 1e7)
+	    return;
+    }
+    if (value != correct)
+	abort ("check failed (was %v, should be %v)", value, correct);
+}
+
 int x = 10;
 
 
-++x%x
-x%++x
--++x
-(++x)!
-++x**2
-2**++x
-++x*2
-2*++x
-++x/2
-2/++x
-++x//2
-2//++x
-++x%2
-2%++x
-++x-1
-1-++x
-++x+1
-1+(++x)
-++x<<1
-1<<++x
-++x>>1
-1>>++x
-++x==x
-x==++x
-++x!=x-1
-x-1!=++x
-++x&1
-1&++x
-++x^1
-1^++x
-++x|1
-1|++x
-++x==x ? 1 : 2
-x+1==++x ? 1 : 2
-true ? ++x : 2
-false ? 1 : ++x
+check(++x%x, 0);
+check(x%++x, 11);
+check(-++x, -13);
+check((++x)!, 87178291200);
+check(++x**2, 225);
+check(2**++x, 65536);
+check(++x*2, 34);
+check(2*++x, 36);
+check(++x/2, 9.5);
+check(2/++x, 0.1);
+check(++x//2, 10);	/* 21 */
+check(2//++x, 0);	/* 22 */
+check(++x%2, 1);	/* 23 */
+check(2%++x, 2);	/* 24 */
+check(++x-1, 24);	/* 25 */
+check(1-++x, -25);	/* 26 */
+check(++x+1, 28);	/* 27 */
+check(1+(++x), 29);	/* 28 */
+check(++x<<1, 58);	/* 29 */
+check(1<<++x, 1073741824);	/* 30 */
+check(++x>>1, 15);	/* 31 */
+check(1>>++x, 0);	/* 32 */
+check(++x==x, true);	/* 33 */
+check(x==++x, false);	/* 34 */
+check(++x!=x-1, true);	/* 35 */
+check(x-1!=++x, true);	/* 36 */
+check(++x&1, 1);	/* 37 */
+check(1&++x, 0);	/* 38 */
+check(++x^1, 38);	/* 39 */
+check(1^++x, 41);	/* 40 */
+check(++x|1, 41);	/* 41 */
+check(1|++x, 43);	/* 42 */
+check(++x==x ? 1 : 2, 1);	/* 43 */
+check(x+1==++x ? 1 : 2, 1);	/* 44 */
+check(true ? ++x : 2, 45);	/* 45 */
+check(false ? 1 : ++x, 46);	/* 46 */
 
 
-x++%x
-x%x++
--x++
-x++!
-x++**2
-2**x++
-x++*2
-2*x++
-x++/2
-2/x++
-x++//2
-2//x++
-x++%2
-2%x++
-x++-1
-1-x++
-x+++1
-1+x++
-x++<<1
-1<<x++
-x++>>1
-1>>x++
-x++==x-1
-x==x++
-x++!=x
-x-1!=x++
-x++&1
-1&x++
-x++^1
-1^x++
-x++|1
-1|x++
-x++==x-1 ? 1 : 2
-true ? x++ : 2
-false ? 1 : x++
+check(x++%x, 46);		/* 47 */
+check(x%x++, 0);		/* 48 */
+check(-x++, -48);	    	/* 49 */
+check(x++!, 608281864034267560872252163321295376887552831379210240000000000);
+check(x++**2, 2500);		/* 51 */
+check(2**x++, 2251799813685248);	/* 52 */
+check(x++*2, 104);			/* 53 */
+check(2*x++, 106);			/* 54 */
+check(x++/2, 27);			/* 55 */
+check(2/x++, 0.0{36});			/* 56 */
+check(x++//2, 28);			/* 57 */
+check(2//x++, 0);			/* 58 */
+check(x++%2, 0);			/* 59 */
+check(2%x++, 2);			/* 60 */
+check(x++-1, 59);			/* 61 */
+check(1-x++, -60);			/* 62 */
+check(x+++1, 63);			/* 63 */
+check(1+x++, 64);			/* 64 */
+check(x++<<1, 128);			/* 65 */
+check(1<<x++, 36893488147419103232);	/* 66 */
+check(x++>>1, 33);			/* 67 */
+check(1>>x++, 0);			/* 68 */
+check(x++==x-1, true);			/* 69 */
+check(x==x++, true);			/* 70 */
+check(x++!=x, true);			/* 71 */
+check(x-1!=x++, true);			/* 72 */
+check(x++&1, 0);			/* 73 */
+check(1&x++, 1);			/* 74 */
+check(x++^1, 75);			/* 75 */
+check(1^x++, 74);			/* 76 */
+check(x++|1, 77);			/* 77 */
+check(1|x++, 77);			/* 78 */
+check(x++==x-1 ? 1 : 2, 1);		/* 79 */
+check(true ? x++ : 2, 79);		/* 80 */
+check(false ? 1 : x++, 80);		/* 81 */
 
 
---x%x
-x%--x
--(--x)
-(--x)!
---x**2
-2**--x
---x*2
-2*--x
---x/2
-2/--x
---x//2
-2//--x
---x%2
-2%--x
---x-1
-1-(--x)
---x+1
-1+--x
---x<<1
-1<<--x
---x>>1
-1>>--x
---x==x
-x-1==--x
---x!=x-1
-x!=--x
---x&1
-1&--x
---x^1
-1^--x
---x|1
-1|--x
---x==x ? 1 : 2
-true ? --x : 2
-false ? 1 : --x
+check(--x%x, 0);			/* 80 */
+check(x%--x, 1);			/* 79 */
+check(-(--x), -78);			/* 78 */
+check((--x)!, 145183092028285869634070784086308284983740379224208358846781574688061991349156420080065207861248000000000000000000);			/* 77 */
+check(--x**2, 5776);			/* 76 */
+check(2**--x, 37778931862957161709568);	/* 75 */
+check(--x*2, 148);			/* 74 */
+check(2*--x, 146);			/* 73 */
+check(--x/2, 36);			/* 72 */
+check(2/--x, 0.{0281690140845070422535211267605633802816901408450704225352112676056338});			/* 71 */
+check(--x//2, 35);			/* 70 */
+check(2//--x, 0);			/* 69 */
+check(--x%2, 0);			/* 68 */
+check(2%--x, 2);			/* 67 */
+check(--x-1, 65);			/* 66 */
+check(1-(--x), -64);			/* 65 */
+check(--x+1, 65);			/* 64 */
+check(1+--x, 64);			/* 63 */
+check(--x<<1, 124);			/* 62 */
+check(1<<--x, 2305843009213693952);    	/* 61 */
+check(--x>>1, 30);			/* 60 */
+check(1>>--x, 0);			/* 59 */
+check(--x==x, true);			/* 58 */
+check(x-1==--x, true);			/* 57 */
+check(--x!=x-1, true);			/* 56 */
+check(x!=--x, true);			/* 55 */
+check(--x&1, 0);			/* 54 */
+check(1&--x, 1);			/* 53 */
+check(--x^1, 53);			/* 52 */
+check(1^--x, 50);			/* 51 */
+check(--x|1, 51);			/* 50 */
+check(1|--x, 49);			/* 49 */
+check(--x==x ? 1 : 2, 1);		/* 48 */
+check(true ? --x : 2, 47);		/* 47 */
+check(false ? 1 : --x, 46);		/* 46 */
 
 
-x--%x
-x%x--
--x--
-x--!
-x--**2
-2**x--
-x--*2
-2*x--
-x--/2
-2/x--
-x--//2
-2//x--
-x--%2
-2%x--
-x---1
-1-x--
-x--+1
-1+x--
-x--<<1
-1<<x--
-x-->>1
-1>>x--
-x--==x+1
-x==x--
-x--!=x
-x+1!=x--
-x--&1
-1&x--
-x--^1
-1^x--
-x--|1
-1|x--
-x--==x+1 ? 1 : 2
-true ? x-- : 2
-false ? 1 : x--
+check(x--%x, 1);			/* 45 */
+check(x%x--, 0);			/* 44 */
+check(-x--, -44);    			/* 43 */
+check(x--!, 60415263063373835637355132068513997507264512000000000);				/* 42 */
+check(x--**2, 1764);			/* 41 */
+check(2**x--, 2199023255552);		/* 40 */
+check(x--*2, 80);			/* 39 */
+check(2*x--, 78);			/* 38 */
+check(x--/2, 19);			/* 37 */
+check(2/x--, 0.{054});			/* 36 */
+check(x--//2, 18);			/* 35 */
+check(2//x--, 0);			/* 34 */
+check(x--%2, 0);			/* 33 */
+check(2%x--, 2);			/* 32 */
+check(x---1, 31);			/* 31 */
+check(1-x--, -30);			/* 30 */
+check(x--+1, 31);			/* 29 */
+check(1+x--, 30);			/* 28 */
+check(x--<<1, 56);			/* 27 */
+check(1<<x--, 134217728);    		/* 26 */
+check(x-->>1, 13);			/* 25 */
+check(1>>x--, 0);			/* 24 */
+check(x--==x+1, true);			/* 23 */
+check(x==x--, true);			/* 22 */
+check(x--!=x, true);			/* 21 */
+check(x+1!=x--, true);			/* 20 */
+check(x--&1, 0);			/* 19 */
+check(1&x--, 1);			/* 18 */
+check(x--^1, 19);			/* 17 */
+check(1^x--, 16);			/* 16 */
+check(x--|1, 17);			/* 15 */
+check(1|x--, 15);			/* 14 */
+check(x--==x+1 ? 1 : 2, 1);		/* 13 */
+check(true ? x-- : 2, 13);		/* 12 */
+check(false ? 1 : x--, 12);		/* 11 */
+
+bool y = true;
+
+check(y, true);
+
+check(!y==!y, true);
+check(!y==!!y, false);
+check(!!y==!y, false);
+check(!y!=!y, false);
+check(!y!=!!y, true);
+check(!!y!=!y, true);
+check(!y&&!y, false);
+check(!y&&!!y, false);
+check(!!y&&!y, false);
+check(!!y&&!!y, true);
+check(!y||!y, false);
+check(!y||!!y, true);
+check(!!y||!y, true);
+check(!!y||!!y, true);
+check(!y ? 1 : 2, 2);
+check(!!y ? 1 : 2, 1);
+check(true ? !y : y, false);
+check(false ? y : !y, false);
 
 
-bool y=true;
+check(x=5, 5);
 
 
-!y==!y
-!y==!!y
-!!y==!y
-!y!=!y
-!y!=!!y
-!!y!=!y
-!y&&!y
-!y&&!!y
-!!y&&!y
-!!y&&!!y
-!y||!y
-!y||!!y
-!!y||!y
-!!y||!!y
-!y ? 1 : 2
-!!y ? 1 : 2
-true ? !y : y
-false ? y : !y
-
-
-x=5;
-
-
-x!**2
-2**x!
-x!*2
-2*x!
-x!/100
-100/x!
-x!//100
-100//x!
-x!%100
-100%x!
-x!+7
-7+x!
-x!-7
-7-x!
-x!>>1
-1>>x!
-x!<<1
-1<<x!
-x!<=x!+1
-x!-1<=x!
-x!>=x-x
-x!+1>=x!
-x!<x!+1
-x!-1<x!
-x!>x-1
-x!+1>x!
-(x!)==x!
-x!!=x-1
-x-1!=x!
-x!&1
-1&x!
-x!^1
-1^x!
-x!|1
-1|x!
-(x!)==x! ? 1 : 2
-true ? x! : 2
-false ? 1 : x!
-
+check(x!**2, 14400);
+check(2**x!, 1329227995784915872903807060280344576);
+check(x!*2, 240);
+check(2*x!, 240);
+check(x!/100, 6/5);
+check(100/x!, 5/6);
+check(x!//100, 1);
+check(100//x!, 0);
+check(x!%100, 20);
+check(100%x!, 100);
+check(x!+7, 127);
+check(7+x!, 127);
+check(x!-7, 113);
+check(7-x!, -113);
+check(x!>>1, 60);
+check(1>>x!, 0);
+check(x!<<1, 240);
+check(1<<x!, 1329227995784915872903807060280344576);
+check(x!<=x!+1, true);
+check(x!-1<=x!, true);
+check(x!>=x-x, true);
+check(x!+1>=x!, true);
+check(x!<x!+1, true);
+check(x!-1<x!, true);
+check(x!>x-1, true);
+check(x!+1>x!, true);
+check((x!)==x!, true);
+check(x!!=x-1, true);
+check(x-1!=x!, true);
+check(x!&1, 0);
+check(1&x!, 0);
+check(x!^1, 121);
+check(1^x!, 121);
+check(x!|1, 121);
+check(1|x!, 121);
+check((x!)==x! ? 1 : 2, 1);
+check(true ? x! : 2, 120);
+check(false ? 1 : x!, 120);
 
 *int pntr;
-pntr=&x;
 
+check(pntr=&x, &x);
 
-*pntr**2
-2***pntr
-*pntr*2
-2*pntr
-*pntr/100
-100/ *pntr
-*pntr//100
-100//*pntr
-*pntr%100
-100%*pntr
-*pntr+7
-7+*pntr
-*pntr-7
-7-*pntr
-*pntr>>1
-1>>*pntr
-*pntr<<1
-1<<*pntr
-
+check(*pntr**2, 25);
+check(2***pntr, 32);
+check(*pntr*2, 10);
+check(2* *pntr, 10);
+check(*pntr/100, 1/20);
+check(100/ *pntr, 20);
+check(*pntr//100, 0);
+check(100//*pntr, 20);
+check(*pntr%100, 5);
+check(100%*pntr, 0);
+check(*pntr+7, 12);
+check(7+*pntr, 12);
+check(*pntr-7, -2);
+check(7-*pntr, 2);
+check(*pntr>>1, 2);
+check(1>>*pntr, 0);
+check(*pntr<<1, 10);
+check(1<<*pntr, 32);

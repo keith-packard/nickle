@@ -1,3 +1,10 @@
+2004-04-23  Keith Packard  <keithp@keithp.com>
+
+	* test/optest.5c:
+	* test/orderofoptest.5c:
+	Turn each test into an assertion which exits with an
+	error on failure so that 'make check' validates the interpreter
+
 2004-04-18  Keith Packard  <keithp@keithp.com>
 
 	* pretty.c: (doPrettyPrint):

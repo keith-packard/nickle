@@ -4,208 +4,277 @@
  * Written by Erin Chapman
  */
 
+void check (poly value, poly correct)
+{
+    if (is_number (value) && !is_rational (value))
+    {
+	real	error = abs (value - correct);
+	if (error < abs(value) / 1e7)
+	    return;
+    }
+    if (value != correct)
+	abort ("check failed (was %v, should be %v)", value, correct);
+}
+
 /* Assigns a value to x for testing. */
-int x = 1;
+int x;
+check (x = 1, 1);
 
 /* Tests unary increment and decrememnt. */
-++x
-x++;
-x
---x
-x--;
-x
+check (++x, 2);
+check (x++, 2);
+check (x, 3);
+check (--x, 2);
+check (x--, 2);
+check (x, 1);
 
 /* Tests Unary negate */
--x
+check (-x, -1);
 
 /* Tests logical negation */
-!true
+check (!true, false);
 
 /* Assigns a different value to x for testing. */
-x = 4;
+check (x = 4, 4);
 
 /* Test Factorial. */
-x!
+check (x!, 24);
 
 /* Tests pointer construction and dereference. */
 *int z;
-z = &x
-*z
+check (z = &x, &x);
+check (*z, 4);
 
 /* Tests construction and evaluation of a union. */
 union {int a; string b;} test;
-test
-test.a = 1;
-test
-test.b = "hello";
-test
-try {
-  test.a;
+check (sprintf ("%v", test), "{<unset>}")
+check (test.a = 1, 1);
+check (test, (union {int a;}) {a = 1});
+check (test.b = "hello", "hello");
+check (test, (union {string b;}) { b = "hello" });
+check (bool func () { try {
+    test.a;
+    return false;
 } catch invalid_struct_member (string msg, poly test, string name) {
-  printf("test.a appropriately failed.\n");
-};
+    return true;
+} return false; } (), true);
 
 /* Tests exponentiation. */
-x**2
-x**.5
-(x/3)**2
-(x/3)**.5
-(-x)**2
-try {
-  (-x)**.5;
+check (x**2, 16);
+check (x**.5, 2);
+check ((x/3)**2, 16/9);
+check ((x/3)**.5, 2 / sqrt (3));
+check ((-x)**2, 16);
+check (bool func () { try {
+    (-x)**.5;
+    return false;
 } catch invalid_argument (msg, int i, poly value) {
-  printf("(-x)**.5 appropriately failed.\n");
-};
+    return true;
+} return false; } (), true);
 
 /* Tests multiplication. */
-x*2
+check (x*2, 8);
 
 /* Tests division. */
-x/2
+check (x/2, 2);
 
 /* Tests integer division. */
-x//3
-x//3 == floor(x/3)
-(x//3)*3+(x%3) == x
+check (x//3, 1);
+check (x//3 == floor(x/3), true);
+check ((x//3)*3+(x%3) == x, true);
 
 /* Tests remainder. */
-x%3
+check (x%3, 1);
 
 /* Tests addition and subtraction. */
-x+3
-x-3
+check (x+3, 7);
+check (x-3, 1);
 
 /* Tests bitwise left shift. */
-x<<1
-x<<-1
-x<<1 == x*2**1
+check (x<<1, 8);
+check (x<<-1, 2);
+check (x<<1 == x*2**1, true);
 
 /* Tests bitwise right shift. */
-x>>1
-x>>-1
-x>>1 == x//2**1
+check (x>>1, 2);
+check (x>>-1, 8);
+check (x>>1 == x//2**1, true);
 
 /* Tests relational operators. */
-x<=10
-x>=-10
-x < 15
-x > -15
+check (x<=10, true);
+check (x>=-10, true);
+check (x < 15, true);
+check (x > -15, true);
 
 /* Tests equality operators. */
-x == x
-x != x - 1
+check (x == x, true);
+check (x != x - 1, true);
 
 /* Tests bitwise AND. */
-1&2
-2&3
-3&3
+check (1&2, 0);
+check (2&3, 2);
+check (3&3, 3);
 
 /* Tests bitwsie XOR. */
-1^2
-2^3
-3^3
+check (1^2, 3);
+check (2^3, 1);
+check (3^3, 0);
 
 /* Tests bitwise OR. */
-0|0
-0|1
+check (0|0, 0);
+check (0|1, 1);
 
 /* Tests short-circuit logical AND. */
-true&&false
-true&&true
-false&&false
-false&&true
+check (true&&false, false);
+check (true&&true, true);
+check (false&&false, false);
+check (false&&true, false);
 
 /* Tests short-circuit logical OR. */
-true||true
-true||false
-false||false
-false||true
+check (true||true, true);
+check (true||false, true);
+check (false||false, false);
+check (false||true, true);
 
 /* Assigns a value to y for testing. */
 int y = 0;
+check (y, 0);
 
 /* Tests conditional expressions. */
-y == 0 ? 1 : 2
-y == 1 ? 1 : 2
+check (y == 0 ? 1 : 2, 1);
+check (y == 1 ? 1 : 2, 2);
 
 /* Tests assignment operators. */
-try {
-  x = 3;
+check (bool func () { try {
+    x = 3;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Equals assignment failed (x = 3).\n");
-};
-x
-try {
-  x += 1;
+    printf("Equals assignment failed (x = 3).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 3);
+
+check (bool func () { try {
+    x += 1;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Plus equals assignment failed (x += 1).\n");
-};
-x
-try {
-  x -= 1;
+    printf("Plus equals assignment failed (x += 1).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 4);
+
+check (bool func () { try {
+    x -= 1;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Minus equals assignment failed (x -= 1).\n");
-};
-x
-try {
-  x *= 2;
+    printf("Minus equals assignment failed (x -= 1).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 3);
+
+check (bool func () { try {
+    x *= 2;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Times equals assignment failed (x *= 2).\n");
-};
-x
-try {
-  x /= 2;
+    printf("Times equals assignment failed (x *= 2).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 6);
+
+check (bool func () { try {
+    x /= 2;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Divide equals assignment failed (x /= 2).\n");
-};
-x
-try {
-  x //= 2;
+    printf("Divide equals assignment failed (x /= 2).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 3);
+
+check (bool func () { try {
+    x //= 2;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Integer divide equals assignment failed (x //= 2).\n");
-};
-x
-try {
-  x %= 3;
+    printf("Integer divide equals assignment failed (x //= 2).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 1);
+
+check (bool func () { try {
+    x %= 3;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Remainder equals assignment failed (x %= 3).\n");
-};
-x
-x = 2;
-try {
-  x **= 2;
+    printf("Remainder equals assignment failed (x %= 3).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 1);
+
+check (x = 2, 2);
+
+check (bool func () { try {
+    x **= 2;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Exponentiation equals assignment failed (x **= 2).\n");
-};
-x
-try {
-  x <<= 1;
+    printf("Exponentiation equals assignment failed (x **= 2).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 4);
+
+check (bool func () { try {
+    x <<= 1;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Bitwise left shift equals assignment failed (x <<= 1).\n");
-};
-x
-try {
-  x >>= 1;
+    printf("Bitwise left shift equals assignment failed (x <<= 1).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 8);
+
+check (bool func () { try {
+    x >>= 1;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Bitwise right shift equals assignment failed (x >>= 1).\n");
-};
-x
-try {
-  x ^= 2;
+    printf("Bitwise right shift equals assignment failed (x >>= 1).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 4);
+
+check (bool func () { try {
+    x ^= 2;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Bitwise XOR equals assignment failed (x ^= 2).\n");
-};
-x
-try {
-  x &= 2;
+    printf("Bitwise XOR equals assignment failed (x ^= 2).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 6);
+
+check (bool func () { try {
+    x &= 2;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Bitwise AND equals assignment failed (x &= 2).\n");
-};
-x
-try {
-  x |= 2;
+    printf("Bitwise AND equals assignment failed (x &= 2).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 2);
+
+check (bool func () { try {
+    x |= 2;
+    return true;
 } catch invalid_argument (string msg, int i, poly value) {
-  printf("Bitwise OR assignment failed (x |= 2).\n");
-};
-x
+    printf("Bitwise OR assignment failed (x |= 2).\n");
+    return false;
+} return false; } (), true);
+
+check (x, 2);
+
 quit

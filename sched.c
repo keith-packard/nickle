@@ -642,6 +642,17 @@ NewContinuation (ContinuationPtr continuation, InstPtr pc)
     RETURN (ret);
 }
 
+static ContinuationPtr
+EmptyContinuation (void)
+{
+    ENTER ();
+    Value   ret;
+
+    ret = ALLOCATE (&ContinuationRep.data, sizeof (Continuation));
+    ContinuationInit (&ret->continuation);
+    RETURN (&ret->continuation);
+}
+
 #ifdef DEBUG_JUMP
 
 void
@@ -789,6 +800,8 @@ JumpContinue (Value thread, InstPtr *next)
 	running->thread.jump = 0;
 	*next = ContinuationSet (&thread->thread.continuation, jump->continuation);
     }
+    if (!*next)
+	SetSignalError ();
     RETURN (jump->ret);
 }
 
@@ -859,6 +872,8 @@ ContinuationJump (Value thread, ContinuationPtr continuation, Value ret, InstPtr
 	*next = JumpStart (thread, continuation, ret);
     else
 	*next = ContinuationSet (&thread->thread.continuation, continuation);
+    if (!*next)
+        SetSignalError ();
     RETURN (ret);
 }
 
@@ -980,8 +995,8 @@ void
 RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 {
     ENTER ();
-    Bool	caught = False;
-    CatchPtr	catch;
+    CatchPtr	    catch;
+    ContinuationPtr continuation = 0;
     
     for (catch = thread->thread.continuation.catches; 
 	 catch; 
@@ -989,12 +1004,12 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
     {
 	if (catch->exception == except)
 	{
-	    ContinuationJump (thread, &catch->continuation, args, next);
-	    caught = True;
+	    continuation = &catch->continuation;
 	    break;
 	}
     }
-    if (!caught)
+    /* unhandled exception -- build an empty continuation and jump to it */
+    if (!continuation)
     {
 	int	i;
 	ObjPtr	obj = thread->thread.continuation.obj;
@@ -1012,8 +1027,9 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 	    for (i = 0; i < args->array.ents; i++)
 		PrintError ("\t%v\n", BoxValueGet (args->array.values, i));
 	}
-	SetSignalError ();
+	continuation = EmptyContinuation();
     }
+    ContinuationJump (thread, continuation, args, next);
     EXIT ();
 }
 

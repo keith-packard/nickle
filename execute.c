@@ -1270,7 +1270,8 @@ ThreadsRun (Value thread, Value lex)
 			if (aborting)
 			    break;
 			value = JumpContinue (thread, &next);
-			complete = True;
+			if (next)
+			    complete = True;
 		    }
 		    break;
 		case OpLeaveDone:
@@ -1279,7 +1280,8 @@ ThreadsRun (Value thread, Value lex)
 			if (aborting)
 			    break;
 			value = JumpContinue (thread, &next);
-			complete = True;
+			if (next)
+			    complete = True;
 		    }
 		    break;
 		case OpFarJump:

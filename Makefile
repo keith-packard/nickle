@@ -87,7 +87,7 @@ nick.tar.gz: $(DIST)
 	tar czf $@ $(DIST)
 
 nick.uu: $(DIST)
-	tar cf - $(DIST) | compress | uuencode nick.tar.Z > $@
+	tar czf - $(DIST) | uuencode nick.tar.Z > $@
 	
 rcs_tag: $(DIST)
 	echo `echo V_$(VERSION) | sed 's/\./_/g'` $(DIST)

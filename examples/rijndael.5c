@@ -1,0 +1,949 @@
+public namespace Rijndael {
+    /*
+     * Derived from the original C reference code which had
+     * the following notice
+     */
+    /* rijndael-alg-ref.c   v2.0   August '99
+     * Reference ANSI C code
+     * authors: Paulo Barreto
+     *          Vincent Rijmen
+     */
+    /*
+     ------------------------------
+     Rijndael ANSI C Reference Code
+     ------------------------------
+
+     October 24, 2000
+
+     Disclaimer
+
+
+     This software package was submitted to the National Institute of Standards and
+     Technology (NIST) during the Advanced Encryption Standard (AES) development
+     effort by Joan Daemen and Vincent Rijmen, the developers of the Rijndael algorithm.
+
+     This software is distributed in compliance with export regulations (see below), and
+     it is intended for non-commercial use, only.   NIST does not support this software 
+     and does not provide any guarantees or warranties as to its performance, fitness 
+     for any particular application, or validation under the Cryptographic Module
+     Validation Program (CMVP) <http://csrc.nist.gov/cryptval/>.  NIST does not accept 
+     any liability associated with its use or misuse.  This software is provided as-is. 
+     By accepting this software the user agrees to the terms stated herein.
+
+     -----------------------
+
+     Export Restrictions
+
+
+     Implementations of cryptography are subject to United States Federal
+     Government export controls.  Export controls on commercial encryption products 
+     are administered by the Bureau of Export Administration (BXA) 
+     <http://www.bxa.doc.gov/Encryption/> in the U.S. Department of Commerce. 
+     Regulations governing exports of encryption are found in the Export 
+     Administration Regulations (EAR), 15 C.F.R. Parts 730-774.
+     */
+
+    int[*] Logtable = (int[256]) {
+	0,   0,  25,   1,  50,   2,  26, 198,  75, 199,  27, 104,  51, 238, 223,   3, 
+	100,   4, 224,  14,  52, 141, 129, 239,  76, 113,   8, 200, 248, 105,  28, 193, 
+	125, 194,  29, 181, 249, 185,  39, 106,  77, 228, 166, 114, 154, 201,   9, 120, 
+	101,  47, 138,   5,  33,  15, 225,  36,  18, 240, 130,  69,  53, 147, 218, 142, 
+	150, 143, 219, 189,  54, 208, 206, 148,  19,  92, 210, 241,  64,  70, 131,  56, 
+	102, 221, 253,  48, 191,   6, 139,  98, 179,  37, 226, 152,  34, 136, 145,  16, 
+	126, 110,  72, 195, 163, 182,  30,  66,  58, 107,  40,  84, 250, 133,  61, 186, 
+	43, 121,  10,  21, 155, 159,  94, 202,  78, 212, 172, 229, 243, 115, 167,  87, 
+	175,  88, 168,  80, 244, 234, 214, 116,  79, 174, 233, 213, 231, 230, 173, 232, 
+	44, 215, 117, 122, 235,  22,  11, 245,  89, 203,  95, 176, 156, 169,  81, 160, 
+	127,  12, 246, 111,  23, 196,  73, 236, 216,  67,  31,  45, 164, 118, 123, 183, 
+	204, 187,  62,  90, 251,  96, 177, 134,  59,  82, 161, 108, 170,  85,  41, 157, 
+	151, 178, 135, 144,  97, 190, 220, 252, 188, 149, 207, 205,  55,  63,  91, 209, 
+	83,  57, 132,  60,  65, 162, 109,  71,  20,  42, 158,  93,  86, 242, 211, 171, 
+	68,  17, 146, 217,  35,  32,  46, 137, 180, 124, 184,  38, 119, 153, 227, 165, 
+	103,  74, 237, 222, 197,  49, 254,  24,  13,  99, 140, 128, 192, 247, 112,   7, 
+    };
+
+    int[*] Alogtable = (int[256]) {
+	1,   3,   5,  15,  17,  51,  85, 255,  26,  46, 114, 150, 161, 248,  19,  53, 
+	95, 225,  56,  72, 216, 115, 149, 164, 247,   2,   6,  10,  30,  34, 102, 170, 
+	229,  52,  92, 228,  55,  89, 235,  38, 106, 190, 217, 112, 144, 171, 230,  49, 
+	83, 245,   4,  12,  20,  60,  68, 204,  79, 209, 104, 184, 211, 110, 178, 205, 
+	76, 212, 103, 169, 224,  59,  77, 215,  98, 166, 241,   8,  24,  40, 120, 136, 
+	131, 158, 185, 208, 107, 189, 220, 127, 129, 152, 179, 206,  73, 219, 118, 154, 
+	181, 196,  87, 249,  16,  48,  80, 240,  11,  29,  39, 105, 187, 214,  97, 163, 
+	254,  25,  43, 125, 135, 146, 173, 236,  47, 113, 147, 174, 233,  32,  96, 160, 
+	251,  22,  58,  78, 210, 109, 183, 194,  93, 231,  50,  86, 250,  21,  63,  65, 
+	195,  94, 226,  61,  71, 201,  64, 192,  91, 237,  44, 116, 156, 191, 218, 117, 
+	159, 186, 213, 100, 172, 239,  42, 126, 130, 157, 188, 223, 122, 142, 137, 128, 
+	155, 182, 193,  88, 232,  35, 101, 175, 234,  37, 111, 177, 200,  67, 197,  84, 
+	252,  31,  33,  99, 165, 244,   7,   9,  27,  45, 119, 153, 176, 203,  70, 202, 
+	69, 207,  74, 222, 121, 139, 134, 145, 168, 227,  62,  66, 198,  81, 243,  14, 
+	18,  54,  90, 238,  41, 123, 141, 140, 143, 138, 133, 148, 167, 242,  13,  23, 
+	57,  75, 221, 124, 132, 151, 162, 253,  28,  36, 108, 180, 199,  82, 246,   1, 
+    };
+
+    int[*] S = (int[256]) {
+	99, 124, 119, 123, 242, 107, 111, 197,  48,   1, 103,  43, 254, 215, 171, 118, 
+	202, 130, 201, 125, 250,  89,  71, 240, 173, 212, 162, 175, 156, 164, 114, 192, 
+	183, 253, 147,  38,  54,  63, 247, 204,  52, 165, 229, 241, 113, 216,  49,  21, 
+	4, 199,  35, 195,  24, 150,   5, 154,   7,  18, 128, 226, 235,  39, 178, 117, 
+	9, 131,  44,  26,  27, 110,  90, 160,  82,  59, 214, 179,  41, 227,  47, 132, 
+	83, 209,   0, 237,  32, 252, 177,  91, 106, 203, 190,  57,  74,  76,  88, 207, 
+	208, 239, 170, 251,  67,  77,  51, 133,  69, 249,   2, 127,  80,  60, 159, 168, 
+	81, 163,  64, 143, 146, 157,  56, 245, 188, 182, 218,  33,  16, 255, 243, 210, 
+	205,  12,  19, 236,  95, 151,  68,  23, 196, 167, 126,  61, 100,  93,  25, 115, 
+	96, 129,  79, 220,  34,  42, 144, 136,  70, 238, 184,  20, 222,  94,  11, 219, 
+	224,  50,  58,  10,  73,   6,  36,  92, 194, 211, 172,  98, 145, 149, 228, 121, 
+	231, 200,  55, 109, 141, 213,  78, 169, 108,  86, 244, 234, 101, 122, 174,   8, 
+	186, 120,  37,  46,  28, 166, 180, 198, 232, 221, 116,  31,  75, 189, 139, 138, 
+	112,  62, 181, 102,  72,   3, 246,  14,  97,  53,  87, 185, 134, 193,  29, 158, 
+	225, 248, 152,  17, 105, 217, 142, 148, 155,  30, 135, 233, 206,  85,  40, 223, 
+	140, 161, 137,  13, 191, 230,  66, 104,  65, 153,  45,  15, 176,  84, 187,  22, 
+    };
+
+    int[*] Si = (int[256]) {
+	82,   9, 106, 213,  48,  54, 165,  56, 191,  64, 163, 158, 129, 243, 215, 251, 
+	124, 227,  57, 130, 155,  47, 255, 135,  52, 142,  67,  68, 196, 222, 233, 203, 
+	84, 123, 148,  50, 166, 194,  35,  61, 238,  76, 149,  11,  66, 250, 195,  78, 
+	8,  46, 161, 102,  40, 217,  36, 178, 118,  91, 162,  73, 109, 139, 209,  37, 
+	114, 248, 246, 100, 134, 104, 152,  22, 212, 164,  92, 204,  93, 101, 182, 146, 
+	108, 112,  72,  80, 253, 237, 185, 218,  94,  21,  70,  87, 167, 141, 157, 132, 
+	144, 216, 171,   0, 140, 188, 211,  10, 247, 228,  88,   5, 184, 179,  69,   6, 
+	208,  44,  30, 143, 202,  63,  15,   2, 193, 175, 189,   3,   1,  19, 138, 107, 
+	58, 145,  17,  65,  79, 103, 220, 234, 151, 242, 207, 206, 240, 180, 230, 115, 
+	150, 172, 116,  34, 231, 173,  53, 133, 226, 249,  55, 232,  28, 117, 223, 110, 
+	71, 241,  26, 113,  29,  41, 197, 137, 111, 183,  98,  14, 170,  24, 190,  27, 
+	252,  86,  62,  75, 198, 210, 121,  32, 154, 219, 192, 254, 120, 205,  90, 244, 
+	31, 221, 168,  51, 136,   7, 199,  49, 177,  18,  16,  89,  39, 128, 236,  95, 
+	96,  81, 127, 169,  25, 181,  74,  13,  45, 229, 122, 159, 147, 201, 156, 239, 
+	160, 224,  59,  77, 174,  42, 245, 176, 200, 235, 187,  60, 131,  83, 153,  97, 
+	23,  43,   4, 126, 186, 119, 214,  38, 225, 105,  20,  99,  85,  33,  12, 125, 
+    };
+
+    int[*,*] iG = (int[4,4]) {
+	{ 0x0e, 0x09, 0x0d, 0x0b, },
+	{ 0x0b, 0x0e, 0x09, 0x0d, },
+	{ 0x0d, 0x0b, 0x0e, 0x09, },
+	{ 0x09, 0x0d, 0x0b, 0x0e, },
+    };
+
+    int[*] rcon = (int[30]) { 
+	0x01,0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c,
+	0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35,
+	0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 
+    };
+
+    int MAXBC = 256//32;
+    int MAXKC = 256//32;
+    int MAXROUNDS = 14;
+    int TRUE = 1;
+    int FALSE = 0;
+    
+    public typedef struct {
+	int	    direction;		    /* Key used for encrypting or decrypting?*/
+	int	    keyLen;		    /* length of key */
+	string  keyMaterial;	    /* raw key data in ASCII */
+	/* The follow parameters are algorithm dependent */
+	int	    blockLen;		    /* block length */
+	int[*,*,*]	keySched;	    /* key schedule */
+    } keyInstance;
+
+    public typedef struct {
+	int	    mode;
+	int[*]  IV;
+
+	int	    blockLen;
+    } cipherInstance;
+
+    public int MODE_ECB = 1; 
+    public int MODE_CBC = 2;
+    public int MODE_CFB1 = 3;
+    public int DIR_ENCRYPT = 0;
+    public int DIR_DECRYPT = 1;
+    public int BITSPERBLOCK = 128;
+    public int MAX_KEY_SIZE = 64;
+    public int MAX_IV_SIZE = BITSPERBLOCK//8;
+
+    public exception bad_key_bits (int keyBits);
+    public exception bad_block_bits (int blockBits);
+    public exception internal_error ();
+    public exception bad_key_dir (int direction);
+    public exception bad_key_len (int keyLen);
+    public exception bad_key_material (string c);
+    
+    namespace algorithm {
+
+	int function SC (int BC) 
+	{ 
+	    return ((BC - 4) >> 1); 
+	};
+
+	global int[*,*,*] shifts = (int[3,4,2]) {
+	    { { 0, 0 }, { 1, 3 }, { 2, 2 }, { 3, 1 } },
+	    { { 0, 0 }, { 1, 5 }, { 2, 4 }, { 3, 3 } },
+	    { { 0, 0 }, { 1, 7 }, { 3, 5 }, { 4, 4 } }
+	}; 
+
+	int function mul(int a, int b) 
+	{
+	    /* multiply two elements of GF(2^m)
+	     * needed for MixColumn and InvMixColumn
+	     */
+	    if (a && b) 
+		return Alogtable[(Logtable[a] + Logtable[b])%255];
+	    else 
+		return 0;
+	}
+
+	void function KeyAddition(*int[*,*]	a, 
+				  *int[*,*,*]	rk,
+				  int		r,
+				  int		BC) 
+	{
+	    /* Exor corresponding text input and round key input bytes
+	     */
+	    int i, j;
+
+	    for(i = 0; i < 4; i++)
+		for(j = 0; j < BC; j++) 
+		    (*a)[i,j] ^= (*rk)[r,i,j];
+	}
+
+	void function ShiftRow(*int[*,*]    a, 
+			       int	    d,
+			       int	    BC) 
+	{
+	    /* Row 0 remains unchanged
+	     * The other three rows are shifted a variable amount
+	     */
+	    int[*]  tmp = (int[BC]);
+	    int	    i, j;
+
+	    for(i = 1; i < 4; i++) 
+	    {
+		for(j = 0; j < BC; j++) 
+		    tmp[j] = (*a)[i,(j + shifts[SC(BC),i,d]) % BC];
+		for(j = 0; j < BC; j++) 
+		    (*a)[i,j] = tmp[j];
+	    }
+	}
+
+	void function Substitution(*int[*,*]	a, 
+				   *int[*]	box,
+				   int		BC) 
+	{
+	    /* Replace every byte of the input by the byte at that place
+	     * in the nonlinear S-box
+	     */
+	    int i, j;
+
+	    for(i = 0; i < 4; i++)
+		for(j = 0; j < BC; j++) 
+		    (*a)[i,j] = (*box)[(*a)[i,j]];
+	}
+
+	void function MixColumn(*int[*,*]   a,
+				int	    BC) 
+	{
+	    /* Mix the four bytes of every column in a linear way
+	     */
+	    int[*,*]	b = (int[4,BC]);
+	    int		i, j;
+
+	    for(j = 0; j < BC; j++)
+		for(i = 0; i < 4; i++)
+		    b[i,j] = (mul(2,(*a)[i,j])
+			      ^ mul(3,(*a)[(i + 1) % 4,j])
+			      ^ (*a)[(i + 2) % 4,j]
+			      ^ (*a)[(i + 3) % 4,j]);
+	    for(i = 0; i < 4; i++)
+		for(j = 0; j < BC; j++) 
+		    (*a)[i,j] = b[i,j];
+	}
+
+	void function InvMixColumn(*int[*,*]	a,
+				   int		BC) 
+	{
+	    /* Mix the four bytes of every column in a linear way
+	     * This is the opposite operation of Mixcolumn
+	     */
+	    int[*,*]	b = (int[4,BC]);
+	    int		i, j;
+
+	    for(j = 0; j < BC; j++)
+		for(i = 0; i < 4; i++)             
+		    b[i,j] = (mul(0xe,(*a)[i,j])
+			      ^ mul(0xb,(*a)[(i + 1) % 4,j])
+			      ^ mul(0xd,(*a)[(i + 2) % 4,j])
+			      ^ mul(0x9,(*a)[(i + 3) % 4,j]));
+	    for(i = 0; i < 4; i++)
+		for(j = 0; j < BC; j++) 
+		    (*a)[i,j] = b[i,j];
+	}
+
+	public int function rijndaelKeySched (int[*,*]	    k,
+					      int	    keyBits,
+					      int	    blockBits,
+					      *int[*,*,*]   W)
+	{
+	    /* Calculate the necessary round keys
+	     * The number of calculations depends on keyBits and blockBits
+	     */
+	    int	    KC, BC, ROUNDS;
+	    int	    i, j, t, rconpointer = 0;
+	    int[*,*]    tk = (int[4,MAXKC]);
+
+	    switch (keyBits) {
+	    case 128: KC = 4; break;
+	    case 192: KC = 6; break;
+	    case 256: KC = 8; break;
+	    default : raise bad_key_bits (keyBits);
+	    }
+
+	    switch (blockBits) {
+	    case 128: BC = 4; break;
+	    case 192: BC = 6; break;
+	    case 256: BC = 8; break;
+	    default : raise bad_block_bits (blockBits);
+	    }
+
+	    switch (keyBits >= blockBits ? keyBits : blockBits) {
+	    case 128: ROUNDS = 10; break;
+	    case 192: ROUNDS = 12; break;
+	    case 256: ROUNDS = 14; break;
+	    default : raise internal_error (); /* this cannot happen */
+	    }
+
+	    (*W) = (int[ROUNDS+1,4,BC]);
+
+	    for(j = 0; j < KC; j++)
+		for(i = 0; i < 4; i++)
+		    tk[i,j] = k[i,j];
+	    t = 0;
+	    /* copy values into round key array */
+	    for(j = 0; (j < KC) && (t < (ROUNDS+1)*BC); j++, t++)
+		for(i = 0; i < 4; i++) 
+		    (*W)[t // BC,i,t % BC] = tk[i,j];
+
+	    while (t < (ROUNDS+1)*BC) { /* while not enough round key material calculated */
+		/* calculate new values */
+		for(i = 0; i < 4; i++)
+		    tk[i,0] ^= S[tk[(i+1)%4,KC-1]];
+		tk[0,0] ^= rcon[rconpointer++];
+
+		if (KC != 8)
+		    for(j = 1; j < KC; j++)
+			for(i = 0; i < 4; i++) tk[i,j] ^= tk[i,j-1];
+		else 
+		{
+		    for(j = 1; j < KC//2; j++)
+			for(i = 0; i < 4; i++) 
+			    tk[i,j] ^= tk[i,j-1];
+		    for(i = 0; i < 4; i++) 
+			tk[i,KC//2] ^= S[tk[i,KC//2 - 1]];
+		    for(j = KC//2 + 1; j < KC; j++)
+			for(i = 0; i < 4; i++) 
+			    tk[i,j] ^= tk[i,j-1];
+		}
+		/* copy values into round key array */
+		for(j = 0; (j < KC) && (t < (ROUNDS+1)*BC); j++, t++)
+		    for(i = 0; i < 4; i++) 
+			(*W)[t // BC,i,t % BC] = tk[i,j];
+	    }		
+
+	    return 0;
+	}
+
+	public void function rijndaelEncrypt (*int[*,*]	    a, 
+					      int	    keyBits, 
+					      int	    blockBits, 
+					      *int[*,*,*]   rk)
+	{
+	    /* Encryption of one block. 
+	     */
+	    int r, BC, ROUNDS;
+
+	    switch (blockBits) {
+	    case 128: BC = 4; break;
+	    case 192: BC = 6; break;
+	    case 256: BC = 8; break;
+	    default : raise bad_block_bits (blockBits);
+	    }
+
+	    switch (keyBits >= blockBits ? keyBits : blockBits) {
+	    case 128: ROUNDS = 10; break;
+	    case 192: ROUNDS = 12; break;
+	    case 256: ROUNDS = 14; break;
+	    default : raise internal_error (); /* this cannot happen */
+	    }
+
+	    /* begin with a key addition
+	     */
+	    KeyAddition (a, rk, 0, BC); 
+
+	    /* ROUNDS-1 ordinary rounds
+	     */
+	    for(r = 1; r < ROUNDS; r++) 
+	    {
+		Substitution (a, &S, BC);
+		ShiftRow (a, 0, BC);
+		MixColumn (a, BC);
+		KeyAddition (a, rk, r, BC);
+	    }
+
+	    /* Last round is special: there is no MixColumn
+	     */
+	    Substitution (a, &S, BC);
+	    ShiftRow (a, 0, BC);
+	    KeyAddition (a, rk, ROUNDS, BC);
+	}
+
+
+	public void function rijndaelEncryptRound (*int[*,*]	a, 
+						   int		keyBits, 
+						   int		blockBits, 
+						   *int[*,*,*]	rk,
+						   int		rounds)
+	{
+	    int r, BC, ROUNDS;
+
+	    switch (blockBits) {
+	    case 128: BC = 4; break;
+	    case 192: BC = 6; break;
+	    case 256: BC = 8; break;
+	    default : raise bad_block_bits (blockBits);
+	    }
+
+	    switch (keyBits >= blockBits ? keyBits : blockBits) {
+	    case 128: ROUNDS = 10; break;
+	    case 192: ROUNDS = 12; break;
+	    case 256: ROUNDS = 14; break;
+	    default : raise internal_error (); /* this cannot happen */
+	    }
+
+	    /* make number of rounds sane */
+	    if (rounds > ROUNDS) 
+		rounds = ROUNDS;
+
+	    /* begin with a key addition
+	     */
+	    KeyAddition (a, rk, 0, BC);
+
+	    /* at most ROUNDS-1 ordinary rounds
+	     */
+	    for(r = 1; (r <= rounds) && (r < ROUNDS); r++) 
+	    {
+		Substitution (a, &S, BC);
+		ShiftRow (a, 0, BC);
+		MixColumn (a, BC);
+		KeyAddition(a, rk, r, BC);
+	    }
+
+	    /* if necessary, do the last, special, round: 
+	     */
+	    if (rounds == ROUNDS) 
+	    {
+		Substitution (a, &S, BC);
+		ShiftRow (a, 0, BC);
+		KeyAddition (a, rk, ROUNDS, BC);
+	    }
+	}
+
+	public void function rijndaelDecrypt (*int[*,*]	    a, 
+					      int	    keyBits, 
+					      int	    blockBits, 
+					      *int[*,*,*]   rk)
+	{
+	    int r, BC, ROUNDS;
+
+	    switch (blockBits) {
+	    case 128: BC = 4; break;
+	    case 192: BC = 6; break;
+	    case 256: BC = 8; break;
+	    default : raise bad_block_bits (blockBits);
+	    }
+
+	    switch (keyBits >= blockBits ? keyBits : blockBits) {
+	    case 128: ROUNDS = 10; break;
+	    case 192: ROUNDS = 12; break;
+	    case 256: ROUNDS = 14; break;
+	    default : raise internal_error (); /* this cannot happen */
+	    }
+
+	    /* To decrypt: apply the inverse operations of the encrypt routine,
+	     *             in opposite order
+	     * 
+	     * (KeyAddition is an involution: it 's equal to its inverse)
+	     * (the inverse of Substitution with table S is Substitution with the inverse table of S)
+	     * (the inverse of Shiftrow is Shiftrow over a suitable distance)
+	     */
+
+	    /* First the special round:
+	     *   without InvMixColumn
+	     *   with extra KeyAddition
+	     */
+	    KeyAddition (a, rk, ROUNDS, BC);
+	    Substitution (a, &Si, BC);
+	    ShiftRow (a, 1, BC);
+
+	    /* ROUNDS-1 ordinary rounds
+	     */
+	    for(r = ROUNDS-1; r > 0; r--) 
+	    {
+		KeyAddition (a, rk, r, BC);
+		InvMixColumn (a, BC);
+		Substitution (a, &Si, BC);
+		ShiftRow (a, 1, BC);
+	    }
+
+	    /* End with the extra key addition
+	     */
+
+	    KeyAddition (a, rk, 0,BC);
+	}
+
+	/* Decrypt only a certain number of rounds.
+	 * Only used in the Intermediate Value Known Answer Test.
+	 * Operations rearranged such that the intermediate values
+	 * of decryption correspond with the intermediate values
+	 * of encryption.
+	 */
+	public void function rijndaelDecryptRound (*int[*,*]	a,
+						   int		keyBits, 
+						   int		blockBits, 
+						   *int[*,*,*]	rk,
+						   int		rounds)
+	{
+	    int r, BC, ROUNDS;
+
+	    switch (blockBits) {
+	    case 128: BC = 4; break;
+	    case 192: BC = 6; break;
+	    case 256: BC = 8; break;
+	    default : raise bad_block_bits (blockBits);
+	    }
+
+	    switch (keyBits >= blockBits ? keyBits : blockBits) {
+	    case 128: ROUNDS = 10; break;
+	    case 192: ROUNDS = 12; break;
+	    case 256: ROUNDS = 14; break;
+	    default : raise internal_error (); /* this cannot happen */
+	    }
+
+	    /* make number of rounds sane */
+	    if (rounds > ROUNDS) 
+		rounds = ROUNDS;
+
+	    /* First the special round:
+	     *   without InvMixColumn
+	     *   with extra KeyAddition
+	     */
+	    KeyAddition (a, rk, ROUNDS, BC);
+	    Substitution (a, &Si, BC);
+	    ShiftRow (a, 1, BC);
+
+	    /* ROUNDS-1 ordinary rounds
+	     */
+	    for(r = ROUNDS-1; r > rounds; r--) 
+	    {
+		KeyAddition (a, rk, r, BC);
+		InvMixColumn (a, BC);
+		Substitution (a, &Si, BC);
+		ShiftRow (a, 1, BC);
+	    }
+
+	    if (rounds == 0) 
+	    {
+		/* End with the extra key addition
+		 */	
+		KeyAddition (a, rk, 0, BC);
+	    }    
+	}
+    }
+
+    import algorithm;
+    
+    public int function makeKey (*keyInstance	key, 
+				 int		direction, 
+				 int		keyLen,
+				 string		keyMaterial)
+    {
+	int[*,*]    k = (int[4,MAXKC]);
+	int	    i, j, t;
+
+	if ((direction == DIR_ENCRYPT) || (direction == DIR_DECRYPT))
+	    key->direction = direction;
+	else
+	    raise bad_key_dir (direction);
+
+	if ((keyLen == 128) || (keyLen == 192) || (keyLen == 256))
+	    key->keyLen = keyLen;
+	else
+	    raise bad_key_len (keyLen);
+
+	key->keyMaterial = keyMaterial;
+	for (i = 0; i < key->keyLen//8; i++)
+	{
+	    t = key->keyMaterial[2*i];
+	    if ((t >= '0') && (t <= '9')) 
+		j = (t - '0') << 4;
+	    else if ((t >= 'a') && (t <= 'f')) 
+		j = (t - 'a' + 10) << 4;
+	    else if ((t >= 'A') && (t <= 'F')) 
+		j = (t - 'A' + 10) << 4; 
+	    else 
+		raise bad_key_material (String::new (t));
+	    
+	    t = key->keyMaterial[2*i+1];
+	    if ((t >= '0') && (t <= '9')) 
+		j ^= (t - '0');
+	    else if ((t >= 'a') && (t <= 'f')) 
+		j ^= (t - 'a' + 10); 
+	    else if ((t >= 'A') && (t <= 'F')) 
+		j ^= (t - 'A' + 10); 
+	    else 
+		raise bad_key_material (String::new (t));
+
+	    k[i % 4,i // 4] = j & 0xff;
+	}
+	rijndaelKeySched (k, key->keyLen, key->blockLen, &key->keySched);
+	return 1;
+    }
+
+    public exception bad_cipher_mode (int mode);
+    public exception bad_cipher_instance (string t);
+    
+    public int function cipherInit (*cipherInstance cipher,
+				    int		    mode,
+				    string	    IV)
+    {
+	int i, j, t;
+
+	if ((mode == MODE_ECB) || (mode == MODE_CBC) || (mode == MODE_CFB1))
+	    cipher->mode = mode;
+	else
+	    raise bad_cipher_mode (mode);
+
+	if (String::length (IV) != 0)
+	{
+	    if (String::length (IV) != cipher->blockLen/8 * 2)
+		raise bad_cipher_instance (IV);
+
+	    for(i = 0; i < cipher->blockLen/8; i++) {		
+		t = IV[2*i];
+		if ((t >= '0') && (t <= '9')) 
+		    j = (t - '0') << 4;
+		else if ((t >= 'a') && (t <= 'f')) 
+		    j = (t - 'a' + 10) << 4; 
+		else if ((t >= 'A') && (t <= 'F')) 
+		    j = (t - 'A' + 10) << 4; 
+		else 
+		    raise bad_cipher_instance (String::new (t));
+
+		t = IV[2*i+1];
+		if ((t >= '0') && (t <= '9')) 
+		    j ^= (t - '0');
+		else if ((t >= 'a') && (t <= 'f')) 
+		    j ^= (t - 'a' + 10); 
+		else if ((t >= 'A') && (t <= 'F')) 
+		    j ^= (t - 'A' + 10); 
+		else 
+		    raise bad_cipher_instance (String::new (t));
+
+		cipher->IV[i] = j & 0xff;
+	    } 
+	}
+
+	return TRUE;
+    }
+
+    public exception bad_cipher_state (*cipherInstance	cipher);
+    
+    public int function blockEncrypt (*cipherInstance	cipher,
+				      *keyInstance	key,
+				      *int[*]		input,
+				      int		inputLen,
+				      *int[*]		outBuffer)
+    {
+	int i, j, t, numBlocks;
+	int[*,*] block = (int[4,MAXBC]);
+
+        /* check parameter consistency: */
+        if (key == 0 || key->direction != DIR_ENCRYPT ||
+	    (key->keyLen != 128 && key->keyLen != 192 && key->keyLen != 256)) 
+	{
+	    raise bad_key_material ("");
+        }
+        if (cipher == 0 ||
+	    (cipher->mode != MODE_ECB && cipher->mode != MODE_CBC && cipher->mode != MODE_CFB1) ||
+	    (cipher->blockLen != 128 && cipher->blockLen != 192 && cipher->blockLen != 256)) 
+	{
+	    raise bad_cipher_state (cipher);
+	}
+
+	numBlocks = inputLen//cipher->blockLen;
+	
+	switch (cipher->mode) {
+	case MODE_ECB: 
+	    for (i = 0; i < numBlocks; i++) 
+	    {
+		for (j = 0; j < cipher->blockLen/32; j++) 
+		{
+		    /* parse input stream into rectangular array */
+		    for(t = 0; t < 4; t++)
+			block[t,j] = (*input)[4*j+t] & 0xFF;
+		}
+		rijndaelEncrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
+		for (j = 0; j < cipher->blockLen/32; j++) 
+		{
+		    /* parse rectangular array into output ciphertext bytes */
+		    for(t = 0; t < 4; t++)
+			(*outBuffer)[4*j+t] = block[t,j];
+		}
+	    }
+	    break;
+
+	case MODE_CBC:
+	    for (j = 0; j < cipher->blockLen/32; j++) 
+	    {
+		/* parse initial value into rectangular array */
+		for(t = 0; t < 4; t++)
+		    block[t,j] = cipher->IV[t+4*j] & 0xFF;
+	    }
+	    for (i = 0; i < numBlocks; i++) 
+	    {
+		for (j = 0; j < cipher->blockLen/32; j++) 
+		{
+		    /* parse input stream into rectangular array and exor with 
+		     IV or the previous ciphertext */
+		    for(t = 0; t < 4; t++)
+			block[t,j] ^= (*input)[4*j+t] & 0xFF;
+		}
+		rijndaelEncrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
+		for (j = 0; j < cipher->blockLen/32; j++) 
+		{
+		    /* parse rectangular array into output ciphertext bytes */
+		    for(t = 0; t < 4; t++)
+			(*outBuffer)[4*j+t] = block[t,j] & 0xFF;
+		}
+	    }
+	    break;
+
+	default: 
+	    raise bad_cipher_state (cipher);
+	}
+	
+	return numBlocks*cipher->blockLen;
+    }
+
+    public int function blockDecrypt (*cipherInstance	cipher,
+				      *keyInstance	key,
+				      *int[*]		input,
+				      int		inputLen,
+				      *int[*]		outBuffer)
+    {
+	int	    i, j, t, numBlocks;
+	int[*,*]    block = (int[4,MAXBC]);
+
+	if (cipher == 0 ||
+	    key == 0 ||
+	    key->direction == DIR_ENCRYPT ||
+	    cipher->blockLen != key->blockLen) 
+	{
+	    raise bad_cipher_state (cipher);
+	}
+
+	/* check parameter consistency: */
+	if (key == 0 ||
+	    key->direction != DIR_DECRYPT ||
+	    (key->keyLen != 128 && key->keyLen != 192 && key->keyLen != 256)) 
+	{
+	    raise bad_key_material ("");
+	}
+
+	if (cipher == 0 ||
+	    (cipher->mode != MODE_ECB && cipher->mode != MODE_CBC && cipher->mode != MODE_CFB1) ||
+	    (cipher->blockLen != 128 && cipher->blockLen != 192 && cipher->blockLen != 256)) 
+	{
+	    raise bad_cipher_state (cipher);
+	}
+
+
+	numBlocks = inputLen//cipher->blockLen;
+
+	switch (cipher->mode) {
+	case MODE_ECB: 
+	    for (i = 0; i < numBlocks; i++) 
+	    {
+		for (j = 0; j < cipher->blockLen/32; j++) 
+		{
+		    /* parse input stream into rectangular array */
+		    for(t = 0; t < 4; t++)
+			block[t,j] = (*input)[4*j+t] & 0xFF;
+		}
+		rijndaelDecrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
+		for (j = 0; j < cipher->blockLen/32; j++) 
+		{
+		    /* parse rectangular array into output ciphertext bytes */
+		    for(t = 0; t < 4; t++)
+			(*outBuffer)[4*j+t] = block[t,j];
+		}
+	    }
+	    break;
+
+	case MODE_CBC:
+	    /* first block */
+	    for (j = 0; j < cipher->blockLen/32; j++) 
+	    {
+		/* parse input stream into rectangular array */
+		for(t = 0; t < 4; t++)
+		    block[t,j] = (*input)[4*j+t] & 0xFF;
+	    }
+	    rijndaelDecrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
+
+	    for (j = 0; j < cipher->blockLen/32; j++) 
+	    {
+		/* exor the IV and parse rectangular array into output ciphertext bytes */
+		for(t = 0; t < 4; t++)
+		    (*outBuffer)[4*j+t] = (block[t,j] ^ cipher->IV[t+4*j]);
+	    }
+
+	    /* next blocks */
+	    for (i = 1; i < numBlocks; i++) 
+	    {
+		for (j = 0; j < cipher->blockLen/32; j++) 
+		{
+		    /* parse input stream into rectangular array */
+		    for(t = 0; t < 4; t++)
+			block[t,j] = (*input)[cipher->blockLen//8+4*j+t] & 0xFF;
+		}
+		rijndaelDecrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
+
+		for (j = 0; j < cipher->blockLen/32; j++) 
+		{
+		    /* exor previous ciphertext block and parse rectangular array 
+		     into output ciphertext bytes */
+		    for(t = 0; t < 4; t++)
+			(*outBuffer)[cipher->blockLen//8+4*j+t] = ((block[t,j] ^ 
+								   (*input)[4*j+t-4*cipher->blockLen//32]));
+		}
+	    }
+	    break;
+
+	default:
+	    raise bad_cipher_state (cipher);
+	}
+
+	return numBlocks*cipher->blockLen;
+    }
+
+    /**
+     *	cipherUpdateRounds:
+     *
+     *	Encrypts/Decrypts exactly one full block a specified number of rounds.
+     *	Only used in the Intermediate Value Known Answer Test.	
+     *
+     *	Returns:
+     *		TRUE - on success
+     *		BAD_CIPHER_STATE - cipher in bad state (e.g., not initialized)
+     */
+
+    public int function cipherUpdateRounds (*cipherInstance cipher,
+					    *keyInstance    key,
+					    *int[*]	    input,
+					    int		    inputLen,
+					    *int[*]	    outBuffer,
+					    int		    rounds)
+    {
+	int	    j, t;
+	int[*,*]    block = (int[4,MAXBC]);
+
+	if (cipher == 0 ||
+	    key == 0 ||
+	    cipher->blockLen != key->blockLen) 
+	{
+	    raise bad_cipher_state (cipher);
+	}
+
+	for (j = 0; j < cipher->blockLen/32; j++) 
+	{
+	    /* parse input stream into rectangular array */
+	    for(t = 0; t < 4; t++)
+		block[t,j] = (*input)[4*j+t] & 0xFF;
+	}
+	switch (key->direction) {
+	case DIR_ENCRYPT:
+	    rijndaelEncryptRound (&block, key->keyLen, cipher->blockLen, 
+				  &key->keySched, rounds);
+	    break;
+
+	case DIR_DECRYPT:
+	    rijndaelDecryptRound (&block, key->keyLen, cipher->blockLen, 
+				  &key->keySched, rounds);
+	    break;
+
+	default:
+	    raise bad_key_dir (key->direction);
+	} 
+	for (j = 0; j < cipher->blockLen/32; j++) 
+	{
+	    /* parse rectangular array into output ciphertext bytes */
+	    for(t = 0; t < 4; t++)
+		(*outBuffer)[4*j+t] = block[t,j];
+	}
+
+	return TRUE;
+    }
+    
+    public int[*] function string_to_array (string s, *cipherInstance cipher)
+    {
+	int	blockLen = cipher->blockLen // 8;
+	int	len = (ceil (String::length (s) / blockLen) * blockLen);
+	
+	int[*]	a = (int[len]);
+	int	i;
+
+	for (i = 0; i < String::length (s); i++)
+	    a[i] = s[i];
+	for (; i < len; i++)
+	    a[i] = 0;
+	return a;
+    }
+    
+    public string function array_to_string (int[*] a)
+    {
+	string	s = "";
+	int	i;
+
+	for (i = 0; i < dim(a) && a[i]; i++)
+	    s = s + String::new (a[i]);
+	return s;
+    }
+}
+
+import Rijndael;
+
+string	secret = "000102030405060708090a0b0c0d0e0f";
+string	data = "Hello, world."
+
+keyInstance encKeyInst = (keyInstance) { blockLen = 128 };
+makeKey (&encKeyInst, DIR_ENCRYPT, 128, secret);
+
+cipherInstance	encCipherInst = (cipherInstance) { blockLen = 128 };
+cipherInit (&encCipherInst, MODE_ECB, "");
+
+int[*]	orig_text = string_to_array (data, &encCipherInst);
+int[*]	cipher_text = (int[dim(orig_text)]);
+
+blockEncrypt (&encCipherInst, &encKeyInst, &orig_text, dim(orig_text) * 8, &cipher_text);
+
+keyInstance decKeyInst = (keyInstance) { blockLen = 128 };
+makeKey (&decKeyInst, DIR_DECRYPT, 128, secret);
+
+cipherInstance	decCipherInst = (cipherInstance) { blockLen = 128 };
+cipherInit (&decCipherInst, MODE_ECB, "");
+
+int[*]	recover_text = (int[dim(cipher_text)]);
+
+blockDecrypt (&decCipherInst, &decKeyInst, &cipher_text, dim(cipher_text) * 8, &recover_text);
+
+string	text = array_to_string (recover_text);

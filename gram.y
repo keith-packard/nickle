@@ -1070,12 +1070,6 @@ primary		: fullname
 			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = $2;
 		    }
-		| OP type OS exprs CS CP namespace_start opt_arrayinit namespace_end
-		    { 
-			ParseCanonType ($2);
-			$$ = NewExprTree (NEW, $8, 0); 
-			$$->base.type = NewTypesArray ($2, $4); 
-		    }
 		| OS stars CS namespace_start arrayinit namespace_end
 		    { 
 			$$ = NewExprTree (NEW, $5, 0); 
@@ -1159,8 +1153,6 @@ arrayelt	: lambdaexpr
 */
 structinit    	: ignorenl OC structelts opt_comma attendnl CC
 		    { $$ = NewExprTree (STRUCT, ExprRehang ($3, 0), 0); }
-		| ignorenl OC CC
-		    { $$ = NewExprTree (STRUCT, 0, 0); }
 		;
 structelts	: structelts COMMA structelt
 		    { $$ = NewExprTree (COMMA, $1, $3); }
@@ -1173,6 +1165,8 @@ structelt	: NAME ASSIGN lambdaexpr
 
 init		: arrayinit
 		| structinit
+		| ignorenl OC attendnl CC
+		    { $$ = 0; }
 		;
 %%
 

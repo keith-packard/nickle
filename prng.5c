@@ -29,7 +29,7 @@ namespace PRNG {
 
   /* returns a random integer in the range 0..n-1 */
   public int function randint(int n) {
-    return randbits(32 + lg(n)) % n;
+    return randbits(32 + bit_width (n)) % n;
   }
 
 }

@@ -66,10 +66,10 @@ function start (int nthread, int nmut_ex, int delay)
 {
     int i;
 
-    owned = (int [nthread]);
+    owned = (int [nthread]) {};
     for (i = 0; i < nthread; i++)
 	owned[i] = -1;
-    mutexes = (named_mutex [nmut_ex]);
+    mutexes = (named_mutex [nmut_ex]) {};
     for (i = 0; i < nmut_ex; i++)
     {
 	mutexes[i] = (named_mutex) {

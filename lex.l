@@ -132,6 +132,25 @@ LexFile (char *s, Bool complain)
     return True;
 }
 
+Bool
+LexFileAfter (char *s, Bool complain)
+{
+    Value	f;
+    LexInput	*n, **prev;
+
+    f = FileFopen (s, "r");
+    if (f == 0) {
+	if (complain)
+	    (void) FilePrintf (FileStderr, "cannot open file %s\n", s);
+	return False;
+    }
+    n = NewLexInput (0, f, AtomId (s));
+    for (prev = &lexInput; *prev; prev = &(*prev)->next)
+	;
+    *prev = n;
+    return True;
+}
+
 void
 LexString (char *s)
 {

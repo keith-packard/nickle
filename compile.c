@@ -1467,6 +1467,30 @@ CompileComprehension (ObjPtr	obj,
     RETURN(obj);
 }
 
+/*
+ * typedef struct { int x; } foo;
+ * typedef struct { foo[2,2] q; } bar;
+ * bar y = { q = { { { x = 1 } ... } ... } };
+ *
+ * 
+ *                           ARRAY
+ *                          /     \
+ *                       COMMA     0
+ *                      /     \
+ *                   ARRAY     COMMA
+ *                  /     \    |    \
+ *               COMMA     0  DOTS   0
+ *              /     \
+ *          STRUCT     COMMA
+ *         /      \    |    \
+ *      COMMA      0   DOTS  0
+ *     /     \
+ *  ASSIGN    0
+ *  |     \
+ * NAME  TEN_NUM
+ *  "x"    1
+ */
+
 static ObjPtr
 CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr code)
 {
@@ -1633,15 +1657,17 @@ CompileImplicitInit (Type *type)
 	    init = CompileImplicitInit (sub);
 	    if (init)
 	    {
-		init = NewExprTree (COMMA,
-				    init,
-				    NewExprTree (COMMA,
-						 NewExprTree (DOTS, 0, 0),
-						 0));
 		dim = CompileCountDeclDimensions (type->array.dimensions);
-		while (--dim)
-		    init = NewExprTree (OC, init, 0);
-		init = NewExprTree (ARRAY, init, 0);
+		while (--dim >= 0)
+		{
+		    init = NewExprTree (ARRAY,
+					NewExprTree (COMMA,
+						     init,
+						     NewExprTree (COMMA,
+								  NewExprTree (DOTS, 0, 0),
+								  0)),
+					0);
+		}
 	    }
 	    else
 		init = NewExprTree (ANONINIT, 0, 0);

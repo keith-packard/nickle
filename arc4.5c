@@ -35,7 +35,7 @@ namespace ARC4 {
       j = 0;
       for (i = 0; i < 256; i++) {
         j = (j + state[i] + key[i % n]) & 0xff;
-	tmp = state[i];
+	int tmp = state[i];
 	state[i] = state[j];
 	state[j] = tmp;
       }

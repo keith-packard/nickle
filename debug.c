@@ -9,14 +9,18 @@
 #include	"nickle.h"
 
 static void
-DebugAddVar (NamespacePtr namespace, char *name, Value v)
+DebugAddVar (NamespacePtr namespace, char *string, Value v, Types *type)
 {
     ENTER ();
-    SymbolPtr  s;
+    NamePtr	name;
 
-    s = NamespaceAddSymbol (namespace, NewSymbolGlobal (AtomId(name), typesPoly, 
-							publish_private));
-    BoxValueSet (s->global.value, 0, v);
+    name = NamespaceFindName (namespace, AtomId (string), False);
+    if (!name)
+	name = NamespaceNewName (namespace, AtomId (string));
+    
+    name->symbol = NewSymbolGlobal (name->atom, type);
+    name->publish = publish_private;
+    BoxValueSet (name->symbol->global.value, 0, v);
     EXIT ();
 }
 
@@ -24,13 +28,15 @@ static void
 DebugAddCommand (char *function, Bool names)
 {
     SymbolPtr	sym;
-    Atom	id;
+    NamePtr	name;
 
-    id = AtomId (function);
-    sym = NamespaceLookupSymbol (DebugNamespace, id);
+    name = NamespaceFindName (CurrentNamespace, AtomId (function), True);
+    if (!name)
+	return;
+    sym = name->symbol;
     if (sym && sym->symbol.class == class_global)
     {
-	CurrentCommands = NewCommand (CurrentCommands, id, 
+	CurrentCommands = NewCommand (CurrentCommands, name->atom, 
 				      BoxValue (sym->global.value, 0), 
 				      names);
     }
@@ -101,11 +107,10 @@ DebugSetFrame (Value continuation, int offset)
     {
 	ret = True;
 	CurrentNamespace = NewNamespace (namespace);
-	CurrentNamespace->debugger = True;
 	CurrentFrame = frame;
 	NamespaceImport (CurrentNamespace, DebugNamespace, publish_public);
-	DebugAddVar (CurrentNamespace, "cont", continuation);
-	DebugAddVar (CurrentNamespace, "frame", NewInt (offset));
+	DebugAddVar (CurrentNamespace, "cont", continuation, typesPrim[type_continuation]);
+	DebugAddVar (CurrentNamespace, "frame", NewInt (offset), typesPrim[type_integer]);
     }
     EXIT ();
     return ret;

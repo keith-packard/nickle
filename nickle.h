@@ -13,7 +13,6 @@
 typedef union _symbol	    *SymbolPtr;
 typedef struct _func	    *FuncPtr;
 typedef struct _namespace   *NamespacePtr;
-typedef struct _typespace   *TypespacePtr;
 typedef struct _command	    *CommandPtr;
 
 typedef struct _symbolBase {
@@ -22,7 +21,6 @@ typedef struct _symbolBase {
     Atom	name;
     Class	class;
     Types	*type;
-    Publish	publish;
 } SymbolBase;
 
 typedef struct _symbolType {
@@ -37,6 +35,7 @@ typedef struct _symbolGlobal {
 typedef struct _symbolLocal {
     SymbolBase	symbol;
     int		element;
+    CodePtr	code;
 } SymbolLocal;
 
 typedef struct _symbolNamespace {
@@ -57,53 +56,39 @@ typedef union _symbol {
     SymbolException exception;
 } Symbol;
 
-extern SymbolPtr    NewSymbolType (Atom name, Types *type, Publish publish);
-extern SymbolPtr    NewSymbolException (Atom name, Types *type, Publish publish);
-extern SymbolPtr    NewSymbolGlobal (Atom name, Types *type, Publish publish);
+extern SymbolPtr    NewSymbolType (Atom name, Types *type);
+extern SymbolPtr    NewSymbolException (Atom name, Types *type);
+extern SymbolPtr    NewSymbolGlobal (Atom name, Types *type);
 extern SymbolPtr    NewSymbolArg (Atom name, Types *type);
 extern SymbolPtr    NewSymbolStatic (Atom name, Types *Type);
 extern SymbolPtr    NewSymbolAuto (Atom name, Types *type);
-extern SymbolPtr    NewSymbolNamespace (Atom name, Publish publish);
+extern SymbolPtr    NewSymbolNamespace (Atom name);
 
-typedef struct _namespaceChain {
-    DataType		    *data;
-    struct _namespaceChain  *next;
-    SymbolPtr		    symbol;
-    Publish		    publish;
-} NamespaceChain, *NamespaceChainPtr;
+typedef struct _name {
+    DataType	    *data;
+    struct _name    *next;
+    Atom	    atom;
+    SymbolPtr	    symbol;
+    Publish	    publish;
+} Name;
 
 typedef struct _namespace {
-    DataType		*data;
-    NamespacePtr	previous;
-    NamespaceChainPtr   symbols;
-    CodePtr		code;
-    Publish		publish;
-    Bool		debugger;
+    DataType	    *data;
+    NamespacePtr    previous;
+    NamePtr	    names;
+    Publish	    publish;
 } Namespace;
 
-extern NamespacePtr NewNamespace (NamespacePtr previous);
-extern SymbolPtr    NamespaceLookupSymbol (NamespacePtr namespace, Atom name);
-extern SymbolPtr    NamespaceFindSymbol (NamespacePtr namespace, Atom name, int *depth);
-extern SymbolPtr    NamespaceAddSymbol (NamespacePtr namespace, SymbolPtr symbol);
-extern Bool	    NamespaceRemoveSymbol (NamespacePtr namespace, SymbolPtr symbol);
-extern SymbolPtr    NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish);
-extern Class	    NamespaceDefaultClass (NamespacePtr namespace);
-extern NamespacePtr GlobalNamespace, CurrentNamespace, DebugNamespace;
+NamePtr		NewName (NamePtr next, Atom atom);
+NamespacePtr	NewNamespace (NamespacePtr previous);
+NamePtr		NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search);
+NamePtr		NamespaceNewName (NamespacePtr namespace, Atom atom);
+Bool		NamespaceRemoveName (NamespacePtr namespace, NamePtr name);
+void		NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish);
+void		NamespaceInit (void);
+
+extern NamespacePtr GlobalNamespace, CurrentNamespace, DebugNamespace, LexNamespace;
 extern FramePtr	    CurrentFrame;
-extern void	    NamespaceInit (void);
-
-typedef struct _typespace {
-    DataType		*data;
-    TypespacePtr	previous;
-    Atom		name;
-    Bool		mask;
-} Typespace;
-
-extern TypespacePtr NewTypespace (TypespacePtr previous, Atom name, Bool mask);
-extern TypespacePtr TypespaceFind (TypespacePtr typespace, Atom name);
-extern TypespacePtr TypespaceRemove (TypespacePtr typespace, Atom name);
-
-extern TypespacePtr CurrentTypespace;
 
 typedef struct _command {
     DataType		*data;
@@ -123,21 +108,21 @@ typedef struct _DeclList    *DeclListPtr;
 typedef struct _DeclList {
     DataType	*data;
     DeclListPtr	next;
-    Atom	name;
+    NamePtr	name;
     ExprPtr	init;
 } DeclList;
 
-extern DeclListPtr  NewDeclList (Atom name, ExprPtr init, DeclListPtr next);
+extern DeclListPtr  NewDeclList (NamePtr name, ExprPtr init, DeclListPtr next);
 
 typedef struct _MemList    *MemListPtr;
 typedef struct _MemList {
     DataType	*data;
     MemListPtr	next;
     Types	*type;
-    DeclListPtr	names;
+    AtomListPtr	atoms;
 } MemList;
 
-extern MemListPtr  NewMemList (DeclListPtr names, Types *type, MemListPtr next);
+extern MemListPtr  NewMemList (AtomListPtr atoms, Types *type, MemListPtr next);
 
 typedef struct _Fulltype {
     Class   class;
@@ -224,6 +209,11 @@ typedef struct _exprAtom {
     Atom	atom;
 } ExprAtom;
 
+typedef struct _exprName {
+    ExprBase	expr;
+    NamePtr	name;
+} ExprName;
+
 typedef struct _exprCode {
     ExprBase	expr;
     CodePtr	code;
@@ -242,6 +232,7 @@ typedef union _expr {
     ExprTree	tree;
     ExprConst	constant;
     ExprAtom	atom;
+    ExprName	name;
     ExprCode	code;
     ExprDecl	decl;
 } Expr;
@@ -249,9 +240,12 @@ typedef union _expr {
 Expr	*NewExprTree (int tag, Expr *left, Expr *right);
 Expr	*NewExprConst (int tag, Value val);
 Expr	*NewExprAtom (Atom atom);
-Expr	*NewExprCode (CodePtr code, Atom name);
+Expr	*NewExprName (NamePtr name);
+Expr	*NewExprCode (CodePtr code, NamePtr name);
 Expr	*NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish);
+
 Expr	*ExprRehang (Expr *expr, Expr *right);
+
 
 typedef struct _codeBase {
     DataType	*data;
@@ -260,7 +254,8 @@ typedef struct _codeBase {
     int		argc;
     Bool	varargs;
     ArgType	*args;
-    Atom	name;
+    NamePtr	name;
+    CodePtr	previous;
 } CodeBase;
 
 typedef struct _funcCode {
@@ -417,8 +412,8 @@ typedef struct _obj {
 #define ObjCode(obj,i)	(((InstPtr) (obj + 1)) + (i))
 #define ObjLast(obj)	((obj)->used - 1)
 
-ObjPtr	CompileStat (ExprPtr expr, NamespacePtr namespace);
-ObjPtr	CompileExpr (ExprPtr expr, NamespacePtr namespace);
+ObjPtr	CompileStat (ExprPtr expr, CodePtr code);
+ObjPtr	CompileExpr (ExprPtr expr, CodePtr code);
 
 typedef enum _wakeKind {
     WakeAll, WakeOne
@@ -474,6 +469,7 @@ extern Value	stopped;    /* stopped threads */
 extern Bool	complete;   /* must complete current inst */
 extern int	runnable;   /* number of non-broken threads */
 
+void	    InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch);
 void	    ObjDump (ObjPtr obj, int indent);
 
 Symbol	*checkSym(Symbol *, Class, Type);
@@ -528,22 +524,23 @@ void	IoInterrupt (void);
 
 void	*AllocateTemp (int size);
 
-void	PrettyPrint (Value f, SymbolPtr name);
+void	PrettyPrint (Value f, NamePtr name);
 void	PrettyCode (Value f, CodePtr code, Atom name, Class class, 
 		    Publish publish, int level, Bool nest);
 void	PrettyStat (Value F, Expr *e, Bool nest);
 void	PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
 
-void	EditFunction (SymbolPtr name);
+void	EditFunction (NamePtr name);
 void	EditFile (Value file_name);
 
 Value	lookupVar (char *);
 void	setVar (NamespacePtr, char *, Value, Types *type);
 void	GetNamespace (NamespacePtr *, FramePtr *);
-Bool	NamespaceLocate (Value names, NamespacePtr  *s, SymbolPtr *sym);
-ExprPtr	BuildName (char *);
+Bool	NamespaceLocate (Value names, NamespacePtr  *s, NamePtr *name);
+ExprPtr	BuildName (char *ns_name, char *name);
 ExprPtr	BuildCall (char *, char *, int, ...);
 ExprPtr	BuildFullname (ExprPtr colonnames, Atom name);
+ExprPtr	BuildRawname (ExprPtr colonnames, Atom name);
 
 Atom	LexFileName (void);
 int	LexFileLine (void);

@@ -107,7 +107,6 @@ AtomName (Atom id)
     return 0;
 }
 
-#if 0
 static void
 AtomListMark (void *object)
 {
@@ -129,4 +128,3 @@ NewAtomList (AtomListPtr next, Atom id)
     al->id = id;
     RETURN (al);
 }
-#endif

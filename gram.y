@@ -11,80 +11,90 @@
 #include	<stdio.h>
 
 int ignorenl;
+NamespacePtr	LexNamespace;
 
 void yyerror (char *fmt, ...);
 
 %}
 
 %union {
-    int		    ival;
-    Value	    vval;
-    Class	    cval;
-    Type	    tval;
-    ArgType	    *atval;
-    Types	    *tsval;
-    Publish	    pval;
-    ExprPtr	    eval;
-    Atom	    aval;
-    DeclListPtr	    dval;
-    MemListPtr	    mval;
-    Fulltype	    ftval;
-    ArgDecl	    adval;
-    NamespacePtr    nsval;
-    CodePtr	    fval;
-    Bool	    bval;
+    int		    ints;
+    Value	    value;
+    Class	    class;
+    Type	    type;
+    ArgType	    *argType;
+    Types	    *types;
+    Publish	    publish;
+    ExprPtr	    expr;
+    Atom	    atom;
+    DeclListPtr	    declList;
+    MemListPtr	    memList;
+    Fulltype	    fulltype;
+    ArgDecl	    argDecl;
+    NamePtr	    name;
+    NamespacePtr    namespace;
+    CodePtr	    code;
+    Bool	    bool;
+    AtomListPtr	    atomList;
 }
 
-%type  <eval>	opt_fullnames fullnames fullname colonnames
-%type  <eval>	block func_body statements statement catches catch
-%type  <eval>	case_block cases case
-%type  <eval>	union_case_block union_cases union_case
-%type  <dval>	enames names initnames
-%type  <aval>	typename name ename
-%type  <eval>	opt_init
-%type  <ftval>	decl func_decl
-%type  <tsval>	opt_type type
-%type  <eval>   opt_stars stars
-%type  <tval>	basetype
-%type  <tval>	struct_or_union
-%type  <mval>	struct_members
-%type  <cval>	class
-%type  <pval>	publish publish_extend
+%type  <expr>	    fullname
+%type  <expr>	    opt_rawnames rawname rawnames rawnamespace
+%type  <atom>	    rawatom
+%type  <expr>	    block func_body statements statement catches catch
+%type  <expr>	    case_block cases case
+%type  <expr>	    union_case_block union_cases union_case
+%type  <expr>	    fulltype
+%type  <expr>	    namespace
+%type  <atomList>   atoms
+%type  <declList>   initnames newtypenames
+%type  <name>	    name newname newtypename
+%type  <expr>	    opt_init
+%type  <fulltype>   decl func_decl
+%type  <types>	    opt_type type
+%type  <expr>	    opt_stars stars
+%type  <type>	    basetype
+%type  <type>	    struct_or_union
+%type  <memList>    struct_members
+%type  <class>	    class
+%type  <publish>    publish publish_extend
+%type  <atom>	    namespacename
 
-%type  <atval>	opt_argdecls argdecls
-%type  <adval>	argdecl
-%type  <atval>	opt_argdefines argdefines
-%type  <adval>	argdefine
-%type  <bval>	opt_dots
+%type  <argType>    opt_argdecls argdecls
+%type  <argDecl>    argdecl
+%type  <argType>    opt_argdefines argdefines
+%type  <argDecl>    argdefine
+%type  <bool>	    opt_dots
 
-%type  <eval>	opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
-%type  <eval>	comma_expr
-%type  <ival>	assignop
-%type  <vval>	opt_integer integer
-%type  <eval>	opt_arrayinit arrayinit arrayelts  arrayelt
-%type  <eval>	structinit structelts structelt
-%type  <eval>	init
+%type  <expr>	    opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
+%type  <expr>	    comma_expr
+%type  <ints>	    assignop
+%type  <value>	    opt_integer integer
+%type  <expr>	    opt_arrayinit arrayinit arrayelts  arrayelt
+%type  <expr>	    structinit structelts structelt
+%type  <expr>	    init
 
-%token		VAR EXPR ARRAY STRUCT UNION
+%token		    VAR EXPR ARRAY STRUCT UNION
 
-%token		NL SEMI MOD OC CC DOLLAR DOTS
-%token <cval>	GLOBAL AUTO STATIC
-%token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
-%token <tval>	FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID
-%token		FUNCTION FUNC EXCEPTION RAISE
-%token		TYPEDEF IMPORT NAMESPACE NEW
-%token <pval>	PUBLIC EXTEND
-%token		IF ELSE WHILE DO FOR SWITCH
-%token		BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
-%token		TRY CATCH TWIXT
-%token <aval>	NAME TYPENAME COMMAND NAMECOMMAND
-%token <vval>	TEN_CONST OCTAL_CONST BINARY_CONST HEX_CONST FLOAT_CONST
-%token <vval>	CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
-%token <vval>	VOIDVAL
+%token		    NL SEMI MOD OC CC DOLLAR DOTS
+%token <class>	    GLOBAL AUTO STATIC
+%token <type>	    POLY INTEGER NATURAL RATIONAL REAL STRING
+%token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID
+%token		    FUNCTION FUNC EXCEPTION RAISE
+%token		    TYPEDEF IMPORT NEW
+%token <namespace>  NAMESPACE
+%token <publish>    PUBLIC EXTEND
+%token		    IF ELSE WHILE DO FOR SWITCH
+%token		    BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
+%token		    TRY CATCH TWIXT
+%token <atom>	    NAME TYPENAME NAMESPACENAME COMMAND NAMECOMMAND
+%token <value>	    TEN_CONST OCTAL_CONST BINARY_CONST HEX_CONST FLOAT_CONST
+%token <value>	    CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
+%token <value>	    VOIDVAL
 
 %nonassoc 	POUND
 %right		COMMA
-%right <ival>	ASSIGN
+%right <ints>	ASSIGN
 		ASSIGNPLUS ASSIGNMINUS ASSIGNTIMES ASSIGNDIVIDE 
 		ASSIGNDIV ASSIGNMOD ASSIGNPOW
 		ASSIGNSHIFTL ASSIGNSHIFTR
@@ -105,6 +115,7 @@ void yyerror (char *fmt, ...);
 %right		UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
 %left		OS CS DOT ARROW REFARRAY CALL OP CP
 %right		COLONCOLON
+
 %%
 lines		: lines pcommand
 		|
@@ -151,11 +162,11 @@ command		: expr attendnl NL
 			
 			e = BuildCall ("Command", "display",
 				       2,
-				       BuildName ("format"),
+				       BuildName (0, "format"),
 				       BuildCall ("History", "insert",
 						  1, NewExprTree (DOLLAR, $1, 0)));
 			GetNamespace (&s, &f);
-			t = NewThread (f, CompileExpr (e, s));
+			t = NewThread (f, CompileExpr (e, 0));
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
@@ -169,7 +180,7 @@ command		: expr attendnl NL
 
 			e = BuildCall ("File", "print",
 				       7,
-				       BuildName ("stdout"),
+				       BuildName (0, "stdout"),
 				       BuildCall ("History", "insert",
 						  1, $1),
 				       NewExprConst (STRING_CONST, NewStrString ("g")),
@@ -183,7 +194,7 @@ command		: expr attendnl NL
 						    1,
 						    NewExprConst (CHAR_CONST, NewInt ('\n'))));
 			GetNamespace (&s, &f);
-			t = NewThread (f, CompileExpr (e, s));
+			t = NewThread (f, CompileExpr (e, 0));
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
@@ -195,7 +206,7 @@ command		: expr attendnl NL
 			Value	    t;
 			
 			GetNamespace (&s, &f);
-			t = NewThread (f, CompileStat ($1, s));
+			t = NewThread (f, CompileStat ($1, 0));
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
@@ -217,12 +228,12 @@ command		: expr attendnl NL
 					     NewExprConst (POLY_CONST, c->func),
 					     $2);
 			    GetNamespace (&s, &f);
-			    t = NewThread (f, CompileExpr (e, s));
+			    t = NewThread (f, CompileExpr (e, 0));
 			    ThreadsRun (t, 0);
 			}
 			EXIT ();
 		    }
-		| NAMECOMMAND opt_fullnames attendnl opt_semi NL
+		| NAMECOMMAND opt_rawnames attendnl opt_semi NL
 		    {
 			ENTER ();
 			ExprPtr e;
@@ -241,68 +252,135 @@ command		: expr attendnl NL
 					     NewExprConst (POLY_CONST, c->func),
 					     $2);
 			    GetNamespace (&s, &f);
-			    t = NewThread (f, CompileExpr (e, s));
+			    t = NewThread (f, CompileExpr (e, 0));
 			    ThreadsRun (t, 0);
 			}
 			EXIT ();
 		    }
 		| NL
 		;
-opt_fullnames	: fullnames
+opt_rawnames	: rawnames
 		|
 		    { $$ = 0; }
 		;
-fullnames	: fullname COMMA fullnames
+rawnames	: rawname COMMA rawnames
 		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| fullname
+		| rawname
 		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
-fullname	: colonnames name
-		    { $$ = BuildFullname ($1, $2); }
+rawname		: rawnamespace rawatom
+		    { $$ = BuildRawname ($1, $2); }
 		;
-colonnames	: colonnames name COLONCOLON
+rawatom		: NAME
+		| NAMESPACENAME
+		| TYPENAME
+		;
+rawnamespace	: rawnamespace NAMESPACENAME COLONCOLON
 		    { $$ = NewExprTree (COLONCOLON, $1, NewExprAtom ($2)); }
+                |
+		    { $$ = 0; }
+                ;
+fulltype	: namespace TYPENAME
+		    { 
+			ExprPtr	e;
+			NamePtr	name;
+			e = BuildFullname ($1, $2);
+			if (e->base.tag == COLONCOLON)
+			    name = e->tree.right->name.name;
+			else
+			    name = e->name.name;
+			if (!name)
+			{
+			    yyerror ("undefined \"%A\"", $2);
+			    YYERROR;
+			}
+			LexNamespace = 0;
+			$$ = e;
+		    }
+fullname	: namespace namespacename
+		    { 
+			ExprPtr	e;
+			NamePtr	name;
+			e = BuildFullname ($1, $2);
+			if (e->base.tag == COLONCOLON)
+			    name = e->tree.right->name.name;
+			else
+			    name = e->name.name;
+			if (!name)
+			{
+			    yyerror ("undefined \"%A\"", $2);
+			    YYERROR;
+			}
+			LexNamespace = 0;
+			$$ = e;
+		    }
+		;
+namespace	: namespace NAMESPACENAME COLONCOLON
+		    { 
+			ExprPtr	    e;
+			NamePtr	name;
+
+			e = BuildFullname ($1, $2);
+			if (e->base.tag == COLONCOLON)
+			    name = e->tree.right->name.name;
+			else
+			    name = e->name.name;
+			if (!name || !name->symbol)
+			{
+			    yyerror ("non-existant namespace \"%A\"", $2);
+			    YYERROR;
+			}
+			else if (name->symbol->symbol.class != class_namespace)
+			{
+			    yyerror ("%A is not a namespace", $2);
+			    YYERROR;
+			}
+			LexNamespace = name->symbol->namespace.namespace;
+			$$ = e;
+		    }
 		|
 		    { $$ = 0; }
+		;
+namespacename	:   NAME
+		|   NAMESPACENAME
 		;
 /*
 * Statements
 */
+namespace_start	:
+		    { CurrentNamespace = NewNamespace (CurrentNamespace); }
+		;
+namespace_end	:
+		    { CurrentNamespace = CurrentNamespace->previous; }
+		;
 block		: block_start ignorenl statements block_end
 		    { $$ = $3; }
 		;
-block_start	: OC
-		    { 
-			CurrentTypespace = NewTypespace (CurrentTypespace, 
-							 0, False); 
-		    }
+block_start	: OC namespace_start
 		;
-block_end	: CC
-		    { 
-			CurrentTypespace = TypespaceFind (CurrentTypespace, 
-							  0)->previous; 
-		    }
+block_end	: namespace_end CC
+		;
 statements	: statement statements
 		    { $$ = NewExprTree(OC, $1, $2); }
 		|
 		    { $$ = NewExprTree(OC, 0, 0); }
 		;
-statement	: IF ignorenl OP expr CP statement
-		    { $$ = NewExprTree(IF, $4, $6); }
-		| IF ignorenl OP expr CP statement ELSE statement
-		    { $$ = NewExprTree(ELSE, $4, NewExprTree(ELSE, $6, $8)); }
-		| WHILE ignorenl OP expr CP statement
-		    { $$ = NewExprTree(WHILE, $4, $6); }
-		| DO ignorenl statement WHILE OP expr CP
-		    { $$ = NewExprTree(DO, $3, $6); }
-		| FOR ignorenl OP opt_expr SEMI opt_expr SEMI opt_expr CP statement
-		    { $$ = NewExprTree(FOR, NewExprTree(FOR, $4, $6),
-				       NewExprTree(FOR, $8, $10));
+statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
+		    { $$ = NewExprTree(IF, $5, $7); }
+		| IF ignorenl namespace_start OP expr CP statement ELSE statement namespace_end
+		    { $$ = NewExprTree(ELSE, $5, NewExprTree(ELSE, $7, $9)); }
+		| WHILE ignorenl namespace_start OP expr CP statement namespace_end
+		    { $$ = NewExprTree(WHILE, $5, $7); }
+		| DO ignorenl namespace_start statement WHILE OP expr CP namespace_end
+		    { $$ = NewExprTree(DO, $4, $7); }
+		| FOR ignorenl namespace_start OP opt_expr SEMI opt_expr SEMI opt_expr CP statement namespace_end
+		    { $$ = NewExprTree(FOR, NewExprTree(FOR, $5, $7),
+				       NewExprTree(FOR, $9, $11));
 		    }
-		| SWITCH ignorenl OP expr CP case_block
-		    { $$ = NewExprTree (SWITCH, $4, $6); }
-		| UNION SWITCH ignorenl OP expr CP union_case_block
-		    { $$ = NewExprTree (UNION, $5, $7); }
+		| SWITCH ignorenl namespace_start OP expr CP case_block namespace_end
+		    { $$ = NewExprTree (SWITCH, $5, $7); }
+		| UNION SWITCH ignorenl namespace_start OP expr CP union_case_block namespace_end
+		    { $$ = NewExprTree (UNION, $6, $8); }
 		| BREAK ignorenl SEMI
 		    { $$ = NewExprTree(BREAK, (Expr *) 0, (Expr *) 0); }
 		| CONTINUE ignorenl SEMI
@@ -314,84 +392,134 @@ statement	: IF ignorenl OP expr CP statement
 		| block
 		| SEMI ignorenl
 		    { $$ = NewExprTree(SEMI, (Expr *) 0, (Expr *) 0); }
-		| func_decl FUNCTION ignorenl NAME OP opt_argdefines CP func_body
+		| func_decl FUNCTION ignorenl newname namespace_start OP opt_argdefines CP func_body namespace_end
 		    { 
 			ExprPtr	decl;
 
 			decl = NewExprDecl (NewDeclList ($4, 0, 0),
 					    $1.class,
-					    NewTypesFunc ($1.type, $6),
+					    NewTypesFunc ($1.type, $7),
 					    $1.publish);
-			if ($8)
+			if ($9)
 			    $$ = NewExprTree (FUNCTION, decl,
 					      NewExprTree (ASSIGN,
-							   NewExprAtom ($4),
+							   NewExprName ($4),
 							   NewExprCode (NewFuncCode ($1.type,
-										     $6,
-										     $8),
+										     $7,
+										     $9),
 									$4)));
 			else
 			    $$ = decl;
 		    }
-		| publish EXCEPTION ignorenl NAME OP opt_argdecls CP SEMI
+		| publish EXCEPTION ignorenl newname namespace_start opt_argdecls namespace_end SEMI
 		    { $$ = NewExprDecl (NewDeclList ($4, 0, 0),
 					class_exception,
 					NewTypesFunc (typesPoly, $6),
 					$1);
 		    }
-		| RAISE NAME OP opt_exprs CP SEMI;
-		    { $$ = NewExprTree (RAISE, NewExprAtom ($2), $4); }
-		| publish TYPEDEF ignorenl enames SEMI
+		| RAISE name OP opt_exprs CP SEMI;
+		    { $$ = NewExprTree (RAISE, NewExprName($2), $4); }
+		| publish TYPEDEF ignorenl newtypenames SEMI
 		    { 
-			DeclListPtr dl;
-			
-			$$ = NewExprDecl ($4, class_typedef, 0, $1);
-			for (dl = $4; dl; dl = dl->next)
-			    CurrentTypespace = NewTypespace (CurrentTypespace,
-							     dl->name,
-							     False);
+			DeclListPtr decl;
+
+			for (decl = $4; decl; decl = decl->next)
+			{
+			    decl->name->symbol = NewSymbolType (decl->name->atom, 0);
+			    decl->name->publish = $1;
+			}
+			$$ = NewExprTree (TYPEDEF, NewExprDecl ($4, class_typedef, 0, $1), 0);
 		    }
-		| publish TYPEDEF ignorenl type enames SEMI
+		| publish TYPEDEF ignorenl type newtypenames SEMI
 		    { 
-			DeclListPtr dl;
+			DeclListPtr decl;
+
+			for (decl = $5; decl; decl = decl->next)
+			{
+			    if (decl->name->symbol)
+			    {
+				if (decl->name->symbol->symbol.type)
+				{
+				    yyerror ("redefinition of typedef %A", decl->name->atom);
+				    YYERROR;
+				}
+				decl->name->symbol->symbol.type = $4;
+			    }
+			    else
+				decl->name->symbol = NewSymbolType (decl->name->atom, $4);
+			    decl->name->publish = $1;
+			}
+			$$ = NewExprTree (TYPEDEF, NewExprDecl ($5, class_typedef, $4, $1), 0);
+		    }
+		| publish_extend NAMESPACE ignorenl namespacename
+		    {
+			NamePtr	    name = 0;
+			Publish	    publish = $1;
 			
-			$$ = NewExprDecl ($5, class_typedef, $4, $1);
-			for (dl = $5; dl; dl = dl->next)
-			    CurrentTypespace = NewTypespace (CurrentTypespace,
-							     dl->name,
-							     False);
+			$2 = CurrentNamespace;
+			if (publish == publish_extend)
+			{
+			    name = NamespaceFindName (CurrentNamespace, $4, True);
+			    if (!name || !name->symbol)
+			    {
+				yyerror ("non-existant namespace %A", $4);
+				YYERROR;
+			    }
+			    else if (name->symbol->symbol.class != class_namespace)
+			    {
+				yyerror ("%A is not a namespace", $4);
+				YYERROR;
+			    }
+			    else
+				CurrentNamespace = name->symbol->namespace.namespace;
+			}
+			else
+			{
+			    name = NamespaceNewName (CurrentNamespace, $4);
+			    CurrentNamespace = NewNamespace (CurrentNamespace);
+			    name->symbol = NewSymbolNamespace ($4);
+			    name->symbol->namespace.namespace = CurrentNamespace;
+			    name->publish = publish;
+			}
 		    }
-		| publish_extend NAMESPACE ignorenl NAME block
+			OC statements CC
 		    {
-			$$ = NewExprTree (NAMESPACE,
-					  NewExprDecl (NewDeclList ($4, 
-								    0, 0),
-						       class_undef,
-						       0,
-						       $1),
-					  $5);
+			CurrentNamespace = $2;
+			$$ = NewExprTree (NAMESPACE, 
+					  NewExprName (NamespaceFindName (CurrentNamespace, 
+									  $4, True)),
+					  $7);
 		    }
-		| publish IMPORT ignorenl NAME SEMI
+		| publish IMPORT ignorenl namespacename SEMI
 		    {
-			$$ = NewExprTree (IMPORT,
-					  NewExprDecl (NewDeclList ($4,
-								    0, 0),
-						       class_undef,
-						       0,
-						       $1),
-					  0);
+			NamePtr	name;
+
+			name = NamespaceFindName (CurrentNamespace, $4, True);
+			if (!name)
+			{
+			    yyerror ("non-existant namespace %A", $4);
+			    YYERROR;
+			}
+			else if (name->symbol->symbol.class != class_namespace)
+			{
+			    yyerror ("%A is not a namespace", $4);
+			    YYERROR;
+			}
+			NamespaceImport (CurrentNamespace, 
+					 name->symbol->namespace.namespace, $1);
+			$$ = NewExprTree (IMPORT, NewExprName (name), 0);
 		    }
 		| TRY ignorenl statement catches
 		    { $$ = NewExprTree (CATCH, $3, $4); }
-		| TWIXT ignorenl OP opt_expr SEMI opt_expr CP statement
+		| TWIXT ignorenl namespace_start OP opt_expr SEMI opt_expr CP statement namespace_end
 		    { $$ = NewExprTree (TWIXT, 
-					NewExprTree (TWIXT, $4, $6),
-					NewExprTree (TWIXT, $8, 0));
+					NewExprTree (TWIXT, $5, $7),
+					NewExprTree (TWIXT, $9, 0));
 		    }
-		| TWIXT ignorenl OP opt_expr SEMI opt_expr CP statement ELSE statement
+		| TWIXT ignorenl namespace_start OP opt_expr SEMI opt_expr CP statement ELSE statement namespace_end
 		    { $$ = NewExprTree (TWIXT, 
-					NewExprTree (TWIXT, $4, $6),
-					NewExprTree (TWIXT, $8, $10));
+					NewExprTree (TWIXT, $5, $7),
+					NewExprTree (TWIXT, $9, $11));
 		    }
 		;
 catches		:   catch catches
@@ -399,8 +527,8 @@ catches		:   catch catches
 		|   
 		    { $$ = 0; }
 		;
-catch		: CATCH NAME OP opt_argdefines CP block
-		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $6), $2); }
+catch		: CATCH name namespace_start opt_argdefines block namespace_end
+		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $5), $2); }
 func_body    	: block
 		| SEMI
 		    { $$ = 0; }
@@ -434,26 +562,45 @@ union_case	: CASE NAME COLON statements
 /*
 * Identifiers
 */
-enames		: ename COMMA enames
-		    { $$ = NewDeclList ($1, 0, $3); }
-		| ename
-		    { $$ = NewDeclList ($1, 0, 0); }
-		;
-ename		: NAME
-		| TYPENAME
-		;
-names		: NAME COMMA names
-		    { $$ = NewDeclList ($1, 0, $3); }
+atoms		: NAME COMMA atoms
+		    { $$ = NewAtomList ($3, $1); }
 		| NAME
-		    { $$ = NewDeclList ($1, 0, 0); }
+		    { $$ = NewAtomList (0, $1); }
 		;
 name		: NAME
+		    { $$ = NamespaceFindName (CurrentNamespace, $1, True); }
 		;
-typename	: TYPENAME
+newname		: NAME
+		    { $$ = NamespaceNewName (CurrentNamespace, $1); }
 		;
-initnames	: name opt_init COMMA initnames
+newtypenames	: newtypename COMMA newtypenames
+		    { $$ = NewDeclList ($1, 0, $3); }
+		| newtypename
+		    { $$ = NewDeclList ($1, 0, 0); }
+		;
+newtypename	: TYPENAME
+		    { 
+			NamePtr	name;
+
+			name = NamespaceFindName (CurrentNamespace, $1, False);
+			if (!name || 
+			    (name->symbol && name->symbol->symbol.type))
+			    name = NamespaceNewName (CurrentNamespace, $1);
+			$$ = name;
+		    }
+		| NAME
+		    { 
+			NamePtr	name;
+
+			name = NamespaceFindName (CurrentNamespace, $1, False);
+			if (!name || name->symbol)
+			    name = NamespaceNewName (CurrentNamespace, $1); 
+			$$ = name;
+		    }
+		;
+initnames	: newname opt_init COMMA initnames
 		    { $$ = NewDeclList ($1, $2, $4); }
-		| name opt_init
+		| newname opt_init
 		    { $$ = NewDeclList ($1, $2, 0); }
 		;
 opt_init	: ASSIGN simpleexpr
@@ -499,13 +646,13 @@ type		: basetype
 		    }
 		| TIMES type			%prec STAR
 		    { $$ = NewTypesRef ($2); }
-		| type OP opt_argdecls CP	%prec CALL
-		    { $$ = NewTypesFunc ($1, $3); }
+		| type opt_argdecls	%prec CALL
+		    { $$ = NewTypesFunc ($1, $2); }
 		| type OS opt_stars CS
 		    { $$ = NewTypesArray ($1, $3); }
 		| struct_or_union OC struct_members CC
 		    {
-			DeclListPtr	dl;
+			AtomListPtr	al;
 			StructType	*st;
 			StructElement	*se;
 			MemListPtr	ml;
@@ -514,7 +661,7 @@ type		: basetype
 			nelements = 0;
 			for (ml = $3; ml; ml = ml->next)
 			{
-			    for (dl = ml->names; dl; dl = dl->next)
+			    for (al = ml->atoms; al; al = al->next)
 				nelements++;
 			}
 			st = NewStructType (nelements);
@@ -522,10 +669,10 @@ type		: basetype
 			nelements = 0;
 			for (ml = $3; ml; ml = ml->next)
 			{
-			    for (dl = ml->names; dl; dl = dl->next)
+			    for (al = ml->atoms; al; al = al->next)
 			    {
 				se[nelements].type = ml->type;
-				se[nelements].name = dl->name;
+				se[nelements].name = al->id;
 				nelements++;
 			    }
 			}
@@ -536,7 +683,7 @@ type		: basetype
 		    }
 		| OP type CP
 		    { $$ = $2; }
-		| typename
+		| fulltype
 		    { $$ = NewTypesName ($1, 0); }
 		;
 basetype    	: POLY
@@ -568,7 +715,7 @@ struct_or_union	: STRUCT
 /*
 * Structure member declarations
 */
-struct_members	: opt_type names SEMI struct_members
+struct_members	: opt_type atoms SEMI struct_members
 		    { $$ = NewMemList ($2, $1, $4); }
 		|
 		    { $$ = 0; }
@@ -595,19 +742,20 @@ publish_extend	: PUBLIC
 /*
 * Arguments in function declarations
 */
-opt_argdecls	: argdecls
-		|
+opt_argdecls	: OP argdecls CP
+		    { $$ = $2; }
+		| OP CP
 		    { $$ = 0; }
 		;
 argdecls	: argdecl COMMA argdecls
 		    { $$ = NewArgType ($1.type, False, $1.name, $3); }
 		| argdecl opt_dots
 		    { $$ = NewArgType ($1.type, $2, $1.name, 0); }
-argdecl		: type NAME
+argdecl		: type newname
 		    { $$.type = $1; $$.name = $2; }
 		| type
 		    { $$.type = $1; $$.name = 0; }
-		| NAME
+		| newname
 		    { $$.type = typesPoly; $$.name = $1; }
 		;
 
@@ -623,7 +771,7 @@ argdefines	: argdefine COMMA argdefines
 		| argdefine opt_dots
 		    { $$ = NewArgType ($1.type, $2, $1.name, 0); }
 		;
-argdefine	: opt_type NAME
+argdefine	: opt_type newname
 		    { $$.type = $1; $$.name = $2; }
 		;
 opt_dots	: DOTS
@@ -664,8 +812,8 @@ exprs		: exprs COMMA lambdaexpr
 * This expression level includes lambdas which can't be in simpleexpr
 * because of grammar ambiguities
 */
-lambdaexpr	: opt_type FUNC OP opt_argdefines CP block
-		    { $$ = NewExprCode (NewFuncCode ($1, $4, $6), 0); }
+lambdaexpr	: opt_type FUNC namespace_start OP opt_argdefines CP block namespace_end
+		    { $$ = NewExprCode (NewFuncCode ($1, $5, $7), 0); }
 		| simpleexpr
 		;
 /*
@@ -716,7 +864,11 @@ simpleexpr	: primary
 		| simpleexpr MOD simpleexpr
 		    { $$ = NewExprTree(MOD, $1, $3); }
 		| simpleexpr POW simpleexpr
-		    { $$ = NewExprTree(POW, $1, $3); }
+		    { 
+			$$ = NewExprTree(POW, 
+					 BuildName ("Math", "pow"), 
+					 NewExprTree (POW, $1, $3)); 
+		    }
 		| simpleexpr SHIFTL simpleexpr
 		    { $$ = NewExprTree(SHIFTL, $1, $3); }
 		| simpleexpr SHIFTR simpleexpr
@@ -734,7 +886,14 @@ simpleexpr	: primary
 		| simpleexpr OR simpleexpr
 		    { $$ = NewExprTree(OR, $1, $3); }
 		| simpleexpr assignop simpleexpr			%prec ASSIGN
-		    { $$ = NewExprTree($2, $1, $3); }
+		    { 
+			if ($2 == ASSIGNPOW)
+			    $$ = NewExprTree (ASSIGNPOW, 
+					      BuildName ("Math", "assign_pow"),
+					      NewExprTree (ASSIGNPOW, $1, $3));
+			else
+			    $$ = NewExprTree($2, $1, $3); 
+		    }
 		| simpleexpr EQ simpleexpr
 		    { $$ = NewExprTree(EQ, $1, $3); }
 		| simpleexpr NE simpleexpr
@@ -762,8 +921,7 @@ assignop	: ASSIGNPLUS
 		| ASSIGNLOR
 		| ASSIGN
 		;
-primary		: NAME
-		    { $$ = NewExprAtom ($1); }
+primary		: fullname
 		| TEN_CONST
 		    { $$ = NewExprConst(TEN_CONST, $1); }
 		| OCTAL_CONST
@@ -821,8 +979,6 @@ primary		: NAME
 		    { $$ = NewExprTree (FORK, (Expr *) 0, $3); }
 		| primary DOT NAME
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3)); }
-		| primary COLONCOLON NAME
-		    { $$ = NewExprTree(COLONCOLON, $1, NewExprAtom ($3)); }
 		| primary ARROW NAME
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3)); }
 		;
@@ -900,7 +1056,7 @@ DeclListMark (void *object)
 DataType DeclListType = { DeclListMark, 0 };
 
 DeclListPtr
-NewDeclList (Atom name, ExprPtr init, DeclListPtr next)
+NewDeclList (NamePtr name, ExprPtr init, DeclListPtr next)
 {
     ENTER ();
     DeclListPtr	dl;
@@ -919,20 +1075,20 @@ MemListMark (void *object)
 
     MemReference (ml->next);
     MemReference (ml->type);
-    MemReference (ml->names);
+    MemReference (ml->atoms);
 }
 
 DataType MemListType = { MemListMark, 0 };
 
 MemListPtr
-NewMemList (DeclListPtr names, Types *type, MemListPtr next)
+NewMemList (AtomListPtr atoms, Types *type, MemListPtr next)
 {
     ENTER ();
     MemListPtr	ml;
 
     ml = ALLOCATE (&MemListType, sizeof (MemList));
     ml->type = type;
-    ml->names = names;
+    ml->atoms = atoms;
     ml->next = next;
     RETURN (ml);
 }
@@ -942,34 +1098,38 @@ extern NamespacePtr	CurrentNamespace;
 FramePtr	CurrentFrame;
 
 Value
-lookupVar (char *name)
+lookupVar (char *n)
 {
     ENTER ();
-    SymbolPtr	s;
-    int		depth;
     Value	v;
+    NamePtr	name;
 
-    s = NamespaceFindSymbol (CurrentNamespace, AtomId (name), &depth);
-    if (s && s->symbol.class == class_global)
-	v = BoxValue (s->global.value, 0);
+    name = NamespaceFindName (CurrentNamespace, AtomId (n), True);
+    if (name && name->symbol && name->symbol->symbol.class == class_global)
+	v = BoxValue (name->symbol->global.value, 0);
     else
 	v = Zero;
     RETURN (v);
 }
 
 void
-setVar (NamespacePtr namespace, char *name, Value v, Types *type)
+setVar (NamespacePtr namespace, char *n, Value v, Types *type)
 {
     ENTER ();
-    Atom	n;
+    Atom	atom;
     SymbolPtr	s;
-    int		depth;
+    NamePtr	name;
 
-    n = AtomId (name);
-    s = NamespaceFindSymbol (namespace, n, &depth);
-    if (!s)
-	s = NamespaceAddSymbol (namespace, NewSymbolGlobal (n, type,
-							    publish_private));
+    atom = AtomId (n);
+    name = NamespaceFindName (namespace, atom, True);
+    if (!name)
+	name = NamespaceNewName (namespace, atom);
+    if (!name->symbol)
+    {
+	name->symbol = NewSymbolGlobal (atom, type);
+	name->publish = publish_private;
+    }
+    s = name->symbol;
     if (s->symbol.class == class_global)
 	BoxValueSet (s->global.value, 0, v);
     EXIT ();
@@ -983,36 +1143,31 @@ GetNamespace (NamespacePtr *scope, FramePtr *fp)
 }
 
 ExprPtr
-BuildName (char *name)
+BuildName (char *ns, char *n)
 {
     ENTER ();
-    RETURN (NewExprAtom (AtomId(name)));
-}
+    NamePtr	    name, ns_name = 0;
+    Bool	    search = True;
+    NamespacePtr    namespace = CurrentNamespace;
+    ExprPtr	    e;
 
-ExprPtr
-BuildCall (char *scope, char *name, int nargs, ...)
-{
-    ENTER ();
-    va_list alist;
-    ExprPtr args;
-    ExprPtr f;
-    ExprPtr e;
-
-    va_start (alist, nargs);
-    args = 0;
-    while (nargs--)
+    if (ns)
     {
-	args = NewExprTree (COMMA, va_arg (alist, ExprPtr), args);
+	ns_name = NamespaceFindName (namespace, AtomId (ns), search);
+	if (ns_name && ns_name->symbol && ns_name->symbol->symbol.class == class_namespace)
+	    namespace = ns_name->symbol->namespace.namespace;
+	else
+	    namespace = 0;
+	search = False;
     }
-    va_end (alist);
-    f = BuildName (name);
-    if (scope)
-	f = NewExprTree (COLONCOLON, BuildName (scope), f);
-    e = NewExprTree (OP, f, args);
-#ifdef DEBUG
-    printExpr (stdout, e, -1, 0);
-    printf ("\n");
-#endif
+    name = 0;
+    if (namespace)
+	name = NamespaceFindName (namespace, AtomId (n), search);
+    if (!name)
+	name = NewName (0, AtomId (n));
+    e = NewExprName (name);
+    if (ns_name)
+	e = NewExprTree (COLONCOLON, NewExprName (ns_name), e);
     RETURN (e);
 }
 
@@ -1024,10 +1179,10 @@ AtomString (Atom id)
 }
 
 ExprPtr
-BuildFullname (ExprPtr colonnames, Atom name)
+BuildRawname (ExprPtr colonnames, Atom name)
 {
     ENTER ();
-    int	    len;
+    int     len;
     Value   array;
     ExprPtr e;
 
@@ -1044,6 +1199,70 @@ BuildFullname (ExprPtr colonnames, Atom name)
 	e = e->tree.left;
     }
     e = NewExprConst (POLY_CONST, array);
+    RETURN (e);
+}
+
+	    
+ExprPtr
+BuildFullname (ExprPtr left, Atom atom)
+{
+    ENTER ();
+    NamespacePtr    namespace;
+    NamePtr	    name;
+    SymbolPtr	    sym;
+    Bool	    search;
+    ExprPtr	    nameExpr;
+
+    if (left)
+    {
+	if (left->base.tag == COLONCOLON)
+	    sym = left->tree.right->name.name->symbol;
+	else
+	    sym = left->name.name->symbol;
+    }
+    else
+	sym = 0;
+    if (sym && sym->symbol.class == class_namespace)
+    {
+	namespace = sym->namespace.namespace;
+	search = False;
+    }
+    else
+    {
+	namespace = CurrentNamespace;
+	search = True;
+    }
+    name = NamespaceFindName (namespace, atom, search);
+    if (!name)
+	name = NamespaceNewName (namespace, atom);
+    nameExpr = NewExprName (name);
+    if (left)
+	nameExpr = NewExprTree (COLONCOLON, left, nameExpr);
+    RETURN (nameExpr);
+}
+
+ExprPtr
+BuildCall (char *scope, char *name, int nargs, ...)
+{
+    ENTER ();
+    va_list	    alist;
+    ExprPtr	    args;
+    ExprPtr	    f;
+    ExprPtr	    e;
+
+    va_start (alist, nargs);
+    args = 0;
+    while (nargs--)
+    {
+	args = NewExprTree (COMMA, va_arg (alist, ExprPtr), args);
+    }
+    va_end (alist);
+    f = BuildName (scope, name);
+    e = NewExprTree (OP, f, args);
+#ifdef DEBUG
+    printExpr (stdout, e, -1, 0);
+    printf ("\n");
+#endif
     RETURN (e);
 }
 

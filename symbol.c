@@ -52,7 +52,7 @@ DataType    SymbolLocalType = { SymbolLocalMark, 0 };
 DataType    SymbolNamespaceType = { SymbolNamespaceMark, 0 };
 
 SymbolPtr
-NewSymbolType (Atom name, Types *type, Publish publish)
+NewSymbolType (Atom name, Types *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -61,12 +61,11 @@ NewSymbolType (Atom name, Types *type, Publish publish)
     s->symbol.name = name;
     s->symbol.class = class_typedef;
     s->symbol.type = type;
-    s->symbol.publish = publish;
     RETURN (s);
 }
 
 SymbolPtr
-NewSymbolException (Atom name, Types *type, Publish publish)
+NewSymbolException (Atom name, Types *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -75,12 +74,11 @@ NewSymbolException (Atom name, Types *type, Publish publish)
     s->symbol.name = name;
     s->symbol.class = class_exception;
     s->symbol.type = type;
-    s->symbol.publish = publish;
     RETURN (s);
 }
 
 SymbolPtr
-NewSymbolGlobal (Atom name, Types *type, Publish publish)
+NewSymbolGlobal (Atom name, Types *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -89,7 +87,6 @@ NewSymbolGlobal (Atom name, Types *type, Publish publish)
     s->symbol.name = name;
     s->symbol.class = class_global;
     s->symbol.type = type;
-    s->symbol.publish = publish;
     s->global.value = NewBox (False, False, 1);
     BoxType (s->global.value, 0) = type;
     RETURN (s);
@@ -105,7 +102,6 @@ NewSymbolArg (Atom name, Types *type)
     s->symbol.name = name;
     s->symbol.class = class_arg;
     s->symbol.type = type;
-    s->symbol.publish = publish_private;
     s->local.element = 0;
     RETURN (s);
 }
@@ -120,7 +116,6 @@ NewSymbolAuto (Atom name, Types *type)
     s->symbol.name = name;
     s->symbol.class = class_auto;
     s->symbol.type = type;
-    s->symbol.publish = publish_private;
     s->local.element = -1;
     RETURN (s);
 }
@@ -135,13 +130,12 @@ NewSymbolStatic (Atom name, Types *type)
     s->symbol.name = name;
     s->symbol.class = class_static;
     s->symbol.type = type;
-    s->symbol.publish = publish_private;
     s->local.element = -1;
     RETURN (s);
 }
 
 SymbolPtr
-NewSymbolNamespace (Atom name, Publish publish)
+NewSymbolNamespace (Atom name)
 {
     ENTER ();
     SymbolPtr	s;
@@ -150,7 +144,6 @@ NewSymbolNamespace (Atom name, Publish publish)
     s->symbol.name = name;
     s->symbol.class = class_namespace;
     s->symbol.type = 0;
-    s->symbol.publish = publish;
     s->namespace.namespace = 0;
     RETURN (s);
 }

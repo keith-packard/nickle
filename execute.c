@@ -479,6 +479,7 @@ ThreadStep (Value thread)
     value = thread->thread.v;
     next = inst + 1;
     complete = False;
+/*    InstDump (inst, 1, 0, 0, 0);*/
     switch (inst->base.opCode) {
     case OpNoop:
 	break;

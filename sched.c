@@ -359,7 +359,7 @@ TraceFrame (FramePtr frame, InstPtr pc)
     for (max = 20; frame && max--; frame = frame->previous)
     {
 	code = frame->function->func.code;
-	TraceFunction (frame, code, code->base.name);
+	TraceFunction (frame, code, code->base.name->atom);
 	PrettyStat (FileStdout, frame->savePc->base.stat, False);
     }
     EXIT ();

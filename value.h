@@ -35,7 +35,7 @@ typedef struct _continuation	*ContinuationPtr;
 typedef union _value	*Value;
 typedef struct _obj	*ObjPtr;
 typedef union _inst	*InstPtr;
-
+typedef struct _name	*NamePtr;
 
 extern Atom AtomId (char *name);
 extern char *AtomName (Atom id);
@@ -54,6 +54,8 @@ typedef struct _AtomList {
     AtomListPtr	next;
     Atom	id;
 } AtomList;
+
+AtomListPtr  NewAtomList (AtomListPtr next, Atom id);
 
 /*
  * computational radix for natural numbers.  Make sure the
@@ -196,11 +198,11 @@ typedef struct _argType {
     DataType	*data;
     TypesPtr	type;
     Bool	varargs;
-    Atom	name;
+    NamePtr	name;
     struct _argType *next;
 } ArgType;
 
-ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name, ArgType *next);
+ArgType *NewArgType (TypesPtr type, Bool varargs, NamePtr name, ArgType *next);
 
 typedef enum _typesTag {
     types_prim, types_name, types_ref, types_func, types_array, 
@@ -219,7 +221,7 @@ typedef struct _typesPrim {
 
 typedef struct _typesName {
     TypesBase	base;
-    Atom	name;
+    ExprPtr	expr;
     TypesPtr	type;
 } TypesName;
 
@@ -257,7 +259,7 @@ typedef union _types {
 
 typedef struct _argDecl {
     Types   *type;
-    Atom    name;
+    NamePtr name;
 } ArgDecl;
 
 typedef struct _argList {
@@ -272,7 +274,7 @@ extern Types	    *typesRefPoly;
 extern Types	    *typesNil;
 extern Types	    *typesPrim[type_void - type_int + 1];
 
-Types	*NewTypesName (Atom name, Types *type);
+Types	*NewTypesName (ExprPtr expr, Types *type);
 Types	*NewTypesRef (Types *ref);
 Types	*NewTypesFunc (Types *ret, ArgType *args);
 Types	*NewTypesArray (Types *type, ExprPtr dimensions);
@@ -281,6 +283,7 @@ Types	*NewTypesUnion (StructTypePtr structs);
 Types	*TypesCanon (Types *type);
 Type	BaseType (Types *type);
 int	TypesInit (void);
+NamePtr	TypeNameName (Types *t);
 
 #define TypesUnionElements(t) ((Types **) (&t->unions + 1))
 

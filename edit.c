@@ -39,7 +39,7 @@ edit (char *file_name)
 }
 
 void
-EditFunction (SymbolPtr name)
+EditFunction (NamePtr name)
 {
     Value	tmp;
     static char	template[] = "/tmp/nXXXXXX";

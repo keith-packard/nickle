@@ -1,4 +1,4 @@
-public namespace Math {
+extend namespace Math {
     real function errbounds (real v)
     {
 	int	prec;

@@ -95,14 +95,14 @@ NewTypesPrim (Type prim)
 }
 
 Types *
-NewTypesName (Atom name, Types *type)
+NewTypesName (ExprPtr name, Types *type)
 {
     ENTER ();
     Types   *t;
 
     t = ALLOCATE (&TypesNameType, sizeof (TypesName));
     t->base.tag = types_name;
-    t->name.name = name;
+    t->name.expr = name;
     t->name.type = type;
     RETURN (t);
 }
@@ -122,7 +122,7 @@ NewTypesRef (Types *ref)
 }
 
 ArgType *
-NewArgType (Types *type, Bool varargs, Atom name, ArgType *next)
+NewArgType (Types *type, Bool varargs, NamePtr name, ArgType *next)
 {
     ENTER ();
     ArgType *a;
@@ -261,6 +261,20 @@ TypeEqual (Types *a, Types *b)
     return False;
 }
 #endif
+
+NamePtr
+TypeNameName (Types *t)
+{
+    ExprPtr e;
+    if (t->base.tag == types_name)
+    {
+	e = t->name.expr;
+	if (e->base.tag == COLONCOLON)
+	    e = e->tree.right;
+	return e->name.name;
+    }
+    return 0;
+}
 
 Bool
 TypePoly (Types *t)

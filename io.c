@@ -137,7 +137,7 @@ IoNoticeWriteBlocked (void)
 void
 IoNoticeReadBlocked (void)
 {
-    IoSetupTimeout ();
+/*    IoSetupTimeout (); */
 }
 
 void

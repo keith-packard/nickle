@@ -708,7 +708,7 @@ FilePutArgTypes (Value f, ArgType *at)
 	if (at->type)
 	    FilePutTypes (f, at->type, at->name != 0);
 	if (at->name)
-	    FilePuts (f, AtomName (at->name));
+	    FilePuts (f, AtomName (at->name->atom));
 	if (at->varargs)
 	    FilePuts (f, " ...");
 	at = at->next;
@@ -741,6 +741,11 @@ FilePutTypes (Value f, Types *t, Bool minimal)
     StructElement   *se;
     Bool	    spaceit = minimal;
     
+    if (!t)
+    {
+	FilePuts (f, "<undefined>");
+	return;
+    }
     switch (t->base.tag) {
     case types_prim:
 	if (t->prim.prim != type_undef || !minimal)
@@ -749,7 +754,7 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	    spaceit = False;
 	break;
     case types_name:
-	FilePuts (f, AtomName (t->name.name));
+	FilePuts (f, AtomName (TypeNameName (t)->atom));
 	break;
     case types_ref:
 	FilePuts (f, "*");

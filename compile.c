@@ -12,7 +12,7 @@
 
 #undef DEBUG
 
-SymbolPtr CompileNamespace (ExprPtr, NamespacePtr);
+SymbolPtr CompileNamespace (ExprPtr);
 
 static void
 ObjMark (void *object)
@@ -105,25 +105,25 @@ AddInst (ObjPtr obj)
 					     ObjLast(_o))->base.push = True) \
 				     : 0)
 
-ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat, Bool createIfNecessary, Bool assign);
-ObjPtr	CompileBinary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat);
-ObjPtr	CompileUnary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat);
-ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat);
-ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat, int *ndimp);
-ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat);
-ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, ExprPtr stat);
+ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createIfNecessary, Bool assign);
+ObjPtr	CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
+ObjPtr	CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
+ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
+ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, int *ndimp);
+ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code);
+ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
 void	CompilePatchLoop (ObjPtr obj, int start, int continue_offset);
-ObjPtr	_CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace);
-ObjPtr	CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat);
-ObjPtr	CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace, Bool evaluate, ExprPtr stat);
-ObjPtr	CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat);
+ObjPtr	_CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code);
+ObjPtr	CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous);
+ObjPtr	CompileDecl (ObjPtr obj, ExprPtr decls, Bool evaluate, ExprPtr stat, CodePtr code);
+ObjPtr	CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
 static void
-CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr stat, Bool complete)
+CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat, Bool complete)
 {
+    NamePtr	name;
     SymbolPtr	s;
-    int		depth;
     ArgType	*arg;
     int		n;
     
@@ -139,37 +139,38 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
     case types_name:
 	if (!type->name.type)
 	{
-	    s = NamespaceFindSymbol (namespace, type->name.name, &depth);
+	    name = TypeNameName (type);
+	    s = name->symbol;
 	    if (!s)
 		CompileError (obj, stat, "No typedef \"%A\" in namespace",
-			      type->name.name);
+			      name->atom);
 	    else if (s->symbol.class != class_typedef)
 		CompileError (obj, stat, "Symbol \"%A\" not a typedef",
-			      type->name.name);
+			      name->atom);
 	    else if (!s->symbol.type)
 	    {
 		if (complete)
 		    CompileError (obj, stat, "Typedef \"%A\" not defined yet",
-				  type->name.name);
+				  name->atom);
 	    }
 	    else
 	    {
 		type->name.type = s->symbol.type;
-		CompileCanonType (obj, namespace, type->name.type, stat, complete);
+		CompileCanonType (obj, type->name.type, stat, complete);
 	    }
 	}
 	break;
     case types_ref:
-    	CompileCanonType (obj, namespace, type->ref.ref, stat, complete);
+    	CompileCanonType (obj, type->ref.ref, stat, complete);
 	break;
     case types_func:
 	if (type->func.ret)
-	    CompileCanonType (obj, namespace, type->func.ret, stat, complete);
+	    CompileCanonType (obj, type->func.ret, stat, complete);
 	for (arg = type->func.args; arg; arg = arg->next)
-	    CompileCanonType (obj, namespace, arg->type, stat, complete);
+	    CompileCanonType (obj, arg->type, stat, complete);
 	break;
     case types_array:
-	CompileCanonType (obj, namespace, type->array.type, stat, complete);
+	CompileCanonType (obj, type->array.type, stat, complete);
 	break;
     case types_struct:
     case types_union:
@@ -178,46 +179,43 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 	    StructElement   *se;
 
 	    se = &StructTypeElements(type->structs.structs)[n];
-	    CompileCanonType (obj, namespace, se->type, stat, complete);
+	    CompileCanonType (obj, se->type, stat, complete);
 	}
 	break;
     }
 }
 
 /*
- * Add a symbol to a namespace while also updating storage
- * information
+ * Set storage information for new symbols
  */
-static SymbolPtr
-CompileAddSymbol (NamespacePtr namespace, SymbolPtr symbol)
+static void
+CompileStorage (SymbolPtr symbol, CodePtr code)
 {
     ENTER ();
     
-    NamespaceAddSymbol (namespace, symbol);
     /*
      * For symbols hanging from a frame (statics, locals and args),
      * locate the frame and set their element value
      */
     if (ClassFrame(symbol->symbol.class))
     {
-	while (!namespace->code)
-	    namespace = namespace->previous;
 	switch (symbol->symbol.class) {
 	case class_static:
-	    symbol->local.element = AddBoxTypes (&namespace->code->func.statics,
+	    symbol->local.element = AddBoxTypes (&code->func.statics,
 						 symbol->symbol.type);
+	    symbol->local.code = code;
 	    break;
 	case class_arg:
-	    namespace->code->base.argc++;
 	case class_auto:
-	    symbol->local.element = AddBoxTypes (&namespace->code->func.dynamics,
+	    symbol->local.element = AddBoxTypes (&code->func.dynamics,
 						 symbol->symbol.type);
+	    symbol->local.code = code;
 	    break;
 	default:
 	    break;
 	}
     }
-    RETURN (symbol);
+    EXIT ();
 }
 
 /*
@@ -226,27 +224,15 @@ CompileAddSymbol (NamespacePtr namespace, SymbolPtr symbol)
  * that the types match exactly
  */
 static SymbolPtr
-CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
-		   Publish publish, Class class, Types *type, Atom name,
-		   Bool *new)
+CompileNewSymbol (ObjPtr obj, ExprPtr stat, Class class, Types *type, 
+		  NamePtr name, Bool *new)
 {
     ENTER ();
     SymbolPtr	s = 0;
     
-    if (publish == publish_extend)
-    {
-	s = NamespaceLookupSymbol (namespace, name);
-	*new = False;
-	if (!s)
-	{
-	    CompileError (obj, stat, "No namespace \"%A\" in namespace", name);
-	    RETURN (0);
-	}
-    } 
-
     if (class == class_typedef)
     {
-	s = NamespaceLookupSymbol (namespace, name);
+	s = name->symbol;
 	if (s)
 	{
 	    if (s->symbol.class == class_typedef &&
@@ -263,23 +249,23 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
     {
 	switch (class) {
 	case class_global:
-	    s = NewSymbolGlobal (name, type, publish);
+	    s = NewSymbolGlobal (name->atom, type);
 	    break;
 	case class_static:
-	    s = NewSymbolStatic (name, type);
+	    s = NewSymbolStatic (name->atom, type);
 	    break;
 	case class_arg:
 	case class_auto:
-	    s = NewSymbolAuto (name, type);
+	    s = NewSymbolAuto (name->atom, type);
 	    break;
 	case class_typedef:
-	    s = NewSymbolType (name, type, publish);
+	    s = NewSymbolType (name->atom, type);
 	    break;
 	case class_namespace:
-	    s = NewSymbolNamespace (name, publish);
+	    s = NewSymbolNamespace (name->atom);
 	    break;
 	case class_exception:
-	    s = NewSymbolException (name, type, publish);
+	    s = NewSymbolException (name->atom, type);
 	    break;
 	default:
 	    s = 0;
@@ -288,7 +274,7 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
 	*new = s != 0;
     }
     if (class != class_namespace)
-	CompileCanonType (obj, namespace, type, stat, class != class_typedef);
+	CompileCanonType (obj, type, stat, class != class_typedef);
     RETURN (s);
 }
 
@@ -297,46 +283,61 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
  * using defaults for class and publication
  */
 static SymbolPtr
-CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace, Atom name, 
+CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
 		   int *depth, Bool createIfNecessary)
 {
     ENTER ();
     SymbolPtr   s;
     Bool	new;
+    int		d;
 
-    s = NamespaceFindSymbol (namespace, name, depth);
+    s = name->symbol;
     if (!s)
     {
 	if (!createIfNecessary)
 	{
-	    CompileError (obj, stat, "No symbol \"%A\" in namespace", name);
+	    CompileError (obj, stat, "No symbol \"%A\" in namespace", 
+			  name->atom);
 	    RETURN (0);
 	}
 	if (!s)
 	{
-	    s = CompileNewSymbol (obj, stat, namespace,
-				   publish_private, NamespaceDefaultClass (namespace),
-				   typesPoly, name, &new);
+	    s = CompileNewSymbol (obj, stat, code ? class_auto : class_global,
+				  typesPoly, name, &new);
 	    if (new)
-		CompileAddSymbol (namespace, s);
+	    {
+		
+		name->symbol = s;
+		name->publish = publish_private;
+	    }
 	}
-	*depth = 0;
     }
     /*
      * For args and autos, make sure we're not compiling a static
      * initializer, in that case, the locals will not be in dynamic
      * namespace
      */
-    if (ClassLocal (s->symbol.class))
-    {
-	while (namespace && !namespace->code)
-	    namespace = namespace->previous;
-	if (namespace && namespace->code->func.inStaticInit)
+    d = 0;
+    switch (s->symbol.class) {
+    case class_arg:
+    case class_auto:
+	if (code && code->func.inStaticInit)
 	{
 	    CompileError (obj, stat, "Symbol \"%A\" not in initializer namespace",
-			  name);
+			  name->atom);
 	}
+	/* fall through */
+    case class_static:
+	while (code && code != s->local.code)
+	{
+	    d++;
+	    code = code->base.previous;
+	}
+	break;
+    default:
+	break;
     }
+    *depth = d;
     RETURN (s);
 }
 
@@ -361,7 +362,7 @@ CompileError (ObjPtr obj, ExprPtr stat, char *s, ...)
  * The result is a 'ref' left in the value register
  */
 ObjPtr
-CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
+CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 		Bool createIfNecessary, Bool assign)
 {
     ENTER ();
@@ -370,10 +371,9 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
     int		depth;
     int		ndim;
     
-    expr->base.namespace = namespace;
     switch (expr->base.tag) {
     case NAME:
-	s = CompileFindSymbol (obj, stat, namespace, expr->atom.atom, 
+	s = CompileFindSymbol (obj, stat, expr->name.name, code,
 			       &depth, createIfNecessary);
 	if (!s)
 	{
@@ -383,7 +383,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	if (!ClassStorage (s->symbol.class))
 	{
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
-			  s->symbol.class, expr->atom.atom);
+			  s->symbol.class, expr->name.name->atom);
 	
 	    expr->base.type = typesPoly;
 	    break;
@@ -401,19 +401,11 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	expr->base.type = s->symbol.type;
 	break;
     case COLONCOLON:
-	s = CompileNamespace (expr->tree.left, namespace);
-	if (!s)
-	{
-	    CompileError (obj, stat, "Object left of ':' is not a namespace");
-	    expr->base.type = typesPoly;
-	    break;
-	}
-	obj = CompileLvalue (obj, expr->tree.right,
-			     s->namespace.namespace, stat, False, assign);
+	obj = CompileLvalue (obj, expr->tree.right, stat, code, False, assign);
 	expr->base.type = expr->tree.right->base.type;
         break;
     case DOT:
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
@@ -435,7 +427,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case ARROW:
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
@@ -458,8 +450,8 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	break;
     case OS:
 	obj = CompileArrayIndex (obj, expr->tree.right,
-				 namespace, stat, &ndim);
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+				 stat, code, &ndim);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineArray (expr->tree.left->base.type,
 					    ndim,
 					    True);
@@ -481,7 +473,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	inst->ints.value = ndim;
 	break;
     case STAR:
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineUnary (expr->tree.left->base.type, expr->base.tag);
 	if (!expr->base.type)
 	{
@@ -506,14 +498,14 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
  * add the operator
  */
 ObjPtr
-CompileBinary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat)
+CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr inst;
     
-    obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+    obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
     SetPush (obj);
-    obj = _CompileExpr (obj, expr->tree.right, namespace, True, stat);
+    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
     expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					 expr->base.tag,
 					 expr->tree.right->base.type);
@@ -533,7 +525,7 @@ CompileBinary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, 
  * compile the operand and add the operator
  */
 ObjPtr
-CompileUnary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat)
+CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr inst;
@@ -543,7 +535,7 @@ CompileUnary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, E
 	down = expr->tree.right;
     else
 	down = expr->tree.left;
-    obj = _CompileExpr (obj, down, namespace, True, stat);
+    obj = _CompileExpr (obj, down, True, stat, code);
     expr->base.type = TypeCombineUnary (down->base.type, expr->base.tag);
     if (!expr->base.type)
     {
@@ -560,14 +552,14 @@ CompileUnary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, E
  * compile the value, build a ref for the LHS and add the operator
  */
 ObjPtr
-CompileAssign (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat)
+CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr inst;
     
-    obj = _CompileExpr (obj, expr->tree.right, namespace, True, stat);
+    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
     SetPush (obj);
-    obj = CompileLvalue (obj, expr->tree.left, namespace, stat, opCode == OpAssign, opCode == OpAssign);
+    obj = CompileLvalue (obj, expr->tree.left, stat, code, opCode == OpAssign, opCode == OpAssign);
     expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					 expr->base.tag,
 					 expr->tree.right->base.type);
@@ -595,7 +587,7 @@ CompileGetArg (ExprPtr arg, int i)
 }
 
 static ObjPtr
-CompileArgs (ObjPtr obj, int *argcp, ExprPtr arg, NamespacePtr namespace, ExprPtr stat)
+CompileArgs (ObjPtr obj, int *argcp, ExprPtr arg, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     int	argc;
@@ -603,7 +595,7 @@ CompileArgs (ObjPtr obj, int *argcp, ExprPtr arg, NamespacePtr namespace, ExprPt
     argc = 0;
     while (arg)
     {
-	obj = _CompileExpr (obj, arg->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, arg->tree.left, True, stat, code);
 	SetPush (obj);
 	arg = arg->tree.right;
 	argc++;
@@ -684,14 +676,14 @@ CompileTypecheckArgs (ObjPtr	obj,
  *   no place to hang a push bit
  */
 ObjPtr
-CompileCall (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
+CompileCall (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr inst;
     int	    argc;
 
-    obj = CompileArgs (obj, &argc, expr->tree.right, namespace, stat);
-    obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+    obj = CompileArgs (obj, &argc, expr->tree.right, stat, code);
+    obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
     if (!CompileTypecheckArgs (obj, expr->tree.left->base.type,
 			       expr->tree.right, argc, stat))
     {
@@ -714,7 +706,7 @@ CompileCall (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
  * + Add the OpRaise
  */
 static ObjPtr
-CompileRaise (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
+CompileRaise (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 {
     ENTER();
     int		argc;
@@ -722,11 +714,11 @@ CompileRaise (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     SymbolPtr	sym;
     InstPtr	inst;
     
-    sym = CompileFindSymbol (obj, stat, namespace, expr->tree.left->atom.atom,
+    sym = CompileFindSymbol (obj, stat, expr->tree.left->name.name, code,
 			     &depth, False);
     if (!sym)
 	RETURN (obj);
-    obj = CompileArgs (obj, &argc, expr->tree.right, namespace, stat);
+    obj = CompileArgs (obj, &argc, expr->tree.right, stat, code);
     if (!CompileTypecheckArgs (obj, sym->symbol.type, expr->tree.right, argc, stat))
 	RETURN(obj);
     expr->base.type = typesPoly;
@@ -758,7 +750,7 @@ CompileRaise (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
  */
 
 static ObjPtr
-CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
+CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     int	    enter_inst, twixt_inst, twixt_body_inst,
@@ -770,7 +762,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 
     /* Compile enter expression */
     if (expr->tree.left->tree.left)
-	obj = _CompileExpr (obj, expr->tree.left->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left->tree.left, True, stat, code);
     else
     {
 	BuildInst (obj, OpConst, inst, stat);
@@ -785,7 +777,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     twixt_body_inst = obj->used;
     state = obj->state;
     obj->state |= OBJ_STATE_SWITCH;
-    obj = _CompileStat (obj, expr->tree.right->tree.left, namespace);
+    obj = _CompileStat (obj, expr->tree.right->tree.left, code);
     CompilePatchLoop (obj, twixt_body_inst, -1);
     obj->state = (obj->state & ~OBJ_STATE_SWITCH) | (state & OBJ_STATE_SWITCH);
     BuildInst (obj, OpTwixtDone, inst, stat);
@@ -799,7 +791,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 
     /* Compile leave expression */
     if (expr->tree.left->tree.right)
-	obj = _CompileExpr (obj, expr->tree.left->tree.right, namespace, False, stat);
+	obj = _CompileExpr (obj, expr->tree.left->tree.right, False, stat, code);
     NewInst (leave_done_inst, obj);
 
     /* finish the enter_done instruction */
@@ -810,7 +802,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     
     /* Compile else */
     if (expr->tree.right->tree.right)
-	obj = _CompileStat (obj, expr->tree.right->tree.right, namespace);
+	obj = _CompileStat (obj, expr->tree.right->tree.right, code);
     
     /* finish the leave_done instruction */
     inst = ObjCode (obj, leave_done_inst);
@@ -822,8 +814,8 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 }
 
 ObjPtr
-CompileArrayIndex (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, 
-		   ExprPtr stat, int *ndimp)
+CompileArrayIndex (ObjPtr obj, ExprPtr expr, 
+		   ExprPtr stat, CodePtr code, int *ndimp)
 {
     ENTER ();
     int		ndim;
@@ -831,7 +823,7 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr, NamespacePtr namespace,
     ndim = 0;
     while (expr)
     {
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	if (!TypeCompatible (typesPrim[type_integer],
 			     expr->tree.left->base.type,
 			     True))
@@ -895,7 +887,7 @@ CompileCountDeclDimensions (ExprPtr expr)
 
 static ObjPtr
 CompileBuildArray (ObjPtr obj, ExprPtr expr, TypesPtr type, int ndim, 
-		   NamespacePtr namespace, ExprPtr stat)
+		   ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr	inst;
@@ -904,7 +896,7 @@ CompileBuildArray (ObjPtr obj, ExprPtr expr, TypesPtr type, int ndim,
     dim = type->array.dimensions;
     while (dim)
     {
-	obj = _CompileExpr (obj, dim->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, dim->tree.left, True, stat, code);
 	SetPush (obj);
 	dim = dim->tree.right;
     }
@@ -949,7 +941,7 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 static ObjPtr
 CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
 		      ExprPtr inits, int ndim, 
-		      NamespacePtr namespace, ExprPtr stat)
+		      ExprPtr stat, CodePtr code)
 {
     ENTER ();
     ExprPtr sub;
@@ -970,13 +962,13 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
 			   sub);
     }
     type->array.dimensions = sub;
-    obj = CompileBuildArray (obj, array, type, ndim, namespace, stat);
+    obj = CompileBuildArray (obj, array, type, ndim, stat, code);
     RETURN (obj);
 }
 
 static ObjPtr
 CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type, 
-		   NamespacePtr namespace, int *ninits, ExprPtr stat)
+		   int *ninits, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     if (expr->base.tag == ARRAY)
@@ -994,7 +986,7 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type,
 	    }
 	    else
 	    {
-		obj = CompileArrayInits (obj, expr->tree.left, type, namespace, ninits, stat);
+		obj = CompileArrayInits (obj, expr->tree.left, type, ninits, stat, code);
 		nsub++;
 	    }
 	    expr = expr->tree.right;
@@ -1006,7 +998,7 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type,
     }
     else
     {
-	obj = _CompileExpr (obj, expr, namespace, True, stat);
+	obj = _CompileExpr (obj, expr, True, stat, code);
 	if (!TypeCombineBinary (type, ASSIGN, expr->base.type))
 	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in array initialization",
@@ -1019,13 +1011,13 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type,
 }
 
 static ObjPtr
-CompileStructInitValues (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
+CompileStructInitValues (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     if (expr)
     {
-	obj = CompileStructInitValues (obj, expr->tree.right, namespace, stat);
-	obj = _CompileExpr (obj, expr->tree.left->tree.right, namespace, True, stat);
+	obj = CompileStructInitValues (obj, expr->tree.right, stat, code);
+	obj = _CompileExpr (obj, expr->tree.left->tree.right, True, stat, code);
 	SetPush (obj);
     }
     RETURN (obj);
@@ -1033,7 +1025,7 @@ CompileStructInitValues (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprP
 
 static ObjPtr
 CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, StructType *structs,
-			   NamespacePtr namespace, ExprPtr stat)
+			   ExprPtr stat)
 {
     ENTER ();
     InstPtr inst;
@@ -1049,7 +1041,7 @@ CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, StructType *structs,
 
 static ObjPtr
 CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body, 
-	      NamespacePtr namespace, ExprPtr stat)
+	      ExprPtr stat, CodePtr code)
 {
     ENTER ();
     int		catch_inst, exception_inst;
@@ -1070,20 +1062,20 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	 *                    +-----------------+
 	 */
 	
-	exception = CompileFindSymbol (obj, stat, namespace, 
+	exception = CompileFindSymbol (obj, stat, 
 				       catch->code.code->base.name,
-				       &depth, False);
+				       code, &depth, False);
 	if (!exception)
 	    RETURN(obj);
 	if (exception->symbol.class != class_exception)
 	{
 	    CompileError (obj, stat, "Invalid use of %C \"%A\" as exception",
-			  exception->symbol.class, exception->symbol.name);
+			  exception->symbol.class, catch->code.code->base.name->atom);
 	    RETURN (obj);
 	}
 
 	catch_type = NewTypesFunc (typesPoly, catch->code.code->base.args);
-	CompileCanonType (obj, namespace, catch_type, stat, False);
+	CompileCanonType (obj, catch_type, stat, False);
 	if (!TypeCompatible (exception->symbol.type, catch_type, True))
 	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in catch",
@@ -1092,7 +1084,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	}
 	NewInst (catch_inst, obj);
 
-	obj = CompileFunc (obj, catch->code.code, namespace, stat);
+	obj = CompileFunc (obj, catch->code.code, stat, code);
 	
 	BuildInst (obj, OpCall, inst, stat);
 	inst->ints.value = -1;
@@ -1104,7 +1096,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	inst->catch.offset = obj->used - catch_inst;
 	inst->catch.exception = exception;
     
-	obj = CompileCatch (obj, catches->tree.right, body, namespace, stat);
+	obj = CompileCatch (obj, catches->tree.right, body, stat, code);
 	
 	BuildInst (obj, OpEndCatch, inst, stat);
 	
@@ -1113,33 +1105,12 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	inst->branch.offset = obj->used - exception_inst;
     }
     else
-	obj = _CompileStat (obj, body, namespace);
+	obj = _CompileStat (obj, body, code);
     RETURN (obj);
 }
 
-SymbolPtr
-CompileNamespace (ExprPtr expr, NamespacePtr namespace)
-{
-    SymbolPtr	s;
-    int		depth;
-    
-    switch (expr->base.tag) {
-    case COLONCOLON:
-	s = CompileNamespace (expr->tree.left, namespace);
-	if (s)
-	    return CompileNamespace (expr->tree.right, s->namespace.namespace);
-	break;
-    case NAME:
-	s = NamespaceFindSymbol (namespace, expr->atom.atom, &depth);
-	if (s && s->symbol.class == class_namespace)
-	    return s;
-	break;
-    }
-    return 0;
-}
-
 ObjPtr
-_CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, ExprPtr stat)
+_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     int	    i;
@@ -1149,11 +1120,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
     SymbolPtr	s;
     Types	*t;
     
-    expr->base.namespace = namespace;
     switch (expr->base.tag) {
     case NAME:
 	BuildInst (obj, OpName, inst, stat);
-	s = CompileFindSymbol (obj, stat, namespace, expr->atom.atom,
+	s = CompileFindSymbol (obj, stat, expr->name.name, code,
 				&inst->var.staticLink, False);
 	if (!s)
 	{
@@ -1163,7 +1133,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	if (!ClassStorage (s->symbol.class))
 	{
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
-			  s->symbol.class, expr->atom.atom);
+			  s->symbol.class, expr->name.name->atom);
 	
 	    expr->base.type = typesPoly;
 	    break;
@@ -1172,10 +1142,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	expr->base.type = s->symbol.type;
 	break;
     case VAR:
-	obj = CompileDecl (obj, expr, namespace, evaluate, stat);
+	obj = CompileDecl (obj, expr, evaluate, stat, code);
 	break;
     case NEW:
-	CompileCanonType (obj, namespace, expr->base.type, stat, True);
+	CompileCanonType (obj, expr->base.type, stat, True);
 	t = TypesCanon (expr->base.type);
 	switch (t ? t->base.tag : types_prim) {
 	case types_struct:
@@ -1188,7 +1158,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 		}
 		obj = CompileStructInitValues (obj, 
 						expr->tree.left->tree.left, 
-						namespace, stat);
+						stat, code);
 	    }
 	    BuildInst (obj, OpBuildStruct, inst, stat);
 	    inst->structs.structs = t->structs.structs;
@@ -1197,7 +1167,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 		obj = CompileStructInitAssigns (obj, 
 						expr->tree.left->tree.left, 
 						t->structs.structs,
-						namespace, stat);
+						stat);
 	    }
 	    break;
 	case types_array:
@@ -1225,16 +1195,16 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 		}
 		i = 0;
 		obj = CompileArrayInits (obj, expr->tree.left, t->array.type,
-					 namespace, &i, stat);
+					 &i, stat, code);
 	    }
 	    if (t->array.dimensions && t->array.dimensions->tree.left)
 	    {
-		obj = CompileBuildArray (obj, expr, t, ndim, namespace, stat);
+		obj = CompileBuildArray (obj, expr, t, ndim, stat, code);
 	    }
 	    else if (expr->tree.left)
 	    {
 		obj = CompileImplicitArray (obj, expr, t, expr->tree.left, 
-					    ndim, namespace, stat);
+					    ndim, stat, code);
 	    }
 	    else
 	    {
@@ -1254,9 +1224,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	}
 	break;
     case UNION:
-	_CompileExpr (obj, expr->tree.right, namespace, True, stat);
+	_CompileExpr (obj, expr->tree.right, True, stat, code);
 	SetPush (obj);
-	CompileCanonType (obj, namespace, expr->base.type, stat, True);
+	CompileCanonType (obj, expr->base.type, stat, True);
 	t = TypesCanon (expr->base.type);
 	if (t && t->base.tag == types_union)
 	{
@@ -1331,8 +1301,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	break;
     case OS:	    
 	obj = CompileArrayIndex (obj, expr->tree.right,
-				 namespace, stat, &ndim);
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+				 stat, code, &ndim);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineArray (expr->tree.left->base.type,
 					    ndim,
 					    False);
@@ -1347,22 +1317,14 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	inst->ints.value = ndim;
 	break;
     case OP:	    /* function call */
-	obj = CompileCall (obj, expr, namespace, stat);
+	obj = CompileCall (obj, expr, stat, code);
 	break;
     case COLONCOLON:
-	s = CompileNamespace (expr->tree.left, namespace);
-	if (!s)
-	{
-	    CompileError (obj, stat, "Object left of ':' is not a namespace");
-	    expr->base.type = typesPoly;
-	    break;
-	}
-	obj = _CompileExpr (obj, expr->tree.right,
-			    s->namespace.namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.right, evaluate, stat, code);
 	expr->base.type = expr->tree.right->base.type;
         break;
     case DOT:
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
@@ -1378,7 +1340,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case ARROW:
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
@@ -1394,13 +1356,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case FUNCTION:
-	obj = CompileFunc (obj, expr->code.code, namespace, stat);
+	obj = CompileFunc (obj, expr->code.code, stat, code);
 	expr->base.type = NewTypesFunc (expr->code.code->base.type,
 					expr->code.code->base.args);
 	break;
-    case STAR:	    obj = CompileUnary (obj, expr, namespace, OpStar, stat); break;
+    case STAR:	    obj = CompileUnary (obj, expr, OpStar, stat, code); break;
     case AMPER:	    
-	obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False, False);
+	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False);
 	expr->base.type = NewTypesRef (expr->tree.left->base.type);
 	if (!expr->base.type)
 	{
@@ -1410,14 +1372,14 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    break;
 	}
 	break;
-    case UMINUS:    obj = CompileUnary (obj, expr, namespace, OpUminus, stat); break;
-    case LNOT:	    obj = CompileUnary (obj, expr, namespace, OpLnot, stat); break;
-    case BANG:	    obj = CompileUnary (obj, expr, namespace, OpBang, stat); break;
-    case FACT:	    obj = CompileUnary (obj, expr, namespace, OpFact, stat); break;
+    case UMINUS:    obj = CompileUnary (obj, expr, OpUminus, stat, code); break;
+    case LNOT:	    obj = CompileUnary (obj, expr, OpLnot, stat, code); break;
+    case BANG:	    obj = CompileUnary (obj, expr, OpBang, stat, code); break;
+    case FACT:	    obj = CompileUnary (obj, expr, OpFact, stat, code); break;
     case INC:	    
 	if (expr->tree.left)
 	{
-	    obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False, False);
+	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNPLUS,
 						 typesPrim[type_int]);
@@ -1425,7 +1387,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	}
 	else
 	{
-	    obj = CompileLvalue (obj, expr->tree.right, namespace, stat, False, False);
+	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNPLUS,
 						 typesPrim[type_int]);
@@ -1443,7 +1405,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
     case DEC:
 	if (expr->tree.left)
 	{
-	    obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False, False);
+	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNMINUS,
 						 typesPrim[type_int]);
@@ -1451,7 +1413,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	}
 	else
 	{
-	    obj = CompileLvalue (obj, expr->tree.right, namespace, stat, False, False);
+	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNMINUS,
 						 typesPrim[type_int]);
@@ -1466,27 +1428,26 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    break;
 	}
 	break;
-    case PLUS:	    obj = CompileBinary (obj, expr, namespace, OpPlus, stat); break;
-    case MINUS:	    obj = CompileBinary (obj, expr, namespace, OpMinus, stat); break;
-    case TIMES:	    obj = CompileBinary (obj, expr, namespace, OpTimes, stat); break;
-    case DIVIDE:    obj = CompileBinary (obj, expr, namespace, OpDivide, stat); break;
-    case DIV:	    obj = CompileBinary (obj, expr, namespace, OpDiv, stat); break;
-    case MOD:	    obj = CompileBinary (obj, expr, namespace, OpMod, stat); break;
+    case PLUS:	    obj = CompileBinary (obj, expr, OpPlus, stat, code); break;
+    case MINUS:	    obj = CompileBinary (obj, expr, OpMinus, stat, code); break;
+    case TIMES:	    obj = CompileBinary (obj, expr, OpTimes, stat, code); break;
+    case DIVIDE:    obj = CompileBinary (obj, expr, OpDivide, stat, code); break;
+    case DIV:	    obj = CompileBinary (obj, expr, OpDiv, stat, code); break;
+    case MOD:	    obj = CompileBinary (obj, expr, OpMod, stat, code); break;
     case POW:
-	obj = _CompileExpr (obj, expr->tree.right, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
 	SetPush (obj);
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.right->tree.left, True, stat, code);
 	SetPush (obj);
-	obj = _CompileExpr (obj, NewExprTree (COLONCOLON, BuildName ("Math"), BuildName ("pow")),
-			    namespace, True, stat);
-	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
 					     expr->base.tag,
-					     expr->tree.left->base.type);
+					     expr->tree.right->tree.right->base.type);
 	if (!expr->base.type)
 	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
-			  expr->tree.left->base.type,
-			  expr->tree.right->base.type);
+			  expr->tree.right->tree.left->base.type,
+			  expr->tree.right->tree.right->base.type);
 	    expr->base.type = typesPoly;
 	    break;
 	}
@@ -1494,8 +1455,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	inst->ints.value = 2;
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case SHIFTL:    obj = CompileBinary (obj, expr, namespace, OpShiftL, stat); break;
-    case SHIFTR:    obj = CompileBinary (obj, expr, namespace, OpShiftR, stat); break;
+    case SHIFTL:    obj = CompileBinary (obj, expr, OpShiftL, stat, code); break;
+    case SHIFTR:    obj = CompileBinary (obj, expr, OpShiftR, stat, code); break;
     case QUEST:
 	/*
 	 * a ? b : c
@@ -1504,14 +1465,14 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	 *   +-------------+
 	 *           +-------+
 	 */
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	NewInst (test_inst, obj);
-	obj = _CompileExpr (obj, expr->tree.right->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.right->tree.left, True, stat, code);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpQuest;
 	inst->branch.offset = obj->used - test_inst;
-	obj = _CompileExpr (obj, expr->tree.right->tree.right, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
 	inst = ObjCode (obj, middle_inst);
 	inst->base.opCode = OpColon;
 	inst->branch.offset = obj->used - middle_inst;
@@ -1528,9 +1489,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case LXOR:	    obj = CompileBinary (obj, expr, namespace, OpLxor, stat); break;
-    case LAND:	    obj = CompileBinary (obj, expr, namespace, OpLand, stat); break;
-    case LOR:	    obj = CompileBinary (obj, expr, namespace, OpLor, stat); break;
+    case LXOR:	    obj = CompileBinary (obj, expr, OpLxor, stat, code); break;
+    case LAND:	    obj = CompileBinary (obj, expr, OpLand, stat, code); break;
+    case LOR:	    obj = CompileBinary (obj, expr, OpLor, stat, code); break;
     case AND:
 	/*
 	 * a && b
@@ -1538,9 +1499,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	 * a ANDAND b
 	 *   +--------+
 	 */
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	NewInst (test_inst, obj);
-	obj = _CompileExpr (obj, expr->tree.right, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpAnd;
 	inst->base.stat = stat;
@@ -1565,9 +1526,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	 * a OROR b
 	 *   +--------+
 	 */
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	NewInst (test_inst, obj);
-	obj = _CompileExpr (obj, expr->tree.right, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpOr;
 	inst->base.stat = stat;
@@ -1585,28 +1546,27 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case ASSIGN:	obj = CompileAssign (obj, expr, namespace, OpAssign, stat); break;
-    case ASSIGNPLUS:	obj = CompileAssign (obj, expr, namespace, OpAssignPlus, stat); break;
-    case ASSIGNMINUS:	obj = CompileAssign (obj, expr, namespace, OpAssignMinus, stat); break;
-    case ASSIGNTIMES:	obj = CompileAssign (obj, expr, namespace, OpAssignTimes, stat); break;
-    case ASSIGNDIVIDE:	obj = CompileAssign (obj, expr, namespace, OpAssignDivide, stat); break;
-    case ASSIGNDIV:	obj = CompileAssign (obj, expr, namespace, OpAssignDiv, stat); break;
-    case ASSIGNMOD:	obj = CompileAssign (obj, expr, namespace, OpAssignMod, stat); break;
+    case ASSIGN:	obj = CompileAssign (obj, expr, OpAssign, stat, code); break;
+    case ASSIGNPLUS:	obj = CompileAssign (obj, expr, OpAssignPlus, stat, code); break;
+    case ASSIGNMINUS:	obj = CompileAssign (obj, expr, OpAssignMinus, stat, code); break;
+    case ASSIGNTIMES:	obj = CompileAssign (obj, expr, OpAssignTimes, stat, code); break;
+    case ASSIGNDIVIDE:	obj = CompileAssign (obj, expr, OpAssignDivide, stat, code); break;
+    case ASSIGNDIV:	obj = CompileAssign (obj, expr, OpAssignDiv, stat, code); break;
+    case ASSIGNMOD:	obj = CompileAssign (obj, expr, OpAssignMod, stat, code); break;
     case ASSIGNPOW:
-	obj = _CompileExpr (obj, expr->tree.right, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
 	SetPush (obj);
-	obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False, expr->base.tag == ASSIGN);
+	obj = CompileLvalue (obj, expr->tree.right->tree.left, stat, code, False, False);
 	SetPush (obj);
-	obj = _CompileExpr (obj, NewExprTree (COLONCOLON, BuildName ("Math"), BuildName ("assign_pow")),
-			    namespace, True, stat);
-	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
 					     expr->base.tag,
-					     expr->tree.right->base.type);
+					     expr->tree.right->tree.right->base.type);
 	if (!expr->base.type)
 	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in assignment",
-			  expr->tree.left->base.type,
-			  expr->tree.right->base.type);
+			  expr->tree.right->tree.left->base.type,
+			  expr->tree.right->tree.right->base.type);
 	    expr->base.type = typesPoly;
 	    break;
 	}
@@ -1614,29 +1574,29 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	inst->ints.value = 2;
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case ASSIGNSHIFTL:	obj = CompileAssign (obj, expr, namespace, OpAssignShiftL, stat); break;
-    case ASSIGNSHIFTR:	obj = CompileAssign (obj, expr, namespace, OpAssignShiftR, stat); break;
-    case ASSIGNLXOR:	obj = CompileAssign (obj, expr, namespace, OpAssignLxor, stat); break;
-    case ASSIGNLAND:	obj = CompileAssign (obj, expr, namespace, OpAssignLand, stat); break;
-    case ASSIGNLOR:	obj = CompileAssign (obj, expr, namespace, OpAssignLor, stat); break;
-    case EQ:	    obj = CompileBinary (obj, expr, namespace, OpEq, stat); break;
-    case NE:	    obj = CompileBinary (obj, expr, namespace, OpNe, stat); break;
-    case LT:	    obj = CompileBinary (obj, expr, namespace, OpLt, stat); break;
-    case GT:	    obj = CompileBinary (obj, expr, namespace, OpGt, stat); break;
-    case LE:	    obj = CompileBinary (obj, expr, namespace, OpLe, stat); break;
-    case GE:	    obj = CompileBinary (obj, expr, namespace, OpGe, stat); break;
+    case ASSIGNSHIFTL:	obj = CompileAssign (obj, expr, OpAssignShiftL, stat, code); break;
+    case ASSIGNSHIFTR:	obj = CompileAssign (obj, expr, OpAssignShiftR, stat, code); break;
+    case ASSIGNLXOR:	obj = CompileAssign (obj, expr, OpAssignLxor, stat, code); break;
+    case ASSIGNLAND:	obj = CompileAssign (obj, expr, OpAssignLand, stat, code); break;
+    case ASSIGNLOR:	obj = CompileAssign (obj, expr, OpAssignLor, stat, code); break;
+    case EQ:	    obj = CompileBinary (obj, expr, OpEq, stat, code); break;
+    case NE:	    obj = CompileBinary (obj, expr, OpNe, stat, code); break;
+    case LT:	    obj = CompileBinary (obj, expr, OpLt, stat, code); break;
+    case GT:	    obj = CompileBinary (obj, expr, OpGt, stat, code); break;
+    case LE:	    obj = CompileBinary (obj, expr, OpLe, stat, code); break;
+    case GE:	    obj = CompileBinary (obj, expr, OpGe, stat, code); break;
     case COMMA:	    
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = expr->tree.left->base.type;
 	if (expr->tree.right)
 	{
-	    obj = _CompileExpr (obj, expr->tree.right, namespace, True, stat);
+	    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
 	    expr->base.type = expr->tree.right->base.type;
 	}
 	break;
     case FORK:
 	BuildInst (obj, OpFork, inst, stat);
-	inst->obj.obj = CompileExpr (expr->tree.right, namespace);
+	inst->obj.obj = CompileExpr (expr->tree.right, code);
 	expr->base.type = typesPrim[type_thread];
 	break;
     case THREAD:
@@ -1645,12 +1605,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 					      NewExprTree (COMMA, 
 							   expr->tree.left,
 							   (Expr *) 0)),
-			    namespace, stat);
+			    stat, code);
 	expr->base.type = typesPrim[type_thread];
 	break;
     case DOLLAR:
 	/* reposition statement reference so top-level errors are nicer*/
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, expr);
+	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	expr->base.type = expr->tree.left->base.type;
 	break;
     }
@@ -1685,7 +1645,7 @@ CompilePatchLoop (ObjPtr obj, int start, int continue_offset)
 }
 
 ObjPtr
-_CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
+_CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 {
     ENTER ();
     int		top_inst, continue_inst, test_inst, middle_inst, bottom_inst;
@@ -1694,9 +1654,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
     int		state;
     Bool	has_default;
     InstPtr	inst;
-    SymbolPtr	sym;
-    Bool	new;
-    NamespacePtr    code_namespace;
     
     switch (expr->base.tag) {
     case IF:
@@ -1706,10 +1663,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 * a IF b
 	 *   +----+
 	 */
-	namespace = NewNamespace (namespace);
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, expr);
+	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
-	obj = _CompileStat (obj, expr->tree.right, namespace);
+	obj = _CompileStat (obj, expr->tree.right, code);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpIf;
 	inst->base.stat = expr;
@@ -1723,16 +1679,15 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 *   +---------+
 	 *        +------+
 	 */
-	namespace = NewNamespace (namespace);
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, expr);
+	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
-	obj = _CompileStat (obj, expr->tree.right->tree.left, namespace);
+	obj = _CompileStat (obj, expr->tree.right->tree.left, code);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpIf;
 	inst->base.stat = expr;
 	inst->branch.offset = obj->used - test_inst;
-	obj = _CompileStat (obj, expr->tree.right->tree.right, namespace);
+	obj = _CompileStat (obj, expr->tree.right->tree.right, code);
 	inst = ObjCode (obj, middle_inst);
 	inst->base.opCode = OpElse;
 	inst->base.stat = expr;
@@ -1746,13 +1701,12 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 *   +----------------+
 	 * +---------+
 	 */
-	namespace = NewNamespace (namespace);
 	continue_inst = obj->used;
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, expr);
+	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
 	state = obj->state;
 	obj->state |= OBJ_STATE_LOOP;
-	obj = _CompileStat (obj, expr->tree.right, namespace);
+	obj = _CompileStat (obj, expr->tree.right, code);
 	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
 	NewInst (bottom_inst, obj);
 	inst = ObjCode (obj, test_inst);
@@ -1772,13 +1726,12 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 * a b DO
 	 * +---+
 	 */
-	namespace = NewNamespace (namespace);
 	continue_inst = obj->used;
 	state = obj->state;
 	obj->state |= OBJ_STATE_LOOP;
-	obj = _CompileStat (obj, expr->tree.left, namespace);
+	obj = _CompileStat (obj, expr->tree.left, code);
 	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
-	obj = _CompileExpr (obj, expr->tree.right, namespace, True, expr);
+	obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
 	NewInst (test_inst, obj);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpDo;
@@ -1795,23 +1748,22 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 *     +--------------+
 	 *   +---------+
 	 */
-	namespace = NewNamespace (namespace);
 	if (expr->tree.left->tree.left)
-	    obj = _CompileExpr (obj, expr->tree.left->tree.left, namespace, False, expr);
+	    obj = _CompileExpr (obj, expr->tree.left->tree.left, False, expr, code);
 	top_inst = obj->used;
 	test_inst = -1;
 	if (expr->tree.left->tree.right)
 	{
-	    obj = _CompileExpr (obj, expr->tree.left->tree.right, namespace, True, expr);
+	    obj = _CompileExpr (obj, expr->tree.left->tree.right, True, expr, code);
 	    NewInst (test_inst, obj);
 	}
 	state = obj->state;
 	obj->state |= OBJ_STATE_LOOP;
-	obj = _CompileStat (obj, expr->tree.right->tree.right, namespace);
+	obj = _CompileStat (obj, expr->tree.right->tree.right, code);
 	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
 	continue_inst = obj->used;
 	if (expr->tree.right->tree.left)
-	    obj = _CompileExpr (obj, expr->tree.right->tree.left, namespace, False, expr);
+	    obj = _CompileExpr (obj, expr->tree.right->tree.left, False, expr, code);
 	NewInst (bottom_inst, obj);
 	if (test_inst != -1)
 	{
@@ -1836,8 +1788,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 *              +-------------+
 	 *                     +--------+
 	 */
-	namespace = NewNamespace (namespace);
-	obj = _CompileExpr (obj, expr->tree.left, namespace, True, expr);
+	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	if (expr->base.tag == SWITCH)
 	    SetPush (obj);
 	c = expr->tree.right;
@@ -1862,7 +1813,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	    if (c->tree.left->tree.left)
 	    {
 		if (expr->base.tag == SWITCH)
-		    obj = _CompileExpr (obj, c->tree.left->tree.left, namespace, True, c);
+		    obj = _CompileExpr (obj, c->tree.left->tree.left, True, c, code);
 		NewInst (case_inst[icase], obj);
 		icase++;
 	    }
@@ -1871,10 +1822,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	/* add default case at the bottom */
     	NewInst (test_inst, obj);
 	top_inst = obj->used;
-	/*
-	 * Create an anonymous namespace
-	 */
-	namespace = NewNamespace (namespace);
 	state = obj->state;
 	obj->state |= OBJ_STATE_SWITCH;
 	/*
@@ -1918,7 +1865,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	    }
 	    while (s->tree.left)
 	    {
-		obj = _CompileStat (obj, s->tree.left, namespace);
+		obj = _CompileStat (obj, s->tree.left, code);
 		s = s->tree.right;
 	    }
 	    c = c->tree.right;
@@ -1937,16 +1884,14 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	CompilePatchLoop (obj, top_inst, -1);
 	break;
     case VAR:
-	obj = CompileDecl (obj, expr, namespace, False, expr);
+	obj = CompileDecl (obj, expr, False, expr, code);
+	break;
+    case TYPEDEF:
 	break;
     case OC:
-	/*
-	 * Create an anonymous namespace
-	 */
-	namespace = NewNamespace (namespace);
 	while (expr->tree.left)
 	{
-	    obj = _CompileStat (obj, expr->tree.left, namespace);
+	    obj = _CompileStat (obj, expr->tree.left, code);
 	    expr = expr->tree.right;
 	}
 	break;
@@ -1969,16 +1914,13 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	inst->branch.offset = 0;    /* filled in by PatchLoop */
 	break;
     case RETURNTOK:
-        code_namespace = namespace;
-	while (code_namespace && !code_namespace->code)
-	    code_namespace = code_namespace->previous;
-	if (!code_namespace)
+	if (!code)
 	{
 	    CompileError (obj, expr, "return not in function");
 	    break;
 	}
 	if (expr->tree.right)
-	    obj = _CompileExpr (obj, expr->tree.right, namespace, True, expr);
+	    obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, middle_inst);
 	if (expr->tree.right)
@@ -1991,101 +1933,38 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	    inst->base.opCode = OpReturnVoid;
 	    expr->base.type = typesPrim[type_void];
 	}
-	if (!TypeCombineBinary (code_namespace->code->base.type, ASSIGN, expr->base.type))
+	if (!TypeCombineBinary (code->base.type, ASSIGN, expr->base.type))
 	{
 	    CompileError (obj, expr, "Incompatible types '%T', '%T' in return",
-			  code_namespace->code->base.type, expr->base.type);
+			  code->base.type, expr->base.type);
 	    break;
 	}
 	inst->base.stat = expr;
 	break;
     case EXPR:
-	obj = _CompileExpr (obj, expr->tree.left, namespace, False, expr);
+	obj = _CompileExpr (obj, expr->tree.left, False, expr, code);
 	break;
     case SEMI:
 	break;
     case FUNCTION:
-	sym = CompileNewSymbol (obj, expr, namespace,
-				 expr->tree.left->decl.publish,
-				 NamespaceDefaultClass (namespace),
-				 expr->tree.left->decl.type,
-				 expr->tree.left->decl.decl->name,
-				 &new);
-	if (new)
-	    CompileAddSymbol (namespace, sym);
-	obj = CompileAssign (obj, expr->tree.right, namespace, OpAssign, expr);
+	obj = CompileDecl (obj, expr->tree.left, False, expr, code); 
+	obj = CompileAssign (obj, expr->tree.right, OpAssign, expr, code);
 	break;
     case NAMESPACE:
-	sym = CompileNewSymbol (obj, expr, namespace, 
-				 expr->tree.left->decl.publish,
-				 class_namespace, 0, 
-				 expr->tree.left->decl.decl->name,
-				 &new);
-	if (!sym)
-	    break;
-	if (sym->symbol.class != class_namespace)
-	{
-	    CompileError (obj, expr, "Invalid use of %C \"%A\"",
-			  sym->symbol.class,
-			  expr->tree.left->decl.decl->name);
-	    break;
-	}
-	if (new)
-	    sym->namespace.namespace = NewNamespace (namespace);
-        namespace = sym->namespace.namespace;
-	/*
-	 * Make private symbols in this namespace visible
-	 */
-	namespace->publish = publish_public;
-	expr = expr->tree.right;
-	while (expr->tree.left)
-	{
-	    obj = _CompileStat (obj, expr->tree.left, namespace);
-	    expr = expr->tree.right;
-	}
-	/*
-	 * Make private symbols in this namespace not visible to searches
-	 */
-	namespace->publish = publish_private;
-	if (new)
-	{
-	    CompileAddSymbol (namespace->previous, sym);
-	}
+	obj = _CompileStat (obj, expr->tree.right, code);
 	break;
     case IMPORT:
-	sym = CompileFindSymbol (obj, expr, namespace,
-				  expr->tree.left->decl.decl->name,
-				  &top_inst, False);
-	if (!sym)
-	    break;
-	if (sym->symbol.class != class_namespace)
-	{
-	    CompileError (obj, expr, "Invalid use of %C \"%A\"",
-			  sym->symbol.class, expr->atom.atom);
-	
-	    break;
-	}
-	sym = NamespaceImport (namespace,
-			   sym->namespace.namespace,
-			   expr->tree.left->decl.publish);
-	if (sym)
-	    CompileError (obj, expr, "Import \"%A\" causes redefinition of \"%A\"",
-			  expr->tree.left->decl.decl->name,
-			  sym->symbol.name);
 	break;
     case CATCH:
-	namespace = NewNamespace (namespace);
-	obj = CompileCatch (obj, expr->tree.right, expr->tree.left, namespace, expr);
+	obj = CompileCatch (obj, expr->tree.right, expr->tree.left, expr, code);
 	break;
     case RAISE:
-	obj = CompileRaise (obj, expr, namespace, expr);
+	obj = CompileRaise (obj, expr, expr, code);
 	break;
     case TWIXT:
-	namespace = NewNamespace (namespace);
-	obj = CompileTwixt (obj, expr, namespace, expr);
+	obj = CompileTwixt (obj, expr, expr, code);
 	break;
     }
-    expr->base.namespace = namespace;
     RETURN (obj);
 }
 
@@ -2126,7 +2005,7 @@ CompileOpIsReturn (OpCode op)
 }
 
 ObjPtr
-CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat)
+CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous)
 {
     ENTER ();
     ObjPtr  obj;
@@ -2134,8 +2013,9 @@ CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat)
     int	    i;
     Bool    needReturn;
     
+    code->base.previous = previous;
     obj = NewObj (OBJ_INCR);
-    obj = _CompileStat (obj, code->func.code, namespace);
+    obj = _CompileStat (obj, code->func.code, code);
     needReturn = False;
     if (!obj->used || !CompileOpIsReturn (ObjCode (obj, ObjLast(obj))->base.opCode))
 	needReturn = True;
@@ -2155,43 +2035,42 @@ CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat)
     if (needReturn)
 	BuildInst (obj, OpReturnVoid, inst, stat);
 #ifdef DEBUG
-    ObjDump (obj);
+    ObjDump (obj, 0);
 #endif
     RETURN (obj);
 }
 
 ObjPtr
-CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
+CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
 {
     ENTER ();
     InstPtr	    inst;
     SymbolPtr	    local;
     ArgType	    *args;
     ObjPtr	    staticInit;
+    Types	    *type;
 
-    namespace = NewNamespace (namespace);
-    namespace->code = code;
     for (args = code->base.args; args; args = args->next)
     {
-        CompileCanonType (obj, namespace, args->type, stat, True);
+        CompileCanonType (obj, args->type, stat, True);
 	if (args->varargs)
 	{
-	    local = NewSymbolArg (args->name, 
-				  NewTypesArray (args->type,
-						 NewExprTree (COMMA,
-							      NewExprConst (TEN_CONST, NewInt (0)),
-							      0)));
-	    local->local.element = AddBoxTypes (&namespace->code->func.dynamics,
-						local->symbol.type);
-	    NamespaceAddSymbol (namespace, local);
+	    type = NewTypesArray (args->type,
+				  NewExprTree (COMMA,
+					       NewExprConst (TEN_CONST, 
+							     NewInt (0)),
+						0));
 	}
 	else
 	{
-	    local = NewSymbolArg (args->name, args->type);
-	    CompileAddSymbol (namespace, local);
+	    type = args->type;
+	    code->base.argc++;
 	}
+	local = NewSymbolArg (args->name->atom, type);
+	args->name->symbol = local;
+	CompileStorage (local, code);
     }
-    code->func.obj = CompileFuncCode (code, namespace, stat);
+    code->func.obj = CompileFuncCode (code, stat, previous);
     obj->state |= code->func.obj->state & OBJ_STATE_ERROR;
     BuildInst (obj, OpObj, inst, stat);
     inst->code.code = code;
@@ -2201,7 +2080,7 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
 	BuildInst (staticInit, OpStaticDone, inst, stat);
 	BuildInst (staticInit, OpEnd, inst, stat);
 #ifdef DEBUG
-	ObjDump (staticInit);
+	ObjDump (staticInit, 1);
 #endif
 	code->func.staticInit = staticInit;
 	BuildInst (obj, OpStaticInit, inst, stat);
@@ -2212,59 +2091,39 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
 }
 
 ObjPtr
-CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace, 
-	     Bool evaluate, ExprPtr stat)
+CompileDecl (ObjPtr obj, ExprPtr decls, 
+	     Bool evaluate, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     SymbolPtr	    s = 0;
     DeclListPtr	    decl;
     Class	    class;
     Publish	    publish;
-    NamespacePtr	    code_namespace;
-    NamespacePtr	    compile_namespace;
+    CodePtr	    code_compile = 0;
     ObjPtr	    *initObj;
     Bool	    initialize = False;
-    Bool	    addToNamespace;
+    Bool	    new;
     
-    decls->base.namespace = namespace;
     class = decls->decl.class;
     if (class == class_undef)
-	class = NamespaceDefaultClass (namespace);
+	class = code ? class_auto : class_global;
     publish = decls->decl.publish;
-    compile_namespace = 0;
     switch (class) {
     case class_global:
 	/*
 	 * Globals are compiled in the static initializer for
 	 * the outermost enclosing function.
 	 */
-	for (code_namespace = namespace; code_namespace; code_namespace = code_namespace->previous)
-	{
-	    if (code_namespace->debugger)
-	    {
-		code_namespace = 0;
-		break;
-	    }
-	    if (code_namespace->code)
-		compile_namespace = code_namespace;
-	}
+	code_compile = code;
+	while (code_compile && code_compile->base.previous)
+	    code_compile = code_compile->base.previous;
 	break;
     case class_static:
 	/*
 	 * Statics are compiled in the static initializer for
 	 * the nearest enclosing function
 	 */
-	for (code_namespace = namespace; code_namespace; code_namespace = code_namespace->previous)
-	{
-	    if (code_namespace->debugger)
-	    {
-		code_namespace = 0;
-		break;
-	    }
-	    if (code_namespace->code || code_namespace->debugger)
-		break;
-	}
-	compile_namespace = code_namespace;
+	code_compile = code;
 	break;
     case class_auto:
     case class_arg:
@@ -2272,69 +2131,59 @@ CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace,
 	 * Autos are compiled where they lie; just make sure a function
 	 * exists somewhere to hang them from
 	 */
-	for (code_namespace = namespace; code_namespace; code_namespace = code_namespace->previous)
-	{
-	    if (code_namespace->debugger)
-	    {
-		code_namespace = 0;
-		break;
-	    }
-	    if (code_namespace->code)
-		break;
-	}
 	break;
     default:
-	code_namespace = 0;
 	break;
     }
-    if (ClassFrame (class) && !code_namespace)
+    if (ClassFrame (class) && !code)
     {
 	CompileError (obj, decls, "Invalid storage class %C", class);
 	decls->base.type = typesPoly;
 	RETURN (obj);
     }
     for (decl = decls->decl.decl; decl; decl = decl->next) {
-	s = CompileNewSymbol (obj, decls, namespace,
-			       decls->decl.publish, class, decls->decl.type,
-			       decl->name, &addToNamespace);
+	s = CompileNewSymbol (obj, decls, class, decls->decl.type,
+			      decl->name, &new);
 	if (!s)
 	    break;
 	/*
 	 * Compile initializers in two steps
 	 * compile the expression before placing the
-	 * name in namespace, and then compile the assignment
+	 * name in and then compile the assignment
 	 */
     	initObj = &obj;
 	if (decl->init)
 	{
-	    if (compile_namespace && compile_namespace->code)
+	    if (code_compile)
 	    {
-		CodePtr	code = compile_namespace->code;
-		if (!code->func.staticInit)
-		    code->func.staticInit = NewObj (OBJ_INCR);
-		initObj = &code->func.staticInit;
-		code->func.inStaticInit = True;
+		if (!code_compile->func.staticInit)
+		    code_compile->func.staticInit = NewObj (OBJ_INCR);
+		initObj = &code_compile->func.staticInit;
+		code_compile->func.inStaticInit = True;
 	    }
 	    *initObj = _CompileExpr (*initObj, decl->init, 
-				     namespace, True, decls);
-	    if (compile_namespace && compile_namespace->code)
+				     True, decls, code);
+	    if (code_compile)
 	    {
-		CodePtr	code = compile_namespace->code;
-		code->func.inStaticInit = False;
+		code_compile->func.inStaticInit = False;
 	    }
 	    SetPush (*initObj);
 	    initialize = True;
 	}
-	if (addToNamespace)
-	    CompileAddSymbol (namespace, s);
+	if (new)
+	{
+	    decl->name->symbol = s;
+	    decl->name->publish = decls->decl.publish;
+	    CompileStorage (s, code);
+	}
 	if (initialize)
 	{
 	    InstPtr inst;
 	    ExprPtr lvalue;
 	    
-	    lvalue = NewExprAtom (decl->name);
+	    lvalue = NewExprName (decl->name);
 	    *initObj = CompileLvalue (*initObj, lvalue,
-				       namespace, decls, False, True);
+				       decls, code, False, True);
 	    if (!TypeCombineBinary (lvalue->base.type,
 				    ASSIGN,
 				    decl->init->base.type))
@@ -2362,23 +2211,23 @@ CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace,
 }
 
 ObjPtr
-CompileStat (ExprPtr expr, NamespacePtr namespace)
+CompileStat (ExprPtr expr, CodePtr code)
 {
     ENTER ();
     ObjPtr  obj;
     InstPtr inst;
 
     obj = NewObj (OBJ_INCR);
-    obj = _CompileStat (obj, expr, namespace);
+    obj = _CompileStat (obj, expr, code);
     BuildInst (obj, OpEnd, inst, expr);
 #ifdef DEBUG
-    ObjDump (obj);
+    ObjDump (obj, 0);
 #endif
     RETURN (obj);
 }
 
 ObjPtr
-CompileExpr (ExprPtr expr, NamespacePtr namespace)
+CompileExpr (ExprPtr expr, CodePtr code)
 {
     ENTER ();
     ObjPtr  obj;
@@ -2386,12 +2235,11 @@ CompileExpr (ExprPtr expr, NamespacePtr namespace)
     ExprPtr stat;
 
     stat = NewExprTree (EXPR, expr, 0);
-    stat->base.namespace = namespace;
     obj = NewObj (OBJ_INCR);
-    obj = _CompileExpr (obj, expr, namespace, True, stat);
+    obj = _CompileExpr (obj, expr, True, stat, code);
     BuildInst (obj, OpEnd, inst, stat);
 #ifdef DEBUG
-    ObjDump (obj);
+    ObjDump (obj, 0);
 #endif
     RETURN (obj);
 }
@@ -2507,6 +2355,107 @@ ObjIndent (int indent)
         FilePrintf (FileStdout, "    ");
 }
 
+void
+InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
+{
+    int	    j;
+    
+    ObjIndent (indent);
+    FilePrintf (FileStdout, "%s%s %c ",
+		OpNames[inst->base.opCode],
+		"             " + strlen(OpNames[inst->base.opCode]),
+		inst->base.push ? '^' : ' ');
+    switch (inst->base.opCode) {
+    case OpTagCase:
+	FilePrintf (FileStdout, "(%T)", inst->tagcase.tag);
+	goto branch;
+    case OpCatch:
+	FilePrintf (FileStdout, "\"%A\" ", 
+		    inst->catch.exception->symbol.name);
+	goto branch;
+    case OpIf:
+    case OpElse:
+    case OpWhile:
+    case OpEndWhile:
+    case OpDo:
+    case OpFor:
+    case OpEndFor:
+    case OpCase:
+    case OpDefault:
+    case OpTagDefault:
+    case OpBreak:
+    case OpContinue:
+    case OpQuest:
+    case OpColon:
+    case OpAnd:
+    case OpOr:
+    case OpException:
+    case OpLeaveDone:
+    branch:
+	if (branch)
+	{
+	    j = i + inst->branch.offset;
+	    if (0 <= j && j < maxbranch)
+		FilePrintf (FileStdout, "branch L%d", branch[j]);
+	    else
+		FilePrintf (FileStdout, "Broken branch %d", inst->branch.offset);
+	}
+	else
+		FilePrintf (FileStdout, "branch %d", inst->branch.offset);
+	break;
+    case OpReturn:
+    case OpReturnVoid:
+	break;
+    case OpFork:
+	FilePrintf (FileStdout, "\n");
+	ObjDump (inst->obj.obj, indent+1);
+	break;
+    case OpEndCatch:
+	break;
+    case OpRaise:
+	FilePrintf (FileStdout, "%A", inst->raise.exception->symbol.name);
+	FilePrintf (FileStdout, " argc %d", inst->raise.argc);
+	break;
+    case OpTwixt:
+	FilePrintf (FileStdout, "enter %d leave %d",
+		    inst->twixt.enter, inst->twixt.leave);
+	break;
+    case OpName:
+    case OpNameRef:
+    case OpNameRefStore:
+	FilePrintf (FileStdout, "%A", inst->var.name ? inst->var.name->symbol.name : 0);
+	break;
+    case OpConst:
+	FilePrintf (FileStdout, "%v", inst->constant.constant);
+	break;
+    case OpCall:
+	FilePrintf (FileStdout, "%d args", inst->ints.value);
+	break;
+    case OpBuildArray:
+	FilePrintf (FileStdout, "%d dims", inst->ints.value);
+	break;
+    case OpInitArray:
+	FilePrintf (FileStdout, "%d values", inst->ints.value);
+	break;
+    case OpDot:
+    case OpDotRef:
+    case OpDotRefStore:
+    case OpArrow:
+    case OpArrowRef:
+    case OpArrowRefStore:
+    case OpInitStruct:
+    case OpInitUnion:
+	FilePrintf (FileStdout, "%s", AtomName (inst->atom.atom));
+	break;
+    case OpObj:
+	FilePrintf (FileStdout, "\n");
+	ObjDump (inst->code.code->func.obj, indent+1);
+	break;
+    default:
+	break;
+    }
+    FilePrintf (FileStdout, "\n");
+}
 
 void
 ObjDump (ObjPtr obj, int indent)
@@ -2538,96 +2487,7 @@ ObjDump (ObjPtr obj, int indent)
 	inst = ObjCode(obj, i);
 	if (branch[i])
 	    FilePrintf (FileStdout, "L%d:\n", branch[i]);
-	ObjIndent (indent);
-	FilePrintf (FileStdout, "%s%s %c ",
-		    OpNames[inst->base.opCode],
-		    "             " + strlen(OpNames[inst->base.opCode]),
-		    inst->base.push ? '^' : ' ');
-	switch (inst->base.opCode) {
-	case OpTagCase:
-	    FilePrintf (FileStdout, "(%T)", inst->tagcase.tag);
-	    goto branch;
-	case OpCatch:
-	    FilePrintf (FileStdout, "\"%A\" ", 
-			inst->catch.exception->symbol.name);
-	    goto branch;
-	case OpIf:
-	case OpElse:
-	case OpWhile:
-	case OpEndWhile:
-	case OpDo:
-	case OpFor:
-	case OpEndFor:
-	case OpCase:
-	case OpDefault:
-	case OpTagDefault:
-	case OpBreak:
-	case OpContinue:
-	case OpQuest:
-	case OpColon:
-	case OpAnd:
-	case OpOr:
-	case OpException:
-	case OpLeaveDone:
-	branch:
-	    j = i + inst->branch.offset;
-	    if (0 <= j && j < obj->used)
-		FilePrintf (FileStdout, "branch L%d", branch[j]);
-	    else
-		FilePrintf (FileStdout, "Broken branch %d", inst->branch.offset);
-	    break;
-	case OpReturn:
-	case OpReturnVoid:
-	    break;
-	case OpFork:
-	    FilePrintf (FileStdout, "\n");
-	    ObjDump (inst->obj.obj, indent+1);
-	    continue;
-	case OpEndCatch:
-	    break;
-	case OpRaise:
-	    FilePrintf (FileStdout, "%s", AtomName (inst->raise.exception->symbol.name));
-	    FilePrintf (FileStdout, " argc %d", inst->raise.argc);
-	    break;
-	case OpTwixt:
-	    FilePrintf (FileStdout, "enter %d leave %d",
-			inst->twixt.enter, inst->twixt.leave);
-	    break;
-	case OpName:
-	case OpNameRef:
-	case OpNameRefStore:
-	    FilePrintf (FileStdout, "%s", AtomName (inst->var.name->symbol.name));
-	    break;
-	case OpConst:
-	    FilePrintf (FileStdout, "%v", inst->constant.constant);
-	    break;
-	case OpCall:
-	    FilePrintf (FileStdout, "%d args", inst->ints.value);
-	    break;
-	case OpBuildArray:
-	    FilePrintf (FileStdout, "%d dims", inst->ints.value);
-	    break;
-	case OpInitArray:
-	    FilePrintf (FileStdout, "%d values", inst->ints.value);
-	    break;
-	case OpDot:
-	case OpDotRef:
-	case OpDotRefStore:
-	case OpArrow:
-	case OpArrowRef:
-	case OpArrowRefStore:
-	case OpInitStruct:
-	case OpInitUnion:
-	    FilePrintf (FileStdout, "%s", AtomName (inst->atom.atom));
-	    break;
-	case OpObj:
-	    FilePrintf (FileStdout, "\n");
-	    ObjDump (inst->code.code->func.obj, indent+1);
-	    continue;
-	default:
-	    break;
-	}
-	FilePrintf (FileStdout, "\n");
+	InstDump (inst, indent, i, branch, obj->used);
     }
 }
 

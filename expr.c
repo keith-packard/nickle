@@ -45,6 +45,15 @@ ExprAtomMark (void *object)
 }
 
 static void
+ExprNameMark (void *object)
+{
+    ExprName	*en = object;
+    MemReference (en->expr.namespace);
+    MemReference (en->expr.type);
+    MemReference (en->name);
+}
+
+static void
 ExprCodeMark (void *object)
 {
     ExprCode	*ec = object;
@@ -68,6 +77,7 @@ ExprDeclMark (void *object)
 DataType    ExprTreeType = { ExprTreeMark, 0 };
 DataType    ExprConstType = { ExprConstMark, 0 };
 DataType    ExprAtomType = { ExprAtomMark, 0 };
+DataType    ExprNameType = { ExprNameMark, 0 };
 DataType    ExprCodeType = { ExprCodeMark, 0 };
 DataType    ExprDeclType = { ExprDeclMark, 0 };
 
@@ -77,6 +87,7 @@ ExprBaseInit (Expr *e, int tag)
     e->base.tag = tag;
     e->base.file = LexFileName ();
     e->base.line = LexFileLine ();
+    e->base.namespace = CurrentNamespace;
 }
 
 Expr *
@@ -127,7 +138,19 @@ NewExprAtom (Atom atom)
 }
 
 Expr *
-NewExprCode (CodePtr code, Atom name)
+NewExprName (NamePtr name)
+{
+    ENTER ();
+    Expr    *e;
+
+    e = ALLOCATE (&ExprNameType, sizeof (ExprName));
+    ExprBaseInit (e, NAME);
+    e->name.name = name;
+    RETURN (e);
+}
+
+Expr *
+NewExprCode (CodePtr code, NamePtr name)
 {
     ENTER ();
     Expr    *e;

@@ -1,7 +1,7 @@
 /*
  * Scanf code.  Extend File namespace with reading code
  */
-public namespace File {
+extend namespace File {
     
     /*
      * Include existing public File members

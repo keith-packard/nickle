@@ -15,8 +15,7 @@ NamespaceMark (void *object)
     NamespacePtr    namespace = object;
 
     MemReference (namespace->previous);
-    MemReference (namespace->symbols);
-    MemReference (namespace->code);
+    MemReference (namespace->names);
 }
 
 DataType namespaceType = { NamespaceMark, 0 };
@@ -29,41 +28,37 @@ NewNamespace (NamespacePtr previous)
 
     namespace = ALLOCATE (&namespaceType, sizeof (Namespace));
     namespace->previous = previous;
-    namespace->symbols = 0;
-    namespace->code = 0;
+    namespace->names = 0;
     namespace->publish = publish_public;
-    namespace->debugger = False;
     RETURN (namespace);
 }
 
 static void
-NamespaceChainMark (void *object)
+NameMark (void *object)
 {
-    NamespaceChainPtr   chain = object;
+    NamePtr   chain = object;
 
     MemReference (chain->next);
     MemReference (chain->symbol);
 }
 
-DataType namespaceChainType = { NamespaceChainMark, 0 };
+DataType nameType = { NameMark, 0 };
 
-static NamespaceChainPtr
-NewNamespaceChain (NamespaceChainPtr next, SymbolPtr symbol, Publish publish)
+NamePtr
+NewName (NamePtr next, Atom atom)
 {
     ENTER ();
-    NamespaceChainPtr   chain;
+    NamePtr   name;
 
-    chain = ALLOCATE (&namespaceChainType, sizeof (NamespaceChain));
-    chain->next = next;
-    chain->symbol = symbol;
-    chain->publish = publish;
-    RETURN (chain);
+    name = ALLOCATE (&nameType, sizeof (Name));
+    name->next = next;
+    name->atom = atom;
+    name->symbol = 0;
+    RETURN (name);
 }
 
 NamespacePtr	GlobalNamespace, CurrentNamespace;
 ReferencePtr	CurrentNamespaceReference;
-TypespacePtr	CurrentTypespace;
-ReferencePtr	CurrentTypespaceReference;
 CommandPtr	CurrentCommands;
 ReferencePtr	CurrentCommandsReference;
 
@@ -77,154 +72,76 @@ NamespaceInit (void)
     CurrentNamespace = GlobalNamespace;
     CurrentNamespaceReference = NewReference ((void **) &CurrentNamespace);
     MemAddRoot (CurrentNamespaceReference);
-    CurrentTypespace = 0;
-    CurrentTypespaceReference = NewReference ((void **) &CurrentTypespace);
-    MemAddRoot (CurrentTypespaceReference);
     CurrentCommands = 0;
     CurrentCommandsReference = NewReference ((void **) &CurrentCommands);
     MemAddRoot (CurrentCommandsReference);
     EXIT ();
 }
 
-SymbolPtr
-NamespaceLookupSymbol (NamespacePtr namespace, Atom name)
+NamePtr
+NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search)
 {
-    NamespaceChainPtr   chain;
-    
-    for (chain = namespace->symbols; chain; chain = chain->next)
-	if (chain->symbol->symbol.name == name &&
-	    (namespace->publish == publish_public ||
-	     chain->publish == publish_public))
-	    return chain->symbol;
-    return 0;
-}
+    NamePtr name;
 
-SymbolPtr
-NamespaceFindSymbol (NamespacePtr namespace, Atom name, int *depth)
-{
-    int		    d;
-    SymbolPtr	    s;
-
-    d = 0;
-    while (namespace)
+    do
     {
-	s = NamespaceLookupSymbol (namespace, name);
-	if (s)
-	{
-	    *depth = d;
-	    return s;
-	}
-	if (namespace->code)
-	    d++;
+	for (name = namespace->names; name; name = name->next)
+	    if (name->atom == atom &&
+		(namespace->publish == publish_public ||
+		 (name->symbol && name->publish == publish_public)))
+		return name;
 	namespace = namespace->previous;
-    }
+    } while (search && namespace);
     return 0;
 }
 
-SymbolPtr
-NamespaceAddSymbol (NamespacePtr namespace, SymbolPtr symbol)
+NamePtr
+NamespaceNewName (NamespacePtr namespace, Atom atom)
 {
-    ENTER ();
-    NamespaceChainPtr   chain;
+    NamePtr name;
+    NamePtr *prev;
 
-    chain = NewNamespaceChain (namespace->symbols, symbol, symbol->symbol.publish);
-    namespace->symbols = chain;
-    RETURN (symbol);
+    for (prev = &namespace->names; (name = *prev); prev = &name->next)
+	if (name->atom == atom)
+	{
+	    *prev = name->next;
+	    break;
+	}
+
+    name = NewName (namespace->names, atom);
+    namespace->names = name;
+    return name;
 }
 
 Bool
-NamespaceRemoveSymbol (NamespacePtr namespace, SymbolPtr symbol)
+NamespaceRemoveName (NamespacePtr namespace, NamePtr name)
 {
-    NamespaceChainPtr	*prev;
+    NamePtr *prev;
 
-    for (prev = &namespace->symbols; *prev; prev = &(*prev)->next)
-    {
-	if ((*prev)->symbol == symbol)
+    for (prev = &namespace->names; *prev; prev = &(*prev)->next)
+	if (*prev == name)
 	{
-	    *prev = (*prev)->next;
+	    *prev = name->next;
 	    return True;
+	    break;
 	}
-    }
     return False;
 }
 
-Class
-NamespaceDefaultClass (NamespacePtr namespace)
-{
-    while (namespace && !namespace->code && !namespace->debugger)
-	namespace = namespace->previous;
-    if (namespace && !namespace->debugger)
-	return class_auto;
-    return class_global;
-}
-
-SymbolPtr
+void
 NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish)
 {
-    NamespaceChainPtr   chain;
-    SymbolPtr		symbol;
+    NamePtr	old, new;
 
-    for (chain = import->symbols; chain; chain = chain->next)
+    for (old = import->names; old; old = old->next)
     {
-	if (chain->publish == publish_public)
+	if (old->symbol && old->publish == publish_public)
 	{
-	    symbol = chain->symbol;
-	    namespace->symbols = NewNamespaceChain (namespace->symbols, 
-						    symbol, publish);
+	    new = NamespaceNewName (namespace, old->atom);
+	    new->symbol = old->symbol;
+	    new->publish = publish;
 	}
     }
-    return 0;
-}
-
-static void
-TypespaceMark (void *object)
-{
-    TypespacePtr    typespace = object;
-
-    MemReference (typespace->previous);
-}
-
-DataType typespaceType = { TypespaceMark, 0 };
-
-TypespacePtr
-NewTypespace (TypespacePtr previous, Atom name, Bool mask)
-{
-    ENTER ();
-    TypespacePtr    typespace;
-
-    typespace = ALLOCATE (&typespaceType, sizeof (Typespace));
-    typespace->previous = previous;
-    typespace->name = name;
-    typespace->mask = mask;
-    RETURN (typespace);
-}
-
-TypespacePtr
-TypespaceFind (TypespacePtr typespace, Atom name)
-{
-    for(; typespace; typespace = typespace->previous)
-	if (typespace->name == name)
-	{
-	    if (typespace->mask)
-		break;
-	    return typespace;
-	}
-    return 0;
-}
-
-TypespacePtr
-TypespaceRemove (TypespacePtr typespace, Atom name)
-{
-    ENTER ();
-    TypespacePtr    *prev;
-
-    for (prev = &typespace; *prev; prev = &(*prev)->previous)
-	if ((*prev)->name == name)
-	{
-	    *prev = (*prev)->previous;
-	    break;
-	}
-    RETURN (typespace);
 }
 
 static void
@@ -277,14 +194,15 @@ CommandRemove (CommandPtr command, Atom name)
 }
 
 Bool
-NamespaceLocate (Value names, NamespacePtr   *namespacep, SymbolPtr *symbolp)
+NamespaceLocate (Value names, NamespacePtr *namespacep, NamePtr *namep)
 {
     int		    i;
     NamespacePtr    s;
     FramePtr	    f;
-    Value	    name;
-    SymbolPtr	    sym = 0;
-    int		    depth;
+    Value	    string;
+    NamePtr	    name = 0;
+    SymbolPtr	    sym;
+    Bool	    search = True;
     
     if (names->value.tag != type_array || names->array.ndim != 1)
     {
@@ -299,23 +217,24 @@ NamespaceLocate (Value names, NamespacePtr   *namespacep, SymbolPtr *symbolp)
     GetNamespace (&s, &f);
     for (i = 0; i < names->array.dim[0]; i++)
     {
-	name = BoxValue (names->array.values, i);
+	string = BoxValue (names->array.values, i);
 	if (aborting)
 	    return False;
-	if (name->value.tag != type_string)
+	if (string->value.tag != type_string)
 	{
 	    RaiseStandardException (exception_invalid_argument,
 				    "not string",
 				    2,
-				    NewInt (0), name);
+				    NewInt (0), string);
 	    return False;
 	}
-	sym = NamespaceFindSymbol (s, AtomId (StringChars (&name->string)),
-				   &depth);
-	if (!sym)
+	name = NamespaceFindName (s, AtomId (StringChars (&string->string)),
+				  search);
+	search = False;
+	if (!name || ! (sym = name->symbol))
 	{
 	    FilePrintf (FileStdout, "No symbol \"%s\" in scope\n",
-			StringChars (&name->string));
+			StringChars (&string->string));
 	    return False;
 	}
 	if (i != names->array.dim[0] - 1)
@@ -323,14 +242,14 @@ NamespaceLocate (Value names, NamespacePtr   *namespacep, SymbolPtr *symbolp)
 	    if (sym->symbol.class != class_namespace)
 	    {
 		FilePrintf (FileStdout, "\"%s\" is not a namespace\n",
-			    StringChars (&name->string));
+			    StringChars (&string->string));
 		return False;
 	    }
 	    s = sym->namespace.namespace;
 	}
     }
     *namespacep = s;
-    *symbolp = sym;
+    *namep = name;
     return True;
 }
 

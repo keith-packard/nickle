@@ -462,10 +462,9 @@ static struct ebuiltin excepts[] = {
     {0,				0 },
 };
 
-static SymbolPtr
-BuiltinSymbol (NamespacePtr *namespacep,
-	       char	    *name,
-	       Types	    *type)
+static NamePtr
+BuiltinName (NamespacePtr   *namespacep,
+	     char	    *string)
 {
     ENTER ();
     NamespacePtr    namespace;
@@ -474,43 +473,49 @@ BuiltinSymbol (NamespacePtr *namespacep,
 	namespace = *namespacep;
     else
 	namespace = GlobalNamespace;
-    RETURN (NamespaceAddSymbol (namespace,
-			    NewSymbolGlobal (AtomId (name), type,
-					     publish_public)));
+    RETURN(NamespaceNewName (namespace, AtomId (string)));
+}
+
+static SymbolPtr
+BuiltinSymbol (NamespacePtr *namespacep,
+	       char	    *string,
+	       Types	    *type)
+{
+    ENTER ();
+    NamePtr	    name;
+
+    name = BuiltinName (namespacep, string);
+    name->symbol = NewSymbolGlobal (name->atom, type);
+    name->publish = publish_public;
+    RETURN (name->symbol);
 }
 
 static SymbolPtr
 BuiltinNamespace (NamespacePtr  *namespacep,
-		  char		*name)
+		  char		*string)
 {
     ENTER ();
-    NamespacePtr	namespace;
-    SymbolPtr		sym;
+    NamePtr	    name;
 
-    if (namespacep)
-	namespace = *namespacep;
-    else
-	namespace = GlobalNamespace;
-    sym = NewSymbolNamespace (AtomId (name), publish_public);
-    sym->namespace.namespace = NewNamespace (namespace);
-    RETURN (NamespaceAddSymbol (namespace, sym));
+    name = BuiltinName (namespacep, string);
+    name->symbol = NewSymbolNamespace (name->atom);
+    name->publish = publish_public;
+    name->symbol->namespace.namespace = NewNamespace (GlobalNamespace);
+    RETURN (name->symbol);
 }
 
 static SymbolPtr
 BuiltinException (NamespacePtr  *namespacep,
-		  char		*name,
+		  char		*string,
 		  Types		*type)
 {
     ENTER ();
-    NamespacePtr	namespace;
-    SymbolPtr		sym;
+    NamePtr	    name;
 
-    if (namespacep)
-	namespace = *namespacep;
-    else
-	namespace = GlobalNamespace;
-    sym = NewSymbolException (AtomId (name), type, publish_public);
-    RETURN (NamespaceAddSymbol (namespace, sym));
+    name = BuiltinName (namespacep, string);
+    name->symbol = NewSymbolException (name->atom, type);
+    name->publish = publish_public;
+    RETURN (name->symbol);
 }
 
 static char *
@@ -705,10 +710,7 @@ BuiltinInit (void)
     }
     
     for (r = rvars; r->name; r++) {
-	sym = NamespaceAddSymbol (GlobalNamespace, 
-			      NewSymbolGlobal (AtomId (r->name), 
-					       typesPrim[type_float], 
-					       publish_private));
+	sym = BuiltinSymbol (0, r->name, typesPrim[type_float]);
 	sym->global.value->constant = True;
 	BoxValueSet (sym->global.value, 0,
 		     NewValueFloat (aetov (r->value),r->prec));
@@ -1964,10 +1966,10 @@ do_Command_pretty_print (Value f, Value names)
 {
     ENTER();
     NamespacePtr    s;
-    SymbolPtr	    sym;
+    NamePtr	    name;
 
-    if (NamespaceLocate (names, &s, &sym) && sym)
-	PrettyPrint (f, sym); 
+    if (NamespaceLocate (names, &s, &name) && name && name->symbol)
+	PrettyPrint (f, name); 
     RETURN (One);
 }
 
@@ -1991,18 +1993,12 @@ do_Command_undefine (int argc, Value *args)
 {
     ENTER ();
     NamespacePtr    s;
-    SymbolPtr	    sym;
+    NamePtr	    name;
     int		    i;
     
     for (i = 0; i < argc; i++)
-    {
-	if (NamespaceLocate (args[i], &s, &sym) && sym)
-	{
-	    CurrentTypespace = TypespaceRemove (CurrentTypespace,
-						sym->symbol.name);
-	    NamespaceRemoveSymbol (GlobalNamespace, sym);
-	}
-    }
+	if (NamespaceLocate (args[i], &s, &name) && name)
+	    NamespaceRemoveName (GlobalNamespace, name);
     RETURN (One);
 }
 
@@ -2011,10 +2007,10 @@ do_Command_edit (Value names)
 {
     ENTER();
     NamespacePtr    s;
-    SymbolPtr	    sym;
+    NamePtr	    name;
 
-    if (NamespaceLocate (names, &s, &sym) && sym)
-	EditFunction (sym); 
+    if (NamespaceLocate (names, &s, &name) && name && name->symbol)
+	EditFunction (name); 
     RETURN (One);
 }
 

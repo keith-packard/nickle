@@ -14,27 +14,6 @@
 
 #include	"builtin.h"
 
-struct sbuiltin {
-    char	    *value;
-    char	    *name;
-    NamespacePtr    *namespace;
-};
-
-struct envbuiltin {
-#ifdef CENVIRON
-    char	    *var;
-#endif
-    char	    *def;
-    char	    *name;
-    NamespacePtr    *namespace;
-};
-    
-struct filebuiltin {
-    char	    *name;
-    Value   	    *value;
-    NamespacePtr    *namespace;
-};
-
 static const struct sbuiltin svars[] = {
     { "> ",	    "prompt" },
     { "+ ",	    "prompt2" },
@@ -190,6 +169,7 @@ BuiltinType (char *format, Type **type)
     case 'c': t = typePrim[rep_continuation]; break;
     case 'b': t = typePrim[rep_bool]; break;
     case 'v': t = typePrim[rep_void]; break;
+    case 'F': t = typePrim[rep_foreign]; break;
     case 'a': t = typeSockaddr; break;
     default: 
 	t = 0;
@@ -306,7 +286,6 @@ void
 BuiltinInit (void)
 {
     ENTER ();
-    const struct sbuiltin	*s;
     const struct filebuiltin	*f;
     const struct ebuiltin	*e;
     SymbolPtr			sym;
@@ -333,12 +312,10 @@ BuiltinInit (void)
 #endif
     import_Environ_namespace();
     import_Socket_namespace();
+    import_Foreign_namespace ();
 
     /* Import builtin strings with predefined values */
-    for (s = svars; s->name; s++) {
-	sym = BuiltinSymbol (s->namespace, s->name, typePrim[rep_string]);
-	BoxValueSet (sym->global.value, 0, NewStrString (s->value));
-    }
+    BuiltinStrings (svars);
 
 #ifdef CENVIRON
     /* Get the user's home directory in case it's referenced in the

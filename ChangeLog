@@ -1,5 +1,33 @@
 2004-12-10  Keith Packard  <keithp@keithp.com>
 
+	* Makefile.am:
+	* builtin-namespaces.h:
+	* builtin-sockets.c: (import_Socket_namespace):
+	* builtin.c: (BuiltinType), (BuiltinInit):
+	* builtin.h:
+	* configure.in:
+	* gram.y:
+	* io.c: (IoTimeout):
+	* lex.l:
+	* mem.h:
+	* nickle.h:
+	* string.c: (NewStrString):
+	* value.c: (ValueInit):
+	* value.h:
+	Add support for dlopen and Foreign datatypes
+
+	* execute.c: (ThreadsRun):
+	* file.c: (FileCreate), (FilePutRep), (FileCheckBlocked),
+	(FileSetBlocked):
+	* sched.c: (BlockHandlerMark), (ThreadsRegisterBlockHandler),
+	(ThreadsUnregisterBlockHandler), (ThreadsBlock), (ThreadInit):
+	Add block handlers.
+	Change file block handling to use timers only on pipes,
+	not on disk files or terminals.  That makes for a lot
+	fewer signals while idle at the prompt.
+	
+2004-12-10  Keith Packard  <keithp@keithp.com>
+
 	* prng.5c:
 	ARC4 requires positive keys
 

@@ -32,7 +32,7 @@
 ReferencePtr	fileBlockedReference;
 Value		fileBlocked;
 Bool		anyFileWriteBlocked;
-Bool		anyFileReadBlocked;
+Bool		anyPipeReadBlocked;
 extern Bool	ownTty[3];
 
 typedef struct _FileErrorMap {
@@ -643,6 +643,8 @@ FileCreate (int fd, int flags)
     file->file.flags |= flags;
     if (isatty (fd))
 	file->file.flags |= FileLineBuf;
+    else if (lseek (fd, 0, 1) < 0)
+	file->file.flags |= FileIsPipe;
     if (fd >= 3)
 	FileSetFd (fd);
     RETURN (file);
@@ -1422,6 +1424,9 @@ FilePutRep (Value f, Rep tag, Bool minimal)
     case rep_bool:
 	FilePuts (f, "bool");
 	break;
+    case rep_foreign:
+	FilePuts (f, "foreign");
+	break;
     case rep_void:
 	FilePuts (f, "void");
 	break;
@@ -1851,7 +1856,7 @@ FileCheckBlocked (Bool block)
     Value	    blocked, *prev;
     Bool	    ready;
     Bool	    writeBlocked;
-    Bool	    readBlocked;
+    Bool	    readPipeBlocked;
     
     FD_ZERO (&readable);
     FD_ZERO (&writable);
@@ -1890,12 +1895,12 @@ FileCheckBlocked (Bool block)
     else
     {
 	anyFileWriteBlocked = False;
-	anyFileReadBlocked = False;
+	anyPipeReadBlocked = False;
     }
     if (n > 0)
     {
 	writeBlocked = False;
-	readBlocked = False;
+	readPipeBlocked = False;
 	for (prev = &fileBlocked; (blocked = *prev); )
 	{
 	    fd = blocked->file.fd;
@@ -1915,8 +1920,9 @@ FileCheckBlocked (Bool block)
 	    }
 	    if (blocked->file.flags & FileOutputBlocked)
 		writeBlocked = True;
-	    if (blocked->file.flags & FileInputBlocked)
-		readBlocked = True;
+	    if (blocked->file.flags & FileInputBlocked &&
+		blocked->file.flags & FileIsPipe)
+		readPipeBlocked = True;
 	    if (ready)
 		ThreadsWakeup (blocked, WakeAll);
 	    if ((blocked->file.flags & (FileOutputBlocked|FileInputBlocked)) == 0)
@@ -1925,7 +1931,7 @@ FileCheckBlocked (Bool block)
 		prev = &blocked->file.next;
 	}
 	anyFileWriteBlocked = writeBlocked;
-	anyFileReadBlocked = readBlocked;
+	anyPipeReadBlocked = readPipeBlocked;
     }
     EXIT ();
 }
@@ -1938,9 +1944,11 @@ FileSetBlocked (Value file, int flag)
 	anyFileWriteBlocked = True;
 	IoNoticeWriteBlocked ();
     }
-    if (flag == FileInputBlocked && !anyFileReadBlocked)
+    if (flag == FileInputBlocked && 
+	(file->file.flags & FileIsPipe) && 
+	!anyPipeReadBlocked)
     {
-	anyFileReadBlocked = True;
+	anyPipeReadBlocked = True;
 	IoNoticeReadBlocked ();
     }
     if (file->file.flags & (FileOutputBlocked|FileInputBlocked))

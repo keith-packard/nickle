@@ -106,7 +106,7 @@ IoTimeout (void *closure)
     if (anyTtyUnowned)
 	IoStart ();
     FileCheckBlocked (False);
-    if (anyFileWriteBlocked || anyFileReadBlocked || anyTtyUnowned)
+    if (anyFileWriteBlocked || anyPipeReadBlocked || anyTtyUnowned)
 	return True;
     ioTimeoutQueued = False;
     return False;

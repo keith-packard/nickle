@@ -12,7 +12,11 @@
  *	header shared across builtin implementation source files
  */
 
+#if LOCAL_BUILD
 #include	"nickle.h"
+#else
+#include	<nickle/nickle.h>
+#endif
 
 SymbolPtr
 BuiltinAddName (NamespacePtr	*namespacep,
@@ -46,6 +50,47 @@ BuiltinAddException (NamespacePtr	*namespacep,
 		     char		*name,
 		     char		*format,
 		     char		*doc);
+
+struct sbuiltin {
+    char	    *value;
+    char	    *name;
+    NamespacePtr    *namespace;
+};
+
+#define BuiltinStrings(s) do { \
+    SymbolPtr	sym; const struct sbuiltin *si; \
+    for (si = (s); si->name; si++) { \
+	sym = BuiltinSymbol (si->namespace, si->name, typePrim[rep_string]); \
+	BoxValueSet (sym->global.value, 0, NewStrString (si->value)); \
+    } } while (0)
+
+struct envbuiltin {
+#ifdef CENVIRON
+    char	    *var;
+#endif
+    char	    *def;
+    char	    *name;
+    NamespacePtr    *namespace;
+};
+    
+struct ibuiltin {
+    int		    value;
+    char	    *name;
+    NamespacePtr    *namespace;
+};
+
+#define BuiltinIntegers(s) do { \
+    SymbolPtr	sym; const struct ibuiltin *ii; \
+    for (ii = (s); ii->name; ii++) { \
+	sym = BuiltinSymbol (ii->namespace ,ii->name, typePrim[rep_integer]); \
+	BoxValueSet (sym->global.value, 0, Reduce (NewIntInteger (ii->value))); \
+    } } while (0)
+
+struct filebuiltin {
+    char	    *name;
+    Value   	    *value;
+    NamespacePtr    *namespace;
+};
 
 void
 BuiltinAddFunction (NamespacePtr *namespacep, char *name, char *ret_format,
@@ -137,4 +182,8 @@ BuiltinFuncStructDef(fbuiltin_2j, fbuiltin_2j_func);
 #define BuiltinFuncs2J(n, f) \
 	BuiltinFuncsGeneric(n, f, fbuiltin_2j, builtin2J, True)
 
+#if LOCAL_BUILD
 #include "builtin-namespaces.h"
+#else
+#include <nickle/builtin-namespaces.h>
+#endif

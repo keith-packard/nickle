@@ -988,15 +988,7 @@ ThreadsRun (Value thread, Value lex)
 	else if (thread && !Runnable (thread))
 	    break;
 	else if (!running)
-	{
-	    sigset_t	set, oset;
-
-	    sigfillset (&set);
-	    sigprocmask (SIG_SETMASK, &set, &oset);
-	    if (!signaling)
-		sigsuspend (&oset);
-	    sigprocmask (SIG_SETMASK, &oset, &set);
-	}
+	    ThreadsBlock ();
 	else 
 	{
 	    ENTER ();

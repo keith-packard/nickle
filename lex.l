@@ -337,6 +337,7 @@ struct		{ yylval.ints = STRUCT; return STRUCT; }
 union		{ yylval.ints = UNION; return UNION; }
 enum		{ yylval.ints = ENUM; return ENUM; }
 void		{ yylval.type = typePrim[rep_void]; return VOID; }
+foreign		{ yylval.type = typePrim[rep_foreign]; return FOREIGN; }
 true		{ yylval.value = TrueVal; return BOOLVAL; }
 false		{ yylval.value = FalseVal; return BOOLVAL; }
 

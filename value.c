@@ -842,6 +842,8 @@ ValueInit (void)
 	return 0;
     if (!StructInit ())
 	return 0;
+    if (!ForeignInit ())
+	return 0;
     ValuePrintStack = StackCreate ();
     MemAddRoot (ValuePrintStack);
     Void = NewVoid ();

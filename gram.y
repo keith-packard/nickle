@@ -139,7 +139,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 
 %token		    SEMI MOD OC CC DOLLAR DOTDOTDOT ENDFILE
 %token <class>	    GLOBAL AUTO STATIC CONST
-%token <type>	    POLY INTEGER NATURAL RATIONAL REAL STRING
+%token <type>	    POLY INTEGER NATURAL RATIONAL REAL STRING FOREIGN
 %token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID BOOL
 %token		    FUNCTION FUNC EXCEPTION RAISE
 %token		    TYPEDEF IMPORT NEW ANONINIT
@@ -1043,6 +1043,7 @@ basetype    	: POLY
 		| THREAD
 		| VOID
 		| BOOL
+		| FOREIGN
 		;
 opt_stars	: stars
 		|

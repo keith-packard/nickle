@@ -22,7 +22,11 @@ typedef struct _DataType DataType;
 typedef const struct _DataType DataType;
 #endif
 
+#if LOCAL_BUILD
 #include	"stack.h"
+#else
+#include	<nickle/stack.h>
+#endif
 
 struct _DataType {
     void    (*Mark) (void *);

@@ -6,9 +6,17 @@
  * for licensing information.
  */
 
+#if LOCAL_BUILD
 #include	"config.h"
+#include	"mem.h"
 #include	"value.h"
 #include	"opcode.h"
+#else
+#include	<nickle/config.h>
+#include	<nickle/mem.h>
+#include	<nickle/value.h>
+#include	<nickle/opcode.h>
+#endif
 #include	<assert.h>
 
 typedef struct _func	    *FuncPtr;
@@ -598,6 +606,15 @@ void	    ThreadInit (void);
 void	    TraceFunction (Value file, FramePtr frame, CodePtr code, ExprPtr name);
 void	    TraceFrame (Value file, FramePtr frame, ObjPtr obj, InstPtr pc, int depth);
 void	    ThreadStackDump (Value thread);
+void	    ThreadsBlock (void);
+
+typedef void	(*NickleBlockHandler) (void *closure);
+
+void
+ThreadsRegisterBlockHandler (NickleBlockHandler handler, void *closure);
+
+void
+ThreadsUnregisterBlockHandler (NickleBlockHandler handler, void *closure);
 
 typedef struct _jump {
     DataType	    *data;

@@ -20,13 +20,19 @@ DEBIAN = debian/nickle.install debian/changelog debian/compat \
 EXTRA_DIST = README.name autogen.sh \
 	$(NICKLEFILES) $(DEBIAN) ChangeLog nickle.1.in nickle.spec.in
 
+nickleincludedir=$(includedir)/nickle
+
+nickleinclude_HEADERS = \
+	builtin.h config.h mem.h nickle.h ref.h value.h \
+	builtin-namespaces.h gram.h memp.h opcode.h stack.h
+
 bin_PROGRAMS = nickle
 
 nickle_SOURCES = \
 	alarm.c array.c atom.c box.c compile.c debug.c \
 	divide.c edit.c error.c execute.c expr.c file.c float.c \
-	frame.c func.c gcd.c hash.c int.c integer.c io.c main.c \
-	mem.c natural.c pretty.c profile.c rational.c ref.c \
+	foreign.c frame.c func.c gcd.c hash.c int.c integer.c io.c \
+	main.c mem.c natural.c pretty.c profile.c rational.c ref.c \
 	refer.c sched.c scope.c stack.c string.c struct.c \
 	symbol.c sync.c type.c union.c util.c value.c \
 	mem.h memp.h nickle.h opcode.h ref.h stack.h value.h \
@@ -34,7 +40,9 @@ nickle_SOURCES = \
 	builtin-file.c builtin-math.c builtin-namespaces.h \
 	builtin-semaphore.c builtin-sockets.c builtin-string.c \
 	builtin-thread.c builtin-toplevel.c builtin.c builtin.h \
-	gram.y lex.l
+	builtin-foreign.c gram.y lex.l
+
+nickle_LDFLAGS=$(NICKLE_LDFLAGS)
 
 pkgdata_DATA = $(NICKLEFILES) COPYING
 
@@ -44,7 +52,8 @@ AM_YFLAGS = -d
 
 AM_CPPFLAGS = \
 	-DBUILD=\""$(BUILD_DATE)"\" \
-	-DBUILD_VERSION=\""$(VERSION)"\"
+	-DBUILD_VERSION=\""$(VERSION)"\" \
+	-DLOCAL_BUILD
 
 AM_CFLAGS = \
 	-Wall -Wpointer-arith -Wstrict-prototypes \
@@ -63,7 +72,7 @@ USES_GRAM_H = \
 
 $(USES_GRAM_H): gram.h
 
-builtin.o: force
+builtin.o: $(nickle_SOURCES)
 
 debuild debuild-signed: debuild-dirs
 	(cd $(distdir)/debian && debuild)

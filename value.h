@@ -22,8 +22,6 @@
 #include	<string.h>
 #include	<signal.h>
 #include	<assert.h>
-#include	"mem.h"
-#include	"opcode.h"
 
 typedef enum { False = 0, True = 1 }  	Bool;
 typedef char		*Atom;
@@ -267,7 +265,9 @@ typedef enum _unaryOp {
  * with functions that operate on the value
  */
 typedef enum _rep {
+	/* unknown type */
 	rep_undef = -1,
+	/* primitive types */
  	rep_int = 0,
 	rep_integer = 1,
  	rep_rational = 2,
@@ -278,15 +278,18 @@ typedef enum _rep {
 	rep_semaphore = 7,
 	rep_continuation = 8,
 	rep_bool = 9,
-	rep_void = 10,
-	rep_ref = 11,
-	rep_func = 12,
+	rep_foreign = 10,
+	rep_void = 11,
+	
+	/* composite types */
+	rep_ref = 12,
+	rep_func = 13,
     
 	/* mutable type */
- 	rep_array = 13,
-	rep_struct = 14,
-	rep_union = 15,
-	rep_hash = 16
+ 	rep_array = 14,
+	rep_struct = 15,
+	rep_union = 16,
+	rep_hash = 17
 } Rep;
 
 /* because rep_undef is -1, using (unsigned) makes these a single compare */
@@ -299,6 +302,7 @@ extern ValueRep    StringRep, ArrayRep, FileRep;
 extern ValueRep    RefRep, StructRep, UnionRep, HashRep;
 extern ValueRep	   FuncRep, ThreadRep;
 extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
+extern ValueRep    ForeignRep;
 
 #define NewInt(i)	((Value) IntToPtr ((((i) << 1) | 1)))
 #define IntSign(i)	((i) < 0 ? Negative : Positive)
@@ -353,6 +357,7 @@ extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 #define ValueIsContinuation(v) (ValueRep(v) == &ContinuationRep)
 #define ValueIsUnit(v) (ValueRep(v) == &UnitRep)
 #define ValueIsBool(v) (ValueRep(v) == &BoolRep)
+#define ValueIsForeign(v) (ValueRep(v) == &ForeignRep)
 
 /*
  * Aggregate types
@@ -576,6 +581,13 @@ typedef struct _string {
 
 #define StringChars(s)	    ((char *) ((s) + 1))
 
+typedef struct _foreign {
+    BaseValue	    base;
+    const char	    *id;
+    void	    *data;
+    void	    (*free)(void *);
+} Foreign;
+
 /*
  * Resizable arrays are actually vectors of single entry
  * boxes.  Otherwise shrinking the array leaves old references
@@ -652,6 +664,7 @@ typedef struct _file {
 #define FileEnd		    0x0400
 #define FileString	    0x0800
 #define FilePipe	    0x1000
+#define FileIsPipe	    0x2000
 
 typedef struct _boxTypes {
     DataType	*data;
@@ -853,6 +866,7 @@ typedef union _value {
     Array	array;
     File	file;
     Ref		ref;
+    Foreign	foreign;
     Struct	structs;
     Union	unions;
     Func	func;
@@ -950,7 +964,9 @@ Value	NewIntegerFloat (Integer *i, unsigned prec);
 Value	NewNaturalFloat (Sign sign, Natural *n, unsigned prec);
 Value	NewRationalFloat (Rational *r, unsigned prec);
 Value	NewValueFloat (Value av, unsigned prec);
+Value	NewDoubleFloat (double d);
 Value	NewContinuation (ContinuationPtr continuation, InstPtr pc);
+Value	NewForeign (const char *id, void *data, void (*free)(void *data));
 
 unsigned    FpartLength (Fpart *a);
 
@@ -960,7 +976,7 @@ unsigned    FpartLength (Fpart *a);
 extern DataCachePtr	refCache;
 
 Value	NewString (long length);
-Value	NewStrString (char *);
+Value	NewStrString (const char *);
 Value	NewCharString (int c);
 Value	NewArray (Bool constant, Bool resizable, TypePtr type, int ndim, int *dims);
 void	ArrayResize (Value av, int dim, int size);
@@ -1068,7 +1084,7 @@ void	FileVPrintf (Value, char *, va_list);
 void	FileSetBuffer (Value file, int buf);
 
 extern Bool	anyFileWriteBlocked;
-extern Bool	anyFileReadBlocked;
+extern Bool	anyPipeReadBlocked;
 
 extern Value    FileStdin, FileStdout, FileStderr;
 
@@ -1177,6 +1193,8 @@ int	NaturalToInt (Natural *);
 int	IntegerToInt (Integer *);
 int	IntPart (Value, char *error);
 
+double	DoublePart (Value av, char *error);
+    
 #ifndef Numericp
 Bool	Numericp (Rep);
 #endif
@@ -1205,6 +1223,7 @@ int	FpartInit (void);
 int	StringInit (void);
 int	StructInit (void);
 int	RefInit (void);
+int	ForeignInit (void);
 int	ValueInit (void);
 
 # define oneNp(n)	((n)->length == 1 && NaturalDigits(n)[0] == 1)

@@ -99,6 +99,21 @@ import_Socket_namespace()
         { 0 }
     };
 
+    static const struct ibuiltin ivars[] = {
+	{ SOCK_STREAM, "SOCK_STREAM", &SocketNamespace },
+	{ SOCK_DGRAM, "SOCK_DGRAM", &SocketNamespace },
+	{ SHUT_RD, "SHUT_RD", &SocketNamespace },
+	{ SHUT_WR, "SHUT_WR", &SocketNamespace },
+	{ SHUT_RDWR, "SHUT_RDWR", &SocketNamespace },
+	{ 0 }
+    };
+
+    static const struct sbuiltin svars[] = {
+	{ "0.0.0.0",		"INADDR_ANY", &SocketNamespace },
+	{ "127.0.0.1",		"INADDR_LOOPBACK", &SocketNamespace },
+	{ "255.255.255.255",	"INADDR_BROADCAST", &SocketNamespace },
+	{ 0 }
+    }; 
     SymbolPtr	sym;
     Type	*type;
 
@@ -120,24 +135,8 @@ import_Socket_namespace()
     BuiltinFuncs2 (&SocketNamespace, funcs_2);
     BuiltinFuncs3 (&SocketNamespace, funcs_3);
 
-    sym = BuiltinSymbol (&SocketNamespace, "SOCK_STREAM", typePrim[rep_int]);
-    BoxValueSet (sym->global.value, 0, NewInt (SOCK_STREAM));
-    sym = BuiltinSymbol (&SocketNamespace, "SOCK_DGRAM", typePrim[rep_int]);
-    BoxValueSet (sym->global.value, 0, NewInt (SOCK_DGRAM));
-
-    sym = BuiltinSymbol (&SocketNamespace, "SHUT_RD", typePrim[rep_int]);
-    BoxValueSet (sym->global.value, 0, NewInt (SHUT_RD));
-    sym = BuiltinSymbol (&SocketNamespace, "SHUT_WR", typePrim[rep_int]);
-    BoxValueSet (sym->global.value, 0, NewInt (SHUT_WR));
-    sym = BuiltinSymbol (&SocketNamespace, "SHUT_RDWR", typePrim[rep_int]);
-    BoxValueSet (sym->global.value, 0, NewInt (SHUT_RDWR));
-
-    sym = BuiltinSymbol (&SocketNamespace, "INADDR_ANY", typePrim[rep_string]);
-    BoxValueSet (sym->global.value, 0, NewStrString ("0.0.0.0"));
-    sym = BuiltinSymbol (&SocketNamespace, "INADDR_LOOPBACK", typePrim[rep_string]);
-    BoxValueSet (sym->global.value, 0, NewStrString ("127.0.0.1"));
-    sym = BuiltinSymbol (&SocketNamespace, "INADDR_BROADCAST", typePrim[rep_string]);
-    BoxValueSet (sym->global.value, 0, NewStrString ("255.255.255.255"));
+    BuiltinIntegers (ivars);
+    BuiltinStrings (svars);
 
     EXIT ();
 }

@@ -517,7 +517,79 @@ NewThread (FramePtr frame, ObjPtr code)
     RETURN (ret);
 }
 
+typedef struct _blockHandler {
+    DataType		    *data;
+    struct _blockHandler    *next;
+    NickleBlockHandler	    handler;
+    void		    *closure;
+} BlockHandler;
+
+static void
+BlockHandlerMark (void *object)
+{
+    BlockHandler    *bh = object;
+
+    MemReference (bh->next);
+}
+
+DataType BlockHandlerType = { BlockHandlerMark, 0, "BlockHandlerType" };
+
+static BlockHandler	*blockHandlers;
+
+void
+ThreadsRegisterBlockHandler (NickleBlockHandler handler, void *closure)
+{
+    ENTER ();
+    BlockHandler    *bh = ALLOCATE (&BlockHandlerType, sizeof (BlockHandler));
+    bh->next = blockHandlers;
+    blockHandlers = bh;
+    bh->handler = handler;
+    bh->closure = closure;
+    EXIT ();
+}
+
+void
+ThreadsUnregisterBlockHandler (NickleBlockHandler handler, void *closure)
+{
+    ENTER ();
+    BlockHandler    **prev, *bh;
+
+    for (prev = &blockHandlers; (bh = *prev); prev = &bh->next)
+    {
+	if (bh->handler == handler && bh->closure == closure)
+	{
+	    bh->handler = 0;
+	    *prev = bh->next;
+	}
+    }
+    EXIT ();
+}
+
+void
+ThreadsBlock (void)
+{
+    BlockHandler    *bh, *next;
+
+    for (bh = blockHandlers; bh; bh = next)
+    {
+	next = bh->next;
+	if (bh->handler)
+	    (*bh->handler) (bh->closure);
+    }
+    if (!running)
+    {
+	sigset_t	    set, oset;
+
+	sigfillset (&set);
+	sigprocmask (SIG_SETMASK, &set, &oset);
+	if (!signaling)
+	    sigsuspend (&oset);
+	sigprocmask (SIG_SETMASK, &oset, &set);
+    }
+}
+
 ReferencePtr	RunningReference, StoppedReference;
+ReferencePtr	BlockHandlerReference;
 
 void
 ThreadInit (void)
@@ -527,6 +599,8 @@ ThreadInit (void)
     MemAddRoot (RunningReference);
     StoppedReference = NewReference ((void **) &stopped);
     MemAddRoot (StoppedReference);
+    BlockHandlerReference = NewReference ((void **) &blockHandlers);
+    MemAddRoot (BlockHandlerReference);
     EXIT ();
 }
 

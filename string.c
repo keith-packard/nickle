@@ -239,7 +239,7 @@ NewString (long length)
 }
 
 Value
-NewStrString (char *str)
+NewStrString (const char *str)
 {
     ENTER ();
     Value   ret;

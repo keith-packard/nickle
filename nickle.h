@@ -203,6 +203,7 @@ typedef struct _exprBase {
     NamespacePtr    namespace;
     Types	    *type;
     unsigned long   ticks;
+    unsigned long   sub_ticks;
 } ExprBase;
 
 typedef struct _exprTree {

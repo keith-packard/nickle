@@ -57,14 +57,13 @@ NewTypedBox (Bool array, BoxTypesPtr bt)
 Value
 BoxValue (BoxPtr box, int e)
 {
-    ENTER ();
     if (!BoxElements(box)[e].value)
     {
 	RaiseStandardException (exception_uninitialized_value,
 				"Uninitialized value", 0);
-	RETURN (Zero);
+	return (Zero);
     }
-    RETURN (BoxElements(box)[e].value);
+    return (BoxElements(box)[e].value);
 }
 
 static void MarkBoxTypes (void *object)

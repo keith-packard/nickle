@@ -41,14 +41,13 @@ StructValue (Value sv, Atom name)
 Types *
 StructTypes (StructType *st, Atom name)
 {
-    ENTER ();
     int		    i;
     StructElement   *se = StructTypeElements(st);
 
     for (i = 0; i < st->nelements; i++)
 	if (se[i].name == name)
-	    RETURN (se[i].type);
-    RETURN (0);
+	    return (se[i].type);
+    return (0);
 }
 
 static Bool

@@ -18,28 +18,40 @@
 
 extern Bool profiling;
 
+static int
+PrettyNumWidth (unsigned long i)
+{
+    int	w = 1;
+    while (i >= 10)
+    {
+	w++;
+	i /= 10;
+    }
+    return w;
+}
+
+static void
+PrettyProfNum (Value f, unsigned long i, int pad_left)
+{
+    int	spaces = 7 - PrettyNumWidth (i);
+    if (pad_left)
+	while (spaces--)
+	    FilePuts (f, " ");
+    FilePrintf (f, "%d", i);
+    if (!pad_left)
+	while (spaces--)
+	    FilePuts (f, " ");
+}
+
 static void
 PrettyProf (Value f, Expr *e)
 {
     if (profiling)
     {
-	unsigned long t;
-	int	i,n;
-
-	t = 1;
-	i = 1;
-	while (t < e->base.ticks)
-	{
-	    t *= 10;
-	    i++;
-	}
-	n = 6 - i;
-	if (n < 0)
-	    n = 0;
-	while (n--)
-	    FilePuts (f, " ");
-	FilePrintf (f, "%d: ", e->base.ticks);
-	e->base.ticks = 0;
+	PrettyProfNum (f, e ? e->base.sub_ticks : 0, 1);
+	FilePuts (f, ",");
+	PrettyProfNum (f, e ? e->base.ticks : 0, 0);
+	FilePuts (f, ": ");
     }
 }
 	    
@@ -512,6 +524,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	if (nest)
 	{
 	    PrettyStatement (f, e->tree.right->tree.left, level+1, level, nest);
+	    PrettyProf (f, 0);
 	    PrettyIndent (f, level);
 	    FilePuts (f, "else\n");
 	    PrettyStatement (f, e->tree.right->tree.right, level+1, level, nest);
@@ -529,6 +542,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	PrettyIndent (f, blevel);
 	FilePuts (f, "{\n");
 	PrettyBlock (f, e, blevel + 1, nest);
+	PrettyProf (f, 0);
 	PrettyIndent (f, blevel);
 	FilePuts (f, "}\n");
 	break;
@@ -646,6 +660,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	    PrettyStatement (f, e->tree.right->tree.left, level+1, level, nest);
 	    if (e->tree.right->tree.right)
 	    {
+		PrettyProf (f, 0);
 		PrettyIndent (f, level);
 		FilePuts (f, "else\n");
 		PrettyStatement (f, e->tree.right->tree.right, level+1, level, nest);
@@ -664,6 +679,11 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	    FilePuts (f, " ");
 	while ((e = e->tree.right))
 	{
+	    if (nest)
+	    {
+		PrettyProf (f, 0);
+		PrettyIndent (f, level);
+	    }
 	    FilePrintf (f, "catch %A ", e->tree.left->code.code->base.name->atom.atom);
 	    PrettyCode (f, e->tree.left->code.code,
 		       0, class_undef,

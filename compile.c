@@ -592,6 +592,8 @@ NewNonLocal (NonLocal *prev, NonLocalKind kind, int target)
  * + Add an OpNoop in case the result must be pushed; otherwise there's
  *   no place to hang a push bit
  */
+extern Bool profiling;
+
 ObjPtr
 CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
 {
@@ -2084,7 +2086,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	}
 	if (expr->tree.right)
 	{
-	    if (expr->tree.right->base.tag == OP)
+	    if (expr->tree.right->base.tag == OP && !profiling)
 	    {
 		obj = CompileCall (obj, expr->tree.right, TailAlways, expr, code);
 	    }
@@ -2112,7 +2114,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	}
 	break;
     case EXPR:
-	if (last && expr->tree.left->base.tag == OP)
+	if (last && expr->tree.left->base.tag == OP && !profiling)
 	    obj = CompileCall (obj, expr->tree.left, TailVoid, expr, code);
 	else
 	    obj = _CompileExpr (obj, expr->tree.left, False, expr, code);

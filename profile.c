@@ -28,16 +28,31 @@ ProfileInterrupt (Value thread)
     unsigned long   ticks = currentTick - previousTick;
     InstPtr	    pc;
     ExprPtr	    stat;
+    FramePtr	    frame;
     
     previousTick = 0;
     if (!thread)
 	return;
     pc = thread->thread.pc;
-    if (!pc)
-	return;
-    stat = pc->base.stat;
-    if (stat)
-	stat->base.ticks += ticks;
+    if (pc)
+    {
+	stat = pc->base.stat;
+	if (stat)
+	{
+	    stat->base.ticks += ticks;
+	    stat->base.sub_ticks += ticks;
+	}
+    }
+    for (frame = thread->thread.frame; frame; frame = frame->previous)
+    {
+	pc = frame->savePc;
+	if (pc)
+	{
+	    stat = pc->base.stat;
+	    if (stat)
+		stat->base.sub_ticks += ticks;
+	}
+    }
 }
 
 Value

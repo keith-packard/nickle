@@ -30,6 +30,7 @@ ValueType   *valueTypes[] = {
     &ArrayType, &RefType, &structType, &FuncType,
 };
 
+#ifndef Numericp
 Bool
 Numericp (Type t)
 {
@@ -43,7 +44,9 @@ Numericp (Type t)
     }
     return False;
 }
+#endif
 
+#ifndef Integralp
 Bool
 Integralp (Type t)
 {
@@ -55,6 +58,7 @@ Integralp (Type t)
     }
     return False;
 }
+#endif
 
 Bool
 Zerop (Value av)

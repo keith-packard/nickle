@@ -279,6 +279,7 @@ TypeNameName (Types *t)
     return 0;
 }
 
+#ifndef TypePoly
 Bool
 TypePoly (Types *t)
 {
@@ -286,6 +287,7 @@ TypePoly (Types *t)
 	return True;
     return False;
 }
+#endif
 
 Bool
 TypeNumeric (Types *t)

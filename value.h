@@ -256,6 +256,10 @@ typedef enum _type {
 	type_func = 14
 } Type;
 
+/* because type_undef is -1, using (unsigned) makes these a single compare */
+#define Numericp(t) ((unsigned) (t) <= (unsigned) type_float)
+#define Integralp(t) ((unsigned) (t) <= (unsigned) type_integer)
+
 /*
  * Aggregate types
  */
@@ -344,6 +348,8 @@ extern Types	    *typesPrim[type_void - type_int + 1];
 
 #define typesEnum   ((Types *) 1)
 
+#define TypePoly(t) ((t)->base.tag == types_prim && (t)->prim.prim == type_undef)
+
 Types	*NewTypesName (ExprPtr expr, Types *type);
 Types	*NewTypesRef (Types *ref);
 Types	*NewTypesFunc (Types *ret, ArgType *args);
@@ -366,7 +372,9 @@ Types	*TypeCombineArray (Types *array, int ndim, Bool lvalue);
 Bool	TypeCompatibleAssign (Types *dest, Value v);
 /* Bool	TypeEqual (Types *a, Types *b); unused */
 Bool	TypeCompatible (Types *a, Types *b, Bool contains);
+#ifndef TypePoly
 Bool	TypePoly (Types *t);
+#endif
 Bool	TypeNumeric (Types *t);
 Bool	TypeIntegral (Types *t);
 Bool	TypeString (Types *t);
@@ -822,8 +830,12 @@ int	NaturalToInt (Natural *);
 int	IntegerToInt (Integer *);
 int	IntPart (Value, char *error);
 
+#ifndef Numericp
 Bool	Numericp (Type);
+#endif
+#ifndef Integralp
 Bool	Integralp (Type);
+#endif
 Bool	Zerop (Value);
 Bool	Negativep (Value);
 Bool	Evenp (Value);

@@ -80,7 +80,6 @@ void yyerror (char *fmt, ...);
 %token		TRY CATCH TWIXT
 %token <aval>	NAME TYPENAME
 %token <vval>	CONST CCONST
-%token		NEW
 
 %nonassoc 	POUND
 %right		COMMA
@@ -930,17 +929,12 @@ primary		: NAME
 			$$ = NewExprTree (NEW, $4, 0); 
 			$$->base.type = $2; 
 		    }
-		| OP type CP OS exprs CS opt_inits
+		| OP type CP OS stars CS inits
 		    { 
 			$$ = NewExprTree (NEW, $7, 0); 
 			$$->base.type = NewTypesArray ($2, $5); 
 		    }
-		| OS exprs CS opt_inits
-		    { 
-			$$ = NewExprTree (NEW, $4, 0); 
-			$$->base.type = NewTypesArray (typesPoly, $2); 
-		    }
-		| OP type CP OS stars CS inits
+		| OP type CP OS exprs CS opt_inits
 		    { 
 			$$ = NewExprTree (NEW, $7, 0); 
 			$$->base.type = NewTypesArray ($2, $5); 
@@ -948,7 +942,12 @@ primary		: NAME
 		| OS stars CS inits
 		    { 
 			$$ = NewExprTree (NEW, $4, 0); 
-			$$->base.type = NewTypesArray (typesPoly, $4); 
+			$$->base.type = NewTypesArray (typesPoly, $2); 
+		    }
+		| OS exprs CS opt_inits
+		    { 
+			$$ = NewExprTree (NEW, $4, 0); 
+			$$->base.type = NewTypesArray (typesPoly, $2); 
 		    }
 		| OP type DOT NAME CP primary			%prec UNIONCAST
 		    { 

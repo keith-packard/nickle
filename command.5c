@@ -102,10 +102,22 @@
 	    return r + ".5c";
 	}
 	
+	void import_if_needed(string name)
+	{
+	    if (do_import)
+	    {
+		string imp = File::sprintf("import %s;\n", name);
+		Command::lex_string(imp);
+	    }
+	}
+
 	for (int i = 0; i < dim(args); i++) {
 	    string[*]	name = args[i];
-	    if (Command::valid_name (name))
+	    if (Command::valid_name (name)) {
+		for (int i = 0; i < dim(name); i++)
+		    import_if_needed(name[i]);
 		continue;
+	    }
 	    if (!do_import && dim(name) > 1)
 	    {
 		string format_name()
@@ -128,6 +140,7 @@
 	    }
 	    for (int j = 0; j < dim(name); j++)
 	    {
+		import_if_needed(name[j]);
 		string f = make_filename(name[j]);
 		if (!Command::lex_library (f)) 
 		{
@@ -137,11 +150,6 @@
 				   autotype,
 				   f);
 		    return;
-		}
-		if (do_import)
-		{
-		    string imp = File::sprintf("import %s;\n", name[j]);
-		    Command::lex_string(imp);
 		}
 	    }
 	}
@@ -175,15 +183,6 @@
     }
 
     Command::new_names ("autoload", do_autoload);
-
-    /*
-     * library
-     *
-     * library "filename"   - Search library path for "filename" and
-     *			      read commands from the first found
-     */
-
-    Command::new ("library", Command::lex_library);
 
     /*
      * char

@@ -1,12 +1,15 @@
-Command::lex_file ("@nicklelib@/ctype.5c");
-Command::lex_file ("@nicklelib@/printf.5c");
-Command::lex_file ("@nicklelib@/history.5c");
-Command::lex_file ("@nicklelib@/command.5c");
-load "@nicklelib@/math.5c"
+Command::library_path = "@nicklelib@";
+Command::new ("library", Command::lex_library);
+library "ctype.5c";
+library "printf.5c";
+library "history.5c";
+library "command.5c";
+library "math.5c";
 import Math;
-load "@nicklelib@/scanf.5c"
-load "@nicklelib@/mutex.5c"
-load "@nicklelib@/arc4.5c"
-load "@nicklelib@/prng.5c"
-load "@nicklelib@/abort.5c"
+library "scanf.5c";
+autoload Abort;
 import Abort;
+autoload Mutex;
+autoload ARC4;
+autoload PRNG;
+

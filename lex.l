@@ -260,7 +260,14 @@ LexGetInteractiveChar (void)
 	    p = StringChars (&v->string);
 	else
 	    p = "??? ";
-	FileFlush (FileStdout);
+	for (;;)
+	{
+	    FileFlush (FileStdout);
+	    if (FileStdout->file.flags & FileOutputBlocked)
+		ThreadsRun (0, FileStdout);
+	    else
+		break;
+	}
 	rl_getc_function = ReadlineGetChar;
 	line_base = readline (p);
 	line = line_base;

@@ -1117,7 +1117,7 @@ ThreadsRun (Value thread, Value lex)
 		signalIo = False;
 		IoInterrupt ();
 	    }
-	    if (lex && !(lex->file.flags & FileInputBlocked))
+	    if (lex && !(lex->file.flags & (FileInputBlocked|FileOutputBlocked)))
 		break;
 	}
 	else if (thread && !Runnable (thread))

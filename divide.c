@@ -13,9 +13,10 @@
 
 # include	"value.h"
 
+#undef CHECK
 #undef DEBUG
 
-#if defined(DEBUG) || 1
+#if defined(DEBUG) || defined(CHECK)
 void
 pr (Natural *n)
 {
@@ -137,7 +138,7 @@ add (Natural *a, Natural *b, int offset)
     index = b->length;
     while (index--)
     {
-	av = *at++;
+	av = *at;
 	bv = *bt++ + carry;
 	if (bv)
 	{
@@ -374,7 +375,7 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 		}
 		if (carry)
 		{
-#if 0
+#ifdef CHECK
 		    printf ("add back 0x%x\n",
 			    (unsigned int) d);
 		    prs ("a", a);
@@ -383,6 +384,9 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 		    prs ("partial", partial);
 #endif
 		    add (rem, b, offset);
+#ifdef CHECK
+		    prs ("rem", rem);
+#endif
 		    d--;
 		}
 	    }
@@ -412,6 +416,21 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 	prs ("rem: ", rem);
 #endif
     }
+#ifdef CHECK
+    {
+	Natural	*check;
+
+	check = NaturalPlus (NaturalTimes (quo, b), rem);
+	if (!NaturalEqual (check, a))
+	{
+	    prs ("a:   ", a);
+	    prs ("b:   ", b);
+	    prs ("quo: ", quo);
+	    prs ("rem: ", rem);
+	    printf ("divide failed\n");
+	}
+    }
+#endif
     EXIT ();
     /*
      * Stack guaratees that this will work -- it saves a place

@@ -14,6 +14,7 @@
 # include	<math.h>
 # include	<ctype.h>
 # include	<strings.h>
+# include	<time.h>
 # include	"nick.h"
 
 #ifndef PI
@@ -128,6 +129,7 @@ Value	dofprintf(int, Value *);
 Value	dogcd(Value,Value);
 Value	dogetc(Value);
 Value	dogetchar(void);
+Value	dotime(void);
 Value	doprint(Value,Value,Value,Value,Value,Value,Value);
 Value	doprintf(int,Value *);
 Value	doputc(Value,Value);
@@ -170,6 +172,7 @@ struct fbuiltin_0 funcs_0[] = {
     { NewSemaphore,	"NewSemaphore" },
     { ThreadsList,	"ThreadsList" },
     { dogetchar,	"getchar" },
+    { dotime,		"time" },
     { DebugUp,		"up", &DebugScope, },
     { DebugDown,	"down", &DebugScope },
     { DebugDone,	"done", &DebugScope },
@@ -726,6 +729,13 @@ dogcd (Value a, Value b)
 {
     ENTER ();
     RETURN (Gcd (a, b));
+}
+
+Value
+dotime (void)
+{
+    ENTER ();
+    RETURN (NewInt (time (0)));
 }
 
 Value

@@ -9,6 +9,13 @@
 #ifndef _MEM_H_
 #define _MEM_H_
 
+#ifdef HAVE_STRING_H
+#include	<string.h>
+#endif
+#ifdef HAVE_STRINGS_H
+#include	<strings.h>
+#endif
+
 #undef MEM_TRACE
 
 #ifndef MEM_TRACE

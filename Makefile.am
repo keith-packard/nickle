@@ -4,8 +4,16 @@
 ## All Rights Reserved.  See the file COPYING in this directory
 ## for licensing information.
 
+NICKLEFILES = math.5c scanf.5c mutex.5c arc4.5c prng.5c command.5c
+EXAMPLES = examples/circle.5c examples/comb.5c examples/kaiser.5c \
+	examples/miller-rabin.5c examples/numbers.5c examples/prime.5c \
+	examples/qbrating.5c examples/roman.5c examples/rsa-demo.5c \
+	examples/rsa.5c
+TEST = test/gcdtest.5c test/inttest.5c test/rattest.5c
+
 AUTOMAKE_OPTIONS = no-dependencies
-EXTRA_DIST = README.name autoconfigure.sh
+EXTRA_DIST = README.name autoconfigure.sh $(NICKLEFILES) \
+	gram.h $(EXAMPLES) $(TEST)
 
 bin_PROGRAMS = nickle
 
@@ -19,7 +27,7 @@ nickle_SOURCES = alarm.c array.c atom.c avl.c box.c builtin.c \
 	avl.h mem.h memp.h nickle.h opcode.h ref.h stack.h value.h \
 	gram.y lex.l
 
-data_DATA = builtin.5c math.5c scanf.5c mutex.5c arc4.5c prng.5c command.5c
+data_DATA = builtin.5c $(NICKLEFILES)
 
 man_MANS = nickle.1
 

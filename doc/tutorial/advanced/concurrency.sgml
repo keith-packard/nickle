@@ -5,9 +5,9 @@
 Threads provide concurrent processing of calculations.
 They are created with the <literal>fork</literal> operator, which spawns a child thread to evaluate its argument and returns it as a variable of the first-class type <literal>thread</literal>:
 </para>
-<itemizedlist>
-<listitem><para>fork <literal>expr</literal></para></listitem>
-</itemizedlist>
+<synopsis>
+fork <literal>expr</literal>
+</synopsis>
 <para>
 The thread it returns is typically stored like this:
 <informalexample><screen>
@@ -30,18 +30,18 @@ The builtin namespace Thread has functions for manipulating threads once they ha
 </para>
 
 <sect3><title>Kill</title>
-<itemizedlist>
-<listitem><para>int kill ( thread t, ... )</para></listitem>
-</itemizedlist>
+<synopsis>
+int kill ( thread t, ... )
+</synopsis>
 <para>
 Kills the threads it takes as arguments, regardless of whether or not they are finished, and returns the number of threads successfully killed. 
 </para>
 </sect3>
 
 <sect3><title>Join</title>
-<itemizedlist>
-<listitem><para>poly join ( thread t )</para></listitem>
-</itemizedlist>
+<synopsis>
+poly join ( thread t )
+</synopsis>
 <para>
 Waits for thread <literal>t</literal> to finish and returns the value of its expression.
 This is how to get the value back out of a thread.
@@ -59,19 +59,21 @@ will execute 'something else' while <literal>t</literal> runs, then wait for it 
 </sect3>
 
 <sect3><title>Current</title>
-<itemizedlist>
-<listitem><para>thread current ( )</para></listitem>
-</itemizedlist>
+<synopsis>
+thread current ( )
+</synopsis>
 <para>
 Returns the currently running thread. Note that things such as <literal>kill(current())</literal> and <literal>join(current())</literal> are allowed, although the former merely exits and the latter hangs forever; watch out for these errors.
 </para>
 </sect3>
 
 <sect3><title>Priorities</title>
-<itemizedlist>
-<listitem><para>int set_priority ( thread t, int i )</para></listitem>
-<listitem><para>int get_priority ( thread t )</para></listitem>
-</itemizedlist>
+<synopsis>
+int set_priority ( thread t, int i )
+</synopsis>
+<synopsis>
+int get_priority ( thread t )
+</synopsis>
 <para>
 Priorities determine how runtime is divided among threads; a thread with higher priority will always run before one with a lower priority.
 <literal>set_priority</literal> sets the priority of <literal>t</literal> to <literal>i</literal> and returns the new priority.
@@ -115,18 +117,18 @@ Mutex defines the following functions:
 </para>
 
 <sect3><title>New</title>
-<itemizedlist>
-<listitem><para>mutex new ( )</para></listitem>
-</itemizedlist>
+<synopsis>
+mutex new ( )
+</synopsis>
 <para>
 Creates a new mutex and returns it.
 </para>
 </sect3>
 
 <sect3><title>Acquire</title>
-<itemizedlist>
-<listitem><para>bool acquire ( mutex m )</para></listitem>
-</itemizedlist>
+<synopsis>
+bool acquire ( mutex m )
+</synopsis>
 <para>
 <literal>acquire</literal> blocks until <literal>m</literal> is free, then locks it and returns true.
 At the top of the conflicting code, each thread should acquire the mutex; since only one at a time can have it, they will take turns executing.
@@ -135,18 +137,18 @@ There is also a <literal>try_acquire</literal> that returns false immediately ra
 </sect3>
 
 <sect3><title>Release</title>
-<itemizedlist>
-<listitem><para>void release ( mutex m )</para></listitem>
-</itemizedlist>
+<synopsis>
+void release ( mutex m )
+</synopsis>
 <para>
 When the thread which owns a mutex leaves the conflicting section of code, it should call release to free it for the next thread to acquire it.
 </para>
 </sect3>
 
 <sect3><title>Owner</title>
-<itemizedlist>
-<listitem><para>mutex_owner owner ( mutex m )</para></listitem>
-</itemizedlist>
+<synopsis>
+mutex_owner owner ( mutex m )
+</synopsis>
 <para>
 Returns the owner of <literal>m</literal>: either the thread which currently owns it or null if it is free.
 </para>
@@ -201,19 +203,21 @@ A semaphore with a count of one behaves just like a mutex.
 <para>
 Semaphores are created with <literal>new</literal>, which is unlike <literal>Mutex::new</literal> in that it takes an argument: the number of threads it will run simultaneously.
 </para>
-<itemizedlist>
-<listitem><para>semaphore new ( int c )</para></listitem>
-</itemizedlist>
+<synopsis>
+semaphore new ( int c )
+</synopsis>
 </sect3>
 
 <sect3><title>Wait and Signal</title>
 <para>
 Just as Mutexes are <literal>acquire</literal>d and <literal>release</literal>d, threads <literal>wait</literal> on semaphores and <literal>signal</literal> them when finished.
 </para>
-<itemizedlist>
-<listitem><para>void wait ( semaphore s )</para></listitem>
-<listitem><para>void signal ( semaphore s )</para></listitem>
-</itemizedlist>
+<synopsis>
+void wait ( semaphore s )
+</synopsis>
+<synopsis>
+void signal ( semaphore s )
+</synopsis>
 <para>
 <literal>wait</literal> merely decrements the count of <literal>s</literal>, which starts with the initial value specified by <literal>new</literal>.
 If the count, after the decrement, is positive, the thread continues to run; if it is negative, it blocks until the count becomes positive again.

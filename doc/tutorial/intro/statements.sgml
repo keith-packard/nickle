@@ -1,11 +1,15 @@
 <sect1><title>Control Statements in Nickle</title>
 
 <sect2><title>Simple statements</title>
-<itemizedlist>
-<listitem><para><replaceable>expr</replaceable>;</para></listitem>
-<listitem><para>;</para></listitem>
-<listitem><para>{ <replaceable>statement</replaceable> ... }</para></listitem>
-</itemizedlist>
+<synopsis>
+<replaceable>expr</replaceable>;
+</synopsis>
+<synopsis>
+;
+</synopsis>
+<synopsis>
+{ <replaceable>statement</replaceable> ... }
+</synopsis>
 <para>
 The simplest statement is merely an expression terminated by a semicolon; the expression is evaluated.
 A semicolon by itself is allowed but does nothing.
@@ -15,11 +19,12 @@ Any statements may compose the statement list, including control statements and 
 </sect2>
 
 <sect2><title>Conditionals</title>
-<itemizedlist>
-<listitem><para>if ( <replaceable>expr</replaceable> )
-<replaceable>statement</replaceable></para></listitem>
-<listitem><para>else <replaceable>statement</replaceable></para></listitem>
-</itemizedlist>
+<synopsis>
+if ( <replaceable>expr</replaceable> ) <replaceable>statement</replaceable>
+</synopsis>
+<synopsis>
+else <replaceable>statement</replaceable>
+</synopsis>
 <para>
 <literal>if</literal> is used to execute a section of code only under some condition: If <replaceable>expr</replaceable> is true, <replaceable>statement</replaceable> is executed; otherwise control skips over it.
 For example:
@@ -56,9 +61,9 @@ else
 </sect2>
 
 <sect2><title>Twixt</title>
-<itemizedlist>
-<listitem><para>twixt ( <replaceable>expr</replaceable>; <replaceable>expr</replaceable> ) <replaceable>statement</replaceable></para></listitem>
-</itemizedlist>
+<synopsis>
+twixt ( <replaceable>expr</replaceable>; <replaceable>expr</replaceable> ) <replaceable>statement</replaceable>
+</synopsis>
 <para>
 <literal>twixt</literal>, like <literal>if</literal>, executes <replaceable>statement</replaceable> only if the first <replaceable>expr</replaceable> is true.
 If <replaceable>statement</replaceable> is executed, the second <replaceable>expr</replaceable> is evaluated after it.
@@ -82,9 +87,9 @@ else
 </sect2>
 
 <sect2><title>Switch</title>
-<itemizedlist>
-<listitem><para>switch ( <replaceable>expr</replaceable> ) { case <replaceable>expr</replaceable>: <replaceable>statement-list</replaceable> ... default: <replaceable>statement-list</replaceable> }</para></listitem>
-</itemizedlist>
+<synopsis>
+switch ( <replaceable>expr</replaceable> ) { case <replaceable>expr</replaceable>: <replaceable>statement-list</replaceable> ... default: <replaceable>statement-list</replaceable> }
+</synopsis>
 <para>
 Control jumps to the first <literal>case</literal> whose <replaceable>expr</replaceable> evaluates to the same value as the <replaceable>expr</replaceable> at the top.
 Unlike in C, these values do not have to be integers, or even constant.
@@ -142,9 +147,9 @@ This is a difficult error to catch.
 </sect2>
 
 <sect2><title>Union switch</title>
-<itemizedlist>
-<listitem><para>union switch ( <replaceable>union</replaceable> ) { case <replaceable>name</replaceable>: <replaceable>statement-list</replaceable> ... default: <replaceable>statement-list</replaceable> }</para></listitem>
-</itemizedlist>
+<synopsis>
+union switch ( <replaceable>union</replaceable> ) { case <replaceable>name</replaceable>: <replaceable>statement-list</replaceable> ... default: <replaceable>statement-list</replaceable> }
+</synopsis>
 <para>
 <literal>union switch</literal> is similar to <literal>switch</literal>.
 It matches its <literal>case</literal>s based on what name currently applies to the union's value.
@@ -188,11 +193,15 @@ union switch ( u ) {
 </sect2>
 
 <sect2><title>Loops</title>
-<itemizedlist>
-<listitem><para>while ( <replaceable>expr</replaceable> ) <replaceable>statement</replaceable></para></listitem>
-<listitem><para>do <replaceable>statement</replaceable> while ( <replaceable>expr</replaceable> )</para></listitem>
-<listitem><para>for ( <replaceable>expr</replaceable>; <replaceable>expr</replaceable>; <replaceable>expr</replaceable> ) <replaceable>statement</replaceable></para></listitem>
-</itemizedlist>
+<synopsis>
+while ( <replaceable>expr</replaceable> ) <replaceable>statement</replaceable>
+</synopsis>
+<synopsis>
+do <replaceable>statement</replaceable> while ( <replaceable>expr</replaceable> )
+</synopsis>
+<synopsis>
+for ( <replaceable>expr</replaceable>; <replaceable>expr</replaceable>; <replaceable>expr</replaceable> ) <replaceable>statement</replaceable>
+</synopsis>
 <para>
 <literal>while</literal> executes <replaceable>statement</replaceable> repeatedly as long as <replaceable>expr</replaceable> is true.
 Control continues outside the loop when <replaceable>expression</replaceable> becomes false.
@@ -235,11 +244,15 @@ for ( int x = 0; x < 10; ++x )
 </sect2>
 
 <sect2><title>Flow control</title>
-<itemizedlist>
-<listitem><para>continue</para></listitem>
-<listitem><para>break</para></listitem>
-<listitem><para>return <replaceable>expr</replaceable></para></listitem>
-</itemizedlist>
+<synopsis>
+continue
+</synopsis>
+<synopsis>
+break
+</synopsis>
+<synopsis>
+return <replaceable>expr</replaceable>
+</synopsis>
 <para>
 <literal>continue</literal> restarts the nearest surrounding <literal>do-while</literal>, <literal>while</literal>, or <literal>for</literal> loop by jumping directly to the conditional test.
 The iterative statement of a <literal>for</literal> loop will be evaluated first.

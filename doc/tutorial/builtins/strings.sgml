@@ -40,10 +40,12 @@ For example:
 Those are the integer representations of each character; they are most likely in ASCII, but not necessarily--see the section on Unicode in the I/O section.
 The String namespace provides <literal>new</literal> to recreate a string from these integer character representations, regardless of ASCII or Unicode:
 </para>
-<itemizedlist>
-<listitem><para>string new(int c)</para></listitem>
-<listitem><para>string new(int[*] cv)</para></listitem>
-</itemizedlist>
+<synopsis>
+string new(int c)
+</synopsis>
+<synopsis>
+string new(int[*] cv)
+</synopsis>
 <para>
 For instance,
 <informalexample><screen>
@@ -75,9 +77,9 @@ In addition, the String namespace provides several useful functions that facilit
 </para>
 
 <sect3><title>Length</title>
-<itemizedlist>
-<listitem><para>int length ( string s )</para></listitem>
-</itemizedlist>
+<synopsis>
+int length ( string s )
+</synopsis>
 <para>
 Returns the number of characters in <literal>s</literal>.
 For example,
@@ -91,10 +93,12 @@ $ nickle
 </sect3>
 
 <sect3><title>Index</title>
-<itemizedlist>
-<listitem><para>int index ( string t, string p )</para></listitem>
-<listitem><para>int rindex ( string t, string p )</para></listitem>
-</itemizedlist>
+<synopsis>
+int index ( string t, string p )
+</synopsis>
+<synopsis>
+int rindex ( string t, string p )
+</synopsis>
 <para>
 Returns the index of the first occurence of the substring <literal>p</literal> in <literal>t</literal>, or -1 if <literal>p</literal> is not in <literal>t</literal>; <literal>rindex</literal> returns the last occurance instead.
 For example,
@@ -111,9 +115,9 @@ $ nickle
 </sect3>
 
 <sect3><title>Substr</title>
-<itemizedlist>
-<listitem><para>string substr ( string s, int i, int l )</para></listitem>
-</itemizedlist>
+<synopsis>
+string substr ( string s, int i, int l )
+</synopsis>
 <para>
 Returns the substring of <literal>s</literal> which begins at index <literal>i</literal> and is <literal>l</literal> characters long.
 If <literal>l</literal> is negative, returns the substring of that length which preceeds <literal>i</literal> instead.

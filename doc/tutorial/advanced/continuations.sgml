@@ -3,10 +3,12 @@
 Arbitrary flow control is accomplished in Nickle with first-class continuations and the functions <literal>setjmp</literal> and <literal>longjmp</literal>.
 These are similar to those in C, but without restrictions on the target.
 </para>
-<itemizedlist>
-<listitem><para>poly setjmp ( continuation *c, poly retval )</para></listitem>
-<listitem><para>void lomgjmp ( continuation c, poly retval )</para></listitem>
-</itemizedlist>
+<synopsis>
+poly setjmp ( continuation *c, poly retval )
+</synopsis>
+<synopsis>
+void lomgjmp ( continuation c, poly retval )
+</synopsis>
 <para>
 Setjmp saves the state of the program, including program counter and names in scope, in <literal>c</literal> and returns <literal>retval</literal>.
 </para>
@@ -48,7 +50,7 @@ int i = 0;
 		search ( t, 2, &c );
 	else
 		printf ( "value = %g\n", p );
-	}
+}
 ]]></screen></informalexample>
 </para>
 <para>

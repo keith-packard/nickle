@@ -32,11 +32,15 @@ Nickle provides the builtin namespace Math for useful functions such as trigonom
 </para>
 
 <sect3><title>Logarithms</title>
-<itemizedlist>
-<listitem><para>real log ( real a )</para></listitem>
-<listitem><para>real log10 ( real a )</para></listitem>
-<listitem><para>real log2 ( real a )</para></listitem>
-</itemizedlist>
+<synopsis>
+real log ( real a )
+</synopsis>
+<synopsis>
+real log10 ( real a )
+</synopsis>
+<synopsis>
+real log2 ( real a )
+</synopsis>
 <para>
 The logarithm of <literal>a</literal> in base e, ten, and two, respectively.
 <informalexample><screen>
@@ -53,14 +57,24 @@ $ nickle
 </sect3>
 
 <sect3><title>Trigonometric functions</title>
-<itemizedlist>
-<listitem><para>real sin ( real a )</para></listitem>
-<listitem><para>real cos ( real a )</para></listitem>
-<listitem><para>real tan ( real a )</para></listitem>
-<listitem><para>real asin ( real a )</para></listitem>
-<listitem><para>real acos ( real a )</para></listitem>
-<listitem><para>real atan ( real a )</para></listitem>
-</itemizedlist>
+<synopsis>
+real sin ( real a )
+</synopsis>
+<synopsis>
+real cos ( real a )
+</synopsis>
+<synopsis>
+real tan ( real a )
+</synopsis>
+<synopsis>
+real asin ( real a )
+</synopsis>
+<synopsis>
+real acos ( real a )
+</synopsis>
+<synopsis>
+real atan ( real a )
+</synopsis>
 <para>
 The sine, cosine, and tangent of <literal>a</literal>, and the inverse functions.
 <informalexample><screen>
@@ -75,10 +89,12 @@ $ nickle
 </sect3>
 
 <sect3><title>Constants</title>
-<itemizedlist>
-<listitem><para>protected real e</para></listitem>
-<listitem><para>real pi</para></listitem>
-</itemizedlist>
+<synopsis>
+protected real e
+</synopsis>
+<synopsis>
+real pi
+</synopsis>
 <para>
 <literal>pi</literal> and <literal>e</literal> define the usual constants (3.14..., 2.72...).
 <literal>e</literal> is protected and must be called <literal>Math::e</literal> to allow ordinary use of the name <literal>e</literal>.

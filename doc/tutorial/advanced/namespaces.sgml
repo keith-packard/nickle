@@ -45,10 +45,9 @@ In this case, it belongs to the top-level namespace, but namespaces can be neste
 </para>
 
 <sect2><title>Extend</title>
-<itemizedlist>
-<listitem><para>extend namespace <replaceable>name</replaceable> {
-<replaceable>statement-list</replaceable> }</para></listitem>
-</itemizedlist>
+<synopsis>
+extend namespace <replaceable>name</replaceable> { <replaceable>statement-list</replaceable> }
+</synopsis>
 <para>
 Names may be added to a namespace after it is initially defined with the <literal>extend</literal> command.
 The namespace <literal>name</literal> is reopened and the new <literal>statement-list</literal> is added to the previous ones.
@@ -65,10 +64,12 @@ Adds <literal>greeting</literal> to the names already defined in <literal>Exampl
 </sect2>
 
 <sect2><title>Peering inside</title>
-<itemizedlist>
-<listitem><para><replaceable>namespace</replaceable>::<replaceable>name</replaceable></para></listitem>
-<listitem><para>import <replaceable>namespace</replaceable></para></listitem>
-</itemizedlist>
+<synopsis>
+<replaceable>namespace</replaceable>::<replaceable>name</replaceable>
+</synopsis>
+<synopsis>
+import <replaceable>namespace</replaceable>
+</synopsis>
 <para>
 The <literal>::</literal> operator refers to a <replaceable>name</replaceable>, which is in <replaceable>namespace</replaceable>, analogously to a structure dereference.
 If <replaceable>name</replaceable> also refers to a namespace, its names too are visible this way.

@@ -16,9 +16,9 @@ A number of exceptions are builtin to Nickle that it throws for various errors, 
 <para>
 The following syntax may be used to declare a new exception:
 </para>
-<itemizedlist>
-<listitem><para>exception <replaceable>name</replaceable> ( <replaceable>type</replaceable> <replaceable>name</replaceable>, ... )</para></listitem>
-</itemizedlist>
+<synopsis>
+exception <replaceable>name</replaceable> ( <replaceable>type</replaceable> <replaceable>name</replaceable>, ... )
+</synopsis>
 <para>
 For example,
 <informalexample><screen>
@@ -27,9 +27,9 @@ exception my_exception ( string msg, int a, int b, int c );
 </para>
 
 <sect2><title>Raise</title>
-<itemizedlist>
-<listitem><para>raise <replaceable>name</replaceable> ( <replaceable>value</replaceable>, ... )</para></listitem>
-</itemizedlist>
+<synopsis>
+raise <replaceable>name</replaceable> ( <replaceable>value</replaceable>, ... )
+</synopsis>
 <para>
 Raises the named exception with the given arguments, e.g.
 <informalexample><screen>
@@ -49,10 +49,12 @@ Unhandled exception "my_exception"
 </sect2>
 
 <sect2><title>Try - catch</title>
-<itemizedlist>
-<listitem><para>try <replaceable>statement</replaceable></para></listitem>
-<listitem><para>catch <replaceable>name</replaceable> ( <replaceable>type</replaceable> <replaceable>name</replaceable>, ... ) { <replaceable>statement-list</replaceable> }</para></listitem>
-</itemizedlist>
+<synopsis>
+try <replaceable>statement</replaceable>
+</synopsis>
+<synopsis>
+catch <replaceable>name</replaceable> ( <replaceable>type</replaceable> <replaceable>name</replaceable>, ... ) { <replaceable>statement-list</replaceable> }
+</synopsis>
 <para>
 <literal>try</literal> executes <replaceable>statement</replaceable>; if it raises an exception whose name matches that of a succeeding <literal>catch</literal> block, the arguments are placed in the names specified and the associated <replaceable>statement-list</replaceable> is executed.
 Control continues after the catch without continuing up the stack; if further propagation is desired, <replaceable>statement-list</replaceable> should re-raise the exception.

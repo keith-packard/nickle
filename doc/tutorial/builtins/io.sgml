@@ -11,9 +11,9 @@ Three are predefined, with their usual meanings: <literal>stdin</literal>, <lite
 For many functions in File, there is a top-level builtin which assumes one of these standard streams.
 Other files may be read and written by opening them:
 </para>
-<itemizedlist>
-<listitem><para>file open(string path, string mode)</para></listitem>
-</itemizedlist>
+<synopsis>
+file open(string path, string mode)
+</synopsis>
 <para>
 The first string gives the path to the file to be opened; the second is one of:
 </para>
@@ -32,9 +32,9 @@ If successful, a filehandle will be returned that can then be used.
 Nickle can also open pipes to other programs, reading or writing to their stdouts or stdins; these are also treated as <literal>file</literal>s, and the difference is transparent to the functions that manipulate them.
 Pipes are opened with <literal>pipe</literal> rather than <literal>open</literal>; otherwise they are treated identically to flat files.
 </para>
-<itemizedlist>
-<listitem><para>file pipe(string path, string[*] argv, string mode)</para></listitem>
-</itemizedlist>
+<synopsis>
+file pipe(string path, string[*] argv, string mode)
+</synopsis>
 <para>
 The first string refers to the program to be run; <literal>argv</literal> is an array of the arguments to pass to it.
 By convention, <literal>argv[0]</literal> should be the name of the program.
@@ -55,9 +55,9 @@ share
 <para>
 When a file is no longer needed, it should be closed.
 </para>
-<itemizedlist>
-<listitem><para>void close(file f)</para></listitem>
-</itemizedlist>
+<synopsis>
+void close(file f)
+</synopsis>
 <informalexample><screen>
 > File::close ( ls );
 </screen></informalexample>
@@ -68,44 +68,54 @@ When a file is no longer needed, it should be closed.
 Output written to a file is not immediately written, but buffered until an appropriate time.
 Ordinarily, this is not noticed; if, however, it is important to know that all buffers have been written to a file, they can be flushed:
 </para>
-<itemizedlist>
-<listitem><para>void flush (file f)</para></listitem>
-</itemizedlist>
+<synopsis>
+void flush (file f)
+</synopsis>
 </sect2>
 
 <sect2><title>End</title>
 <para>
 Returns true if the file is at end-of-file, otherwise returns false.
 </para>
-<itemizedlist>
-<listitem><para>bool end (file f)</para></listitem>
-</itemizedlist>
+<synopsis>
+bool end (file f)
+</synopsis>
 </sect2>
 
 <sect2><title>Characters and strings</title>
 <para>
 Individual characters can be read and written using <literal>getc</literal>, <literal>getchar</literal>, <literal>putc</literal>, and <literal>putchar</literal>.
 </para>
-<itemizedlist>
-<listitem><para>int getc(file f)</para></listitem>
-<listitem><para>int getchar()</para></listitem>
-<listitem><para>int putc(int c,file f)</para></listitem>
-<listitem><para>void putchar(int c)</para></listitem>
-</itemizedlist>
+<synopsis>
+int getc(file f)
+</synopsis>
+<synopsis>
+int getchar()
+</synopsis>
+<synopsis>
+int putc(int c,file f)
+</synopsis>
+<synopsis>
+void putchar(int c)
+</synopsis>
 <para>
 A character can be pushed back onto the stream with <literal>ungetc</literal> or <literal>ungetchar</literal>.
 </para>
-<itemizedlist>
-<listitem><para>int ungetc(int c, file f)</para></listitem>
-<listitem><para>int ungetchar(int c)</para></listitem>
-</itemizedlist>
+<synopsis>
+int ungetc(int c, file f)
+</synopsis>
+<synopsis>
+int ungetchar(int c)
+</synopsis>
 <para>
 Strings can be read, a line at a time, using <literal>fgets</literal> and <literal>gets</literal>.
 </para>
-<itemizedlist>
-<listitem><para>string fgets(file f)</para></listitem>
-<listitem><para>string gets()</para></listitem>
-</itemizedlist>
+<synopsis>
+string fgets(file f)
+</synopsis>
+<synopsis>
+string gets()
+</synopsis>
 <para>
 All of these are like their C counterparts, with the exception noted in the following section.
 </para>
@@ -124,11 +134,15 @@ However, there is one situation in which the programmer will notice (disregardin
 Therefore, unlike in C, <emphasis>characters cannot be counted on to be the same as bytes</emphasis>.
 For this reason, Nickle provides the following functions:
 </para>
-<itemizedlist>
-<listitem><para>int putb(int c,file f)</para></listitem>
-<listitem><para>int getb(file f)</para></listitem>
-<listitem><para>int ungetb(file f)</para></listitem>
-</itemizedlist>
+<synopsis>
+int putb(int c,file f)
+</synopsis>
+<synopsis>
+int getb(file f)
+</synopsis>
+<synopsis>
+int ungetb(file f)
+</synopsis>
 <para>
 These operate the same as <literal>putc</literal>, <literal>getc</literal>, and <literal>ungetc</literal>, but will always read or write one byte at a time, regardless of character representation.
 </para>

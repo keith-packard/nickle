@@ -58,15 +58,19 @@ do_Math_assignpow (Value a, Value b)
     RETURN (ret);
 }
 
-static unsigned count_bits(unsigned n) {
-    int i;
-    int count = 0;
-
-    for (i = 0; i < 32; i++) {
-	count += (n & 1);
-	n >>= 1;
-    }
-    return count;
+static unsigned count_bits (unsigned n) {
+    unsigned c3 = 0x0f0f0f0f;
+    unsigned c2 = c3 ^ (c3 << 2);
+    unsigned c1 = c2 ^ (c2 << 1);
+    unsigned left = (n >> 1) & c1;
+    n = left + (n & c1);
+    left = (n >> 2) & c2;
+    n = left + (n & c2);
+    left = (n >> 4) & c3;
+    n = left + (n & c3);
+    n += (n >> 8);
+    n += (n >> 16);
+    return (n & 0xff);
 }
 
 Value

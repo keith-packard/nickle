@@ -16,6 +16,9 @@ int funcDepth;
 
 void yyerror (char *fmt, ...);
 
+static Bool
+ParseCanonType (TypesPtr type);
+
 static SymbolPtr
 ParseNewSymbol (Class class, Types *type, NamePtr name);
 

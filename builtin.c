@@ -421,11 +421,6 @@ static struct sbuiltin svars[] = {
 #else
     { "?",	    "build" },
 #endif
-#ifdef NICKLELIB
-    { NICKLELIB,    "library_path",	&CommandNamespace },
-#else
-    { "",	    "library_path",	&CommandNamespace },
-#endif
     { 0,    0 },
 };
 

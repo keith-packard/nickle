@@ -481,6 +481,22 @@ Symbol	*extractSym (Symbol *);
 Symbol	*insertSym (char *);
 void	SymbolInit (void);
 
+extern NamespacePtr    DebugNamespace;
+extern NamespacePtr    FileNamespace;
+extern NamespacePtr    HistoryNamespace;
+extern NamespacePtr    MathNamespace;
+#ifdef BSD_RANDOM
+extern NamespacePtr    BSDRandomNamespace;
+#endif
+extern NamespacePtr    SemaphoreNamespace;
+extern NamespacePtr    StringNamespace;
+extern NamespacePtr    ThreadNamespace;
+extern NamespacePtr	CommandNamespace;
+#ifdef GCD_DEBUG
+extern NamespacePtr	GcdNamespace;
+#endif
+extern NamespacePtr	EnvironNamespace;
+
 void	BuiltinInit (void);
 
 Bool	DebugSetFrame (Value continuation, int offset);
@@ -522,7 +538,7 @@ void	EditFunction (SymbolPtr name);
 void	EditFile (Value file_name);
 
 Value	lookupVar (char *);
-void	setVar (char *, Value, Types *type);
+void	setVar (NamespacePtr, char *, Value, Types *type);
 void	GetNamespace (NamespacePtr *, FramePtr *);
 Bool	NamespaceLocate (Value names, NamespacePtr  *s, SymbolPtr *sym);
 ExprPtr	BuildName (char *);

@@ -30,8 +30,9 @@ setArgv (int argc, char **argv)
     args = NewArray (True, typesPrim[type_string], 1, &argc);
     for (i = 0; i < argc; i++)
 	BoxValueSet (args->array.values, i, NewStrString (argv[i]));
-    setVar ("argv", args, NewTypesArray (typesPrim[type_string],
-					 NewExprTree (COMMA, 0, 0)));
+    setVar (GlobalNamespace, "argv", args, 
+	    NewTypesArray (typesPrim[type_string],
+			   NewExprTree (COMMA, 0, 0)));
     EXIT ();
 }
 
@@ -73,6 +74,8 @@ try_nicklelib (void)
     lib = getenv ("NICKLELIB");
     if (!lib)
 	lib = NICKLELIB;
+    setVar (CommandNamespace, "library_path", NewStrString (lib),
+	    typesPrim[type_string]);
     while (*lib)
     {
 	colon = strchr (lib, ':');

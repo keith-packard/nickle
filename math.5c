@@ -781,31 +781,27 @@ extend namespace Math {
     }
 	
     /*
-     * atan (x/y)
+     * atan (y/x)
      */
-    public real atan2 (real x, real y)
+    public real atan2 (real y, real x)
     {
-	x = imprecise (x);
 	y = imprecise (y);
+	x = imprecise (x);
 	if (y == 0)
 	{
-	    if (x == 0)
-		return 0;
-	    return sign(x) * pi_value (precision (x))/2;
-	}
-	if (x == 0)
-	{
-	    if (y > 0)
+	    if (x >= 0)
 		return 0;
 	    return pi_value (precision (y));
 	}
+	if (x == 0)
+	    return sign(y) * pi_value (precision (y))/2;
 
 	real	a;
 
-	a = atan (x/y);
+	a = atan (y/x);
 	if (x < 0)
 	{
-	    if (y > 0)
+	    if (y >= 0)
 		a += pi_value (precision (a));
 	    else
 		a -= pi_value (precision (a));

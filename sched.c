@@ -919,7 +919,7 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 			except->symbol.name);
 	if (args)
 	{
-	    for (i = 0; i < args->array.ents; i++)
+	    for (i = args->array.ents - 1; i >= 0; i--)
 		PrintError ("\t%v\n", BoxValueGet (args->array.values, i));
 	}
 	SetSignalError ();
@@ -961,10 +961,10 @@ RaiseStandardException (StandardException   se,
     va_start (va, argc);
     i = argc + 1;
     args = NewArray (False, typesPoly, 1, &i);
-    BoxValueSet (args->array.values, 0, NewStrString (string));
+    BoxValueSet (args->array.values, argc, NewStrString (string));
     if (argc)
 	for (i = 0; i < argc; i++)
-	    BoxValueSet (args->array.values, i+1, va_arg (va, Value));
+	    BoxValueSet (args->array.values, (argc - 1) - i, va_arg (va, Value));
     standardException = se;
     standardExceptionArgs = args;
     SetSignalException ();

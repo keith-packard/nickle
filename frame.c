@@ -39,12 +39,11 @@ NewFrame (Value		function,
     frame->previous = previous;
     frame->staticLink = staticLink;
     frame->function = function;
-    if (dynamics)
-	frame->frame = NewTypedBox (False, dynamics);
-    else
-	frame->frame = 0;
-    frame->statics = statics;
     frame->savePc = 0;
     frame->saveObj = 0;
+    frame->statics = statics;
+    frame->frame = 0;
+    if (dynamics)
+	frame->frame = NewTypedBox (False, dynamics);
     RETURN (frame);
 }

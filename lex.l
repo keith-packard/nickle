@@ -389,6 +389,14 @@ extend		{ yylval.pval = publish_extend; return EXTEND; }
 		yylval.vval = atov(yytext, 10);
 		return CONST;
 		}
+[0-9]+\./\.\.\.	{
+		yylval.vval = aetov(yytext);
+		return CONST;
+		}
+[0-9]+/\.\.	{
+		yylval.vval = atov(yytext, 10);
+		return CONST;
+		}
 (([0-9]+((\.[0-9]*(\{[0-9]+\})?)?))|(\.[0-9]+)|(\.[0-9]*\{[0-9]+\}))(([Ee][-+]?[0-9]+)?) {
 		yylval.vval = aetov (yytext);
 		return CONST;

@@ -27,7 +27,7 @@ AC_CHECK_LIB(m, log)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h strings.h time.h sys/time.h unistd.h)
-AC_CHECK_HEADERS(ieeefp.h fpu_control.h stropts.h)
+AC_CHECK_HEADERS(stropts.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE

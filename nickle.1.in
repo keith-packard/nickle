@@ -56,6 +56,15 @@ Operands:
 Can include exponent, need not
 include decimal point or sign.
 Will be treated as exact rationals.
+If a trailing decimal part contains an opening
+curly brace, the brace is silently ignored; if it
+contains a curly-bracketed trailing portion,
+it is treated as a repeating decimal.
+Note that ``floating point'' constants
+are currently represented internally as rationals:
+for floating constants with a given precision
+(and an infinite-precision exponent), use the
+imprecise() builtin function described below.
 .IP octal numbers
 Start with a 0 (e.g., 014 is the same as 12).
 .IP hexidecimal numbers
@@ -135,14 +144,20 @@ by
 Addition and subtraction.
 .PP
 .IP "<< >>"
-Bitwise left and right shift.  Negative
+Bitwise left and right shift with integer
+operands.  Negative right
+operands work as expected.  These operators
+are defined by
+.br
+  x << y = x * 2 ** y
+.br
+  x >> y = x // 2 ** y
+.br
+Another way to look at this is that negative
 left operands are considered to be in
 an infinite twos-complement representation
-(i.e., sign-extended to infinity).
-Right shift sign-extends its left operand.
-(What else could it do?)
-Negative right
-operands work as expected.
+(i.e., sign-extended to infinity), with
+right shift sign-extending its left operand.
 .PP
 .IP "<= >= < >"
 Relational operators.
@@ -184,26 +199,35 @@ Returns right-hand expression.
 The type declaration syntax of Nickle more strongly resembles
 the ``left'' variant of the Java syntax than the C syntax.
 Essentially, a type consists of:
-.IP "poly integer rational real string file semaphore continuation void"
+.IP "poly integer rational real string continuation void"
+.IP "file semaphore thread"
 A base type of the language.  Type void is actually
 only usable in certain contexts, notably function returns.
 Type poly is the supertype of all other types (i.e., it
 can be used to inhibit static type checking), and is the
 default type in most situations where a type need not appear.
-.IP "T[] T[*]"
+The types file, semaphore, and thread are strictly the property
+of the File and Thread ADTs: see below.
+.IP "T[]"
+An array of type T, of one or more dimensions.  There are no
+zero-dimensional arrays in Nickle.
+.IP "T[*]"
 A one-dimensional array of type T.  Unlike in C, the dimension of an array
 is never part of its type in Nickle.  Further, arrays and pointers
-are unrelated types in Nickle.  The alternate syntax has the
-same meaning as the standard syntax: see the next paragraph for
-details.
+are unrelated types in Nickle.
 .IP "T[*,*,...,*]"
 A two or more dimensional array of type T.  The stars ``*'' are not
-optional.  As the previous paragraph
-makes clear, ``T[]'' is not a zero-dimensional array. There
-are no zero-dimensional arrays in Nickle.
+optional.  As the previous paragraphs
+make clear, ``T[]'' is not a zero-dimensional array.
 .IP "T0() T0(T,T,...,T)"
 A function returning type T0.  A function accepts 0
 or more arguments.
+.IP "T0() T0(T,T,...,T \fB...\fP)"
+A function accepting zero or more required
+arguments, plus an arbitrary number of optional
+arguments.  The second sequence of three dots is
+syntax, not metasyntax: see the description
+of varargs functions for details.
 .IP "*T"
 A reference (``pointer'') to a location of type T.
 There is no pointer arithmetic in Nickle.  A reference
@@ -267,17 +291,17 @@ Creates multidimensional arrays.
 Note that "*" and integer expressions
 cannot be mixed: an array's dimensions
 are entirely either specified or unspecified
-by the definition.  Array initializers
-for multidimensional arrays are as in C: they
-may either contain extra brackets around each
-dimension, or not, as desired.
+by the definition.  These arrays may also
+be created initialized: see next paragraph for
+initializer syntax.
 .IP "(T[E]) (T[E,E,...,E]) (T[E]){E,E,...,E}"
 .IP "(T[E,E,...,E]){{E,...},...,{E,...}}"
 Alternate syntax for creating arrays of type T.
+The initializers, in curly braces, are optional.
 The number of initializers must be less than or equal
 to the given number of elements in each dimension.
 For multidimensional arrays, the extra
-curly brackets per dimension in the initializer
+curly braces per dimension in the initializer
 are required; this is unlike C, where they are
 optional.
 .IP "(T[*]){E,E,...,E} (T[*,*,...,*]){{E,...},...,{E,...}}"
@@ -313,6 +337,14 @@ sugar for
 .br
   T(T,T,...T) name = (T func(T name,T name,...T name){S;S;...S;});
 .br
+.IP "T function name(T name, T name \fB...\fP)"
+The ellipsis here is syntax, not metasyntax: if
+the last formal argument to a function is followed
+by three dots, the function may be called with
+more actuals than formals.  All ``extra'' actuals
+are packaged into the array formal of
+the given name, and typechecked against the
+optional type T of the last argument (default poly).
 .LP
 Structures:
 .IP "(struct { T name; T name; ...T name; }){name = E; name = E; ...name=E;}"

@@ -249,21 +249,18 @@ ${ac_eA}HAVE_SYS_TIME_H${ac_eB}HAVE_SYS_TIME_H${ac_eC}1${ac_eD}
 ${ac_dA}HAVE_UNISTD_H${ac_dB}HAVE_UNISTD_H${ac_dC}1${ac_dD}
 ${ac_uA}HAVE_UNISTD_H${ac_uB}HAVE_UNISTD_H${ac_uC}1${ac_uD}
 ${ac_eA}HAVE_UNISTD_H${ac_eB}HAVE_UNISTD_H${ac_eC}1${ac_eD}
-${ac_dA}HAVE_FPU_CONTROL_H${ac_dB}HAVE_FPU_CONTROL_H${ac_dC}1${ac_dD}
-${ac_uA}HAVE_FPU_CONTROL_H${ac_uB}HAVE_FPU_CONTROL_H${ac_uC}1${ac_uD}
-${ac_eA}HAVE_FPU_CONTROL_H${ac_eB}HAVE_FPU_CONTROL_H${ac_eC}1${ac_eD}
 ${ac_dA}HAVE_STROPTS_H${ac_dB}HAVE_STROPTS_H${ac_dC}1${ac_dD}
 ${ac_uA}HAVE_STROPTS_H${ac_uB}HAVE_STROPTS_H${ac_uC}1${ac_uD}
 ${ac_eA}HAVE_STROPTS_H${ac_eB}HAVE_STROPTS_H${ac_eC}1${ac_eD}
+${ac_dA}HAVE_C_INLINE${ac_dB}HAVE_C_INLINE${ac_dC}1${ac_dD}
+${ac_uA}HAVE_C_INLINE${ac_uB}HAVE_C_INLINE${ac_uC}1${ac_uD}
+${ac_eA}HAVE_C_INLINE${ac_eB}HAVE_C_INLINE${ac_eC}1${ac_eD}
 CEOF
   sed -f conftest.frag conftest.in > conftest.out
   rm -f conftest.in
   mv conftest.out conftest.in
 
   cat > conftest.frag <<CEOF
-${ac_dA}HAVE_C_INLINE${ac_dB}HAVE_C_INLINE${ac_dC}1${ac_dD}
-${ac_uA}HAVE_C_INLINE${ac_uB}HAVE_C_INLINE${ac_uC}1${ac_uD}
-${ac_eA}HAVE_C_INLINE${ac_eB}HAVE_C_INLINE${ac_eC}1${ac_eD}
 ${ac_dA}SIZEOF_LONG_LONG${ac_dB}SIZEOF_LONG_LONG${ac_dC}8${ac_dD}
 ${ac_uA}SIZEOF_LONG_LONG${ac_uB}SIZEOF_LONG_LONG${ac_uC}8${ac_uD}
 ${ac_eA}SIZEOF_LONG_LONG${ac_eB}SIZEOF_LONG_LONG${ac_eC}8${ac_eD}
@@ -273,15 +270,15 @@ ${ac_eA}RETSIGTYPE${ac_eB}RETSIGTYPE${ac_eC}void${ac_eD}
 ${ac_dA}HAVE_VPRINTF${ac_dB}HAVE_VPRINTF${ac_dC}1${ac_dD}
 ${ac_uA}HAVE_VPRINTF${ac_uB}HAVE_VPRINTF${ac_uC}1${ac_uD}
 ${ac_eA}HAVE_VPRINTF${ac_eB}HAVE_VPRINTF${ac_eC}1${ac_eD}
+${ac_dA}HAVE_GETTIMEOFDAY${ac_dB}HAVE_GETTIMEOFDAY${ac_dC}1${ac_dD}
+${ac_uA}HAVE_GETTIMEOFDAY${ac_uB}HAVE_GETTIMEOFDAY${ac_uC}1${ac_uD}
+${ac_eA}HAVE_GETTIMEOFDAY${ac_eB}HAVE_GETTIMEOFDAY${ac_eC}1${ac_eD}
 CEOF
   sed -f conftest.frag conftest.in > conftest.out
   rm -f conftest.in
   mv conftest.out conftest.in
 
   cat > conftest.frag <<CEOF
-${ac_dA}HAVE_GETTIMEOFDAY${ac_dB}HAVE_GETTIMEOFDAY${ac_dC}1${ac_dD}
-${ac_uA}HAVE_GETTIMEOFDAY${ac_uB}HAVE_GETTIMEOFDAY${ac_uC}1${ac_uD}
-${ac_eA}HAVE_GETTIMEOFDAY${ac_eB}HAVE_GETTIMEOFDAY${ac_eC}1${ac_eD}
 ${ac_dA}HAVE_SELECT${ac_dB}HAVE_SELECT${ac_dC}1${ac_dD}
 ${ac_uA}HAVE_SELECT${ac_uB}HAVE_SELECT${ac_uC}1${ac_uD}
 ${ac_eA}HAVE_SELECT${ac_eB}HAVE_SELECT${ac_eC}1${ac_eD}

@@ -24,12 +24,6 @@
 /* The number of bytes in a long long.  */
 #undef SIZEOF_LONG_LONG
 
-/* Define if you have the __setfpucw function.  */
-#undef HAVE___SETFPUCW
-
-/* Define if you have the finite function.  */
-#undef HAVE_FINITE
-
 /* Define if you have the gettimeofday function.  */
 #undef HAVE_GETTIMEOFDAY
 
@@ -38,12 +32,6 @@
 
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
-
-/* Define if you have the <fpu_control.h> header file.  */
-#undef HAVE_FPU_CONTROL_H
-
-/* Define if you have the <ieeefp.h> header file.  */
-#undef HAVE_IEEEFP_H
 
 /* Define if you have the <strings.h> header file.  */
 #undef HAVE_STRINGS_H

@@ -185,13 +185,13 @@ do_Debug_dump (Value f)
 	FilePuts (FileStdout, "<builtin>\n");
 	RETURN (Zero);
     }
-    if (code->func.staticInit)
+    if (code->func.staticInit.obj)
     {
 	FilePuts (FileStdout, "Static initializers\n");
-	ObjDump (code->func.staticInit, 2);
+	ObjDump (code->func.staticInit.obj, 2);
 	FilePuts (FileStdout, "\n");
     }
     FilePuts (FileStdout, "Function body\n");
-    ObjDump (code->func.obj, 1);
+    ObjDump (code->func.body.obj, 1);
     RETURN (Zero);
 }

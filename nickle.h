@@ -35,6 +35,7 @@ typedef struct _symbolGlobal {
 typedef struct _symbolLocal {
     SymbolBase	symbol;
     int		element;
+    Bool	staticScope;	/* dynamic scope equal to static */
     CodePtr	code;
 } SymbolLocal;
 
@@ -258,16 +259,60 @@ typedef struct _codeBase {
     CodePtr	previous;
 } CodeBase;
 
+/*
+ * Static initializers:
+ *
+ *  Two kinds:
+ *	static
+ *	global
+ *
+ * Static initializers are essentially parallel functions called when
+ * the function is evaluated; the value resulting from this evaluation
+ * contains a pointer to the function body along with a block of initialized
+ * statics.   They can therefore access any *static* variables in the
+ * function scope as well as any other variables in *dynamic* scope
+ * at the time of function evaluation, which means they can access
+ * any name they can see *except* for dynamic variables in the function
+ * scope.
+ *
+ * Global initializers are run in a global context, they can only access
+ * variables which have global lifetime, that means only global variables.
+ * When found inside a function context, they are placed in the static
+ * initializer block of the enclosing function at global scope.
+ *
+ *
+ *	function foo() {
+ *	    auto foo_a = 1;
+ *	    static foo_s = 2;
+ *	    global foo_g = 3;
+ *
+ *	    function bar() {
+ *		auto	bar_a1 = 4;	    <- can touch any name in scope
+ *		global	bar_g1 = foo_g;	    <- legal
+ *		global	bar_g2 = foo_s;	    <- not legal
+ *		static	bar_s1 = foo_g;	    <- legal
+ *		static	bar_s2 = foo_s;	    <- legal
+ *		static	bar_s3 = foo_a;	    <- legal
+ *		static	bar_s4 = bar_a1;    <- not legal
+ *	    }
+ *	}
+ */
+
+typedef struct _funcBody {
+    ObjPtr	obj;
+    BoxTypesPtr	dynamics;
+} FuncBody, *FuncBodyPtr;
+
 typedef struct _funcCode {
     CodeBase	base;
     ExprPtr	code;
-    ObjPtr	obj;
+
+    FuncBody	body;
+    FuncBody	staticInit;
     
-    BoxTypesPtr	dynamics;
     BoxTypesPtr	statics;
-    
-    ObjPtr	staticInit;
     Bool	inStaticInit;
+    Bool	inGlobalInit;
 } FuncCode, *FuncCodePtr;
 
 typedef union _builtinFunc {

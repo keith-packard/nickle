@@ -23,17 +23,19 @@ Bool	signalSuspend;	    /* current thread is suspending */
 static ThreadState ThreadStep (Value thread);
 
 static FramePtr
-BuildFrame (Value thread, Value func, Bool varargs, int nformal, int off,
+BuildFrame (Value thread, Value func, Bool staticInit,
+	    Bool varargs, int nformal, int off,
 	    int nargs, InstPtr savePc)
 {
     ENTER ();
     CodePtr	    code = func->func.code;
+    FuncBodyPtr	    body = staticInit ? &code->func.staticInit : &code->func.body;
     int		    fe;
     FramePtr	    frame;
     
     frame = NewFrame (func, thread->thread.frame, 
 		      func->func.staticLink, 
-		      code->func.dynamics,
+		      body->dynamics,
 		      func->func.statics);
     for (fe = 0; fe < nformal; fe++)
 	BoxValueSet (frame->frame, fe, Copy (Stack(fe+off)));
@@ -184,13 +186,13 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
     }
     else
     {
-	frame = BuildFrame (thread, value, code->base.varargs,
+	frame = BuildFrame (thread, value, False, code->base.varargs,
 			    code->base.argc, off, argc, *next);
 	if (aborting)
 	    RETURN (value);
 	complete = True;
 	thread->thread.frame = frame;
-	thread->thread.code = code->func.obj;
+	thread->thread.code = code->func.body.obj;
 	*next = ObjCode (thread->thread.code, 0);
     }
     RETURN (value);
@@ -207,15 +209,12 @@ ThreadStaticInit (Value thread, InstPtr *next)
     CodePtr	code = value->func.code;
     FramePtr	frame;
     
-    frame = NewFrame (value, thread->thread.frame,
-		      value->func.staticLink,
-		      0, value->func.statics);
-    frame->function = value;
-    frame->savePc = *next;
-    frame->saveCode = thread->thread.code;
+    frame = BuildFrame (thread, value, True, False, 0, 0, 0, *next);
+    if (aborting)
+	return;
     complete = True;
     thread->thread.frame = frame;
-    thread->thread.code = code->func.staticInit;
+    thread->thread.code = code->func.staticInit.obj;
     *next = ObjCode (thread->thread.code, 0);
     EXIT ();
 }
@@ -798,6 +797,7 @@ ThreadStep (Value thread)
 	next = thread->thread.frame->savePc;
 	thread->thread.code = thread->thread.frame->saveCode;
 	thread->thread.frame = thread->thread.frame->previous;
+	/* Fetch the Obj from the stack */
 	value = Stack (stack); stack++;
 	break;
     case OpStar:

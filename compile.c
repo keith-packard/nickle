@@ -105,6 +105,12 @@ AddInst (ObjPtr obj)
 					     ObjLast(_o))->base.push = True) \
 				     : 0)
 
+/*
+ * Select the correct code body depending on whether
+ * we're compiling a static initializer
+ */
+#define CodeBody(c) ((c)->func.inStaticInit ? &(c)->func.staticInit : &(c)->func.body)
+
 ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createIfNecessary, Bool assign);
 ObjPtr	CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
 ObjPtr	CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
@@ -214,12 +220,14 @@ CompileStorage (SymbolPtr symbol, CodePtr code)
 	case class_static:
 	    symbol->local.element = AddBoxTypes (&code->func.statics,
 						 symbol->symbol.type);
+	    symbol->local.staticScope = True;
 	    symbol->local.code = code;
 	    break;
 	case class_arg:
 	case class_auto:
-	    symbol->local.element = AddBoxTypes (&code->func.dynamics,
+	    symbol->local.element = AddBoxTypes (&CodeBody (code)->dynamics,
 						 symbol->symbol.type);
+	    symbol->local.staticScope = code->func.inStaticInit;
 	    symbol->local.code = code;
 	    break;
 	default:
@@ -301,6 +309,7 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
     SymbolPtr   s;
     Bool	new;
     int		d;
+    CodePtr	c;
 
     s = name->symbol;
     if (!s)
@@ -319,7 +328,7 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
 		RETURN (0);
 	    if (new)
 	    {
-		
+		CompileStorage (s, code);
 		name->symbol = s;
 		name->publish = publish_private;
 	    }
@@ -332,20 +341,42 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
      */
     d = 0;
     switch (s->symbol.class) {
+    case class_static:
     case class_arg:
     case class_auto:
-	if (code && code->func.inStaticInit)
+	/*
+	 * See if the name is above a global init scope
+	 */
+	for (c = code; c; c = c->base.previous)
+	    if (c->func.inGlobalInit)
+		break;
+	for (; c; c = c->base.previous)
+	    if (c == s->local.code)
+		break;
+	if (c)
 	{
-	    CompileError (obj, stat, "Symbol \"%A\" not in initializer namespace",
+	    CompileError (obj, stat, "\"%A\" not in global initializer scope",
 			  name->atom);
+	    break;
 	}
-	/* fall through */
-    case class_static:
-	while (code && code != s->local.code)
-	{
+
+	c = s->local.code;
+	/*
+	 * Ensure the dynamic scope will exist
+	 */
+	if (c->func.inStaticInit && !s->local.staticScope)
+        {
+	    CompileError (obj, stat, "\"%A\" not in static initializer scope",
+			  name->atom);
+	    break;
+	}
+	
+	/*
+	 * Compute the static link offset
+	 */
+	d = 0;
+	for (c = code; c && c != s->local.code; c = c->base.previous)
 	    d++;
-	    code = code->base.previous;
-	}
 	break;
     default:
 	break;
@@ -2081,11 +2112,11 @@ CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
 	args->name->symbol = local;
 	CompileStorage (local, code);
     }
-    code->func.obj = CompileFuncCode (code, stat, previous);
-    obj->state |= code->func.obj->state & OBJ_STATE_ERROR;
+    code->func.body.obj = CompileFuncCode (code, stat, previous);
+    obj->state |= code->func.body.obj->state & OBJ_STATE_ERROR;
     BuildInst (obj, OpObj, inst, stat);
     inst->code.code = code;
-    if ((staticInit = code->func.staticInit))
+    if ((staticInit = code->func.staticInit.obj))
     {
 	SetPush (obj);
 	BuildInst (staticInit, OpStaticDone, inst, stat);
@@ -2093,7 +2124,7 @@ CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
 #ifdef DEBUG
 	ObjDump (staticInit, 1);
 #endif
-	code->func.staticInit = staticInit;
+	code->func.staticInit.obj = staticInit;
 	BuildInst (obj, OpStaticInit, inst, stat);
 	BuildInst (obj, OpNoop, inst, stat);
 	obj->state |= (staticInit->state & OBJ_STATE_ERROR);
@@ -2167,16 +2198,19 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	{
 	    if (code_compile)
 	    {
-		if (!code_compile->func.staticInit)
-		    code_compile->func.staticInit = NewObj (OBJ_INCR);
-		initObj = &code_compile->func.staticInit;
+		if (!code_compile->func.staticInit.obj)
+		    code_compile->func.staticInit.obj = NewObj (OBJ_INCR);
+		initObj = &code_compile->func.staticInit.obj;
 		code_compile->func.inStaticInit = True;
+		if (code != code_compile)
+		    code->func.inGlobalInit = True;
 	    }
 	    *initObj = _CompileExpr (*initObj, decl->init, 
 				     True, decls, code);
 	    if (code_compile)
 	    {
 		code_compile->func.inStaticInit = False;
+		code->func.inGlobalInit = False;
 	    }
 	    SetPush (*initObj);
 	    initialize = True;
@@ -2434,7 +2468,24 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
     case OpName:
     case OpNameRef:
     case OpNameRefStore:
-	FilePrintf (FileStdout, "%A", inst->var.name ? inst->var.name->symbol.name : 0);
+	if (inst->var.name)
+	{
+	    SymbolPtr	s = inst->var.name;
+	    FilePrintf (FileStdout, "%C %A", s->symbol.class, s->symbol.name);
+	    switch (s->symbol.class) {
+	    case class_arg:
+	    case class_static:
+	    case class_auto:
+		FilePrintf (FileStdout, " (link %d elt %d)",
+			    inst->var.staticLink,
+			    s->local.element);
+		break;
+	    default:
+		break;
+	    }
+	}
+	else
+	    FilePrintf (FileStdout, "Broken name");
 	break;
     case OpConst:
 	FilePrintf (FileStdout, "%v", inst->constant.constant);
@@ -2460,7 +2511,15 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	break;
     case OpObj:
 	FilePrintf (FileStdout, "\n");
-	ObjDump (inst->code.code->func.obj, indent+1);
+	if (inst->code.code->func.staticInit.obj)
+	{
+	    ObjIndent (indent);
+	    FilePrintf (FileStdout, "Static initializer:\n");
+	    ObjDump (inst->code.code->func.staticInit.obj, indent+1);
+	    ObjIndent (indent);
+	    FilePrintf (FileStdout, "Function body:\n");
+	}
+	ObjDump (inst->code.code->func.body.obj, indent+1);
 	break;
     default:
 	break;
@@ -2478,6 +2537,7 @@ ObjDump (ObjPtr obj, int indent)
 
     branch = AllocateTemp (obj->used * sizeof (int));
     
+    ObjIndent (indent);
     FilePrintf (FileStdout, "%d instructions (0x%x)\n",
 		obj->used, ObjCode(obj,0));
     b = 0;

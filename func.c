@@ -15,10 +15,11 @@ static void MarkFuncCode (void *object)
     MemReference (fc->base.type);
     MemReference (fc->base.args);
     MemReference (fc->code);
-    MemReference (fc->obj);
-    MemReference (fc->dynamics);
+    MemReference (fc->body.obj);
+    MemReference (fc->body.dynamics);
+    MemReference (fc->staticInit.obj);
+    MemReference (fc->staticInit.dynamics);
     MemReference (fc->statics);
-    MemReference (fc->staticInit);
 }
 
 DataType    FuncCodeType = { MarkFuncCode, 0 };
@@ -47,11 +48,12 @@ NewFuncCode (Types *type, ArgType *args, ExprPtr code)
     fc->base.args = args;
     fc->base.argc = 0;
     fc->base.varargs = HasVarargs (args);
-    fc->func.dynamics = 0;
     fc->func.statics = 0;
     fc->func.code = code;
-    fc->func.obj = 0;
-    fc->func.staticInit = 0;
+    fc->func.body.dynamics = 0;
+    fc->func.body.obj = 0;
+    fc->func.staticInit.obj = 0;
+    fc->func.staticInit.dynamics = 0;
     RETURN (fc);
 }
 
@@ -91,7 +93,6 @@ FuncMark (void *object)
     MemReference (f->code);
     MemReference (f->staticLink);
     MemReference (f->statics);
-    MemReference (f->staticInit);
 }
 
 void printCode (Value f, CodePtr code, int level);

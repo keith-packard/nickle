@@ -450,7 +450,6 @@ typedef struct _func {
     CodePtr	code;
     FramePtr	staticLink;
     BoxPtr	statics;
-    ObjPtr	staticInit;
 } Func;
 
 typedef enum _ThreadState {

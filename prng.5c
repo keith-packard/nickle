@@ -16,7 +16,7 @@ namespace PRNG {
      * Seed the PRNG with 's'
      */
   {
-    ARC4::nsetkey(10, s);
+    ARC4::nsetkey(10, abs (s));
     setkey = true;
   }
 

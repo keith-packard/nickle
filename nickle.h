@@ -560,6 +560,8 @@ Value	do_Debug_dump (Value);
 Value	do_Thread_set_priority (Value, Value);
 Value	do_File_open (Value, Value);
 Value	do_gcd (Value, Value);
+Value	do_Math_pow (Value, Value);
+Value	do_Math_assignpow (Value, Value);
 Value	do_File_putc (Value, Value);
 Value	do_File_setbuf (Value, Value);
 Value	do_String_index (Value, Value);

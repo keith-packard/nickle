@@ -1,4 +1,4 @@
-public namespace math_helper 
+public namespace Math_helper 
 {
     public integer function log2 (integer i)
     {
@@ -31,7 +31,7 @@ public namespace math_helper
 
 public real function sqrt (real v)
 {
-    import  math_helper;
+    import  Math_helper;
     
     real function real_sqrt(real v)
     {
@@ -74,7 +74,7 @@ public real function sqrt (real v)
 
 public real function cbrt (real v)
 {
-    import  math_helper;
+    import  Math_helper;
     
     real function real_cbrt(real v)
     {
@@ -117,8 +117,8 @@ public real function cbrt (real v)
     return real_cbrt (v);
 }
 
-namespace math {
-    import  math_helper;
+public namespace Math {
+    import  Math_helper;
 
     public real function exp (real v)
     {
@@ -609,31 +609,37 @@ namespace math {
 	}
 	return a;
     }
+
+    public real function pow (real a, real b)
+    {
+	real    result;
+	if (is_integer (b))
+	{
+	    integer flip = 0;
+
+	    if (b < 0)
+		flip = 1;
+	    result = 1;
+	    while (b)
+	    {
+		if (b % 2)
+		    result *= a;
+		if (b //= 2)
+		    a *= a;
+	    }
+	    if (flip)
+		result = 1/result;
+	}
+	else
+	{
+	    result = Math.exp (b * Math.log(a));
+	}
+	return result;
+    }
+
+    public real function assign_pow (*real a, real b)
+    {
+	return *a = pow (*a, b);
+    }
 }
 
-public real function pow (real a, real b)
-{
-    real    result;
-    if (is_integer (b))
-    {
-	integer flip = 0;
-	
-	if (b < 0)
-	    flip = 1;
-	result = 1;
-	while (b)
-	{
-	    if (b % 2)
-		result *= a;
-	    if (b //= 2)
-		a *= a;
-	}
-	if (flip)
-	    result = 1/result;
-    }
-    else
-    {
-	result = math.exp (b * math.log(a));
-    }
-    return result;
-}

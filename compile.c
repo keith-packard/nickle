@@ -1171,7 +1171,18 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     case DIVIDE:    obj = CompileBinary (obj, expr, namespace, OpDivide, stat); break;
     case DIV:	    obj = CompileBinary (obj, expr, namespace, OpDiv, stat); break;
     case MOD:	    obj = CompileBinary (obj, expr, namespace, OpMod, stat); break;
-    case POW:	    obj = CompileBinary (obj, expr, namespace, OpPow, stat); break;
+    case POW:
+	obj = _CompileExpr (obj, expr->tree.right, namespace, stat);
+	SetPush (obj);
+	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
+	SetPush (obj);
+	obj = _CompileExpr (obj, NewExprTree (DOT, BuildName ("Math"), BuildName ("pow")),
+			    namespace, stat);
+	expr->base.type = NewTypesPrim (type_float);
+	BuildInst (obj, OpCall, inst, stat);
+	inst->ints.value = 2;
+	BuildInst (obj, OpNoop, inst, stat);
+	break;
     case QUEST:
 	/*
 	 * a ? b : c
@@ -1256,7 +1267,18 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     case ASSIGNDIVIDE:	obj = CompileAssign (obj, expr, namespace, OpAssignDivide, stat); break;
     case ASSIGNDIV:	obj = CompileAssign (obj, expr, namespace, OpAssignDiv, stat); break;
     case ASSIGNMOD:	obj = CompileAssign (obj, expr, namespace, OpAssignMod, stat); break;
-    case ASSIGNPOW:	obj = CompileAssign (obj, expr, namespace, OpAssignPow, stat); break;
+    case ASSIGNPOW:
+	obj = _CompileExpr (obj, expr->tree.right, namespace, stat);
+	SetPush (obj);
+	obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False);
+	SetPush (obj);
+	obj = _CompileExpr (obj, NewExprTree (DOT, BuildName ("Math"), BuildName ("assign_pow")),
+			    namespace, stat);
+	expr->base.type = NewTypesPrim (type_float);
+	BuildInst (obj, OpCall, inst, stat);
+	inst->ints.value = 2;
+	BuildInst (obj, OpNoop, inst, stat);
+	break;
     case ASSIGNLXOR:	obj = CompileAssign (obj, expr, namespace, OpAssignLxor, stat); break;
     case ASSIGNLAND:	obj = CompileAssign (obj, expr, namespace, OpAssignLand, stat); break;
     case ASSIGNLOR:	obj = CompileAssign (obj, expr, namespace, OpAssignLor, stat); break;
@@ -1508,10 +1530,8 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	    break;
 	}
 	if (new)
-	{
-	    namespace = NewNamespace (namespace);
-	    sym->namespace.namespace = namespace;
-	}
+	    sym->namespace.namespace = NewNamespace (namespace);
+        namespace = sym->namespace.namespace;
 	expr = expr->tree.right;
 	while (expr->tree.left)
 	{

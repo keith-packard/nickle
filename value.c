@@ -448,14 +448,8 @@ Pow (Value av, Value bv)
 	}
 	break;
     default:
-#if 0
-	{
-	    av = DoubleType.promote (av);
-	    bv = DoubleType.promote (bv);
-	    result = NewDouble (pow (av->doubles.value, bv->doubles.value));
-	}
-#endif
-	result = av;
+	RaiseError ("pow: non-integer power %v", bv);
+	result = Zero;
 	break;
     }
     RETURN (result);

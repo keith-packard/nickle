@@ -243,6 +243,8 @@ struct fbuiltin_2 funcs_2[] = {
     { do_Thread_set_priority,"set_priority",	    type_integer,   "tn",   &ThreadNamespace },
     { do_File_open,	    "open",		    type_file,	    "ss",   &FileNamespace },
     { do_gcd,		    "gcd",		    type_integer,   "nn"    },
+    { do_Math_pow,	    "pow",		    type_float,	    "nn",   &MathNamespace },
+    { do_Math_assignpow,    "assign_pow",	    type_float,	    "*nn",  &MathNamespace },
     { do_File_putc,	    "putc",		    type_integer,   "nf",   &FileNamespace },
     { do_File_setbuf,	    "setbuffer",	    type_integer,   "fn",   &FileNamespace },
     { do_String_index,      "index",		    type_integer,   "ss",   &StringNamespace },
@@ -965,6 +967,29 @@ do_gcd (Value a, Value b)
 {
     ENTER ();
     RETURN (Gcd (a, b));
+}
+
+Value
+do_Math_pow (Value a, Value b)
+{
+    ENTER ();
+    RETURN (Pow (a, b));
+}
+
+Value
+do_Math_assignpow (Value a, Value b)
+{
+    ENTER ();
+    Value   ret;
+    
+    if (a->value.tag != type_ref)
+    {
+	RaiseError ("assignpow: first argument must be ref");
+	RETURN (Zero);
+    }
+    ret = Pow (RefValue (a), b);
+    RefValue (a) = ret;
+    RETURN (ret);
 }
 
 Value

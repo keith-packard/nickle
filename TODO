@@ -8,13 +8,13 @@ TODO
   gettimeofday() and the like.
 + Build a small test suite.
 + Add a PRNG
-+ "scope public" has a somewhat non-intuitive meaning.  Fix?
 + Finish the manual.
 + fix output formatting length problems
 
 NOT TODO
 
 + Comments should not be allowed in interactive mode?
++ "scope public" has a somewhat non-intuitive meaning.  Fix?
 
 DONE
 

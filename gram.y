@@ -40,6 +40,7 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
     MemListPtr	    memList;
     Fulltype	    fulltype;
     ArgDecl	    argDecl;
+    SymbolPtr	    symbol;
     NamespacePtr    namespace;
     CodePtr	    code;
     Bool	    bool;
@@ -57,10 +58,11 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %type  <expr>	    namespace
 %type  <atomList>   atoms
 %type  <declList>   initnames typenames
+%type  <symbol>	    name
 %type  <funcDecl>   func_decl
 %type  <atom>	    typename
 %type  <expr>	    opt_init
-%type  <fulltype>   decl opt_decl
+%type  <fulltype>   decl opt_decl next_decl
 %type  <types>	    opt_type type opt_type_or_enum
 %type  <expr>	    opt_stars stars
 %type  <type>	    basetype
@@ -631,10 +633,38 @@ typenames	: typename COMMA typenames
 typename	: TYPENAME
 		| NAME
 		;
-initnames	: NAME opt_init COMMA initnames
-		    { $$ = NewDeclList ($1, $2, $4); }
-		| NAME opt_init
-		    { $$ = NewDeclList ($1, $2, 0); }
+/*
+ * Ok, a few cute hacks to fetch the fulltype from the
+ * value stack -- initnames always immediately follows a decl,
+ * so $0 will be a fulltype.  Note the cute trick to store the
+ * type across the comma operator -- this means that name
+ * will always find the fulltype at $0 as well
+ */
+initnames	: name opt_init next_decl initnames
+		    { 
+			$$ = NewDeclList ($1->symbol.name, $2, $4); 
+			$$->symbol = $1;
+		    }
+		| name opt_init
+		    { 
+			$$ = NewDeclList ($1->symbol.name, $2, 0);
+			$$->symbol = $1;
+		    }
+		;
+name		: NAME
+		    {	
+			$$ = ParseNewSymbol ($<fulltype>0.publish,
+					     $<fulltype>0.class,
+					     $<fulltype>0.type,
+					     $1);
+		    }
+		;
+/* 
+ * next_decl -- look backwards three entries on the stack to
+ * find the previous type
+ */
+next_decl	: COMMA
+		    { $$ = $<fulltype>-2; }
 		;
 /*
  * Declaration of a function
@@ -949,9 +979,6 @@ expr		: comma_expr
 
 			for (decl = $2; decl; decl = decl->next)
 			{
-			    decl->symbol = ParseNewSymbol ($1.publish,
-							   $1.class, 
-							   $1.type, decl->name);
 			    if (decl->init)
 			    {
 				if (decl->init->base.tag == STRUCT ||

@@ -122,7 +122,7 @@ do_File_print (Value file, Value value, Value format,
 	if (file->file.flags & FileOutputError)
 	{
 	    RaiseStandardException (exception_io_error, 
-				    strerror (file->file.output_errno), 
+				    FileGetErrorMessage (file->file.output_errno), 
 				    2, FileGetError (file->file.output_errno), file);
 	}
     }
@@ -145,7 +145,7 @@ do_File_open (Value name, Value mode)
     if (!ret)
     {
 	RaiseStandardException (exception_open_error,
-				strerror (err),
+				FileGetErrorMessage (err),
 				2, FileGetError (err), name);
 	RETURN (Void);
     }
@@ -162,7 +162,7 @@ do_File_flush (Value f)
 	break;
     case FileError:
 	RaiseStandardException (exception_io_error, 
-				strerror (f->file.output_errno), 
+				FileGetErrorMessage (f->file.output_errno), 
 				2, FileGetError (f->file.output_errno), f);
 	break;
     }
@@ -180,14 +180,14 @@ do_File_close (Value f)
 	break;
     case FileError:
 	RaiseStandardException (exception_io_error, 
-				strerror (f->file.output_errno), 
+				FileGetErrorMessage (f->file.output_errno), 
 				2, FileGetError (f->file.output_errno), f);
 	break;
     default:
 	if (FileClose (f) == FileError)
 	{
 	    RaiseStandardException (exception_io_error, 
-				    strerror (f->file.output_errno), 
+				    FileGetErrorMessage (f->file.output_errno), 
 				    2, FileGetError (f->file.output_errno), f);
 	}
 	else
@@ -220,7 +220,7 @@ do_File_pipe (Value file, Value argv, Value mode)
     if (!ret)
     {
 	RaiseStandardException (exception_open_error,
-				strerror (err),
+				FileGetErrorMessage (err),
 				2, FileGetError (err), file);
 	ret = Void;
     }
@@ -276,7 +276,7 @@ do_File_getb (Value f)
 	    RETURN (Void);
 	case FileError:
 	    RaiseStandardException (exception_io_error,
-				    strerror (f->file.input_errno),
+				    FileGetErrorMessage (f->file.input_errno),
 				    2, FileGetError (f->file.input_errno), f);
 	    RETURN (Void);
 	default:
@@ -302,7 +302,7 @@ do_File_getc (Value f)
 	    RETURN (Void);
 	case FileError:
 	    RaiseStandardException (exception_io_error,
-				    strerror (f->file.input_errno),
+				    FileGetErrorMessage (f->file.input_errno),
 				    2, FileGetError (f->file.input_errno), f);
 	    RETURN (Void);
 	default:
@@ -355,7 +355,7 @@ do_File_putb (Value v, Value f)
 	    if (FileOutput (f, IntPart (v, "putb non integer")) == FileError)
 	    {
 		RaiseStandardException (exception_io_error,
-					strerror (f->file.output_errno),
+					FileGetErrorMessage (f->file.output_errno),
 					2, FileGetError (f->file.output_errno), f);
 	    }
 	    else
@@ -379,7 +379,7 @@ do_File_putc (Value v, Value f)
 	    if (FileOutchar (f, IntPart (v, "putc non integer")) == FileError)
 	    {
 		RaiseStandardException (exception_io_error,
-					strerror (f->file.output_errno),
+					FileGetErrorMessage (f->file.output_errno),
 					2, FileGetError (f->file.output_errno), f);
 	    }
 	    else

@@ -20,7 +20,7 @@
 #include	"builtin.h"
 #include	<errno.h>
 
-#define perror(s) FilePrintf(FileStderr, s ": %s\n", strerror(errno))
+#define perror(s) FilePrintf(FileStderr, s ": %s\n", FileGetErrorMessage(errno))
 #ifdef HAVE_HSTRERROR
 #define herror(s) FilePrintf(FileStderr, s ": %s\n", hstrerror(h_errno))
 #else
@@ -169,7 +169,7 @@ do_Sockets_connect (Value s, Value host, Value port)
 	    else
 	    {
 		RaiseStandardException (exception_io_error,
-					strerror (errno),
+					FileGetErrorMessage (errno),
 					2, FileGetError (errno),
 					s);
 		RETURN (Void); /* FIXME: more here? */
@@ -245,7 +245,7 @@ do_Sockets_accept (Value s)
 	else
 	{
 	    RaiseStandardException (exception_io_error,
-				    strerror (errno),
+				    FileGetErrorMessage (errno),
 				    2, FileGetError (errno),
 				    s);
 	    RETURN (Void);

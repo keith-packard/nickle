@@ -138,8 +138,8 @@ MemAllocate (DataType *type, int size)
     if (!new)
 	new = MemHunkMore (sizeIndex);
     freeList[sizeIndex] = new->next;
-    if (sizeIndex >= 6)
-	memset (new, '\0', size);
+/*    if (sizeIndex >= 6)
+	memset (new, '\0', size); */
     new->type = type;
     return (void *) new;
 }

@@ -876,6 +876,7 @@ extern Value	Blank, Empty, Elementless, Void, TrueVal, FalseVal;
 # define False(v)	((v) != TrueVal)
 
 Value	FileGetError (int err);
+char	*FileGetErrorMessage (int err);
 int	FileInput (Value);
 int	FileOutput (Value, char);
 void	FileUnput (Value, unsigned char);

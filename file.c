@@ -482,6 +482,16 @@ FileGetError (int err)
     RETURN (ret);
 }
 
+char *
+FileGetErrorMessage (int err)
+{
+    int i;
+    for (i = 0; i < NUM_FILE_ERRORS; i++)
+	if (fileErrorMap[i].value == err)
+	    return fileErrorMap[i].message;
+    return "Unknown error";
+}
+
 static void
 FileMark (void *object)
 {

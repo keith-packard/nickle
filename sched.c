@@ -1062,10 +1062,10 @@ RaiseStandardException (StandardException   se,
     va_start (va, argc);
     i = argc + 1;
     args = NewArray (False, typePoly, 1, &i);
-    BoxValueSet (args->array.values, argc, NewStrString (string));
+    BoxValueSet (args->array.values, 0, NewStrString (string));
     if (argc)
 	for (i = 0; i < argc; i++)
-	    BoxValueSet (args->array.values, (argc - 1) - i, va_arg (va, Value));
+	    BoxValueSet (args->array.values, i + 1, va_arg (va, Value));
     standardException = se;
     standardExceptionArgs = args;
     SetSignalException ();

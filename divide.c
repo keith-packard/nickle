@@ -37,7 +37,9 @@ prs (char *s, Natural *n)
 
 static digit subtract(Natural *, Natural *, int);
 static void multiply (Natural *, digit, Natural *);
+#if 0
 static Bool greaterequal (Natural *, Natural *, int);
+#endif
 
 #ifdef LBASE2
 /*

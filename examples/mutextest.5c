@@ -1,0 +1,79 @@
+import Mutex;
+integer die;
+
+typedef struct {
+    mutex	mut_ex;
+    string	name;
+} named_mutex;
+
+integer[*]	owned;
+named_mutex[*]	mutexes;
+mutex		owned_mutex = Mutex::new();
+semaphore	started = Semaphore::new (0);
+
+function status ()
+{
+    integer nt = dim (owned);
+    integer i;
+
+    
+    twixt (acquire (owned_mutex); release (owned_mutex))
+    {
+	for (i = 0; i < nt; i++)
+	{
+	    if (owned[i] >= 0)
+		printf ("%s", mutexes[owned[i]].name);
+	    else
+		printf (" ");
+	}
+	printf ("\n");
+    }
+}
+
+function t (*(named_mutex[*]) mutexes, integer self, integer delay)
+{
+    integer i;
+    
+    Semaphore::signal (started);
+    die = 0;
+    while (!die)
+    {
+	for (i = 0; !die && i < dim (*mutexes); i++)
+	{
+	    twixt (acquire ((*mutexes)[i].mut_ex); 
+		   release ((*mutexes)[i].mut_ex))
+	    {
+		twixt (acquire (owned_mutex); release (owned_mutex))
+		    owned[self] = i;
+		/* status(); */
+		sleep (delay);
+		twixt (acquire (owned_mutex); release (owned_mutex))
+		    owned[self] = -1;
+	    }
+	   /*  printf ("Thread %v done with %v\n", Thread::current (),
+		    (*mutexes)[i].mut_ex);*/
+	}
+    }
+}
+
+function start (integer nthread, integer nmut_ex, integer delay)
+{
+    integer i;
+
+    owned = (integer) [nthread];
+    for (i = 0; i < nthread; i++)
+	owned[i] = -1;
+    mutexes = (named_mutex) [nmut_ex];
+    for (i = 0; i < nmut_ex; i++)
+    {
+	mutexes[i] = (named_mutex) {
+	    mut_ex = new (),
+	    name = Strings::new('A' + i)
+	};
+    }
+    for (i = 0; i < nthread; i++)
+    {
+	fork (t (&mutexes, i, delay));
+	Semaphore::wait (started);
+    }
+}

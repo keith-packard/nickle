@@ -7,6 +7,7 @@ dnl for licensing information.
 AC_INIT(nickle.h)
 AM_INIT_AUTOMAKE(nickle,2.00)
 AM_CONFIG_HEADER(config.h)
+AC_CONFIG_AUX_DIR(.)
 
 dnl Checks for programs.
 AC_PROG_CC

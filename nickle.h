@@ -800,17 +800,17 @@ IntBinaryOperate (Value av, Value bv, BinaryOp operator) {
 	    break;
 	case FirstPositive:
 	    r = - (a / -b);
+	    if (a % -b)
+		--r;
 	    break;
 	case SecondPositive:
-	    r = -(a / -b);
-	    if (a % -b)
-		r--;
+	    r = -(-a / b);
+	    if (-a % b)
+		--r;
 	    break;
 	case BothNegative:
 	default:
 	    r = -a / -b;
-	    if (-a % -b)
-		r++;
 	    break;
 	}
 	return NewInt (r);

@@ -354,18 +354,19 @@ TraceFunction (FramePtr frame, CodePtr code, ExprPtr name)
 }
 
 void
-TraceFrame (FramePtr frame, InstPtr pc)
+TraceFrame (FramePtr frame, ObjPtr obj, InstPtr pc)
 {
     ENTER ();
     int		max;
     CodePtr	code;
 
-    PrettyStat (FileStdout, pc->base.stat, False);
+    PrettyStat (FileStdout, ObjStatement (obj, pc), False);
     for (max = 20; frame && max--; frame = frame->previous)
     {
 	code = frame->function->func.code;
 	TraceFunction (frame, code, code->base.name);
-	PrettyStat (FileStdout, frame->savePc->base.stat, False);
+	PrettyStat (FileStdout, ObjStatement (frame->saveObj,
+					      frame->savePc), False);
     }
     EXIT ();
 }
@@ -386,6 +387,7 @@ do_Thread_trace (int n, Value *p)
     Value	v;
     FramePtr	frame;
     InstPtr	pc;
+    ObjPtr	obj;
     
     if (n == 0)
 	v = lookupVar (0, "cont");
@@ -396,6 +398,7 @@ do_Thread_trace (int n, Value *p)
     case rep_continuation:
 	frame = v->continuation.frame;
 	pc = v->continuation.pc;
+	obj = v->continuation.obj;
 	break;
     default:
 	if (n == 0)
@@ -404,7 +407,7 @@ do_Thread_trace (int n, Value *p)
 	    RaiseError ("trace: %v neither continuation nor thread", v);
 	RETURN (Void);
     }
-    TraceFrame (frame, pc);
+    TraceFrame (frame, obj, pc);
     RETURN(Void);
 }
 
@@ -648,6 +651,7 @@ ContinuationTrace (char *where, Continuation *continuation, int indent)
     StackObject	*stack = continuation->stack;
     CatchPtr	catches = continuation->catches;
     TwixtPtr	twixts = continuation->twixts;
+    ObjPtr	obj = continuation->obj;
     InstPtr	pc = continuation->pc;
     
     TraceIndent (indent);
@@ -674,7 +678,7 @@ ContinuationTrace (char *where, Continuation *continuation, int indent)
     FilePuts (FileStdout, "\n");
     TraceIndent (indent);
     FilePuts (FileStdout, "statement: ");
-    PrettyStat (FileStdout, pc->base.stat, False);
+    PrettyStat (FileStdout, ObjStatement (obj, pc), False);
     for (s = 0; twixts; twixts = twixts->continuation.twixts, s++)
     {
 	ContinuationTrace ("twixt", &twixts->continuation, indent+1);
@@ -993,7 +997,9 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
     if (!caught)
     {
 	int	i;
-	ExprPtr	stat = thread->thread.continuation.pc->base.stat;
+	ObjPtr	obj = thread->thread.continuation.obj;
+	InstPtr	pc = thread->thread.continuation.pc;
+	ExprPtr	stat = ObjStatement (obj, pc);
 	
 	if (stat->base.file)
 	    PrintError ("Unhandled exception \"%A\" at %A:%d\n", 

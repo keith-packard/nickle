@@ -25,7 +25,6 @@ ObjMark (void *object)
     inst = ObjCode (obj, 0);
     for (i = 0; i < obj->used; i++, inst++)
     {
-	MemReference (inst->base.stat);
 	switch (inst->base.opCode) {
 	case OpGlobal:
 	case OpGlobalRef:
@@ -66,56 +65,126 @@ ObjMark (void *object)
 	    break;
 	}
     }
+    for (i = 0; i < obj->used_stat; i++)
+	MemReference (ObjStat (obj, i)->stat);
 }
 
 DataType    ObjType = { ObjMark, 0 };
 
 static ObjPtr
-NewObj (int size)
+NewObj (int size, int size_stat)
 {
     ENTER ();
     ObjPtr  obj;
 
-    obj = ALLOCATE (&ObjType, sizeof (Obj) + size * sizeof (Inst));
+    obj = ALLOCATE (&ObjType, 
+		    sizeof (Obj) + 
+		    size * sizeof (Inst) + 
+		    size_stat * sizeof (Stat));
     obj->size = size;
     obj->used = 0;
+    obj->size_stat = size_stat;
+    obj->used_stat = 0;
     obj->error = False;
     obj->nonLocal = 0;
     RETURN (obj);
 }
 
-#define OBJ_INCR    32
+#define OBJ_INCR	32
+#define OBJ_STAT_INCR	16
 
 static ObjPtr
-AddInst (ObjPtr obj)
+AddInst (ObjPtr obj, ExprPtr stat)
 {
     ENTER ();
     ObjPtr  nobj;
+    int	    need_stat = 1;
     
-    if (obj->used == obj->size)
+    if (obj->used_stat && ObjStat(obj, obj->used_stat - 1)->stat == stat)
+	need_stat = 0;
+    if (obj->used == obj->size || obj->used_stat + need_stat > obj->size_stat)
     {
-	nobj = NewObj (obj->size + OBJ_INCR);
+	int	nsize = obj->size, nsize_stat = obj->size_stat;
+	if (obj->used == obj->size)
+	    nsize = obj->size + OBJ_INCR;
+	if (obj->used_stat + need_stat > obj->size_stat)
+	    nsize_stat = obj->size_stat + OBJ_STAT_INCR;
+	nobj = NewObj (nsize, nsize_stat);
 	memcpy (ObjCode (nobj, 0), ObjCode (obj, 0), obj->used * sizeof (Inst));
+	memcpy (ObjStat (nobj, 0), ObjStat (obj, 0), obj->used_stat * sizeof (Stat));
 	nobj->used = obj->used;
+	nobj->used_stat = obj->used_stat;
 	nobj->error = obj->error;
 	nobj->nonLocal = obj->nonLocal;
 	obj = nobj;
+    }
+    if (need_stat)
+    {
+	StatPtr s = ObjStat (obj, obj->used_stat);
+	s->inst = obj->used;
+	s->stat = stat;
+	obj->used_stat++;
     }
     obj->used++;
     RETURN (obj);
 }
 
-#define NewInst(_i,_o)	(((_o) = AddInst(_o)), _i = ObjLast(_o))
+ExprPtr
+ObjStatement (ObjPtr obj, InstPtr inst)
+{
+    int	    i = inst - ObjCode(obj, 0);
+    int	    low = 0, high = obj->used_stat - 1;
+    
+    while (low < high - 1)
+    {
+	int mid = (low + high) >> 1;
+	if (ObjStat(obj,mid)->inst <= i)
+	    low = mid;
+	else
+	    high = mid - 1;
+    }
+    while (low <= high)
+    {
+        StatPtr s = ObjStat(obj, high);
+	if (s->inst <= i)
+	    return s->stat;
+	high--;
+    }
+    return 0;
+}
+
+static void
+ResetInst (ObjPtr obj, int i)
+{
+    obj->used = i;
+    while (obj->used_stat && ObjStat(obj, obj->used_stat - 1)->inst > i)
+	obj->used_stat--;
+}
+
+#define NewInst(_o,_op,_i,_stat) \
+{\
+    InstPtr __inst__; \
+    (_o) = AddInst(_o, _stat); \
+    (_i) = ObjLast(_o); \
+    __inst__ = ObjCode (_o, _i); \
+    __inst__->base.opCode = (_op); \
+    __inst__->base.flags = 0; \
+}
+
 #define BuildInst(_o,_op,_inst,_stat) \
 {\
-    (_o) = AddInst (_o); \
+    (_o) = AddInst (_o, _stat); \
     (_inst) = ObjCode(_o, ObjLast(_o)); \
     (_inst)->base.opCode = (_op); \
-    (_inst)->base.stat = (_stat); \
+    (_inst)->base.flags = 0; \
 }
-#define SetPush(_o)  ((_o)->used ? (ObjCode((_o), \
-					     ObjLast(_o))->base.push = True) \
+
+#define SetFlag(_o,_f) ((_o)->used ? (ObjCode((_o), \
+					      ObjLast(_o))->base.flags |= (_f)) \
 				     : 0)
+#define SetPush(_o)	SetFlag(_o,InstPush)
+#define SetAInit(_o)	SetFlag(_o,InstAInit)
+
 
 /*
  * Select the correct code body depending on whether
@@ -388,9 +457,9 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case OS:
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	obj = CompileArrayIndex (obj, expr->tree.right,
 				 stat, code, &ndim);
-	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineArray (expr->tree.left->base.type,
 					    ndim,
 					    True);
@@ -479,7 +548,7 @@ CompileBinOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code)
 						 ObjCode(obj, right)->constant.constant,
 						 op);
 	_CompileCheckException (obj, stat);
-	inst->base.push = False;
+	inst->base.flags &= ~InstPush;
 	obj->used = left + 1;
     }
     else
@@ -521,7 +590,7 @@ CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr
 	inst->constant.constant = (*func) (ObjCode(obj, left)->constant.constant,
 					   ObjCode(obj, right)->constant.constant);
 	_CompileCheckException (obj, stat);
-	inst->base.push = False;
+	inst->base.flags &= ~InstPush;
 	obj->used = left + 1;
     }
     else
@@ -566,7 +635,7 @@ CompileUnOp (ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code)
 	inst->constant.constant = UnaryOperate (ObjCode(obj, d)->constant.constant,
 						op);
 	_CompileCheckException (obj, stat);
-	inst->base.push = False;
+	inst->base.flags &= ~InstPush;
 	obj->used = d + 1;
     }
     else
@@ -605,7 +674,7 @@ CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr c
 	inst = ObjCode (obj, d);
 	inst->constant.constant = (*func) (ObjCode(obj, d)->constant.constant);
 	_CompileCheckException (obj, stat);
-	inst->base.push = False;
+	inst->base.flags &= ~InstPush;
 	obj->used = d + 1;
     }
     else
@@ -943,7 +1012,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     BuildInst (obj, OpEnterDone, inst, stat);
     
     /* here's where the twixt instruction goes */
-    NewInst (twixt_inst, obj);
+    NewInst (obj, OpTwixt, twixt_inst, stat);
 
     /* Compile the body */
     obj = _CompileStat (obj, expr->tree.right->tree.left, False, code);
@@ -952,8 +1021,6 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     
     /* finish the twixt instruction */
     inst = ObjCode (obj, twixt_inst);
-    inst->base.opCode = OpTwixt;
-    inst->base.stat = stat;
     inst->twixt.enter = enter_inst - twixt_inst;
     inst->twixt.leave = obj->used - twixt_inst;
 
@@ -981,6 +1048,7 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr,
     ndim = 0;
     while (expr)
     {
+	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	if (!TypeCompatible (typePrim[rep_integer],
 			     expr->tree.left->base.type,
@@ -990,7 +1058,6 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr,
 			  expr->tree.left->base.type);
 	    break;
 	}
-	SetPush (obj);
 	expr = expr->tree.right;
 	ndim++;
     }
@@ -1095,10 +1162,8 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
     return True;
 }
 
-static ObjPtr
-CompileImplicitArray (ObjPtr obj, ExprPtr array, TypePtr type,
-		      ExprPtr inits, int ndim, 
-		      ExprPtr stat, CodePtr code)
+static ExprPtr
+CompileImplicitArray (ObjPtr obj, ExprPtr stat, ExprPtr inits, int ndim)
 {
     ENTER ();
     ExprPtr sub;
@@ -1110,7 +1175,7 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypePtr type,
     if (!CompileSizeDimensions (inits, dims, ndim))
     {
 	CompileError (obj, stat, "Implicit dimensioned array with variable initializers");
-	RETURN (obj);
+	RETURN (0);
     }
     sub = 0;
     for (n = 0; n < ndim; n++)
@@ -1119,21 +1184,23 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypePtr type,
 			   NewExprConst (TEN_NUM, NewInt (*dims++)),
 			   sub);
     }
-    obj = CompileBuildArray (obj, array, type, sub, ndim, stat, code);
-    RETURN (obj);
+    RETURN(sub);
 }
 
 static ObjPtr
-CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr code);
+CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, 
+		  ExprPtr stat, CodePtr code);
     
 static ObjPtr
 CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type, 
-		   int ndim, int *ninits, ExprPtr stat, CodePtr code)
+		   int ndim, ExprPtr stat, CodePtr code)
 {
     ENTER ();
+    InstPtr	inst;
+    AInitMode	mode = AInitModeElement;
     
-    if (expr->base.tag == ARRAY)
-    {
+    switch (expr->base.tag) {
+    case ARRAY:
 	if (ndim == 0 && type->base.tag == type_array)
 	{
 	    obj = CompileArrayInit (obj, expr, type, stat, code);
@@ -1141,41 +1208,28 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
 	}
 	else
 	{
-	    int	nsub = 0;
-	    InstPtr	inst;
-    
-	    expr = expr->tree.left;
-	    while (expr)
+	    for (expr = expr->tree.left; expr; expr = expr->tree.right)
 	    {
-		if (expr->tree.left->base.tag == DOTS)
-		{
-		    nsub = -nsub;
-		    break;
-		}
-		else
-		{
-		    obj = CompileArrayInits (obj, expr->tree.left, type, ndim-1, ninits, stat, code);
-		    nsub++;
-		}
-		expr = expr->tree.right;
+		obj = CompileArrayInits (obj, expr->tree.left,
+					 type, ndim-1, stat, code);
 	    }
-	    BuildInst (obj, OpConst, inst, stat);
-	    inst->constant.constant = NewInt (nsub);
 	}
-	SetPush (obj);
-	++(*ninits);
-    }
-    else
-    {
+	break;
+    case DOTS:
+	mode = AInitModeRepeat;
+	break;
+    default:
 	obj = _CompileExpr (obj, expr, True, stat, code);
 	if (!TypeCombineBinary (type, ASSIGN, expr->base.type))
 	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in array initialization",
 			  type, expr->base.type);
 	}
-	SetPush (obj);
-	++(*ninits);
     }
+    BuildInst (obj, OpInitArray, inst, stat);
+    expr = expr->tree.right;
+    inst->ainit.dim = ndim;
+    inst->ainit.mode = mode;
     RETURN (obj);
 }
 
@@ -1186,52 +1240,60 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
     int	    ndim;
     Type   *sub = type->array.type;
     int	    i;
+    Expr    *dimensions;
 
     ndim = CompileCountDeclDimensions (type->array.dimensions);
-    if (expr)
-    {
-	int ninitdim;
-
-	if (expr->base.tag != ARRAY)
-	{
-	    CompileError (obj, stat, "Non array initializer");
-	    RETURN (obj);
-	}
-	ninitdim = CompileCountInitDimensions (expr);
-	if (ninitdim < 0)
-	{
-	    CompileError (obj, stat, "Inconsistent array initializer dimensionality");
-	    RETURN (obj);
-	}
-	if (ndim > ninitdim ||
-	    (ndim < ninitdim && sub->base.tag != type_array))
-	{
-	    CompileError (obj, stat, "Array dimension mismatch %d != %d\n",
-			  ndim, ninitdim);
-	    RETURN (obj);
-	}
-	i = 0;
-	obj = CompileArrayInits (obj, expr, sub, ndim,
-				 &i, stat, code);
-    }
     if (type->array.dimensions && type->array.dimensions->tree.left)
-    {
-	obj = CompileBuildArray (obj, expr, type, type->array.dimensions, ndim, stat, code);
-    }
+	dimensions = type->array.dimensions;
     else if (expr)
-    {
-	obj = CompileImplicitArray (obj, expr, type, expr, 
-				    ndim, stat, code);
-    }
+	dimensions = CompileImplicitArray (obj, stat, expr, ndim);
     else
+	dimensions = 0;
+    if (!dimensions)
     {
 	CompileError (obj, stat, "Non-dimensioned array with no initializers");
+	return obj;
     }
+    obj = CompileBuildArray (obj, expr, type, dimensions, ndim, stat, code);
     if (expr)
     {
-	InstPtr	inst;
+	int	    ninitdim;
+	InstPtr	    inst;
+	
 	BuildInst (obj, OpInitArray, inst, stat);
-	inst->ints.value = i;
+	inst->ainit.mode = AInitModeStart;
+	inst->ainit.dim = ndim;
+	if (expr->base.tag == FUNC)
+	{
+	    CodePtr comp = expr->code.code;
+	    
+	    comp->base.type = sub;
+	    obj = CompileFunc (obj, comp, stat, code, 0);
+	    ninitdim = code->base.argc;
+	    i = 0;
+	}
+	else
+	{
+	    if (expr->base.tag != ARRAY)
+	    {
+		CompileError (obj, stat, "Non array initializer");
+		RETURN (obj);
+	    }
+	    ninitdim = CompileCountInitDimensions (expr);
+	    if (ninitdim < 0)
+	    {
+		CompileError (obj, stat, "Inconsistent array initializer dimensionality");
+		RETURN (obj);
+	    }
+	    if (ndim > ninitdim ||
+		(ndim < ninitdim && sub->base.tag != type_array))
+	    {
+		CompileError (obj, stat, "Array dimension mismatch %d != %d\n",
+			      ndim, ninitdim);
+		RETURN (obj);
+	    }
+	    obj = CompileArrayInits (obj, expr, sub, ndim, stat, code);
+	}
     }
     RETURN (obj);
 }
@@ -1435,14 +1497,14 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 			  catch_type, exception->symbol.type);
 	    RETURN (obj);
 	}
-	NewInst (catch_inst, obj);
+	NewInst (obj, OpCatch, catch_inst, stat);
 
 	/*
 	 * Exception arguments are sitting in value, push
 	 * them on the stack
 	 */
 	BuildInst (obj, OpNoop, inst, stat);
-	inst->base.push = True;
+	SetPush (obj);
 
 	/*
 	 * Compile the exception handler and the
@@ -1460,11 +1522,9 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	
 	BuildInst (obj, OpExceptionCall, inst, stat);
 	
-	NewInst (exception_inst, obj);
+	NewInst (obj, OpBranch, exception_inst, stat);
     
 	inst = ObjCode (obj, catch_inst);
-	inst->base.opCode = OpCatch;
-	inst->base.stat = stat;
 	inst->catch.offset = obj->used - catch_inst;
 	inst->catch.exception = exception;
     
@@ -1477,8 +1537,6 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	BuildInst (obj, OpEndCatch, inst, stat);
 	
 	inst = ObjCode (obj, exception_inst);
-	inst->base.opCode = OpBranch;
-	inst->base.stat = stat;
 	inst->branch.offset = obj->used - exception_inst;
 	inst->branch.mod = BranchModNone;
     }
@@ -1673,9 +1731,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	expr->base.type = typePoly;    /* FIXME composite const type */
 	break;
     case OS:	    
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	obj = CompileArrayIndex (obj, expr->tree.right,
 				 stat, code, &ndim);
-	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineArray (expr->tree.left->base.type,
 					    ndim,
 					    False);
@@ -1851,7 +1909,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	else
 	{
-	    NewInst (test_inst, obj);
+	    NewInst (obj, OpBranchFalse, test_inst, stat);
 	    bool_const = False;
 	}
 	top_inst = obj->used;
@@ -1864,10 +1922,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	else
 	{
-	    NewInst (middle_inst, obj);
+	    NewInst (obj, OpBranch, middle_inst, stat);
 	    inst = ObjCode (obj, test_inst);
-	    inst->base.opCode = OpBranchFalse;
-	    inst->base.stat = stat;
 	    inst->branch.offset = obj->used - test_inst;
 	    inst->branch.mod = BranchModNone;
 	}
@@ -1882,8 +1938,6 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	else
 	{
 	    inst = ObjCode (obj, middle_inst);
-	    inst->base.opCode = OpBranch;
-	    inst->base.stat = stat;
 	    inst->branch.offset = obj->used - middle_inst;
 	    inst->branch.mod = BranchModNone;
 	    BuildInst (obj, OpNoop, inst, stat);
@@ -1923,7 +1977,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	else
 	{
-	    NewInst (test_inst, obj);
+	    NewInst (obj, OpBranchFalse, test_inst, stat);
 	    bool_const = True;
 	}
 	middle_inst = obj->used;
@@ -1939,8 +1993,6 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	if (test_inst >= 0)
 	{
 	    inst = ObjCode (obj, test_inst);
-	    inst->base.opCode = OpBranchFalse;
-	    inst->base.stat = stat;
 	    inst->branch.offset = obj->used - test_inst;
 	    inst->branch.mod = BranchModNone;
 	    BuildInst (obj, OpNoop, inst, stat);
@@ -1976,7 +2028,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	else
 	{
-	    NewInst (test_inst, obj);
+	    NewInst (obj, OpBranchTrue, test_inst, stat);
 	    bool_const = False;
 	}
 	middle_inst = obj->used;
@@ -1992,8 +2044,6 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	if (test_inst >= 0)
 	{
 	    inst = ObjCode (obj, test_inst);
-	    inst->base.opCode = OpBranchTrue;
-	    inst->base.stat = stat;
 	    inst->branch.offset = obj->used - test_inst;
 	    inst->branch.mod = BranchModNone;
 	    BuildInst (obj, OpNoop, inst, stat);
@@ -2214,7 +2264,6 @@ _CompileNonLocal (ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
     if (twixt || catch || frame)
     {
 	BuildInst (obj, OpFarJump, inst, expr);
-	inst->base.stat = expr;
 	inst->farJump.farJump = 0;
 	inst->farJump.farJump = NewFarJump (-1, twixt, catch, frame);
 	inst->farJump.mod = mod;
@@ -2277,11 +2326,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 *   +-------------+
 	 */
 	obj = _CompileBoolExpr (obj, expr->tree.left, True, expr, code);
-	NewInst (test_inst, obj);
+	NewInst (obj, OpBranchFalse, test_inst, expr);
 	obj = _CompileStat (obj, expr->tree.right, last, code);
 	inst = ObjCode (obj, test_inst);
-	inst->base.opCode = OpBranchFalse;
-	inst->base.stat = expr;
 	inst->branch.offset = obj->used - test_inst;
 	inst->branch.mod = BranchModNone;
 	break;
@@ -2294,7 +2341,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 *                 +--------+
 	 */
 	obj = _CompileBoolExpr (obj, expr->tree.left, True, expr, code);
-	NewInst (test_inst, obj);
+	NewInst (obj, OpBranchFalse, test_inst, expr);
 	/*
 	 * Compile b
 	 */
@@ -2303,15 +2350,15 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 * Branch around else if reachable
 	 */
 	if (CompileIsReachable (obj, obj->used))
-	    NewInst (middle_inst, obj);
+	{
+	    NewInst (obj, OpBranch, middle_inst, expr);
+	}
 	else
 	    middle_inst = -1;
 	/*
 	 * Fix up branch on a
 	 */
 	inst = ObjCode (obj, test_inst);
-	inst->base.opCode = OpBranchFalse;
-	inst->base.stat = expr;
 	inst->branch.offset = obj->used - test_inst;
 	inst->branch.mod = BranchModNone;
 	/*
@@ -2324,8 +2371,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	if (middle_inst != -1)
 	{
 	    inst = ObjCode (obj, middle_inst);
-	    inst->base.opCode = OpBranch;
-	    inst->base.stat = expr;
 	    inst->branch.offset = obj->used - middle_inst;
 	    inst->branch.mod = BranchModNone;
 	}
@@ -2338,7 +2383,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 * +--------+
 	 *        +---+
 	 */
-	NewInst (start_inst, obj);
+	NewInst (obj, OpBranch, start_inst, expr);
 	    
         top_inst = obj->used;
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
@@ -2347,8 +2392,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	obj->nonLocal = obj->nonLocal->prev;
 
 	inst = ObjCode (obj, start_inst);
-	inst->base.opCode = OpBranch;
-	inst->base.stat = expr;
 	inst->branch.offset = obj->used - start_inst;
 	inst->branch.mod = BranchModNone;
 	
@@ -2363,12 +2406,8 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    if (t)
 	    {
 		obj->used = continue_inst;
-		NewInst (test_inst, obj);
-
-		inst = ObjCode (obj, test_inst);
-		inst->base.opCode = OpBranch;
-		inst->base.stat = expr;
-		inst->branch.offset = top_inst - test_inst;
+		BuildInst (obj, OpBranch, inst, expr);
+		inst->branch.offset = top_inst - ObjLast(obj);
 		inst->branch.mod = BranchModNone;
 	    }
 	    else
@@ -2380,12 +2419,8 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	}
 	else
 	{
-	    NewInst (test_inst, obj);
-    
-	    inst = ObjCode (obj, test_inst);
-	    inst->base.opCode = OpBranchTrue;
-	    inst->base.stat = expr;
-	    inst->branch.offset = top_inst - test_inst;
+	    BuildInst (obj, OpBranchTrue, inst, expr);
+	    inst->branch.offset = top_inst - ObjLast(obj);
 	    inst->branch.mod = BranchModNone;
 	}
 	
@@ -2414,12 +2449,8 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    if (t)
 	    {
 		obj->used = continue_inst;
-		NewInst (test_inst, obj);
-
-		inst = ObjCode (obj, test_inst);
-		inst->base.opCode = OpBranch;
-		inst->base.stat = expr;
-		inst->branch.offset = top_inst - test_inst;
+		BuildInst (obj, OpBranch, inst, expr);
+		inst->branch.offset = top_inst - ObjLast(obj);
 		inst->branch.mod = BranchModNone;
 	    }
 	    else
@@ -2430,11 +2461,8 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	}
 	else
 	{
-	    NewInst (test_inst, obj);
-	    inst = ObjCode (obj, test_inst);
-	    inst->base.opCode = OpBranchTrue;
-	    inst->base.stat = expr;
-	    inst->branch.offset = continue_inst - test_inst;
+	    BuildInst (obj, OpBranchTrue, inst, expr);
+	    inst->branch.offset = continue_inst - ObjLast(obj);
 	    inst->branch.mod = BranchModNone;
 	}
 	CompilePatchLoop (obj, top_inst, continue_inst, obj->used);
@@ -2456,7 +2484,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	
 	/* check for b */
 	if (expr->tree.left->tree.right)
-	    NewInst (start_inst, obj);
+	    NewInst (obj, OpBranch, start_inst, expr);
 
 	top_inst = obj->used;
 
@@ -2485,44 +2513,34 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		obj->used = middle_inst;
 		if (t)
 		{
-		    NewInst (test_inst, obj);
-		    inst = ObjCode (obj, test_inst);
-		    inst->base.opCode = OpBranch;
-		    inst->base.stat = expr;
-		    inst->branch.offset = top_inst - test_inst;
+		    BuildInst (obj, OpBranch, inst, expr);
+		    inst->branch.offset = top_inst - ObjLast (obj);
 		    inst->branch.mod = BranchModNone;
 		}
 		else
 		{
 		    /* delete whole for body */
-		    obj->used = start_inst;
+		    ResetInst (obj, start_inst);
 		    continue_inst = top_inst = start_inst;
 		}
 	    }
 	    else
 	    {
-		NewInst (test_inst, obj);
-		inst = ObjCode (obj, test_inst);
-		inst->base.opCode = OpBranchTrue;
-		inst->base.stat = expr;
-		inst->branch.offset = top_inst - test_inst;
+		
+		BuildInst (obj, OpBranchTrue, inst, expr);
+		inst->branch.offset = top_inst - ObjLast(obj);
 		inst->branch.mod = BranchModNone;
 	    }
 	    
 	    /* patch start branch */
 	    inst = ObjCode (obj, start_inst);
-	    inst->base.opCode = OpBranch;
-	    inst->base.stat = expr;
 	    inst->branch.offset = middle_inst - start_inst;
 	    inst->branch.mod = BranchModNone;
 	}
 	else
 	{
-	    NewInst (test_inst, obj);
-	    inst = ObjCode (obj, test_inst);
-	    inst->base.opCode = OpBranch;
-	    inst->base.stat = expr;
-	    inst->branch.offset = top_inst - test_inst;
+	    BuildInst (obj, OpBranch, inst, expr);
+	    inst->branch.offset = top_inst - ObjLast (obj);
 	    inst->branch.mod = BranchModNone;
 	}
 
@@ -2623,7 +2641,8 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    {
 		if (expr->base.tag == SWITCH)
 		    obj = _CompileExpr (obj, c->tree.left->tree.left, True, c, code);
-		NewInst (case_inst[icase], obj);
+		NewInst (obj, expr->base.tag == SWITCH ? OpCase : OpTagCase,
+			 case_inst[icase], expr);
 		icase++;
 	    }
 	    c = c->tree.right;
@@ -2631,7 +2650,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	/* add default case at the bottom */
 	if (test_inst == 0)
 	{
-	    NewInst (test_inst, obj);
+	    /* don't know what the opcode is yet */
+	    NewInst (obj, expr->base.tag == SWITCH ? OpDefault : OpBranch,
+		     test_inst, expr);
 	}
         top_inst = obj->used;
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
@@ -2653,7 +2674,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		inst = ObjCode (obj, case_inst[icase]);
 		if (expr->base.tag == SWITCH)
 		{
-		    inst->base.opCode = OpCase;
 		    inst->branch.offset = obj->used - case_inst[icase];
 		    inst->branch.mod = BranchModNone;
 		}
@@ -2686,7 +2706,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 			CompileError (obj, expr, 
 				      "Fall through case with varient value");
 		    }
-		    inst->base.opCode = OpTagCase;
 		    inst->tagcase.offset = obj->used - case_inst[icase];
 		    inst->tagcase.tag = tag;
 		    /*
@@ -2705,7 +2724,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 			assign->var.name = name;
 		    }
 		}
-		inst->base.stat = expr;
 		icase++;
 	    }
 	    else if (test_inst >= 0)
@@ -2715,7 +2733,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		    inst->base.opCode = OpDefault;
 		else
 		    inst->base.opCode = OpBranch;
-		inst->base.stat = expr;
 		inst->branch.offset = obj->used - test_inst;
 		inst->branch.mod = BranchModNone;
 		test_inst = -1;
@@ -2734,11 +2751,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	if (test_inst >= 0)
 	{
 	    inst = ObjCode (obj, test_inst);
-	    if (expr->base.tag == SWITCH)
-		inst->base.opCode = OpDefault;
-	    else
-		inst->base.opCode = OpBranch;
-	    inst->base.stat = expr;
 	    inst->branch.offset = obj->used - test_inst;
 	    inst->branch.mod = BranchModNone;
 	}
@@ -2885,7 +2897,7 @@ CompileFuncCode (CodePtr	code,
     Bool    needReturn;
     
     code->base.previous = previous;
-    obj = NewObj (OBJ_INCR);
+    obj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
     obj->nonLocal = nonLocal;
     obj = _CompileStat (obj, code->func.code, True, code);
     needReturn = False;
@@ -3035,7 +3047,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	    if (code_compile)
 	    {
 		if (!code_compile->func.staticInit.obj)
-		    code_compile->func.staticInit.obj = NewObj (OBJ_INCR);
+		    code_compile->func.staticInit.obj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
 		initObj = &code_compile->func.staticInit.obj;
 		code_compile->func.inStaticInit = True;
 		if (code != code_compile)
@@ -3090,7 +3102,7 @@ CompileStat (ExprPtr expr, CodePtr code)
     ObjPtr  obj;
     InstPtr inst;
 
-    obj = NewObj (OBJ_INCR);
+    obj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
     obj = _CompileStat (obj, expr, False, code);
     BuildInst (obj, OpEnd, inst, expr);
 #ifdef DEBUG
@@ -3108,7 +3120,7 @@ CompileExpr (ExprPtr expr, CodePtr code)
     ExprPtr stat;
 
     stat = NewExprTree (EXPR, expr, 0);
-    obj = NewObj (OBJ_INCR);
+    obj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
     obj = _CompileExpr (obj, expr, True, stat, code);
     BuildInst (obj, OpEnd, inst, stat);
 #ifdef DEBUG
@@ -3264,7 +3276,7 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
     FilePrintf (FileStdout, "%s%s %c ",
 		OpNames[inst->base.opCode],
 		"             " + strlen(OpNames[inst->base.opCode]),
-		inst->base.push ? '^' : ' ');
+		inst->base.flags & InstPush ? '^' : ' ');
     switch (inst->base.opCode) {
     case OpTagCase:
 	FilePrintf (FileStdout, "(%A) ", inst->tagcase.tag);
@@ -3375,7 +3387,11 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	FilePrintf (FileStdout, "%d dims", inst->ints.value);
 	break;
     case OpInitArray:
-	FilePrintf (FileStdout, "%d values", inst->ints.value);
+	FilePrintf (FileStdout, "%d %s",
+		    inst->ainit.dim,
+		    inst->ainit.mode == AInitModeStart ? "start":
+		    inst->ainit.mode == AInitModeElement ? "element":
+		    inst->ainit.mode == AInitModeRepeat ? "repeat" : "?");
 	break;
     case OpDot:
     case OpDotRef:
@@ -3434,8 +3450,8 @@ ObjDump (ObjPtr obj, int indent)
     memset (branch, '\0', obj->used * sizeof (int));
     
     ObjIndent (indent);
-    FilePrintf (FileStdout, "%d instructions (0x%x)\n",
-		obj->used, ObjCode(obj,0));
+    FilePrintf (FileStdout, "%d instructions %d statements (0x%x)\n",
+		obj->used, obj->used_stat, ObjCode(obj,0));
     b = 0;
     for (i = 0; i < obj->used; i++)
     {
@@ -3463,12 +3479,12 @@ ObjDump (ObjPtr obj, int indent)
     stat = 0;
     for (i = 0; i < obj->used; i++)
     {
-	inst = ObjCode(obj, i);
-	if (inst->base.stat && inst->base.stat != stat)
+	ExprPtr	nextStat = ObjStatement (obj, inst = ObjCode (obj, i));
+	if (nextStat && nextStat != stat)
 	{
+	    stat = nextStat;
 	    FilePrintf (FileStdout, "                                     ");
-	    PrettyStat (FileStdout, inst->base.stat, False);
-	    stat = inst->base.stat;
+	    PrettyStat (FileStdout, stat, False);
 	}
 	if (branch[i])
 	    FilePrintf (FileStdout, "L%d:\n", branch[i]);

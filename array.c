@@ -51,10 +51,10 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
     if (pretty)
     {
 	FilePuts (f, "[");
-	for (i = 0; i < a->ndim; i++)
+	for (i = a->ndim - 1; i >= 0; i--)
 	{
 	    FilePutInt (f, a->dim[i]);
-	    if (i < a->ndim - 1)
+	    if (i)
 		FilePuts (f, ",");
 	}
 	FilePuts (f, "] ");
@@ -73,12 +73,12 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
 	if (pretty)
 	{
 	    j = i;
-	    k = a->ndim - 1;
-	    while (k && j % a->dim[k] == 0)
+	    k = 0;
+	    while (k < a->ndim - 1 && j % a->dim[k] == 0)
 	    {
 		ndone++;
 		j = j / a->dim[k];
-		k--;
+		k++;
 	    }
 	    for (k = 0; k < ndone; k++)
 		FileOutput (f, '}');

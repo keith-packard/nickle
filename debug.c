@@ -73,22 +73,24 @@ Bool
 DebugSetFrame (Value continuation, int offset)
 {
     ENTER ();
-    FramePtr	    frame;
+    FramePtr	    frame = continuation->continuation.frame;
+    ObjPtr	    obj = continuation->continuation.obj;
+    InstPtr	    pc = continuation->continuation.pc;
+    ExprPtr	    stat = ObjStatement (obj, pc);
     NamespacePtr    namespace;
     int		    n = offset;
     Bool	    ret;
-    ExprPtr	    stat;
     
-    frame = continuation->continuation.frame;
-    stat = continuation->continuation.pc->base.stat;
     while (frame && frame->function->func.code->base.builtin)
     {
-	stat = frame->savePc->base.stat;
+	stat = ObjStatement (frame->saveObj,
+			     frame->savePc);
 	frame = frame->previous;
     }
     while (frame && n--)
     {
-	stat = frame->savePc->base.stat;
+	stat = ObjStatement (frame->saveObj,
+			     frame->savePc);
 	frame = frame->previous;
     }
     if (stat)

@@ -354,10 +354,11 @@ typedef struct _farJump {
 FarJumpPtr  NewFarJump (int inst, int twixt, int catch, int frame);
 Value	    FarJumpContinuation (ContinuationPtr continuation, FarJumpPtr farJump);
 
+#define InstPush    0x01
+
 typedef struct _instBase {
     OpCode	opCode;
-    Bool	push;
-    ExprPtr	stat;
+    short	flags;
 } InstBase;
 
 typedef struct _instVar {
@@ -391,6 +392,16 @@ typedef struct _instArray {
     int		ndim;
     TypePtr	type;
 } InstArray;
+
+typedef enum _aInitMode {
+    AInitModeStart, AInitModeElement, AInitModeRepeat
+} AInitMode;
+
+typedef struct _instAInit {
+    InstBase	inst;
+    int		dim;
+    AInitMode	mode;
+} InstAInit;
 
 typedef struct _instCode {
     InstBase	inst;
@@ -482,6 +493,7 @@ typedef union _inst {
     InstInt	ints;
     InstStruct	structs;
     InstArray	array;
+    InstAInit	ainit;
     InstCode	code;
     InstBranch	branch;
     InstBinOp	binop;
@@ -520,10 +532,17 @@ typedef struct _nonLocal {
     ObjPtr		obj;
 } NonLocal, *NonLocalPtr;
 
+typedef struct _Stat {
+    int		inst;
+    ExprPtr	stat;
+} Stat, *StatPtr;
+
 typedef struct _obj {
     DataType	*data;
     int		size;
     int		used;
+    int		size_stat;
+    int		used_stat;
     Bool	error;
     NonLocal	*nonLocal;
 } Obj;
@@ -531,8 +550,11 @@ typedef struct _obj {
 #define ObjCode(obj,i)	(((InstPtr) (obj + 1)) + (i))
 #define ObjLast(obj)	((obj)->used - 1)
 
+#define ObjStat(obj,i)	(((StatPtr) ObjCode(obj,(obj)->size)) + (i))
+
 ObjPtr	CompileStat (ExprPtr expr, CodePtr code);
 ObjPtr	CompileExpr (ExprPtr expr, CodePtr code);
+ExprPtr	ObjStatement (ObjPtr obj, InstPtr inst);
 
 typedef enum _wakeKind {
     WakeAll, WakeOne
@@ -550,7 +572,7 @@ void	    ThreadSetState (Value thread, ThreadState state);
 void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);
 void	    TraceFunction (FramePtr frame, CodePtr code, ExprPtr name);
-void	    TraceFrame (FramePtr frame, InstPtr pc);
+void	    TraceFrame (FramePtr frame, ObjPtr obj, InstPtr pc);
 
 typedef struct _jump {
     DataType	    *data;

@@ -883,8 +883,8 @@ stars		: stars COMMA TIMES
 		| TIMES
 		    { $$ = NewExprTree (COMMA, 0, 0); }
 		;
-dims		: dims COMMA simpleexpr
-		    { $$ = NewExprTree (COMMA, $3, $1); }
+dims		: simpleexpr COMMA dims
+		    { $$ = NewExprTree (COMMA, $1, $3); }
 		| simpleexpr
 		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
@@ -1293,6 +1293,10 @@ arrayinit    	: OC arrayelts opt_comma opt_dots CC
 							 0);
 			}
 			$$ = NewExprTree (ARRAY, elts, 0); 
+		    }
+		| OC opt_type FUNC namespace_start args block namespace_end CC
+		    {
+			$$ = NewExprCode (NewFuncCode ($2, $5, $6), 0);
 		    }
 		;
 arrayelts	: arrayelts COMMA arrayelt

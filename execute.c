@@ -308,120 +308,159 @@ ThreadArray (Value thread, int ndim, Type *type)
 }
 
 static int
-ThreadInitArrayPart (Value thread, Value a, int base, int dim, int s)
-{
-    ENTER();
-    int	    ninit;
-    int	    n;
-    int	    ns;
-    int	    size;
-    Bool    replicate = False;
-
-    ninit = IntPart (Stack (s), "Invalid array initialization");
-    if (ninit < 0)
-    {
-	replicate = True;
-	ninit = -ninit;
-    }
-    ++s;
-    if (aborting)
-    {
-	EXIT ();
-	return s;
-    }
-    if (ninit > a->array.dim[dim])
-    {
-	RaiseStandardException (exception_invalid_argument,
-				"too many array initializers",
-				2, NewInt (ninit), NewInt (a->array.dim[dim]));
-	EXIT ();
-	return s;
-    }
-    if (dim == a->array.ndim - 1)
-    {
-	if (replicate)
-	    n = a->array.dim[dim] - 1;
-	else
-	    n = ninit - 1;
-	for (; n >= 0; n--)
-	{
-	    if (!TypeCompatibleAssign (a->array.type, Stack(s)))
-	    {
-		RaiseStandardException (exception_invalid_argument,
-				"Incompatible types in array initialization",
-				2, NewInt(n), Stack(s));
-	    }
-	    BoxValueSet (a->array.values, base + n, Copy (Stack(s)));
-	    if (n < ninit)
-		s++;
-	}
-    }
-    else
-    {
-	size = 1;
-	for (n = dim + 1; n < a->array.ndim; n++)
-	    size = size * a->array.dim[n];
-	if (replicate)
-	    n = a->array.dim[dim] - 1;
-	else
-	    n = ninit - 1;
-	base += size * (n);
-	for (; n >= 0; n--)
-	{
-	    ns = ThreadInitArrayPart (thread, a, base, dim+1, s);
-	    base -= size;
-	    if (n < ninit)
-		s = ns;
-	}
-    }
-    EXIT ();
-    return s;
-}
-
-static void
-ThreadInitArray (Value thread, Value a, int ninit)
-{
-    ENTER ();
-    ThreadInitArrayPart (thread, a, 0, 0, 0);
-    EXIT ();
-}
-
-static int
-ThreadArrayIndex (Value thread, int ndim)
+ThreadArrayIndex (Value array, Value thread, int ndim, Value last, int off)
 {
     int	    i;
     int	    dim;
     int	    part;
-    Value   a;
     Value   d;
     
-    a = thread->thread.continuation.value;
-    d = Stack(0);
-    if (!ValueIsInt(d) || 
-	(i = d->ints.value) < 0 || 
-	a->array.dim[0] <= i)
+    i = 0;
+    for (dim = ndim - 1; dim >= 0; dim--)
     {
-	RaiseStandardException (exception_invalid_array_bounds,
-				"Array index out of bounds",
-				2, a, Stack(0));
-	return 0;
-    }
-    for (dim = 1; dim < ndim; dim++)
-    {
-	d = Stack(dim);
+	if (dim == 0)
+	    d = last;
+	else
+	    d = Stack(dim + off - 1);
 	if (!ValueIsInt(d) || 
 	    (part = d->ints.value) < 0 || 
-	    a->array.dim[dim] <= part)
+	    array->array.dim[dim] <= part)
 	{
 	    RaiseStandardException (exception_invalid_array_bounds,
 				    "Array index out of bounds",
-				    2, a, Stack(dim));
+				    2, array, Stack(dim + off - 1));
 	    return 0;
 	}
-	i = i * a->array.dim[dim] + part;
+	i = i * array->array.dim[dim] + part;
     }
     return i;
 }
+
+/*
+ * Array initialization
+ *
+ * Array initialization uses the stack to hold temporary index values while
+ * the array is walked.  The stack looks like:
+ *
+ *	array
+ *	major-index
+ *	...
+ *	minor-index
+ *	num-dimensions
+ *
+ * Each Element Repeat instruction indicates which dimension
+ * is being stepped over.  When the entire array has been walked,
+ * a final Element inst with ndim set to the dimensionality of the
+ * array is executed which pops the whole mess off the stack and
+ * returns the completed array
+ *
+ * Repeat elements indicate along which dimension the repeat occurs.
+ * The initial value for the repeat has already been stored in the
+ * array, so the task is just to copy that first element to the end
+ * of the dimension.
+ */
+ 
+static void
+ThreadArrayReplicate (Value thread, Value array, int dim, int start)
+{
+    int		dimsize = 1;
+    int		i;
+    int		total;
+    BoxElement	*elements;
+
+    for (i = 0; i < dim; i++)
+	dimsize *= array->array.dim[i];
+    start = start - dimsize;
+    total = array->array.dim[dim] * dimsize;
+    elements = BoxElements (array->array.values);
+    for (i = start + dimsize; i % total; i += dimsize)
+	memmove (elements + i, elements + start,
+		 dimsize * sizeof (elements[0]));
+}
+
+static Value
+ThreadArrayInit (Value thread, Value value, AInitMode mode, 
+		 int dim, int *stack)
+{
+    ENTER ();
+    Value   array;
+    int	    i;
+    int	    ndim;
+
+    if (aborting)
+	RETURN(value);
+    switch (mode) {
+    case AInitModeStart:
+	complete = True;
+	STACK_PUSH (thread->thread.continuation.stack, value);
+	for (i = 0; i < dim; i++)
+	    STACK_PUSH (thread->thread.continuation.stack, Zero);
+	STACK_PUSH (thread->thread.continuation.stack, NewInt(dim));
+	break;
+    case AInitModeElement:
+        ndim = Stack(0)->ints.value;
+	array = Stack(ndim+1);
+	/*
+	 * Check and see if we're done
+	 */
+	if (dim == ndim)
+	{
+	    *stack = ndim + 2;
+	    value = array;
+	    break;
+	}
+	/*
+	 * Initialize a single value?
+	 */
+	if (dim == 0)
+	{
+	    if (!TypeCompatibleAssign (array->array.type, value))
+	    {
+		RaiseStandardException (exception_invalid_argument,
+				"Incompatible types in array initialization",
+				2, array, value);
+		break;
+	    }
+	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2);
+	    if (aborting)
+		break;
+	    complete=True;
+	    BoxValueSet (array->array.values, i, Copy (value));
+	}
+	complete = True;
+	/*
+	 * Step to the next element
+	 */
+	STACK_DROP(thread->thread.continuation.stack, dim+1);
+	STACK_PUSH(thread->thread.continuation.stack,
+		   Plus (STACK_POP(thread->thread.continuation.stack),
+				   One));
+	/*
+	 * Reset remaining indices to zero
+	 */
+	while (--dim >= 0)
+	    STACK_PUSH (thread->thread.continuation.stack, Zero);
+	STACK_PUSH (thread->thread.continuation.stack, NewInt (ndim));
+	break;
+    case AInitModeRepeat:
+        ndim = Stack(0)->ints.value;
+	array = Stack(ndim+1);
+	i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2);
+	ThreadArrayReplicate (thread, array, dim, i);
+	break;
+    }
+#ifdef DEBUG_AINIT
+    if (*stack == 0)
+    {
+	FilePrintf (FileStdout, "ndim %v\n", Stack(0));
+	for (i = 0; i < Stack(0)->ints.value; i++)
+	    FilePrintf (FileStdout, "dim %d: %v\n", i, Stack(1+i));
+	FilePrintf (FileStdout, "array: %v\n", Stack(1+i));
+    }
+#endif
+    RETURN (value);
+}
+
 
 static Value
 ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
@@ -775,8 +814,9 @@ ThreadsRun (Value thread, Value lex)
 		value = ThreadArray (thread, stack, inst->array.type);
 		break;
 	    case OpInitArray:
-		stack = inst->ints.value;
-		ThreadInitArray (thread, value, stack);
+		stack = 0;
+		value = ThreadArrayInit (thread, value, inst->ainit.mode,
+					 inst->ainit.dim, &stack);
 		break;
 	    case OpBuildStruct:
 		value = NewStruct (inst->structs.structs, False);
@@ -814,7 +854,9 @@ ThreadsRun (Value thread, Value lex)
 	    case OpArray:
 	    case OpArrayRef:
 	    case OpArrayRefStore:
-		switch (ValueTag(value)) {
+		stack = inst->ints.value;
+		v = Stack(stack-1);
+		switch (ValueTag(v)) {
 		    char    *s;
 		case rep_string:
 		    if (inst->base.opCode != OpArray)
@@ -831,39 +873,37 @@ ThreadsRun (Value thread, Value lex)
 						2, NewInt (inst->ints.value), value);
 			break;
 		    }
-		    stack = 0;
-		    v = Stack(stack); stack++;
-		    i = IntPart (v, "Invalid string index");
+		    i = IntPart (value, "Invalid string index");
 		    if (aborting)
 			break;
-		    s = StringChars (&value->string);
+		    s = StringChars (&v->string);
 		    if (i < 0 || StringLength (s) < i)
 		    {
 			RaiseStandardException (exception_invalid_binop_values,
 						"String index out of bounds",
-						2, v, value);
+						2, value, v);
 			break;
 		    }
 		    value = NewInt (StringGet (s, i));
 		    break;
 		case rep_array:
-		    if (inst->ints.value != value->array.ndim)
+		    if (inst->ints.value != v->array.ndim)
 		    {
 			RaiseStandardException (exception_invalid_binop_values,
 						"Mismatching dimensionality",
-						2, NewInt (inst->ints.value), value);
+						2, NewInt (inst->ints.value), v);
 			break;
 		    }
 		    stack = inst->ints.value;
-		    i = ThreadArrayIndex (thread, stack);
+		    i = ThreadArrayIndex (v, thread, stack, value, 0);
 		    if (!aborting)
 		    {
 			if (inst->base.opCode != OpArrayRefStore)
-			    ThreadBoxCheck (value->array.values, i, value->array.type);
+			    ThreadBoxCheck (v->array.values, i, v->array.type);
 			if (inst->base.opCode == OpArray)
-			    value = BoxValue (value->array.values, i);
+			    value = BoxValue (v->array.values, i);
 			else
-			    value = NewRef (value->array.values, i);
+			    value = NewRef (v->array.values, i);
 		    }
 		    break;
 		default:
@@ -1114,7 +1154,7 @@ ThreadsRun (Value thread, Value lex)
 		thread->thread.continuation.value = value;
 		if (stack)
 		    STACK_DROP (thread->thread.continuation.stack, stack);
-		if (inst->base.push)
+		if (inst->base.flags & InstPush)
 		    STACK_PUSH (thread->thread.continuation.stack, value);
 		thread->thread.continuation.pc = next;
 		if (thread->thread.next)

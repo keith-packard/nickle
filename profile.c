@@ -36,7 +36,7 @@ ProfileInterrupt (Value thread)
     pc = thread->thread.continuation.pc;
     if (pc)
     {
-	stat = pc->base.stat;
+	stat = ObjStatement (thread->thread.continuation.obj,pc);
 	if (stat)
 	{
 	    stat->base.ticks += ticks;
@@ -46,12 +46,9 @@ ProfileInterrupt (Value thread)
     for (frame = thread->thread.continuation.frame; frame; frame = frame->previous)
     {
 	pc = frame->savePc;
-	if (pc)
-	{
-	    stat = pc->base.stat;
-	    if (stat)
-		stat->base.sub_ticks += ticks;
-	}
+        stat = ObjStatement (frame->saveObj, frame->savePc);
+        if (stat)
+	    stat->base.sub_ticks += ticks;
     }
 }
 

@@ -1,8 +1,28 @@
-/*
- * Add common commands
- */
-{
+extend namespace Command {
+    /*
+     * These are used by the parser when building
+     * programs to run from the top level of the
+     * interpreter
+     */
     
+    public void display (poly v) {
+	if (is_void (v))
+	    return;
+	History::insert (v);
+	printf (format, v);
+	putchar ('\n');
+    }
+
+    public void display_base (poly v, int base) {
+	History::insert (v);
+	File::print (stdout, v, "g", base, 0, -1, " ");
+	putchar ('\n');
+    }
+
+    /*
+     * Now add a collection of useful commands
+     */
+
     /*
      * quit
      *
@@ -17,7 +37,7 @@
 	    code = args[0];
 	exit (code);
     }
-    Command::new ("quit", do_quit);
+    new ("quit", do_quit);
 
     /*
      * history
@@ -40,7 +60,7 @@
 	    break;
 	}
     }
-    Command::new ("history", do_history);
+    new ("history", do_history);
 
     /*
      * print
@@ -49,14 +69,14 @@
      */
     void do_pretty_print (string[*] names...)
     {
-	Command::pretty_print (stdout, names ...);
+	pretty_print (stdout, names ...);
     }
 
-    Command::new_names ("print", do_pretty_print);
+    new_names ("print", do_pretty_print);
 
-    Command::new_names ("edit", Command::edit);
+    new_names ("edit", edit);
 
-    Command::new_names ("undefine", Command::undefine);
+    new_names ("undefine", undefine);
 
     /*
      * load
@@ -65,11 +85,11 @@
      */
     void do_load (string f)
     {
-	if (!Command::lex_file (f))
+	if (!lex_file (f))
 	    File::fprintf (stderr, "Cannot load file \"%s\"\n", f);
     }
 
-    Command::new ("load", do_load);
+    new ("load", do_load);
 
 
     /*
@@ -107,13 +127,13 @@
 	    if (do_import)
 	    {
 		string imp = File::sprintf("import %s;\n", name);
-		Command::lex_string(imp);
+		lex_string(imp);
 	    }
 	}
 
 	for (int i = 0; i < dim(args); i++) {
 	    string[*]	name = args[i];
-	    if (Command::valid_name (name)) {
+	    if (valid_name (name)) {
 		for (int i = 0; i < dim(name); i++)
 		    import_if_needed(name[i]);
 		continue;
@@ -142,7 +162,7 @@
 	    {
 		import_if_needed(name[j]);
 		string f = make_filename(name[j]);
-		if (!Command::lex_library (f)) 
+		if (!lex_library (f)) 
 		{
 		    File::fprintf (stderr,
 				   "Cannot load %s " +
@@ -168,7 +188,7 @@
 	do_auto(args, true);
     }
 
-    Command::new_names ("autoimport", do_autoimport);
+    new_names ("autoimport", do_autoimport);
 
     /*
      * autoload
@@ -182,7 +202,7 @@
 	do_auto(args, false);
     }
 
-    Command::new_names ("autoload", do_autoload);
+    new_names ("autoload", do_autoload);
 
     /*
      * char
@@ -197,35 +217,101 @@
 		    c[i], c[i], String::new (c[i]));
     }
     
-    Command::new ("char", do_char);
+    new ("char", do_char);
 
-}
+    /*
+     * Command line processing
+     */
+    string[*] process_args(string[*] argv) 
+    {
+	typedef struct {
+	    bool	    library;
+	    string	    name;
+	} lex_arg;
+	lex_arg[dim(argv)]	files;
+	int			nfiles = 0;
+	bool		lex_stdin = true;
+	bool		done = false;
+	int			i = 0;
 
-/*
- * Extend command namespace for output
- */
+	while (!done && i < dim (argv))
+	{
+	    switch (argv[i]) {
+	    case "-e":
+		/*
+		 * -e -- remaining arguments are a single expression
+		 */
+		string  expr = "";
+		while (++i < dim(argv))
+		{
+		    expr += argv[i];
+		    if (i < dim(argv)-1)
+			expr += " ";
+		    else
+			expr += "\n";
+		}
+		lex_string (expr);
+		done = true;
+		lex_stdin = false;
+		break;
+	    case "-f":
+		/*
+		 * -f -- lex a file
+		 */
+		i++;
+		files[nfiles].library = false;
+		files[nfiles].name = argv[i];
+		nfiles++;
+		i++;
+		break;
+	    case "-l":
+		i++;
+		files[nfiles].library = true;
+		files[nfiles].name = argv[i];
+		nfiles++;
+		i++;
+		break;
+	    default:
+		/*
+		 * Add the script base directory to the library path
+		 */
+		nickle_path += ":" + String::dirname(argv[0]);
+		files[nfiles].library = false;
+		files[nfiles].name = argv[i];
+		nfiles++;
+		done = true;
+		lex_stdin = false;
+		break;
+	    }
+	}
+	if (lex_stdin)
+	{
+	    /*
+	     * Add the current directory to the library path
+	     */
+	    nickle_path += ":.";
+	    lex_input (stdin, "<stdin>", false, File::isatty (stdin));
+	    try {
+		lex_file (Environ::get ("HOME") + "/.nicklerc");
+	    } catch invalid_argument (msg, int i, poly value) {
+		/* do nothing */;
+	    } catch File::open_error (string name,
+				      File::error_type err,
+				      string msg) {
+		/* do nothing */;
+	    }
+	}
 
-extend namespace Command {
-
-    public void display (poly v) {
-	if (is_void (v))
-	    return;
-	History::insert (v);
-	printf (format, v);
-	putchar ('\n');
+	while (nfiles-- > 0)
+	{
+	    if (files[nfiles].library)
+		lex_library (files[nfiles].name);
+	    else
+		lex_file (files[nfiles].name);
+	}
+	/*
+	 * Reset argv to hold remaining arguments
+	 */
+	return (string[dim(argv) - i]) { [j] = argv[i+j] };
     }
-
-    public void display_base (poly v, int base) {
-	History::insert (v);
-	File::print (stdout, v, "g", base, 0, -1, " ");
-	putchar ('\n');
-    }
-
-    public string dirname(string name) {
-	int n = String::rindex(name, "/");
-	if (n == -1)
-	    return ".";
-	return (String::substr(name, 0, n));
-    }
-
 }

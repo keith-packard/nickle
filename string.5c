@@ -15,4 +15,11 @@ extend namespace String {
 	return -1;
     }
 
+    public string dirname(string name) {
+	int n = rindex(name, "/");
+	if (n == -1)
+	    return ".";
+	return (substr(name, 0, n));
+    }
+
 }

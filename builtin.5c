@@ -4,9 +4,13 @@
 
 # Set up the library path correctly and
 # provide the "library" command.
+# Lives in this file because it's necessary
+# for bootstrapping
+
 extend namespace Command {
     /* actually controls library loading */
-    public string nickle_path = nickle_libdir + ":.";
+    public string nickle_path = nickle_libdir;
+
     if (Environ::check("NICKLEPATH"))
 	nickle_path = Environ::get("NICKLEPATH");
 
@@ -92,99 +96,5 @@ autoload PRNG;
 
 # parse the command line
 extend namespace Command {
-    public string[*] process_args(string[*] argv) 
-    {
-	typedef struct {
-	    bool	    library;
-	    string	    name;
-	} lex_arg;
-	lex_arg[dim(argv)]	files;
-	int			nfiles = 0;
-	bool		lex_stdin = true;
-	bool		done = false;
-	int			i = 0;
-
-	while (!done && i < dim (argv))
-	{
-	    switch (argv[i]) {
-	    case "-e":
-		/*
-		 * -e -- remaining arguments are a single expression
-		 */
-		string  expr = "";
-		while (++i < dim(argv))
-		{
-		    expr += argv[i];
-		    if (i < dim(argv)-1)
-			expr += " ";
-		    else
-			expr += "\n";
-		}
-		Command::lex_string (expr);
-		done = true;
-		lex_stdin = false;
-		break;
-	    case "-f":
-		/*
-		 * -f -- lex a file
-		 */
-		i++;
-		files[nfiles].library = false;
-		files[nfiles].name = argv[i];
-		nfiles++;
-		i++;
-		break;
-	    case "-l":
-		i++;
-		files[nfiles].library = true;
-		files[nfiles].name = argv[i];
-		nfiles++;
-		i++;
-		break;
-	    default:
-		/*
-		 * Add the script base directory to the library
-		 * path
-		 */
-		if (!Environ::check("NICKLEPATH")) {
-		    Command::nickle_path =
-			Command::nickle_libdir +
-			":" +
-			Command::dirname(argv[0]);
-		}
-		files[nfiles].library = false;
-		files[nfiles].name = argv[i];
-		nfiles++;
-		done = true;
-		lex_stdin = false;
-		break;
-	    }
-	}
-	if (lex_stdin)
-	{
-	    Command::lex_input (stdin, "<stdin>", false, File::isatty (stdin));
-	    try {
-		Command::lex_file (Environ::get ("HOME") + "/" + ".nicklerc");
-	    } catch invalid_argument (msg, int i, poly value) {
-		;
-	    } catch File::open_error (string name,
-				      File::error_type err,
-				      string msg) {
-		;
-	    }
-	}
-
-	while (nfiles-- > 0)
-	{
-	    if (files[nfiles].library)
-		Command::lex_library (files[nfiles].name);
-	    else
-		Command::lex_file (files[nfiles].name);
-	}
-	/*
-	 * Reset argv to hold remaining arguments
-	 */
-	return (string[dim(argv) - i]) { [j] = argv[i+j] };
-    }
+    argv = process_args (argv);
 }
-argv = Command::process_args (argv);

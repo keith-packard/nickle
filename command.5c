@@ -1,0 +1,44 @@
+namespace Syntax {
+    void function do_quit (int args...)
+    {
+	int	code = 0;
+	
+	if (dim(args) > 0)
+	    code = args[0];
+	exit (code);
+    }
+    Command::new ("quit", do_quit);
+
+    void function do_history (int args...)
+    {
+	switch (dim (args)) {
+	case 0:
+	    History::show (format);
+	    break;
+	case 1:
+	    History::show (format, args[0]);
+	    break;
+	default:
+	    History::show (format, args[0], args[1]);
+	    break;
+	}
+    }
+    Command::new ("history", do_history);
+
+    void function do_load (string file_name)
+    {
+	Command::push_input (file_name);
+    }
+    
+    Command::new ("load", do_load);
+
+    void function do_pretty_print (string[] names)
+    {
+	Command::pretty_print (stdout, names);
+    }
+
+    Command::new_names ("print", do_pretty_print);
+
+    Command::new_names ("edit", Command::edit);
+    Command::new_names ("undefine", Command::undefine);
+}

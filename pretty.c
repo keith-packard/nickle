@@ -539,6 +539,15 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest, ProfileData 
 	PrettyExpr (f, e->tree.right->tree.right, selfPrec, level, nest, pd);
 	break;
     case DOLLAR:
+	if (e->tree.left)
+	{
+	    FilePuts (f, "$");
+	    PrettyExpr (f, e->tree.left, selfPrec, level, nest, pd);
+	}
+	else
+	    FilePuts (f, ".");
+	break;
+    case EXPR:
 	PrettyExpr (f, e->tree.left, selfPrec, level, nest, pd);
 	break;
     }

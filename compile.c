@@ -2481,6 +2481,19 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	expr->base.type = typePrim[rep_thread];
 	break;
     case DOLLAR:
+	{
+	    ExprPtr value, new;
+	    
+	    if (expr->tree.left)
+		value = expr->tree.left;
+	    else
+		value = NewExprConst (TEN_NUM, Zero);
+	    new = BuildCall ("History", "fetch", 1, value);
+	    obj = _CompileExpr (obj, new, True, stat, code);
+	}
+	expr->base.type = typePoly;
+	break;
+    case EXPR:
 	/* reposition statement reference so top-level errors are nicer*/
 	obj = _CompileExpr (obj, expr->tree.left, evaluate, expr, code);
 	expr->base.type = expr->tree.left->base.type;

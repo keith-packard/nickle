@@ -241,7 +241,7 @@ command		: not_command expr reset NL
 			FramePtr	f;
 			
 			e = BuildCall ("Command", "display",
-				       1,NewExprTree (DOLLAR, $2, 0));
+				       1,NewExprTree (EXPR, $2, 0));
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, 0));
 			ThreadsRun (t, 0);
@@ -1332,7 +1332,7 @@ primary		: fullname
 		| DOLLAR opt_integer
 		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_NUM, $2)); }
 		| DOT
-		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_NUM, Zero)); }
+		    { $$ = NewExprTree (DOLLAR, 0, 0); }
 		| OP expr CP
 		    { $$ = $2; }
 		| OP block CP

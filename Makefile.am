@@ -29,5 +29,5 @@ DEFINES = -DNICKLELIB=\""$(datadir)"\" -DBUILD=\""`$(srcdir)/date-sh`"\"
 CDEBUGFLAGS = -O -g
 
 CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
--Wmissing-prototypes -Wmissing-declarations \
--Wnested-externs $(DEFINES)
+	-Wmissing-prototypes -Wmissing-declarations \
+	-Wnested-externs $(DEFINES)

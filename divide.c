@@ -16,7 +16,7 @@
 
 #include	"value.h"
 
-#define CHECK
+#undef CHECK
 #undef DEBUG
 
 #if defined(DEBUG) || defined(CHECK)

@@ -858,6 +858,8 @@ primary		: NAME
 		    { $$ = NewExprTree (FORK, (Expr *) 0, $3); }
 		| primary DOT NAME
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3)); }
+		| primary COLON NAME
+		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3)); }
 		| primary ARROW NAME
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3)); }
 		;

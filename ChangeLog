@@ -1,3 +1,10 @@
+2005-03-15  Keith Packard  <keithp@keithp.com>
+
+	* hash.c: (HashGet):
+	Check for NULL hash value in a valid hash element.  This
+	occurs when a reference to a hash element is made and then
+	not stored through.
+
 2005-02-24  Eric Anholt  <anholt@freedesktop.org>
 
 	reviewed by: Keith Packard

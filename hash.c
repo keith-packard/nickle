@@ -341,6 +341,7 @@ HashGet (Value hv, Value key)
     HashTablePtr    ht = &hv->hash;
     Value	    hash = ValueHash (key);
     Value	    *he;
+    Value	    value;
 
     he = Find (ht, hash, key);
     if (!HashEltValid (he))
@@ -361,7 +362,14 @@ HashGet (Value hv, Value key)
 	HashEltKey(he) = key;
 	HashEltValue(he) = Copy(ht->def);
     }
-    return HashEltValue (he);
+    value = HashEltValue (he);
+    if (!value)
+    {
+	RaiseStandardException (exception_uninitialized_value,
+				"uninitialized hash element", 0);
+	return (Void);
+    }
+    return value;
 }
 
 void

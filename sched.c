@@ -1009,7 +1009,7 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 			except->symbol.name);
 	if (args)
 	{
-	    for (i = args->array.ents - 1; i >= 0; i--)
+	    for (i = 0; i < args->array.ents; i++)
 		PrintError ("\t%v\n", BoxValueGet (args->array.values, i));
 	}
 	SetSignalError ();

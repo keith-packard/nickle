@@ -35,6 +35,7 @@ typedef struct _AtomList    *AtomListPtr;
 typedef union _types	    *TypesPtr;
 typedef struct _structType  *StructTypePtr;
 typedef union _expr	    *ExprPtr;
+typedef struct _catch	    *CatchPtr;
 
 typedef struct _AtomList {
     DataType	*data;
@@ -245,6 +246,7 @@ Types	*TypeCombineAssign (Types *lvalue, int tag, Types *rvalue);
 Types	*TypeCombineBinary (Types *left, int tag, Types *right);
 Types	*TypeCombineUnary (Types *down, int tag);
 Types	*TypeCombineStruct (Types *type, int tag, Atom atom);
+Types	*TypeCombineReturn (Types *type);
 Types	*TypeCombineFunction (Types *type);
 Bool	TypeEqual (Types *a, Types *b);
 Bool	TypeCompatible (Types *a, Types *b, Bool contains);
@@ -391,8 +393,6 @@ typedef struct _continuation	*ContinuationPtr;
 typedef union _value	*Value;
 typedef struct _obj	*ObjPtr;
 typedef union _inst	*InstPtr;
-typedef struct _catch   *CatchPtr;
-typedef struct _except	*ExceptPtr;
 
 typedef struct _func {
     BaseValue	base;
@@ -421,7 +421,6 @@ typedef struct _thread {
     FramePtr	frame;
     ObjPtr	code;
     CatchPtr	catches;
-    ExceptPtr	exception;
     /*
      * Thread status
      */
@@ -456,6 +455,7 @@ typedef struct _continuation {
     FramePtr	frame;
     InstPtr	pc;
     StackObject	*stack;
+    CatchPtr	catches;
 } Continuation;
 
 typedef union _value {
@@ -546,6 +546,9 @@ Value	NewIntegerFloat (Integer *i, unsigned prec);
 Value	NewNaturalFloat (Sign sign, Natural *n, unsigned prec);
 Value	NewRationalFloat (Rational *r, unsigned prec);
 Value	NewValueFloat (Value av, unsigned prec);
+Value	NewContinuation (FramePtr frame, InstPtr pc, 
+			 StackObject *stack,
+			 CatchPtr catches);
 
 unsigned    FpartLength (Fpart *a);
 

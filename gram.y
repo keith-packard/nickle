@@ -71,9 +71,8 @@ void yyerror (char *fmt, ...);
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
 %token <tval>	FILET MUTEX SEMAPHORE CONTINUATION
-%token		FUNCTION FUNC EXCEPTION
+%token		FUNCTION FUNC EXCEPTION RAISE
 %token		TYPEDEF IMPORT NAMESPACE NEW
-%token		EXCEPTION
 %token <pval>	PUBLIC
 %token		IF ELSE WHILE DO FOR BREAK CONTINUE RETURNTOK FORK
 %token		TRY CATCH TWIXT
@@ -378,6 +377,8 @@ statement	: IF ignorenl OP expr CP statement
 					NewTypesFunc (0, False, $6),
 					$1);
 		    }
+		| RAISE NAME OP opt_exprs CP
+		    { $$ = NewExprTree (RAISE, NewExprAtom ($2), $4); }
 		| decl ignorenl opt_initnames SEMI
 		    { $$ = NewExprDecl ($3, $1.class, $1.type, $1.publish); }
 		| publish TYPEDEF ignorenl opt_type names SEMI
@@ -403,7 +404,7 @@ statement	: IF ignorenl OP expr CP statement
 					  0);
 		    }
 		| TRY ignorenl statement catches
-		    { $$ = NewExprTree (TRY, $3, $4); }
+		    { $$ = NewExprTree (CATCH, $3, $4); }
 		| TWIXT ignorenl OP opt_expr SEMI opt_expr CP statement
 		    { $$ = NewExprTree (TWIXT, 
 					NewExprTree (TWIXT, $4, $6),
@@ -421,7 +422,7 @@ catches		:   catch catches
 		    { $$ = 0; }
 		;
 catch		: CATCH NAME OP opt_argdefines CP block
-		    { $$ = 0; }
+		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $6), $2); }
 func_body    	: block
 		| SEMI
 		    { $$ = 0; }

@@ -485,7 +485,10 @@ ContinuationMark (void *object)
 {
     ContinuationPtr continuation = object;
 
+    MemReference (continuation->value.type);
     MemReference (continuation->frame);
+    MemReference (continuation->stack);
+    MemReference (continuation->catches);
 }
 
 static Bool
@@ -520,8 +523,9 @@ ValueType    ContinuationType = {
     0,
 };
 
-static Value
-NewContinuation (FramePtr frame, InstPtr pc, StackObject *stack)
+Value
+NewContinuation (FramePtr frame, InstPtr pc, 
+		 StackObject *stack, CatchPtr catches)
 {
     ENTER ();
     Value   ret;
@@ -531,6 +535,7 @@ NewContinuation (FramePtr frame, InstPtr pc, StackObject *stack)
     ret->continuation.frame = frame;
     ret->continuation.pc = pc;
     ret->continuation.stack = stack;
+    ret->continuation.catches = catches;
     RETURN (ret);
 }
 
@@ -552,7 +557,8 @@ do_set_jump (InstPtr *next, Value continuation_ref, Value ret)
 	RETURN (Zero);
     }
     continuation = NewContinuation (running->thread.frame, *next,
-				    StackCopy (running->thread.stack));
+				    StackCopy (running->thread.stack),
+				    running->thread.catches);
     RefValue (continuation_ref) = continuation;
     RETURN (ret);
 }
@@ -571,6 +577,32 @@ do_long_jump (InstPtr *next, Value continuation, Value ret)
     }
     running->thread.frame = continuation->continuation.frame;
     running->thread.stack = StackCopy (continuation->continuation.stack);
+    running->thread.catches = continuation->continuation.catches;
     *next = continuation->continuation.pc;
     RETURN (ret);
+}
+
+static void
+MarkCatch (void *object)
+{
+    CatchPtr	catch = object;
+
+    MemReference (catch->previous);
+    MemReference (catch->continuation);
+    MemReference (catch->exception);
+}
+
+DataType    CatchType = { MarkCatch, 0 };
+
+CatchPtr
+NewCatch (CatchPtr previous, Value continuation, SymbolPtr exception)
+{
+    ENTER();
+    CatchPtr	catch;
+
+    catch = ALLOCATE (&CatchType, sizeof (Catch));
+    catch->previous = previous;
+    catch->continuation = continuation;
+    catch->exception = exception;
+    RETURN (catch);
 }

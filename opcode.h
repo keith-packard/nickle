@@ -26,10 +26,10 @@ typedef enum _OpCode {
     OpReturn,
     OpFunction,
     OpFork,
-    OpTry,
-    OpEndTry,
+    OpCatch,
+    OpException,
+    OpEndCatch,
     OpRaise,
-    OpReRaise,
     /*
      * Expr op codes
      */

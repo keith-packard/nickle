@@ -131,6 +131,15 @@ extern FramePtr	NewFrame (Value		function,
 			  BoxTypesPtr	dynamics,
 			  BoxPtr	statics);
 
+typedef struct _catch {
+    DataType	    *data;
+    CatchPtr	    previous;
+    Value	    continuation;
+    SymbolPtr	    exception;
+} Catch;
+
+CatchPtr    NewCatch (CatchPtr previous, Value continuation, SymbolPtr exception);
+
 # define	NOTHING	0
 # define	CONT	1
 # define	BRK	2
@@ -186,25 +195,6 @@ Expr	*NewExprConst (Value val);
 Expr	*NewExprAtom (Atom atom);
 Expr	*NewExprCode (CodePtr code, Atom name);
 Expr	*NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish);
-
-typedef struct _catch {
-    DataType	*data;
-    CatchPtr	previous;
-    Atom	exception;
-    FramePtr	frame;
-    InstPtr	pc;
-} Catch;
-
-Catch	*NewCatch (CatchPtr previous, Atom exception, FramePtr frame, InstPtr pc);
-InstPtr	*CatchThrow (Value thread, ExceptPtr except);
-
-typedef struct _except {
-    DataType	*data;
-    Atom	exception;
-    BoxPtr	args;
-} Except;
-
-Except	*NewExcept (Atom exception, int nargs, Value *args);
 
 typedef struct _codeBase {
     DataType	*data;
@@ -310,9 +300,15 @@ typedef struct _instObj {
 
 typedef struct _instCatch {
     InstBase	inst;
-    Atom	exception;
+    SymbolPtr	exception;
     int		offset;
 } InstCatch;
+
+typedef struct _instRaise {
+    InstBase	inst;
+    int		argc;
+    SymbolPtr	exception;
+} InstRaise;
 
 typedef union _inst {
     InstBase	base;
@@ -325,6 +321,7 @@ typedef union _inst {
     InstBranch	branch;
     InstObj	obj;
     InstCatch	catch;
+    InstRaise	raise;
 } Inst;
 
 typedef struct _obj {
@@ -359,7 +356,7 @@ extern Value	stopped;    /* stopped threads */
 extern Bool	complete;   /* must complete current inst */
 extern int	runnable;   /* number of non-broken threads */
 
-void	    ObjDump (ObjPtr obj);
+void	    ObjDump (ObjPtr obj, int indent);
 
 Symbol	*checkSym(Symbol *, Class, Type);
 Symbol	*extractSym (Symbol *);

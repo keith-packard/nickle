@@ -129,6 +129,7 @@ fork		{ yylval.ival = FORK; return FORK; }
 namespace    	{ yylval.ival = NAMESPACE; return NAMESPACE; }
 import		{ yylval.ival = IMPORT; return IMPORT; }
 exception	{ yylval.ival = EXCEPTION; return EXCEPTION; }
+raise		{ yylval.ival = RAISE; return RAISE; }
 public		{ yylval.pval = publish_public; return PUBLIC; }
 ";"		{ yylval.ival = SEMI; return SEMI; }
 ","		{ yylval.ival = COMMA; return COMMA; }

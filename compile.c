@@ -499,6 +499,85 @@ CompileGetArg (ExprPtr arg, int i)
     return arg;
 }
 
+static ObjPtr
+CompileArgs (ObjPtr obj, int *argcp, ExprPtr arg, NamespacePtr namespace, ExprPtr stat)
+{
+    ENTER ();
+    int	argc;
+    
+    argc = 0;
+    while (arg)
+    {
+	obj = _CompileExpr (obj, arg->tree.left, namespace, stat);
+	SetPush (obj);
+	arg = arg->tree.right;
+	argc++;
+    }
+    *argcp = argc;
+    RETURN(obj);
+}
+
+/*
+ * Typecheck function object and arguments
+ */
+static Bool
+CompileTypecheckArgs (ObjPtr	obj,
+		      Types	*type,
+		      ExprPtr	args,
+		      int	argc,
+		      ExprPtr	stat)
+{
+    ENTER ();
+    Bool	ret = True;
+    ArgType	*argt;
+    ExprPtr	arg;
+    Types	*func_type;
+    int		i;
+    
+    func_type = TypeCombineFunction (type);
+    if (!func_type)
+    {
+	CompileError (obj, stat, "Incompatible type %t for call",
+		      type);
+	EXIT ();
+	return False;
+    }
+    
+    if (func_type->base.tag == types_func)
+    {
+	argt = func_type->func.args;
+	i = 0;
+	while ((arg = CompileGetArg (args, argc - i)) || argt)
+	{
+	    if (!argt)
+	    {
+		if (!func_type->func.varargs)
+		{
+		    CompileError (obj, stat, "Too many parameters");
+		    ret = False;
+		}
+		break;
+	    }
+	    if (!arg)
+	    {
+		CompileError (obj, stat, "Too few parameters");
+		ret = False;
+		break;
+	    }
+	    if (!TypeCompatible (argt->type, arg->tree.left->base.type, True))
+	    {
+		CompileError (obj, stat, "Incompatible types %t %t argument %d",
+			      argt->type, arg->tree.left->base.type, i);
+		ret = False;
+	    }
+	    i++;
+	    argt = argt->next;
+	}
+    }
+    EXIT ();
+    return ret;
+}
+
 /*
  * Compile a function call --
  * 
@@ -514,58 +593,51 @@ ObjPtr
 CompileCall (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
-    ExprPtr arg;
     InstPtr inst;
     int	    argc;
-    int	    i;
-    ArgType *argt;
 
-    arg = expr->tree.right;
-    argc = 0;
-    while (arg)
-    {
-	obj = _CompileExpr (obj, arg->tree.left, namespace, stat);
-	SetPush (obj);
-	arg = arg->tree.right;
-	argc++;
-    }
+    obj = CompileArgs (obj, &argc, expr->tree.right, namespace, stat);
     obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
-    expr->base.type = TypeCombineFunction (expr->tree.left->base.type);
-    if (!expr->base.type)
+    if (!CompileTypecheckArgs (obj, expr->tree.left->base.type,
+			       expr->tree.right, argc, stat))
     {
-	CompileError (obj, stat, "Incompatible type %t for function call",
-		      expr->tree.left->base.type);
+	RETURN (obj);
     }
-    if (expr->tree.left->base.type->base.tag == types_func)
-    {
-	argt = expr->tree.left->base.type->func.args;
-	i = 0;
-	while ((arg = CompileGetArg (expr->tree.right, argc - i)) || argt)
-	{
-	    if (!argt)
-	    {
-		if (!expr->tree.left->base.type->func.varargs)
-		    CompileError (obj, stat, "Too many parameters");
-		break;
-	    }
-	    if (!arg)
-	    {
-		CompileError (obj, stat, "Too few parameters");
-		break;
-	    }
-	    if (!TypeCompatible (argt->type, arg->tree.left->base.type, True))
-	    {
-		CompileError (obj, stat, "Incompatible types %t %t argument %d",
-			      argt->type, arg->tree.left->base.type, i);
-		break;
-	    }
-	    i++;
-	    argt = argt->next;
-	}
-    }
+    expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
     BuildInst (obj, OpCall, inst, stat);
     inst->ints.value = argc;
     BuildInst (obj, OpNoop, inst, stat);
+    RETURN (obj);
+}
+
+/*
+ * Compile an exception --
+ *
+ * + lookup the name
+ * + compile the args, pushing
+ * + typecheck the args
+ * + Add the OpRaise
+ */
+static ObjPtr
+CompileRaise (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
+{
+    ENTER();
+    int		argc;
+    int		depth;
+    SymbolPtr	sym;
+    InstPtr	inst;
+    
+    sym = CompileFindSymbol (obj, stat, namespace, expr->tree.left->atom.atom,
+			     &depth, 0, False);
+    if (!sym)
+	RETURN (obj);
+    obj = CompileArgs (obj, &argc, expr->tree.right, namespace, stat);
+    if (!CompileTypecheckArgs (obj, sym->symbol.type, expr->tree.right, argc, stat))
+	RETURN(obj);
+    expr->base.type = typesPoly;
+    BuildInst (obj, OpRaise, inst, stat);
+    inst->raise.argc = argc;
+    inst->raise.exception = sym;
     RETURN (obj);
 }
 
@@ -739,13 +811,15 @@ CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, StructType *structs,
 }
 
 static ObjPtr
-CompileTry (ObjPtr obj, ExprPtr catches, ExprPtr body, NamespacePtr namespace, ExprPtr stat)
+CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body, 
+	      NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
-    int	    catch_inst, end_inst;
-    InstPtr inst;
-    ExprPtr catch;
-    Bool    finally;
+    int		catch_inst, exception_inst;
+    InstPtr	inst;
+    ExprPtr	catch;
+    SymbolPtr	exception;
+    int		depth;
     
     if (catches)
     {
@@ -753,27 +827,44 @@ CompileTry (ObjPtr obj, ExprPtr catches, ExprPtr body, NamespacePtr namespace, E
 	/*
 	 * try a catch b
 	 *
-	 * CATCH a ENDCATCH b
-	 *             +------+
+	 * CATCH b OpCall EXCEPTION a ENDCATCH
+	 *   +----------------------+
+	 *                    +-----------------+
 	 */
-	finally = catch->tree.left->atom.atom == 0;
 	
+	exception = CompileFindSymbol (obj, stat, namespace, 
+				       catch->code.code->base.name,
+				       &depth, typesPoly, False);
+	if (!exception)
+	    RETURN(obj);
+	if (exception->symbol.class != class_exception)
+	{
+	    CompileError (obj, stat, "Invalid use of %C \"%A\" as exception",
+			  exception->symbol.class, exception->symbol.name);
+	    RETURN (obj);
+	}
+
 	NewInst (catch_inst, obj);
+
+	obj = CompileFunc (obj, catch->code.code, namespace, stat);
 	
-	obj = CompileTry (obj, catches->tree.right, body, namespace, stat);
+	BuildInst (obj, OpCall, inst, stat);
+	inst->ints.value = catch->code.code->base.argc;
 	
-	NewInst (end_inst, obj);
-	
+	NewInst (exception_inst, obj);
+    
 	inst = ObjCode (obj, catch_inst);
-	inst->base.opCode = OpTry;
-	inst->catch.exception = catch->tree.left->atom.atom;
+	inst->base.opCode = OpCatch;
 	inst->catch.offset = obj->used - catch_inst;
+	inst->catch.exception = exception;
+    
+	obj = CompileCatch (obj, catches->tree.right, body, namespace, stat);
 	
-	obj = _CompileStat (obj, catch->tree.right, namespace);
+	BuildInst (obj, OpEndCatch, inst, stat);
 	
-	inst = ObjCode (obj, end_inst);
-	inst->base.opCode = OpEndTry;
-	inst->branch.offset = obj->used - end_inst;
+	inst = ObjCode (obj, exception_inst);
+	inst->base.opCode = OpException;
+	inst->branch.offset = obj->used - exception_inst;
     }
     else
 	obj = _CompileStat (obj, body, namespace);
@@ -1384,8 +1475,11 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 			  expr->tree.left->decl.decl->name,
 			  sym->symbol.name);
 	break;
-    case TRY:
-	obj = CompileTry (obj, expr->tree.right, expr->tree.left, namespace, expr);
+    case CATCH:
+	obj = CompileCatch (obj, expr->tree.right, expr->tree.left, namespace, expr);
+	break;
+    case RAISE:
+	obj = CompileRaise (obj, expr, namespace, expr);
 	break;
     }
     RETURN (obj);
@@ -1680,10 +1774,10 @@ char *OpNames[] = {
     "Return",
     "Function",
     "Fork",
-    "Try",
-    "EndTry",
+    "Catch",
+    "Exception",
+    "EndCatch",
     "Raise",
-    "ReRaise",
     /*
      * Expr op codes
      */
@@ -1748,16 +1842,18 @@ char *OpNames[] = {
 };
 
 void
-ObjDump (ObjPtr obj)
+ObjDump (ObjPtr obj, int indent)
 {
-    int	    i;
+    int	    i, j;
     InstPtr inst;
     
     FilePrintf (FileStdout, "%d instructions\n", obj->used);
     for (i = 0; i < obj->used; i++)
     {
 	inst = ObjCode(obj, i);
-	FilePrintf (FileStdout, "    %s%s %c ",
+	for (j = 0; j < indent; j++)
+	    FilePrintf (FileStdout, "    ");
+	FilePrintf (FileStdout, "%s%s %c ",
 		    OpNames[inst->base.opCode],
 		    "          " + strlen(OpNames[inst->base.opCode]),
 		    inst->base.push ? '^' : ' ');
@@ -1775,12 +1871,23 @@ ObjDump (ObjPtr obj)
 	case OpColon:
 	case OpAnd:
 	case OpOr:
+	case OpException:
 	    FilePrintf (FileStdout, "branch %d", inst->branch.offset);
 	    break;
 	case OpReturn:
 	    break;
 	case OpFork:
 	    FilePrintf (FileStdout, "fork");
+	    break;
+	case OpCatch:
+	    FilePrintf (FileStdout, "%s", AtomName (inst->catch.exception->symbol.name));
+	    FilePrintf (FileStdout, " branch %d", inst->catch.offset);
+	    break;
+	case OpEndCatch:
+	    break;
+	case OpRaise:
+	    FilePrintf (FileStdout, "%s", AtomName (inst->raise.exception->symbol.name));
+	    FilePrintf (FileStdout, " argc %d", inst->raise.argc);
 	    break;
 	case OpName:
 	case OpNameRef:
@@ -1801,6 +1908,10 @@ ObjDump (ObjPtr obj)
 	case OpArrowRef:
 	    FilePrintf (FileStdout, "%s", AtomName (inst->atom.atom));
 	    break;
+	case OpObj:
+	    FilePrintf (FileStdout, "\n");
+	    ObjDump (inst->code.code->func.obj, indent+1);
+	    continue;
 	default:
 	    break;
 	}

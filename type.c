@@ -495,7 +495,7 @@ TypeCombineStruct (Types *type, int tag, Atom atom)
 }
 
 Types *
-TypeCombineFunction (Types *type)
+TypeCombineReturn (Types *type)
 {
     if (TypePoly (type))
 	return typesPoly;
@@ -505,6 +505,21 @@ TypeCombineFunction (Types *type)
 
     if (type->base.tag == types_func)
 	return type->func.ret;
+
+    return 0;
+}
+
+Types *
+TypeCombineFunction (Types *type)
+{
+    if (TypePoly (type))
+	return typesPoly;
+	
+    if (type->base.tag == types_name)
+	return TypeCombineFunction (type->name.type);
+
+    if (type->base.tag == types_func)
+	return type;
 
     return 0;
 }

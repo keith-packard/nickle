@@ -127,10 +127,10 @@ do_Debug_dump (Value f)
     if (code->func.staticInit)
     {
 	FilePuts (FileStdout, "Static initializers\n");
-	ObjDump (code->func.staticInit);
+	ObjDump (code->func.staticInit, 2);
 	FilePuts (FileStdout, "\n");
     }
     FilePuts (FileStdout, "Function body\n");
-    ObjDump (code->func.obj);
+    ObjDump (code->func.obj, 1);
     RETURN (Zero);
 }

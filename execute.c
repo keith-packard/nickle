@@ -291,16 +291,18 @@ ThreadArrayIndex (Value thread, int ndim)
 }
 
 static void
-ThreadCatch (Value thread, Atom exception, int offset)
+ThreadCatch (Value thread, SymbolPtr exception, int offset)
 {
     ENTER ();
-#if 0
     CatchPtr	catch;
+    Value	continuation;
 
-    catch = NewCatch (thread->thread.catches, exception, thread->thread.frame,
-		      thread->thread.pc + offset);
+    continuation = NewContinuation (thread->thread.frame, 
+				    thread->thread.pc + 1, 
+				    thread->thread.stack,
+				    thread->thread.catches);
+    catch = NewCatch (thread->thread.catches, continuation, exception);
     thread->thread.catches = catch;
-#endif
     EXIT ();
 }
 
@@ -313,6 +315,7 @@ ThreadStep (Value thread)
     int		i;
     int		stack = 0;
     Value	value, v, w;
+    CatchPtr	catch;
     
     inst = thread->thread.pc;
     value = thread->thread.v;
@@ -637,18 +640,26 @@ ThreadStep (Value thread)
 	value = GreaterEqual (Stack(stack), value); stack++; break;
     case OpFork:
 	value = NewThread (thread->thread.frame, inst->obj.obj); break;
-    case OpTry:
+    case OpCatch:
 	ThreadCatch (thread, inst->catch.exception, inst->catch.offset);
+	next = inst + inst->catch.offset;
 	break;
-    case OpEndTry:
-#if 0
-	thread->thread.catches = thread->thread.catches->previous;
-#endif
+    case OpException:
 	next = inst + inst->branch.offset;
 	break;
-    case OpRaise:
+    case OpEndCatch:
+	thread->thread.catches = thread->thread.catches->previous;
 	break;
-    case OpReRaise:
+    case OpRaise:
+	for (catch = thread->thread.catches; catch; catch = catch->previous)
+	    if (catch->exception == inst->raise.exception)
+	    {
+		do_long_jump (&next, catch->continuation, Zero);
+		break;
+	    }
+	if (!catch)
+	    RaiseError ("Unhandled exception \"%A\"",
+			inst->raise.exception->symbol.name);
 	break;
     }
     if (!exception || complete)

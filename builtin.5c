@@ -97,11 +97,17 @@ extend namespace Command {
     new ("library", lex_library);
 }
 
+
 # Load the prerequisites for the extra commands.
 library "ctype.5c";
 library "string.5c";
 library "file.5c";
 library "printf.5c";
+
+# Get abort() in early, even if this means not autoimporting it
+library "abort.5c";
+import Abort;
+
 library "history.5c";
 
 # Now load the extra commands.
@@ -115,7 +121,6 @@ library "scanf.5c";
 library "socket.5c";
 
 # Now autoload/autoimport the bonus stuff
-autoimport Abort;
 autoload Mutex;
 autoload ARC4;
 autoload PRNG;

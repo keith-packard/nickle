@@ -33,7 +33,7 @@ man_MANS = nickle.1
 
 YFLAGS = -d
 
-DEFINES = -DNICKLELIB=\""$(datadir)"\" -DBUILD=\""`$(srcdir)/date-sh`"\"
+DEFINES = -DBUILD=\""`$(srcdir)/date-sh`"\"
 
 CDEBUGFLAGS = -O -g
 

@@ -148,7 +148,15 @@ Visibility:
 Any definition expression (function definition,
 variable definition, type definition) can be qualified
 with public to indicate that the name being defined should
-be visible outside the current namespace.  See Namespaces
+be visible outside the current namespace, and
+should be automatically imported.  See Namespaces
+below for further info.
+.IP protected
+Any definition expression (function definition,
+variable definition, type definition) can be qualified
+with protected to indicate that the name being defined should
+be visible outside the current namespace, but
+should not be made available by import declarations.  See Namespaces
 below for further info.
 .LP
 Lifetime:
@@ -636,6 +644,12 @@ Top-Level Builtins:
 .IP "int printf(string fmt, poly args...)"
 Calls File::fprintf(stdout, fmt, args ...) and
 returns its result.
+.IP "string function gets ()"
+Calls File::fgets(stdin) and returns its result.
+.IP "string function scanf (string fmt, *poly args...)"
+Calls File::vfscanf(stdin, fmt, args) and returns its result.
+.IP "string function vscanf (string fmt, (*poly)[*] args)"
+Calls File::vfscanf(stdin, fmt, args) and returns its result.
 .IP "real imprecise(rational value)"
 See the discussion of type real above.
 .IP "real imprecise(rational value, int prec)"
@@ -757,18 +771,6 @@ The longjmp() builtin
 never returns to the call site, but instead returns from
 the setjmp() that created the continuation, with
 return value equal to the second argument of longjmp().
-.IP "real pi"
-Imprecise constant giving the value of the
-circumference/diameter ratio of the circle
-to the
-default precision of 256 bits.  Attempting to
-change this values will result in an exception.
-.IP "real e"
-Imprecise constant giving the value of the
-base of natural logarithms
-to the
-default precision of 256 bits.  Attempting to
-change this values will result in an exception.
 .IP "string prompt"
 The prompt printed during interactive use when
 at top-level.  Default "> ".
@@ -802,13 +804,27 @@ Bound to the standard error stream.
 Builtin Namespaces:
 .\" HERE
 .IP Math
-The available math functions
+The math functions available in the Math
+namespace
 are implemented in a fashion
 intended to be compatible with the C library.
 Please consult the appropriate manuals for further
 details.
-.LP
-Functions:
+.IP "real pi"
+Imprecise constant giving the value of the
+circumference/diameter ratio of the circle
+to the
+default precision of 256 bits. 
+.IP "protected real e"
+Imprecise constant giving the value of the
+base of natural logarithms
+to the
+default precision of 256 bits.
+Since e is protected, it must be
+referenced via Math::e, in order
+to avoid problems with using the
+fifth letter of the alphabet at
+top level.
 .IP "real function sqrt(real v)"
 Returns the square root of v.
 .IP "real function cbrt(real v)"
@@ -864,13 +880,124 @@ Deals correctly with y == 0.
 The implementation of the ** operator.
 .PP
 .IP File
-.\" HERE
+The namespace File provides operations on file values.
+.IP "int function fprintf(file f, string s, ....)"
+Print formatted values to a file, as with
+UNIX stdio library fprintf().
 fprintf() and printf() accept a reasonable sub-set of the stdio
-library version:  %d, %e, %c, %g, %f, %s, %o work
-as expected, as does %v to smart-print a value.
+library version:  %c, %d, %e, %x, %o, %f, %s, %g work
+as expected, as does %v to smart-print a value.  Format modifiers
+may be placed between the percent-sign and the format letter
+to modify formatting.  There are a lot of known bugs with
+input and output formatting.
+.RS
+.LP
+Format Letters:
+.IP "%c"
+Requires a small integer argument (0..255), and formats as
+an ASCII character.
+.IP "%d"
+Requires an integer argument, and formats as an integer.
+.IP "%x"
+Requires an integer argument, and formats as a
+base-16 (hexadecimal) integer.
+.IP "%o"
+Requires an integer argument, and formats as a
+base-8 (octal) integer.
+.IP "%e"
+Requires a number argument, and formats in scientific
+notation.
+.IP "%f"
+Requires a number argument, and formats in fixed-point
+notation.
+.IP "%s"
+Requires a string argument, and emits the string literally.
+.IP "%g"
+Requires a number, and tries to pick a precise and readable
+representation to format it.
+.LP
+Format Modifiers:
+.IP "digits"
+All format characters will take an integer format modifier
+indicating the number of blanks in the format field for the
+data to be formatted.  The value will be printed right-justified
+in this space.
+.IP "digits.digits"
+The real formats will take a pair of integer format modifiers
+indicating the field width and precision (number of chars
+after decimal point) of the formatted value.  Either integer
+may be omitted.
+.IP "-"
+A precision value indicating infinite
+precision.
+.IP "*"
+The next argument to fprintf() is an integer indicating
+the field width or precision of the formatted value.
+.RE
+.IP "file function string_write()"
+Return a file which collects written values
+into a string.
+.IP "int function close(file f)"
+Close file f and return an indication of success.
+.IP "int function flush(file f)"
+Flush the buffers of file f and return an indication of success.
+.IP "int function getc(file f)"
+Get the next character from file f and return it.
+.IP "int function end(file f)"
+Returns true if file f is at EOF, else false.
+.IP "int function error(file f)"
+Returns true if an error is pending on file f,
+else false.
+.IP "int function clear_error(file f)"
+Clears pending errors on file f, and
+returns an indication of success.
+.IP "file function string_read(string s)"
+Returns a virtual file whose contents are the
+string s.
+.IP "string function string_string(file f)"
+Return the string previously written into the file f,
+which should have been created by string_read() or
+string_write().  Behavior on other files is
+currently undefined.
+.IP "file function open(string path, string mode)"
+Open the file at the given path with the given
+mode string, ala UNIX stdio fopen().  Permissible
+modes are as in stdio: "r", "w", "x", "r+", "w+"
+and "x+".
+.IP "integer function fputc(integer c, file f)"
+Output the character c to the output file f, and return
+an indication of success.
+.IP "integer function ungetc(integer c, file f)"
+Push the character c back onto the input file f, and return
+an indication of success.
+.IP "integer function setbuf(file f, integer n)"
+Set the size of the buffer associated with file f to
+n, and return n.
+.IP "string function fgets (file f)"
+Get a line of input from file f, and return the
+resulting string.
+.IP "file function pipe(string path, string[*] argv, string mode)"
+Start up the program at the given path, returning a file
+which is one end of a "pipe" to the given process. The
+mode argument can be "r" to read from the pipe or
+"w" to write to the pipe.  The argv argument is an array
+of strings giving the arguments to be passed to the program,
+with argv[0] conventionally being the program name.
+.IP "int function print (file f, poly v, string fmt, int base, int width, int prec, string fill)"
+Print value v to file f in format fmt with the given base, width,
+prec, and fill.  Used internally by File::fprintf();
+.IP "int function fscanf(file f, string fmt, *poly args...)"
+Fill the locations pointed to by the array args with values
+taken from file f according to string fmt.  The format specifiers
+are much as in UNIX stdio scanf(): the "%d", "%e", "%f",
+"%c" and "%s" specifiers are supported with the expected
+modifiers.
+.IP "int function vfscanf (file f, string fmt, (*poly)[*] args)"
+Given the file f, the format fmt, and the array of arguments args,
+fscanf() appropriately.
 .\"
 .SH COMMANDS
-.LP
+.PP
 Nickle has a set of commands which may be
 given at the top level.
 .IP "quit"
@@ -1009,6 +1136,9 @@ The workaround is to parenthesize the assignment expression:
 .fi
 Because this is so rare, so hard to fix, and so easy to work around, this
 bug is unlikely to be fixed anytime soon.
+.PP
+There are a lot of known bugs with input and output formatting.
+The obvious stuff works, other stuff does not.
 .PP
 The semantics of division are unfortunately different from
 those of C.  This is arguably because C is broken in this

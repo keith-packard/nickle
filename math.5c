@@ -121,8 +121,8 @@ extend namespace Math {
 	if (v > 1)
 	{
 	    int	    p = floor (v);
-	    static  big_e = e;
-	    static  big_e_bits = precision (big_e);
+	    static  real big_e = e;
+	    static  int big_e_bits = precision (big_e);
 
 	    if (big_e_bits < prec * 2)
 	    {

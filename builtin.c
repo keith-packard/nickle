@@ -322,10 +322,6 @@ static struct sbuiltin svars[] = {
     { 0,    0 },
 };
 
-#ifndef NICKLELIB
-#define NICKLELIB "/usr/local/share/nickle"
-#endif
-
 static struct envbuiltin envvars[] = {
     { "NICKLELIB",  NICKLELIB,	"library_path",	&CommandNamespace },
     { 0,    0 },

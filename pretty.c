@@ -658,11 +658,12 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest, ProfileData
 	FilePuts (f, "for (");
 	if (e->tree.left->tree.left)
 	    PrettyExpr (f, e->tree.left->tree.left, -1, level, nest, pd);
-	if (e->base.tag == SEMI)
+	if (e->tree.left->base.tag == SEMI)
 	    FilePuts (f, ";");
 	if (e->tree.left->tree.right->tree.left)
 	{
-	    FilePuts (f, " ");
+	    if (e->tree.left->base.tag == SEMI)
+		FilePuts (f, " ");
 	    PrettyExpr (f, e->tree.left->tree.right->tree.left, -1, level, nest, pd);
 	}
 	FilePuts (f, ";");
@@ -673,7 +674,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest, ProfileData
 	}
 	FilePuts (f, ")\n");
 	if (nest)
-	    PrettyStatement (f, e->tree.right->tree.right, level+1, level, nest, pd);
+	    PrettyStatement (f, e->tree.right, level+1, level, nest, pd);
 	break;
     case SWITCH:
     case UNION:

@@ -129,7 +129,7 @@ NewMemList (DeclListPtr names, Type type, MemListPtr next)
 %left <ival>	TIMES DIVIDE DIV MOD
 %right <ival>	POW
 %right <ival>	UMINUS BANG FACT LNOT INC DEC STAR AMPER THREAD
-%left <ival>	OS CS DOT ARROW CALL
+%left <ival>	OS CS DOT ARROW REFARRAY CALL
 %%
 lines	:	lines pcommand
 	|
@@ -631,6 +631,8 @@ primary	:	NAME
 			{ $$ = NewExprConst(History (0, Zero)); }
 	|	OP expr CP
 			{ $$ = $2; }
+	|	primary REFARRAY arglist CS
+			{ $$ = NewExprTree (OS, NewExprTree (STAR, $1, (Expr *) 0), $3); }
 	|	primary OS arglist CS
 			{ $$ = NewExprTree(OS, $1, $3); }
 	|	primary OP oarglist CP				%prec CALL

@@ -122,6 +122,7 @@ public		{ yylval.pval = publish_public; return PUBLIC; }
 "$"		{ yylval.ival = DOLLAR; return DOLLAR; }
 "."		{ yylval.ival = DOT; return DOT; }
 "->"		{ yylval.ival = ARROW; return ARROW; }
+"*["		{ yylval.ival = REFARRAY; return REFARRAY; }
 \n		{ if (!ignorenl) { yylval.ival = NL; return NL; } }
 "("		{ yylval.ival = OP; return OP; }
 ")"		{ yylval.ival = CP; return CP; }

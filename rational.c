@@ -737,7 +737,8 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     char	*repeat = 0, *re;
     char	*whole;
     int		initial_width, repeat_width;
-    int		rep_width;
+    int		frac_width;
+    int		rep_width, brace_width = 0, dot_width = 0;
     int		whole_width;
     int		fraction_width;
     int		print_width;
@@ -856,6 +857,63 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     }
     quo = NaturalDivide (r->num, r->den, &partial);
     whole = NaturalSprint (0, quo, base, &whole_width);
+    brace_width = 0;
+    if (repeat_width)
+    {
+	brace_width++;
+	if (repeat_width > 0)
+	    brace_width++;
+    }
+    dot_width = 0;
+    if (initial_width + rep_width)
+	dot_width = 1;
+    /*
+     * Compute how much space is available for the fractional part
+     */
+    if (width)
+    {
+	fraction_width = width - (whole_width + exponent_width);
+	if (fraction_width < 0)
+	    fraction_width = 0;
+	if (prec > 0 && fraction_width > prec + dot_width)
+	    fraction_width = prec + dot_width;
+    }
+    else if (prec > 0)
+	fraction_width = prec + dot_width;
+    else
+	fraction_width = -1;
+    /*
+     * Start paring down parts of the output to fit the desired size
+     */
+    while (fraction_width >= 0 &&
+	   (frac_width = dot_width + initial_width + rep_width + brace_width)
+	   && frac_width > fraction_width)
+    {
+	if (rep_width)
+	{
+	    if (brace_width > 1)
+	    {
+		brace_width = 1;
+		repeat_width = -repeat_width;
+	    }
+	    rep_width = fraction_width - (dot_width + initial_width +
+					  brace_width);
+	    if (rep_width < 0)
+	    {
+		rep_width = 0;
+	    }
+	}
+	else if (brace_width)
+	    brace_width = 0;
+	else if (initial_width)
+	{
+	    initial_width = fraction_width - dot_width;
+	    if (initial_width < 0)
+		initial_width = 0;
+	}
+	else
+	    dot_width = 0;
+    }
     if (initial_width)
     {
 	init = NaturalDivide (NaturalTimes (partial,

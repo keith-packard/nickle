@@ -21,7 +21,6 @@ Types		*typesField;
 Types		*typesRefPoly;
 Types		*typesNil;
 Types		*typesUnit;
-Types		*typesPolyUnit;
 Types		*typesPrim[type_continuation - type_int + 1];
 
 static void
@@ -375,9 +374,6 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 		return True;
     }
     
-    if ((a->base.tag == types_unit) != (b->base.tag == types_unit))
-	return False;
-
     if (TypePoly (a) || TypePoly (b))
 	return True;
 
@@ -1060,7 +1056,7 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 		return True;
     }
 
-    if (TypePoly (a) && b->value.tag != type_undef)
+    if (TypePoly (a))
 	return True;
     
     switch (a->base.tag) {
@@ -1192,12 +1188,6 @@ TypesInit (void)
     StructTypeElements(st)[0].type = typesPrim[type_int];
     StructTypeElements(st)[1].type = typesRefPoly;
     typesNil = NewTypesUnion (st);
-    MemAddRoot (typesField);
-    
-    st = NewStructType (2);
-    StructTypeElements(st)[0].type = typesPoly;
-    StructTypeElements(st)[1].type = typesUnit;
-    typesPolyUnit = NewTypesUnion (st);
     MemAddRoot (typesField);
     
     TypeCheckStack = StackCreate ();

@@ -650,6 +650,7 @@ Value	do_is_array (Value);
 Value	do_is_ref (Value);
 Value	do_is_struct (Value);
 Value	do_is_func (Value);
+Value	do_is_void (Value);
 Value	do_Thread_get_priority (Value);
 Value	do_Thread_id_to_thread (Value);
 Value	do_Thread_join (Value);

@@ -211,25 +211,26 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_denominator,	    "denominator",	    "i",    "R"	    },
     { do_precision,	    "precision",	    "i",    "R"	    },
     { do_sign,		    "sign",		    "i",    "R"	    },
-    { do_is_int,	    "is_int",		    "i",    "R"	    },
-    { do_is_rational,	    "is_rational",	    "i",    "R"	    },
-    { do_is_number,	    "is_number",	    "i",    "R"	    },
-    { do_is_string,	    "is_string",	    "i",    "s"	    },
-    { do_is_file,	    "is_file",		    "i",    "f"	    },
-    { do_is_thread,	    "is_thread",    	    "i",    "t"	    },
-    { do_is_semaphore,	    "is_semaphore",    	    "i",    "S"	    },
-    { do_is_continuation,   "is_continuation",	    "i",    "c"	    },
-    { do_is_array,	    "is_array",		    "i",    "Ap"    },
-    { do_is_ref,	    "is_ref",		    "i",    "*p"    },
+    { do_is_int,	    "is_int",		    "i",    "p"	    },
+    { do_is_rational,	    "is_rational",	    "i",    "p"	    },
+    { do_is_number,	    "is_number",	    "i",    "p"	    },
+    { do_is_string,	    "is_string",	    "i",    "p"	    },
+    { do_is_file,	    "is_file",		    "i",    "p"	    },
+    { do_is_thread,	    "is_thread",    	    "i",    "p"	    },
+    { do_is_semaphore,	    "is_semaphore",    	    "i",    "p"	    },
+    { do_is_continuation,   "is_continuation",	    "i",    "p"	    },
+    { do_is_array,	    "is_array",		    "i",    "p"	    },
+    { do_is_ref,	    "is_ref",		    "i",    "p"	    },
     { do_is_struct,	    "is_struct",	    "i",    "p"	    },
     { do_is_func,	    "is_func",		    "i",    "p"	    },
+    { do_is_void,	    "is_void",		    "i",    "p"	    },
     { do_Thread_get_priority,"get_priority",	    "i",    "t",    &ThreadNamespace },
     { do_Thread_id_to_thread,"id_to_thread",	    "t",    "i",    &ThreadNamespace },
     { do_Thread_join,	    "join",		    "p",    "t",    &ThreadNamespace },
     { do_Semaphore_signal,  "signal",		    "i",    "S",    &SemaphoreNamespace },
     { do_Semaphore_wait,    "wait",		    "i",    "S",    &SemaphoreNamespace },
     { do_Semaphore_test,    "test",		    "i",    "S",    &SemaphoreNamespace },
-    { do_History_insert,    "insert",		    "p",    "u",    &HistoryNamespace },
+    { do_History_insert,    "insert",		    "p",    "p",    &HistoryNamespace },
     { do_File_close,	    "close",		    "i",    "f",    &FileNamespace },
     { do_File_flush,	    "flush",		    "i",    "f",    &FileNamespace },
     { do_File_getc,	    "getc",		    "i",    "f",    &FileNamespace },
@@ -267,7 +268,7 @@ static struct fbuiltin_2 funcs_2[] = {
     { do_Command_new,	    "new",		    "i",    "sp",   &CommandNamespace },
     { do_Command_new_names, "new_names",    	    "i",    "sp",   &CommandNamespace },
     { do_Command_pretty_print,"pretty_print",	    "i",    "fA*s", &CommandNamespace },
-    { do_Command_display,   "display",		    "i",    "su",   &CommandNamespace },
+    { do_Command_display,   "display",		    "i",    "sp",   &CommandNamespace },
     { 0,		    0 },
 };
 
@@ -532,7 +533,7 @@ BuiltinType (char *format, Types **type)
     case 't': t = NewTypesPrim (type_thread); break;
     case 'S': t = NewTypesPrim (type_semaphore); break;
     case 'c': t = NewTypesPrim (type_continuation); break;
-    case 'u': t = typesPolyUnit; break;
+    case 'u': t = typesUnit; break;
     default: 
 	t = 0;
 	write (2, "Invalid builtin argument type\n", 30);
@@ -1792,6 +1793,21 @@ do_is_func (Value av)
     ENTER ();
     switch (av->value.tag) {
     case type_func:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_void (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_undef:
 	av = One;
 	break;
     default:

@@ -44,6 +44,7 @@ StackCreate (void)
     stack->current = 0;
     stack->save = 0;
     stack->temp = 0;
+    stack->stackPointer = 0;
     TemporaryData = stack;
     addChunk (stack);
     TemporaryData = 0;
@@ -198,15 +199,18 @@ stackMark (void *object)
     MemReference (stack->temp);
     MemReference (stack->save);
     chunk = stack->current;
-    stackPointer = STACK_TOP(stack);
-    for (;;)
+    if (chunk)
     {
-	MemReference (chunk);
-	while (stackPointer != CHUNK_MAX(chunk))
-	    MemReference (*stackPointer++);
-	chunk = chunk->previous;
-	if (!chunk)
-	    break;
-	stackPointer = CHUNK_MIN(chunk);
+	stackPointer = STACK_TOP(stack);
+	for (;;)
+	{
+	    MemReference (chunk);
+	    while (stackPointer != CHUNK_MAX(chunk))
+		MemReference (*stackPointer++);
+	    chunk = chunk->previous;
+	    if (!chunk)
+		break;
+	    stackPointer = CHUNK_MIN(chunk);
+	}
     }
 }

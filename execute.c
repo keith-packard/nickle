@@ -8,7 +8,7 @@
 
 #include	"nickle.h"
 
-#define Stack(i) ((Value) STACK_ELT(thread->thread.context.stack, i))
+#define Stack(i) ((Value) STACK_ELT(thread->thread.continuation.stack, i))
 
 /*
  * Instruction must be completed because changes have been
@@ -33,7 +33,7 @@ BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,
     int		    fe;
     FramePtr	    frame;
     
-    frame = thread->thread.context.frame;
+    frame = thread->thread.continuation.frame;
     if (tail)
 	frame = frame->previous;
     frame = NewFrame (func, frame,
@@ -54,8 +54,8 @@ BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,
     }
     if (tail)
     {
-	frame->savePc = thread->thread.context.frame->savePc;
-	frame->saveObj = thread->thread.context.frame->saveObj;
+	frame->savePc = thread->thread.continuation.frame->savePc;
+	frame->saveObj = thread->thread.continuation.frame->saveObj;
     }
     else
     {
@@ -69,7 +69,7 @@ static Value
 ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 {
     ENTER ();
-    Value	value = thread->thread.context.value;
+    Value	value = thread->thread.continuation.value;
     CodePtr	code = value->func.code;
     int		argc = *stack;
     FramePtr	frame;
@@ -187,19 +187,19 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 	if (tail && !aborting)
 	{
 	    complete = True;
-	    *next = thread->thread.context.frame->savePc;
-	    thread->thread.context.frame = thread->thread.context.frame->previous;
+	    *next = thread->thread.continuation.frame->savePc;
+	    thread->thread.continuation.frame = thread->thread.continuation.frame->previous;
 	}
     }
     else
     {
 	frame = BuildFrame (thread, value, False, tail, code->base.varargs,
-			    code->base.argc, argc, *next, thread->thread.context.obj);
+			    code->base.argc, argc, *next, thread->thread.continuation.obj);
 	if (aborting)
 	    RETURN (value);
 	complete = True;
-	thread->thread.context.frame = frame;
-	thread->thread.context.obj = code->func.body.obj;
+	thread->thread.continuation.frame = frame;
+	thread->thread.continuation.obj = code->func.body.obj;
 	*next = ObjCode (code->func.body.obj, 0);
     }
     RETURN (value);
@@ -212,17 +212,17 @@ static void
 ThreadStaticInit (Value thread, InstPtr *next)
 {
     ENTER ();
-    Value	value = thread->thread.context.value;
+    Value	value = thread->thread.continuation.value;
     CodePtr	code = value->func.code;
     FramePtr	frame;
     
     frame = BuildFrame (thread, value, True, False, False, 0, 0, 
-			*next, thread->thread.context.obj);
+			*next, thread->thread.continuation.obj);
     if (aborting)
 	return;
     complete = True;
-    thread->thread.context.frame = frame;
-    thread->thread.context.obj = code->func.staticInit.obj;
+    thread->thread.continuation.frame = frame;
+    thread->thread.continuation.obj = code->func.staticInit.obj;
     *next = ObjCode (code->func.staticInit.obj, 0);
     EXIT ();
 }
@@ -374,7 +374,7 @@ ThreadArrayIndex (Value thread, int ndim)
     Value   a;
     Value   d;
     
-    a = thread->thread.context.value;
+    a = thread->thread.continuation.value;
     d = Stack(0);
     if (!ValueIsInt(d) || 
 	(i = d->ints.value) < 0 || 
@@ -402,22 +402,6 @@ ThreadArrayIndex (Value thread, int ndim)
     return i;
 }
 
-static void
-ThreadCatch (Value thread, SymbolPtr exception, int offset)
-{
-    ENTER ();
-    Value	continuation;
-
-    continuation = NewContinuation (&thread->thread.context, 
-				    thread->thread.context.pc + 1);
-#ifdef DEBUG_JUMP
-    ContinuationTrace ("ThreadCatch", continuation);
-#endif
-    thread->thread.context.catches = NewCatch (thread->thread.context.catches,
-					       continuation, exception);
-    EXIT ();
-}
-
 static Value
 ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
 {
@@ -434,7 +418,7 @@ ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
      */
     args = NewArray (False, typesPoly, 1, &argc);
     for (i = 0; i < argc; i++)
-        BoxValueSet (args->array.values, i, STACK_POP (thread->thread.context.stack));
+        BoxValueSet (args->array.values, i, STACK_POP (thread->thread.continuation.stack));
     RaiseException (thread, exception, args, next);
     RETURN (args);
 }
@@ -473,7 +457,7 @@ ThreadExceptionCall (Value thread, InstPtr *next, int *stack)
     argc = args->array.ents;
     i = argc;
     while (--i >= 0)
-	STACK_PUSH (thread->thread.context.stack, BoxValue(args->array.values, i));
+	STACK_PUSH (thread->thread.continuation.stack, BoxValue(args->array.values, i));
     /*
      * Call the function
      */
@@ -498,29 +482,29 @@ ThreadUnwind (Value thread, Value ret, int twixts, int catches, InstPtr *next)
      * and catches and then ends up executing the next
      * instruction
      */
-    continuation = NewContinuation (&thread->thread.context, *next);
+    continuation = NewContinuation (&thread->thread.continuation, *next);
     /*
      * Unwind correct number of twixts
      */
-    twixt = continuation->continuation.context.twixts;
+    twixt = continuation->continuation.twixts;
     while (twixts--)
-	twixt = twixt->context.twixts;
+	twixt = twixt->continuation.twixts;
     
-    continuation->continuation.context.twixts = twixt;
+    continuation->continuation.twixts = twixt;
     /*
      * Unwind correct number of catches
      */
-    catch = continuation->continuation.context.catches;
+    catch = continuation->continuation.catches;
     while (catches--)
-	catch = catch->previous;
-    continuation->continuation.context.catches = catch;
+	catch = catch->continuation.catches;;
+    continuation->continuation.catches = catch;
     /*
      * And jump
      */
     if (!aborting)
     {
 	complete = True;
-	ContinuationJump (thread, continuation, ret, next);
+	ContinuationJump (thread, &continuation->continuation, ret, next);
     }
     EXIT ();
 }
@@ -604,8 +588,8 @@ ThreadsRun (Value thread, Value lex)
 	    Value	value, v, w;
 	    BoxPtr	box;
 
-	    inst = thread->thread.context.pc;
-	    value = thread->thread.context.value;
+	    inst = thread->thread.continuation.pc;
+	    value = thread->thread.continuation.value;
 	    next = inst + 1;
 	    complete = False;
 	    /*    InstDump (inst, 1, 0, 0, 0); */
@@ -651,12 +635,12 @@ ThreadsRun (Value thread, Value lex)
 		value = Void;
 		/* fall through */
 	    case OpReturn:
-		if (!thread->thread.context.frame)
+		if (!thread->thread.continuation.frame)
 		{
 		    RaiseError ("return outside of function");
 		    break;
 		}
-		if (!TypeCompatibleAssign (thread->thread.context.frame->function->func.code->base.type,
+		if (!TypeCompatibleAssign (thread->thread.continuation.frame->function->func.code->base.type,
 					   value))
 		{
 		    RaiseStandardException (exception_invalid_argument,
@@ -667,9 +651,9 @@ ThreadsRun (Value thread, Value lex)
 		if (aborting)
 		    break;
 		complete = True;
-		next = thread->thread.context.frame->savePc;
-		thread->thread.context.obj = thread->thread.context.frame->saveObj;
-		thread->thread.context.frame = thread->thread.context.frame->previous;
+		next = thread->thread.continuation.frame->savePc;
+		thread->thread.continuation.obj = thread->thread.continuation.frame->saveObj;
+		thread->thread.continuation.frame = thread->thread.continuation.frame->previous;
 		break;
 	    case OpGlobal:
 	    case OpGlobalRef:
@@ -685,7 +669,7 @@ ThreadsRun (Value thread, Value lex)
 	    case OpStatic:
 	    case OpStaticRef:
 	    case OpStaticRefStore:
-		for (i = 0, fp = thread->thread.context.frame; i < inst->var.staticLink; i++)
+		for (i = 0, fp = thread->thread.continuation.frame; i < inst->var.staticLink; i++)
 		    fp = fp->staticLink;
 		box = fp->statics;
 		i = inst->var.name->local.element;
@@ -699,7 +683,7 @@ ThreadsRun (Value thread, Value lex)
 	    case OpLocal:
 	    case OpLocalRef:
 	    case OpLocalRefStore:
-		for (i = 0, fp = thread->thread.context.frame; i < inst->var.staticLink; i++)
+		for (i = 0, fp = thread->thread.continuation.frame; i < inst->var.staticLink; i++)
 		    fp = fp->staticLink;
 		box = fp->frame;
 		i = inst->var.name->local.element;
@@ -891,14 +875,14 @@ ThreadsRun (Value thread, Value lex)
 		}
 		break;
 	    case OpObj:
-		value = NewFunc (inst->code.code, thread->thread.context.frame);
+		value = NewFunc (inst->code.code, thread->thread.continuation.frame);
 		break;
 	    case OpStaticInit:
 		/* Always follows OpObj so the function is sitting in value */
 		ThreadStaticInit (thread, &next);
 		break;
 	    case OpStaticDone:
-		if (!thread->thread.context.frame)
+		if (!thread->thread.continuation.frame)
 		{
 		    RaiseError ("StaticInitDone outside of function");
 		    break;
@@ -906,9 +890,9 @@ ThreadsRun (Value thread, Value lex)
 		if (aborting)
 		    break;
 		complete = True;
-		next = thread->thread.context.frame->savePc;
-		thread->thread.context.obj = thread->thread.context.frame->saveObj;
-		thread->thread.context.frame = thread->thread.context.frame->previous;
+		next = thread->thread.continuation.frame->savePc;
+		thread->thread.continuation.obj = thread->thread.continuation.frame->saveObj;
+		thread->thread.continuation.frame = thread->thread.continuation.frame->previous;
 		/* Fetch the Obj from the stack */
 		value = Stack (stack); stack++;
 		break;
@@ -952,19 +936,20 @@ ThreadsRun (Value thread, Value lex)
 		value = v;
 		break;
 	    case OpFork:
-		value = NewThread (thread->thread.context.frame, inst->obj.obj); 
+		value = NewThread (thread->thread.continuation.frame, inst->obj.obj); 
 		break;
 	    case OpCatch:
 		if (aborting)
 		    break;
-		ThreadCatch (thread, inst->catch.exception, inst->catch.offset);
+		thread->thread.continuation.catches = NewCatch (thread,
+							   inst->catch.exception);
 		complete = True;
 		next = inst + inst->catch.offset;
 		break;
 	    case OpEndCatch:
 		if (aborting)
 		    break;
-		thread->thread.context.catches = thread->thread.context.catches->previous;
+		thread->thread.continuation.catches = thread->thread.continuation.catches->continuation.catches;
 		complete = True;
 		break;
 	    case OpRaise:
@@ -979,15 +964,15 @@ ThreadsRun (Value thread, Value lex)
 	    case OpTwixt:
 		if (aborting)
 		    break;
-		thread->thread.context.twixts = NewTwixt (&thread->thread.context,
-							  thread->thread.context.pc + inst->twixt.enter,
-							  thread->thread.context.pc + inst->twixt.leave);
+		thread->thread.continuation.twixts = NewTwixt (&thread->thread.continuation,
+							  thread->thread.continuation.pc + inst->twixt.enter,
+							  thread->thread.continuation.pc + inst->twixt.leave);
 		complete = True;
 		break;
 	    case OpTwixtDone:
 		if (aborting)
 		    break;
-		thread->thread.context.twixts = thread->thread.context.twixts->context.twixts;
+		thread->thread.continuation.twixts = thread->thread.continuation.twixts->continuation.twixts;
 		complete = True;
 		break;
 	    case OpEnterDone:
@@ -1031,12 +1016,12 @@ ThreadsRun (Value thread, Value lex)
 	    {
 		/* this instruction has been completely executed */
 		thread->thread.partial = 0;
-		thread->thread.context.value = value;
+		thread->thread.continuation.value = value;
 		if (stack)
-		    STACK_DROP (thread->thread.context.stack, stack);
+		    STACK_DROP (thread->thread.continuation.stack, stack);
 		if (inst->base.push)
-		    STACK_PUSH (thread->thread.context.stack, value);
-		thread->thread.context.pc = next;
+		    STACK_PUSH (thread->thread.continuation.stack, value);
+		thread->thread.continuation.pc = next;
 		if (thread->thread.next)
 		    ThreadStepped (thread);
 	    }
@@ -1059,12 +1044,12 @@ ThreadsRun (Value thread, Value lex)
 		{
 		    signalException = False;
 		    JumpStandardException (thread, &next);
-		    thread->thread.context.pc = next;
+		    thread->thread.continuation.pc = next;
 		}
 		if (signalError)
 		{
 		    signalError = False;
-		    DebugStart (NewContinuation (&thread->thread.context,
+		    DebugStart (NewContinuation (&thread->thread.continuation,
 						 inst));
 		    ThreadFinish (thread);
 		}

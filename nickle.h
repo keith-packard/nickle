@@ -159,23 +159,20 @@ extern FramePtr	NewFrame (Value		function,
 			  BoxPtr	statics);
 
 typedef struct _catch {
-    DataType	    *data;
-    CatchPtr	    previous;
-    Value	    continuation;
+    Continuation	    continuation;
     SymbolPtr	    exception;
 } Catch;
 
-CatchPtr    NewCatch (CatchPtr previous, Value continuation, SymbolPtr exception);
+CatchPtr    NewCatch (Value thread, SymbolPtr exception);
 
 typedef struct _twixt {
-    DataType	    *data;
-    Context	    context;
+    Continuation	    continuation;
     InstPtr	    leave;
     int		    depth;
 } Twixt;
 
 TwixtPtr
-NewTwixt (ContextPtr context, InstPtr enter, InstPtr leave);
+NewTwixt (ContinuationPtr continuation, InstPtr enter, InstPtr leave);
 
 InstPtr	    TwixtJump (Value thread, TwixtPtr twixt, Bool enter);
 #define TwixtDepth(t)	((t) ? (t)->depth : 0)
@@ -273,9 +270,9 @@ typedef struct _codeBase {
  * any name they can see *except* for dynamic variables in the function
  * scope.
  *
- * Global initializers are run in a global context, they can only access
+ * Global initializers are run in a global continuation, they can only access
  * variables which have global lifetime, that means only global variables.
- * When found inside a function context, they are placed in the static
+ * When found inside a function continuation, they are placed in the static
  * initializer block of the enclosing function at global scope.
  *
  *
@@ -535,11 +532,6 @@ void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);
 void	    TraceFunction (FramePtr frame, CodePtr code, ExprPtr name);
 void	    TraceFrame (FramePtr frame, InstPtr pc);
-#ifdef DEBUG_JUMP
-void	    ContextTrace (char *where, Context *context, int indent);
-void	    ContinuationTrace (char	*where, Value continuation);
-#endif
-Value	    ContinuationJump (Value thread, Value continuation, Value ret, InstPtr *next);
 
 typedef struct _jump {
     DataType	    *data;
@@ -547,15 +539,14 @@ typedef struct _jump {
     TwixtPtr	    entering;
     TwixtPtr	    leave;
     TwixtPtr	    parent;
-    Value	    continuation;
+    ContinuationPtr	    continuation;
     Value	    ret;
 } Jump;
 
 Value	    JumpContinue (Value thread, InstPtr *next);
-InstPtr	    JumpStart (Value thread, TwixtPtr leave, TwixtPtr enter, 
-		       Value continuation, Value ret);
+InstPtr	    JumpStart (Value thread, ContinuationPtr continuation, Value ret);
 JumpPtr	    NewJump (TwixtPtr leave, TwixtPtr enter, 
-		     TwixtPtr parent, Value continuation, Value ret);
+		     TwixtPtr parent, ContinuationPtr continuation, Value ret);
 
 #define Runnable(t)    (((t)->thread.state & ~(ThreadSuspended)) == 0)
 

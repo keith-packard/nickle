@@ -32,7 +32,6 @@ typedef union _code	*CodePtr;
 typedef struct _frame	*FramePtr;
 typedef struct _thread	*ThreadPtr;
 typedef struct _continuation	*ContinuationPtr;
-typedef struct _context		*ContextPtr;
 typedef union _value	*Value;
 typedef struct _obj	*ObjPtr;
 typedef union _inst	*InstPtr;
@@ -558,11 +557,15 @@ typedef struct _func {
 } Func;
 
 /*
- * This structure is used within continuations, twixts and
- * threads to hold an execution context
+ * This is a continuation, the same structure is also used within
+ * threads, twixts and catches to hold an execution context
  */
 
-typedef struct _context {
+typedef struct _continuation {
+    union {
+	BaseValue   value;
+	DataType    *data;
+    }		type;
     Value	value;	    /* accumulator */
     InstPtr	pc;	    /* program counter */
     ObjPtr	obj;	    /* reference to obj containing pc */
@@ -570,7 +573,7 @@ typedef struct _context {
     StackObject	*stack;	    /* value stack */
     CatchPtr	catches;    /* handled exceptions */
     TwixtPtr	twixts;	    /* pending twixts */
-} Context;
+} Continuation;
 
 typedef enum _ThreadState {
     ThreadRunning = 0,
@@ -580,11 +583,10 @@ typedef enum _ThreadState {
 } ThreadState;
 
 typedef struct _thread {
-    BaseValue	value;
     /*
-     * Execution context
+     * Execution continuation
      */
-    Context	context;
+    Continuation    continuation;
     /*
      * Currently executing jump
      */
@@ -615,29 +617,32 @@ typedef struct _semaphore {
 } Semaphore;
 
 /*
- * Set the context at dst to that at src.  Return the src
- * context instruction pointer
+ * Set the continuation at dst to that at src.  Return the src
+ * continuation instruction pointer
  */
-InstPtr	ContextSet (ContextPtr	dst,
-		    ContextPtr	src);
-
-void
-ContextJump (ContextPtr dst, ContextPtr src, InstPtr *next);
+InstPtr	ContinuationSet (ContinuationPtr    dst,
+			 ContinuationPtr    src);
 
 /*
- * Mark memory referenced from a context,
+ * Jump through a continuation, unwinding or rewinding appropriate twixt blocks
  */
-void	ContextMark (ContextPtr	ctx);
+Value
+ContinuationJump (Value thread, ContinuationPtr src, Value ret, InstPtr *next);
 
 /*
- * Initialize a context to default values
+ * Mark memory referenced from a continuation,
  */
-void	ContextInit (ContextPtr dst);
+void	ContinuationMark (void *object);
 
-typedef struct _continuation {
-    BaseValue	value;
-    Context	context;
-} Continuation;
+/*
+ * Initialize a continuation to default values
+ */
+void	ContinuationInit (ContinuationPtr continuation);
+
+#ifdef DEBUG_JUMP
+void	    ContinuationTrace (char *where, Continuation *continuation, int indent);
+void	    ContinuationTrace (char	*where, Value continuation);
+#endif
 
 typedef union _value {
     BaseValue	value;
@@ -739,7 +744,7 @@ Value	NewIntegerFloat (Integer *i, unsigned prec);
 Value	NewNaturalFloat (Sign sign, Natural *n, unsigned prec);
 Value	NewRationalFloat (Rational *r, unsigned prec);
 Value	NewValueFloat (Value av, unsigned prec);
-Value	NewContinuation (ContextPtr context, InstPtr pc);
+Value	NewContinuation (ContinuationPtr continuation, InstPtr pc);
 
 unsigned    FpartLength (Fpart *a);
 

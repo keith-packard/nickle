@@ -6,6 +6,7 @@
  * for licensing information.
  */
 
+#include	<assert.h>
 #include	"nickle.h"
 #include	"ref.h"
 
@@ -174,7 +175,7 @@ do_Thread_join (Value target)
 	ThreadSleep (running, target, PrioritySync);
 	RETURN (Zero);
     }
-    RETURN (target->thread.context.value);
+    RETURN (target->thread.continuation.value);
 }
 
 static void
@@ -392,8 +393,8 @@ do_Thread_trace (int n, Value *p)
     switch (ValueTag(v)) {
     case type_thread:
     case type_continuation:
-	frame = v->continuation.context.frame;
-	pc = v->continuation.context.pc;
+	frame = v->continuation.frame;
+	pc = v->continuation.pc;
 	break;
     default:
 	if (n == 0)
@@ -411,7 +412,7 @@ ThreadMark (void *object)
 {
     ThreadPtr	thread = object;
 
-    ContextMark (&thread->context);
+    ContinuationMark (&thread->continuation);
     MemReference (thread->jump);
     MemReference (thread->sleep);
     MemReference (thread->next);
@@ -468,8 +469,8 @@ NewThread (FramePtr frame, ObjPtr code)
     ret->thread.partial = 0;
     ret->thread.next = 0;
     
-    ContextInit (&ret->thread.context);
-    ret->thread.context.pc = ObjCode (code, 0);
+    ContinuationInit (&ret->thread.continuation);
+    ret->thread.continuation.pc = ObjCode (code, 0);
     
     complete = True;
     if (code->error)
@@ -491,12 +492,19 @@ ThreadInit (void)
     EXIT ();
 }
 
-static void
+void
 ContinuationMark (void *object)
 {
-    ContinuationPtr continuation = object;
+    ContinuationPtr	continuation = object;
 
-    ContextMark (&continuation->context);
+    assert (ObjCode (continuation->obj, 0) <= continuation->pc &&
+	    continuation->pc <= ObjCode (continuation->obj, ObjLast(continuation->obj))); 
+    MemReference (continuation->obj);
+    MemReference (continuation->frame);
+    MemReference (continuation->stack);
+    MemReference (continuation->value);
+    MemReference (continuation->catches);
+    MemReference (continuation->twixts);
 }
 
 static Bool
@@ -533,27 +541,27 @@ ValueType    ContinuationType = {
 };
 
 Value
-NewContinuation (ContextPtr context, InstPtr pc)
+NewContinuation (ContinuationPtr continuation, InstPtr pc)
 {
     ENTER ();
     Value   ret;
 
     ret = ALLOCATE (&ContinuationType.data, sizeof (Continuation));
-    ret->continuation.context.pc = pc;
-    ContextSet (&ret->continuation.context, context);
+    ret->continuation.pc = pc;
+    ContinuationSet (&ret->continuation, continuation);
     RETURN (ret);
 }
 
 #ifdef DEBUG_JUMP
 
 void
-ContextTrace (char *where, Context *context, int indent)
+ContinuationTrace (char *where, Continuation *continuation, int indent)
 {
     int	    s;
-    StackObject	*stack = context->stack;
-    CatchPtr	catches = context->catches;
-    TwixtPtr	twixts = context->twixts;
-    InstPtr	pc = context->pc;
+    StackObject	*stack = continuation->stack;
+    CatchPtr	catches = continuation->catches;
+    TwixtPtr	twixts = continuation->twixts;
+    InstPtr	pc = continuation->pc;
     
     TraceIndent (indent);
     FilePuts (FileStdout, "*** ");
@@ -580,15 +588,15 @@ ContextTrace (char *where, Context *context, int indent)
     TraceIndent (indent);
     FilePuts (FileStdout, "statement: ");
     PrettyStat (FileStdout, pc->base.stat, False);
-    for (s = 0; twixts; twixts = twixts->context.twixts, s++)
+    for (s = 0; twixts; twixts = twixts->continuation.twixts, s++)
     {
-	ContextTrace ("twixt", &twixts->context, indent+1);
+	ContinuationTrace ("twixt", &twixts->continuation, indent+1);
     }
 }
 #endif
 
 InstPtr
-ContextSet (ContextPtr dst, ContextPtr src)
+ContinuationSet (ContinuationPtr dst, ContinuationPtr src)
 {
     ENTER ();
     dst->obj = src->obj;
@@ -603,7 +611,7 @@ ContextSet (ContextPtr dst, ContextPtr src)
 }
 
 void
-ContextInit (ContextPtr dst)
+ContinuationInit (ContinuationPtr dst)
 {
     dst->pc = 0;
     dst->obj = 0;
@@ -613,21 +621,6 @@ ContextInit (ContextPtr dst)
     dst->twixts = 0;
     dst->stack = 0;
     dst->stack = StackCreate ();
-}
-
-#include <assert.h>
-
-void
-ContextMark (ContextPtr	context)
-{
-    assert (ObjCode (context->obj, 0) <= context->pc &&
-	    context->pc <= ObjCode (context->obj, ObjLast(context->obj))); 
-    MemReference (context->obj);
-    MemReference (context->frame);
-    MemReference (context->stack);
-    MemReference (context->value);
-    MemReference (context->catches);
-    MemReference (context->twixts);
 }
 
 static void
@@ -647,7 +640,7 @@ DataType    JumpType = { MarkJump, 0 };
 
 JumpPtr
 NewJump (TwixtPtr leave, TwixtPtr enter, TwixtPtr parent,
-	 Value continuation, Value ret)
+	 ContinuationPtr continuation, Value ret)
 {
     ENTER ();
     JumpPtr jump;
@@ -660,31 +653,6 @@ NewJump (TwixtPtr leave, TwixtPtr enter, TwixtPtr parent,
     jump->continuation = continuation;
     jump->ret = ret;
     RETURN (jump);
-}
-
-Value
-ContinuationJump (Value thread, Value continuation, Value ret, InstPtr *next)
-{
-    ENTER ();
-#ifdef DEBUG_JUMP
-    ContextTrace ("ContinuationJump from", &thread->thread.context, 1);
-    ContextTrace ("ContinuationJump to", &continuation->continuation.context, 1);
-#endif
-    /*
-     * If there are twixt enter or leave blocks to execute, build a Jump
-     * that walks them and then resets the context.
-     *
-     * Otherwise, just jump
-     */
-    if (thread->thread.context.twixts != continuation->continuation.context.twixts)
-	*next = JumpStart (thread, 
-			   thread->thread.context.twixts,
-			   continuation->continuation.context.twixts,
-			   continuation, ret);
-    else
-	*next = ContextSet (&thread->thread.context, 
-			    &continuation->continuation.context);
-    RETURN (ret);
 }
 
 /*
@@ -703,14 +671,14 @@ JumpContinue (Value thread, InstPtr *next)
 	 * Going up
 	 */
 	twixt = jump->leave;
-	jump->leave = twixt->context.twixts;
+	jump->leave = twixt->continuation.twixts;
 	/*
 	 * Matching element of the twixt chain, next time start
 	 * back down the other side
 	 */
 	if (jump->leave == jump->parent)
 	    jump->leave = 0;
-	ContextSet (&thread->thread.context, &twixt->context);
+	ContinuationSet (&thread->thread.continuation, &twixt->continuation);
 	*next = twixt->leave;
     }
     else if (jump->entering)
@@ -720,16 +688,15 @@ JumpContinue (Value thread, InstPtr *next)
 	 */
 	twixt = jump->entering;
 	jump->entering = TwixtNext (jump->entering, jump->enter);
-	*next = ContextSet (&thread->thread.context, &twixt->context);
+	*next = ContinuationSet (&thread->thread.continuation, &twixt->continuation);
     }
     else
     {
 	/*
-	 * All done, set to final context and drop the jump object
+	 * All done, set to final continuation and drop the jump object
 	 */
 	running->thread.jump = 0;
-	*next = ContextSet (&thread->thread.context, 
-			    &jump->continuation->continuation.context);
+	*next = ContinuationSet (&thread->thread.continuation, jump->continuation);
     }
     RETURN (jump->ret);
 }
@@ -739,33 +706,34 @@ JumpContinue (Value thread, InstPtr *next)
  * ending up at 'continuation' returning 'ret'
  */
 InstPtr
-JumpStart (Value thread, TwixtPtr leave, TwixtPtr enter, 
-	   Value continuation, Value ret)
+JumpStart (Value thread, ContinuationPtr continuation, Value ret)
 {
     ENTER ();
     int	diff;
+    TwixtPtr	leave = thread->thread.continuation.twixts;
+    TwixtPtr	enter = continuation->twixts;
     TwixtPtr	leave_parent, enter_parent, parent;
     InstPtr	next;
 
-    leave_parent = leave;
-    enter_parent = enter;
     /*
      * Make both lists the same length.  Note that either can be empty
      */
+    leave_parent = leave;
+    enter_parent = enter;
     diff = TwixtDepth (leave_parent) - TwixtDepth (enter_parent);
     if (diff >= 0)
 	while (diff-- > 0)
-	    leave_parent = leave_parent->context.twixts;
+	    leave_parent = leave_parent->continuation.twixts;
     else
 	while (diff++ < 0)
-	    enter_parent = enter_parent->context.twixts;
+	    enter_parent = enter_parent->continuation.twixts;
     /*
      * Now find the common parent
      */
     while (leave_parent != enter_parent)
     {
-	leave_parent = leave_parent->context.twixts;
-	enter_parent = enter_parent->context.twixts;
+	leave_parent = leave_parent->continuation.twixts;
+	enter_parent = enter_parent->continuation.twixts;
     }
 
     parent = enter_parent;
@@ -782,6 +750,26 @@ JumpStart (Value thread, TwixtPtr leave, TwixtPtr enter,
     RETURN (next);
 }
 
+Value
+ContinuationJump (Value thread, ContinuationPtr continuation, Value ret, InstPtr *next)
+{
+#ifdef DEBUG_JUMP
+    ContinuationTrace ("ContinuationJump from", &thread->thread.continuation, 1);
+    ContinuationTrace ("ContinuationJump to", continuation, 1);
+#endif
+    ENTER ();
+    /*
+     * If there are twixt enter or leave blocks to execute, build a Jump
+     * that walks them and then resets the continuation.
+     *
+     * Otherwise, just jump
+     */
+    if (thread->thread.continuation.twixts != continuation->twixts)
+	*next = JumpStart (thread, continuation, ret);
+    else
+	*next = ContinuationSet (&thread->thread.continuation, continuation);
+    RETURN (ret);
+}
 
 /*
  * It is necessary that SetJump and LongJump have the same number
@@ -800,15 +788,15 @@ do_setjmp (Value continuation_ref, Value ret)
 	RaiseError ("setjump: not a reference %v", continuation_ref);
 	RETURN (Zero);
     }
-    continuation = NewContinuation (&running->thread.context,
-				    running->thread.context.pc + 1);
+    continuation = NewContinuation (&running->thread.continuation,
+				    running->thread.continuation.pc + 1);
     /*
      * Adjust stack for set jump return
      */
-    STACK_DROP (continuation->continuation.context.stack, 2);
+    STACK_DROP (continuation->continuation.stack, 2);
     RefValueSet (continuation_ref, continuation);
 #ifdef DEBUG_JUMP
-    ContextTrace ("do_setjmp", &continuation->continuation.context, 1);
+    ContinuationTrace ("do_setjmp", &continuation->continuation, 1);
 #endif
     RETURN (ret);
 }
@@ -825,31 +813,30 @@ do_longjmp (InstPtr *next, Value continuation, Value ret)
 	RaiseError ("longjump: not a continuation %v", continuation);
 	RETURN (Zero);
     }
-    RETURN (ContinuationJump (running, continuation, ret, next));
+    RETURN (ContinuationJump (running, &continuation->continuation, ret, next));
 }
 
 static void
-MarkCatch (void *object)
+CatchMark (void *object)
 {
     CatchPtr	catch = object;
 
-    MemReference (catch->previous);
-    MemReference (catch->continuation);
+    ContinuationMark (&catch->continuation);
     MemReference (catch->exception);
 }
 
-DataType    CatchType = { MarkCatch, 0 };
+DataType    CatchType = { CatchMark, 0 };
 
 CatchPtr
-NewCatch (CatchPtr previous, Value continuation, SymbolPtr except)
+NewCatch (Value thread, SymbolPtr exception)
 {
     ENTER();
     CatchPtr	catch;
 
     catch = ALLOCATE (&CatchType, sizeof (Catch));
-    catch->previous = previous;
-    catch->continuation = continuation;
-    catch->exception = except;
+    ContinuationSet (&catch->continuation, &thread->thread.continuation);
+    catch->continuation.pc = thread->thread.continuation.pc + 1;
+    catch->exception = exception;
     RETURN (catch);
 }
 
@@ -858,14 +845,14 @@ TwixtMark (void *object)
 {
     TwixtPtr	twixt = object;
 
-    ContextMark (&twixt->context);
+    ContinuationMark (&twixt->continuation);
     MemReference (twixt->leave);
 }
 
 DataType    TwixtType = { TwixtMark, 0 };
 
 TwixtPtr
-NewTwixt (ContextPtr	context,
+NewTwixt (ContinuationPtr	continuation,
 	  InstPtr	enter,
 	  InstPtr	leave)
 {
@@ -873,13 +860,13 @@ NewTwixt (ContextPtr	context,
     TwixtPtr	twixt;
 
     twixt = ALLOCATE (&TwixtType, sizeof (Twixt));
-    twixt->context.pc = enter;
+    twixt->continuation.pc = enter;
     twixt->leave = leave;
-    if (context->twixts)
-	twixt->depth = context->twixts->depth + 1;
+    if (continuation->twixts)
+	twixt->depth = continuation->twixts->depth + 1;
     else
 	twixt->depth = 1;
-    ContextSet (&twixt->context, context);
+    ContinuationSet (&twixt->continuation, continuation);
     RETURN (twixt);
 }
 
@@ -893,8 +880,8 @@ TwixtNext (TwixtPtr twixt, TwixtPtr last)
 {
     if (last == twixt)
 	return 0;
-    while (last->context.twixts != twixt)
-	last = last->context.twixts;
+    while (last->continuation.twixts != twixt)
+	last = last->continuation.twixts;
     return last;
 }
 
@@ -905,17 +892,21 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
     Bool	caught = False;
     CatchPtr	catch;
     
-    for (catch = thread->thread.context.catches; catch; catch = catch->previous)
+    for (catch = thread->thread.continuation.catches; 
+	 catch; 
+	 catch = catch->continuation.catches)
+    {
 	if (catch->exception == except)
 	{
-	    ContinuationJump (thread, catch->continuation, args, next);
+	    ContinuationJump (thread, &catch->continuation, args, next);
 	    caught = True;
 	    break;
 	}
+    }
     if (!caught)
     {
 	int	i;
-	ExprPtr	stat = thread->thread.context.pc->base.stat;
+	ExprPtr	stat = thread->thread.continuation.pc->base.stat;
 	
 	if (stat->base.file)
 	    PrintError ("Unhandled exception \"%A\" at %A:%d\n", 

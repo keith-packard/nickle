@@ -292,7 +292,7 @@ Types	*TypeCombineStruct (Types *type, int tag, Atom atom);
 Types	*TypeCombineReturn (Types *type);
 Types	*TypeCombineFunction (Types *type);
 Types	*TypeCombineArray (Types *array, int ndim, Bool lvalue);
-Bool	TypeCompatibleAssign (Types *dest, Value v, Bool shallow);
+Bool	TypeCompatibleAssign (Types *dest, Value v);
 /* Bool	TypeEqual (Types *a, Types *b); unused */
 Bool	TypeCompatible (Types *a, Types *b, Bool contains);
 Bool	TypePoly (Types *t);

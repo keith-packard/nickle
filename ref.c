@@ -34,7 +34,9 @@ RefPlus (Value av, Value bv, int expandOk)
     i = i + ref->element;
     if (i < 0 || i >= ref->box->nvalues)
     {
-	RaiseError ("Element out of range in reference addition %v + %v", av, bv);
+	RaiseStandardException (exception_invalid_array_bounds,
+				"Element out of range in reference addition",
+				2, av, bv);
 	RETURN (Zero);
     }
     RETURN (NewRef (ref->box, i));
@@ -78,7 +80,9 @@ RefMinus (Value av, Value bv, int expandOk)
     i = i + element;
     if (i < 0 || i >= ref->box->nvalues)
     {
-	RaiseError ("Element out of range in reference subtraction %v - %v", av, bv);
+	RaiseStandardException (exception_invalid_array_bounds,
+				"Element out of range in reference subtraction",
+				2, av, bv);
 	RETURN (Zero);
     }
     RETURN (NewRef (ref->box, i));

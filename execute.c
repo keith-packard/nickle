@@ -89,7 +89,7 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
 				    2, NewInt (argc), NewInt(code->base.argc));
 	    RETURN (value);
 	}
-	if (!TypeCompatibleAssign (argt->type, Stack(fe+off), False))
+	if (!TypeCompatibleAssign (argt->type, Stack(fe+off)))
 	{
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Incompatible argument",
@@ -236,7 +236,7 @@ ThreadAssign (Value ref, Value v)
 				"Attempted assignment beyond box bounds",
 				2, NewInt(ref->ref.element), v);
     }
-    else if (!TypeCompatibleAssign (RefType (ref), v, False))
+    else if (!TypeCompatibleAssign (RefType (ref), v))
     {
 	RaiseStandardException (exception_invalid_argument,
 				"Incompatible types in assignment",
@@ -311,7 +311,7 @@ ThreadInitArrayPart (Value thread, Value a, int base, int dim, int s)
 	    n = ninit - 1;
 	for (; n >= 0; n--)
 	{
-	    if (!TypeCompatibleAssign (a->array.type, Stack(s), False))
+	    if (!TypeCompatibleAssign (a->array.type, Stack(s)))
 	    {
 		RaiseStandardException (exception_invalid_argument,
 				"Incompatible types in array initialization",
@@ -544,7 +544,7 @@ ThreadStep (Value thread)
 	    break;
 	}
 	if (!TypeCompatibleAssign (thread->thread.frame->function->func.code->base.type,
-				   value, False))
+				   value))
 	{
 	    RaiseStandardException (exception_invalid_argument,
 				    "Incompatible type in return",

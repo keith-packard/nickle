@@ -1039,7 +1039,7 @@ TypeCombineFunction (Types *type)
  */
 
 Bool
-TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
+TypeCompatibleAssign (TypesPtr a, Value b)
 {
     int	adim, bdim;
     int	n;
@@ -1052,7 +1052,7 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 	StructType  *st = a->structs.structs;
 	for (n = 0; n < st->nelements; n++)
 	    if (!StructTypeElements(st)[n].name && 
-		TypeCompatibleAssign (StructTypeElements(st)[n].type, b, shallow))
+		TypeCompatibleAssign (StructTypeElements(st)[n].type, b))
 		return True;
     }
 
@@ -1070,15 +1070,10 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 	}
 	break;
     case types_name:
-	return TypeCompatibleAssign (a->name.type, b, False);
+	return TypeCompatibleAssign (a->name.type, b);
     case types_ref:
 	if (b->value.tag == type_ref)
-	{
-	    /* avoid looping through data structures */
-	    if (shallow)
-		return True;
-	    return TypeCompatibleAssign (a->ref.ref, RefValueGet (b), True);
-	}
+	    return TypeCompatible (a->ref.ref, RefType (b), True);
 	if (b->value.tag == type_int && b->ints.value == 0)
 	    return True;
 	break;

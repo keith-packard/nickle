@@ -233,6 +233,7 @@ struct fbuiltin_1 funcs_1[] = {
     { do_File_flush,	    "flush",		    type_integer,   "f",    &FileNamespace },
     { do_File_getc,	    "getc",		    type_integer,   "f",    &FileNamespace },
     { do_String_length,	    "length",		    type_integer,   "s",    &StringNamespace },
+    { do_String_new,	    "new",		    type_string,    "p",    &StringNamespace },
     { do_Primitive_random,  "random",		    type_integer,   "n",    &PrimitiveNamespace },
     { do_Primitive_srandom, "srandom",		    type_integer,   "n",    &PrimitiveNamespace },
     { do_Debug_dump,	    "dump",		    type_integer,   "p",    &DebugNamespace },
@@ -1232,6 +1233,35 @@ do_String_length (Value av)
     RETURN (ret);
 }
 
+Value
+do_String_new (Value av)
+{
+    ENTER ();
+    Value   ret;
+    int	    len, i;
+    char    *s;
+
+    if (av->value.tag == type_array && av->array.ndim == 1)
+    {
+	len = av->array.dim[0];
+	ret = NewString (len);
+	s = StringChars (&ret->string);
+	for (i = 0; i < len; i++)
+	    *s++ = IntPart (BoxValue (av->array.values, i),
+			    "new: array element not integer");
+	*s++ = '\0';
+    }
+    else
+    {
+	len = 1;
+	ret = NewString (len);
+	s = StringChars (&ret->string);
+	s[0] = IntPart (av, "new: argument not integer");
+	s[1] = '\0';
+    }
+    RETURN (ret);
+}
+	       
 Value
 do_String_index (Value av, Value bv)
 {

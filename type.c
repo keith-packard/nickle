@@ -501,7 +501,7 @@ TypeCombineBinary (Types *left, int tag, Types *right)
     case LE:
     case GE:
 	if (TypeCompatible (left, right, False))
-	    return typesPrim[type_int];
+	    return typesPrim[type_integer];
 	break;
     }
     return 0;
@@ -531,6 +531,8 @@ TypeCombineUnary (Types *type, int tag)
     case OS:
 	if (type->base.tag == types_array)
 	    return type->array.type;
+	if (type->base.tag == types_prim && type->prim.prim == type_string)
+	    return typesPrim[type_integer];
 	break;
     }
     return 0;

@@ -577,6 +577,7 @@ Value	do_File_close (Value);
 Value	do_File_flush (Value);
 Value	do_File_getc (Value);
 Value	do_String_length (Value);
+Value	do_String_new (Value);
 Value	do_Primitive_random (Value);
 Value	do_Primitive_srandom (Value);
 Value	do_Debug_dump (Value);

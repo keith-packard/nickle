@@ -531,25 +531,52 @@ ThreadStep (Value thread)
 	break;
     case OpArray:
     case OpArrayRef:
-	if (value->value.tag != type_array)
-	{
+	switch (value->value.tag) {
+	    char    *s;
+	case type_string:
+	    if (inst->base.opCode == OpArrayRef)
+	    {
+		RaiseError ("strings aren't addressable");
+		break;
+	    }
+	    if (inst->ints.value != 1)
+	    {
+		RaiseError ("strings don't have %d dimensions",
+			    inst->ints.value);
+		break;
+	    }
+	    stack = 0;
+	    i = IntPart (Stack(stack), "Invalid string index"); stack++;
+	    if (exception)
+		break;
+	    s = StringChars (&value->string);
+	    if (i > strlen (s))
+	    {
+		RaiseError ("String index too large");
+		break;
+	    }
+	    value = NewInt (s[i]);
+	    break;
+	case type_array:
+	    if (inst->ints.value != value->array.ndim)
+	    {
+		RaiseError ("mismatching number of dimensions %d != %d",
+			    value->array.ndim, inst->ints.value);
+		break;
+	    }
+	    stack = inst->ints.value;
+	    i = ThreadArrayIndex (thread, stack);
+	    if (!exception)
+	    {
+		if (inst->base.opCode == OpArray)
+		    value = BoxValue (value->array.values, i);
+		else
+		    value = NewRef (value->array.values, i);
+	    }
+	    break;
+	default:
 	    RaiseError ("attempt to use non-array as array");
 	    break;
-	}
-	if (inst->ints.value != value->array.ndim)
-	{
-	    RaiseError ("mismatching number of dimensions %d != %d",
-		    value->array.ndim, inst->ints.value);
-	    break;
-	}
-	stack = inst->ints.value;
-	i = ThreadArrayIndex (thread, stack);
-	if (!exception)
-	{
-	    if (inst->base.opCode == OpArray)
-		value = BoxValue (value->array.values, i);
-	    else
-		value = NewRef (value->array.values, i);
 	}
 	break;
     case OpCall:

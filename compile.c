@@ -547,15 +547,13 @@ CompileTypecheckArgs (ObjPtr	obj,
     {
 	argt = func_type->func.args;
 	i = 0;
-	while ((arg = CompileGetArg (args, argc - i)) || argt)
+	while ((arg = CompileGetArg (args, argc - i)) || 
+	       (argt && !argt->varargs))
 	{
 	    if (!argt)
 	    {
-		if (!func_type->func.varargs)
-		{
-		    CompileError (obj, stat, "Too many parameters");
-		    ret = False;
-		}
+		CompileError (obj, stat, "Too many parameters");
+		ret = False;
 		break;
 	    }
 	    if (!arg)
@@ -571,7 +569,8 @@ CompileTypecheckArgs (ObjPtr	obj,
 		ret = False;
 	    }
 	    i++;
-	    argt = argt->next;
+	    if (!argt->varargs)
+		argt = argt->next;
 	}
     }
     EXIT ();
@@ -891,6 +890,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
     ExprPtr	catch;
     SymbolPtr	exception;
     int		depth;
+    Types	*catch_type;
     
     if (catches)
     {
@@ -915,6 +915,14 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	    RETURN (obj);
 	}
 
+	catch_type = NewTypesFunc (typesPoly, catch->code.code->base.args);
+	
+	if (!TypeCompatible (exception->symbol.type, catch_type, True))
+	{
+	    CompileError (obj, stat, "Incompatible types %t %t in catch",
+			  catch_type, exception->symbol.type);
+	    RETURN (obj);
+	}
 	NewInst (catch_inst, obj);
 
 	obj = CompileFunc (obj, catch->code.code, namespace, stat);
@@ -1104,7 +1112,6 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     case FUNCTION:
 	obj = CompileFunc (obj, expr->code.code, namespace, stat);
 	expr->base.type = NewTypesFunc (expr->code.code->base.type,
-					False,
 					expr->code.code->base.args);
 	break;
     case STAR:	    obj = CompileUnary (obj, expr, namespace, OpStar, stat); break;
@@ -1621,19 +1628,22 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
     for (args = code->base.args; args; args = args->next)
     {
 	CompileCanonType (obj, namespace, args->type, stat);
-	local = NewSymbolArg (args->name, args->type);
-	CompileAddSymbol (namespace, local);
-    }
-    if (code->base.varargs)
-    {
-	local = NewSymbolArg (AtomId ("args"), 
-			      NewTypesArray (typesPoly, 
-					     NewExprTree (COMMA,
-							  NewExprConst (NewInt (0)),
-							  0)));
-	local->local.element = AddBoxTypes (&namespace->code->func.dynamics,
-					    local->symbol.type);
-	NamespaceAddSymbol (namespace, local);
+	if (args->varargs)
+	{
+	    local = NewSymbolArg (args->name, 
+				  NewTypesArray (args->type,
+						 NewExprTree (COMMA,
+							      NewExprConst (NewInt (0)),
+							      0)));
+	    local->local.element = AddBoxTypes (&namespace->code->func.dynamics,
+						local->symbol.type);
+	    NamespaceAddSymbol (namespace, local);
+	}
+	else
+	{
+	    local = NewSymbolArg (args->name, args->type);
+	    CompileAddSymbol (namespace, local);
+	}
     }
     code->func.obj = CompileFuncCode (code, namespace, stat);
     obj->errors += code->func.obj->errors;

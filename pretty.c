@@ -618,6 +618,8 @@ PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
 	}
 	if (args->name)
 	    FilePuts (f, AtomName (args->name));
+	if (args->varargs)
+	    FilePuts (f, " ...");
 	if (args->next || code->base.argc == -1)
 	    FilePuts (f, ", ");
     }

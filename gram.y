@@ -24,7 +24,7 @@ void yyerror (char *fmt, ...);
     Value	    vval;
     Class	    cval;
     Type	    tval;
-    ArgList	    alval;
+    ArgType	    *atval;
     Types	    *tsval;
     Publish	    pval;
     ExprPtr	    eval;
@@ -35,6 +35,7 @@ void yyerror (char *fmt, ...);
     ArgDecl	    adval;
     NamespacePtr    nsval;
     CodePtr	    fval;
+    Bool	    bval;
 }
 
 %type  <nsval>	colonnames
@@ -50,10 +51,11 @@ void yyerror (char *fmt, ...);
 %type  <cval>	class
 %type  <pval>	publish
 
-%type  <alval>	opt_argdecls argdecls
+%type  <atval>	opt_argdecls argdecls
 %type  <adval>	argdecl
-%type  <alval>	opt_argdefines argdefines
+%type  <atval>	opt_argdefines argdefines
 %type  <adval>	argdefine
+%type  <bval>	opt_dots
 
 %type  <eval>	opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
 %type  <eval>	initexpr
@@ -372,16 +374,14 @@ statement	: IF ignorenl OP expr CP statement
 
 			decl = NewExprDecl (NewDeclList ($4, 0, 0),
 					    $1.class,
-					    NewTypesFunc ($1.type, $6.varargs,
-							  $6.argType),
+					    NewTypesFunc ($1.type, $6),
 					    $1.publish);
 			if ($8)
 			    $$ = NewExprTree (FUNCTION, decl,
 					      NewExprTree (ASSIGN,
 							   NewExprAtom ($4),
 							   NewExprCode (NewFuncCode ($1.type,
-										     $6.varargs,
-										     $6.argType,
+										     $6,
 										     $8),
 									$4)));
 			else
@@ -390,7 +390,7 @@ statement	: IF ignorenl OP expr CP statement
 		| publish EXCEPTION ignorenl NAME OP opt_argdefines CP SEMI
 		    { $$ = NewExprDecl (NewDeclList ($4, 0, 0),
 					class_exception,
-					NewTypesFunc (0, $6.varargs, $6.argType),
+					NewTypesFunc (typesPoly, $6),
 					$1);
 		    }
 		| RAISE NAME OP opt_exprs CP
@@ -446,7 +446,7 @@ catches		:   catch catches
 		    { $$ = 0; }
 		;
 catch		: CATCH NAME OP opt_argdefines CP block
-		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4.varargs, $4.argType, $6), $2); }
+		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $6), $2); }
 func_body    	: block
 		| SEMI
 		    { $$ = 0; }
@@ -530,7 +530,7 @@ type		: basetype
 		| TIMES type			%prec STAR
 		    { $$ = NewTypesRef ($2); }
 		| type OP opt_argdecls CP	%prec CALL
-		    { $$ = NewTypesFunc ($1, $3.varargs, $3.argType); }
+		    { $$ = NewTypesFunc ($1, $3); }
 		| type OS opt_exprs CS
 		    { $$ = NewTypesArray ($1, $3); }
 		| STRUCT OC members CC
@@ -604,27 +604,12 @@ publish		: PUBLIC
 */
 opt_argdecls	: argdecls
 		|
-		    { 
-			$$.argType = 0; 
-			$$.varargs = False;
-		    }
+		    { $$ = 0; }
 		;
 argdecls	: argdecl COMMA argdecls
-		    { 
-			$$.argType = NewArgType ($1.type, $1.name, $3.argType); 
-			$$.varargs = $3.varargs;
-		    }
-		| argdecl
-		    { 
-			$$.argType = NewArgType ($1.type, $1.name, 0); 
-			$$.varargs = False;
-		    }
-		| DOTS
-		    {
-			$$.argType = 0;
-			$$.varargs = False;
-		    }
-		;
+		    { $$ = NewArgType ($1.type, False, $1.name, $3); }
+		| argdecl opt_dots
+		    { $$ = NewArgType ($1.type, $2, $1.name, 0); }
 argdecl		: type NAME
 		    { $$.type = $1; $$.name = $2; }
 		| type
@@ -638,29 +623,20 @@ argdecl		: type NAME
 */
 opt_argdefines	: argdefines
 		|
-		    { 
-			$$.argType = 0; 
-			$$.varargs = False;
-		    }
+		    { $$ = 0; }
 		;
 argdefines	: argdefine COMMA argdefines
-		    { 
-			$$.argType = NewArgType ($1.type, $1.name, $3.argType); 
-			$$.varargs = $3.varargs;
-		    }
-		| argdefine
-		    { 
-			$$.argType = NewArgType ($1.type, $1.name, 0); 
-			$$.varargs = False;
-		    }
-		| DOTS
-		    { 
-			$$.argType = 0;
-			$$.varargs = True;
-		    }
+		    { $$ = NewArgType ($1.type, False, $1.name, $3); }
+		| argdefine opt_dots
+		    { $$ = NewArgType ($1.type, $2, $1.name, 0); }
 		;
 argdefine	: opt_type NAME
 		    { $$.type = $1; $$.name = $2; }
+		;
+opt_dots	: DOTS
+		    { $$ = True; }
+		|
+		    { $$ = False; }
 		;
 
 /*
@@ -692,7 +668,7 @@ exprs		: exprs COMMA lambdaexpr
 * because of grammar ambiguities
 */
 lambdaexpr	: opt_type FUNC OP opt_argdefines CP block
-		    { $$ = NewExprCode (NewFuncCode ($1, $4.varargs, $4.argType, $6), 0); }
+		    { $$ = NewExprCode (NewFuncCode ($1, $4, $6), 0); }
 		| simpleexpr
 		;
 /*

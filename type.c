@@ -126,20 +126,21 @@ NewTypesRef (Types *ref)
 }
 
 ArgType *
-NewArgType (Types *type, Atom name, ArgType *next)
+NewArgType (Types *type, Bool varargs, Atom name, ArgType *next)
 {
     ENTER ();
     ArgType *a;
 
     a = ALLOCATE (&ArgTypeType, sizeof (ArgType));
     a->type = type;
+    a->varargs = varargs;
     a->name = name;
     a->next = next;
     RETURN (a);
 }
 
 Types *
-NewTypesFunc (Types *ret, Bool varargs, ArgType *args)
+NewTypesFunc (Types *ret, ArgType *args)
 {
     ENTER ();
     Types   *t;
@@ -147,7 +148,6 @@ NewTypesFunc (Types *ret, Bool varargs, ArgType *args)
     t = ALLOCATE (&TypesFuncType, sizeof (TypesFunc));
     t->base.tag = types_func;
     t->func.ret = ret;
-    t->func.varargs = varargs;
     t->func.args = args;
     RETURN (t);
 }
@@ -308,6 +308,8 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	    while (aarg || barg)
 	    {
 		if (!barg || !aarg)
+		    return False;
+		if (barg->varargs != aarg->varargs)
 		    return False;
 		if (!TypeCompatible (barg->type, aarg->type, contains))
 		    return False;

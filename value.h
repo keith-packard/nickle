@@ -171,11 +171,12 @@ typedef enum _type {
 typedef struct _argType {
     DataType	*data;
     TypesPtr	type;
+    Bool	varargs;
     Atom	name;
     struct _argType *next;
 } ArgType;
 
-ArgType *NewArgType (TypesPtr type, Atom name, ArgType *next);
+ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name, ArgType *next);
 
 typedef enum _typesTag {
     types_prim, types_name, types_ref, types_func, types_array, types_struct
@@ -205,7 +206,6 @@ typedef struct _typesRef {
 typedef struct _typesFunc {
     TypesBase	base;
     TypesPtr	ret;
-    Bool	varargs;
     ArgType	*args;
 } TypesFunc;
 
@@ -245,7 +245,7 @@ extern Types	*typesPoly;
 Types	*NewTypesPrim (Type prim);
 Types	*NewTypesName (Atom name, Types *type);
 Types	*NewTypesRef (Types *ref);
-Types	*NewTypesFunc (Types *ret, Bool varargs, ArgType *args);
+Types	*NewTypesFunc (Types *ret, ArgType *args);
 Types	*NewTypesArray (Types *type, ExprPtr dimensions);
 Types	*NewTypesStruct (StructTypePtr structs);
 Types	*TypesCanon (Types *type);

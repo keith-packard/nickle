@@ -166,15 +166,15 @@ struct ebuiltin {
 
 
 struct fbuiltin_v funcs_v[] = {
-    { do_printf,	    "printf",		    type_integer,   "s."    },
-    { do_scanf,		    "scanf",		    type_integer,   "s."    },
-    { do_fprintf,	    "fprintf",		    type_integer,   "fs.",  &FileNamespace},
-    { do_imprecise,	    "imprecise",	    type_float,	    "n."    },
-    { do_Thread_kill,	    "kill",		    type_integer,   ".",    &ThreadNamespace },
-    { do_Thread_trace,	    "trace",		    type_integer,   ".",    &ThreadNamespace },
-    { do_Thread_trace,	    "trace",		    type_integer,   ".",    &DebugNamespace },
-    { do_History_show,	    "show",		    type_integer,   "s.",   &HistoryNamespace },
-    { do_string_to_integer, "string_to_integer",    type_integer,   "s."    },
+    { do_printf,	    "printf",		    type_integer,   "s.p"   },
+    { do_scanf,		    "scanf",		    type_integer,   "s.p"   },
+    { do_fprintf,	    "fprintf",		    type_integer,   "fs.p", &FileNamespace},
+    { do_imprecise,	    "imprecise",	    type_float,	    "n.i"   },
+    { do_Thread_kill,	    "kill",		    type_integer,   ".t",   &ThreadNamespace },
+    { do_Thread_trace,	    "trace",		    type_integer,   ".p",   &ThreadNamespace },
+    { do_Thread_trace,	    "trace",		    type_integer,   ".p",   &DebugNamespace },
+    { do_History_show,	    "show",		    type_integer,   "s.i",  &HistoryNamespace },
+    { do_string_to_integer, "string_to_integer",    type_integer,   "s.i"   },
     { 0,		    0 },
 };
 struct fbuiltin_0 funcs_0[] = {
@@ -440,24 +440,25 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 }
 
 static ArgType *
-BuiltinArgTypes (char *format, int *argcp, Bool *varargs)
+BuiltinArgTypes (char *format, int *argcp)
 {
     ENTER ();
     ArgType	*args, *a, **last;
     int		argc;
     Types	*t;
     Bool	ref;
+    Bool	varargs;
     
     args = 0;
     last = &args;
     argc = 0;
-    *varargs = False;
     while (*format)
     {
+	varargs = False;
 	if (*format == '.')
 	{
-	    *varargs = True;
-	    break;
+	    varargs = True;
+	    format++;
 	}
 	ref = False;
 	if (*format == '*')
@@ -480,8 +481,9 @@ BuiltinArgTypes (char *format, int *argcp, Bool *varargs)
 	}
 	if (ref)
 	    t = NewTypesRef (t);
-	argc++;
-        a = NewArgType (t, 0, 0);
+	if (!varargs)
+	    argc++;
+        a = NewArgType (t, varargs, 0, 0);
 	*last = a;
 	last = &a->next;
     }
@@ -497,12 +499,11 @@ BuiltinAddFunction (NamespacePtr *namespacep, char *name, Type ret,
     Value	func;
     SymbolPtr	sym;
     int		argc;
-    Bool	varargs;
     ArgType	*args;
 
-    args = BuiltinArgTypes (format, &argc, &varargs);
-    sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim (ret), True, args));
-    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, varargs, f, False), 0);
+    args = BuiltinArgTypes (format, &argc);
+    sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim (ret), args));
+    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, False), 0);
     BoxValue (sym->global.value, 0) = func;
     EXIT ();
 }
@@ -515,12 +516,11 @@ BuiltinAddJumpingFunction (NamespacePtr *namespacep, char *name, Type ret,
     Value	func;
     SymbolPtr	sym;
     ArgType	*args;
-    Bool	varargs;
     int		argc;
     
-    args = BuiltinArgTypes (format, &argc, &varargs);
-    sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim(ret), True, args));
-    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, varargs, f, True), 0);
+    args = BuiltinArgTypes (format, &argc);
+    sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim(ret), args));
+    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, True), 0);
     BoxValue (sym->global.value, 0) = func;
     EXIT ();
 }

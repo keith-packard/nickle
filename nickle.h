@@ -285,9 +285,9 @@ typedef union _code {
     BuiltinCode	builtin;
 } Code;
 
-CodePtr	NewFuncCode (Types *type, Bool varargs, ArgType *args, ExprPtr code);
+CodePtr	NewFuncCode (Types *type, ArgType *args, ExprPtr code);
 CodePtr	NewBuiltinCode (Types *type, ArgType *args, int argc, 
-			Bool varargs, BuiltinFunc func, Bool needsNext);
+			BuiltinFunc func, Bool needsNext);
 Value	NewFunc (CodePtr, FramePtr);
 
 typedef struct _instBase {

@@ -25,8 +25,20 @@ static void MarkFuncCode (void *object)
 
 DataType    FuncCodeType = { MarkFuncCode, 0 };
 
+static Bool
+HasVarargs (ArgType *args)
+{
+    while (args)
+    {
+	if (args->varargs)
+	    return True;
+	args = args->next;
+    }
+    return False;
+}
+
 CodePtr
-NewFuncCode (Types *type, Bool varargs, ArgType *args, ExprPtr code)
+NewFuncCode (Types *type, ArgType *args, ExprPtr code)
 {
     ENTER ();
     CodePtr	fc;
@@ -36,7 +48,7 @@ NewFuncCode (Types *type, Bool varargs, ArgType *args, ExprPtr code)
     fc->base.type = type;
     fc->base.args = args;
     fc->base.argc = 0;
-    fc->base.varargs = varargs;
+    fc->base.varargs = HasVarargs (args);
     fc->func.dynamics = 0;
     fc->func.statics = 0;
     fc->func.code = code;
@@ -57,17 +69,17 @@ DataType BuiltinCodeType = { MarkBuiltinCode, 0 };
 
 CodePtr
 NewBuiltinCode (Types *type, ArgType *args, int argc, 
-		Bool varargs, BuiltinFunc builtin, Bool needsNext)
+		BuiltinFunc builtin, Bool needsNext)
 {
     ENTER ();
-    CodePtr  bc;
+    CodePtr bc;
 
     bc = ALLOCATE (&BuiltinCodeType, sizeof (BuiltinCode));
     bc->base.builtin = True;
     bc->base.type = type;
     bc->base.args = args;
     bc->base.argc = argc;
-    bc->base.varargs = varargs;
+    bc->base.varargs = HasVarargs (args);
     bc->builtin.needsNext = needsNext;
     bc->builtin.b = builtin;
     RETURN (bc);

@@ -126,6 +126,8 @@ fprintArgTypes (Value f, ArgType *at)
 	}
 	if (at->name)
 	    FilePuts (f, AtomName (at->name));
+	if (at->varargs)
+	    FilePuts (f, " ...");
 	at = at->next;
 	if (at)
 	    FilePuts (f, ", ");

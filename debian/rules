@@ -11,29 +11,24 @@ export DH_COMPAT=3
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	# Add here commands to configure the package.
-	sh ./autoconfigure.sh
-	./configure --prefix=/usr --mandir=/usr/share/man
-
+	./configure --prefix=/ \
+          --bindir='$${prefix}/usr/bin' \
+          --mandir='$${prefix}/usr/share/man' \
+          --datadir='$${prefix}/usr/share'
 	touch configure-stamp
 
 build: configure-stamp build-stamp
 build-stamp:
 	dh_testdir
-
-	# Add here commands to compile the package.
 	$(MAKE)
-
+	$(MAKE) nickle.1
 	touch build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp configure-stamp
-
-	# Add here commands to clean up after the build process.
-	-$(MAKE) clean
-
+	-$(MAKE) distclean
 	dh_clean
 
 install: build
@@ -41,9 +36,7 @@ install: build
 	dh_testroot
 	dh_clean -k
 	dh_installdirs
-
-	# Add here commands to install the package into debian/nickle.
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/nickle
+	$(MAKE) install prefix=$(CURDIR)/debian/nickle
 
 
 # Build architecture-independent files here.
@@ -54,26 +47,22 @@ binary-indep: build install
 binary-arch: build install
 	dh_testdir
 	dh_testroot
-#	dh_installdebconf
-	cp COPYING debian/copyright
+#	dh_installdebconf	
 	dh_installdocs
-	rm debian/copyright
-#	dh_installexamples
-#	dh_installmenu
+	dh_installexamples
+	dh_installmenu
 #	dh_installlogrotate
 #	dh_installemacsen
 #	dh_installpam
 #	dh_installmime
 #	dh_installinit
-#	dh_installcron
-#	dh_installman
-#	dh_installinfo
+	dh_installcron
+	dh_installman
+	dh_installinfo
 #	dh_undocumented
-	dh_installchangelogs
+	dh_installchangelogs ChangeLog
 	dh_link
 	dh_strip
-	find debian/nickle -depth -type d -name CVS -exec rm -rf '{}' \;
-	find debian/nickle -depth -type d -empty -exec rmdir '{}' \;
 	dh_compress
 	dh_fixperms
 #	dh_makeshlibs

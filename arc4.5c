@@ -1,0 +1,58 @@
+/*
+ * Implementation of Alleged RC4
+ *
+ * Bart 1999/2
+ * 
+ * Used primarily for PRNG, so interface is not too fancy
+ */
+
+namespace ARC4 {
+
+  global int[] state = [256];
+  global int p1, p2;
+
+  /*
+   * First argument is number of times to iterate the
+   * initial scramble.  10 seems good for most apps.
+   * Second argument is integer key: largest useful key is
+   * 8 * 62 bits.
+   */
+  public void function nsetkey(int nn, int k) {
+    int i, j, n, ii;
+    int[] key = [64];
+
+    key[0] = 13;
+    key[1] = 17;
+    for (n = 2; n < 64 && k > 0; n++) {
+      key[n] = k % 256;
+      k = k // 256;
+    }
+
+    for (i = 0; i < 256; i++)
+      state[i] = i;
+
+    for (ii = 0; ii < nn; ii++) {
+      j = 0;
+      for (i = 0; i < 256; i++) {
+        j = (j + state[i] + key[i % n]) % 256;
+	tmp = state[i];
+	state[i] = state[j];
+	state[j] = tmp;
+      }
+    }
+    p1 = p2 = 0;
+  }
+
+  /* Get the next byte from the stream */
+  public int function streambyte() {
+    p1 = (p1 + 1) % 256;
+    p2 = (p2 + state[p1]) % 256;
+    int tmp = state[p1];
+    state[p1] = state[p2];
+    state[p2] = tmp;
+    int n = (state[p1] + state[p2]) % 256;
+    return state[n];
+  }
+  
+}
+

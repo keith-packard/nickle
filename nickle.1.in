@@ -1,23 +1,22 @@
-.TH NICKLE 1 "5 Feb 2001"
+.TH NICKLE 1 "20 Mar 2001"
 .\" $Header$
 .SH NAME
-nickle \- a polymorphic desk calculator
+nickle \- a desk calculator language
 .SH SYNOPSIS
 nickle [ file ... ]
 .SH DESCRIPTION
 \fINickle\fP is a
 desk calculator language
 with powerful programming and scripting capabilities.
-\fINickle\fP supports several datatypes: int, natural,
-integer, ratio, double, string and array.  The
-natural, integer and ratio datatypes are
-implemented with arbitrary precision.  \fINickle\fP can automatically convert
-between types when appropriate.
-.PP
+\fINickle\fP supports a variety of datatypes,
+especially arbitrary precision
+integers, rationals, and imprecise reals.
 The input language vaguely resembles C.  Some things in C
 which do not
-translate easily are different, and some features are simply
-missing.
+translate easily are different, some
+design choices have been made differently,
+and a very few features are simply missing.
+.PP
 To make the input language more
 useful in an interactive setting, \fBnewline\fP only terminates
 statements at ``reasonable'' times.  \fBNewline\fP terminates either
@@ -25,6 +24,7 @@ expressions or single statements typed by the user. Inside compound
 statements or function definitions, only a \fB;\fP
 terminates statements.  This approach is convenient and does
 not appear to cause problems in normal use.
+.SH SYNTAX
 .PP
 The syntax of \fInickle\fP programs is as follows.
 In this description,
@@ -43,28 +43,39 @@ denotes any expression which results
 in an array.
 .\"
 .LP
-Comments are enclosed in /* and */
+C-style comments are enclosed in /* and */,
+and shell-style comments are
+denoted by a leading # at the start of a line.
 .\"
 .LP
 Operands:
 .IP
 floating point numbers - can include exponent, need not
-include decimal point nor sign.
+include decimal point or sign.
 .IP
 octal numbers - start with a 0 (e.g., 014 is the same as 12).
 .IP
 hexdecimal numbers - start with "0x" (e.g., 0x1a is the same as 26).
 .IP
-name
+name - a variable reference.
 .IP
 name (E) - a function call.
 .\"
-.LP
-Operators (in order of decreasing precedence):
+.SH OPERATORS
+Here are the basic Nickle operators, grouped in order
+of increasing precedence:
+.PP
 .IP "(type) E"
-cast the result of E into this type
-.IP "array [E]"
-refers to the E'th element of this array
+Cast the result of E into this type.
+.IP "array[E] array[E,E,...]"
+Refers to the E'th element of this array,
+or the E1'th/E2'th/etc
+element of a multi-dimensional array.
+.IP "struct.tag"
+Structure dereference.
+.IP "struct->tag"
+Structure pointer dereference ala C.
+.PP
 .IP "++ --"
 Increment/Decrement - either postfix or prefix.
 .IP "-"
@@ -73,44 +84,120 @@ Unary negate
 Logical negation.
 .IP "E !"
 Factorial.
-.IP "^"
+.IP "* E"
+Box dereference.
+.IP "& E"
+Box construction.
+.PP
+.IP "**"
 Exponentiation
-.IP "* / %"
-Times, divide and remainder
+.PP
+.IP "* / // %"
+Times, divide, integer divide, and remainder.
 .IP "+ -"
 Addition and subtraction.
+.PP
+.IP "<< >>"
+Bitwise left and right shift.
+.PP
 .IP "<= >= < >"
 Relational operators.
+.PP
 .IP "== !="
 Equality operators.
-.IP "|| &&"
-Logical OR and AND.
+.PP
+Finally, in order of decreasing precedence:
+.IP "&"
+Bitwise AND.
+.IP "^"
+Bitwise XOR.
+.IP "|"
+Bitwise OR.
+.IP "&&"
+Short-circuit logical AND.
+.IP "||"
+Short-circuit logical OR.
 .IP "E ? E : E"
-.IP "= <op>="
-Assignment
-.IP "[E1]([E2]...)"
-creates an array with E1 elements (each containing an array of E2 elements ...).
-For example, to make "a" reference a 10x10 array, "a = [10][10]".
+Conditional expression: if first expression
+is logical true, value is second expression,
+else third.
+.IP "= += -= *= /= //= %= **= <<= >>= ^= &= |="
+Assignment operators.  Left-hand side must be
+assignable.
+.BI x "<op>=" y
+is equivalent to
+.BI x "=" x "<op>" y
+.IP "E , E"
+Returns right-hand expression.
 .\"
+.SH STRUCTURED VALUES
+.PP
+Nickle has several kinds of ``structured value'':
+arrays, structures and disjoint unions.
+All of these have some common properties.
+When created, all of the component values are
+uninitialized (unless otherwise specified).  Attempts
+to reference an uninitialized value will result
+in either a compile-time error or a runtime exception.
+An initializer can be specified with any structure
+creation expression.
 .LP
-Statement Forms:
+Arrays:
+.IP "[E]"
+creates a (zero-based) array with E elements.
+E must be non-negative.
+.IP "[E]{V,V,V,...}
+Creates an array with E elements,
+initialized to the Vs.  If there are
+too few initializers, remaining elements
+will remain uninitialized.
+.IP "[*]{V,V,V,...}"
+Creates an initialized array with exactly as
+many elements as initializers.  There
+must be at least one initializer.
+.IP "[E,E,...] [*,*,...]"
+Creates multidimensional arrays.
+Note that "*" and integer expressions
+cannot be mixed: an array's dimensions
+are entirely either specified or unspecified
+by the definition.  Array initializers
+for multidimensional arrays are as in C: they
+may either contain extra brackets around each
+dimension, or not, as desired.
+.LP
+Structures:
+.\"
+.SH STATEMENTS
+The statement syntax very closely resembles
+that of C.  Some additional syntax has been
+added to support Nickle's additional functionality.
 .IP "E;"
 Evaluates the expression.
 .IP "{S ... S}"
 Executes the enclosed statements in order.
 .IP "if (E) S"
-.IP "if (E) S then S"
+Basic conditional.
+.IP "if (E) S else S"
+Else is allowed, with the usual syntax and semantics.
 .IP "while (E) S"
+C-style while loop.
 .IP "do S while (E);"
+C-style do loop.
 .IP "for (opt-E; opt-E; opt-E) S"
+C-style for loop.
+.IP "switch (E) { case E: S-list  case E: S-list ... default: S-list }"
+C-style case statement.  Note that the case expressions
+are not required to be constant expressions, but may
+be arbitrary.
 .IP ";"
 The null statement
 .IP "break;"
-Discontinue execution of the nearest enclosing for/do/while statement.
+Discontinue execution of the nearest enclosing for/do/while/switch statement.
 .IP "continue;"
 Branch directly to the conditional test of the nearest enclosing
 for/do/while statement.
 .IP "return E;"
+Return value E from the nearest enclosing function.
 .\"
 .LP
 \fINickle\fP supports polymorphic data: As an expresion is evaluated, a

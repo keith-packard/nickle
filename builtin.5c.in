@@ -1,4 +1,6 @@
 load "@datadir@/math.5c"
 load "@datadir@/scanf.5c"
 load "@datadir@/mutex.5c"
+load "@datadir@/arc4.5c"
+load "@datadir@/prng.5c"
 import Math;

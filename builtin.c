@@ -22,7 +22,9 @@ NamespacePtr    DebugNamespace;
 NamespacePtr    FileNamespace;
 NamespacePtr    HistoryNamespace;
 NamespacePtr    MathNamespace;
-NamespacePtr    PrimitiveNamespace;
+#ifdef BSD_RANDOM
+NamespacePtr    BSDRandomNamespace;
+#endif
 NamespacePtr    SemaphoreNamespace;
 NamespacePtr    StringNamespace;
 NamespacePtr    ThreadNamespace;
@@ -232,8 +234,10 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_File_clear_error,  "clear_error",	    "i",    "f",    &FileNamespace },
     { do_String_length,	    "length",		    "i",    "s",    &StringNamespace },
     { do_String_new,	    "new",		    "s",    "p",    &StringNamespace },
-    { do_Primitive_random,  "random",		    "i",    "i",    &PrimitiveNamespace },
-    { do_Primitive_srandom, "srandom",		    "i",    "i",    &PrimitiveNamespace },
+#ifdef BSD_RANDOM
+    { do_BSD_random,  "random",		    "i",    "i",    &BSDRandomNamespace },
+    { do_BSD_srandom, "srandom",		    "i",    "i",    &BSDRandomNamespace },
+#endif
     { do_Debug_dump,	    "dump",		    "i",    "p",    &DebugNamespace },
     { 0,		    0 },
 };
@@ -398,7 +402,9 @@ static struct nbuiltin nvars[] = {
     { "File",	    &FileNamespace },
     { "History",    &HistoryNamespace },
     { "Math",	    &MathNamespace },
-    { "Primitive",  &PrimitiveNamespace },
+#ifdef BSD_RANDOM
+    { "BSDRandom",  &BSDRandomNamespace },
+#endif
     { "Semaphore",  &SemaphoreNamespace },
     { "Strings",    &StringNamespace },
     { "Thread",	    &ThreadNamespace },
@@ -1251,8 +1257,10 @@ do_ceil (Value a)
     return Ceil (a);
 }
 
+#ifdef BSD_RANDOM
+
 Value
-do_Primitive_random (Value bits)
+do_BSD_random (Value bits)
 {
     ENTER();
     int n = IntPart (bits, "random: modulus non-integer");
@@ -1273,7 +1281,7 @@ do_Primitive_random (Value bits)
 }
 
 Value
-do_Primitive_srandom (Value seed)
+do_BSD_srandom (Value seed)
 {
     ENTER();
     int n = IntPart (seed, "srandom: non-integer seed");
@@ -1281,6 +1289,8 @@ do_Primitive_srandom (Value seed)
     srandom ((unsigned int) n);
     RETURN (Zero);
 }
+
+#endif
 
 Value
 do_String_length (Value av)

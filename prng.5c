@@ -1,0 +1,35 @@
+/*
+ * Use ARC4 to generate large random numbers
+ *
+ * Bart 1999/2
+ */
+
+namespace PRNG {
+
+  global int setkey = 0;
+
+  public void function srandom(int s) {
+    ARC4::nsetkey(10, s);
+    setkey = 1;
+  }
+
+  /* returns an n-*bit* random number in 0..(2**n)-1 */
+  public int function randbits(int n) {
+    int q = n // 8;
+    int r = n % 8;
+    if (!setkey)
+      srandom(floor(pi * (10**16)));
+    int acc = 0;
+    while (q > 0) {
+      --q;
+      acc += (2 ** (8 * q + r)) * ARC4::streambyte();
+    }
+    return acc;
+  }
+
+  /* returns a random integer in the range 0..n-1 */
+  public int function randint(int n) {
+    return randbits(32 + lg(n)) % n;
+  }
+
+}

@@ -1,6 +1,16 @@
 public namespace Math_helper 
 {
-    public int function log2 (int i)
+    public real function errbounds (real v)
+    {
+	int	prec;
+
+	prec = precision (v);
+	if (prec == 0)
+	    prec = 256;
+	return 2**(prec+3);
+    }
+
+    public int function bits (int i)
     {
 	int	min, max, cur;
 
@@ -17,21 +27,12 @@ public namespace Math_helper
 	}
 	return min;
     }
-    
-    public real function errbounds (real v)
-    {
-	int	prec;
-
-	prec = precision (v);
-	if (prec == 0)
-	    prec = 256;
-	return 2**(prec+3);
-    }
 }
 
 public real function sqrt (real v)
 {
     import  Math_helper;
+    
     
     real function real_sqrt(real v)
     {
@@ -60,8 +61,8 @@ public real function sqrt (real v)
 
 	num = numerator (v);
 	den = denominator (v);
-	num_s = real_sqrt (imprecise (num, log2(num) + 128));
-	den_s = real_sqrt (imprecise (den, log2(den) + 128));
+	num_s = real_sqrt (imprecise (num, bits(num) + 128));
+	den_s = real_sqrt (imprecise (den, bits(den) + 128));
 	num = floor (num_s + 0.5);
 	den = floor (den_s + 0.5);
 	if (num * num == numerator (v) && den * den == denominator (v))
@@ -104,8 +105,8 @@ public real function cbrt (real v)
 
 	num = numerator (v);
 	den = denominator (v);
-	num_s = real_cbrt (imprecise (num, log2(num) + 128));
-	den_s = real_cbrt (imprecise (den, log2(den) + 128));
+	num_s = real_cbrt (imprecise (num, bits(num) + 128));
+	den_s = real_cbrt (imprecise (den, bits(den) + 128));
 	num = floor (num_s + 0.5);
 	den = floor (den_s + 0.5);
 	/* printf ("num %g den %g\n", num, den); */
@@ -168,7 +169,7 @@ public namespace Math {
 
 	    a = imprecise (a / (a + 2), prec*2);
 	    v = 0;
-	    iter = log2(prec) + 15;
+	    iter = bits(prec) + 15;
 	    for (i = 1; --iter; i += 2)
 	    {
 		term = a**i/i;
@@ -196,7 +197,7 @@ public namespace Math {
 	if (a < 1)
 	    return -log(1/a);
 	prec = precision(a);
-	maxiter = log2(prec) + 15;
+	maxiter = bits(prec) + 15;
 	/* printf ("maxiter %g\n", maxiter); */
 	
 	err = imprecise (1/errbounds (a), prec*2);
@@ -204,7 +205,7 @@ public namespace Math {
 	a = imprecise (a, prec*2);
 	
 	/*
-	 * estimate = log2(a) / log2(e)
+	 * estimate = bits(a) / bits(e)
 	 */
 	v = imprecise ((exponent (a) - 1) / 1.44269504088896, prec*2);
 	/* printf ("Initial estimate %g\n", v); */
@@ -241,11 +242,11 @@ public namespace Math {
     }
     
     /*
-     * log2(x) = log2(e) * log(x)
+     * bits(x) = bits(e) * log(x)
      *
-     * log2(e) = log(e) / log(2) = 1/log(2)
+     * bits(e) = log(e) / log(2) = 1/log(2)
      */
-    public real function log2 (real a)
+    public real function bits (real a)
     {
 	static real	loge = 0;
 
@@ -255,6 +256,11 @@ public namespace Math {
 	return loge * log(a);
     }
     
+    /* Number of bits required to represent x. */
+    public int function bits(real x) {
+	return ceil(bits(x));
+    }
+
     /*
      * Calculate pi using the formula:
      *
@@ -272,7 +278,7 @@ public namespace Math {
 	{
 	    real	ret;
 
-	    ret = log2(p) - p * exponent (imprecise (v));
+	    ret = bits(p) - p * exponent (imprecise (v));
 	    /* printf ("v %g p %g avail %g\n", v, p, ret); */
 	    return ret;
 	}

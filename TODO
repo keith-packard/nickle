@@ -1,19 +1,19 @@
 TODO
 
-+ tagless GC
 + Allow poll() as a substitue for select().
 + Allow nick to be built without all the async IO and
   gettimeofday() and the like.
 + Build a small test suite.
-+ Add a PRNG
 + Finish the manual.
 + fix output formatting length problems
-+ add file/line numbers to compile errors
++ Allow multiple instances of ARC4 or PRNG to run simultaneously
+  (i.e. encapsulated generators)?
++ Too few array initializers is an error?
 
 NOT TODO
 
 + Comments should not be allowed in interactive mode?
-+ "scope public" has a somewhat non-intuitive meaning.  Fix?
++ "public namespace" has a somewhat non-intuitive meaning.  Fix?
 
 DONE
 
@@ -36,3 +36,6 @@ DONE
 + xor builtin
 + deeper typechecking on assignment (of all kinds)
 + forward declarations of typenames
++ add file/line numbers to compile errors
++ Add a PRNG
++ tagless GC

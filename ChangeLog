@@ -1,3 +1,9 @@
+2004-12-24  Keith Packard  <keithp@keithp.com>
+version 2.45
+
+	* debian/changelog:
+	Update to version 2.45
+
 2004-12-23  Keith Packard  <keithp@keithp.com>
 
 	* foreign.c: (ForeignMark), (NewForeign):

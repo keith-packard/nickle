@@ -57,10 +57,12 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    opt_rawnames rawname rawnames rawnamespace
 %type  <atom>	    rawatom
 %type  <expr>	    block func_body statements statement catches catch
+%type  <expr>	    block_or_expr
 %type  <expr>	    case_block cases case
 %type  <expr>	    union_case_block union_cases union_case
 %type  <expr>	    fulltype
 %type  <expr>	    namespace
+%type  <expr>	    comprehension compnames compname
 %type  <atomList>   atoms
 %type  <declList>   initnames typenames
 %type  <symbol>	    name opt_name
@@ -570,9 +572,18 @@ catches		:   catch catches
 catch		: CATCH fullname namespace_start args block namespace_end
 		    { $$ = NewExprCode (NewFuncCode (typePrim[rep_void], $4, $5), $2); }
 		;
-func_body    	: { ++funcDepth; } block { --funcDepth; $$ = $2; }
+func_body    	: { ++funcDepth; } block_or_expr { --funcDepth; $$ = $2; }
 		| SEMI
 		    { $$ = 0; }
+		;
+block_or_expr	: block
+		    { $$ = $1; }
+		| ASSIGN simpleexpr SEMI
+		    { 
+			$$ = NewExprTree (OC,
+					  NewExprTree (RETURNTOK, 0, $2),
+					  NewExprTree (OC, 0, 0));
+		    }
 		;
 case_block	: block_start cases block_end
 		    { $$ = $2; }
@@ -1015,7 +1026,8 @@ expr		: comma_expr
 			    if (decl->init)
 			    {
 				if (decl->init->base.tag == STRUCT ||
-				    decl->init->base.tag == ARRAY)
+				    decl->init->base.tag == ARRAY ||
+				    decl->init->base.tag == COMP)
 				{
 				    decl->init = NewExprTree (NEW, decl->init, 0);
 				}
@@ -1208,22 +1220,24 @@ primary		: fullname
 		    { $$ = NewExprConst(VOIDVAL, $1); }
 		| BOOLVAL
 		    { $$ = NewExprConst(BOOLVAL, $1); }
+		| OS CS
+		    { $$ = NewExprTree(COMP, 0, 0); }
 		| OP type CP namespace_start init namespace_end
 		    { 
 			ParseCanonType ($2, False);
 			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = $2;
 		    }
-		| OS stars CS namespace_start arrayinit namespace_end
+		| OP OS stars CS CP namespace_start arrayinit namespace_end
 		    { 
-			$$ = NewExprTree (NEW, $5, 0); 
-			$$->base.type = NewTypeArray (typePoly, $2); 
+			$$ = NewExprTree (NEW, $7, 0); 
+			$$->base.type = NewTypeArray (typePoly, $3); 
 			ParseCanonType ($$->base.type, False);
 		    }
-		| OS dims CS namespace_start opt_arrayinit namespace_end
+		| OP OS dims CS CP namespace_start opt_arrayinit namespace_end
 		    { 
-			$$ = NewExprTree (NEW, $5, 0); 
-			$$->base.type = NewTypeArray (typePoly, $2); 
+			$$ = NewExprTree (NEW, $7, 0); 
+			$$->base.type = NewTypeArray (typePoly, $3); 
 		    }
 		| type DOT NAME						%prec UNIONCAST
 		    {
@@ -1294,9 +1308,25 @@ arrayinit    	: OC arrayelts opt_comma opt_dots CC
 			}
 			$$ = NewExprTree (ARRAY, elts, 0); 
 		    }
-		| OC ASSIGN expr CC
-    		    {
-			$$ = NewExprTree (COMP, $3, 0);
+		| OC OS namespace_start compnames CS comprehension namespace_end CC
+		    {
+			$$ = NewExprTree (COMP, $4, $6);
+		    }
+		;
+comprehension	:   ASSIGN expr
+		    { $$ = $2; }
+		|   block
+		;
+compnames	: compname COMMA compnames
+		    { $$ = NewExprTree (COMMA, $1, $3); }
+		| compname
+		;
+compname	: NAME
+		    { 
+			SymbolPtr   s;
+			s = ParseNewSymbol (publish_private, class_arg, 
+					    typePrim[rep_integer], $1);
+			$$ = NewExprAtom ($1, s, False); 
 		    }
 		;
 arrayelts	: arrayelts COMMA arrayelt

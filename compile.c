@@ -129,6 +129,22 @@ AddInst (ObjPtr obj, ExprPtr stat)
     RETURN (obj);
 }
 
+static ObjPtr
+AppendObj (ObjPtr first, ObjPtr last)
+{
+    int	    i;
+    InstPtr firsti, lasti;
+
+    for (i = 0; i < last->used; i++)
+    {
+	lasti = ObjCode (last, i);
+	first = AddInst (first, ObjStatement (last, lasti));
+	firsti = ObjCode (first, ObjLast (first));
+	*firsti = *lasti;
+    }
+    return first;
+}
+
 ExprPtr
 ObjStatement (ObjPtr obj, InstPtr inst)
 {
@@ -1115,6 +1131,19 @@ CompileCountDeclDimensions (ExprPtr expr)
     return ndim;
 }
 
+static int
+CompileCountImplicitDimensions (ExprPtr expr)
+{
+    switch (expr->base.tag) {
+    case ARRAY:
+	return 1 + CompileCountImplicitDimensions (expr->tree.left);
+    case COMMA:
+	return CompileCountImplicitDimensions (expr->tree.left);
+    default:
+	return 0;
+    }
+}
+
 static ObjPtr
 CompileBuildArray (ObjPtr obj, ExprPtr expr, TypePtr type, 
 		   ExprPtr dim, int ndim, 
@@ -1250,6 +1279,57 @@ CompileArrayInitArgs (int ndim)
     return NewExprTree (COMMA, a, CompileArrayInitArgs (ndim - 1));
 }
 
+static ArgType *
+CompileComprehensionArgs (ExprPtr e)
+{
+    ArgType *down = 0;
+    if (e->base.tag == COMMA)
+    {
+	down = CompileComprehensionArgs (e->tree.right);
+	e = e->tree.left;
+    }
+    down = NewArgType (typePrim[rep_integer],
+		       False, e->atom.atom,
+		       e->atom.symbol, down);
+    return down;
+}
+
+static ObjPtr
+CompileComprehension (ObjPtr	obj,
+		      TypePtr	type,
+		      ExprPtr	expr,
+		      ExprPtr	stat,
+		      CodePtr	code)
+{
+    ENTER ();
+    ExprPtr	body = expr->tree.right;
+    ExprPtr	lambda;
+    ArgType	*args;
+
+    /*
+     * Convert a single expression into a block containing a 
+     * return statement
+     */
+    if (body->base.tag != OC)
+	body = NewExprTree (OC,
+			    NewExprTree (RETURNTOK, 0, body),
+			    NewExprTree (OC, 0, 0));
+    /*
+     * Convert the args
+     */
+    args = CompileComprehensionArgs (expr->tree.left);
+    /*
+     * Build a func expression
+     */
+    lambda = NewExprCode (NewFuncCode (type,
+				       args,
+				       body),
+			  0);
+    obj = _CompileExpr (obj, lambda, True, stat, code);
+    expr->tree.left->base.type = lambda->base.type;
+    RETURN(obj);
+}
+
 static ObjPtr
 CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr code)
 {
@@ -1259,6 +1339,16 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
     Expr    *dimensions;
 
     ndim = CompileCountDeclDimensions (type->array.dimensions);
+    if (!ndim)
+    {
+	if (expr)
+	    ndim = CompileCountImplicitDimensions (expr);
+	if (!ndim)
+	{
+	    CompileError (obj, stat, "Cannot compute number of array dimensions");
+	    RETURN (obj);
+	}
+    }
     if (type->array.dimensions && type->array.dimensions->tree.left)
 	dimensions = type->array.dimensions;
     else if (expr)
@@ -1268,24 +1358,24 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
     if (!dimensions)
     {
 	CompileError (obj, stat, "Non-dimensioned array with no initializers");
-	return obj;
+	RETURN(obj);
     }
     if (expr && expr->base.tag == COMP)
     {
 	ExprPtr	args = CompileArrayInitArgs (ndim);
 	
-	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	obj = CompileComprehension (obj, sub, expr, stat, code);
 	if (!CompileTypecheckArgs (obj, expr->tree.left->base.type,
 				   args, ndim, stat))
 	{
-	    return obj;
+	    RETURN(obj);
 	}
 	expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
 	if (!TypeCombineBinary (sub, ASSIGN, expr->base.type))
 	{
 	    CompileError (obj, stat, "Incompatible types, array '%T', return '%T', for initializer",
 			  sub, expr->base.type);
-	    return obj;
+	    RETURN(obj);
 	}
 	SetPush (obj);
     }
@@ -2296,6 +2386,44 @@ CompilePatchLoop (ObjPtr    obj,
     }
 }
 
+static void
+CompileMoveObj (ObjPtr	obj,
+		int	start,
+		int	depth,
+		int	amount)
+{
+    InstPtr inst;
+
+    while (start < obj->used)
+    {
+	inst = ObjCode (obj, start);
+	switch (inst->base.opCode) {
+	case OpFarJump:
+	    if (inst->farJump.farJump->frame == depth &&
+		inst->farJump.farJump->inst >= 0)
+	    {
+		inst->farJump.farJump->inst += amount;
+	    }
+	    break;
+	case OpObj:
+	    if (!inst->code.code->base.builtin &&
+		inst->code.code->func.body.obj->nonLocal)
+	    {
+		if (inst->code.code->func.body.obj)
+		    CompileMoveObj (inst->code.code->func.body.obj, 0,
+				    depth + 1, amount);
+		if (inst->code.code->func.staticInit.obj)
+		    CompilePatchLoop (inst->code.code->func.staticInit.obj, 0,
+				      depth + 1, amount);
+	    }
+	    break;
+	default:
+	    break;
+	}
+	++start;
+    }
+}
+
 static ObjPtr
 _CompileNonLocal (ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
 {
@@ -2399,6 +2527,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
     Bool	has_default;
     InstPtr	inst;
     StructType	*st;
+    ObjPtr	cobj, bobj;
     
     switch (expr->base.tag) {
     case IF:
@@ -2408,12 +2537,25 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 * a BRANCHFALSE b
 	 *   +-------------+
 	 */
+	top_inst = obj->used;
 	obj = _CompileBoolExpr (obj, expr->tree.left, True, expr, code);
-	NewInst (obj, OpBranchFalse, test_inst, expr);
-	obj = _CompileStat (obj, expr->tree.right, last, code);
-	inst = ObjCode (obj, test_inst);
-	inst->branch.offset = obj->used - test_inst;
-	inst->branch.mod = BranchModNone;
+	if (obj->used == top_inst + 1 &&
+	    (inst = ObjCode (obj, top_inst))->base.opCode == OpConst)
+	{
+	    Bool    t = True (inst->constant.constant);
+
+	    obj->used = top_inst;
+	    if (t)
+		obj = _CompileStat (obj, expr->tree.right, last, code);
+	}
+	else
+	{
+	    NewInst (obj, OpBranchFalse, test_inst, expr);
+	    obj = _CompileStat (obj, expr->tree.right, last, code);
+	    inst = ObjCode (obj, test_inst);
+	    inst->branch.offset = obj->used - test_inst;
+	    inst->branch.mod = BranchModNone;
+	}
 	break;
     case ELSE:
 	/*
@@ -2423,86 +2565,112 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 *   +--------------------+
 	 *                 +--------+
 	 */
+	top_inst = obj->used;
 	obj = _CompileBoolExpr (obj, expr->tree.left, True, expr, code);
-	NewInst (obj, OpBranchFalse, test_inst, expr);
-	/*
-	 * Compile b
-	 */
-	obj = _CompileStat (obj, expr->tree.right->tree.left, last, code);
-	/*
-	 * Branch around else if reachable
-	 */
-	if (CompileIsReachable (obj, obj->used))
+	if (obj->used == top_inst + 1 &&
+	    (inst = ObjCode (obj, top_inst))->base.opCode == OpConst)
 	{
-	    NewInst (obj, OpBranch, middle_inst, expr);
+	    Bool    t = True (inst->constant.constant);
+
+	    obj->used = top_inst;
+	    /*
+	     * Check which side wins
+	     */
+	    if (t)
+		obj = _CompileStat (obj, expr->tree.right->tree.left, last, code);
+	    else
+		obj = _CompileStat (obj, expr->tree.right->tree.right, last, code);
 	}
 	else
-	    middle_inst = -1;
-	/*
-	 * Fix up branch on a
-	 */
-	inst = ObjCode (obj, test_inst);
-	inst->branch.offset = obj->used - test_inst;
-	inst->branch.mod = BranchModNone;
-	/*
-	 * Compile c
-	 */
-	obj = _CompileStat (obj, expr->tree.right->tree.right, last, code);
-	/*
-	 * Fix up branch around else if necessary
-	 */
-	if (middle_inst != -1)
 	{
-	    inst = ObjCode (obj, middle_inst);
-	    inst->branch.offset = obj->used - middle_inst;
+	    NewInst (obj, OpBranchFalse, test_inst, expr);
+	    /*
+	     * Compile b
+	     */
+	    obj = _CompileStat (obj, expr->tree.right->tree.left, last, code);
+	    /*
+	     * Branch around else if reachable
+	     */
+	    if (CompileIsReachable (obj, obj->used))
+	    {
+		NewInst (obj, OpBranch, middle_inst, expr);
+	    }
+	    else
+		middle_inst = -1;
+	    /*
+	     * Fix up branch on a
+	     */
+	    inst = ObjCode (obj, test_inst);
+	    inst->branch.offset = obj->used - test_inst;
 	    inst->branch.mod = BranchModNone;
+	    /*
+	     * Compile c
+	     */
+	    obj = _CompileStat (obj, expr->tree.right->tree.right, last, code);
+	    /*
+	     * Fix up branch around else if necessary
+	     */
+	    if (middle_inst != -1)
+	    {
+		inst = ObjCode (obj, middle_inst);
+		inst->branch.offset = obj->used - middle_inst;
+		inst->branch.mod = BranchModNone;
+	    }
 	}
 	break;
     case WHILE:
 	/*
 	 * while (a) b
 	 *
-	 * BRANCH b a BRANCHTRUE
-	 * +--------+
-	 *        +---+
+	 * a BRANCHFALSE b BRANCH
+	 *   +--------------------+
+	 * +---------------+
 	 */
-	NewInst (obj, OpBranch, start_inst, expr);
-	    
+	
+	cobj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
+	cobj = _CompileBoolExpr (cobj, expr->tree.left, True, expr, code);
+	
+	if (cobj->used == 1 &&
+	    (inst = ObjCode (cobj, 0))->base.opCode == OpConst)
+	{
+	    Bool    t = True (inst->constant.constant);
+
+	    if (!t)
+	    {
+		/* strip out the whole while loop */
+		break;
+	    }
+	    start_inst = -1;
+	}
+	else
+	{
+	    NewInst (obj, OpBranch, start_inst, expr);
+	}
+	
         top_inst = obj->used;
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
 				     NON_LOCAL_BREAK|NON_LOCAL_CONTINUE);
 	obj = _CompileStat (obj, expr->tree.right, False, code);
 	obj->nonLocal = obj->nonLocal->prev;
 
-	inst = ObjCode (obj, start_inst);
-	inst->branch.offset = obj->used - start_inst;
-	inst->branch.mod = BranchModNone;
-	
 	continue_inst = obj->used;
-	obj = _CompileBoolExpr (obj, expr->tree.left, True, expr, code);
-	if (obj->used == continue_inst + 1 &&
-	    (inst = ObjCode (obj, continue_inst))->base.opCode == OpConst)
+	
+	if (start_inst != -1)
 	{
-	    Bool    t = True (inst->constant.constant);
-
-	    obj->used = continue_inst;
-	    if (t)
-	    {
-		obj->used = continue_inst;
-		BuildInst (obj, OpBranch, inst, expr);
-		inst->branch.offset = top_inst - ObjLast(obj);
-		inst->branch.mod = BranchModNone;
-	    }
-	    else
-	    {
-		/* strip out the whole while loop */
-		obj->used = start_inst;
-		top_inst = continue_inst = start_inst;
-	    }
+	    inst = ObjCode (obj, start_inst);
+	    inst->branch.offset = obj->used - start_inst;
+	    inst->branch.mod = BranchModNone;
+	    
+	    middle_inst = obj->used;
+	    obj = AppendObj (obj, cobj);
+	    CompileMoveObj (obj, middle_inst, 0, middle_inst);
+	    BuildInst (obj, OpBranchTrue, inst, expr);
+	    inst->branch.offset = top_inst - ObjLast(obj);
+	    inst->branch.mod = BranchModNone;
 	}
 	else
 	{
-	    BuildInst (obj, OpBranchTrue, inst, expr);
+	    BuildInst (obj, OpBranch, inst, expr);
 	    inst->branch.offset = top_inst - ObjLast(obj);
 	    inst->branch.mod = BranchModNone;
 	}
@@ -2566,9 +2734,24 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	start_inst = -1;
 	
 	/* check for b */
+	bobj = 0;
 	if (expr->tree.left->tree.right)
+	{
+	    bobj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
+	    bobj = _CompileBoolExpr (bobj, 
+				     expr->tree.left->tree.right,
+				     True, expr, code);
 	    NewInst (obj, OpBranch, start_inst, expr);
+	}
 
+	/* check for c */
+	cobj = 0;
+	if (expr->tree.right->tree.left)
+	{
+	    cobj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
+	    cobj = _CompileExpr (cobj, expr->tree.right->tree.left, False, expr, code);
+	}
+	    
 	top_inst = obj->used;
 
 	/* d */
@@ -2577,17 +2760,21 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	obj = _CompileStat (obj, expr->tree.right->tree.right, False, code);
 	obj->nonLocal = obj->nonLocal->prev;
 
-	/* c */
+	/* glue c into place */
 	continue_inst = obj->used;
-	if (expr->tree.right->tree.left)
-	    obj = _CompileExpr (obj, expr->tree.right->tree.left, False, expr, code);
+	if (cobj)
+	{
+	    middle_inst = obj->used;
+	    obj = AppendObj (obj, cobj);
+	    CompileMoveObj (obj, middle_inst, 0, middle_inst);
+	}
 	
-	/* b */
-	if (expr->tree.left->tree.right)
+	/* glue b into place */
+	if (bobj)
 	{
 	    int	middle_inst = obj->used;
-	    
-	    obj = _CompileBoolExpr (obj, expr->tree.left->tree.right, True, expr, code);
+	    obj = AppendObj (obj, bobj);
+	    CompileMoveObj (obj, middle_inst, 0, middle_inst);
 	    if (obj->used == middle_inst + 1 &&
 		(inst = ObjCode (obj, middle_inst))->base.opCode == OpConst)
 	    {

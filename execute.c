@@ -9,6 +9,8 @@
 #include	"nickle.h"
 #include	<assert.h>
 
+#undef DEBUG_FRAME
+
 #define Stack(i) ((Value) STACK_ELT(thread->thread.continuation.stack, i))
 
 /*
@@ -460,7 +462,7 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	/*
 	 * Push args. Tricky because the stack keeps growing
 	 */
-	i = dim;
+	i = dim + 1;
 	while (--dim >= 0)
 	{
 	    STACK_PUSH(thread->thread.continuation.stack, value);
@@ -514,15 +516,6 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	ThreadArrayReplicate (thread, array, dim, i);
 	break;
     }
-#ifdef DEBUG_AINIT
-    if (*stack == 0)
-    {
-	FilePrintf (FileStdout, "ndim %v\n", Stack(0));
-	for (i = 0; i < Stack(0)->ints.value; i++)
-	    FilePrintf (FileStdout, "dim %d: %v\n", i, Stack(1+i));
-	FilePrintf (FileStdout, "array: %v\n", Stack(1+i));
-    }
-#endif
     RETURN (value);
 }
 

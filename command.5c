@@ -198,6 +198,7 @@
     }
     
     Command::new ("char", do_char);
+
 }
 
 /*
@@ -205,6 +206,7 @@
  */
 
 extend namespace Command {
+
     public void display (poly v) {
 	if (is_void (v))
 	    return;
@@ -218,4 +220,18 @@ extend namespace Command {
 	File::print (stdout, v, "g", base, 0, -1, " ");
 	putchar ('\n');
     }
+
+    public string dirname(string name) {
+	int n = String::rindex(name, "/");
+	if (n == -1)
+	    return ".";
+	return (String::substr(name, 0, n));
+    }
+
+    /* XXX externally non-obvious semantic: suggestions? */
+    public void script_dir(string name)
+    {
+	library_path = name + ":" + nickle_library_path;
+    }
+
 }

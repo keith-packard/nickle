@@ -1,15 +1,60 @@
-Command::library_path = "@nicklelib@";
-Command::new ("library", Command::lex_library);
+/*
+ * XXX Here there be dragons.
+ * Top-level bootstrap of Nickle builtins in Nickle.
+ * As you might expect, ordering and details are crucial.
+ */
+
+/*
+ * Set up the library path correctly and
+ * provide the "library" command.
+ */
+extend namespace Command {
+    public string nickle_library_path = "@nicklelib@";
+    library_path = nickle_library_path;
+
+    void do_library(string name) {
+	/* XXX: bootstrap to load printf.5c */
+	void put_err(string msg) {
+	    for (int i = 0; i < String::length(msg); i++)
+		File::putb(msg[i], stderr);
+	}
+	if (!lex_library(name))
+	    put_err ("Cannot load library file \"" + name + "\".\n");
+    }
+
+    new ("library", do_library);
+}
+
+/*
+ * Load the prerequisites for the extra commands.
+ */
+library "string.5c";
 library "ctype.5c";
 library "printf.5c";
 library "history.5c";
+/*
+ * Now load the extra commands.
+ */
 library "command.5c";
+/*
+ * Note that some libraries extend namespaces, and
+ * thus aren't autoload/autoimport candidates.
+ */
 library "math.5c";
 import Math;
 library "scanf.5c";
-autoload Abort;
-import Abort;
+/*
+ * Now autoload/autoimport the bonus stuff
+ */
+autoimport Abort;
 autoload Mutex;
 autoload ARC4;
 autoload PRNG;
 
+/*
+ * Finally, if this is a script invocation, add
+ * the script base directory to the front of the
+ * script, for grins.
+ */
+if (dim(argv) > 0)
+     Command::script_dir(Command::dirname(argv[0]));

@@ -200,6 +200,8 @@ BaseType (Types *t)
     return type_undef;
 }
 
+#if 0
+/* This function is unused (and may be broken as well) */
 Bool
 TypeEqual (Types *a, Types *b)
 {
@@ -247,6 +249,7 @@ TypeEqual (Types *a, Types *b)
     }
     return False;
 }
+#endif
 
 Bool
 TypePoly (Types *t)
@@ -298,11 +301,15 @@ TypeCountDimensions (ExprPtr dims)
     return ndim;
 }
 
+StackObject *TypeCheckStack;
+int	    TypeCheckLevel;
+
 Bool
 TypeCompatible (Types *a, Types *b, Bool contains)
 {
     int	    n;
     int	    adim, bdim;
+    Bool    ret;
     
     if (a == b)
 	return True;
@@ -322,7 +329,18 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	    return contains ? a->prim.prim >= b->prim.prim : True;
 	break;
     case types_ref:
-	return TypeCompatible (a->ref.ref, b->ref.ref, contains);
+	/*
+	 * Avoid the infinite recursion, but don't unify types yet
+	 */
+	for (n = 0; n < TypeCheckLevel; n++)
+	    if (STACK_ELT(TypeCheckStack, n) == a)
+		return True;
+	STACK_PUSH (TypeCheckStack, a);
+	++TypeCheckLevel;
+	ret = TypeCompatible (a->ref.ref, b->ref.ref, contains);
+	STACK_POP (TypeCheckStack);
+	--TypeCheckLevel;
+	return ret;
     case types_func:
 	if (TypeCompatible (a->func.ret, b->func.ret, contains))
 	{
@@ -728,6 +746,9 @@ TypesInit (void)
     }
     typesPoly = NewTypesPrim(type_undef);
     MemAddRoot (typesPoly);
+    TypeCheckStack = StackCreate ();
+    MemAddRoot (TypeCheckStack);
+    TypeCheckLevel = 0;
     EXIT ();
     return 1;
 }

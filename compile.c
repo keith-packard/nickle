@@ -122,6 +122,7 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
     SymbolPtr	s;
     int		depth;
     ArgType	*arg;
+    int		n;
     
     if (!type)
 	return;
@@ -141,7 +142,7 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 	    else
 	    {
 		type->name.type = s->symbol.type;
-		CompileCanonType (obj, namespace, type->name.type, stat);
+/*		CompileCanonType (obj, namespace, type->name.type, stat); */
 	    }
 	}
 	break;
@@ -157,6 +158,13 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 	CompileCanonType (obj, namespace, type->array.type, stat);
 	break;
     case types_struct:
+	for (n = 0; n < type->structs.structs->nelements; n++)
+	{
+	    StructElement   *se;
+
+	    se = &StructTypeElements(type->structs.structs)[n];
+	    CompileCanonType (obj, namespace, se->type, stat);
+	}
 	break;
     }
 }
@@ -208,17 +216,19 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
 		   Bool *new)
 {
     ENTER ();
-    SymbolPtr	s;
+    SymbolPtr	s = 0;
     
-    CompileCanonType (obj, namespace, type, stat);
     if (publish == publish_extend)
     {
 	s = NamespaceLookupSymbol (namespace, name);
 	*new = False;
 	if (!s)
+	{
 	    CompileError (obj, stat, "No namespace \"%A\" in namespace", name);
-	return s;
-    }
+	    RETURN (0);
+	}
+    } 
+
     if (class == class_typedef)
     {
 	s = NamespaceLookupSymbol (namespace, name);
@@ -229,36 +239,40 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
 	    {
 		*new = False;
 		s->symbol.type = type;
-		return s;
 	    }
+	    else
+		s = 0;
 	}
     }
-
-    switch (class) {
-    case class_global:
-	s = NewSymbolGlobal (name, type, publish);
-	break;
-    case class_static:
-	s = NewSymbolStatic (name, type);
-	break;
-    case class_arg:
-    case class_auto:
-	s = NewSymbolAuto (name, type);
-	break;
-    case class_typedef:
-	s = NewSymbolType (name, type, publish);
-	break;
-    case class_namespace:
-	s = NewSymbolNamespace (name, publish);
-	break;
-    case class_exception:
-	s = NewSymbolException (name, type, publish);
-	break;
-    default:
-	s = 0;
-	break;
+    if (!s)
+    {
+	switch (class) {
+	case class_global:
+	    s = NewSymbolGlobal (name, type, publish);
+	    break;
+	case class_static:
+	    s = NewSymbolStatic (name, type);
+	    break;
+	case class_arg:
+	case class_auto:
+	    s = NewSymbolAuto (name, type);
+	    break;
+	case class_typedef:
+	    s = NewSymbolType (name, type, publish);
+	    break;
+	case class_namespace:
+	    s = NewSymbolNamespace (name, publish);
+	    break;
+	case class_exception:
+	    s = NewSymbolException (name, type, publish);
+	    break;
+	default:
+	    s = 0;
+	    break;
+	}
+	*new = s != 0;
     }
-    *new = s != 0;
+    CompileCanonType (obj, namespace, type, stat);
     RETURN (s);
 }
 
@@ -268,7 +282,7 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
  */
 static SymbolPtr
 CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace, Atom name, 
-		    int *depth, Types *type, Bool createIfNecessary)
+		   int *depth, Bool createIfNecessary)
 {
     ENTER ();
     SymbolPtr   s;
@@ -277,7 +291,6 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace, Atom name,
     s = NamespaceFindSymbol (namespace, name, depth);
     if (!s)
     {
-	CompileCanonType (obj, namespace, type, stat);
 	if (!createIfNecessary)
 	{
 	    CompileError (obj, stat, "No symbol \"%A\" in namespace", name);
@@ -287,7 +300,7 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace, Atom name,
 	{
 	    s = CompileNewSymbol (obj, stat, namespace,
 				   publish_private, NamespaceDefaultClass (namespace),
-				   type, name, &new);
+				   typesPoly, name, &new);
 	    if (new)
 		CompileAddSymbol (namespace, s);
 	}
@@ -342,7 +355,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
     switch (expr->base.tag) {
     case NAME:
 	s = CompileFindSymbol (obj, stat, namespace, expr->atom.atom, 
-			       &depth, typesPoly, createIfNecessary);
+			       &depth, createIfNecessary);
 	if (!s)
 	    break;
 	if (!ClassStorage (s->symbol.class))
@@ -626,7 +639,7 @@ CompileRaise (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     InstPtr	inst;
     
     sym = CompileFindSymbol (obj, stat, namespace, expr->tree.left->atom.atom,
-			     &depth, 0, False);
+			     &depth, False);
     if (!sym)
 	RETURN (obj);
     obj = CompileArgs (obj, &argc, expr->tree.right, namespace, stat);
@@ -913,7 +926,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	
 	exception = CompileFindSymbol (obj, stat, namespace, 
 				       catch->code.code->base.name,
-				       &depth, typesPoly, False);
+				       &depth, False);
 	if (!exception)
 	    RETURN(obj);
 	if (exception->symbol.class != class_exception)
@@ -994,7 +1007,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     case NAME:
 	BuildInst (obj, OpName, inst, stat);
 	s = CompileFindSymbol (obj, stat, namespace, expr->atom.atom,
-				&inst->var.staticLink, typesPoly, False);
+				&inst->var.staticLink, False);
 	if (!s)
 	    break;
 	if (!ClassStorage (s->symbol.class))
@@ -1640,8 +1653,8 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	if (sym->symbol.class != class_namespace)
 	{
 	    CompileError (obj, expr, "Invalid use of %C \"%A\"",
-			  sym->symbol.class, expr->atom.atom);
-	
+			  sym->symbol.class,
+			  expr->tree.left->decl.decl->name);
 	    break;
 	}
 	if (new)
@@ -1669,7 +1682,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
     case IMPORT:
 	sym = CompileFindSymbol (obj, expr, namespace,
 				  expr->tree.left->decl.decl->name,
-				  &top_inst, typesPoly, False);
+				  &top_inst, False);
 	if (!sym)
 	    break;
 	if (sym->symbol.class != class_namespace)
@@ -1776,7 +1789,7 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
     namespace->code = code;
     for (args = code->base.args; args; args = args->next)
     {
-	CompileCanonType (obj, namespace, args->type, stat);
+        CompileCanonType (obj, namespace, args->type, stat);
 	if (args->varargs)
 	{
 	    local = NewSymbolArg (args->name, 
@@ -1894,7 +1907,6 @@ CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace)
 	CompileError (obj, decls, "Invalid storage class %C", class);
 	RETURN (obj);
     }
-    CompileCanonType (obj, namespace, decls->decl.type, decls);
     for (decl = decls->decl.decl; decl; decl = decl->next) {
 	s = CompileNewSymbol (obj, decls, namespace,
 			       decls->decl.publish, class, decls->decl.type,

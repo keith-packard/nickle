@@ -69,7 +69,7 @@ void yyerror (char *fmt, ...);
 %token		ASSIGNPOW ASSIGNLXOR ASSIGNLAND ASSIGNLOR
 %token		VAR EXPR ARRAY STRUCT
 
-%token		NL SEMI MOD OC CC DOLLAR DOTS COLONCOLON COLON
+%token		NL SEMI MOD OC CC DOLLAR DOTS COLONCOLON
 %token		UNDEFINE LOAD HISTORY PRINT EDIT QUIT
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
@@ -87,7 +87,7 @@ void yyerror (char *fmt, ...);
 %nonassoc 	POUND
 %right		COMMA
 %right		ASSIGN
-%right		QUEST
+%right		QUEST COLON
 %left		OR
 %left		AND
 %left		LOR

@@ -167,7 +167,6 @@ struct ebuiltin {
 
 struct fbuiltin_v funcs_v[] = {
     { do_printf,	    "printf",		    type_integer,   "s.p"   },
-    { do_scanf,		    "scanf",		    type_integer,   "s.p"   },
     { do_fprintf,	    "fprintf",		    type_integer,   "fs.p", &FileNamespace},
     { do_imprecise,	    "imprecise",	    type_float,	    "n.i"   },
     { do_Thread_kill,	    "kill",		    type_integer,   ".t",   &ThreadNamespace },
@@ -250,7 +249,8 @@ struct fbuiltin_2 funcs_2[] = {
     { do_xor,		    "xor",		    type_integer,   "ii"    },
     { do_Math_pow,	    "pow",		    type_float,	    "nn",   &MathNamespace },
     { do_Math_assignpow,    "assign_pow",	    type_float,	    "*nn",  &MathNamespace },
-    { do_File_putc,	    "putc",		    type_integer,   "nf",   &FileNamespace },
+    { do_File_putc,	    "putc",		    type_integer,   "if",   &FileNamespace },
+    { do_File_ungetc,	    "ungetc",		    type_integer,   "if",   &FileNamespace },
     { do_File_setbuf,	    "setbuffer",	    type_integer,   "fn",   &FileNamespace },
     { do_String_index,      "index",		    type_integer,   "ss",   &StringNamespace },
     { do_set_jump,	    "set_jump",		    type_undef,	    "*cp"   },
@@ -989,6 +989,28 @@ do_File_putc (Value v, Value f)
 }
 
 Value 
+do_File_ungetc (Value v, Value f)
+{
+    ENTER ();
+    
+    if (f->value.tag != type_file) {
+	RaiseError ("parameter to putc should be file");
+	RETURN (Zero);
+    }
+    if (f->file.flags & FileOutputBlocked)
+	ThreadSleep (running, f, PriorityIo);
+    else
+    {
+	if (!aborting)
+	{
+	    complete = True;
+	    FileUnput (f, IntPart (v, "ungetc: non integer"));
+	}
+    }
+    RETURN (v);
+}
+
+Value 
 do_putchar (Value v)
 {
     ENTER ();
@@ -1081,13 +1103,6 @@ do_History_show (int n, Value *p)
 	break;
     }
     RETURN (Zero);
-}
-
-Value 
-/*ARGSUSED*/
-do_scanf (int n, Value *p)
-{
-    return Zero;
 }
 
 extern Value	atov (char *, int);

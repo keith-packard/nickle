@@ -339,8 +339,8 @@ typedef struct _instObj {
 
 typedef struct _instCatch {
     InstBase	inst;
-    SymbolPtr	exception;
     int		offset;
+    SymbolPtr	exception;
 } InstCatch;
 
 typedef struct _instRaise {
@@ -513,7 +513,6 @@ extern Value    yyinput;
 
 /* vararg builtins */
 Value	do_printf (int, Value *);
-Value	do_scanf (int, Value *);
 Value	do_fprintf (int, Value *);
 Value	do_imprecise (int, Value *);
 Value	do_Thread_kill (int, Value *);
@@ -593,6 +592,7 @@ Value	do_xor (Value, Value);
 Value	do_Math_pow (Value, Value);
 Value	do_Math_assignpow (Value, Value);
 Value	do_File_putc (Value, Value);
+Value	do_File_ungetc (Value, Value);
 Value	do_File_setbuf (Value, Value);
 Value	do_String_index (Value, Value);
 Value	do_set_jump (Value, Value);

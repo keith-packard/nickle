@@ -1,2 +1,3 @@
 load "@datadir@/math.5c"
+load "@datadir@/scanf.5c"
 import Math;

@@ -223,7 +223,19 @@ TypeEqual (Types *a, Types *b)
     case types_func:
 	if (TypeEqual (a->func.ret, b->func.ret))
 	{
-	    /* FIXME arg checking */
+	    ArgType *aarg = a->func.args, *barg = b->func.args;
+
+	    while (aarg || barg)
+	    {
+		if (!barg || !aarg)
+		    return False;
+		if (barg->varargs != aarg->varargs)
+		    return False;
+		if (!TypeEqual (barg->type, aarg->type))
+		    return False;
+		aarg = aarg->next;
+		barg = barg->next;
+	    }
 	    return True;
 	}
 	break;

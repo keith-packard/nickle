@@ -1,0 +1,140 @@
+/*
+ * Scanf code.  Extend File namespace with reading code
+ */
+public namespace File {
+    
+    /*
+     * Include existing public File members
+     */
+    public import File;
+    
+    /*
+     * vfscanf
+     */
+    public integer function vfscanf (file f, string format, (*poly)[0] args)
+    {
+	integer function iswhite (integer c)
+	{
+	    switch (c) {
+	    case ' ':
+	    case '\t':
+		return 1;
+	    }
+	    return 0;
+	}
+
+	/* Skip whitespace */
+	function whitespace ()
+	{
+	    integer c;
+
+	    while (iswhite (c = File::getc (f)))
+		;
+	    File::ungetc (c, f);
+	}
+
+	integer function isnumber (integer c)
+	{
+	    if ('0' <= c && c <= '9')
+		return 1;
+	    if ('a' <= c && c <= 'f')
+		return 1;
+	    if ('A' <= c && c <= 'F')
+		return 1;
+	    if (c == '-')
+		return 1;
+	    if (c == '.')
+		return 1;
+	    return 0;
+	}
+
+	/* return next number in input */
+	real function number ()
+	{
+	    integer c;
+	    string	s;
+
+	    whitespace();
+	    s = "";
+	    while (isnumber (c = File::getc (f)))
+		s = s + Strings::new(c);
+	    File::ungetc (c, f);
+	    return string_to_real (s);
+	}
+
+	string function word ()
+	{
+	    integer	c;
+	    string	s;
+
+	    whitespace();
+	    s = "";
+	    while (!iswhite (c = File::getc(f)))
+		s = s + Strings::new(c);
+	    File::ungetc (c, f);
+	    return s;
+	}
+
+	integer i = 0;
+	integer argc = 0;
+	integer c;
+
+	while (i < Strings::length (format) && !File::end(f) && !File::error(f))
+	{
+	    switch (format[i]) {
+	    case ' ':
+	    case '\t':
+		whitespace ();
+		break;
+	    case '%':
+		i++;
+		switch (format[i]) {
+		case 'd':
+		case 'e':
+		case 'f':
+		    *args[argc++] = number();
+		    break;
+		case 'c':
+		    *args[argc++] = File::getc(f);
+		    break;
+		case 's':
+		    *args[argc++] = word();
+		    break;
+		default:
+		    c = File::getc(f);
+		    if (c != format[i])
+		    {
+			File::ungetc (c, f);
+			return argc;
+		    }
+		}
+		break;
+	    default:
+		c = File::getc(f);
+		if (c != format[i])
+		{
+		    File::ungetc (c, f);
+		    return argc;
+		}
+		break;
+	    }
+	    i++;
+	}
+	return argc;
+    }
+
+    integer function fscanf (file f, string format, *poly args...)
+    {
+	return vfscanf (f, format, args);
+    }
+}
+
+public integer function scanf (string format, *poly args...)
+{
+    return File::vfscanf (stdin, format, args);
+}
+
+public integer function vscanf (string format, (*poly)[0] args)
+{
+    return File::vfscanf (stdin, format, args);
+}    

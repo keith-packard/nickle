@@ -386,7 +386,7 @@ aetov (char *s)
 	    esign = -1;
 	    exp_part++;
 	}
-    } else if (frac_len < 0)
+    } else if (frac_len < 0 && frac_part)
 	frac_len = strlen(frac_part);
     v = atov (int_part, 10);
     if (frac_part && frac_len)

@@ -431,7 +431,7 @@ FilePutIntBase (Value file, int a, int base)
 	    if (digit <= 9) 
 		digit = '0' + digit;
 	    else
-		digit = 'a' + digit - base;
+		digit = 'a' + digit - 10;
 	    *--s = digit;
 	    a /= base;
 	}

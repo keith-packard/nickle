@@ -1697,16 +1697,62 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
     RETURN (obj);
 }
 
+static Bool
+CompileIsBranch (InstPtr inst)
+{
+    switch (inst->base.opCode) {
+    case OpIf:
+    case OpElse:
+    case OpWhile:
+    case OpEndWhile:
+    case OpDo:
+    case OpFor:
+    case OpEndFor:
+    case OpCase:
+    case OpDefault:
+    case OpBreak:
+    case OpContinue:
+    case OpQuest:
+    case OpColon:
+    case OpAnd:
+    case OpOr:
+    case OpException:
+    case OpLeaveDone:
+    case OpCatch:
+	return True;
+    default:
+	return False;
+    }
+}
+
 ObjPtr
 CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
     ObjPtr  obj;
     InstPtr inst;
+    int	    i;
+    Bool    needReturn;
     
     obj = NewObj (OBJ_INCR);
     obj = _CompileStat (obj, code->func.code, namespace);
+    needReturn = False;
     if (!obj->used || ObjCode (obj, ObjLast(obj))->base.opCode != OpReturn)
+	needReturn = True;
+    else
+    {
+	for (i = 0; i < obj->used; i++)
+	{
+	    inst = ObjCode (obj, i);
+	    if (CompileIsBranch (inst))
+		if (i + inst->branch.offset == obj->used)
+		{
+		    needReturn = True;
+		    break;
+		}
+	}
+    }
+    if (needReturn)
 	BuildInst (obj, OpReturn, inst, stat);
 #ifdef DEBUG
     ObjDump (obj);
@@ -2086,22 +2132,46 @@ ObjIndent (int indent)
         FilePrintf (FileStdout, "    ");
 }
 
+
 void
 ObjDump (ObjPtr obj, int indent)
 {
-    int	    i;
+    int	    i, j;
     InstPtr inst;
+    int	    *branch;
+    int	    b;
+
+    branch = AllocateTemp (obj->used * sizeof (int));
     
-    FilePrintf (FileStdout, "%d instructions\n", obj->used);
+    FilePrintf (FileStdout, "%d instructions (0x%x)\n",
+		obj->used, ObjCode(obj,0));
+    b = 0;
     for (i = 0; i < obj->used; i++)
     {
 	inst = ObjCode(obj, i);
+	if (CompileIsBranch (inst))
+	{
+	    j = i + inst->branch.offset;
+	    if (0 <= j && j < obj->used)
+		if (!branch[j])
+		    branch[j] = ++b;
+	}
+    }
+    b = 0;
+    for (i = 0; i < obj->used; i++)
+    {
+	inst = ObjCode(obj, i);
+	if (branch[i])
+	    FilePrintf (FileStdout, "L%d:\n", branch[i]);
 	ObjIndent (indent);
 	FilePrintf (FileStdout, "%s%s %c ",
 		    OpNames[inst->base.opCode],
 		    "            " + strlen(OpNames[inst->base.opCode]),
 		    inst->base.push ? '^' : ' ');
 	switch (inst->base.opCode) {
+	case OpCatch:
+	    FilePrintf (FileStdout, "%s", AtomName (inst->catch.exception->symbol.name));
+	    /* fall through ... */
 	case OpIf:
 	case OpElse:
 	case OpWhile:
@@ -2119,7 +2189,11 @@ ObjDump (ObjPtr obj, int indent)
 	case OpOr:
 	case OpException:
 	case OpLeaveDone:
-	    FilePrintf (FileStdout, "branch %d", inst->branch.offset);
+	    j = i + inst->branch.offset;
+	    if (0 <= j && j < obj->used)
+		FilePrintf (FileStdout, "branch L%d", branch[j]);
+	    else
+		FilePrintf (FileStdout, "Broken branch %d", inst->branch.offset);
 	    break;
 	case OpReturn:
 	    break;
@@ -2127,10 +2201,6 @@ ObjDump (ObjPtr obj, int indent)
 	    FilePrintf (FileStdout, "\n");
 	    ObjDump (inst->obj.obj, indent+1);
 	    continue;
-	case OpCatch:
-	    FilePrintf (FileStdout, "%s", AtomName (inst->catch.exception->symbol.name));
-	    FilePrintf (FileStdout, " branch %d", inst->catch.offset);
-	    break;
 	case OpEndCatch:
 	    break;
 	case OpRaise:

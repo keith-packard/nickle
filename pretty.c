@@ -177,7 +177,6 @@ printAinit (Value f, Expr *e, int level, Bool nest)
     }
 }
 
-#if 0
 static void
 printSinit (Value f, Expr *e, int level, Bool nest)
 {
@@ -191,7 +190,6 @@ printSinit (Value f, Expr *e, int level, Bool nest)
 	    FilePuts (f, ", ");
     }
 }
-#endif
 
 void
 printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
@@ -214,28 +212,28 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	    printParameters (f, e->tree.right, nest);
 	FilePuts (f, ")");
 	break;
-#if 0
+    case OS:
+	printExpr (f, e->tree.left, selfPrec, level, nest);
+	FilePuts (f, "[");
+	printParameters (f, e->tree.right, nest);
+	FilePuts (f, "]");
+	break;
+    case NEW:
+	fprintTypes (f, e->base.type);
+	FilePuts (f, " ");
+	printExpr (f, e->tree.left, selfPrec, level, nest);
+	break;
     case ARRAY:
 	FilePuts (f, "[");
 	if (e->tree.left)
 	    printParameters (f, e->tree.left, nest);
 	FilePuts (f, "]");
-	if (e->tree.right)
-	    printAinit (f, e->tree.right, level, nest);
-	break;
-    case OS:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
-	FilePuts (f, " [");
-	printParameters (f, e->tree.right, nest);
-	FilePuts (f, "] ");
 	break;
     case STRUCT:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
-	FilePuts (f, " {");
-	printSinit (f, e->tree.right, level, nest);
+	FilePuts (f, "{ ");
+	printSinit (f, e->tree.left, level, nest);
 	FilePuts (f, " }");
 	break;
-#endif
     case CONST:
 	print (f, e->constant.constant);
 	break;

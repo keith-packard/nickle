@@ -666,6 +666,7 @@ void	IoNoticeTtyUnowned (void);
 void	IoInterrupt (void);
 
 void	FileFini (void);
+void	ProcessInterrupt (void);
 
 void	*AllocateTemp (int size);
 

@@ -911,6 +911,11 @@ ThreadsRun (Value thread, Value lex)
 		signalIo = False;
 		IoInterrupt ();
 	    }
+	    if (signalChild)
+	    {
+		signalChild = False;
+		ProcessInterrupt ();
+	    }
 	    if (lex && !(lex->file.flags & (FileInputBlocked|FileOutputBlocked)))
 		break;
 	}

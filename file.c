@@ -452,10 +452,33 @@ FileInitErrors (void)
     return 1;
 }
 
+volatile Bool	signalChild;
+
+static RETSIGTYPE
+sigchld (int sig)
+{
+    resetSignal (SIGCHLD, sigchld);
+    SetSignalChild ();
+}
+
+void
+ProcessInterrupt ()
+{
+    for (;;) {
+	pid_t		pid;
+	int		status;
+
+	pid = wait3 (&status, WNOHANG, NULL);
+	if (pid < 0 && errno == ECHILD)
+	    break;
+    }
+}
+
 int
 FileInit (void)
 {
     ENTER ();
+    catchSignal (SIGCHLD, sigchld);
     fileBlockedReference = NewReference ((void **) &fileBlocked);
     MemAddRoot (fileBlockedReference);
     FileInitErrors ();
@@ -1116,12 +1139,6 @@ FileFlush (Value file, Bool block)
 	    FileResetFd (file->file.fd);
 	    close (file->file.fd);
 	    file->file.fd = -1;
-	}
-	/* FIXME -- dont block waiting for child */
-	if (file->file.pid != 0)
-	{
-	    while (waitpid (file->file.pid, &file->file.status, 0) < 0);
-	    file->file.pid = 0;
 	}
     }
     EXIT ();

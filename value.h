@@ -1086,11 +1086,13 @@ extern volatile Bool signalInterrupt;	/* keyboard interrupt */
 extern volatile Bool signalTimer;	/* timer interrupt */
 extern volatile Bool signalIo;		/* i/o interrupt */
 extern volatile Bool signalProfile;	/* vtimer interrupt */
+extern volatile Bool signalChild;	/* sub process interrupt */
 
 #define SetSignalInterrupt()(aborting = signaling = signalInterrupt = True)
 #define SetSignalTimer()    (signaling = signalTimer = True)
 #define SetSignalIo()	    (signaling = signalIo = True)
 #define SetSignalProfile()  (signaling = signalProfile = True)
+#define SetSignalChild()    (signaling = signalChild = True)
 
 /*
  * Any signal state set by regular code doesn't need to be volatile

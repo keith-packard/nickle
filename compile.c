@@ -996,7 +996,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	}
 
 	catch_type = NewTypesFunc (typesPoly, catch->code.code->base.args);
-	
+	CompileCanonType (obj, namespace, catch_type, stat, False);
 	if (!TypeCompatible (exception->symbol.type, catch_type, True))
 	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in catch",

@@ -220,7 +220,7 @@ ThreadStaticInit (Value thread, InstPtr *next)
 }
 
 static void
-ThreadAssign (Value ref, Value v)
+ThreadAssign (Value ref, Value v, Bool copy)
 {
     ENTER ();
     if (RefConstant(ref))
@@ -245,7 +245,8 @@ ThreadAssign (Value ref, Value v)
     {
 	if (!v)
 	    abort ();
-	v = Copy (v);
+	if (copy)
+	    v = Copy (v);
 	if (!aborting)
 	{
 	    complete = True;
@@ -615,17 +616,18 @@ ThreadStep (Value thread)
         value = NewStruct (inst->structs.structs, False);
         break;
     case OpInitStruct:
-	v = StructRef (value, inst->atom.atom);
+	w = Stack(stack); stack++;
+	v = StructRef (w, inst->atom.atom);
 	if (!v)
 	{
 	    RaiseStandardException (exception_invalid_struct_member,
 				    "Invalid struct member",
-				    2, value, 
+				    2, v, 
 				    NewStrString (AtomName (inst->atom.atom)));
 	    break;
 	}
-	w = Stack(stack); stack++;
-	ThreadAssign (v, w);
+	ThreadAssign (v, value, True);
+	value = w;
 	break;
     case OpBuildUnion:
 	value = NewUnion (inst->structs.structs, False);
@@ -641,7 +643,7 @@ ThreadStep (Value thread)
 	    break;
 	}
 	w = Stack(stack); stack++;
-	ThreadAssign (v, w);
+	ThreadAssign (v, w, True);
 	break;
     case OpArray:
     case OpArrayRef:
@@ -838,7 +840,7 @@ ThreadStep (Value thread)
 	    w = Plus (v, One);
 	else
 	    w = Minus (v, One);
-	ThreadAssign (value, w);
+	ThreadAssign (value, w, True);
 	value = v;
 	if (inst->base.opCode == OpPreInc || inst->base.opCode == OpPreDec)
 	    value = w;
@@ -927,7 +929,14 @@ ThreadStep (Value thread)
 	default:
 	    break;
 	}
-	ThreadAssign (value, v);
+	ThreadAssign (value, v, True);
+	value = v;
+	break;
+    case OpInitialize:
+	if (value->value.tag != type_ref)
+	    break;
+	v = Stack(stack); stack++;
+	ThreadAssign (value, v, False);
 	value = v;
 	break;
     case OpEq:

@@ -259,6 +259,7 @@ LexGetInteractiveChar (void)
 	    p = StringChars (&v->string);
 	else
 	    p = "??? ";
+	FileFlush (FileStdout);
 	rl_getc_function = ReadlineGetChar;
 	line_base = readline (p);
 	line = line_base;

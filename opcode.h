@@ -103,6 +103,7 @@ typedef enum _OpCode {
     OpAssignLxor,
     OpAssignLand,
     OpAssignLor,
+    OpInitialize,
     OpEq,
     OpNe,
     OpLt,

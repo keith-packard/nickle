@@ -314,6 +314,14 @@ FileStringString (Value file)
     Value	    str;
     char	    *s;
 
+    if (!(file->file.flags & FileString))
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"string_string: not string file",
+				2,
+				Zero, file);
+	RETURN (Zero);
+    }
     len = 0;
     for (out = file->file.output; out; out = out->next)
 	len += out->used;

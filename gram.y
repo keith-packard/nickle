@@ -1163,6 +1163,8 @@ structelts	: structelts COMMA structelt
 		;
 structelt	: NAME ASSIGN lambdaexpr
 		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0), $3); }
+		| NAME ASSIGN structinit
+		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0), $3); }
 		;
 
 init		: arrayinit

@@ -456,7 +456,8 @@ CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr co
     
     obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
     SetPush (obj);
-    obj = CompileLvalue (obj, expr->tree.left, stat, code, opCode == OpAssign, opCode == OpAssign);
+    obj = CompileLvalue (obj, expr->tree.left, stat, code, opCode == OpAssign, 
+			 opCode == OpAssign || opCode == OpInitialize);
     expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					 expr->base.tag,
 					 expr->tree.right->base.type);
@@ -715,6 +716,12 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     RETURN (obj);
 }
 
+/*
+ * Return an expression that will build an
+ * initializer for a fully specified composite
+ * type
+ */
+
 ObjPtr
 CompileArrayIndex (ObjPtr obj, ExprPtr expr, 
 		   ExprPtr stat, CodePtr code, int *ndimp)
@@ -867,32 +874,44 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
 }
 
 static ObjPtr
+CompileArrayInit (ObjPtr obj, ExprPtr expr, Types *type, ExprPtr stat, CodePtr code);
+    
+static ObjPtr
 CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type, 
-		   int *ninits, ExprPtr stat, CodePtr code)
+		   int ndim, int *ninits, ExprPtr stat, CodePtr code)
 {
     ENTER ();
+    
     if (expr->base.tag == ARRAY)
     {
-	int	nsub = 0;
-	InstPtr	inst;
-
-	expr = expr->tree.left;
-	while (expr)
+	if (ndim == 0 && type->base.tag == types_array)
 	{
-	    if (expr->tree.left->base.tag == DOTS)
-	    {
-		nsub = -nsub;
-		break;
-	    }
-	    else
-	    {
-		obj = CompileArrayInits (obj, expr->tree.left, type, ninits, stat, code);
-		nsub++;
-	    }
-	    expr = expr->tree.right;
+	    obj = CompileArrayInit (obj, expr, type, stat, code);
+	    expr->base.type = type;
 	}
-	BuildInst (obj, OpConst, inst, stat);
-	inst->constant.constant = NewInt (nsub);
+	else
+	{
+	    int	nsub = 0;
+	    InstPtr	inst;
+    
+	    expr = expr->tree.left;
+	    while (expr)
+	    {
+		if (expr->tree.left->base.tag == DOTS)
+		{
+		    nsub = -nsub;
+		    break;
+		}
+		else
+		{
+		    obj = CompileArrayInits (obj, expr->tree.left, type, ndim-1, ninits, stat, code);
+		    nsub++;
+		}
+		expr = expr->tree.right;
+	    }
+	    BuildInst (obj, OpConst, inst, stat);
+	    inst->constant.constant = NewInt (nsub);
+	}
 	SetPush (obj);
 	++(*ninits);
     }
@@ -911,30 +930,207 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type,
 }
 
 static ObjPtr
-CompileStructInitValues (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
+CompileArrayInit (ObjPtr obj, ExprPtr expr, Types *type, ExprPtr stat, CodePtr code)
 {
     ENTER ();
+    int	    ndim;
+    Types   *sub = type->array.type;
+    int	    i;
+
+    ndim = CompileCountDeclDimensions (type->array.dimensions);
     if (expr)
     {
-	obj = CompileStructInitValues (obj, expr->tree.right, stat, code);
-	obj = _CompileExpr (obj, expr->tree.left->tree.right, True, stat, code);
-	SetPush (obj);
+	int ninitdim;
+
+	if (expr->base.tag != ARRAY)
+	{
+	    CompileError (obj, stat, "Non array initializer");
+	    RETURN (obj);
+	}
+	ninitdim = CompileCountInitDimensions (expr);
+	if (ninitdim < 0)
+	{
+	    CompileError (obj, stat, "Inconsistent array initializer dimensionality");
+	    RETURN (obj);
+	}
+	if (ndim > ninitdim ||
+	    (ndim < ninitdim && sub->base.tag != types_array))
+	{
+	    CompileError (obj, stat, "Array dimension mismatch %d != %d\n",
+			  ndim, ninitdim);
+	    RETURN (obj);
+	}
+	i = 0;
+	obj = CompileArrayInits (obj, expr, sub, ndim,
+				 &i, stat, code);
+    }
+    if (type->array.dimensions && type->array.dimensions->tree.left)
+    {
+	obj = CompileBuildArray (obj, expr, type, type->array.dimensions, ndim, stat, code);
+    }
+    else if (expr)
+    {
+	obj = CompileImplicitArray (obj, expr, type, expr, 
+				    ndim, stat, code);
+    }
+    else
+    {
+	CompileError (obj, stat, "Non-dimensioned array with no initializers");
+    }
+    if (expr)
+    {
+	InstPtr	inst;
+	BuildInst (obj, OpInitArray, inst, stat);
+	inst->ints.value = i;
     }
     RETURN (obj);
 }
 
-static ObjPtr
-CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, StructType *structs,
-			   ExprPtr stat)
+static ExprPtr
+CompileCompositeImplicitInit (Types *type)
 {
     ENTER ();
-    InstPtr inst;
+    ExprPtr	    init = 0;
+    Types	    *sub;
+    int		    dim;
+    StructTypePtr   structs;
+    StructElement   *se;
+    int		    i;
+    
+    type = TypesCanon (type);
+    
+    switch (type->base.tag) {
+    case types_array:
+	if (type->array.dimensions->tree.left)
+	{
+	    sub = type->array.type;
+	    init = CompileCompositeImplicitInit (sub);
+	    if (init)
+	    {
+		init = NewExprTree (COMMA,
+				    init,
+				    NewExprTree (COMMA,
+						 NewExprTree (DOTS, 0, 0),
+						 0));
+		dim = CompileCountDeclDimensions (type->array.dimensions);
+		while (--dim)
+		    init = NewExprTree (OC, init, 0);
+		init = NewExprTree (ARRAY, init, 0);
+	    }
+	    init = NewExprTree (NEW, init, 0);
+	    init->base.type = type;
+	}
+	break;
+    case types_struct:
+	structs = type->structs.structs;
+	se = StructTypeElements (structs);
+	init = 0;
+	for (i = 0; i < structs->nelements; i++)
+	{
+	    ExprPtr	member;
+	    
+	    sub = TypesCanon (se[i].type);
+
+	    member = CompileCompositeImplicitInit (sub);
+	    if (member)
+	    {
+		init = NewExprTree (COMMA,
+				    NewExprTree (ASSIGN, 
+						 NewExprAtom (se[i].name, 0), 
+						 member),
+				    init);
+	    }
+	}
+	if (init)
+	    init = NewExprTree (STRUCT, init, 0);
+	init = NewExprTree (NEW, init, 0);
+	init->base.type = type;
+	break;
+    default:
+	break;
+    }
+    RETURN (init);
+}
+
+static Bool
+CompileStructInitElementIncluded (ExprPtr expr, Atom atom)
+{
     while (expr)
     {
+	if (atom == expr->tree.left->tree.left->atom.atom)
+	    return True;
+	expr = expr->tree.right;
+    }
+    return False;
+}
+
+static ObjPtr
+CompileStructInitUninitialized (ObjPtr obj, ExprPtr expr, StructType *structs,
+				ExprPtr stat, CodePtr code)
+{
+    int			i;
+    StructElement	*se = StructTypeElements (structs);
+    InstPtr		inst;
+
+    for (i = 0; i < structs->nelements; i++)
+    {
+	TypesPtr	type = TypesCanon (se[i].type);
+
+	if (!expr || !CompileStructInitElementIncluded (expr, se[i].name))
+	{
+	    ExprPtr init = CompileCompositeImplicitInit (type);
+
+	    if (init)
+	    {
+		SetPush (obj);
+		obj = _CompileExpr (obj, init, True, stat, code);
+		BuildInst (obj, OpInitStruct, inst, stat);
+		inst->atom.atom = se[i].name;
+	    }
+	}
+    }
+    return obj;
+}
+
+static ObjPtr
+CompileStructInit (ObjPtr obj, ExprPtr expr, Types *type,
+		   ExprPtr stat, CodePtr code)
+{
+    ENTER ();
+    StructType	*structs = type->structs.structs;
+    InstPtr	inst;
+    ExprPtr	init;
+    Types	*mem_type;
+    
+    for (; expr; expr = expr->tree.right)
+    {
+        mem_type = StructTypes (structs, expr->tree.left->tree.left->atom.atom);
+	if (!mem_type)
+	{
+	    CompileError (obj, stat, "Type '%T' is not a struct or union containing \"%A\"",
+			  type, expr->tree.left->tree.left->atom.atom);
+	    continue;
+	}
+	init = expr->tree.left->tree.right;
+	if (init->base.tag == STRUCT)
+	{
+	    init = NewExprTree (NEW, init, 0);
+	    init->base.type = mem_type;
+	}
+	
+	SetPush (obj);	/* push the struct */
+	obj = _CompileExpr (obj, init, True, stat, code);
+	if (!TypeCombineBinary (mem_type,
+				ASSIGN,
+				init->base.type))
+	{
+	    CompileError (obj, stat, "Incompatible types '%T', '%T' in struct initializer",
+			  mem_type, init->base.type);
+	    continue;
+	}
+	
 	BuildInst (obj, OpInitStruct, inst, stat);
 	inst->atom.atom = expr->tree.left->tree.left->atom.atom;
-	
-	expr = expr->tree.right;
     }
     RETURN (obj);
 }
@@ -1016,7 +1212,6 @@ ObjPtr
 _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code)
 {
     ENTER ();
-    int	    i;
     int	    ndim;
     int	    test_inst, middle_inst;
     InstPtr inst;
@@ -1051,6 +1246,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	t = TypesCanon (expr->base.type);
 	switch (t ? t->base.tag : types_prim) {
 	case types_struct:
+	    BuildInst (obj, OpBuildStruct, inst, stat);
+	    inst->structs.structs = t->structs.structs;
 	    if (expr->tree.left)
 	    {
 		if (expr->tree.left->base.tag != STRUCT)
@@ -1058,65 +1255,19 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 		    CompileError (obj, stat, "Non struct initializer");
 		    break;
 		}
-		obj = CompileStructInitValues (obj, 
-						expr->tree.left->tree.left, 
-						stat, code);
+		obj = CompileStructInit (obj, 
+					 expr->tree.left->tree.left, 
+					 t,
+					 stat, code);
 	    }
-	    BuildInst (obj, OpBuildStruct, inst, stat);
-	    inst->structs.structs = t->structs.structs;
-	    if (expr->tree.left)
-	    {
-		obj = CompileStructInitAssigns (obj, 
-						expr->tree.left->tree.left, 
-						t->structs.structs,
-						stat);
-	    }
+	    obj = CompileStructInitUninitialized (obj, 
+						  expr->tree.left ?
+						  expr->tree.left->tree.left : 0,
+						  t->structs.structs,
+						  stat, code);
 	    break;
 	case types_array:
-	    ndim = CompileCountDeclDimensions (t->array.dimensions);
-	    if (expr->tree.left)
-	    {
-		int ninitdim;
-    
-		if (expr->tree.left->base.tag != ARRAY)
-		{
-		    CompileError (obj, stat, "Non array initializer");
-		    break;
-		}
-		ninitdim = CompileCountInitDimensions (expr->tree.left);
-		if (ninitdim < 0)
-		{
-		    CompileError (obj, stat, "Inconsistent array initializer dimensionality");
-		    break;
-		}
-		if (ninitdim != ndim)
-		{
-		    CompileError (obj, stat, "Array dimension mismatch %d != %d\n",
-				  ndim, ninitdim);
-		    break;
-		}
-		i = 0;
-		obj = CompileArrayInits (obj, expr->tree.left, t->array.type,
-					 &i, stat, code);
-	    }
-	    if (t->array.dimensions && t->array.dimensions->tree.left)
-	    {
-		obj = CompileBuildArray (obj, expr, t, t->array.dimensions, ndim, stat, code);
-	    }
-	    else if (expr->tree.left)
-	    {
-		obj = CompileImplicitArray (obj, expr, t, expr->tree.left, 
-					    ndim, stat, code);
-	    }
-	    else
-	    {
-		CompileError (obj, stat, "Non-dimensioned array with no initializers");
-	    }
-	    if (expr->tree.left)
-	    {
-		BuildInst (obj, OpInitArray, inst, stat);
-		inst->ints.value = i;
-	    }
+	    obj = CompileArrayInit (obj, expr->tree.left, t, stat, code);
 	    expr->base.type = t;
 	    break;
 	default:
@@ -1849,7 +2000,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	break;
     case FUNCTION:
 	obj = CompileDecl (obj, expr->tree.left, False, expr, code); 
-	obj = CompileAssign (obj, expr->tree.right, OpAssign, expr, code);
+	obj = CompileAssign (obj, expr->tree.right, OpInitialize, expr, code);
 	break;
     case NAMESPACE:
 	obj = _CompileStat (obj, expr->tree.right, code);
@@ -1992,7 +2143,6 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
     Publish	    publish;
     CodePtr	    code_compile = 0;
     ObjPtr	    *initObj;
-    Bool	    initialize = False;
     
     class = decls->decl.class;
     if (class == class_undef)
@@ -2032,16 +2182,25 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	RETURN (obj);
     }
     for (decl = decls->decl.decl; decl; decl = decl->next) {
+	ExprPtr	init;
         CompileStorage (obj, decls, decl->symbol, code);
 	s = decl->symbol;
 	/*
-	 * Compile initializers in two steps
-	 * compile the expression before placing the
-	 * name in and then compile the assignment
+	 * Automatically build initializers for composite types
+	 * which fully specify the storage
 	 */
-    	initObj = &obj;
-	if (decl->init)
+	init = decl->init;
+	if (!init)
+	    init = CompileCompositeImplicitInit (s->symbol.type);
+	if (init)
 	{
+	    InstPtr inst;
+	    ExprPtr lvalue;
+
+	    /*
+	     * Compile the initializer value
+	     */
+	    initObj = &obj;
 	    if (code_compile)
 	    {
 		if (!code_compile->func.staticInit.obj)
@@ -2051,7 +2210,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 		if (code != code_compile)
 		    code->func.inGlobalInit = True;
 	    }
-	    *initObj = _CompileExpr (*initObj, decl->init, 
+	    *initObj = _CompileExpr (*initObj, init, 
 				     True, decls, code);
 	    if (code_compile)
 	    {
@@ -2059,25 +2218,22 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 		code->func.inGlobalInit = False;
 	    }
 	    SetPush (*initObj);
-	    initialize = True;
-	}
-	if (initialize)
-	{
-	    InstPtr inst;
-	    ExprPtr lvalue;
 	    
+	    /*
+	     * Assign it
+	     */
 	    lvalue = NewExprAtom (decl->name, decl->symbol);
 	    *initObj = CompileLvalue (*initObj, lvalue,
 				       decls, code, False, True);
 	    if (!TypeCombineBinary (lvalue->base.type,
 				    ASSIGN,
-				    decl->init->base.type))
+				    init->base.type))
 	    {
 		CompileError (obj, decls, "Incompatible types '%T', '%T' in initialization",
 			      lvalue->base.type,
-			      decl->init->base.type);
+			      init->base.type);
 	    }
-	    BuildInst (*initObj, OpAssign, inst, decls);
+	    BuildInst (*initObj, OpInitialize, inst, decls);
 	}
     }
     if (evaluate)
@@ -2223,6 +2379,7 @@ char *OpNames[] = {
     "AssignLxor",
     "AssignLand",
     "AssignLor",
+    "Initialize",
     "Eq",
     "Ne",
     "Lt",

@@ -64,7 +64,7 @@ do_String_new (Value av)
     int	    len, i;
     char    *s;
 
-    if (av->value.tag == type_array && av->array.ndim == 1)
+    if (ValueIsArray(av) && av->array.ndim == 1)
     {
 	len = av->array.dim[0];
 	ret = NewString (len);

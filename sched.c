@@ -164,7 +164,7 @@ Value
 do_Thread_join (Value target)
 {
     ENTER ();
-    if (target->value.tag != type_thread)
+    if (!ValueIsThread(target))
     {
 	RaiseError ("Join needs thread argument");
 	RETURN (Zero);
@@ -253,7 +253,7 @@ do_Thread_set_priority (Value thread, Value priority)
 {
     ENTER ();
     int	    i;
-    if (thread->value.tag != type_thread)
+    if (!ValueIsThread(thread))
     {
 	RaiseError ("SetPriority: %v not a thread", thread);
 	RETURN (Zero);
@@ -274,7 +274,7 @@ Value
 do_Thread_get_priority (Value thread)
 {
     ENTER ();
-    if (thread->value.tag != type_thread)
+    if (!ValueIsThread(thread))
     {
 	RaiseError ("GetPriority: %v not a thread", thread);
 	RETURN (Zero);
@@ -296,7 +296,7 @@ KillThread (Value thread)
 {
     int	ret;
     
-    if (thread->value.tag != type_thread)
+    if (!ValueIsThread(thread))
     {
 	RaiseError ("Kill: %v not a thread", thread);
 	return 0;
@@ -319,7 +319,7 @@ do_Thread_kill (int n, Value *p)
     if (n == 0)
     {
 	thread = lookupVar (0, "thread");
-	if (thread->value.tag != type_thread)
+	if (!ValueIsThread(thread))
 	    RaiseError ("Kill: no default thread");
 	else
 	    ret = KillThread (thread);
@@ -437,7 +437,7 @@ do_Thread_trace (int n, Value *p)
 	v = lookupVar (0, "cont");
     else
 	v = *p;
-    switch (v->value.tag) {
+    switch (ValueTag(v)) {
     case type_thread:
 	frame = v->thread.frame;
 	pc = v->thread.pc;
@@ -482,6 +482,7 @@ ThreadPrint (Value f, Value av, char format, int base, int width, int prec, unsi
 
 ValueType    ThreadType = {
     { ThreadMark, 0 },	/* base */
+    type_thread,	/* tag */
     {			/* binary */
 	0,
 	0,
@@ -514,7 +515,6 @@ NewThread (FramePtr frame, ObjPtr code)
     Value ret;
 
     ret = ALLOCATE (&ThreadType.data, sizeof (Thread));
-    ret->value.tag = type_thread;
     ret->thread.v = Zero;
     ret->thread.stack = StackCreate ();
     ret->thread.pc = ObjCode (code, 0);
@@ -565,7 +565,8 @@ ContinuationPrint (Value f, Value av, char format, int base, int width, int prec
 
 ValueType    ContinuationType = {
     { ContinuationMark, 0 },	/* base */
-    {			/* binary */
+    type_continuation,		/* tag */
+    {				/* binary */
 	0,
 	0,
 	0,
@@ -577,7 +578,7 @@ ValueType    ContinuationType = {
 	0,
 	0,
     },
-    {			    /* unary */
+    {				/* unary */
 	0,
 	0,
 	0,
@@ -597,7 +598,6 @@ NewContinuation (FramePtr frame, InstPtr pc,
     Value   ret;
 
     ret = ALLOCATE (&ContinuationType.data, sizeof (Continuation));
-    ret->value.tag = type_continuation;
     ret->continuation.frame = frame;
     ret->continuation.pc = pc;
     ret->continuation.stack = stack;
@@ -767,7 +767,7 @@ do_setjmp (Value continuation_ref, Value ret)
     Value	continuation;
     StackObject	*stack;
     
-    if (continuation_ref->value.tag != type_ref)
+    if (!ValueIsRef(continuation_ref))
     {
 	RaiseError ("setjump: not a reference %v", continuation_ref);
 	RETURN (Zero);
@@ -797,7 +797,7 @@ do_longjmp (InstPtr *next, Value continuation, Value ret)
 
     if (!running)
 	RETURN (Zero);
-    if (continuation->value.tag != type_continuation)
+    if (!ValueIsContinuation(continuation))
     {
 	RaiseError ("longjump: not a continuation %v", continuation);
 	RETURN (Zero);

@@ -1393,7 +1393,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	/*
 	 * Magic - 0 is both integer and *poly
 	 */
-	if (expr->constant.constant->value.tag == type_int &&
+	if (ValueIsInt(expr->constant.constant) &&
 	    expr->constant.constant->ints.value == 0)
 	{
 	    expr->base.type = typesNil;

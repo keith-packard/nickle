@@ -66,8 +66,6 @@ void		*TemporaryData;
 int	GCdebug;
 #endif
 
-static int sizeMap[NUMSIZES];
-
 StackObject *MemStack;
 
 static struct bfree *freeList[NUMSIZES];
@@ -102,7 +100,7 @@ newHunk (int sizeIndex)
     int			dsize;
 
     if (!freeList[sizeIndex]) {
-	bsize = sizeMap[sizeIndex];
+	bsize = HUNKSIZE(sizeIndex);
 	b = (struct block *) gimmeBlock ();
 	if (!b) {
 	    if (freeList[sizeIndex])
@@ -142,7 +140,7 @@ gotsome:
     new = (unsigned char *) freeList[sizeIndex];
     freeList[sizeIndex] = freeList[sizeIndex]->next;
 #ifdef DEBUG
-    memset (new, '\0', sizeMap[sizeIndex]);
+    memset (new, '\0', HUNKSIZE(sizeIndex));
 #endif
     return new;
 }
@@ -186,10 +184,26 @@ newObject (int size)
 {
     int	sizeIndex;
 
-    for (sizeIndex = 0; sizeIndex < NUMSIZES; sizeIndex++)
-	if (sizeMap[sizeIndex] >= size)
-	    return newHunk (sizeIndex);
-    return newHuge (size);
+    if (size > MAXHUNK)
+	return newHuge (size);
+    
+    sizeIndex = 0;
+    /*
+     * A binary search would be faster given a random distribution,
+     * but most blocks are of small size
+     *
+     *	int sizeStep;
+     *	sizeStep = NUMSIZES/2;
+     *	while (sizeStep)
+     *	{
+     *	    while (HUNKSIZE(sizeIndex + sizeStep - 1) < size)
+     *		sizeIndex += sizeStep;
+     *	    sizeStep >>= 1;
+     *	}
+     */
+    while (size > HUNKSIZE(sizeIndex))
+	sizeIndex++;
+    return newHunk (sizeIndex);
 }
 
 static void *
@@ -348,7 +362,7 @@ setReference (void *address)
 	    cache = b;
 	cache_hit:		;
 	    if ((map = b->bitmap)) {
-		index = dist / sizeMap[b->sizeIndex];
+		index = dist / HUNKSIZE(b->sizeIndex);
 		byte = index >> 3;
 		bit = (1 << (index & 7));
 		old = map[byte] & bit;
@@ -381,7 +395,7 @@ MemCheckPointer (void *base, void *address, int size)
 	else
 	{
 	    if (b->bitmap)
-		datasize = sizeMap[b->sizeIndex];
+		datasize = HUNKSIZE(b->sizeIndex);
 	    else
 		datasize = b->datasize;
 	    if (base <= address && 
@@ -462,7 +476,7 @@ checkBlockRef (struct block *b)
 	else
 	{
 	    totalBytesFree += b->datasize;
-	    totalObjectsFree += b->datasize / sizeMap[b->sizeIndex];
+	    totalObjectsFree += b->datasize / HUNKSIZE(b->sizeIndex);
 	}
 	b->bitmap = (unsigned char *) hughFree;
 	hughFree = b;
@@ -471,7 +485,7 @@ checkBlockRef (struct block *b)
 	sizeIndex = b->sizeIndex;
 	thisLast = lastFree[sizeIndex];
 	max = b->data + b->datasize;
-	size = sizeMap[sizeIndex];
+	size = HUNKSIZE(sizeIndex);
 	byte = b->bitmap;
 	bit = 1;
 	for (object = b->data; object < max; object += size) {
@@ -536,7 +550,7 @@ checkRef (void)
 	       totalBytesFree, totalObjectsFree);
 	for (i = 0; i <= NUMSIZES; i++)
 	    debug ("used %4d: %7d\n",
-		   i == NUMSIZES ? 0 : sizeMap[i], useMap[i]);
+		   i == NUMSIZES ? 0 : HUNKSIZE(i), useMap[i]);
 	debug ("GC: GarbageTime set to %d\n", GarbageTime);
     }
 #endif
@@ -545,10 +559,6 @@ checkRef (void)
 void
 MemInitialize (void)
 {
-    int	    i;
-
-    for (i = 0; i < NUMSIZES; i++)
-	sizeMap[i] = MINHUNK << i;
     if (!MemStack)
     {
 	MemStack = StackCreate ();

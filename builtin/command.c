@@ -59,7 +59,7 @@ do_Command_new_common (Value name, Value func, Bool names)
     char	*cmd;
     int		c;
     
-    if (func->value.tag != type_func)
+    if (!ValueIsFunc(func))
     {
 	RaiseStandardException (exception_invalid_argument,
 				"argument must be func",

@@ -271,7 +271,7 @@ RationalPromote (Value av, Value bv)
 {
     ENTER ();
 
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
 	av = NewIntRational (av->ints.value);
 	break;
@@ -1104,7 +1104,8 @@ RationalMark (void *object)
 }
 
 ValueType    RationalType = { 
-    { RationalMark, 0 },
+    { RationalMark, 0 },    /* base */
+    type_rational,	    /* tag */
     {			    /* binary */
 	RationalPlus,
 	RationalMinus,
@@ -1150,7 +1151,6 @@ NewRational (Sign sign, Natural *num, Natural *den)
 	}
     }
     ret = ALLOCATE (&RationalType.data, sizeof (Rational));
-    ret->value.tag = type_rational;
     ret->rational.sign = sign;
     ret->rational.num = num;
     ret->rational.den = den;

@@ -226,7 +226,7 @@ do_imprecise (int n, Value *p)
 	prec = IntPart (p[1], "imprecise: invalid precision");
     else
     {
-	if (v->value.tag == type_float)
+	if (ValueIsFloat(v))
 	    RETURN(v);
 	prec = DEFAULT_FLOAT_PREC;
     }
@@ -316,7 +316,7 @@ do_precision (Value av)
     ENTER ();
     unsigned	prec;
 
-    if (av->value.tag == type_float)
+    if (ValueIsFloat(av))
 	prec = av->floats.prec;
     else
 	prec = 0;
@@ -343,7 +343,7 @@ do_exponent (Value av)
     ENTER ();
     Value   ret;
 
-    if (av->value.tag != type_float)
+    if (!ValueIsFloat(av))
     {
 	RaiseStandardException (exception_invalid_argument,
 				"exponent: argument must be imprecise",
@@ -361,7 +361,7 @@ do_mantissa (Value av)
     ENTER ();
     Value   ret;
 
-    if (av->value.tag != type_float)
+    if (!ValueIsFloat(av))
     {
 	RaiseStandardException (exception_invalid_argument,
 				"mantissa: argument must be imprecise",
@@ -378,7 +378,7 @@ Value
 do_numerator (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
     case type_integer:
 	break;
@@ -399,7 +399,7 @@ Value
 do_denominator (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
     case type_integer:
 	av = One;
@@ -421,7 +421,7 @@ Value
 do_bit_width (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
 	av = NewInt (IntWidth (av->ints.value));
 	break;
@@ -442,7 +442,7 @@ Value
 do_is_int (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
     case type_integer:
 	av = One;
@@ -458,7 +458,7 @@ Value
 do_is_rational (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
     case type_integer:
     case type_rational:
@@ -475,7 +475,7 @@ Value
 do_is_number (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
     case type_integer:
     case type_rational:
@@ -493,7 +493,7 @@ Value
 do_is_string (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_string:
 	av = One;
 	break;
@@ -508,7 +508,7 @@ Value
 do_is_file (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_file:
 	av = One;
 	break;
@@ -523,7 +523,7 @@ Value
 do_is_thread (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_thread:
 	av = One;
 	break;
@@ -538,7 +538,7 @@ Value
 do_is_semaphore (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_semaphore:
 	av = One;
 	break;
@@ -553,7 +553,7 @@ Value
 do_is_continuation (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_continuation:
 	av = One;
 	break;
@@ -568,7 +568,7 @@ Value
 do_is_void (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_void:
 	av = One;
 	break;
@@ -583,7 +583,7 @@ Value
 do_is_array (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_array:
 	av = One;
 	break;
@@ -598,7 +598,7 @@ Value
 do_is_ref (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_ref:
 	av = One;
 	break;
@@ -613,7 +613,7 @@ Value
 do_is_struct (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_struct:
 	av = One;
 	break;
@@ -628,7 +628,7 @@ Value
 do_is_func (Value av)
 {
     ENTER ();
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_func:
 	av = One;
 	break;

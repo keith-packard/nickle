@@ -260,6 +260,28 @@ typedef enum _type {
 #define Numericp(t) ((unsigned) (t) <= (unsigned) type_float)
 #define Integralp(t) ((unsigned) (t) <= (unsigned) type_integer)
 
+extern ValueType    IntType, IntegerType, RationalType, FloatType;
+extern ValueType    StringType, ArrayType, FileType;
+extern ValueType    RefType, structType, unionType, FuncType, ThreadType;
+extern ValueType    SemaphoreType, ContinuationType, UnitType;
+
+#define ValueIsInt(v) ((v)->value.type == &IntType)
+#define ValueIsInteger(v) ((v)->value.type == &IntegerType)
+#define ValueIsRational(v) ((v)->value.type == &RationalType)
+#define ValueIsFloat(v) ((v)->value.type == &FloatType)
+#define ValueIsString(v) ((v)->value.type == &StringType)
+#define ValueIsArray(v) ((v)->value.type == &ArrayType)
+#define ValueIsFile(v) ((v)->value.type == &FileType)
+#define ValueIsRef(v) ((v)->value.type == &RefType)
+#define ValueIsStruct(v) ((v)->value.type == &structType)
+#define ValueIsUnion(v) ((v)->value.type == &unionType)
+#define ValueIsFunc(v) ((v)->value.type == &FuncType)
+#define ValueIsThread(v) ((v)->value.type == &ThreadType)
+#define ValueIsSemaphore(v) ((v)->value.type == &SemaphoreType)
+#define ValueIsContinuation(v) ((v)->value.type == &ContinuationType)
+#define ValueIsUnit(v) ((v)->value.type == &UnitType)
+
+
 /*
  * Aggregate types
  */
@@ -398,9 +420,10 @@ typedef enum _publish {
     publish_private, publish_protected, publish_public, publish_extend
 } Publish;
 
+#define ValueTag(v) ((v)->value.type->tag)
+
 typedef struct _baseValue {
     ValueType	*type;
-    Type	tag;
 } BaseValue;
 
 typedef struct _int {
@@ -570,11 +593,6 @@ typedef struct _thread {
 #define PrioritySync	200
 #define PriorityIo	300
 
-typedef struct _mutex {
-    BaseValue	value;
-    Value	owner;
-} Mutex;
-
 typedef struct _semaphore {
     BaseValue	value;
     int		count;
@@ -604,7 +622,6 @@ typedef union _value {
     Union	unions;
     Func	func;
     Thread	thread;
-    Mutex	mutex;
     Semaphore	semaphore;
     Continuation    continuation;
 } ValueRec;
@@ -626,6 +643,7 @@ typedef ValueType   *(*TypeCheck) (BinaryOp, Value, Value, int);
 
 struct _valueType {
     DataType	data;
+    Type	tag;
     Binary	binary[NumBinaryOp];
     Unary	unary[NumUnaryOp];
     Promote	promote;

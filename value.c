@@ -12,23 +12,10 @@
 
 #include	"nickle.h"
 
-extern ValueType    IntType, IntegerType, RationalType, FloatType;
-extern ValueType    StringType, ArrayType, FileType;
-extern ValueType    RefType, structType, FuncType, ThreadType;
-extern ValueType    SemaphoreType, ContinuationType, UnitType;
-
 Value	Void;
 
 volatile Bool	aborting;
 volatile Bool	signaling;
-
-/* must be synchronized with Type enum */
-ValueType   *valueTypes[] = {
-    &IntType, &IntegerType, &RationalType, &FloatType,
-    &StringType, &FileType,
-    &ThreadType, &SemaphoreType, &ContinuationType, &UnitType,
-    &ArrayType, &RefType, &structType, &FuncType,
-};
 
 #ifndef Numericp
 Bool
@@ -63,7 +50,7 @@ Integralp (Type t)
 Bool
 Zerop (Value av)
 {
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
 	return av->ints.value == 0;
     case type_integer:
@@ -80,7 +67,7 @@ Zerop (Value av)
 Bool
 Negativep (Value av)
 {
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
 	return av->ints.value < 0;
     case type_integer:
@@ -97,7 +84,7 @@ Negativep (Value av)
 Bool
 Evenp (Value av)
 {
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
 	return (av->ints.value & 1) == 0;
     case type_integer:
@@ -111,7 +98,7 @@ int
 IntPart (Value av, char *error)
 {
     av = Truncate (av);
-    if (av->value.tag != type_int)
+    if (!ValueIsInt(av))
     {
 	RaiseStandardException (exception_invalid_argument, error, 
 				2, NewInt (0), av);
@@ -131,19 +118,19 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	type = (*av->value.type->typecheck) (operator, av, bv, 1);
     else if (bv->value.type->typecheck)
 	type = (*bv->value.type->typecheck) (operator, av, bv, 1);
-    else if (av->value.tag == bv->value.tag)
+    else if (av->value.type == bv->value.type)
 	type = av->value.type;
-    else if (Numericp (av->value.tag) && Numericp (bv->value.tag))
+    else if (Numericp (ValueTag(av)) && Numericp (ValueTag(bv)))
     {
-	if (av->value.tag < bv->value.tag)
+	if (ValueTag(av) < ValueTag(bv))
 	    av = (*bv->value.type->promote) (av, bv);
 	else
 	    bv = (*av->value.type->promote) (bv, av);
 	type = av->value.type;
     }
-    else if (av->value.tag == type_union)
+    else if (ValueIsUnion(av))
 	type = av->value.type;
-    else if (bv->value.tag == type_union)
+    else if (ValueIsUnion(bv))
 	type = bv->value.type;
     if (!type || !type->binary[operator])
     {
@@ -339,7 +326,7 @@ Factorial (Value av)
     Value   i;    
     StackPointer    iref, tvref;
 
-    if (!Integralp (av->value.tag) || Negativep (av))
+    if (!Integralp (ValueTag(av)) || Negativep (av))
     {
 	RaiseStandardException (exception_invalid_unop_value,
 				"invalid operand",
@@ -400,7 +387,7 @@ Pow (Value av, Value bv)
     ENTER ();
     Value	result;
 
-    if (!Numericp (av->value.tag) || !Numericp (bv->value.tag))
+    if (!Numericp (ValueTag(av)) || !Numericp (ValueTag(bv)))
     {
 	RaiseStandardException (exception_invalid_binop_values,
 				"invalid operands",
@@ -408,7 +395,7 @@ Pow (Value av, Value bv)
 				av, bv);
 	RETURN (Zero);
     }
-    switch (bv->value.tag) {
+    switch (ValueTag(bv)) {
     case type_int:
 	{
 	    Value	p;
@@ -475,7 +462,7 @@ Value
 ShiftL (Value av, Value bv)
 {
     ENTER ();
-    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseError ("non-integer %v << %v\n", av, bv);
 	RETURN (Zero);
@@ -484,7 +471,7 @@ ShiftL (Value av, Value bv)
 	RETURN (ShiftR(av, Negate (bv)));
     if (Zerop (bv))
 	RETURN(av);
-    if (bv->value.tag == type_int)
+    if (ValueIsInt(bv))
     {
 	Sign	sign = Positive;
 	if (Negativep (av))
@@ -504,7 +491,7 @@ Value
 ShiftR (Value av, Value bv)
 {
     ENTER ();
-    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseError ("non-integer %v >> %v\n", av, bv);
 	RETURN (Zero);
@@ -513,7 +500,7 @@ ShiftR (Value av, Value bv)
 	RETURN (ShiftL(av, Negate (bv)));
     if (Zerop (bv))
 	RETURN(av);
-    if (bv->value.tag == type_int)
+    if (ValueIsInt(bv))
     {
 	Sign	sign = Positive;
 	if (Negativep (av))
@@ -537,7 +524,7 @@ Gcd (Value av, Value bv)
 {
     ENTER ();
     
-    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseStandardException (exception_invalid_binop_values,
 				"invalid gcd argument values",
@@ -556,7 +543,7 @@ Bdivmod (Value av, Value bv)
 {
     ENTER ();
     
-    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseStandardException (exception_invalid_binop_values,
 				"invalid gcd argument values",
@@ -574,7 +561,7 @@ KaryReduction (Value av, Value bv)
 {
     ENTER ();
     
-    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseStandardException (exception_invalid_binop_values,
 				"invalid kary_reduction argument values",
@@ -632,7 +619,7 @@ Copy (Value v)
     
     if (!v)
 	RETURN (v);
-    switch (v->value.tag) {
+    switch (ValueTag(v)) {
     case type_array:
 	if (!v->array.values->constant)
 	{
@@ -702,6 +689,7 @@ UnitPrint (Value f, Value av, char format, int base, int width, int prec, unsign
 
 ValueType UnitType = {
     { 0, 0 },	    /* data */
+    type_void,	    /* tag */
     { 
 	0,	    /* Plus */
 	0,	    /* Minus */
@@ -726,7 +714,6 @@ NewVoid (void)
     Value   ret;
 
     ret = ALLOCATE (&UnitType.data, sizeof (BaseValue));
-    ret->value.tag = type_void;
     RETURN (ret);
 }
 

@@ -367,6 +367,7 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
 
 ValueType IntType = {
     { 0, 0 },	    /* data */
+    type_int,	    /* tag */
     {		    /* binary */
 	IntPlus,
 	IntMinus,
@@ -400,7 +401,6 @@ NewInt (int value)
 	if (!ret)
 	{
 	    ret = ALLOCATE (&IntType.data, sizeof (Int));
-	    ret->value.tag = type_int;
 	    ret->ints.value = value;
 	    BoxValueSet (SmallInts, value - MIN_SMALL, ret);
 	}
@@ -408,7 +408,6 @@ NewInt (int value)
     else
     {
 	ret = ALLOCATE (&IntType.data, sizeof (Int));
-	ret->value.tag = type_int;
 	ret->ints.value = value;
     }
     RETURN (ret);

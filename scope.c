@@ -227,7 +227,7 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publ
     SymbolPtr	    symbol;
     Bool	    search = True;
     
-    if (names->value.tag != type_array || names->array.ndim != 1)
+    if (!ValueIsArray(names) || names->array.ndim != 1)
     {
 	RaiseStandardException (exception_invalid_argument,
 				"not array of strings",
@@ -243,7 +243,7 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publ
 	string = BoxValue (names->array.values, i);
 	if (aborting)
 	    return False;
-	if (string->value.tag != type_string)
+	if (!ValueIsString(string))
 	{
 	    RaiseStandardException (exception_invalid_argument,
 				    "not string",

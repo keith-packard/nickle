@@ -138,7 +138,7 @@ do_Debug_up (void)
     
     continuation = lookupVar (0, "cont");
     frame = lookupVar (0, "frame");
-    if (continuation->continuation.value.tag == type_continuation && frame->value.tag == type_int)
+    if (ValueIsContinuation(continuation) && ValueIsInt(frame))
     {
 	if (DebugSetFrame (continuation, frame->ints.value + 1))
 	    RETURN (One);
@@ -156,7 +156,7 @@ do_Debug_down (void)
     
     continuation = lookupVar (0, "cont");
     frame = lookupVar (0, "frame");
-    if (continuation->value.tag == type_continuation && frame->value.tag == type_int)
+    if (ValueIsContinuation(continuation) && ValueIsInt(frame))
     {
 	if (frame->ints.value <= 0)
 	    FilePrintf (FileStderr, "Already at bottom\n");

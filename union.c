@@ -76,9 +76,9 @@ UnionEqual (Value av, Value bv, int expandOk)
 {
     Union	    *a = &av->unions, *b = &bv->unions;
     
-    if (av->value.tag != type_union)
+    if (!ValueIsUnion(av))
 	return Equal (av, BoxValue (b->value, 0));
-    if (bv->value.tag != type_union)
+    if (!ValueIsUnion(bv))
 	return Equal (BoxValue (a->value, 0), bv);
     if (a->tag != b->tag)
 	return Zero;
@@ -87,6 +87,7 @@ UnionEqual (Value av, Value bv, int expandOk)
 
 ValueType    unionType = { 
     { UnionMark, 0 },	    /* base */
+    type_union,		    /* tag */
     {			    /* binary */
 	0,
 	0,
@@ -117,7 +118,6 @@ NewUnion (StructType *type, Bool constant)
     Value	    ret;
 
     ret = ALLOCATE (&unionType.data, sizeof (Union));
-    ret->value.tag = type_union;
     ret->unions.type = type;
     ret->unions.tag = 0;
     ret->unions.value = NewBox (constant, False, 1);

@@ -797,7 +797,7 @@ doPrettyPrint (Value f, Publish publish, SymbolPtr symbol, int level, Bool nest)
     case class_const:
     case class_global:
 	v = BoxValueGet (symbol->global.value, 0);
-	if (v && v->value.tag == type_func)
+	if (v && ValueIsFunc(v))
 	{
 	    PrettyCode (f, v->func.code,
 		       symbol->symbol.name,

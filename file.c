@@ -81,6 +81,7 @@ FilePrint (Value f, Value av, char format, int base, int width, int prec, unsign
 
 ValueType FileType = {
     { FileMark, FileFree },
+    type_file, 
     {
 	0, 0, 0, 0, 0, 0,
 	0, ValueEqual, 0, 0,
@@ -100,7 +101,6 @@ NewFile (int fd)
     Value   ret;
 
     ret = ALLOCATE (&FileType.data, sizeof (File));
-    ret->value.tag = type_file;
     ret->file.fd = fd;
     ret->file.flags = 0;
     ret->file.error = 0;

@@ -154,7 +154,7 @@ LexLibrary (char *filename, Bool complain, Bool after)
     Bool    found = False;
 
     library_path = lookupVar ("Command", "library_path");
-    if (library_path == Zero || library_path->value.tag != type_string)
+    if (library_path == Zero || !ValueIsString(library_path))
     {
 	if (complain)
 	    (void) FilePrintf (FileStderr, "Command::library_path not set\n");
@@ -256,7 +256,7 @@ LexGetInteractiveChar (void)
 	Value	v;
 
 	v = prompt ();
-	if (v && v->value.tag == type_string)
+	if (v && ValueIsString(v))
 	    p = StringChars (&v->string);
 	else
 	    p = "??? ";

@@ -80,13 +80,9 @@ EditFile (Value file_name)
     }
     else
     {
-	switch (file_name->value.tag) {
-	default:
-	    PrintError ("edit: non-string filename %v", file_name);
-	    break;
-	case type_string:
+	if (ValueIsString(file_name)) 
 	    edit (StringChars (&file_name->string));
-	    break;
-	}
+	else
+	    PrintError ("edit: non-string filename %v", file_name);
     }
 }

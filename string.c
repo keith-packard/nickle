@@ -74,7 +74,8 @@ StringPrint (Value f, Value av, char format, int base, int width, int prec, unsi
 }
 
 ValueType   StringType = {
-    { 0, 0 },
+    { 0, 0 },		/* base */
+    type_string,	/* tag */
     {			/* binary */
 	StringPlus,
 	0,
@@ -102,7 +103,6 @@ NewString (int len)
     Value   ret;
 
     ret = ALLOCATE (&StringType.data, sizeof (String) + len + 1);
-    ret->value.tag = type_string;
     RETURN (ret);
 }
 

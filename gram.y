@@ -152,6 +152,7 @@ ignorenl	:
 		;
 attendnl	:
 		    { ignorenl--; }
+		;
 reset		:
 		    { 
 			ignorenl = 0; 
@@ -565,6 +566,7 @@ catches		:   catch catches
 		;
 catch		: CATCH fullname namespace_start opt_argdefines block namespace_end
 		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $5), $2); }
+		;
 func_body    	: { ++funcDepth; } block { --funcDepth; $$ = $2; }
 		| SEMI
 		    { $$ = 0; }
@@ -913,6 +915,7 @@ argdecls	: argdecl COMMA argdecls
 		    { $$ = NewArgType ($1.type, False, $1.name, 0, $3); }
 		| argdecl opt_dots
 		    { $$ = NewArgType ($1.type, $2, $1.name, 0, 0); }
+		;
 argdecl		: type NAME
 		    { 
 			ParseCanonType ($1);

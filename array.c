@@ -110,6 +110,7 @@ ArrayMark (void *object)
 
 ValueType    ArrayType = { 
     { ArrayMark, 0 },
+    type_array,
     {
 	0, 0, 0, 0, 0, 0,
 	0, ArrayEqual, 0, 0,
@@ -141,7 +142,6 @@ NewArray (Bool constant, TypesPtr type, int ndim, int *dims)
     else
 	ents = 0;
     ret = ALLOCATE (&ArrayType.data, sizeof (Array) + ndim * sizeof (int));
-    ret->value.tag = type_array;
     ret->array.type = type;
     ret->array.ndim = ndim;
     ret->array.ents = ents;

@@ -1122,29 +1122,29 @@ TypeCompatibleAssign (TypesPtr a, Value b)
     
     switch (a->base.tag) {
     case types_prim:
-	if (a->prim.prim == b->value.tag)
+	if (a->prim.prim == ValueTag(b))
 	    return True;
-	if (Numericp (a->prim.prim) && Numericp (b->value.tag))
+	if (Numericp (a->prim.prim) && Numericp (ValueTag(b)))
 	{
-	    if (a->prim.prim >= b->value.tag)
+	    if (a->prim.prim >= ValueTag(b))
 		return True;
 	}
 	break;
     case types_name:
 	return TypeCompatibleAssign (a->name.type, b);
     case types_ref:
-	if (b->value.tag == type_ref)
+	if (ValueIsRef(b))
 	{
 	    if (RefValueGet (b))
 		return TypeCompatibleAssign (a->ref.ref, RefValueGet (b));
 	    else
 		return TypeCompatible (a->ref.ref, RefType (b), True);
 	}
-	if (b->value.tag == type_int && b->ints.value == 0)
+	if (ValueIsInt(b) && b->ints.value == 0)
 	    return True;
 	break;
     case types_func:
-	if (b->value.tag == type_func)
+	if (ValueIsFunc(b))
 	{
 	    if (TypeCompatible (a->func.ret,
 				b->func.code->base.type, True))
@@ -1167,7 +1167,7 @@ TypeCompatibleAssign (TypesPtr a, Value b)
 	}
 	break;
     case types_array:
-	if (b->value.tag == type_array)
+	if (ValueIsArray(b))
 	{
 	    adim = TypeCountDimensions (a->array.dimensions);
 	    bdim = b->array.ndim;
@@ -1196,8 +1196,8 @@ TypeCompatibleAssign (TypesPtr a, Value b)
 	break;
     case types_struct:
     case types_union:
-	if ((b->value.tag == type_struct && a->base.tag == types_struct) ||
-	    (b->value.tag == type_union && a->base.tag == types_union))
+	if ((ValueIsStruct(b) && a->base.tag == types_struct) ||
+	    (ValueIsUnion(b) && a->base.tag == types_union))
 	{
 	    for (n = 0; n < a->structs.structs->nelements; n++)
 	    {

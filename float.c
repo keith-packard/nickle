@@ -78,7 +78,7 @@ NewValueFpart (Value v)
 {
     ENTER ();
     Fpart   *ret;
-    switch (v->value.tag) {
+    switch (ValueTag(v)) {
     case type_int:
 	ret = NewIntFpart (v->ints.value);
 	break;
@@ -584,9 +584,9 @@ FloatPromote (Value av, Value bv)
     ENTER ();
     int	prec;
 
-    if (av->value.tag != type_float)
+    if (!ValueIsFloat(av))
     {
-	if (bv && bv->value.tag == type_float)
+	if (bv && ValueIsFloat(bv))
 	    prec = bv->floats.prec;
 	else
 	    prec = DEFAULT_FLOAT_PREC;
@@ -827,7 +827,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
 	if (prec == INFINITE_OUTPUT_PRECISION)
 	{
 	    prec = mant_prec;
-	    if (expbase->value.tag == type_int)
+	    if (ValueIsInt(expbase))
 	    {
 		if (expbase->ints.value < 0)
 		    prec -= expbase->ints.value;
@@ -849,7 +849,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
     int_part = Floor (m);
     frac_part = Minus (m, int_part);
 	
-    if (int_part->value.tag == type_integer)
+    if (ValueIsInteger(int_part))
 	int_n = int_part->integer.mag;
     else
 	int_n = NewNatural (int_part->ints.value);
@@ -900,7 +900,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
 	
 	frac_part = Floor (Times (frac_part, Pow (NewInt (base), 
 						  NewInt (frac_width - 1))));
-	if (frac_part->value.tag == type_integer)
+	if (ValueIsInteger(frac_part))
 	    frac_n = frac_part->integer.mag;
 	else
 	    frac_n = NewNatural (frac_part->ints.value);
@@ -960,6 +960,7 @@ FloatMark (void *object)
 
 ValueType   FloatType = {
     { FloatMark, 0 },	/* base */
+    type_float,		/* tag */
     {			/* binary */
 	FloatPlus,
 	FloatMinus,
@@ -1016,7 +1017,6 @@ NewFloat (Fpart *mant, Fpart *exp, unsigned prec)
     DebugFp ("Can mant", mant);
     DebugFp ("Can exp ", exp);
     ret = ALLOCATE (&FloatType.data, sizeof (Float));
-    ret->value.tag = type_float;
     ret->floats.mant = mant;
     ret->floats.exp = exp;
     ret->floats.prec = prec;
@@ -1066,7 +1066,7 @@ NewValueFloat (Value av, unsigned prec)
 {
     ENTER ();
 
-    switch (av->value.tag) {
+    switch (ValueTag(av)) {
     case type_int:
 	av = NewIntFloat (av->ints.value, prec);
 	break;

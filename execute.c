@@ -563,7 +563,7 @@ ThreadStep (Value thread)
 	}
 	break;
     case OpTagCase:
-	if (value->value.tag != type_union)
+	if (!ValueIsUnion(value))
 	{
 	    RaiseStandardException (exception_invalid_argument,
 				    "union switch expression not union",
@@ -694,7 +694,7 @@ ThreadStep (Value thread)
     case OpArray:
     case OpArrayRef:
     case OpArrayRefStore:
-	switch (value->value.tag) {
+	switch (ValueTag(value)) {
 	    char    *s;
 	case type_string:
 	    if (inst->base.opCode != OpArray)
@@ -755,7 +755,7 @@ ThreadStep (Value thread)
 	break;
     case OpCall:
     case OpTailCall:
-	if (value->value.tag != type_func)
+	if (!ValueIsFunc(value))
 	{
 	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not a function",
@@ -769,9 +769,8 @@ ThreadStep (Value thread)
     case OpArrow:
     case OpArrowRef:
     case OpArrowRefStore:
-	if (value->value.tag != type_ref ||
-	    (RefValue (value)->value.tag != type_struct &&
-	     RefValue (value)->value.tag != type_union))
+	if (!ValueIsRef(value) ||
+	    (!ValueIsStruct(RefValue (value)) && !ValueIsUnion(RefValue (value))))
 	{
 	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not a struct/union reference",
@@ -782,7 +781,7 @@ ThreadStep (Value thread)
     case OpDot:
     case OpDotRef:
     case OpDotRefStore:
-	switch (value->value.tag) {
+	switch (ValueTag(value)) {
 	default:
 	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not a struct/union",
@@ -851,7 +850,7 @@ ThreadStep (Value thread)
 	value = Stack (stack); stack++;
 	break;
     case OpStar:
-	if (value->value.tag != type_ref)
+	if (!ValueIsRef(value))
 	{
 	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not a reference",
@@ -876,7 +875,7 @@ ThreadStep (Value thread)
     case OpPostInc:
     case OpPreDec:
     case OpPostDec:
-	if (value->value.tag != type_ref)
+	if (!ValueIsRef(value))
 	{
 	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not an lvalue",
@@ -943,7 +942,7 @@ ThreadStep (Value thread)
     case OpAssignLxor:
     case OpAssignLand:
     case OpAssignLor:
-	if (value->value.tag != type_ref)
+	if (!ValueIsRef(value))
 	    break;
 	v = Stack(stack); stack++;
 	switch (inst->base.opCode) {
@@ -981,7 +980,7 @@ ThreadStep (Value thread)
 	value = v;
 	break;
     case OpInitialize:
-	if (value->value.tag != type_ref)
+	if (!ValueIsRef(value))
 	    break;
 	v = Stack(stack); stack++;
 	ThreadAssign (value, v, True);
@@ -1081,7 +1080,8 @@ ThreadStep (Value thread)
 	if (inst->base.push)
 	    STACK_PUSH (thread->thread.stack, value);
 	thread->thread.pc = next;
-	ThreadStepped (thread);
+	if (thread->thread.next)
+	    ThreadStepped (thread);
     }
     else
     {

@@ -26,7 +26,8 @@ union block_round {
 
 # define MINHUNK	(sizeof (struct bfree))
 # define NUMSIZES	12
-# define MAXHUNK	(MINHUNK << (NUMSIZES-1))	/* MINHUNK * 2^(NUMSIZES-1) */
+# define HUNKSIZE(i)	(MINHUNK << (i))
+# define MAXHUNK	HUNKSIZE(NUMSIZES-1)
 
 # define TYPE(o)	(*((DataType **) (o)))
 # define HEADSIZE	(sizeof (union block_round))

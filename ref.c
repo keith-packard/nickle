@@ -15,14 +15,14 @@ RefPlus (Value av, Value bv, int expandOk)
     int	    i;
     Ref	    *ref;
 
-    if (av->value.tag == type_int)
+    if (ValueIsInt(av))
     {
 	i = IntPart (av, "Attempt to add non-integer to reference type");
 	if (aborting)
 	    RETURN (Zero);
 	ref = &bv->ref;
     }
-    else if (bv->value.tag == type_int)
+    else if (ValueIsInt(bv))
     {
 	i = IntPart (bv, "Attempt to add non-integer to reference type");
 	if (aborting)
@@ -51,7 +51,7 @@ RefMinus (Value av, Value bv, int expandOk)
     int	    element;
     Ref	    *ref, *bref;
 
-    if (av->value.tag == type_int)
+    if (ValueIsInt(av))
     {
 	i = IntPart (av, "Attempt to subtract non-integer to reference type");
 	if (aborting)
@@ -59,7 +59,7 @@ RefMinus (Value av, Value bv, int expandOk)
 	ref = &bv->ref;
 	element = -ref->element;
     }
-    else if (bv->value.tag == type_int)
+    else if (ValueIsInt(bv))
     {
 	i = -IntPart (bv, "Attempt to subtract non-integer to reference type");
 	if (aborting)
@@ -121,17 +121,17 @@ RefTypeCheck (BinaryOp op, Value av, Value bv, int expandOk)
 {
     switch (op) {
     case MinusOp:
-	if (av->value.tag == type_ref && bv->value.tag == type_ref)
+	if (ValueIsRef(av) && ValueIsRef(bv))
 	    return av->value.type;
     case PlusOp:
-	if (av->value.tag == type_int)
+	if (ValueIsInt(av))
 	    return bv->value.type;
-	if (bv->value.tag == type_int)
+	if (ValueIsInt(bv))
 	    return av->value.type;
 	break;
     case LessOp:
     case EqualOp:
-	if (av->value.tag == type_ref && bv->value.tag == type_ref)
+	if (ValueIsRef(av) && ValueIsRef(bv))
 	    return av->value.type;
 	break;
     default:
@@ -158,6 +158,7 @@ RefMark (void *object)
 
 ValueType RefType = { 
     { RefMark, 0 },	/* data */
+    type_ref,		/* tag */
     {			/* binary */
 	RefPlus,
 	RefMinus,
@@ -188,7 +189,6 @@ NewRef (BoxPtr box, int element)
     Value   ret;
 
     ret = ALLOCATE (&RefType.data, sizeof (Ref));
-    ret->value.tag = type_ref;
     ret->ref.box = box;
     ret->ref.element = element;
     RETURN (ret);

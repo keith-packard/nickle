@@ -107,6 +107,7 @@ StructEqual (Value a, Value b, int expandOk)
 
 ValueType    structType = { 
     { StructMark, 0 },	    /* base */
+    type_struct,	    /* tag */
     {			    /* binary */
 	0,
 	0,
@@ -139,7 +140,6 @@ NewStruct (StructType *type, Bool constant)
     StructElement   *se;
 
     ret = ALLOCATE (&structType.data, sizeof (Struct));
-    ret->value.tag = type_struct;
     ret->structs.type = type;
     ret->structs.values = NewBox (constant, False, type->nelements);
     se = StructTypeElements (type);    

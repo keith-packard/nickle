@@ -302,12 +302,8 @@ IntegerPromote (Value av, Value bv)
 {
     ENTER ();
     
-    switch (av->value.tag) {
-    case type_int:
+    if (ValueIsInt(av))
 	av = NewIntInteger (av->ints.value);
-    default:
-	break;
-    }	
     RETURN (av);
 }
 
@@ -396,6 +392,7 @@ IntegerMark (void *object)
 
 ValueType    IntegerType = { 
     { IntegerMark, 0 },	    /* base */
+    type_integer,	    /* tag */
     {			    /* binary */
 	IntegerPlus,
 	IntegerMinus,
@@ -425,7 +422,6 @@ NewInteger (Sign sign, Natural *mag)
     Value ret;
 
     ret = ALLOCATE (&IntegerType.data, sizeof (Integer));
-    ret->value.tag = type_integer;
     ret->integer.sign = sign;
     ret->integer.mag = mag;
     RETURN (ret);

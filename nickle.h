@@ -695,7 +695,6 @@ Value	do_Command_undefine (int, Value *);
 /* zero argument builtins */
 Value	do_Thread_cont (void);
 Value	do_Thread_current (void);
-Value	do_Mutex_new (void);
 Value	do_Thread_list (void);
 Value	do_getchar (void);
 Value	do_time (void);
@@ -740,9 +739,6 @@ Value	do_is_void (Value);
 Value	do_Thread_get_priority (Value);
 Value	do_Thread_id_to_thread (Value);
 Value	do_Thread_join (Value);
-Value	do_Mutex_acquire (Value);
-Value	do_Mutex_release (Value);
-Value	do_Mutex_try_acquire (Value);
 Value	do_Semaphore_signal (Value);
 Value	do_Semaphore_wait (Value);
 Value	do_Semaphore_test (Value);

@@ -106,6 +106,7 @@ FuncPrint (Value f, Value av, char format, int base, int width, int prec, unsign
 
 ValueType   FuncType = {
     { FuncMark, 0 },	/* base */
+    type_func,		/* tag */
     {			/* binary */
 	0,
 	0,
@@ -136,7 +137,6 @@ NewFunc (CodePtr code, FramePtr staticLink)
     Value	    ret;
 
     ret = ALLOCATE (&FuncType.data, sizeof (Func));
-    ret->value.tag = type_func;
     ret->func.code = code;
     ret->func.staticLink = staticLink;
     ret->func.statics = 0;

@@ -1,5 +1,14 @@
 2004-04-10  Keith Packard  <keithp@keithp.com>
 
+	* box.c: (BoxRewrite):
+	Ugh.  Array shrink causes problems with references to
+	elements now outside the box boundaries.  "real" fix
+	is hard, so here's a kludge to keep the interpreter
+	from crashing and (perhaps) prevent the error
+	from propagating through the application.
+
+2004-04-10  Keith Packard  <keithp@keithp.com>
+
 	* array.c: (ArrayPrint), (ArrayResize):
 	* builtin-toplevel.c: (do_setdims), (do_setdim):
 	* builtin.c: (BuiltinType):

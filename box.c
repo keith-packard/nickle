@@ -116,6 +116,23 @@ BoxRewrite (BoxPtr box, int *ep)
 	e = chunk * r->newstride + off;
 	box = r->new;
     }
+    /*
+     * XXX oops.  References to previously available storage
+     * should do something sensible instead of cratering.
+     * The desired semantic is for them to persist, pointing
+     * to whatever storage was there before the underlying object
+     * was resized.  But, that's "hard".  This check will
+     * at least prevent a seg fault.
+     */
+    if (e >= box->nvalues)
+    {
+	RaiseStandardException (exception_invalid_array_bounds,
+				"Rewriting reference beyond box bounds",
+				1, NewInt (e));
+	e = 0;
+	box = NewBox (True, False, 1, typePrim[rep_void]);
+	BoxValueSet (box, 0, 0);
+    }
     *ep = e;
     return box;
 }

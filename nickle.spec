@@ -1,7 +1,7 @@
 %define name nickle
 %define version 1.99.2
 %define release 1
-%define prefix /usr
+%define prefix /usr/local
 
 Summary: Desk calculator language, similar to C.
 

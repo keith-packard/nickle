@@ -325,6 +325,12 @@ typedef struct _instStruct {
     StructType	*structs;
 } InstStruct;
 
+typedef struct _instArray {
+    InstBase	inst;
+    int		ndim;
+    TypesPtr	type;
+} InstArray;
+
 typedef struct _instCode {
     InstBase	inst;
     CodePtr	code;
@@ -371,6 +377,7 @@ typedef union _inst {
     InstAtom	atom;
     InstInt	ints;
     InstStruct	structs;
+    InstArray	array;
     InstCode	code;
     InstBranch	branch;
     InstObj	obj;

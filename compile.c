@@ -33,6 +33,9 @@ ObjMark (void *object)
 	case OpBuildStruct:
 	    MemReference (inst->structs.structs);
 	    break;
+	case OpBuildArray:
+	    MemReference (inst->array.type);
+	    break;
 	case OpConst:
 	    MemReference (inst->constant.constant);
 	    break;
@@ -861,22 +864,23 @@ CompileCountDeclDimensions (ExprPtr expr)
 }
 
 static ObjPtr
-CompileBuildArray (ObjPtr obj, ExprPtr array, ExprPtr sub, 
-		   int ndim, NamespacePtr namespace, ExprPtr stat)
+CompileBuildArray (ObjPtr obj, ExprPtr expr, TypesPtr type, int ndim, 
+		   NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
     InstPtr	inst;
+    ExprPtr	dim;
 
-    while (sub)
+    dim = type->array.dimensions;
+    while (dim)
     {
-	obj = _CompileExpr (obj, sub->tree.left, namespace, stat);
+	obj = _CompileExpr (obj, dim->tree.left, namespace, stat);
 	SetPush (obj);
-	sub = sub->tree.right;
+	dim = dim->tree.right;
     }
-    if (array)
-	array->base.type = NewTypesArray (typesPoly, sub);
     BuildInst (obj, OpBuildArray, inst, stat);
-    inst->ints.value = ndim;
+    inst->array.ndim = ndim;
+    inst->array.type = type->array.type;
     RETURN (obj);
 }
 
@@ -908,7 +912,8 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 }
 
 static ObjPtr
-CompileImplicitArray (ObjPtr obj, ExprPtr array, ExprPtr inits, int ndim, 
+CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
+		      ExprPtr inits, int ndim, 
 		      NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
@@ -925,12 +930,14 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, ExprPtr inits, int ndim,
 			   NewExprConst (CONST, NewInt (*dims++)),
 			   sub);
     }
-    obj = CompileBuildArray (obj, array, sub, ndim, namespace, stat);
+    type->array.dimensions = sub;
+    obj = CompileBuildArray (obj, array, type, ndim, namespace, stat);
     RETURN (obj);
 }
 
 static ObjPtr
-CompileArrayInits (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, int *ninits, ExprPtr stat)
+CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type, 
+		   NamespacePtr namespace, int *ninits, ExprPtr stat)
 {
     ENTER ();
     if (expr->base.tag == ARRAY)
@@ -941,7 +948,7 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, int *ninits
 	expr = expr->tree.left;
 	while (expr)
 	{
-	    obj = CompileArrayInits (obj, expr->tree.left, namespace, ninits, stat);
+	    obj = CompileArrayInits (obj, expr->tree.left, type, namespace, ninits, stat);
 	    expr = expr->tree.right;
 	    nsub++;
 	}
@@ -953,6 +960,11 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, int *ninits
     else
     {
 	obj = _CompileExpr (obj, expr, namespace, stat);
+	if (!TypeCombineBinary (type, ASSIGN, expr->base.type))
+	{
+	    CompileError (obj, stat, "Incompatible types '%T', '%T' in array initialization",
+			  type, expr->base.type);
+	}
 	SetPush (obj);
 	++(*ninits);
     }
@@ -1161,28 +1173,28 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 		    break;
 		}
 		i = 0;
-		obj = CompileArrayInits (obj, expr->tree.left, 
+		obj = CompileArrayInits (obj, expr->tree.left, t->array.type,
 					 namespace, &i, stat);
 	    }
 	    if (t->array.dimensions && t->array.dimensions->tree.left)
 	    {
-		obj = CompileBuildArray (obj, expr, t->array.dimensions, 
-					 ndim, namespace, stat);
+		obj = CompileBuildArray (obj, expr, t, ndim, namespace, stat);
 	    }
-	    else if (!expr->tree.left)
+	    else if (expr->tree.left)
 	    {
-		CompileError (obj, stat, "Non-dimensioned array with no initializers");
+		obj = CompileImplicitArray (obj, expr, t, expr->tree.left, 
+					    ndim, namespace, stat);
 	    }
 	    else
 	    {
-		obj = CompileImplicitArray (obj, expr, expr->tree.left, 
-					    ndim, namespace, stat);
+		CompileError (obj, stat, "Non-dimensioned array with no initializers");
 	    }
 	    if (expr->tree.left)
 	    {
 		BuildInst (obj, OpInitArray, inst, stat);
 		inst->ints.value = i;
 	    }
+	    expr->base.type = t;
 	    break;
 	default:
 	    CompileError (obj, stat, 

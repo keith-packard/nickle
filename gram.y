@@ -60,10 +60,10 @@ void yyerror (char *fmt, ...);
 %type  <bval>	opt_dots
 
 %type  <eval>	opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
-%type  <eval>	initexpr
 %type  <ival>	assignop
 %type  <vval>	opt_const const
-%type  <eval>	opt_inits inits arrayinits arrayinit structinits structinit
+%type  <eval>	opt_arrayinit arrayinit arrayelts  arrayelt
+%type  <eval>	structinit structelts structelt
 
 %token		VAR EXPR ARRAY STRUCT UNION
 
@@ -843,108 +843,33 @@ assignop	: ASSIGNPLUS
 		| ASSIGNLOR
 		| ASSIGN
 		;
-initexpr	: primary
-		| MOD const						%prec THREADID
-		    {   Value	t;
-			t = do_Thread_id_to_thread ($2);
-			if (Zerop (t))
-			{
-			    yyerror ("No thread %v", $2);
-			    YYERROR;
-			}
-			else
-			    $$ = NewExprConst(CONST, t); 
-		    }
-		| TIMES initexpr					%prec STAR
-		    { $$ = NewExprTree(STAR, $2, (Expr *) 0); }
-		| LAND initexpr					%prec AMPER
-		    { $$ = NewExprTree(AMPER, $2, (Expr *) 0); }
-		| MINUS initexpr					%prec UMINUS
-		    { $$ = NewExprTree(UMINUS, $2, (Expr *) 0); }
-		| LNOT initexpr
-		    { $$ = NewExprTree(LNOT, $2, (Expr *) 0); }
-		| BANG initexpr
-		    { $$ = NewExprTree(BANG, $2, (Expr *) 0); }
-		| initexpr BANG					%prec FACT
-		    { $$ = NewExprTree(FACT, $1, (Expr *) 0); }
-		| INC initexpr
-		    { $$ = NewExprTree(INC, $2, (Expr *) 0); }
-		| initexpr INC
-		    { $$ = NewExprTree(INC, (Expr *) 0, $1); }
-		| DEC initexpr
-		    { $$ = NewExprTree(DEC, $2, (Expr *) 0); }
-		| initexpr DEC
-		    { $$ = NewExprTree(DEC, (Expr *) 0, $1); }
-		| initexpr PLUS initexpr
-		    { $$ = NewExprTree(PLUS, $1, $3); }
-		| initexpr MINUS initexpr
-		    { $$ = NewExprTree(MINUS, $1, $3); }
-		| initexpr TIMES initexpr
-		    { $$ = NewExprTree(TIMES, $1, $3); }
-		| initexpr DIVIDE initexpr
-		    { $$ = NewExprTree(DIVIDE, $1, $3); }
-		| initexpr DIV initexpr
-		    { $$ = NewExprTree(DIV, $1, $3); }
-		| initexpr MOD initexpr
-		    { $$ = NewExprTree(MOD, $1, $3); }
-		| initexpr POW initexpr
-		    { $$ = NewExprTree(POW, $1, $3); }
-		| initexpr SHIFTL initexpr
-		    { $$ = NewExprTree(SHIFTL, $1, $3); }
-		| initexpr SHIFTR initexpr
-		    { $$ = NewExprTree(SHIFTR, $1, $3); }
-		| initexpr QUEST initexpr COLON initexpr
-		    { $$ = NewExprTree(QUEST, $1, NewExprTree(COLON, $3, $5)); }
-		| initexpr LXOR initexpr
-		    { $$ = NewExprTree(LXOR, $1, $3); }
-		| initexpr LAND initexpr
-		    { $$ = NewExprTree(LAND, $1, $3); }
-		| initexpr LOR initexpr
-		    { $$ = NewExprTree(LOR, $1, $3); }
-		| initexpr AND initexpr
-		    { $$ = NewExprTree(AND, $1, $3); }
-		| initexpr OR initexpr
-		    { $$ = NewExprTree(OR, $1, $3); }
-		| initexpr EQ initexpr
-		    { $$ = NewExprTree(EQ, $1, $3); }
-		| initexpr NE initexpr
-		    { $$ = NewExprTree(NE, $1, $3); }
-		| initexpr LT initexpr
-		    { $$ = NewExprTree(LT, $1, $3); }
-		| initexpr GT initexpr
-		    { $$ = NewExprTree(GT, $1, $3); }
-		| initexpr LE initexpr
-		    { $$ = NewExprTree(LE, $1, $3); }
-		| initexpr GE initexpr
-		    { $$ = NewExprTree(GE, $1, $3); }
-		;
 primary		: NAME
 		    { $$ = NewExprAtom ($1); }
 		| CONST
 		    { $$ = NewExprConst(CONST, $1); }
 		| CCONST
 		    { $$ = NewExprConst(CCONST, $1); }
-		| OP type CP inits
+		| OP type CP structinit
 		    { 
 			$$ = NewExprTree (NEW, $4, 0); 
-			$$->base.type = $2; 
+			$$->base.type = $2;
 		    }
-		| OP type CP OS stars CS inits
+		| OP type CP OS opt_stars CS arrayinit
 		    { 
 			$$ = NewExprTree (NEW, $7, 0); 
 			$$->base.type = NewTypesArray ($2, $5); 
 		    }
-		| OP type CP OS exprs CS opt_inits
+		| OP type CP OS exprs CS opt_arrayinit
 		    { 
 			$$ = NewExprTree (NEW, $7, 0); 
 			$$->base.type = NewTypesArray ($2, $5); 
 		    }
-		| OS stars CS inits
+		| OS stars CS arrayinit
 		    { 
 			$$ = NewExprTree (NEW, $4, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 		    }
-		| OS exprs CS opt_inits
+		| OS exprs CS opt_arrayinit
 		    { 
 			$$ = NewExprTree (NEW, $4, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
@@ -983,41 +908,38 @@ const		: CONST
 		| CCONST
 		;
 /*
- * Initializers
- */
-opt_inits	: inits
-		|
-		    { $$ = 0; };
-		;
-inits		: OC arrayinits  CC
-		    { $$ = NewExprTree (ARRAY, $2, 0); }
-		| OC structinits CC
-		    { $$ = NewExprTree (STRUCT, $2, 0); }
-		| OC CC
-		    { $$ = 0; }
-		;
-/*
  * Array initializers
  */
-arrayinits	: arrayinit COMMA arrayinits
+opt_arrayinit	: arrayinit
+		|
+		    { $$ = 0; }
+		;
+arrayinit    	: OC arrayelts CC
+		    { $$ = NewExprTree (ARRAY, $2, 0); }
+		;
+arrayelts	: arrayelt COMMA arrayelts
 		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| arrayinit
+		| arrayelt
 		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
-arrayinit	: initexpr
-		| OC arrayinits CC
-		    { $$ = NewExprTree (ARRAY, $2, 0); }
+arrayelt	: lambdaexpr
+		| arrayinit
 		;
 
 /* 
 * Structure initializers
 */
-structinits	: structinit COMMA structinits
+structinit    	: OC structelts CC
+		    { $$ = NewExprTree (STRUCT, $2, 0); }
+		| OC CC
+		    { $$ = NewExprTree (STRUCT, 0, 0); }
+		;
+structelts	: structelt COMMA structelts
 		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| structinit
+		| structelt
 		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
-structinit	: NAME ASSIGN initexpr
+structelt	: NAME ASSIGN lambdaexpr
 		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1), $3); }
 		;
 

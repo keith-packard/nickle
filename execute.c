@@ -258,7 +258,7 @@ ThreadAssign (Value ref, Value v)
 }
 
 static Value
-ThreadArray (Value thread, int ndim)
+ThreadArray (Value thread, int ndim, Types *type)
 {
     ENTER ();
     int	    i;
@@ -271,7 +271,7 @@ ThreadArray (Value thread, int ndim)
 	if (aborting)
 	    RETURN (0);
     }
-    RETURN (NewArray (False, typesPoly, ndim, dims));
+    RETURN (NewArray (False, type, ndim, dims));
 }
 
 static int
@@ -578,8 +578,8 @@ ThreadStep (Value thread)
 	value = inst->constant.constant;
 	break;
     case OpBuildArray:
-	stack = inst->ints.value;
-	value = ThreadArray (thread, stack);
+	stack = inst->array.ndim;
+	value = ThreadArray (thread, stack, inst->array.type);
 	break;
     case OpInitArray:
 	stack = inst->ints.value;

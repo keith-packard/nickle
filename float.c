@@ -12,29 +12,13 @@
 Fpart	*zero_fpart, *one_fpart;
 
 #if 0
-#define DebugV(s,v) { \
-    FilePuts (FileStdout, s); \
-    FilePuts (FileStdout, " "); \
-    Print (FileStdout, v, 'g', 0, 0, DEFAULT_OUTPUT_PRECISION, ' '); \
-    FilePuts (FileStdout, "\n"); \
-}
+#define DebugV(s,v) FilePrintf (FileStdout, "%s %v\n", s, v)
 
-#define DebugN(s,n) { \
-    int	print_width; \
-    FilePuts (FileStdout, s); \
-    FilePuts (FileStdout, " "); \
-    FilePuts (FileStdout, NaturalSprint (0, n, 10, &print_width)); \
-    FilePuts (FileStdout, "\n"); \
-}
+#define DebugN(s,n) FilePrintf (FileStdout, "%s %n\n", s, n)
 
-#define DebugFp(s,f) { \
-    int	print_width; \
-    FilePuts (FileStdout, s); \
-    FilePuts (FileStdout, " "); \
-    if (f->sign == Negative) FilePuts (FileStdout, "-"); \
-    FilePuts (FileStdout, NaturalSprint (0, (f)->mag, 10, &print_width)); \
-    FilePuts (FileStdout, "\n"); \
-}
+#define DebugFp(s,f) FilePrintf (FileStdout, "%s %s%n\n", s, \
+				 (f)->sign == Negative ? "-" : "", \
+				 (f)->mag)
 #define DebugF(s,f) { \
     DebugFp(s,(f)->mant); \
     DebugFp(" e ", (f)->exp); \
@@ -603,20 +587,6 @@ FloatReduce (Value av)
 {
     return av;
 }
-
-#if 0
-static void
-FpartPrint (Value f, Fpart *fp, int base)
-{
-    ENTER ();
-    int	    print_width;
-    
-    if (fp->sign == Negative)
-	FileOutput (f, '-');
-    FilePuts (f, NaturalSprint (0, fp->mag, base, &print_width));
-    EXIT ();
-}
-#endif
 
 /*
  *  1/2 <= value / 2^exp2 < 1

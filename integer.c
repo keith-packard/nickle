@@ -204,13 +204,7 @@ IntegerEqual (Value av, Value bv, int expandOk)
 }
 
 #if 0
-#define DebugN(s,n) { \
-    int	print_width; \
-    FilePuts (FileStdout, s); \
-    FilePuts (FileStdout, " "); \
-    FilePuts (FileStdout, NaturalSprint (0, n, 16, &print_width)); \
-    FilePuts (FileStdout, "\n"); \
-}
+#define DebugN(s,n) FilePrintf (FileStdout, "%s %N\n", s, n)
 #else
 #define DebugN(s,n)
 #endif

@@ -16,58 +16,12 @@
 #include	"nickle.h"
 #include	"gram.h"
 
-void printParameters (Value f, Expr *e, Bool nest);
-void printAinit (Value f, Expr *e, int level, Bool nest);
-void printStatement (Value f, Expr *e, int level, int blevel, Bool nest);
-void printTypes (Value f, Types *t);
-    
-static void
-printclass (Value f, Class class)
-{
-    switch (class) {
-    case class_global:
-	FilePuts (f, "global");
-	break;
-    case class_static:
-	FilePuts (f, "static");
-	break;
-    case class_arg:
-	FilePuts (f, "arg");
-	break;
-    case class_auto:
-	FilePuts (f, "auto");
-	break;
-    case class_typedef:
-	FilePuts (f, "typedef");
-	break;
-    case class_namespace:
-	FilePuts (f, "namespace");
-	break;
-    case class_exception:
-	FilePuts (f, "exception");
-	break;
-    case class_undef:
-	break;
-    }
-}
+static void PrettyParameters (Value f, Expr *e, Bool nest);
+static void PrettyArrayInit (Value f, Expr *e, int level, Bool nest);
+static void PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest);
 
 static void
-printpublish (Value f, Publish publish)
-{
-    switch (publish) {
-    case publish_public:
-	FilePuts (f, "public ");
-	break;
-    case publish_extend:
-	FilePuts (f, "extend ");
-	break;
-    case publish_private:
-	break;
-    }
-}
-
-static void
-printindent (Value f, int level)
+PrettyIndent (Value f, int level)
 {
     int	i;
     for (i = 0; i < level-1; i += 2)
@@ -77,10 +31,10 @@ printindent (Value f, int level)
 }
 
 static void
-printBlock (Value f, Expr *e, int level, Bool nest)
+PrettyBlock (Value f, Expr *e, int level, Bool nest)
 {
     while (e->tree.left) {
-	printStatement (f, e->tree.left, level, level, nest);
+	PrettyStatement (f, e->tree.left, level, level, nest);
 	e = e->tree.right;
     }
 }
@@ -142,49 +96,52 @@ tokenToPrecedence (int token)
     }
 }
 
-void
-printParameters (Value f, Expr *e, Bool nest)
+static void
+PrettyParameters (Value f, Expr *e, Bool nest)
 {
     if (e->tree.right) {
-	printParameters (f, e->tree.right, nest);
+	PrettyParameters (f, e->tree.right, nest);
 	FilePuts (f, ", ");
     }
-    printExpr (f, e->tree.left, -1, 0, nest);
+    PrettyExpr (f, e->tree.left, -1, 0, nest);
 }
 
 static void
-printAinits (Value f, Expr *e, int level, Bool nest)
+PrettyArrayInit (Value f, Expr *e, int level, Bool nest);
+
+static void
+PrettyArrayInits (Value f, Expr *e, int level, Bool nest)
 {
-    printAinit (f, e->tree.left, 0, nest);
+    PrettyArrayInit (f, e->tree.left, 0, nest);
     if (e->tree.right) {
 	FilePuts (f, ", ");
-	printAinits (f, e->tree.right, level, nest);
+	PrettyArrayInits (f, e->tree.right, level, nest);
     }
 }
 
-void
-printAinit (Value f, Expr *e, int level, Bool nest)
+static void
+PrettyArrayInit (Value f, Expr *e, int level, Bool nest)
 {
     switch (e->base.tag) {
     case OC:
 	FilePuts (f, "{ ");
-	printAinits (f, e->tree.left, level, nest);
+	PrettyArrayInits (f, e->tree.left, level, nest);
 	FilePuts (f, " }");
 	break;
     default:
-	printExpr (f, e, -1, level, nest);
+	PrettyExpr (f, e, -1, level, nest);
 	break;
     }
 }
 
 static void
-printSinit (Value f, Expr *e, int level, Bool nest)
+PrettyStructInit (Value f, Expr *e, int level, Bool nest)
 {
     while (e)
     {
 	FilePuts (f, AtomName (e->tree.left->tree.left->atom.atom));
 	FilePuts (f, " = ");
-	printExpr (f, e->tree.left->tree.right, -1, level, nest);
+	PrettyExpr (f, e->tree.left->tree.right, -1, level, nest);
 	e = e->tree.right;
 	if (e)
 	    FilePuts (f, ", ");
@@ -192,7 +149,7 @@ printSinit (Value f, Expr *e, int level, Bool nest)
 }
 
 void
-printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
+PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 {
     int	selfPrec;
 
@@ -206,39 +163,38 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePuts (f, AtomName (e->atom.atom));
 	break;
     case OP:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	FilePuts (f, " (");
 	if (e->tree.right)
-	    printParameters (f, e->tree.right, nest);
+	    PrettyParameters (f, e->tree.right, nest);
 	FilePuts (f, ")");
 	break;
     case OS:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	FilePuts (f, "[");
-	printParameters (f, e->tree.right, nest);
+	PrettyParameters (f, e->tree.right, nest);
 	FilePuts (f, "]");
 	break;
     case NEW:
-	fprintTypes (f, e->base.type);
-	FilePuts (f, " ");
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	FilePrintf (f, "(%T) ", e->base.type);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	break;
     case ARRAY:
 	FilePuts (f, "[");
 	if (e->tree.left)
-	    printParameters (f, e->tree.left, nest);
+	    PrettyParameters (f, e->tree.left, nest);
 	FilePuts (f, "]");
 	break;
     case STRUCT:
 	FilePuts (f, "{ ");
-	printSinit (f, e->tree.left, level, nest);
+	PrettyStructInit (f, e->tree.left, level, nest);
 	FilePuts (f, " }");
 	break;
     case CONST:
-	print (f, e->constant.constant);
+	FilePrintf (f, "%v", e->constant.constant);
 	break;
     case FUNCTION:
-	PrintCode (f, e->code.code, 0, class_undef, publish_private, level + 1, nest);
+	PrettyCode (f, e->code.code, 0, class_undef, publish_private, level + 1, nest);
 	break;
     case PLUS:
     case MINUS:
@@ -273,7 +229,7 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     case ASSIGNLAND:
     case ASSIGNLOR:
     case COMMA:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	switch (e->base.tag) {
 	case PLUS:	FilePuts (f, " + "); break;
 	case MINUS:	FilePuts (f, " - "); break;
@@ -281,10 +237,10 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	case DIVIDE:	FilePuts (f, " / "); break;
 	case MOD:	FilePuts (f, " % "); break;
 	case DIV:	FilePuts (f, " // "); break;
-	case POW:	FilePuts (f, " ^ "); break;
+	case POW:	FilePuts (f, " ** "); break;
 	case SHIFTL:	FilePuts (f, " << "); break;
 	case SHIFTR:	FilePuts (f, " >> "); break;
-	case LXOR:	FilePuts (f, " ^^ "); break;
+	case LXOR:	FilePuts (f, " ^ "); break;
 	case LAND:	FilePuts (f, " & "); break;
 	case LOR:	FilePuts (f, " | "); break;
 	case EQ:	FilePuts (f, " == "); break;
@@ -302,18 +258,18 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	case ASSIGNDIVIDE:FilePuts (f, " /= "); break;
 	case ASSIGNMOD:	FilePuts (f, " %= "); break;
 	case ASSIGNDIV:	FilePuts (f, " //= "); break;
-	case ASSIGNPOW:	FilePuts (f, " ^= "); break;
+	case ASSIGNPOW:	FilePuts (f, " **= "); break;
 	case ASSIGNSHIFTL:FilePuts (f, " <<= "); break;
 	case ASSIGNSHIFTR:FilePuts (f, " >>= "); break;
-	case ASSIGNLXOR:FilePuts (f, " ^^= "); break;
+	case ASSIGNLXOR:FilePuts (f, " ^= "); break;
 	case ASSIGNLAND:FilePuts (f, " &= "); break;
 	case ASSIGNLOR:	FilePuts (f, " |= "); break;
 	case COMMA:	FilePuts (f, ", "); break;
 	}
-	printExpr (f, e->tree.right, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.right, selfPrec, level, nest);
 	break;
     case FACT:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	FilePuts (f, "!"); 
 	break;
     case LNOT:
@@ -322,7 +278,7 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     case INC:
     case DEC:
 	if (e->tree.right)
-	    printExpr (f, e->tree.right, selfPrec, level, nest);
+	    PrettyExpr (f, e->tree.right, selfPrec, level, nest);
 	switch (e->base.tag) {
 	case LNOT:	FilePuts (f, "~"); break;
 	case UMINUS:	FilePuts (f, "-"); break;
@@ -331,40 +287,40 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	case DEC:	FilePuts (f, "--"); break;
 	}
 	if (e->tree.left)
-	    printExpr (f, e->tree.left, selfPrec, level, nest);
+	    PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	break;
     case STAR:
 	FilePuts (f, "*");
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	break;
     case AMPER:
 	FilePuts (f, "&");
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	break;
     case COLONCOLON:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	FilePuts (f, "::");
 	FilePuts (f, AtomName (e->tree.right->atom.atom));
 	break;
     case DOT:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	FileOutput (f, '.');
 	FilePuts (f, AtomName (e->tree.right->atom.atom));
 	break;
     case ARROW:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	FilePuts (f, "->");
 	FilePuts (f, AtomName (e->tree.right->atom.atom));
 	break;
     case QUEST:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	FilePuts (f, " ? ");
-	printExpr (f, e->tree.right->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.right->tree.left, selfPrec, level, nest);
 	FilePuts (f, " : ");
-	printExpr (f, e->tree.right->tree.right, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.right->tree.right, selfPrec, level, nest);
 	break;
     case DOLLAR:
-	printExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	break;
     }
     if (selfPrec < parentPrec)
@@ -372,36 +328,33 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 }
 
 static void
-printDecl (Value f, Expr *e, int level, Bool nest)
+PrettyDecl (Value f, Expr *e, int level, Bool nest)
 {
     DeclListPtr	decl;
 
-    printpublish (f, e->decl.publish);
+    FilePutPublish (f, e->decl.publish, True);
     switch (e->decl.class) {
     case class_global:
 	if (e->decl.type)
-	    fprintTypes (f, e->decl.type);
+	    FilePutTypes (f, e->decl.type, False);
 	else
 	    FilePuts (f, "global");
 	break;
     case class_auto:
 	if (e->decl.type)
-	    fprintTypes (f, e->decl.type);
+	    FilePutTypes (f, e->decl.type, False);
 	else
 	    FilePuts (f, "auto");
 	break;
     case class_static:
     case class_typedef:
-	printclass (f, e->decl.class);
+	FilePutClass (f, e->decl.class, !TypePoly (e->decl.type));
 	if (!TypePoly (e->decl.type))
-	{
-	    FilePuts (f, " ");
-	    fprintTypes (f, e->decl.type);
-	}
+	    FilePutTypes (f, e->decl.type, False);
 	break;
     case class_undef:
     default:
-	fprintTypes (f, e->decl.type);
+	FilePutTypes (f, e->decl.type, False);
 	break;
     }
     for (decl = e->decl.decl; decl; decl = decl->next)
@@ -411,7 +364,7 @@ printDecl (Value f, Expr *e, int level, Bool nest)
 	if (decl->init)
 	{
 	    FilePuts (f, " = ");
-	    printExpr (f, decl->init, -1, level, nest);
+	    PrettyExpr (f, decl->init, -1, level, nest);
 	}
 	if (decl->next)
 	    FilePuts (f, ", ");
@@ -421,80 +374,80 @@ printDecl (Value f, Expr *e, int level, Bool nest)
 }
 
 void
-printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
+PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 {
     switch (e->base.tag) {
     case EXPR:
-	printindent (f, level);
-	printExpr (f, e->tree.left, -1, level, nest);
+	PrettyIndent (f, level);
+	PrettyExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, ";\n");
 	break;
     case IF:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "if (");
-	printExpr (f, e->tree.left, -1, level, nest);
+	PrettyExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, ")\n");
 	if (nest)
-	    printStatement (f, e->tree.right, level+1, level, nest);
+	    PrettyStatement (f, e->tree.right, level+1, level, nest);
 	break;
     case ELSE:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "if (");
-	printExpr (f, e->tree.left, -1, level, nest);
+	PrettyExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, ")\n");
 	if (nest)
 	{
-	    printStatement (f, e->tree.right->tree.left, level+1, level, nest);
-	    printindent (f, level);
+	    PrettyStatement (f, e->tree.right->tree.left, level+1, level, nest);
+	    PrettyIndent (f, level);
 	    FilePuts (f, "else\n");
-	    printStatement (f, e->tree.right->tree.right, level+1, level, nest);
+	    PrettyStatement (f, e->tree.right->tree.right, level+1, level, nest);
 	}
 	break;
     case WHILE:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "while (");
-	printExpr (f, e->tree.left, -1, level, nest);
+	PrettyExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, ")\n");
 	if (nest)
-	    printStatement (f, e->tree.right, level+1, level, nest);
+	    PrettyStatement (f, e->tree.right, level+1, level, nest);
 	break;
     case OC:
-	printindent (f, blevel);
+	PrettyIndent (f, blevel);
 	FilePuts (f, "{\n");
-	printBlock (f, e, blevel + 1, nest);
-	printindent (f, blevel);
+	PrettyBlock (f, e, blevel + 1, nest);
+	PrettyIndent (f, blevel);
 	FilePuts (f, "}\n");
 	break;
     case DO:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "do\n");
 	if (nest)
-	    printStatement (f, e->tree.left, level+1, level, nest);
-	printindent (f, level);
+	    PrettyStatement (f, e->tree.left, level+1, level, nest);
+	PrettyIndent (f, level);
 	FilePuts (f, "while (");
-	printExpr (f, e->tree.right, -1, level, nest);
+	PrettyExpr (f, e->tree.right, -1, level, nest);
 	FilePuts (f, ");\n");
 	break;
     case FOR:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "for (");
-	printExpr (f, e->tree.left->tree.left, -1, level, nest);
+	PrettyExpr (f, e->tree.left->tree.left, -1, level, nest);
 	FilePuts (f, "; ");
-	printExpr (f, e->tree.left->tree.right, -1, level, nest);
+	PrettyExpr (f, e->tree.left->tree.right, -1, level, nest);
 	FilePuts (f, "; ");
-	printExpr (f, e->tree.right->tree.left, -1, level, nest);
+	PrettyExpr (f, e->tree.right->tree.left, -1, level, nest);
 	FilePuts (f, ")\n");
 	if (nest)
-	    printStatement (f, e->tree.right->tree.right, level+1, level, nest);
+	    PrettyStatement (f, e->tree.right->tree.right, level+1, level, nest);
 	break;
     case SWITCH:
     case TYPESWITCH:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	if (e->base.tag == SWITCH)
 	    FilePuts (f, "switch (");
 	else
 	    FilePuts (f, "typeswitch (");
-	printExpr (f, e->tree.left, -1, level, nest);
+	PrettyExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, ")");
 	if (nest)
 	{
@@ -503,47 +456,47 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	    FilePuts (f, " {\n");	    
 	    while (block)
 	    {
-		printindent (f, level);
+		PrettyIndent (f, level);
 		if (block->tree.left->tree.left)
 		{
 		    FilePuts (f, "case ");
 		    if (e->base.tag == SWITCH)
-			printExpr (f, block->tree.left->tree.left, -1, level, nest);
+			PrettyExpr (f, block->tree.left->tree.left, -1, level, nest);
 		    else
-			fprintTypes (f, block->tree.left->decl.type);
+			FilePutTypes (f, block->tree.left->decl.type, False);
 		}
 		else
 		    FilePuts (f, "default");
 		FilePuts (f, ":\n");
-		printBlock (f, block->tree.left->tree.right, level+1, nest);
+		PrettyBlock (f, block->tree.left->tree.right, level+1, nest);
 		block = block->tree.right;
 	    }
-	    printindent (f, level);
+	    PrettyIndent (f, level);
 	    FilePuts (f, "}");
 	}
         FilePuts (f, "\n");
 	break;
     case SEMI:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, ";\n");
 	break;
     case BREAK:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "break;\n");
 	break;
     case CONTINUE:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "continue;\n");
 	break;
     case RETURNTOK:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "return ");
-	printExpr (f, e->tree.right, -1, level, nest);
+	PrettyExpr (f, e->tree.right, -1, level, nest);
 	FilePuts (f, ";\n");
 	break;
     case FUNCTION:
-	printindent (f, level);
-	PrintCode (f, e->tree.right->tree.right->code.code, 
+	PrettyIndent (f, level);
+	PrettyCode (f, e->tree.right->tree.right->code.code, 
 		   e->tree.left->decl.decl->name,
 		   e->tree.left->decl.class,
 		   e->tree.left->decl.publish,
@@ -551,57 +504,53 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	FilePuts (f, "\n");
 	break;
     case VAR:
-	printindent (f, level);
-	printDecl (f, e, level, nest);
+	PrettyIndent (f, level);
+	PrettyDecl (f, e, level, nest);
 	break;
     case NAMESPACE:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "namespace ");
-	printExpr (f, e->tree.left, -1, level, nest);
+	PrettyExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, "\n");
-	printStatement (f, e->tree.right, level + 1, level, nest);
+	PrettyStatement (f, e->tree.right, level + 1, level, nest);
 	break;
     case IMPORT:
-	printindent (f, level);
-	FilePuts (f, "import ");
-	printpublish (f, e->tree.left->decl.publish);
-	FilePuts (f, AtomName (e->tree.left->decl.decl->name));
-	FilePuts (f, ";\n");
+	PrettyIndent (f, level);
+	FilePrintf (f, "%pimport %A;\n", e->tree.left->decl.publish,
+		    e->tree.left->decl.decl->name);
 	break;
     case TWIXT:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "twixt (");
-	printExpr (f, e->tree.left->tree.left, -1, level, nest);
+	PrettyExpr (f, e->tree.left->tree.left, -1, level, nest);
 	FilePuts (f, "; ");
-	printExpr (f, e->tree.left->tree.right, -1, level, nest);
+	PrettyExpr (f, e->tree.left->tree.right, -1, level, nest);
 	FilePuts (f, ")\n");
 	if (nest)
 	{
-	    printStatement (f, e->tree.right->tree.left, level+1, level, nest);
+	    PrettyStatement (f, e->tree.right->tree.left, level+1, level, nest);
 	    if (e->tree.right->tree.right)
 	    {
-		printindent (f, level);
+		PrettyIndent (f, level);
 		FilePuts (f, "else\n");
-		printStatement (f, e->tree.right->tree.right, level+1, level, nest);
+		PrettyStatement (f, e->tree.right->tree.right, level+1, level, nest);
 	    }
 	}
 	break;
     case CATCH:
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "try");
 	if (nest)
 	{
 	    FilePuts (f, "\n");
-	    printStatement (f, e->tree.left, level+1, level, nest);
+	    PrettyStatement (f, e->tree.left, level+1, level, nest);
 	}
 	else
 	    FilePuts (f, " ");
 	while ((e = e->tree.right))
 	{
-	    FilePuts (f, "catch ");
-	    FilePuts (f, AtomName (e->tree.left->code.code->base.name));
-	    FilePuts (f, " ");
-	    PrintCode (f, e->tree.left->code.code,
+	    FilePrintf (f, "catch %A ", e->tree.left->code.code->base.name);
+	    PrettyCode (f, e->tree.left->code.code,
 		       0, class_undef,
 		       publish_private, level, nest);
 	    if (!nest)
@@ -609,17 +558,15 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	}
 	break;
     case RAISE:
-	printindent (f, level);
-	FilePuts (f, "raise ");
-	FilePuts (f, AtomName (e->tree.left->atom.atom));
-	FilePuts (f, " (");
+	PrettyIndent (f, level);
+	FilePrintf (f, "raise %A (", e->tree.left->atom.atom);
 	if (e->tree.right)
-	    printParameters (f, e->tree.right, nest);
+	    PrettyParameters (f, e->tree.right, nest);
 	FilePuts (f, ");\n");
 	break;
     case DOLLAR:
-	printindent (f, level);
-	printExpr (f, e->tree.left, -1, level, nest);
+	PrettyIndent (f, level);
+	PrettyExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, "\n");
 	break;
     }
@@ -631,12 +578,7 @@ PrintArgs (Value f, ArgType *args)
     FilePuts (f, "(");
     for (; args; args = args->next)
     {
-	if (!TypePoly (args->type) || !args->name)
-	{
-	    fprintTypes (f, args->type);
-	    if (args->name)
-		FilePuts (f, " ");
-	}
+        FilePutTypes (f, args->type, args->name != 0);
 	if (args->name)
 	    FilePuts (f, AtomName (args->name));
 	if (args->varargs)
@@ -648,19 +590,12 @@ PrintArgs (Value f, ArgType *args)
 }
 
 void
-PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
+PrettyCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
 	   int level, Bool nest)
 {
     if (name)
-    {
-	printpublish (f, publish);
-	printclass (f, class);
-    }
-    if (!TypePoly (code->base.type))
-    {
-	fprintTypes (f, code->base.type);
-	FilePuts (f, " ");
-    }
+	FilePrintf (f, "%p%k", publish, class);
+    FilePrintf (f, "%t", code->base.type);
     if (name)
     {
 	FilePuts (f, "function ");
@@ -679,19 +614,19 @@ PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
 	if (nest)
 	{
 	    FilePuts (f, "\n");
-	    printindent (f, level);
+	    PrettyIndent (f, level);
 	    FilePuts (f, "{\n");
-	    printBlock (f, code->func.code, level + 1, nest);
-	    printindent (f, level);
+	    PrettyBlock (f, code->func.code, level + 1, nest);
+	    PrettyIndent (f, level);
 	    FilePuts (f, "}");
 	}
     }
 }
 
 void
-PrintStat (Value f, Expr *e, Bool nest)
+PrettyStat (Value f, Expr *e, Bool nest)
 {
-    printStatement (f, e, 1, 1, nest);
+    PrettyStatement (f, e, 1, 1, nest);
 }
 
 void
@@ -713,13 +648,13 @@ void
 doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 {
     Value  v;
-    printindent (f, level);
+    PrettyIndent (f, level);
     switch (name->symbol.class) {
     case class_global:
 	v = BoxValueGet (name->global.value, 0);
 	if (v && v->value.tag == type_func)
 	{
-	    PrintCode (f, v->func.code,
+	    PrettyCode (f, v->func.code,
 		       name->symbol.name,
 		       class_undef,
 		       name->symbol.publish,
@@ -727,43 +662,28 @@ doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 	}
 	else
 	{
-	    FilePuts (f, "(");
-	    fprintTypes (f, name->symbol.type);
-	    FilePuts (f, ") ");
-	    print (f, v);
+	    FilePrintf (f, "(%T) %v", name->symbol.type, v);
 	}
 	FilePuts (f, "\n");
 	break;
     case class_namespace:
-	printpublish (f, name->symbol.publish);
-	printclass (f, name->symbol.class);
-	FilePuts (f, " ");
-	FilePuts (f, AtomName (name->symbol.name));
-	FilePuts (f, " {\n");
+	FilePutPublish (f, name->symbol.publish, True);
+	FilePrintf (f, "%C %A {\n", name->symbol.class, name->symbol.name);
 	PrintNamespace (f, name->namespace.namespace, level + 1);
-	printindent (f, level);
+	PrettyIndent (f, level);
 	FilePuts (f, "}\n");
 	break;
     case class_exception:
-	printpublish (f, name->symbol.publish);
-	printclass (f, name->symbol.class);
-	FilePuts (f, " ");
-	FilePuts (f, AtomName (name->symbol.name));
-	FilePuts (f, " ");
+	FilePrintf (f, "%p%C %A ", name->symbol.publish, 
+		    name->symbol.class, name->symbol.name);
 	PrintArgs (f, name->symbol.type->func.args);
 	FilePuts (f, ";\n");
 	break;
     default:
-	printpublish (f, name->symbol.publish);
-	printclass (f, name->symbol.class);
-	FilePuts (f, " ");
-	if (!TypePoly (name->symbol.type))
-	{
-	    fprintTypes (f, name->symbol.type);
-	    FilePuts (f, " ");
-	}
-	FilePuts (f, AtomName (name->symbol.name));
-	FilePuts (f, ";\n");
+	FilePrintf (f, "%p%c%t",
+		    name->symbol.publish, name->symbol.class,
+		    name->symbol.type);
+	FilePrintf (f, "%a;\n", name->symbol.name);
 	break;
     }
 }

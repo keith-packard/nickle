@@ -64,9 +64,6 @@ void yyerror (char *fmt, ...);
 %type  <vval>	opt_const
 %type  <eval>	opt_inits inits arrayinits arrayinit structinits structinit
 
-%token		ASSIGNPLUS ASSIGNMINUS ASSIGNTIMES ASSIGNDIVIDE ASSIGNDIV ASSIGNMOD
-%token		ASSIGNSHIFTL ASSIGNSHIFTR
-%token		ASSIGNPOW ASSIGNLXOR ASSIGNLAND ASSIGNLOR
 %token		VAR EXPR ARRAY STRUCT UNION
 
 %token		NL SEMI MOD OC CC DOLLAR DOTS COLONCOLON
@@ -86,7 +83,11 @@ void yyerror (char *fmt, ...);
 
 %nonassoc 	POUND
 %right		COMMA
-%right		ASSIGN
+%right <ival>	ASSIGN
+		ASSIGNPLUS ASSIGNMINUS ASSIGNTIMES ASSIGNDIVIDE 
+		ASSIGNDIV ASSIGNMOD ASSIGNPOW
+		ASSIGNSHIFTL ASSIGNSHIFTR
+		ASSIGNLXOR ASSIGNLAND ASSIGNLOR
 %right		QUEST COLON
 %left		OR
 %left		AND
@@ -841,32 +842,19 @@ simpleexpr	: primary
 		| simpleexpr GE simpleexpr
 		    { $$ = NewExprTree(GE, $1, $3); }
 		;
-assignop	: PLUS ASSIGN
-		    { $$ = ASSIGNPLUS; }
-		| MINUS ASSIGN
-		    { $$ = ASSIGNMINUS; }
-		| TIMES ASSIGN
-		    { $$ = ASSIGNTIMES; }
-		| DIVIDE ASSIGN
-		    { $$ = ASSIGNDIVIDE; }
-		| DIV ASSIGN
-		    { $$ = ASSIGNDIV; }
-		| MOD ASSIGN
-		    { $$ = ASSIGNMOD; }
-		| POW ASSIGN
-		    { $$ = ASSIGNPOW; }
-		| SHIFTL ASSIGN
-		    { $$ = ASSIGNSHIFTL; }
-		| SHIFTR ASSIGN
-		    { $$ = ASSIGNSHIFTR; }
-		| LXOR ASSIGN
-		    { $$ = ASSIGNLXOR; }
-		| LAND ASSIGN
-		    { $$ = ASSIGNLAND; }
-		| LOR ASSIGN
-		    { $$ = ASSIGNLOR; }
+assignop	: ASSIGNPLUS
+		| ASSIGNMINUS
+		| ASSIGNTIMES
+		| ASSIGNDIVIDE
+		| ASSIGNDIV
+		| ASSIGNMOD
+		| ASSIGNPOW
+		| ASSIGNSHIFTL
+		| ASSIGNSHIFTR
+		| ASSIGNLXOR
+		| ASSIGNLAND
+		| ASSIGNLOR
 		| ASSIGN
-		    { $$ = ASSIGN; }
 		;
 initexpr	: primary
 		| MOD CONST						%prec THREADID
@@ -1182,8 +1170,9 @@ yyerror (char *fmt, ...)
     extern int	yylineno;
 
     if (yyfile)
-	PrintError ("%A:%d: %z", yyfile, yylineno);
+	FilePrintf (FileStderr, "%A:%d: ", yyfile, yylineno);
     va_start (args, fmt);
-    vPrintError (fmt, args);
+    FileVPrintf (FileStderr, fmt, args);
+    FilePrintf (FileStderr, "\n");
     va_end (args);
 }

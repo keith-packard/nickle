@@ -417,6 +417,8 @@ static struct ebuiltin excepts[] = {
     {"invalid_array_bounds",	exception_invalid_array_bounds,	"spp" },
     {"divide_by_zero",		exception_divide_by_zero,	"snn" },
     {"invalid_struct_member",	exception_invalid_struct_member,"sps" },
+    {"invalid_binop_types",	exception_invalid_binop_types,	"spp" },
+    {"invalid_unop_types",	exception_invalid_unop_types,	"sp" },
     {0,				0 },
 };
 
@@ -792,12 +794,6 @@ dofformat (Value f, char *fmt, int n, Value *p)
 				NewInt (pn),
 				NewInt (n));
     return -1;
-}
-
-void
-print (Value f, Value v)
-{
-    dofformat (f, "%v", 1, &v);
 }
 
 void

@@ -209,21 +209,16 @@ do_Thread_list (void)
 
     for (t = running; t; t = t->thread.next)
     {
-	FilePuts (FileStdout, "\t%");
-	FilePutInt (FileStdout, t->thread.id);
+	FilePrintf (FileStdout, "\t%%%d", t->thread.id);
 	ThreadListState (t);
 	FileOutput (FileStdout, '\n');
     }
     for (t = stopped; t; t = t->thread.next)
     {
-	FilePuts (FileStdout, "\t%");
-	FilePutInt (FileStdout, t->thread.id);
+	FilePrintf (FileStdout, "\t%%%d", t->thread.id);
 	ThreadListState (t);
 	if (t->thread.sleep)
-	{
-	    FileOutput (FileStdout, ' ');
-	    print (FileStdout, t->thread.sleep);
-	}
+	    FilePrintf (FileStdout, " %v", t->thread.sleep);
 	FileOutput (FileStdout, '\n');
     }
     return Zero;
@@ -355,7 +350,7 @@ TraceFunction (FramePtr frame, CodePtr code, Atom name)
     {
 	if (fe)
 	    FilePuts (FileStdout, ", ");
-	print (FileStdout, BoxValue (frame->frame, fe));
+	FilePrintf (FileStdout, "%v", BoxValue (frame->frame, fe));
     }
     FilePuts (FileStdout, ")\n");
 }
@@ -367,12 +362,12 @@ TraceFrame (FramePtr frame, InstPtr pc)
     int		max;
     CodePtr	code;
 
-    PrintStat (FileStdout, pc->base.stat, False);
+    PrettyStat (FileStdout, pc->base.stat, False);
     for (max = 20; frame && max--; frame = frame->previous)
     {
 	code = frame->function->func.code;
 	TraceFunction (frame, code, code->base.name);
-	PrintStat (FileStdout, frame->savePc->base.stat, False);
+	PrettyStat (FileStdout, frame->savePc->base.stat, False);
     }
     EXIT ();
 }
@@ -485,8 +480,7 @@ ThreadMark (void *object)
 static Bool
 ThreadPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
-    FileOutput (f, '%');
-    FilePutInt (f, av->thread.id);
+    FilePrintf (f, "%%%d", av->thread.id);
     return True;
 }
 

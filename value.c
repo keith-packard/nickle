@@ -138,10 +138,10 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
     if (!type || !type->binary[operator])
     {
 	if (operator != EqualOp)
-	{
-	    RaiseError ("undefined type combination %T %O %T",
-		    av->value.tag, operator, bv->value.tag);
-	}
+	    RaiseStandardException (exception_invalid_binop_types,
+				    "invalid operand types",
+				    2,
+				    av, bv);
 	RETURN (Zero);
     }
     ret = (*type->binary[operator]) (av, bv, 1);
@@ -158,7 +158,9 @@ UnaryOperate (Value v, UnaryOp operator)
     
     if (!v->value.type->unary[operator])
     {
-	RaiseError ("undefined operator %T %U", v->value.tag, operator);
+	RaiseStandardException (exception_invalid_unop_type,
+				"invalid operand type",
+				1, v);
 	RETURN (Zero);
     }
     ret = (*v->value.type->unary[operator])(v, 1);
@@ -356,8 +358,10 @@ Pow (Value av, Value bv)
 
     if (!Numericp (av->value.tag) || !Numericp (bv->value.tag))
     {
-	RaiseError ("undefined type combination %T ^ %T",
-		    av->value.tag, bv->value.tag);
+	RaiseStandardException (exception_invalid_binop_types,
+				"invalid operand types",
+				2,
+				av, bv);
 	RETURN (Zero);
     }
     switch (bv->value.tag) {
@@ -460,8 +464,10 @@ Gcd (Value av, Value bv)
     
     if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
     {
-	RaiseError ("undefined type combination gcd(%T, %T)",
-		av->value.tag, bv->value.tag);
+	RaiseStandardException (exception_invalid_binop_types,
+				"invalid gcd argument types",
+				2,
+				av, bv);
 	RETURN (Zero);
     }
     RETURN (Reduce (NewInteger (Positive, 

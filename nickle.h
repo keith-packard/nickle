@@ -489,20 +489,19 @@ void	IoInterrupt (void);
 void	*AllocateTemp (int size);
 
 void	PrettyPrint (Value f, SymbolPtr name);
-void	PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
-		   int level, Bool nest);
-void	PrintStat (Value F, Expr *e, Bool nest);
+void	PrettyCode (Value f, CodePtr code, Atom name, Class class, 
+		    Publish publish, int level, Bool nest);
+void	PrettyStat (Value F, Expr *e, Bool nest);
+void	PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
+
 void	EditFunction (SymbolPtr name);
 void	EditFile (Value file_name);
-void	printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
 
-void	print (Value f, Value value);
 Value	lookupVar (char *);
 void	setVar (char *, Value);
 void	GetNamespace (NamespacePtr *, FramePtr *);
 ExprPtr	BuildName (char *);
 ExprPtr	BuildCall (char *, char *, int, ...);
-void	fprintTypes (Value f, Types *t);
 
 int	yywrap (void);
 void	yyerror (char *fmt, ...);
@@ -547,6 +546,8 @@ typedef enum _standardException {
     exception_invalid_array_bounds, /* string poly poly */
     exception_divide_by_zero,	    /* string number number */
     exception_invalid_struct_member,/* string poly string */
+    exception_invalid_binop_types,  /* string poly poly */
+    exception_invalid_unop_type,    /* string poly */
     _num_standard_exceptions,
 } StandardException;
 

@@ -4,13 +4,13 @@ public namespace Math_helper
     {
 	integer	min, max, cur;
 
-	for (max = 1; 2^max < i; max *= 2)
+	for (max = 1; 2**max < i; max *= 2)
 	    ;
 	min=max//2;
 	while (max - min > 1)
 	{
 	    cur = (min + max) // 2;
-	    if (2^cur > i)
+	    if (2**cur > i)
 		max = cur;
 	    else
 		min = cur;
@@ -25,7 +25,7 @@ public namespace Math_helper
 	prec = precision (v);
 	if (prec == 0)
 	    prec = 256;
-	return 2^(prec+3);
+	return 2**(prec+3);
     }
 }
 
@@ -40,12 +40,12 @@ public real function sqrt (real v)
 	integer	n, iter;
     
 	v = imprecise (v);
-	err = 1/(2^(precision (v)+3));
-	prev = imprecise (1 / (0.75 * 2^(floor (exponent(v)/2))), precision(v));
+	err = 1/(2**(precision (v)+3));
+	prev = imprecise (1 / (0.75 * 2**(floor (exponent(v)/2))), precision(v));
 	iter = precision (v) + 15;
 	while (iter--)
 	{
-	    cur = 0.5 * prev * (3 - v * prev^2);
+	    cur = 0.5 * prev * (3 - v * prev**2);
 	    if (abs (cur - prev) < err)
 		break;
 	    prev = cur;
@@ -85,11 +85,11 @@ public real function cbrt (real v)
     
 	s = sign (v);
 	v = imprecise (abs (v));
-	err = 1/(2^(precision (v)+3));
-	prev = imprecise (1 / (0.75 * 2^(floor (exponent(v)/3))), precision(v));
+	err = 1/(2**(precision (v)+3));
+	prev = imprecise (1 / (0.75 * 2**(floor (exponent(v)/3))), precision(v));
 	for (;;)
 	{
-	    cur = 1/3 * (2 * prev + v / prev^2);
+	    cur = 1/3 * (2 * prev + v / prev**2);
 	    if (abs (cur - prev) < err)
 		break;
 	    prev = cur;
@@ -109,7 +109,7 @@ public real function cbrt (real v)
 	num = floor (num_s + 0.5);
 	den = floor (den_s + 0.5);
 	/* printf ("num %g den %g\n", num, den); */
-	if (num ^ 3 == numerator (v) && den ^ 3 == denominator (v))
+	if (num ** 3 == numerator (v) && den ** 3 == denominator (v))
 	{
 	    return num/den;
 	}
@@ -156,7 +156,7 @@ public namespace Math {
 	/*
 	 * y = x/(x+2)
 	 *
-	 * log((1+y)/(1-y)) = 2 * (y + y^3/3 + y^5/5 +...)
+	 * log((1+y)/(1-y)) = 2 * (y + y**3/3 + y**5/5 +...)
 	 */
 	real function log_near_1 (real a)
 	{
@@ -171,7 +171,7 @@ public namespace Math {
 	    iter = log2(prec) + 15;
 	    for (i = 1; --iter; i += 2)
 	    {
-		term = a^i/i;
+		term = a**i/i;
 		v = v + term;
 		/* printf ("v %g term %g term * err %g\n", v, term,
 			   term*err); */
@@ -305,7 +305,7 @@ public namespace Math {
 	/*
 	 * Compute arctan near zero
 	 *
-	 * arctan(x) = x - x^3/3 + x^5/5 - ...
+	 * arctan(x) = x - x**3/3 + x**5/5 - ...
 	 */
 	real function arctan (rational den, integer digits)
 	{
@@ -317,7 +317,7 @@ public namespace Math {
 
 	    p = 3;
 	    q = 5;
-	    mden = imprecise (den, digits * 4) ^ 4;
+	    mden = imprecise (den, digits * 4) ** 4;
 	    l = loops (1 / den, digits) // 2;
 	    /*
 	     * Need at least digits + log10(loops) for all intermediate
@@ -325,8 +325,8 @@ public namespace Math {
 	     */
 	    /* printf ("loops %d\n", l); File.flush (stdout); */
 	    result = 1 / den;
-	    pv = 1 / (den ^ p);
-	    qv = 1 / (den ^ q);
+	    pv = 1 / (den ** p);
+	    qv = 1 / (den ** q);
 	    while (l--)
 	    {
 		partial = pv / p - qv / q;
@@ -376,7 +376,7 @@ public namespace Math {
     public real function sin (real a)
     {
 	/*
-	 * sin(x) = x - x^3/3! + x^5/5! ... 
+	 * sin(x) = x - x**3/3! + x**5/5! ... 
 	 */
 	real function raw_sin (real a)
 	{
@@ -392,9 +392,9 @@ public namespace Math {
 	    a = imprecise(a,prec*2);
 	    i = 1;
 	    j = 3;
-	    a4 = a^4;
-	    ai = a^i;
-	    aj = a^j;
+	    a4 = a**4;
+	    ai = a**i;
+	    aj = a**j;
 	    iter = prec + 8;
 	    v = 0;
 	    while (iter--)
@@ -411,15 +411,15 @@ public namespace Math {
 	    return imprecise (v + term, prec);
 	}
 
-	/* sin(5x) = 16 * sin^5(x) - 20 * sin^3(x) + 5 * sin(x) */
+	/* sin(5x) = 16 * sin**5(x) - 20 * sin**3(x) + 5 * sin(x) */
 	real function do_5x (real a)
 	{
-	    return 16 * a^5 - 20 * a^3 + 5 * a;
+	    return 16 * a**5 - 20 * a**3 + 5 * a;
 	}
 	
 	real function big_sin (real a)
 	{
-	    if (a > .01)
+	    if (a > 0.01)
 		return do_5x (big_sin (a/5));
 	    return raw_sin (a);
 	}
@@ -434,7 +434,7 @@ public namespace Math {
     public real function cos (real a)
     {
 	/*
-	 * cos(x) = 1 - x^2/2! + x^4/4! - x^6/6! ... 
+	 * cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ... 
 	 */
 
 	real function raw_cos (real a)
@@ -450,8 +450,8 @@ public namespace Math {
 	    i = 0;
 	    j = 2;
 	    ai = 1;
-	    aj = a^2;
-	    a4 = a^4;
+	    aj = a**2;
+	    a4 = a**4;
 	    iter = prec + 8;
 	    v = 0;
 	    while (iter--)
@@ -468,10 +468,10 @@ public namespace Math {
 	    return imprecise (v + term);
 	}
 
-	/* cos(4x) = 8 * (cos^4(x) - cos^2(x)) + 1 */
+	/* cos(4x) = 8 * (cos**4(x) - cos**2(x)) + 1 */
 	real function do_4x (real c)
 	{
-	    return 8 * (c^4 - c^2) + 1;
+	    return 8 * (c**4 - c**2) + 1;
 	}
 	 
 	real function big_cos (real a)
@@ -489,7 +489,7 @@ public namespace Math {
     
     real function cos_to_sin (real v)
     {
-	return sqrt (1 - v^2);
+	return sqrt (1 - v**2);
     }
     
     public function sin_cos (real a, *real sinp, *real cosp)
@@ -515,7 +515,7 @@ public namespace Math {
     public real function arctan (real v)
     {
 	/* 
-	 * arctan(x) = x - x^3/3 + x^5/5 - ...
+	 * arctan(x) = x - x**3/3 + x**5/5 - ...
 	 */
 	real function raw_arctan (real v)
 	{
@@ -529,9 +529,9 @@ public namespace Math {
 	    v = imprecise (v, prec*2);
 	    i = 1;
 	    j = 3;
-	    vi = v^i;
-	    vj = v^j;
-	    v4 = v^4;
+	    vi = v**i;
+	    vj = v**j;
+	    v4 = v**4;
 	    a = 0;
 	    iter = prec + 8;
 	    while (iter--)
@@ -545,7 +545,7 @@ public namespace Math {
 		i += 4;
 		j += 4;
 	    }
-	    return a;
+	    return imprecise (a, prec);
 	}
 
 	real	sqrt3;
@@ -574,18 +574,18 @@ public namespace Math {
     }
     
     /*
-     *	arctan(v) = arcsin(v/sqrt(1+v^2))
+     *	arctan(v) = arcsin(v/sqrt(1+v**2))
      *
-     *	q = v/sqrt(1+v^2)
-     *	q*sqrt(1+v^2) = v
-     *  q^2*(1+v^2) = v^2
-     *  q^2 + q^2v^2 = v^2
-     *	q^2 = v^2 - q^2v^2
-     *  q^2 = v^2 * (1 - q^2)
-     *  v^2 = q^2/(1-q^2)
-     *  v = q/sqrt(1-q^2)
+     *	q = v/sqrt(1+v**2)
+     *	q*sqrt(1+v**2) = v
+     *  q**2*(1+v**2) = v**2
+     *  q**2 + q**2v**2 = v**2
+     *	q**2 = v**2 - q**2v**2
+     *  q**2 = v**2 * (1 - q**2)
+     *  v**2 = q**2/(1-q**2)
+     *  v = q/sqrt(1-q**2)
      *
-     *  arcsin(q) = arctan(q/sqrt(1-q^2))
+     *  arcsin(q) = arctan(q/sqrt(1-q**2))
      */
     
     public real function arcsin (real v)
@@ -597,14 +597,14 @@ public namespace Math {
 	    return pi_value (precision (v))/2;
 	if (v == -1)
 	    return -pi_value (precision (v))/2;
-	return arctan (v/sqrt(1-v^2));
+	return arctan (v/sqrt(1-v**2));
     }
 
     /*
-     * arccos(v) = arcsin (sqrt (1 - v^2))
-     *		= arctan (sqrt(1-v^2) / sqrt (1-(sqrt (1-v^2))^2))
-     *		= arctan (sqrt(1-v^2) / sqrt (1-(1-v^2)))
-     *		= arctan (sqrt(1-v^2) / v)
+     * arccos(v) = arcsin (sqrt (1 - v**2))
+     *		= arctan (sqrt(1-v**2) / sqrt (1-(sqrt (1-v**2))**2))
+     *		= arctan (sqrt(1-v**2) / sqrt (1-(1-v**2)))
+     *		= arctan (sqrt(1-v**2) / v)
      */
     public real function arccos (real v)
     {
@@ -617,7 +617,7 @@ public namespace Math {
 	    return pi_value(precision(v));
 	if (v == 0)
 	    return pi_value(precision(v))/2;
-	return arctan (sqrt (1-v^2)/v);
+	return arctan (sqrt (1-v**2)/v);
     }
 	
     /*
@@ -654,7 +654,7 @@ public namespace Math {
     }
 
     /*
-     * These two are used for the '^' and '^=' operators
+     * These two are used for the '**' and '**=' operators
      */
     public real function pow (real a, real b)
     {

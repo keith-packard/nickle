@@ -375,9 +375,7 @@ ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
     BoxPtr	args = 0;
 
 #ifdef DEBUG_JUMP
-    FilePuts (FileStdout, "    Raise: ");
-    FilePuts (FileStdout, AtomName (exception->symbol.name));
-    FilePuts (FileStdout, "\n");
+    FilePrintf (FileStdout, "    Raise: %A\n", exception->symbol.name);
 #endif
     if (argc)
     {

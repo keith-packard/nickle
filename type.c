@@ -16,6 +16,9 @@
 #include	"gram.h"
 
 Types		*typesPoly;
+Types		*typesGroup;
+Types		*typesField;
+Types		*typesRefPoly;
 Types		*typesPrim[type_continuation - type_int + 1];
 
 static void
@@ -288,9 +291,11 @@ TypePoly (Types *t)
 Bool
 TypeNumeric (Types *t)
 {
+    if (t == typesGroup)
+	return True;
     if (t->base.tag != types_prim)
 	return False;
-    if (Numericp (t->prim.prim) || t->prim.prim == type_undef)
+    if (Numericp (t->prim.prim))
 	return True;
     return False;
 }
@@ -298,9 +303,11 @@ TypeNumeric (Types *t)
 Bool
 TypeIntegral (Types *t)
 {
+    if (t == typesGroup)
+	return True;
     if (t->base.tag != types_prim)
 	return False;
-    if (Integralp (t->prim.prim) || t->prim.prim == type_undef)
+    if (Integralp (t->prim.prim))
 	return True;
     return False;
 }
@@ -310,7 +317,7 @@ TypeString (Types *t)
 {
     if (t->base.tag != types_prim)
 	return False;
-    if (t->prim.prim == type_string || t->prim.prim == type_undef)
+    if (t->prim.prim == type_string)
 	return True;
     return False;
 }
@@ -432,98 +439,193 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	
 }
 
-Types *
-TypeCombineAssign (Types *left, int tag, Types *right)
+/*
+ * Return a type representing the union of two other types, or zero
+ * if no such non-union type exists
+ */
+
+static Types *
+TypeUnify (Types *a, Types *b, Bool shallow)
 {
-    if (TypePoly (left) || TypePoly (right))
-	return typesPoly;
-    
-    if (left->base.tag == types_name)
-	return TypeCombineAssign (left->name.type, tag, right);
-    if (right->base.tag == types_name)
-	return TypeCombineAssign (left, tag, right->name.type);
-    if (left->base.tag == types_union)
+    if (a->base.tag == types_name)
     {
-	int		n;
-	Types		**ut;
-
-	ut = TypesUnionElements (left);
-	for (n = 0; n < left->unions.nelements; n++)
-	{
-	    Types	    *ret;
-
-	    ret = TypeCombineAssign (ut[n], tag, right);
-	    if (ret)
-		return ret;
-	}
-	return 0;
+	if (shallow)
+	    return 0;
+	return TypeUnify (a->name.type, b, True);
     }
-    if (right->base.tag == types_union)
+    if (b->base.tag == types_name)
     {
-	int		n;
-	Types		**ut;
-
-	ut = TypesUnionElements (right);
-	for (n = 0; n < right->unions.nelements; n++)
-	{
-	    Types	    *ret;
-
-	    ret = TypeCombineAssign (left, tag, ut[n]);
-	    if (ret)
-		return right;
-	}
-	return 0;
+	if (shallow)
+	    return 0;
+	return TypeUnify (a, b->name.type, True);
     }
-    switch (tag) {
-    case ASSIGN:
-	if (TypeCompatible (left, right, True))
-	    return left;
-	break;
-    case ASSIGNPLUS:
-	if (TypeString (left) && TypeString (right))
-	    return left;
-    case ASSIGNMINUS:
-	if (left->base.tag == types_ref && TypeNumeric (right))
-	    return left;
-	/* fall through...*/
-    case ASSIGNTIMES:
-    case ASSIGNDIVIDE:
-    case ASSIGNDIV:
-    case ASSIGNMOD:
-    case ASSIGNPOW:
-	if (TypeNumeric (left) && TypeNumeric (right))
-	{
-	    if (left->prim.prim > right->prim.prim)
-		return left;
-	    else
-		return right;
-	}
-	break;
-    case ASSIGNSHIFTL:
-    case ASSIGNSHIFTR:
-    case ASSIGNLXOR:
-    case ASSIGNLAND:
-    case ASSIGNLOR:
-	if (TypeIntegral (left) && TypeIntegral (right))
-	{
-	    if (left->prim.prim > right->prim.prim)
-		return left;
-	    else
-		return right;
-	}
-	break;
+    if (a->base.tag == types_union)
+	return 0;
+    if (b->base.tag == types_union)
+	return 0;
+    return 0;
+}
+
+/*
+ * return the combined type for an operation
+ * on a set closed under addition
+ */
+static Types *
+TypeCombineGroup (Types *left, Types *right)
+{
+    if (TypePoly (left))
+    {
+	if (TypePoly (right) || TypeNumeric (right))
+	    return typesGroup;
+    }
+    else if (TypePoly (right))
+    {
+	if (TypeNumeric (left))
+	    return typesGroup;
+    }
+    else if (TypeNumeric (left) &&  TypeNumeric (right))
+    {
+	if (left->prim.prim < right->prim.prim)
+	    left = right;
+	return left;
     }
     return 0;
+}
+
+/*
+ * Return the least-upper bound for an integral computation
+ */
+static Types *
+TypeCombineIntegral (Types *left, Types *right)
+{
+    if (TypePoly (left))
+	left = typesPrim[type_integer];
+    if (TypePoly (right))
+	right = typesPrim[type_integer];
+    if (TypeIntegral (left) && TypeIntegral (right))
+    {
+	if (left->prim.prim < right->prim.prim)
+	    left = right;
+	return left;
+    }
+    return 0;
+}
+
+/*
+ * return the combined type for an operation
+ * on a set closed under addition and multiplication
+ */
+static Types *
+TypeCombineField (Types *left, Types *right)
+{
+    if (TypePoly (left))
+    {
+	if (TypePoly (right) || TypeNumeric (right))
+	    return typesField;
+    }
+    else if (TypePoly (right))
+    {
+	if (TypeNumeric (left))
+	    return typesField;
+    }
+    else if (TypeNumeric (left) && TypeNumeric (right))
+    {
+	if (left->prim.prim < right->prim.prim)
+	    left = right;
+	if (left->prim.prim < type_rational)
+	    left = typesPrim[type_rational];
+	return left;
+    }
+    return 0;
+}
+
+/*
+ * Return the type resuting from an exponentiation operator,
+ * 'left' for integral 'right', float otherwise
+ */
+static Types *
+TypeCombinePow (Types *left, Types *right)
+{
+    if (TypePoly (left))
+	left = typesPrim[type_float];
+    if (TypePoly (right))
+	right = typesPrim[type_float];
+    if (TypeNumeric (left) && TypeNumeric (right))
+    {
+	if (TypeIntegral (right))
+	    return left;
+	return typesPrim[type_float];
+    }
+    return 0;
+}
+
+/*
+ * Return string if both left and right are strings
+ */
+static Types *
+TypeCombineString (Types *left, Types *right)
+{
+    if (TypePoly (left))
+	left = typesPrim[type_string];
+    if (TypePoly (right))
+	right = typesPrim[type_string];
+    if (TypeString (left) && TypeString (right))
+	return left;
+    return 0;
+}
+		
+/*
+ * Return reference type
+ */
+static Types *
+TypeCombineRef (Types *ref, Types *off)
+{
+    if (TypePoly (ref))
+	ref = typesRefPoly;
+    if (TypePoly (off))
+	off = typesPrim[type_integer];
+    if (ref->base.tag == types_ref && TypeIntegral (off))
+	return ref;
+    return 0;
+}
+		
+static void
+TypeRemove (Types **ts, int i, int *n)
+{
+    int	remain = *n - (i+1);
+    memmove (ts + i, ts + (i+1), remain * sizeof (ts[0]));
+    (*n)--;
+}
+
+static Types **
+TypeAdd (Types **ts, Types *t, int *n, int *size)
+{
+    if (*n >= *size) 
+    {
+	int ns = *n + 10;
+	ts = memmove (AllocateTemp (ns * sizeof (ts[0])),
+		      ts,
+		      *size * sizeof (ts[0]));
+	*size = ns;
+    }
+    ts[(*n)++] = t;
+    return ts;
 }
 
 Types *
 TypeCombineBinary (Types *left, int tag, Types *right)
 {
     ENTER ();
+#define NUM_TYPE_STACK	100
+    Types   *retsStack[NUM_TYPE_STACK];
+    Types   **rets = retsStack;
+    Types   *ret;
+    int	    nret = 0;
+    int	    sret = NUM_TYPE_STACK;
+    int	    n, m;
 
-    if (TypePoly (left) || TypePoly (right))
-	RETURN (typesPoly);
-
+    if (!left || !right)
+	return 0;
     if (left->base.tag == types_name)
 	RETURN (TypeCombineBinary (left->name.type, tag, right));
     if (right->base.tag == types_name)
@@ -531,159 +633,169 @@ TypeCombineBinary (Types *left, int tag, Types *right)
     
     if (left->base.tag == types_union)
     {
-	int	    n, t;
 	Types	    **ut;
-	Types	    **rets;
-	Types	    *ret;
 
-	rets = AllocateTemp (left->unions.nelements * sizeof (Types *));
 	ut = TypesUnionElements (left);
-	t = 0;
 	for (n = 0; n < left->unions.nelements; n++)
 	{
 	    ret = TypeCombineBinary (ut[n], tag, right);
 	    if (ret)
-		rets[t++] = ret;
+		rets = TypeAdd (rets, ret, &nret, &sret);
 	}
-	if (t == 0)
-	    RETURN (0);
-	if (t == 1)
-	    RETURN (rets[0]);
-	ret = NewTypesUnion (t);
-	for (t = 0; t < ret->unions.nelements; t++)
-	    TypesUnionElements(ret)[t] = rets[t];
-	RETURN(ret);
     }
-    if (right->base.tag == types_union)
+    else if (right->base.tag == types_union)
     {
-	int	    n, t;
 	Types	    **ut;
-	Types	    **rets;
-	Types	    *ret;
 
-	rets = AllocateTemp (right->unions.nelements * sizeof (Types *));
 	ut = TypesUnionElements (right);
-	t = 0;
 	for (n = 0; n < right->unions.nelements; n++)
 	{
-	    Types	    *ret;
-
 	    ret = TypeCombineBinary (left, tag, ut[n]);
 	    if (ret)
-		rets[t++] = ret;
+		rets = TypeAdd (rets, ret, &nret, &sret);
 	}
-	if (t == 0)
-	    RETURN (0);
-	if (t == 1)
-	    RETURN (rets[0]);
-	ret = NewTypesUnion (t);
-	for (t = 0; t < ret->unions.nelements; t++)
-	    TypesUnionElements(ret)[t] = rets[t];
-	RETURN(ret);
-    }
-    switch (tag) {
+    } else switch (tag) {
+    case ASSIGN:
+	if (TypeCompatible (left, right, True))
+	{
+	    if (TypePoly (left))
+		rets = TypeAdd (rets, right, &nret, &sret);
+	    else
+		rets = TypeAdd (rets, left, &nret, &sret);
+	}
+	break;
     case PLUS:
-	if (TypeString (left) && TypeString (right))
-	    RETURN (left);
+    case ASSIGNPLUS:
+	if ((ret = TypeCombineString (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	/* fall through ... */
     case MINUS:
-	if (left->base.tag == types_ref && TypeNumeric (right))
-	    RETURN (left);
-	if (TypeNumeric (left) && right->base.tag == types_ref)
-	    RETURN (right);
+    case ASSIGNMINUS:
+	if ((ret = TypeCombineRef (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if (tag == MINUS || tag == PLUS)
+	{
+	    if ((ret = TypeCombineRef (right, left)))
+		rets = TypeAdd (rets, ret, &nret, &sret);
+	}
+	/* fall through ... */
     case TIMES:
     case DIV:
     case MOD:
-	if (TypeNumeric (left) && TypeNumeric (right))
-	{
-	    if (TypePoly (left) || TypePoly (right))
-		RETURN (typesPoly);
-	    if (left->prim.prim > right->prim.prim)
-		RETURN (left);
-	    else
-		RETURN (right);
-	}
+    case ASSIGNTIMES:
+    case ASSIGNDIV:
+    case ASSIGNMOD:
+	if ((ret = TypeCombineGroup (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
     case POW:
-	if (TypeNumeric (left) && TypeNumeric (right))
-	{
-	    if (TypePoly (left) || TypePoly (right))
-		RETURN (typesPoly);
-	    if (right->prim.prim >= type_rational)
-	    {
-		if (left->prim.prim < type_float)
-		    RETURN (typesPrim[type_float]);
-		else
-		    RETURN (left);
-	    }
-	    else
-	    {
-		if (left->prim.prim > right->prim.prim)
-		    RETURN (left);
-		else
-		    RETURN (right);
-	    }
-	}
+    case ASSIGNPOW:
+	if ((ret = TypeCombinePow (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
     case DIVIDE:
-	if (TypeNumeric (left) && TypeNumeric (right))
-	{
-	    if (TypePoly (left) || TypePoly (right))
-		RETURN (typesPoly);
-	    if (left->prim.prim > right->prim.prim)
-		right = left;
-	    if (right->prim.prim < type_rational)
-		RETURN (typesPrim[type_rational]);
-	    else
-		RETURN (right);
-	}
+    case ASSIGNDIVIDE:
+	if ((ret = TypeCombineField (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
     case SHIFTL:
     case SHIFTR:
     case LXOR:
     case LAND:
     case LOR:
-	if (TypeIntegral (left) && TypeIntegral (right))
-	{
-	    if (TypePoly (left) || TypePoly (right))
-		RETURN (typesPoly);
-	    if (left->prim.prim > right->prim.prim)
-		RETURN (left);
-	    else
-		RETURN (right);
-	}
+    case ASSIGNSHIFTL:
+    case ASSIGNSHIFTR:
+    case ASSIGNLXOR:
+    case ASSIGNLAND:
+    case ASSIGNLOR:
+	if ((ret = TypeCombineIntegral (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
     case COLON:
     case AND:
     case OR:
-	if (TypeCompatible (left, right, False))
+	if (TypePoly (left))
 	{
-	    if (TypeNumeric (left) && TypeNumeric (right))
-	    {
-		if (left->prim.prim > right->prim.prim)
-		    RETURN (left);
-		else
-		    RETURN (right);
-	    }
-	    RETURN (left);
+	    rets = TypeAdd (rets, typesPoly, &nret, &sret);
+	}
+	else if (TypePoly (right))
+	{
+	    rets = TypeAdd (rets, typesPoly, &nret, &sret);
+	}
+	else if (TypeCompatible (left, right, False))
+	{
+	    if (TypeNumeric (left) && TypeNumeric (right) &&
+		left->prim.prim < right->prim.prim)
+		rets = TypeAdd (rets, right, &nret, &sret);
+	    else
+		rets = TypeAdd (rets, left, &nret, &sret);
 	}
 	break;
     case EQ:
-	RETURN (typesPrim[type_integer]);
+    	rets = TypeAdd (rets, typesPrim[type_integer], &nret, &sret);
+	break;
     case NE:
     case LT:
     case GT:
     case LE:
     case GE:
 	if (TypeCompatible (left, right, False))
-	    RETURN (typesPrim[type_integer]);
+	    rets = TypeAdd (rets, typesPrim[type_integer], &nret, &sret);
 	break;
     }
-    RETURN (0);
+    
+    /*
+     * Flatten unions
+     */
+    for (n = 0; n < nret; n++)
+    {
+	Types	*ut;
+
+	ut = rets[n];
+	if (ut->base.tag == types_union)
+	{
+	    TypeRemove (rets, n, &nret);
+	    for (m = 0; m < ut->unions.nelements; m++)
+		rets = TypeAdd (rets, TypesUnionElements(ut)[m], &nret, &sret);
+	}
+    }
+
+    /*
+     * Remove obvious duplicates
+     */
+    for (n = 0; n < nret-1; n++)
+	for (m = n+1; m < nret;)
+	{
+	    if (rets[n] == rets[m])
+		TypeRemove (rets,m,&nret);
+	    else
+		m++;
+	}
+
+    /*
+     * Check for quick bail
+     */
+    for (n = 0; n < nret; n++)
+	if (TypePoly (rets[n]))
+	    RETURN (typesPoly);
+
+    if (nret == 0)
+	RETURN (0);
+    if (nret == 1)
+	RETURN (rets[0]);
+    
+    ret = NewTypesUnion (nret);
+    for (nret = 0; nret < ret->unions.nelements; nret++)
+	TypesUnionElements(ret)[nret] = rets[nret];
+    RETURN(ret);
 }
 
 Types *
 TypeCombineUnary (Types *type, int tag)
 {
+    if (!type)
+	return 0;
+
     if (TypePoly (type))
 	return typesPoly;
     
@@ -911,6 +1023,17 @@ TypesInit (void)
     }
     typesPoly = NewTypesPrim(type_undef);
     MemAddRoot (typesPoly);
+    typesRefPoly = NewTypesRef (typesPoly);
+    MemAddRoot (typesRefPoly);
+    typesGroup = NewTypesUnion (3);
+    TypesUnionElements(typesGroup)[0] = typesPrim[type_integer];
+    TypesUnionElements(typesGroup)[1] = typesPrim[type_rational];
+    TypesUnionElements(typesGroup)[2] = typesPrim[type_float];
+    MemAddRoot (typesGroup);
+    typesField = NewTypesUnion (2);
+    TypesUnionElements(typesField)[0] = typesPrim[type_rational];
+    TypesUnionElements(typesField)[1] = typesPrim[type_float];
+    MemAddRoot (typesField);
     TypeCheckStack = StackCreate ();
     MemAddRoot (TypeCheckStack);
     TypeCheckLevel = 0;

@@ -155,20 +155,32 @@ extend		{ yylval.pval = publish_extend; return EXTEND; }
 "]"		{ yylval.ival = CS; return CS; }
 "{"		{ yylval.ival = OC; return OC; }
 "}"		{ yylval.ival = CC; return CC; }
+"+="		{ yylval.ival = ASSIGNPLUS; return ASSIGNPLUS; }
+"-="		{ yylval.ival = ASSIGNMINUS; return ASSIGNMINUS; }
+"*="		{ yylval.ival = ASSIGNTIMES; return ASSIGNTIMES; }
+"/="		{ yylval.ival = ASSIGNDIVIDE; return ASSIGNDIVIDE; }
+"//="		{ yylval.ival = ASSIGNDIV; return ASSIGNDIV; }
+"%="		{ yylval.ival = ASSIGNMOD; return ASSIGNMOD; }
+"**="		{ yylval.ival = ASSIGNPOW; return ASSIGNPOW; }
+"<<="		{ yylval.ival = ASSIGNSHIFTL; return ASSIGNSHIFTL; }
+">>="		{ yylval.ival = ASSIGNSHIFTR; return ASSIGNSHIFTR; }
+"^="		{ yylval.ival = ASSIGNLXOR; return ASSIGNLXOR; }
+"&="		{ yylval.ival = ASSIGNLAND; return ASSIGNLAND; }
+"|="		{ yylval.ival = ASSIGNLOR; return ASSIGNLOR; }
+"="		{ yylval.ival = ASSIGN; return ASSIGN; }
 "+"		{ yylval.ival = PLUS; return PLUS; }
 "-"		{ yylval.ival = MINUS; return MINUS; }
 "*"		{ yylval.ival = TIMES; return TIMES; }
 "/"		{ yylval.ival = DIVIDE; return DIVIDE; }
 "//"		{ yylval.ival = DIV; return DIV; }
+"**"		{ yylval.ival = POW; return POW; }
 "%"		{ yylval.ival = MOD; return MOD; }
 "!"		{ yylval.ival = BANG; return BANG; }
 "#"		{ yylval.ival = POUND; return POUND; }
-"^"		{ yylval.ival = POW; return POW; }
 "&"		{ yylval.ival = LAND; return LAND; }
 "|"		{ yylval.ival = LOR; return LOR; }
-"^^"		{ yylval.ival = LXOR; return LXOR; }
+"^"		{ yylval.ival = LXOR; return LXOR; }
 "~"		{ yylval.ival = LNOT; return LNOT; }
-"="		{ yylval.ival = ASSIGN; return ASSIGN; }
 "++"		{ yylval.ival = INC; return INC; }
 "--"		{ yylval.ival = DEC; return DEC; }
 "=="		{ yylval.ival = EQ; return EQ; }
@@ -429,10 +441,9 @@ lexfile(char *s)
     Value	f;
     f = FileFopen (s, "r");
     interactive = 0;
-    if (f == 0) {
-	FilePuts (FileStderr, "cannot open file \"");
-	FilePuts (FileStderr, s);
-	FilePuts (FileStderr, "\"\n");
+    if (f == 0) 
+    {
+	FilePrintf (FileStderr, "cannot open file \"%s\"\n", s);
 	return False;
     }
     ++yyfiledeep;

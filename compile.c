@@ -335,13 +335,14 @@ CompileError (ObjPtr obj, ExprPtr stat, char *s, ...)
 {
     va_list args;
 
-    FilePuts (FileStderr, "-> ");
-    PrintStat (FileStderr, stat, False);
+    FilePrintf (FileStderr, "-> ");
+    PrettyStat (FileStderr, stat, False);
     if (stat->base.file)
-	PrintError ("%A:%d: %z", stat->base.file, stat->base.line);
+	FilePrintf (FileStderr, "%A:%d: ", stat->base.file, stat->base.line);
     va_start (args, s);
-    vPrintError (s, args);
+    FileVPrintf (FileStderr, s, args);
     va_end (args);
+    FilePrintf (FileStderr, "\n");
     obj->state |= OBJ_STATE_ERROR;
 }
 
@@ -427,7 +428,8 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Object left of '->' is not a struct");
+	    CompileError (obj, stat, "Incompatible type '%T' in struct operation",
+			  expr->tree.left->base.type, ndim);
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case OS:
@@ -438,7 +440,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 					    ndim,
 					    True);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Type %t is not a %d dimensional array",
+	    CompileError (obj, stat, "Incompatible type '%T' in array operation",
 			  expr->tree.left->base.type, ndim);
 	if (assign)
 	{
@@ -455,7 +457,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	expr->base.type = TypeCombineUnary (expr->tree.left->base.type, expr->base.tag);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible type %t in unary operation",
+	    CompileError (obj, stat, "Incompatible type '%T' in unary operation",
 			  expr->tree.left->base.type);
 	}
 	break;
@@ -485,7 +487,7 @@ CompileBinary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, 
 					 expr->tree.right->base.type);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible types %t %t in binary operation",
+	CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
     }
@@ -512,7 +514,7 @@ CompileUnary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, E
     expr->base.type = TypeCombineUnary (down->base.type, expr->base.tag);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible type %t in unary operation",
+	CompileError (obj, stat, "Incompatible type '%T' in unary operation",
 		      down->base.type);
     }
     BuildInst (obj, opCode, inst, stat);
@@ -532,12 +534,12 @@ CompileAssign (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, 
     obj = _CompileExpr (obj, expr->tree.right, namespace, stat);
     SetPush (obj);
     obj = CompileLvalue (obj, expr->tree.left, namespace, stat, opCode == OpAssign, opCode == OpAssign);
-    expr->base.type = TypeCombineAssign (expr->tree.left->base.type,
+    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					 expr->base.tag,
 					 expr->tree.right->base.type);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible types in assignment %t = %t",
+	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
     }
@@ -595,7 +597,7 @@ CompileTypecheckArgs (ObjPtr	obj,
     func_type = TypeCombineFunction (type);
     if (!func_type)
     {
-	CompileError (obj, stat, "Incompatible type %t for call",
+	CompileError (obj, stat, "Incompatible type '%T' for call",
 		      type);
 	EXIT ();
 	return False;
@@ -622,7 +624,7 @@ CompileTypecheckArgs (ObjPtr	obj,
 	    }
 	    if (!TypeCompatible (argt->type, arg->tree.left->base.type, True))
 	    {
-		CompileError (obj, stat, "Incompatible types %t %t argument %d",
+		CompileError (obj, stat, "Incompatible types '%T', '%T' argument %d",
 			      argt->type, arg->tree.left->base.type, i);
 		ret = False;
 	    }
@@ -784,7 +786,7 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr, NamespacePtr namespace,
 			     expr->tree.left->base.type,
 			     True))
 	{
-	    CompileError (obj, stat, "Index type %t is not integer",
+	    CompileError (obj, stat, "Index type '%T' is not integer",
 			  expr->tree.left->base.type);
 	    break;
 	}
@@ -978,7 +980,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	
 	if (!TypeCompatible (exception->symbol.type, catch_type, True))
 	{
-	    CompileError (obj, stat, "Incompatible types %t %t in catch",
+	    CompileError (obj, stat, "Incompatible types '%T', '%T' in catch",
 			  catch_type, exception->symbol.type);
 	    RETURN (obj);
 	}
@@ -1119,7 +1121,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	    break;
 	default:
 	    CompileError (obj, stat, 
-			  "Non composite type %t in composite initializer", t);
+			  "Non composite type '%T' in composite initializer", t);
 	    break;
 	}
 	break;
@@ -1136,7 +1138,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					    ndim,
 					    False);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Type %t is not a %d dimensional array or string",
+	    CompileError (obj, stat, "Type '%T' is not a %d dimensional array or string",
 			  expr->tree.left->base.type, ndim);
 	BuildInst (obj, OpArray, inst, stat);
 	inst->ints.value = ndim;
@@ -1161,7 +1163,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "%t is not a struct containing \"%A\"",
+	    CompileError (obj, stat, "Type '%T' is not a struct containing \"%A\"",
 			  expr->tree.left->base.type,
 			  expr->tree.left->atom.atom);
 	BuildInst (obj, OpDot, inst, stat);
@@ -1173,7 +1175,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "%t is not a struct ref containing \"%A\"",
+	    CompileError (obj, stat, "Type '%T' is not a struct ref containing \"%A\"",
 			  expr->tree.left->base.type,
 			  expr->tree.left->atom.atom);
 	BuildInst (obj, OpArrow, inst, stat);
@@ -1197,7 +1199,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	if (expr->tree.left)
 	{
 	    obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False, False);
-	    expr->base.type = TypeCombineAssign (expr->tree.left->base.type,
+	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNPLUS,
 						 NewTypesPrim (type_int));
 	    BuildInst (obj, OpPreInc, inst, stat);
@@ -1205,13 +1207,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	else
 	{
 	    obj = CompileLvalue (obj, expr->tree.right, namespace, stat, False, False);
-	    expr->base.type = TypeCombineAssign (expr->tree.right->base.type,
+	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNPLUS,
 						 NewTypesPrim (type_int));
 	    BuildInst (obj, OpPostInc, inst, stat);
 	}
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Invalid ++ type %t",
+	    CompileError (obj, stat, "Incompatible type '%T' in ++",
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
 	break;
@@ -1219,7 +1221,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	if (expr->tree.left)
 	{
 	    obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False, False);
-	    expr->base.type = TypeCombineAssign (expr->tree.left->base.type,
+	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNMINUS,
 						 NewTypesPrim (type_int));
 	    BuildInst (obj, OpPreDec, inst, stat);
@@ -1227,13 +1229,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	else
 	{
 	    obj = CompileLvalue (obj, expr->tree.right, namespace, stat, False, False);
-	    expr->base.type = TypeCombineAssign (expr->tree.right->base.type,
+	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNMINUS,
 						 NewTypesPrim (type_int));
 	    BuildInst (obj, OpPostDec, inst, stat);
 	}
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Invalid -- type %t",
+	    CompileError (obj, stat, "Incompatible type '%T' in --",
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
 	break;
@@ -1282,7 +1284,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     COLON,
 					     expr->tree.right->tree.right->base.type);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Incompatible types %t %t in ?:",
+	    CompileError (obj, stat, "Incompatible types '%T', '%T' in ?:",
 			  expr->tree.right->tree.left->base.type,
 			  expr->tree.right->tree.right->base.type);
 	BuildInst (obj, OpNoop, inst, stat);
@@ -1308,7 +1310,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     COLON,
 					     expr->tree.right->base.type);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Incompatible types %t %t in &&",
+	    CompileError (obj, stat, "Incompatible types '%T', '%T' in &&",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
 	BuildInst (obj, OpNoop, inst, stat);
@@ -1331,7 +1333,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     COLON,
 					     expr->tree.right->base.type);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Incompatible types %t %t in ||",
+	    CompileError (obj, stat, "Incompatible types '%T', '%T' in ||",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
 	BuildInst (obj, OpNoop, inst, stat);
@@ -1350,12 +1352,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	SetPush (obj);
 	obj = _CompileExpr (obj, NewExprTree (COLONCOLON, BuildName ("Math"), BuildName ("assign_pow")),
 			    namespace, stat);
-	expr->base.type = TypeCombineAssign (expr->tree.left->base.type,
+	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					     expr->base.tag,
 					     expr->tree.right->base.type);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible types in assignment %t = %t",
+	    CompileError (obj, stat, "Incompatible types '%T', '%T' in assignment",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
 	}
@@ -2039,11 +2041,11 @@ CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace)
 	    lvalue = NewExprAtom (decl->name);
 	    *initObj = CompileLvalue (*initObj, lvalue,
 				       namespace, decls, False, True);
-	    if (!TypeCombineAssign (lvalue->base.type,
+	    if (!TypeCombineBinary (lvalue->base.type,
 				    ASSIGN,
 				    decl->init->base.type))
 	    {
-		CompileError (obj, decls, "Incompatible types in initialization %t = %t",
+		CompileError (obj, decls, "Incompatible types '%T', '%T' in initialization",
 			      lvalue->base.type,
 			      decl->init->base.type);
 	    }
@@ -2234,12 +2236,11 @@ ObjDump (ObjPtr obj, int indent)
 		    inst->base.push ? '^' : ' ');
 	switch (inst->base.opCode) {
 	case OpTypeCase:
-	    FilePrintf (FileStdout, "(");
-	    fprintTypes (FileStdout, inst->typecase.type);
-	    FilePrintf (FileStdout, ") ");
+	    FilePrintf (FileStdout, "(%T)", inst->typecase.type);
 	    goto branch;
 	case OpCatch:
-	    FilePrintf (FileStdout, "\"%s\" ", AtomName (inst->catch.exception->symbol.name));
+	    FilePrintf (FileStdout, "\"%A\" ", 
+			inst->catch.exception->symbol.name);
 	    goto branch;
 	case OpIf:
 	case OpElse:
@@ -2284,6 +2285,7 @@ ObjDump (ObjPtr obj, int indent)
 	    break;
 	case OpName:
 	case OpNameRef:
+	case OpNameRefStore:
 	    FilePrintf (FileStdout, "%s", AtomName (inst->var.name->symbol.name));
 	    break;
 	case OpConst:
@@ -2297,8 +2299,10 @@ ObjDump (ObjPtr obj, int indent)
 	    break;
 	case OpDot:
 	case OpDotRef:
+	case OpDotRefStore:
 	case OpArrow:
 	case OpArrowRef:
+	case OpArrowRefStore:
 	    FilePrintf (FileStdout, "%s", AtomName (inst->atom.atom));
 	    break;
 	case OpObj:

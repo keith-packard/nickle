@@ -421,7 +421,7 @@ FilePuts (Value file, char *s)
 	FileOutput (file, *s++);
 }
 
-static void
+void
 FilePutIntBase (Value file, int a, int base)
 {
     int	    digit;
@@ -456,19 +456,277 @@ FilePutIntBase (Value file, int a, int base)
     FilePuts (file, s);
 }
 
-void
-FilePutInt (Value file, int a)
+void	FilePutInt (Value file, int a)
 {
     FilePutIntBase (file, a, 10);
 }
 
 void
-FilePrintf (Value file, char *fmt, ...)
+FilePutType (Value f, Type tag, Bool minimal)
 {
-    Value   v;
-    va_list args;
+    switch (tag) {
+    case type_undef:
+	if (!minimal)
+	    FilePuts (f, "poly");
+	break;
+    case type_int:
+    case type_integer:
+	FilePuts (f, "integer");
+	break;
+    case type_rational:
+	FilePuts (f, "rational");
+	break;
+    case type_float:
+	FilePuts (f, "real");
+	break;
+    case type_string:
+	FilePuts (f, "string");
+	break;
+    case type_file:
+	FilePuts (f, "file");
+	break;
+    case type_thread:
+	FilePuts (f, "thread");
+	break;
+    case type_mutex:
+	FilePuts (f, "mutex");
+	break;
+    case type_semaphore:
+	FilePuts (f, "semaphore");
+	break;
+    case type_continuation:
+	FilePuts (f, "continuation");
+	break;
+	
+    case type_array:
+	FilePuts (f, "array");
+	break;
+    case type_ref:
+	FilePuts (f, "ref");
+	break;
+    case type_struct:
+	FilePuts (f, "struct");
+	break;
+    case type_func:
+	FilePuts (f, "function");
+	break;
+    default:
+	FilePrintf (f, "bad type %d", tag);
+	break;
+    }
+    if (minimal && tag != type_undef)
+	FilePuts (f, " ");
+}
+
+void
+FilePutClass (Value f, Class storage, Bool minimal)
+{
+    switch (storage) {
+    case class_undef:
+	if (!minimal)
+	    FilePuts (f, "undefined");
+	break;
+    case class_global:
+	FilePuts (f, "global");
+	break;
+    case class_arg:
+	FilePuts (f, "argument");
+	break;
+    case class_auto:
+	FilePuts (f, "auto");
+	break;
+    case class_static:
+	FilePuts (f, "static");
+	break;
+    case class_typedef:
+	FilePuts (f, "typedef");
+	break;
+    case class_namespace:
+	FilePuts (f, "namespace");
+	break;
+    case class_exception:
+	FilePuts (f, "exception");
+	break;
+    }
+    if (minimal && storage != class_undef)
+	FilePuts (f, " ");
+}
+
+void
+FilePutPublish (Value f, Publish publish, Bool minimal)
+{
+    switch (publish) {
+    case publish_private:
+	if (!minimal)
+	    FilePuts (f, "private");
+	break;
+    case publish_public:
+	FilePuts (f, "public");
+	break;
+    case publish_extend:
+	FilePuts (f, "extend");
+	break;
+    }
+    if (minimal && publish != publish_private)
+	FilePuts (f, " ");
+}
+
+static void
+FilePutArgTypes (Value f, ArgType *at)
+{
+    while (at)
+    {
+	if (at->type)
+	    FilePutTypes (f, at->type, at->name != 0);
+	if (at->name)
+	    FilePuts (f, AtomName (at->name));
+	if (at->varargs)
+	    FilePuts (f, " ...");
+	at = at->next;
+	if (at)
+	    FilePuts (f, ", ");
+    }
+}
+
+static void
+FilePutDimensions (Value f, ExprPtr dims)
+{
+    while (dims)
+    {
+	if (dims->tree.left)
+	    PrettyExpr (f, dims->tree.left, -1, 0, False);
+	else
+	    FilePuts (f, "*");
+	if (dims->tree.right)
+	    FilePuts (f, ", ");
+	dims = dims->tree.right;
+    }
+}
+
+void
+FilePutTypes (Value f, Types *t, Bool minimal)
+{
+    int		    i;
+    StructType	    *st;
+    StructElement   *se;
     
-    va_start (args, fmt);
+    if (!t)
+    {
+	FilePuts (f, "<null type>");
+    } 
+    else
+    {
+	switch (t->base.tag) {
+	case types_prim:
+	    FilePutType (f, t->prim.prim, minimal);
+	    break;
+	case types_name:
+	    FilePuts (f, AtomName (t->name.name));
+	    break;
+	case types_ref:
+	    FilePuts (f, "*");
+	    FilePutTypes (f, t->ref.ref, False);
+	    break;
+	case types_func:
+	    FilePutTypes (f, t->func.ret, False);
+	    FilePuts (f, "(");
+	    FilePutArgTypes (f, t->func.args);
+	    FilePuts (f, ")");
+	    break;
+	case types_array:
+	    FilePutTypes (f, t->array.type, False);
+	    FilePuts (f, "[");
+	    FilePutDimensions (f, t->array.dimensions);
+	    FilePuts (f, "]");
+	    break;
+	case types_struct:
+	    FilePuts (f, "struct { ");
+	    st = t->structs.structs;
+	    se = StructTypeElements (st);
+	    for (i = 0; i < st->nelements; i++)
+	    {
+		FilePutTypes (f, se[i].type, True);
+		FilePuts (f, " ");
+		FilePuts (f, AtomName (se[i].name));
+		FilePuts (f, "; ");
+	    }
+	    FilePuts (f, "}");
+	    break;
+	case types_union:
+	    FilePuts (f, "union { ");
+	    for (i = 0; i < t->unions.nelements; i++)
+	    {
+		FilePutTypes (f, TypesUnionElements(t)[i], False);
+		FilePuts (f, "; ");
+	    }
+	    FilePuts (f, "}");
+	    break;
+	}
+    }
+}
+
+static void
+FilePutBinOp (Value f, BinaryOp o)
+{
+    switch (o) {
+    case PlusOp:
+	FilePuts (f, "+");
+	break;
+    case MinusOp:
+	FilePuts (f, "-");
+	break;
+    case TimesOp:
+	FilePuts (f, "*");
+	break;
+    case DivideOp:
+	FilePuts (f, "/");
+	break;
+    case DivOp:
+	FilePuts (f, "//");
+	break;
+    case ModOp:
+	FilePuts (f, "%");
+	break;
+    case LessOp:
+	FilePuts (f, "<");
+	break;
+    case EqualOp:
+	FilePuts (f, "==");
+	break;
+    case LandOp:
+	FilePuts (f, "&");
+	break;
+    case LorOp:
+	FilePuts (f, "|");
+	break;
+    default:
+	break;
+    }
+}
+
+static void
+FilePutUnaryOp (Value f, UnaryOp o)
+{
+    switch (o) {
+    case NegateOp:
+	FilePuts (f, "-");
+	break;
+    case FloorOp:
+	FilePuts (f, "floor");
+	break;
+    case CeilOp:
+	FilePuts (f, "ceil");
+	break;
+    default:
+	break;
+    }
+}
+
+void
+FileVPrintf (Value file, char *fmt, va_list args)
+{
+    Value	v;
+
     for (;*fmt;) {
 	switch (*fmt) {
 	case '\0':
@@ -487,17 +745,48 @@ FilePrintf (Value file, char *fmt, ...)
 		FilePutIntBase (file, va_arg (args, int), 16);
 		break;
 	    case 'v':
+	    case 'g':
 		v = va_arg (args, Value);
 		if (!v)
 		    (void) FilePuts (file, "(null)");
 		else
-		    Print (file, v, 'v', 0, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+		    Print (file, v, *fmt, 0, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+		break;
+	    case 'n':
+		FilePuts (file, NaturalSprint (0, va_arg (args, Natural *), 10, 0));
+		break;
+	    case 'N':
+		FilePuts (file, NaturalSprint (0, va_arg (args, Natural *), 16, 0));
 		break;
 	    case 's':
 		(void) FilePuts (file, va_arg (args, char *));
 		break;
 	    case 'A':
 		(void) FilePuts (file, AtomName (va_arg (args, Atom)));
+		break;
+	    case 't':
+		FilePutTypes (file, va_arg (args, Types *), True);
+		break;
+	    case 'T':
+		FilePutTypes (file, va_arg (args, Types *), False);
+		break;
+	    case 'k':	/* sic */
+		FilePutClass (file, (Class) (va_arg (args, int)), True);
+		break;
+	    case 'C':
+		FilePutClass (file, (Class) (va_arg (args, int)), False);
+		break;
+	    case 'p':
+		FilePutPublish (file, (Publish) (va_arg (args, int)), True);
+		break;
+	    case 'P':
+		FilePutPublish (file, (Publish) (va_arg (args, int)), False);
+		break;
+	    case 'O':
+		FilePutBinOp (file, va_arg (args, BinaryOp));
+		break;
+	    case 'U':
+		FilePutUnaryOp (file, va_arg (args, UnaryOp));
 		break;
 	    case 'c':
 		(void) FileOutput (file, va_arg (args, int));
@@ -513,6 +802,15 @@ FilePrintf (Value file, char *fmt, ...)
 	}
 	++fmt;
     }
+}
+
+void
+FilePrintf (Value file, char *fmt, ...)
+{
+    va_list args;
+    
+    va_start (args, fmt);
+    FileVPrintf (file, fmt, args);
     va_end (args);
 }
 

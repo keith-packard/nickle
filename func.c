@@ -99,7 +99,7 @@ void printCode (Value f, CodePtr code, int level);
 static Bool
 FuncPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
-    PrintCode (f, av->func.code, 0, class_undef, publish_private, 0, True);
+    PrettyCode (f, av->func.code, 0, class_undef, publish_private, 0, True);
     return True;
 }
 

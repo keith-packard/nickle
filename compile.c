@@ -462,8 +462,8 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
     SymbolPtr	s;
     int		depth;
     int		ndim;
-    OpCode	opCode = OpNoop;
     TypePtr	t;
+    Bool	flipTypes = False;
     
     switch (expr->base.tag) {
     case VAR:
@@ -520,16 +520,7 @@ isName:
 	if (!inst)
 	    break;
 	expr->base.type = s->symbol.type;
-	t = CompileRefType (expr->base.type);
-	if (amper && !t)
-	    CompileError (obj, stat, "Object right of '&' is not of ref type");
-	if (t && !amper)
-	{
-	    inst->base.opCode--;
-	    expr->base.type = t;
-	}
-	else if (assign)
-	    inst->base.opCode++;
+	flipTypes = True;
 	break;
     case AMPER:
 	obj = CompileLvalue (obj, expr->tree.left, stat, code,
@@ -552,19 +543,9 @@ isName:
 	    expr->base.type = typePoly;
 	    break;
 	}
-	opCode = OpDotRef;
-	t = CompileRefType (expr->base.type);
-	if (amper && !t)
-	    CompileError (obj, stat, "Object right of '&' is not of ref type");
-	if (t && !amper)
-	{
-	    opCode--;
-	    expr->base.type = t;
-	}
-	else if (assign)
-	    opCode++;
-        BuildInst (obj, opCode, inst, stat);
+        BuildInst (obj, OpDotRef, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
+	flipTypes = True;
 	break;
     case ARROW:
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
@@ -578,18 +559,7 @@ isName:
 	    expr->base.type = typePoly;
 	    break;
 	}
-	opCode = OpArrowRef;
-	t = CompileRefType (expr->base.type);
-	if (amper && !t)
-	    CompileError (obj, stat, "Object right of '&' is not of ref type");
-	if (t && !amper)
-	{
-	    opCode--;
-	    expr->base.type = t;
-	}
-	else if (assign)
-	    opCode++;
-        BuildInst (obj, opCode, inst, stat);
+	BuildInst (obj, OpArrowRef, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case OS:
@@ -615,19 +585,9 @@ isName:
 	    expr->base.type = typePoly;
 	    break;
 	}
-	opCode = OpArrayRef;
-	t = CompileRefType (expr->base.type);
-	if (amper && !t)
-	    CompileError (obj, stat, "Object right of '&' is not of ref type");
-	if (t && !amper)
-	{
-	    opCode--;
-	    expr->base.type = t;
-	}
-	else if (assign)
-	    opCode++;
-        BuildInst (obj, opCode, inst, stat);
+	BuildInst (obj, OpArrayRef, inst, stat);
 	inst->ints.value = ndim;
+	flipTypes = True;
 	break;
     case STAR:
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
@@ -644,6 +604,55 @@ isName:
 	CompileError (obj, stat, "Invalid lvalue");
         expr->base.type = typePoly;
 	break;
+    }
+    if (flipTypes)
+    {
+	t = CompileRefType (expr->base.type);
+	if (amper)
+	{
+	    if (t)
+	    {
+		/* 
+		 * reference to a reference type; that
+		 * means just reference the variable itself, but
+		 * switch the expression type to '*foo' instead of
+		 * '&foo'
+		 */
+		expr->base.type = NewTypeRef (t, True);
+		if (assign)
+		    inst->base.opCode++;
+	    }
+	    else
+	    {
+		/*
+		 * reference to a non-reference type.  Error
+		 */
+		CompileError (obj, stat, "Object right of '&' is not of ref type");
+		expr->base.type = typePoly;
+	    }
+	}
+	else
+	{
+	    if (t)
+	    {
+		/*
+		 * access to a reference type; that means
+		 * fetch the value of the reference
+		 */
+		inst->base.opCode--;
+		expr->base.type = t;
+	    }
+	    else
+	    {
+		/*
+		 * access to a non-reference type; that
+		 * means just reference the variable itself and
+		 * leave the type alone
+		 */
+		if (assign)
+		    inst->base.opCode++;
+	    }
+	}
     }
     assert (expr->base.type);
     RETURN (obj);
@@ -2393,17 +2402,16 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case STAR:	    obj = CompileUnFunc (obj, expr, Dereference, stat, code,"*"); break;
     case AMPER:	    
 	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, False);
-	expr->base.type = CompileRefType (expr->tree.left->base.type);
+	t = CompileRefType (expr->tree.left->base.type);
+	if (!t)
+	    t = expr->tree.left->base.type;
+	expr->base.type = NewTypeRef (t, True);
 	if (!expr->base.type)
 	{
-	    expr->base.type = NewTypeRef (expr->tree.left->base.type, False);
-	    if (!expr->base.type)
-	    {
-		CompileError (obj, stat, "Type '%T' cannot be an l-value",
-			      expr->tree.left->base.type);
-		expr->base.type = typePoly;
-		break;
-	    }
+	    CompileError (obj, stat, "Type '%T' cannot be an l-value",
+			  expr->tree.left->base.type);
+	    expr->base.type = typePoly;
+	    break;
 	}
 	break;
     case UMINUS:    obj = CompileUnOp (obj, expr, NegateOp, stat, code); break;

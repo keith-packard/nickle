@@ -1,5 +1,18 @@
 2004-05-20  Keith Packard  <keithp@keithp.com>
 
+	* compile.c: (CompileLvalue), (_CompileExpr):
+	Ok, so the previous change was incomplete.
+	
+	Restructure CompileLvalue so that the processing of ampersands is
+	unified.  The unified rules were changed so that the value of a
+	reference to a reference type is converted to a pointer instead of a
+	reference.  That seems confusing enough.  Basically, it allows:
+
+		&int r;
+		*&int pr = & & r;
+
+2004-05-20  Keith Packard  <keithp@keithp.com>
+
 	* compile.c: (_CompileExpr):
 	When compiling '&' expressions, if the operand is of ref type,
 	the result type is the referenced type, not NULL.

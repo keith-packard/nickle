@@ -542,7 +542,7 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 
 
 static Value
-ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *next, int *stack)
+ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *next)
 {
     ENTER ();
     StackObject *cstack = thread->thread.continuation.stack;
@@ -560,7 +560,6 @@ ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *
     args = NewArray (False, typePoly, 1, &argc);
     for (i = 0; i < argc; i++)
         BoxValueSet (args->array.values, i, Arg(i));
-    *stack = argc ? argc - 1 : 0;
     if (!aborting)
     {
 	RaiseException (thread, exception, args, next);
@@ -602,8 +601,7 @@ ThreadExceptionCall (Value thread, InstPtr *next, int *stack)
     }
     complete = True;
     argc = args->array.ents;
-    i = argc;
-    while (--i >= 0)
+    for (i = 0; i < argc; i++)
     {
 	STACK_PUSH (thread->thread.continuation.stack,
 		    thread->thread.continuation.value);
@@ -1230,8 +1228,7 @@ ThreadsRun (Value thread, Value lex)
 		case OpRaise:
 		    if (aborting)
 			break;
-		    stack = 0;
-		    value = ThreadRaise (thread, value, inst->raise.argc, inst->raise.exception, &next, &stack);
+		    value = ThreadRaise (thread, value, inst->raise.argc, inst->raise.exception, &next);
 		    break;
 		case OpExceptionCall:
 		    ThreadExceptionCall (thread, &next, &stack);

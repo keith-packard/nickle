@@ -1,0 +1,26 @@
+extend namespace Socket {
+    public string addr_to_string (int addr) {
+	return sprintf ("%d.%d.%d.%d",
+			(addr >> 24) & 0xff,
+			(addr >> 16) & 0xff,
+			(addr >> 8) & 0xff,
+			(addr) & 0xff);
+    }
+    
+    public int string_to_addr (string addr) {
+	int r = File::sscanf (addr, "%d.%d.%d.%d", 
+			&(int a), &(int b), &(int c), &(int d));
+	if (r != 4)
+	    raise invalid_argument ("invalid network address format",
+				    r, addr);
+	return (a << 24) + (b << 16) + (c << 8) + d;
+    }
+}
+
+/*
+ * backwards compatibility for old namespace name 
+ */
+
+namespace Sockets {
+    public import Socket;
+}

@@ -35,6 +35,8 @@ typedef union _types	    *TypesPtr;
 typedef struct _structType  *StructTypePtr;
 typedef union _expr	    *ExprPtr;
 typedef struct _catch	    *CatchPtr;
+typedef struct _twixt	    *TwixtPtr;
+typedef struct _jump	    *JumpPtr;
 
 typedef struct _AtomList {
     DataType	*data;
@@ -419,6 +421,8 @@ typedef struct _thread {
     FramePtr	frame;
     ObjPtr	code;
     CatchPtr	catches;
+    TwixtPtr	twixts;
+    JumpPtr	jump;
     /*
      * Thread status
      */
@@ -454,6 +458,7 @@ typedef struct _continuation {
     InstPtr	pc;
     StackObject	*stack;
     CatchPtr	catches;
+    TwixtPtr	twixts;
 } Continuation;
 
 typedef union _value {
@@ -546,7 +551,8 @@ Value	NewRationalFloat (Rational *r, unsigned prec);
 Value	NewValueFloat (Value av, unsigned prec);
 Value	NewContinuation (FramePtr frame, InstPtr pc, 
 			 StackObject *stack,
-			 CatchPtr catches);
+			 CatchPtr catches,
+			 TwixtPtr twixts);
 
 unsigned    FpartLength (Fpart *a);
 

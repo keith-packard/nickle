@@ -652,51 +652,67 @@ CompileRaise (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 /*
  * Compile a  twixt --
  *
- *  twixt (a; b) c else d
+ *  twixt (enter; leave) body else _else
+ *
+ *	OpTwixt		leave:
+ *		enter
+ *	OpEnterDone	else:
+ *		body
+ *	OpTwixtDone
+ *  leave:
+ *		leave
+ *	OpLeaveDone	done:
+ *  else:
+ *		_else
+ *  done:
  *
  */
-#if 0
+
+static ObjPtr
+CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 {
-    {
-	integer		value;
-	continuation	c_a;
-	continuation	c_b;
-
-	integer function f_a (continuation c_a, integer *value)
-	{ 
-	    *value = (a);
-	    long_jump (c_a, 1)
-	}
-
-	integer function f_b (continuation c_b)
-	{
-	    (b);
-	    long_jump (c_b, 1);
-	}
-
+    ENTER ();
+    int	    twixt_inst, enter_done_inst, leave_done_inst;
+    InstPtr inst;
     
-	if (set_jump (&c_a, 0) == 0)
-	{
-	    f_a (c_a);
-	}
-	else
-	{
-	    if (value)
-	    {
-		if (set_jump (&c_b, 0) == 0)
-		{
-		    (c);
-		    f_b (c_b);
-		}
-	    }
-	    else
-	    {
-		(d);
-	    }
-	}
-    }
+    NewInst (twixt_inst, obj);
+
+    /* Compile enter expression */
+    obj = _CompileExpr (obj, expr->tree.left->tree.left, namespace, stat);
+    NewInst (enter_done_inst, obj);
+    
+    /* Compile the body */
+    obj = _CompileStat (obj, expr->tree.right->tree.left, namespace);
+    BuildInst (obj, OpTwixtDone, inst, stat);
+    
+    /* finish the twixt instruction */
+    inst = ObjCode (obj, twixt_inst);
+    inst->base.opCode = OpTwixt;
+    inst->base.stat = stat;
+    inst->branch.offset = obj->used - twixt_inst;
+
+    /* Compile leave expression */
+    obj = _CompileExpr (obj, expr->tree.left->tree.right, namespace, stat);
+    NewInst (leave_done_inst, obj);
+
+    /* finish the enter_done instruction */
+    inst = ObjCode (obj, enter_done_inst);
+    inst->base.opCode = OpEnterDone;
+    inst->base.stat = stat;
+    inst->branch.offset = obj->used - enter_done_inst;
+    
+    /* Compile else */
+    if (expr->tree.right->tree.right)
+	obj = _CompileStat (obj, expr->tree.right->tree.right, namespace);
+    
+    /* finish the leave_done instruction */
+    inst = ObjCode (obj, leave_done_inst);
+    inst->base.opCode = OpLeaveDone;
+    inst->base.stat = stat;
+    inst->branch.offset = obj->used - leave_done_inst;
+
+    RETURN (obj);
 }
-#endif
 
 ObjPtr
 CompileArray (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat)
@@ -1538,6 +1554,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
     case RAISE:
 	obj = CompileRaise (obj, expr, namespace, expr);
 	break;
+    case TWIXT:
+	obj = CompileTwixt (obj, expr, namespace, expr);
+	break;
     }
     RETURN (obj);
 }
@@ -1836,6 +1855,10 @@ char *OpNames[] = {
     "Exception",
     "EndCatch",
     "Raise",
+    "OpTwixt",
+    "OpTwixtDone",
+    "OpEnterDone",
+    "OpLeaveDone",
     /*
      * Expr op codes
      */
@@ -1899,21 +1922,28 @@ char *OpNames[] = {
     "End",
 };
 
+static void
+ObjIndent (int indent)
+{
+    int	j;
+    for (j = 0; j < indent; j++)
+        FilePrintf (FileStdout, "    ");
+}
+
 void
 ObjDump (ObjPtr obj, int indent)
 {
-    int	    i, j;
+    int	    i;
     InstPtr inst;
     
     FilePrintf (FileStdout, "%d instructions\n", obj->used);
     for (i = 0; i < obj->used; i++)
     {
 	inst = ObjCode(obj, i);
-	for (j = 0; j < indent; j++)
-	    FilePrintf (FileStdout, "    ");
+	ObjIndent (indent);
 	FilePrintf (FileStdout, "%s%s %c ",
 		    OpNames[inst->base.opCode],
-		    "          " + strlen(OpNames[inst->base.opCode]),
+		    "            " + strlen(OpNames[inst->base.opCode]),
 		    inst->base.push ? '^' : ' ');
 	switch (inst->base.opCode) {
 	case OpIf:
@@ -1930,13 +1960,15 @@ ObjDump (ObjPtr obj, int indent)
 	case OpAnd:
 	case OpOr:
 	case OpException:
+	case OpTwixtDone:
 	    FilePrintf (FileStdout, "branch %d", inst->branch.offset);
 	    break;
 	case OpReturn:
 	    break;
 	case OpFork:
-	    FilePrintf (FileStdout, "fork");
-	    break;
+	    FilePrintf (FileStdout, "\n");
+	    ObjDump (inst->obj.obj, indent+1);
+	    continue;
 	case OpCatch:
 	    FilePrintf (FileStdout, "%s", AtomName (inst->catch.exception->symbol.name));
 	    FilePrintf (FileStdout, " branch %d", inst->catch.offset);
@@ -1946,6 +1978,9 @@ ObjDump (ObjPtr obj, int indent)
 	case OpRaise:
 	    FilePrintf (FileStdout, "%s", AtomName (inst->raise.exception->symbol.name));
 	    FilePrintf (FileStdout, " argc %d", inst->raise.argc);
+	    break;
+	case OpTwixt:
+	    FilePrintf (FileStdout, "leave %d", inst->branch.offset);
 	    break;
 	case OpName:
 	case OpNameRef:

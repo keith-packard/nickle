@@ -30,6 +30,10 @@ typedef enum _OpCode {
     OpException,
     OpEndCatch,
     OpRaise,
+    OpTwixt,
+    OpTwixtDone,
+    OpEnterDone,
+    OpLeaveDone,
     /*
      * Expr op codes
      */

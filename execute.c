@@ -59,7 +59,7 @@ BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
 }
 
 static Value
-ThreadCall (Value thread, InstPtr *next)
+ThreadCall (Value thread, InstPtr *next, int *stack)
 {
     ENTER ();
     InstPtr	inst = thread->thread.pc;
@@ -78,62 +78,72 @@ ThreadCall (Value thread, InstPtr *next)
 	Value	*values;
 	int	arg;
 
-	if (code->builtin.needsNext) switch (code->base.argc) {
-	case -1:
-	    values = AllocateTemp (inst->ints.value * sizeof (Value));
-	    for (arg = 0; arg < inst->ints.value; arg++)
-		values[arg] = Stack(arg);
-	    value = (*code->builtin.b.builtinNJ)(next, inst->ints.value, values);
-	    break;
-	case 0:
-	    value = (*code->builtin.b.builtin0J)(next);
-	    break;
-	case 1:
-	    value = (*code->builtin.b.builtin1J)(next, Stack(0));
-	    break;
-	case 2:
-	    value = (*code->builtin.b.builtin2J)(next, Stack(0), Stack(1));
-	    break;
+	if (code->builtin.needsNext) 
+	{
+	    /*
+	     * Let the non-local function handle the stack adjust
+	     */
+	    *stack = 0;
+	    switch (code->base.argc) {
+	    case -1:
+		values = AllocateTemp (inst->ints.value * sizeof (Value));
+		for (arg = 0; arg < inst->ints.value; arg++)
+		    values[arg] = Stack(arg);
+		value = (*code->builtin.b.builtinNJ)(next, inst->ints.value, values);
+		break;
+	    case 0:
+		value = (*code->builtin.b.builtin0J)(next);
+		break;
+	    case 1:
+		value = (*code->builtin.b.builtin1J)(next, Stack(0));
+		break;
+	    case 2:
+		value = (*code->builtin.b.builtin2J)(next, Stack(0), Stack(1));
+		break;
+	    }
 	}
-	else switch (code->base.argc) {
-	case -1:
-	    values = AllocateTemp (inst->ints.value * sizeof (Value));
-	    for (arg = 0; arg < inst->ints.value; arg++)
-		values[arg] = Stack(arg);
-	    value = (*code->builtin.b.builtinN)(inst->ints.value, values);
-	    break;
-	case 0:
-	    value = (*code->builtin.b.builtin0)();
-	    break;
-	case 1:
-	    value = (*code->builtin.b.builtin1)(Stack(0));
-	    break;
-	case 2:
-	    value = (*code->builtin.b.builtin2)(Stack(0), Stack(1));
-	    break;
-	case 3:
-	    value = (*code->builtin.b.builtin3)(Stack(0), Stack(1), Stack(2));
-	    break;
-	case 4:
-	    value = (*code->builtin.b.builtin4)(Stack(0), Stack(1), Stack(2),
-					     Stack(3));
-	    break;
-	case 5:
-	    value = (*code->builtin.b.builtin5)(Stack(0), Stack(1), Stack(2),
-					     Stack(3), Stack(4));
-	    break;
-	case 6:
-	    value = (*code->builtin.b.builtin6)(Stack(0), Stack(1), Stack(2),
-					     Stack(3), Stack(4), Stack(5));
-	    break;
-	case 7:
-	    value = (*code->builtin.b.builtin7)(Stack(0), Stack(1), Stack(2),
-					     Stack(3), Stack(4), Stack(5),
-					     Stack(6));
-	    break;
-	default:
-	    value = Zero;
-	    break;
+	else 
+	{
+	    switch (code->base.argc) {
+	    case -1:
+		values = AllocateTemp (inst->ints.value * sizeof (Value));
+		for (arg = 0; arg < inst->ints.value; arg++)
+		    values[arg] = Stack(arg);
+		value = (*code->builtin.b.builtinN)(inst->ints.value, values);
+		break;
+	    case 0:
+		value = (*code->builtin.b.builtin0)();
+		break;
+	    case 1:
+		value = (*code->builtin.b.builtin1)(Stack(0));
+		break;
+	    case 2:
+		value = (*code->builtin.b.builtin2)(Stack(0), Stack(1));
+		break;
+	    case 3:
+		value = (*code->builtin.b.builtin3)(Stack(0), Stack(1), Stack(2));
+		break;
+	    case 4:
+		value = (*code->builtin.b.builtin4)(Stack(0), Stack(1), Stack(2),
+						    Stack(3));
+		break;
+	    case 5:
+		value = (*code->builtin.b.builtin5)(Stack(0), Stack(1), Stack(2),
+						    Stack(3), Stack(4));
+		break;
+	    case 6:
+		value = (*code->builtin.b.builtin6)(Stack(0), Stack(1), Stack(2),
+						    Stack(3), Stack(4), Stack(5));
+		break;
+	    case 7:
+		value = (*code->builtin.b.builtin7)(Stack(0), Stack(1), Stack(2),
+						    Stack(3), Stack(4), Stack(5),
+						    Stack(6));
+		break;
+	    default:
+		value = Zero;
+		break;
+	    }
 	}
     }
     else
@@ -300,7 +310,8 @@ ThreadCatch (Value thread, SymbolPtr exception, int offset)
     continuation = NewContinuation (thread->thread.frame, 
 				    thread->thread.pc + 1, 
 				    thread->thread.stack,
-				    thread->thread.catches);
+				    thread->thread.catches,
+				    thread->thread.twixts);
     catch = NewCatch (thread->thread.catches, continuation, exception);
     thread->thread.catches = catch;
     EXIT ();
@@ -322,6 +333,24 @@ ThreadRaise (Value thread, SymbolPtr exception, InstPtr *next)
 	}
     EXIT ();
     return ret;
+}
+
+static void
+ThreadTwixt (Value thread, int leaveOffset)
+{
+    ENTER ();
+    TwixtPtr	twixt, prev;
+
+    prev = thread->thread.twixts;
+
+    twixt = NewTwixt (prev,
+		      thread->thread.frame,
+		      thread->thread.pc + 1,
+		      thread->thread.pc + leaveOffset,
+		      thread->thread.catches,
+		      StackCopy (thread->thread.stack));
+    thread->thread.twixts = twixt;
+    EXIT ();
 }
 
 static inline ThreadState
@@ -479,7 +508,7 @@ ThreadStep (Value thread)
 	    break;
 	}
         stack = inst->ints.value;
-	value = ThreadCall (thread, &next);
+	value = ThreadCall (thread, &next, &stack);
 	break;
     case OpArrow:
     case OpArrowRef:
@@ -672,6 +701,30 @@ ThreadStep (Value thread)
 	    RaiseError ("Unhandled exception \"%A\"",
 			inst->raise.exception->symbol.name);
 	break;
+    case OpTwixt:
+	ThreadTwixt (thread, inst->branch.offset);
+	break;
+    case OpTwixtDone:
+	thread->thread.twixts = thread->thread.twixts->previous;
+	break;
+    case OpEnterDone:
+	if (!True (value))
+	{
+	    next = inst + inst->branch.offset;
+	    thread->thread.jump = 0;
+	}
+	else
+	{
+	    if (thread->thread.jump)
+		value = JumpContinuation (thread->thread.jump, &next);
+	}
+	break;
+    case OpLeaveDone:
+	if (thread->thread.jump)
+	    value = JumpContinuation (thread->thread.jump, &next);
+	else
+	    next = inst + inst->branch.offset;
+	break;
     }
     if (!exception || complete)
     {
@@ -711,7 +764,8 @@ ThreadStep (Value thread)
 	    DebugSetFrame (NewContinuation (thread->thread.frame,
 					    inst,
 					    thread->thread.stack,
-					    thread->thread.catches),
+					    thread->thread.catches,
+					    thread->thread.twixts),
 			   0);
 	    ThreadFinish (thread);
 	}

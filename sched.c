@@ -532,7 +532,8 @@ ValueType    ContinuationType = {
 
 Value
 NewContinuation (FramePtr frame, InstPtr pc, 
-		 StackObject *stack, CatchPtr catches)
+		 StackObject *stack, CatchPtr catches,
+		 TwixtPtr twixts)
 {
     ENTER ();
     Value   ret;
@@ -543,8 +544,121 @@ NewContinuation (FramePtr frame, InstPtr pc,
     ret->continuation.pc = pc;
     ret->continuation.stack = stack;
     ret->continuation.catches = catches;
+    ret->continuation.twixts = twixts;
     RETURN (ret);
 }
+
+static void
+MarkJump (void *object)
+{
+    JumpPtr jump = object;
+
+    MemReference (jump->enter);
+    MemReference (jump->leave);
+    MemReference (jump->parent);
+    MemReference (jump->continuation);
+}
+
+DataType    JumpType = { MarkJump, 0 };
+
+JumpPtr
+NewJump (TwixtPtr leave, TwixtPtr enter, 
+	 TwixtPtr parent, Value continuation, Value ret)
+{
+    ENTER ();
+    JumpPtr jump;
+
+    jump = ALLOCATE (&JumpType, sizeof (Jump));
+    jump->leave = leave;
+    jump->enter = enter;
+    jump->parent = parent;
+    jump->continuation = continuation;
+    jump->ret = ret;
+    RETURN (jump);
+}
+
+/*
+ * Figure out where to go next in a long_jump through twixts
+ */
+Value
+JumpContinuation (JumpPtr jump, InstPtr *next)
+{
+    ENTER ();
+    TwixtPtr	twixt;
+    
+    if (jump->leave)
+    {
+	twixt = jump->leave;
+	jump->leave = twixt->previous;
+	if (jump->leave == jump->parent)
+	{
+	    jump->leave = 0;
+	    jump->parent = TwixtNext (jump->parent, jump->enter);
+	}
+	TwixtJump (running, twixt, False, next);
+    }
+    else if (jump->parent)
+    {
+	twixt = jump->parent;
+	jump->parent = TwixtNext (jump->parent, jump->enter);
+	TwixtJump (running, twixt, True, next);
+    }
+    else
+    {
+	Value	continuation = jump->continuation;
+	
+	running->thread.frame = continuation->continuation.frame;
+	running->thread.stack = StackCopy (continuation->continuation.stack);
+	running->thread.catches = continuation->continuation.catches;
+	running->thread.jump = 0;
+	/*
+	 * Adjust stack for set jump return
+	 */
+	STACK_DROP (running->thread.stack, 2);
+	*next = continuation->continuation.pc;
+    }
+    RETURN (jump->ret);
+}
+
+JumpPtr
+JumpBuild (TwixtPtr leave, TwixtPtr enter, 
+	   Value continuation, Value ret, InstPtr  *next)
+{
+    ENTER ();
+    int	diff;
+    TwixtPtr	leave_parent, enter_parent, parent;
+    JumpPtr	jump = 0;
+
+    leave_parent = leave;
+    enter_parent = enter;
+    /*
+     * Make both lists the same length 
+     */
+    diff = TwixtDepth (leave_parent) - TwixtDepth (enter_parent);
+    if (diff >= 0)
+	while (diff-- > 0)
+	    leave_parent = leave_parent->previous;
+    else
+	while (diff++ < 0)
+	    enter_parent = enter_parent->previous;
+    /*
+     * Now find the common parent
+     */
+    while (leave_parent != enter_parent)
+    {
+	leave_parent = leave_parent->previous;
+	enter_parent = enter_parent->previous;
+    }
+
+    parent = enter_parent;
+    /*
+     * Build a data structure to get from leave to enter via parent
+     */
+    jump = NewJump (leave, enter, parent, continuation, ret);
+    JumpContinuation (jump, next);
+    RETURN (jump);
+}
+
 
 /*
  * It is necessary that SetJump and LongJump have the same number
@@ -565,7 +679,8 @@ do_set_jump (InstPtr *next, Value continuation_ref, Value ret)
     }
     continuation = NewContinuation (running->thread.frame, *next,
 				    StackCopy (running->thread.stack),
-				    running->thread.catches);
+				    running->thread.catches,
+				    running->thread.twixts);
     RefValue (continuation_ref) = continuation;
     RETURN (ret);
 }
@@ -582,10 +697,26 @@ do_long_jump (InstPtr *next, Value continuation, Value ret)
 	RaiseError ("longjump: not a continuation %v", continuation);
 	RETURN (Zero);
     }
-    running->thread.frame = continuation->continuation.frame;
-    running->thread.stack = StackCopy (continuation->continuation.stack);
-    running->thread.catches = continuation->continuation.catches;
-    *next = continuation->continuation.pc;
+    /*
+     * Check for intervening twixts
+     */
+    if (running->thread.twixts != continuation->continuation.twixts)
+	running->thread.jump = JumpBuild (running->thread.twixts,
+					  continuation->continuation.twixts,
+					  continuation, ret,
+					  next);
+    else
+    {
+	running->thread.frame = continuation->continuation.frame;
+	running->thread.stack = StackCopy (continuation->continuation.stack);
+	running->thread.catches = continuation->continuation.catches;
+	running->thread.jump = 0;
+	/*
+	 * Adjust stack for set jump return
+	 */
+	STACK_DROP (running->thread.stack, 2);
+	*next = continuation->continuation.pc;
+    }
     RETURN (ret);
 }
 
@@ -612,4 +743,75 @@ NewCatch (CatchPtr previous, Value continuation, SymbolPtr exception)
     catch->continuation = continuation;
     catch->exception = exception;
     RETURN (catch);
+}
+
+static void
+MarkTwixt (void *object)
+{
+    TwixtPtr	twixt = object;
+
+    MemReference (twixt->previous);
+    MemReference (twixt->frame);
+    MemReference (twixt->catches);
+    MemReference (twixt->stack);
+}
+
+DataType    TwixtType = { MarkTwixt, 0 };
+
+TwixtPtr
+NewTwixt (TwixtPtr	previous,
+	  FramePtr	frame, 
+	  InstPtr	enter,
+	  InstPtr	leave,
+	  CatchPtr	catches,
+	  StackObject	*stack)
+{
+    ENTER ();
+    TwixtPtr	twixt;
+
+    twixt = ALLOCATE (&TwixtType, sizeof (Twixt));
+    twixt->previous = previous;
+    if (previous)
+	twixt->depth = previous->depth + 1;
+    else
+	twixt->depth = 1;
+    twixt->frame = frame;
+    twixt->enter = enter;
+    twixt->leave = leave;
+    twixt->catches = catches;
+    twixt->stack = stack;
+    RETURN (twixt);
+}
+
+/*
+ * Set up for execution in a twixt context
+ */
+void
+TwixtJump (Value thread, TwixtPtr twixt, Bool enter, InstPtr *next)
+{
+    thread->thread.frame = twixt->frame;
+    thread->thread.stack = StackCopy (twixt->stack);
+    thread->thread.catches = twixt->catches;
+    if (enter)
+	*next = twixt->enter;
+    else
+	*next = twixt->leave;
+}
+
+int
+TwixtDepth (TwixtPtr twixt)
+{
+    if (!twixt)
+	return 0;
+    return twixt->depth;
+}
+
+TwixtPtr
+TwixtNext (TwixtPtr twixt, TwixtPtr last)
+{
+    if (last == twixt)
+	return 0;
+    while (last->previous != twixt)
+	last = last->previous;
+    return last;
 }

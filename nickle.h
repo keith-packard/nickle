@@ -154,6 +154,29 @@ typedef struct _catch {
 
 CatchPtr    NewCatch (CatchPtr previous, Value continuation, SymbolPtr exception);
 
+typedef struct _twixt {
+    DataType	    *data;
+    TwixtPtr	    previous;
+    int		    depth;
+    FramePtr	    frame;
+    InstPtr	    enter;
+    InstPtr	    leave;
+    CatchPtr	    catches;
+    StackObject	    *stack;
+} Twixt;
+
+TwixtPtr
+NewTwixt (TwixtPtr	previous,
+	  FramePtr	frame, 
+	  InstPtr	enter,
+	  InstPtr	leave,
+	  CatchPtr	catches,
+	  StackObject	*stack);
+
+void	    TwixtJump (Value thread, TwixtPtr twixt, Bool enter, InstPtr *next);
+int	    TwixtDepth (TwixtPtr twixt);
+TwixtPtr    TwixtNext (TwixtPtr twixt, TwixtPtr last);
+
 # define	NOTHING	0
 # define	CONT	1
 # define	BRK	2
@@ -362,6 +385,21 @@ void	    ThreadFinish (Value thread);
 void	    ThreadSetState (Value thread, ThreadState state);
 void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);
+
+typedef struct _jump {
+    DataType	    *data;
+    TwixtPtr	    enter;
+    TwixtPtr	    leave;
+    TwixtPtr	    parent;
+    Value	    continuation;
+    Value	    ret;
+} Jump;
+
+Value	    JumpContinuation (JumpPtr jump, InstPtr *next);
+JumpPtr	    JumpBuild (TwixtPtr leave, TwixtPtr enter, 
+		       Value continuation, Value ret, InstPtr *next);
+JumpPtr	    NewJump (TwixtPtr leave, TwixtPtr enter, 
+		     TwixtPtr parent, Value continuation, Value ret);
 
 #define Runnable(t)    (((t)->thread.state & ~(ThreadSuspended)) == 0)
 

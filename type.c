@@ -348,7 +348,8 @@ TypeCompatible (Types *a, Types *b, Bool contains)
     {
 	StructType  *st = a->structs.structs;
 	for (n = 0; n < st->nelements; n++)
-	    if (TypeCompatible (StructTypeElements(st)[n].type, b, contains))
+	    if (!StructTypeElements(st)[n].name && 
+		TypeCompatible (StructTypeElements(st)[n].type, b, contains))
 		return True;
 	return False;
     }
@@ -357,7 +358,8 @@ TypeCompatible (Types *a, Types *b, Bool contains)
     {
 	StructType  *st = b->structs.structs;
 	for (n = 0; n < st->nelements; n++)
-	    if (TypeCompatible (a, StructTypeElements(st)[n].type, contains))
+	    if (!StructTypeElements(st)[n].name && 
+		TypeCompatible (a, StructTypeElements(st)[n].type, contains))
 		return True;
 	return False;
     }
@@ -648,14 +650,16 @@ TypeCombineFlatten (Types **rets, int nret, int sret)
     int		n, m;
 
     /*
-     * Flatten unions
+     * Flatten anonymous unions
      */
     for (n = 0; n < nret; n++)
     {
 	Types	*ut;
 
 	ut = rets[n];
-	if (ut->base.tag == types_union)
+	if (ut->base.tag == types_union && 
+	    (ut->structs.structs->nelements == 0 ||
+	     !StructTypeElements(ut->structs.structs)[0].name))
 	{
 	    st = ut->structs.structs;
 	    
@@ -724,9 +728,12 @@ TypeCombineBinary (Types *left, int tag, Types *right)
         StructType  *st = left->structs.structs;
 	for (n = 0; n < st->nelements; n++)
 	{
-	    ret = TypeCombineBinary (StructTypeElements(st)[n].type, tag, right);
-	    if (ret)
-		rets = TypeAdd (rets, ret, &nret, &sret);
+	    if (!StructTypeElements(st)[n].name)
+	    {
+		ret = TypeCombineBinary (StructTypeElements(st)[n].type, tag, right);
+		if (ret)
+		    rets = TypeAdd (rets, ret, &nret, &sret);
+	    }
 	}
     }
     else if (right->base.tag == types_union)
@@ -734,9 +741,12 @@ TypeCombineBinary (Types *left, int tag, Types *right)
         StructType  *st = right->structs.structs;
 	for (n = 0; n < st->nelements; n++)
 	{
-	    ret = TypeCombineBinary (left, tag, StructTypeElements(st)[n].type);
-	    if (ret)
-		rets = TypeAdd (rets, ret, &nret, &sret);
+	    if (!StructTypeElements(st)[n].name)
+	    {
+		ret = TypeCombineBinary (left, tag, StructTypeElements(st)[n].type);
+		if (ret)
+		    rets = TypeAdd (rets, ret, &nret, &sret);
+	    }
 	}
     } else switch (tag) {
     case ASSIGN:
@@ -854,9 +864,12 @@ TypeCombineUnary (Types *type, int tag)
 	StructType  *st = type->structs.structs;
 	for (n = 0; n < st->nelements; n++)
 	{
-	    ret = TypeCombineUnary (StructTypeElements(st)[n].type, tag);
-	    if (ret)
-		rets = TypeAdd (rets, ret, &nret, &sret);
+	    if (!StructTypeElements(st)[n].name)
+	    {
+		ret = TypeCombineUnary (StructTypeElements(st)[n].type, tag);
+		if (ret)
+		    rets = TypeAdd (rets, ret, &nret, &sret);
+	    }
 	}
     }
     else switch (tag) {
@@ -921,9 +934,12 @@ TypeCombineArray (Types *type, int ndim, Bool lvalue)
 	StructType  *st = type->structs.structs;
 	for (n = 0; n < st->nelements; n++)
 	{
-	    ret = TypeCombineArray (StructTypeElements(st)[n].type, ndim, lvalue);
-	    if (ret)
-		rets = TypeAdd (rets, ret, &nret, &sret);
+	    if (!StructTypeElements(st)[n].name)
+	    {
+		ret = TypeCombineArray (StructTypeElements(st)[n].type, ndim, lvalue);
+		if (ret)
+		    rets = TypeAdd (rets, ret, &nret, &sret);
+	    }
 	}
     }
 

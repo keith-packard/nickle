@@ -190,6 +190,10 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	PrettyStructInit (f, e->tree.left, level, nest);
 	FilePuts (f, " }");
 	break;
+    case UNION:
+	FilePrintf (f, "(%T.%A) ", e->base.type, e->tree.left->atom.atom);
+	PrettyExpr (f, e->tree.right, selfPrec, level, nest);
+	break;
     case CONST:
 	FilePrintf (f, "%v", e->constant.constant);
 	break;

@@ -1,3 +1,4 @@
 load "@datadir@/math.5c"
 load "@datadir@/scanf.5c"
+load "@datadir@/mutex.5c"
 import Math;

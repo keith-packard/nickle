@@ -1,0 +1,76 @@
+/*
+ * Mutexes
+ *
+ * Mutexes can be held by only one thread
+ * at a time, the following exceptions may
+ * be raised:
+ *
+ *  exception deadlock (mutex m, thread self)
+ *
+ *	Raised when a thread attempts to reacquire the mutex
+ *
+ *  exception notowned (mutex m, thread self, mutex_owner owner)
+ *
+ *	Raised when a thread attempts to release a mutex not owned by it.
+ */
+
+/* A mutex is either owned by a thread or nobody (0) */
+typedef union { 
+    thread owner; 
+    integer nobody; 
+} mutex_owner;
+
+public typedef struct { 
+    semaphore	sem; 
+    mutex_owner owner; 
+} mutex_struct;
+
+public typedef *mutex_struct mutex;
+
+namespace Mutex {
+    exception deadlock (mutex m, thread self);
+    exception notowned (mutex m, thread self, mutex_owner owner);
+
+    public integer function acquire (mutex m)
+    {
+	if (m->owner == (mutex_owner.owner) Thread::current())
+	    raise deadlock (m, Thread::current ());
+	Semaphore::wait(m->sem);
+	m->owner = (mutex_owner.owner) Thread::current ();
+	return 1;
+    }
+
+    public integer function try_acquire (mutex m)
+    {
+	integer ret = 0;
+	
+	if (m->owner == (mutex_owner.owner) Thread::current())
+	    raise deadlock (m, Thread::current());
+        ret = Semaphore::test (m->sem);
+        if (ret)
+	    m->owner = (mutex_owner.owner) Thread::current();
+	return ret;
+    }
+
+    public integer function release (mutex m)
+    {
+	if (m->owner != (mutex_owner.owner) Thread::current())
+	    raise notowned (m, Thread::current (), m->owner);
+	m->owner = (mutex_owner.nobody) 0;
+	Semaphore::signal (m->sem);
+	return 1;
+    }
+
+    public mutex_owner function owner (mutex m)
+    {
+	return m->owner;
+    }
+    
+    public mutex function new ()
+    {
+	return reference ((mutex_struct) { 
+	    sem = Semaphore::new (1),
+	    owner = (mutex_owner.nobody) 0 
+	});
+    }
+}

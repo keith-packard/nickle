@@ -403,7 +403,7 @@ statement	: IF ignorenl OP expr CP statement
 					NewTypesFunc (typesPoly, $6),
 					$1);
 		    }
-		| RAISE NAME OP opt_exprs CP
+		| RAISE NAME OP opt_exprs CP SEMI;
 		    { $$ = NewExprTree (RAISE, NewExprAtom ($2), $4); }
 		| decl ignorenl opt_initnames SEMI
 		    { $$ = NewExprDecl ($3, $1.class, $1.type, $1.publish); }

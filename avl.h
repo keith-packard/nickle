@@ -12,7 +12,7 @@
  * balanced binary tree
  */
 
-typedef long PtrInt;
+typedef unsigned long PtrInt;
 
 struct block {
 	struct block		*left, *right;

@@ -302,20 +302,22 @@ setReference (void *address)
      */
     static struct block	*cache;
 
+    b = cache;
     if ((b = cache) &&
-	(dist = ((PtrInt) address) - ((PtrInt) b->data)) > 0 &&
-	dist < b->datasize)
+	(PtrInt) address >= (PtrInt) b->data &&
+	(PtrInt) address <= (PtrInt) b->data + b->datasize)
 	goto cache_hit;
 
     for (b = root; b;) {
-	if ((dist = ((PtrInt) address) - ((PtrInt) b->data)) < 0)
+	if ((PtrInt) address < (PtrInt) b->data)
 	    b = b->left;
-	else if (dist >= b->datasize)
+	else if ((PtrInt) address >= (PtrInt) b->data + b->datasize)
 	    b = b->right;
 	else {
 	    cache = b;
 	cache_hit:		;
 	    if ((map = b->bitmap)) {
+		dist = (PtrInt) address - (PtrInt) b->data;
 		index = dist / HUNKSIZE(b->sizeIndex);
 		byte = index >> 3;
 		bit = (1 << (index & 7));
@@ -344,13 +346,12 @@ void
 MemCheckPointer (void *base, void *address, int size)
 {
     struct block    *b;
-    int		    dist;
     int		    datasize;
 
     for (b = root; b;) {
-	if ((dist = ((PtrInt) base) - ((PtrInt) b->data)) < 0)
+	if ((PtrInt) address < (PtrInt) b->data)
 	    b = b->left;
-	else if (dist >= b->datasize)
+	else if ((PtrInt) address >= (PtrInt) b->data + b->datasize)
 	    b = b->right;
 	else
 	{
@@ -358,8 +359,8 @@ MemCheckPointer (void *base, void *address, int size)
 		datasize = HUNKSIZE(b->sizeIndex);
 	    else
 		datasize = b->datasize;
-	    if (base <= address && 
-		(char *) address + size <= (char *) base + datasize)
+	    if ((PtrInt) base <= (PtrInt) address && 
+		(PtrInt) address + size <= (PtrInt) base + datasize)
 	    {
 		return;
 	    }
@@ -370,7 +371,7 @@ MemCheckPointer (void *base, void *address, int size)
 }
 
 void
-MemFree (void *object, int size)
+MemFree (void *address, int size)
 {
     int	sizeIndex = 0;
 
@@ -391,12 +392,11 @@ MemFree (void *object, int size)
     else
     {
 	struct block    *b;
-	int		dist;
 
 	for (b = root; b;) {
-	    if ((dist = ((PtrInt) object) - ((PtrInt) b->data)) < 0)
+	    if ((PtrInt) address < (PtrInt) b->data)
 		b = b->left;
-	    else if (dist >= b->datasize)
+	    else if ((PtrInt) address >= (PtrInt) b->data + b->datasize)
 		b = b->right;
 	    else
 	    {
@@ -411,13 +411,13 @@ MemFree (void *object, int size)
 
     if (sizeIndex >= NUMSIZES)
     {
-	struct block    *b = (struct block *) object - 1;
+	struct block    *b = (struct block *) address - 1;
 	unNoteBlock (b);
 	free (b);
     }
     else
     {
-	struct bfree    *old = object;
+	struct bfree    *old = address;
 
 	old->next = freeList[sizeIndex];
 	freeList[sizeIndex] = old;

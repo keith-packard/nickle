@@ -542,14 +542,14 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			    name = $4->tree.right->name.name;
 			else
 			    name = $4->name.name;
-			if (!name || !name->symbol)
+			if (!name->symbol)
 			{
-			    yyerror ("non-existant namespace %A", $4);
+			    yyerror ("non-existant namespace %A", name->atom);
 			    YYERROR;
 			}
 			else if (name->symbol->symbol.class != class_namespace)
 			{
-			    yyerror ("%A is not a namespace", $4);
+			    yyerror ("%A is not a namespace", name->atom);
 			    YYERROR;
 			}
 			NamespaceImport (CurrentNamespace, 

@@ -224,7 +224,6 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_is_thread,	    "is_thread",    	    "i",    "p"	    },
     { do_is_semaphore,	    "is_semaphore",    	    "i",    "p"	    },
     { do_is_continuation,   "is_continuation",	    "i",    "p"	    },
-    { do_is_void,	    "is_void",		    "i",    "p"	    },
     { do_is_array,	    "is_array",		    "i",    "p"	    },
     { do_is_ref,	    "is_ref",		    "i",    "p"	    },
     { do_is_struct,	    "is_struct",	    "i",    "p"	    },

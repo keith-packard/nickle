@@ -5,7 +5,7 @@
 ## for licensing information.
 
 AUTOMAKE_OPTIONS = no-dependencies
-EXTRA_DIST = README.name
+EXTRA_DIST = README.name autoconfigure.sh
 
 bin_PROGRAMS = nickle
 

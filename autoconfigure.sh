@@ -2,4 +2,4 @@
 autoheader
 aclocal
 autoconf
-automake -a
+automake -a -c

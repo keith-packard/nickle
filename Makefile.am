@@ -19,7 +19,6 @@ TEST = test/gcdtest.5c test/inttest.5c test/rattest.5c
 DEBIAN = debian/changelog  debian/control debian/copyright \
 	debian/docs debian/files debian/rules
 
-AUTOMAKE_OPTIONS = no-dependencies
 EXTRA_DIST = README.name autoconfigure.sh $(NICKLEFILES) \
 	gram.h $(EXAMPLES) $(TEST) $(DEBIAN)
 
@@ -58,14 +57,19 @@ AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
 	-Wnested-externs -fno-strict-aliasing
 
-$(nickle_OBJECTS): avl.h gram.h memp.h opcode.h stack.h \
-	config.h mem.h nickle.h ref.h value.h
-
 all: version.m4
 
-gram.c gram.h: gram.y
+USES_GRAM_H = \
+	compile.o \
+	error.o \
+	expr.o \
+	file.o \
+	lex.o \
+	main.o \
+	pretty.o \
+	type.o
 
-lex.c: lex.l
+$(USES_GRAM_H): gram.h
 
 version.m4: update-version.sh \
   $(nickle_SOURCES) $(NICKLEFILES) $(NICKLEBUILTINSOURCES)

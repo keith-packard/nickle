@@ -175,6 +175,12 @@ ResetInst (ObjPtr obj, int i)
 	obj->used_stat--;
 }
 
+/*
+ * Set branch offsets to zero so that CompileIsReachable can
+ * use them before the real values get filled in.  This is correct
+ * because the reachability targets are always in nested blocks which
+ * can never be the target for this instruction
+ */
 #define NewInst(_o,_op,_i,_stat) \
 {\
     InstPtr __inst__; \
@@ -183,6 +189,7 @@ ResetInst (ObjPtr obj, int i)
     __inst__ = ObjCode (_o, _i); \
     __inst__->base.opCode = (_op); \
     __inst__->base.flags = 0; \
+    __inst__->branch.offset = 0; \
 }
 
 #define BuildInst(_o,_op,_inst,_stat) \
@@ -191,6 +198,7 @@ ResetInst (ObjPtr obj, int i)
     (_inst) = ObjCode(_o, ObjLast(_o)); \
     (_inst)->base.opCode = (_op); \
     (_inst)->base.flags = 0; \
+    (_inst)->branch.offset = 0; \
 }
 
 #define SetFlag(_o,_f) ((_o)->used ? (ObjCode((_o), \
@@ -464,6 +472,8 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	    for (decl = expr->decl.decl; decl; decl = decl->next)
 		s = decl->symbol;
 	}
+	/* the symbol was compiled in this frame */
+	depth = 0;
         goto isName;
     case NAME:
 	s = CompileCheckSymbol (obj, stat, expr, code,

@@ -1,14 +1,9 @@
 2003-10-25  Keith Packard  <keithp@keithp.com>
 
-	* builtin/Makefile.am:
-	* builtin/builtin.c: (BuiltinType):
-	* builtin/builtin.h:
-	* expr.c: (NewExprComma):
-	* nickle.h:
-	* version.m4:
-	Eliminate bogus explicit dependencies from Makefile.am
-	Eliminate need for gram.h in builtins
-	Move #include version.h from builtin.h to builtin.c
+	* Makefile.am:
+	* autogen.sh:
+	Use automatic dependencies, fix up yacc stuff a bit.
+	Replace autogen.sh with short version
 
 2003-10-24  Keith Packard  <keithp@keithp.com>
 
@@ -20,6 +15,18 @@
 	offset is set.
 	Set the static link offset to zero for names contained in
 	declarations; it was otherwise uninitialized.
+
+2003-10-25  Keith Packard  <keithp@keithp.com>
+
+	* builtin/Makefile.am:
+	* builtin/builtin.c: (BuiltinType):
+	* builtin/builtin.h:
+	* expr.c: (NewExprComma):
+	* nickle.h:
+	* version.m4:
+	Eliminate bogus explicit dependencies from Makefile.am
+	Eliminate need for gram.h in builtins
+	Move #include version.h from builtin.h to builtin.c
 
 1.99.0:	First semi-public test release
 2.00:	Stable enough for Debian package

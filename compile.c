@@ -2393,8 +2393,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case STAR:	    obj = CompileUnFunc (obj, expr, Dereference, stat, code,"*"); break;
     case AMPER:	    
 	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, False);
-	t = CompileRefType (expr->tree.left->base.type);
-	if (!t)
+	expr->base.type = CompileRefType (expr->tree.left->base.type);
+	if (!expr->base.type)
 	{
 	    expr->base.type = NewTypeRef (expr->tree.left->base.type, False);
 	    if (!expr->base.type)

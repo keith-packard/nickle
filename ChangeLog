@@ -1,3 +1,9 @@
+2004-05-20  Keith Packard  <keithp@keithp.com>
+
+	* compile.c: (_CompileExpr):
+	When compiling '&' expressions, if the operand is of ref type,
+	the result type is the referenced type, not NULL.
+
 2004-05-20  Bart Massey  <bart@cs.pdx.edu>
 
 	* gram.y, compile.c pretty.c

@@ -36,39 +36,58 @@ setArgv (int argc, char **argv)
 static void
 try_nicklerc (void)
 {
-    char    nicklerc[2048];
-    char    *home;
+    ENTER ();
+    char	*home;
+    char	*nicklerc;
+    static char filename[] = "/.nicklerc";
 
-    home = getenv ("NICKLERC");
-    if (home) {
+    if ((nicklerc = getenv ("NICKLERC")))
+    {
 	LexFile (nicklerc, True);
-	return;
     }
-    home = getenv ("HOME");
-    if (!home)
-	return;
-    if (strlen(home) > 1024) {
-	fprintf(stderr, "warning: $HOME too large, giving up on .nicklerc\n");
-	return;
+    else if ((home = getenv ("HOME")))
+    {
+	nicklerc = AllocateTemp (strlen (home) + strlen (filename) + 1);
+	strcpy (nicklerc, home);
+	strcat (nicklerc, filename);
+	LexFile (nicklerc, False);
     }
-    strcpy (nicklerc, home);
-    strcat (nicklerc, "/.nicklerc");
-    LexFile (nicklerc, False);
+    EXIT ();
 }
 
 #ifndef NICKLELIB
-#define NICKLELIB "/usr/local/share/nickle/builtin.5c"
+#define NICKLELIB "/usr/local/share/nickle"
 #endif
 
 static void
 try_nicklelib (void)
 {
-    char    *lib;
+    ENTER ();
+    char	*lib;
+    char	*colon;
+    char	*nicklelib;
+    static char filename[] = "builtin.5c";
 
     lib = getenv ("NICKLELIB");
     if (!lib)
 	lib = NICKLELIB;
-    LexFile (lib, True);
+    while (*lib)
+    {
+	colon = strchr (lib, ':');
+	if (!colon)
+	    colon = lib + strlen (lib);
+	nicklelib = AllocateTemp (colon - lib + strlen (filename) + 2);
+	strncpy (nicklelib, lib, colon-lib);
+	nicklelib[colon-lib] = '\0';
+	strcat (nicklelib, "/");
+	strcat (nicklelib, filename);
+	if (LexFile (nicklelib, False))
+	    break;
+	lib = colon;
+	if (*lib == ':')
+	    lib++;
+    }
+    EXIT ();
 }
 
 RETSIGTYPE	intr(int), ferr(int);

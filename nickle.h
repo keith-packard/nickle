@@ -680,6 +680,8 @@ Value	do_Command_delete (Value);
 Value	do_Command_lex_file (Value);
 Value	do_Command_lex_string (Value);
 Value	do_Command_edit (Value);
+Value	do_Environ_get (Value);
+Value	do_Environ_unset (Value);
 
 /* two argument builtins */
 Value	do_Thread_set_priority (Value, Value);
@@ -701,6 +703,7 @@ Value	do_Command_display (Value, Value);
 Value	do_Gcd_bdivmod (Value, Value);
 Value	do_Gcd_kary_reduction (Value, Value);
 #endif
+Value	do_Environ_set (Value, Value);
 
 /* three argument builtins */
 Value	do_String_substr (Value, Value, Value);

@@ -32,6 +32,7 @@ NamespacePtr	CommandNamespace;
 #ifdef GCD_DEBUG
 NamespacePtr	GcdNamespace;
 #endif
+NamespacePtr	EnvironNamespace;
 
 struct fbuiltin_v {
     Value	    (*func) (int, Value *);
@@ -254,6 +255,8 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_Command_lex_file,  "lex_file",		    "i",    "s",    &CommandNamespace },
     { do_Command_lex_string,"lex_string",	    "i",    "s",    &CommandNamespace },
     { do_Command_edit,	    "edit",		    "i",    "A*s",  &CommandNamespace },
+    { do_Environ_get,	    "get",		    "p",    "s",    &EnvironNamespace },
+    { do_Environ_unset,	    "unset",		    "i",    "s",    &EnvironNamespace },
     { 0,		    0 },
 };
 
@@ -277,6 +280,7 @@ static struct fbuiltin_2 funcs_2[] = {
     { do_Gcd_bdivmod,	    "bdivmod",		    "i",    "ii",   &GcdNamespace},
     { do_Gcd_kary_reduction,"kary_reduction",	    "i",    "ii",   &GcdNamespace},
 #endif
+    { do_Environ_set,	    "set",		    "s",    "ss",   &EnvironNamespace },
     { 0,		    0 },
 };
 
@@ -407,15 +411,20 @@ static struct rbuiltin rvars[] = {
 };
 
 static struct sbuiltin svars[] = {
-    { "> ",	"prompt" },
-    { "+ ",	"prompt2" },
-    { "- ",	"prompt3" },
-    { "%g",	"format" },
-    { VERSION,	"version" },
+    { "> ",	    "prompt" },
+    { "+ ",	    "prompt2" },
+    { "- ",	    "prompt3" },
+    { "%g",	    "format" },
+    { VERSION,	    "version" },
 #ifdef BUILD
-    { BUILD,	"build" },
+    { BUILD,	    "build" },
 #else
-    { "?",	"build" },
+    { "?",	    "build" },
+#endif
+#ifdef NICKLELIB
+    { NICKLELIB,    "library_path",	&CommandNamespace },
+#else
+    { "",	    "library_path",	&CommandNamespace },
 #endif
     { 0,    0 },
 };
@@ -428,7 +437,7 @@ static struct ibuiltin ivars[] = {
 };
 
 static struct nbuiltin nvars[] = {
-    { "Debugger",   &DebugNamespace },
+    { "Debug",	    &DebugNamespace },
     { "File",	    &FileNamespace },
     { "History",    &HistoryNamespace },
     { "Math",	    &MathNamespace },
@@ -436,12 +445,13 @@ static struct nbuiltin nvars[] = {
     { "BSDRandom",  &BSDRandomNamespace },
 #endif
     { "Semaphore",  &SemaphoreNamespace },
-    { "String",    &StringNamespace },
+    { "String",	    &StringNamespace },
     { "Thread",	    &ThreadNamespace },
     { "Command",    &CommandNamespace },
 #ifdef GCD_DEBUG
     { "Gcd",	    &GcdNamespace },
 #endif
+    { "Environ",    &EnvironNamespace },
     { 0,	    0 },
 };
 
@@ -1456,7 +1466,23 @@ do_String_substr (Value av, Value bv, Value cv)
     a = StringChars(&av->string);
     al = strlen(a);
     b = IntPart(bv, "substr: index not integer");
+    if (b < 0 || al < b)
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"substr: index out of range",
+				2, NewInt (1), bv);
+	RETURN (av);
+    }
     c = IntPart(cv, "substr: count not integer");
+    if (c < 0)
+	c = al - b;
+    if (b + al < c)
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"substr: count out of range",
+				2, NewInt (2), cv);
+	RETURN (av);
+    }
     ret = NewString(c);
     rchars = StringChars(&ret->string);
     strncpy(rchars, a + b, c);
@@ -1937,9 +1963,13 @@ Value
 do_Command_lex_file (Value name)
 {
     ENTER ();
+    Value   r;
 
-    LexFile (StringChars (&name->string), True);
-    RETURN (One);
+    if (LexFile (StringChars (&name->string), False))
+	r = One;
+    else
+	r = Zero;
+    RETURN (r);
 }
 
 Value
@@ -2007,5 +2037,33 @@ do_Command_edit (Value names)
 
     if (NamespaceLocate (names, &s, &sym) && sym)
 	EditFunction (sym); 
+    RETURN (One);
+}
+
+Value
+do_Environ_get (Value av)
+{
+    ENTER ();
+    char    *c;
+
+    c = getenv (StringChars (&av->string));
+    if (!c)
+	RETURN (Zero);
+    RETURN (NewStrString (c));
+}
+
+Value
+do_Environ_unset (Value av)
+{
+    unsetenv (StringChars (&av->string));
+    return One;
+}
+
+Value
+do_Environ_set (Value name, Value value)
+{
+    ENTER ();
+    if (setenv (StringChars (&name->string), StringChars (&value->string), 1) < 0)
+	RETURN (Zero);
     RETURN (One);
 }

@@ -24,14 +24,10 @@ man_MANS = nickle.1
 
 YFLAGS = -d
 
-CFLAGS = -O -g -Wall -Wpointer-arith -Wstrict-prototypes \
+DEFINES = -DNICKLELIB=\""$(datadir)"\" -DBUILD=\""`$(srcdir)/date-sh`"\"
+
+CDEBUGFLAGS = -O -g
+
+CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
 -Wmissing-prototypes -Wmissing-declarations \
--Wnested-externs
-
-builtin.o: builtin.c config.status $(srcdir)/date-sh
-	$(CC) -c -DBUILD=\""`$(srcdir)/date-sh`"\" -I. -I$(srcdir) $(CPPFLAGS) $(CFLAGS) builtin.c
-
-main.o: main.c
-	$(CC) -c -DNICKLELIB=\""$(datadir)/builtin.5c"\" -I. -I$(srcdir) $(CPPFLAGS) $(CFLAGS) main.c
-
-compile.o error.o expr.o lex.o pretty.o type.o: gram.h
+-Wnested-externs $(DEFINES)

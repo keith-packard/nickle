@@ -1,4 +1,14 @@
+/*
+ * Add common commands
+ */
 namespace Syntax {
+    
+    /*
+     * quit
+     *
+     * quit	    - exit with code 0
+     * quit N	    - exit with code N
+     */
     void function do_quit (int args...)
     {
 	int	code = 0;
@@ -9,6 +19,13 @@ namespace Syntax {
     }
     Command::new ("quit", do_quit);
 
+    /*
+     * history
+     *
+     * history	    - show some recent history
+     * history N    - show N recent history
+     * history N,M  - show history from N to M
+     */
     void function do_history (int args...)
     {
 	switch (dim (args)) {
@@ -25,13 +42,11 @@ namespace Syntax {
     }
     Command::new ("history", do_history);
 
-    void function do_load (string file_name)
-    {
-	Command::lex_file (file_name);
-    }
-    
-    Command::new ("load", do_load);
-
+    /*
+     * print
+     *
+     * print name	- pretty print name
+     */
     void function do_pretty_print (string[] names)
     {
 	Command::pretty_print (stdout, names);
@@ -40,5 +55,56 @@ namespace Syntax {
     Command::new_names ("print", do_pretty_print);
 
     Command::new_names ("edit", Command::edit);
+
     Command::new_names ("undefine", Command::undefine);
+
+    /*
+     * load
+     *
+     * load "filename"	- read commands from "filename"
+     */
+    void function do_load (string f)
+    {
+	if (!Command::lex_file (f))
+	    File::fprintf (stderr, "Cannot load file \"%s\"\n", f);
+    }
+
+    Command::new ("load", do_load);
+
+    /*
+     * library
+     *
+     * library "filename"   - Search library path for "filename" and
+     *			      read commands from the first found
+     */
+    void function lex_library (string lib_file)
+    {
+	poly	library_path = Environ::get ("NICKLELIB");
+
+	if (!library_path)
+	    library_path = Command::library_path;
+	while (library_path)
+	{
+	    int	    i = String::index (library_path, ":");
+	    string  dir;
+
+	    if (i >= 0)
+	    {
+		dir = String::substr (library_path, 0, i);
+		library_path = String::substr (library_path, i + 1, -1);
+	    }
+	    else
+	    {
+		dir = library_path;
+		library_path = 0;
+	    }
+	    if (Command::lex_file (dir + "/" + lib_file))
+		break;
+	    if (!library_path)
+		File::fprintf (stderr, "Cannot load library \"%s\"\n",
+			       lib_file);
+	}
+    }
+
+    Command::new ("library", lex_library);
 }

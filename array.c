@@ -14,7 +14,7 @@ int
 ArrayInit (void)
 {
     ENTER ();
-    Empty = NewArray (True, typePoly, 0, 0);
+    Empty = NewArray (True, False, typePoly, 0, 0);
     MemAddRoot (Empty);
     EXIT ();
     return 1;
@@ -203,7 +203,7 @@ ValueRep    ArrayRep = {
 };
 
 Value
-NewArray (Bool constant, TypePtr type, int ndim, int *dims)
+NewArray (Bool constant, Bool resizable, TypePtr type, int ndim, int *dims)
 {
     ENTER ();
     Value   ret;
@@ -220,7 +220,7 @@ NewArray (Bool constant, TypePtr type, int ndim, int *dims)
 	ents = 0;
     ret = ALLOCATE (&ArrayRep.data, sizeof (Array) + (ndim * 2) * sizeof (int));
     ret->array.ndim = ndim;
-    ret->array.ents = ents;
+    ret->array.resizable = resizable;
     ret->array.values = 0;
     ret->array.values = NewBox (constant, True, ents, type);
     for (dim = 0; dim < ndim; dim++)
@@ -235,14 +235,16 @@ ArrayResize (Value av, int dim, int size)
     int	    *dims = ArrayDims(a);
     int	    *limits = ArrayLimits(a);
 
-    if (dims[dim] <= size)
+    if (dims[dim] < size || dims[dim] > size * 2)
     {
 	ENTER ();
+	BoxPtr	obox = a->values;
 	BoxPtr	nbox;
 	int	odim = dims[dim];
-	int	ents = a->ents;
+	int	ents = obox->nvalues;
 	int	chunk_size;
-	int	chunk_skip;
+	int	chunk_ostride;
+	int	chunk_nstride;
 	int	chunk_zero;
 	int	d;
 	int	nchunk;
@@ -250,7 +252,7 @@ ArrayResize (Value av, int dim, int size)
 
 	if (!ents)
 	{
-	    chunk_size = 0;
+	    chunk_ostride = 0;
 	    for (d = 0; d < a->ndim; d++)
 	    {
 		dims[d] = 1;
@@ -262,35 +264,72 @@ ArrayResize (Value av, int dim, int size)
 	}
 	else
 	{
-	    chunk_size = 1;
+	    chunk_ostride = 1;
 	    for (d = 0; d <= dim; d++)
-		chunk_size *= dims[d];
-	    nchunk = ents / chunk_size;
+		chunk_ostride *= dims[d];
+	    nchunk = ents / chunk_ostride;
 	}
-	chunk_skip = chunk_size;
-	while (odim < size)
+	chunk_nstride = chunk_ostride;
+	if (odim < size)
 	{
-	    odim <<= 1;
-	    ents <<= 1;
-	    chunk_skip <<= 1;
+	    /* bigger */
+	    while (odim < size)
+	    {
+		odim <<= 1;
+		ents <<= 1;
+		chunk_nstride <<= 1;
+	    }
+	    chunk_size = chunk_ostride;
+	}
+	else if (size > 0)
+	{
+	    /* smaller */
+	    while (odim > size * 2)
+	    {
+		odim >>= 1;
+		ents >>= 1;
+		chunk_nstride >>= 1;
+	    }
+	    chunk_size = chunk_nstride;
+	}
+	else
+	{
+	    /* empty */
+	    ents = 0;
+	    chunk_nstride = 0;
+	    chunk_size = 0;
+	    for (d = 0; d < a->ndim; d++)
+	    {
+		dims[d] = 0;
+		limits[d] = 0;
+	    }
 	}
 	nbox = NewBox (a->values->constant, True, ents, a->values->u.type);
 	o = BoxElements (a->values);
 	n = BoxElements (nbox);
-	chunk_zero = chunk_skip - chunk_size;
+        chunk_zero = chunk_nstride - chunk_size;
 	while (nchunk--)
 	{
 	    memcpy (n, o, chunk_size * sizeof (Value));
-	    o += chunk_size;
+	    o += chunk_ostride;
 	    n += chunk_size;
 	    memset (n, '\0', chunk_zero * sizeof (Value));
 	    n += chunk_zero;
 	}
-	BoxSetReplace (a->values, nbox, chunk_size, chunk_skip);
+	BoxSetReplace (a->values, nbox, chunk_ostride, chunk_nstride);
 	a->values = nbox;
-	a->ents = ents;
 	dims[dim] = odim;
 	EXIT ();
     }
     limits[dim] = size;
+}
+
+void
+ArraySetDimensions (Value av, int *dims)
+{
+    Array   *a = &av->array;
+    int	    i;
+
+    for (i = 0; i < a->ndim; i++)
+	ArrayResize (av, i, dims[i]);
 }

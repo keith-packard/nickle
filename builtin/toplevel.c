@@ -69,6 +69,8 @@ import_Toplevel_namespace()
         { do_gcd, "gcd", "i", "ii" },
         { do_setjmp, "setjmp", "p", "*cp" },
         { do_xor, "xor", "i", "ii" },
+	{ do_setdims, "setdims", "v", "ApAi" },
+	{ do_setdim, "setdim", "v", "Api" },
         { 0 }
     };
 
@@ -314,8 +316,9 @@ do_dims(Value av)
     ENTER();
     Value ret;
     int i;
+    int ndim = av->array.ndim;
 
-    ret = NewArray(True, typePrim[rep_int], 1, &av->array.ndim);
+    ret = NewArray(True, False, typePrim[rep_int], 1, &ndim);
     for (i = 0; i < av->array.ndim; i++) {
       Value d = NewInt(ArrayLimits(&av->array)[i]);
       BoxValueSet(ret->array.values, i, d);
@@ -323,6 +326,60 @@ do_dims(Value av)
     RETURN (ret);
 }
 
+Value
+do_setdims (Value av, Value dv)
+{
+    ENTER ();
+    Array   *a = &av->array;
+    Array   *d = &dv->array;
+    BoxPtr  db = d->values;
+#define DIM_LOCAL   32
+    int dimLocal[DIM_LOCAL];
+    int	*dims = a->ndim < DIM_LOCAL ? dimLocal : AllocateTemp (a->ndim * sizeof (int));
+    int	i;
+
+    if (a->ndim != db->nvalues)
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"setdims: size of dimensions must match dimensionality of array",
+				2, NewInt (a->ndim), dv);
+	RETURN (Void);
+    }
+    for (i = 0; i < a->ndim; i++)
+    {
+	dims[i] = IntPart (BoxValueGet (db,i), "setdims: invalid dimension");
+	if (aborting)
+	    RETURN (Void);
+	if (dims[i] < 0)
+	{
+	    RaiseStandardException (exception_invalid_argument,
+				    "setdims: dimensions must be non-negative",
+				    2, NewInt (i), NewInt (dims[i]));
+	    RETURN (Void);
+	}
+    }
+    ArraySetDimensions (av, dims);
+    RETURN (Void);
+}
+
+Value
+do_setdim (Value av, Value dv)
+{
+    ENTER ();
+    int	    d = IntPart (dv, "setdim: invalid dimension");
+    if (aborting)
+	RETURN (Void);
+    if (d < 0)
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"setdim: dimension must be non-negative",
+				2, NewInt (d), Void);
+	RETURN (Void);
+    }
+    ArrayResize (av, 0, d);
+    RETURN (Void);
+}
+    
 Value
 do_reference (Value av)
 {

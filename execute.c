@@ -57,7 +57,7 @@ BuildFrame (Value thread, Value func, Value value, Bool staticInit, Bool tail,
 	int	extra = argc - nformal;
 	Value	array;
 	
-	array = NewArray (True, typePoly, 1, &extra);
+	array = NewArray (True, False, typePoly, 1, &extra);
 	BoxValueSet (frame->frame, fe, array);
 	for (; fe < argc; fe++)
 	    BoxValueSet (array->array.values, fe-nformal, Copy (Arg(fe)));
@@ -312,7 +312,7 @@ ThreadAssign (Value ref, Value v, Bool initialize)
 }
 
 static Value
-ThreadArray (Value thread, int ndim, Type *type)
+ThreadArray (Value thread, Bool resizable, int ndim, Type *type)
 {
     ENTER ();
     int	    i;
@@ -325,7 +325,7 @@ ThreadArray (Value thread, int ndim, Type *type)
 	if (aborting)
 	    RETURN (0);
     }
-    RETURN (NewArray (False, type, ndim, dims));
+    RETURN (NewArray (False, resizable, type, ndim, dims));
 }
 
 static int
@@ -574,7 +574,7 @@ ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *
      * Build and array to hold the arguments, this will end up
      * in the thread's value on entry to the catch block
      */
-    args = NewArray (False, typePoly, 1, &argc);
+    args = NewArray (False, False, typePoly, 1, &argc);
     for (i = 0; i < argc; i++)
         BoxValueSet (args->array.values, i, Arg(i));
     if (!aborting)
@@ -617,7 +617,7 @@ ThreadExceptionCall (Value thread, InstPtr *next, int *stack)
 	RETURN (Void);
     }
     complete = True;
-    argc = args->array.ents;
+    argc = args->array.values->nvalues;
     for (i = 0; i < argc; i++)
     {
 	STACK_PUSH (thread->thread.continuation.stack,
@@ -1077,7 +1077,8 @@ ThreadsRun (Value thread, Value lex)
 		    break;
 		case OpBuildArray:
 		    stack = inst->array.ndim;
-		    value = ThreadArray (thread, stack, inst->array.type);
+		    /* XXX resizable? */
+		    value = ThreadArray (thread, True, stack, inst->array.type);
 		    break;
 		case OpInitArray:
 		    stack = 0;

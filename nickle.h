@@ -1018,6 +1018,8 @@ Value	do_File_ungetc (Value, Value);
 Value	do_File_setbuf (Value, Value);
 Value	do_String_index (Value, Value);
 Value	do_setjmp (Value, Value);
+Value	do_setdims (Value, Value);
+Value	do_setdim (Value, Value);
 Value	do_Command_new (Value, Value);
 Value	do_Command_new_names (Value, Value);
 #ifdef GCD_DEBUG

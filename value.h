@@ -516,8 +516,8 @@ typedef struct _string {
 
 typedef struct _array {
     BaseValue	base;
-    int		ndim;
-    int		ents;
+    int		resizable : 1;
+    int		ndim : (sizeof (int) * 8 - 1);
     BoxPtr	values;
 } Array;
 
@@ -768,7 +768,7 @@ typedef struct _box {
     unsigned long   constant : 1;
     unsigned long   homogeneous : 1;
     unsigned long   replace : 1;
-    unsigned long   nvalues : 29;
+    unsigned long   nvalues : (sizeof (unsigned long) * 8) - 3;
     union {
 	BoxTypesPtr	    types;
 	TypePtr		    type;
@@ -826,8 +826,9 @@ extern DataCachePtr	refCache;
 
 Value	NewString (int);
 Value	NewStrString (char *);
-Value	NewArray (Bool constant, TypePtr type, int ndim, int *dims);
+Value	NewArray (Bool constant, Bool resizable, TypePtr type, int ndim, int *dims);
 void	ArrayResize (Value av, int dim, int size);
+void	ArraySetDimensions (Value av, int *dims);
 Value	NewFile (int fd);
 Value	NewRefReal (BoxPtr box, int element, Value *re);
 char	*StringNextChar (char *src, unsigned *dst);

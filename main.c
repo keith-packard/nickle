@@ -29,7 +29,7 @@ setArgv (int argc, char **argv)
     Value   args;
     int	    i;
 
-    args = NewArray (True, typePrim[rep_string], 1, &argc);
+    args = NewArray (True, True, typePrim[rep_string], 1, &argc);
     for (i = 0; i < argc; i++)
 	BoxValueSet (args->array.values, i, NewStrString (argv[i]));
     setVar (GlobalNamespace, "argv", args, 

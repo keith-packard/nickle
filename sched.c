@@ -1069,10 +1069,11 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 	PrintError ("Unhandled exception %A (", except->symbol.name);
 	if (args)
 	{
-	    for (i = 0; i < args->array.ents; i++)
+	    BoxPtr  values = args->array.values;
+	    for (i = 0; i < values->nvalues; i++)
 	    {
-		PrintError ("%v", BoxValueGet (args->array.values, i));
-		if (i < args->array.ents - 1)
+		PrintError ("%v", BoxValueGet (values, i));
+		if (i < values->nvalues - 1)
 		    PrintError (", ");
 	    }
 	}
@@ -1133,7 +1134,7 @@ RaiseStandardException (StandardException   se,
     
     va_start (va, argc);
     i = argc + 1;
-    args = NewArray (False, typePoly, 1, &i);
+    args = NewArray (False, False, typePoly, 1, &i);
     BoxValueSet (args->array.values, 0, NewStrString (string));
     if (argc)
 	for (i = 0; i < argc; i++)

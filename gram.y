@@ -1618,7 +1618,7 @@ BuildRawname (ExprPtr colonnames, Atom name)
     len = 1;
     for (e = colonnames; e; e = e->tree.left)
 	len++;
-    array = NewArray (False, typePrim[rep_string], 1, &len);
+    array = NewArray (False, False, typePrim[rep_string], 1, &len);
     len--;
     BoxValueSet (array->array.values, len, AtomString (name));
     e = colonnames;

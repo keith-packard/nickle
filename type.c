@@ -1055,7 +1055,7 @@ TypeCompatibleAssign (TypePtr a, Value b)
 		    int	i;
 		    BoxPtr  box = b->array.values;
 
-		    for (i = 0; i < b->array.ents; i++)
+		    for (i = 0; i < box->nvalues; i++)
 			if (BoxValueGet (box, i) &&
 			    !TypeCompatibleAssign (a->array.type,
 						   BoxValueGet (box, i)))

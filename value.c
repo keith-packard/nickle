@@ -582,13 +582,13 @@ CopyMutable (Value v)
     case rep_array:
 	if (v->array.values->constant)
 	    RETURN (v);
-	nv = NewArray (False, ArrayType(&v->array),
+	nv = NewArray (False, v->array.resizable, ArrayType(&v->array),
 		       v->array.ndim, ArrayDims(&v->array));
 	for (i = 0; i < v->array.ndim; i++)
 	    ArrayLimits(&nv->array)[i] = ArrayLimits(&v->array)[i];
 	box = v->array.values;
 	nbox = nv->array.values;
-	n = v->array.ents;
+	n = box->nvalues;
 	break;
     case rep_struct:
 	if (v->structs.values->constant)

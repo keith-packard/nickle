@@ -203,6 +203,8 @@ struct fbuiltin_1 funcs_1[] = {
     { doputchar,	"putchar",	type_int,	"n" },
     { absD,		"abs",		type_float,	"n" },
     { floorD,		"floor",	type_integer,	"n" },
+    { exponentD,	"exponent",	type_integer,	"n" },
+    { mantissaD,	"mantissa",	type_rational,	"n" },
     { lengthS,          "length",	type_int,	"s", &StringScope },
     { _random,		"random",	type_int,	"n", &PrimitiveScope },
     { _srandom,		"srandom",	type_int,	"n", &PrimitiveScope },
@@ -1263,4 +1265,37 @@ precision (Value av)
     else
 	prec = 0;
     RETURN (NewInt (prec));
+}
+
+Value
+exponentD (Value av)
+{
+    ENTER ();
+    Value   ret;
+
+    if (av->value.tag != type_float)
+    {
+	RaiseError ("exponenet: argument must be imprecise %v", av);
+	RETURN (Zero);
+    }
+    ret = NewInteger (av->floats.exp->sign, av->floats.exp->mag);
+    ret = Plus (ret, NewInt (FpartLength (av->floats.mant)));
+    RETURN (ret);
+}
+
+Value
+mantissaD (Value av)
+{
+    ENTER ();
+    Value   ret;
+
+    if (av->value.tag != type_float)
+    {
+	RaiseError ("mantissa: argument must be imprecise %v", av);
+	RETURN (Zero);
+    }
+    ret = NewInteger (av->floats.mant->sign, av->floats.mant->mag);
+    ret = Divide (ret, Pow (NewInt (2), 
+			    NewInt (FpartLength (av->floats.mant))));
+    RETURN (ret);
 }

@@ -545,6 +545,8 @@ Value	NewNaturalFloat (Sign sign, Natural *n, unsigned prec);
 Value	NewRationalFloat (Rational *r, unsigned prec);
 Value	NewValueFloat (Value av, unsigned prec);
 
+unsigned    FpartLength (Fpart *a);
+
 #define DEFAULT_FLOAT_PREC	256
 
 Value	NewString (int);

@@ -208,7 +208,7 @@ FpartEqual (Fpart *a, Fpart *b, Bool negate)
     }
 }
 
-static unsigned
+unsigned
 FpartLength (Fpart *a)
 {
     unsigned	bits;
@@ -925,8 +925,6 @@ NewFloat (Fpart *mant, Fpart *exp, unsigned prec)
      * Trim to specified precision
      */
     bits = FpartLength (mant);
-    if (bits == 0)
-	exp = mant = zero_fpart;
     if (bits > prec)
     {
 	dist = bits - prec;
@@ -942,6 +940,9 @@ NewFloat (Fpart *mant, Fpart *exp, unsigned prec)
 	exp = FpartAdd (exp, NewIntFpart (dist), False);
 	mant = FpartRsl (mant, dist);
     }
+    bits = FpartLength (mant);
+    if (bits == 0)
+	exp = mant = zero_fpart;
     DebugF ("Can mant", mant);
     DebugF ("Can exp ", exp);
     ret = ALLOCATE (&FloatType.data, sizeof (Float));

@@ -1,0 +1,102 @@
+scope math {
+    public real function errbounds (real v)
+    {
+	integer	prec;
+
+	prec = precision (v);
+	if (prec == 0)
+	    prec = 256;
+	return 2^(prec+3);
+    }
+    
+    public real function exp (real v)
+    {
+	real	e;
+	real	m;
+	integer	loop;
+	real	err = errbounds (v);
+	real	term;
+
+	loop = 0;
+	e = 0;
+/*	printf ("Precision e %g\n", precision (v)); */
+	for (loop = 0; ; loop++)
+	{
+	    term = v^loop/loop!;
+	    e = e + term;
+/*	    printf ("Precision e %g term %g\n",
+		    precision (v), precision (term));
+	    printf ("e %g term %g term*err %g\n", e, term, term*err); */
+	    if (abs (e) >= abs (term * err))
+		break;
+	}
+	return e;
+    }
+
+    public real function sqrt (real v)
+    {
+	real	err;
+	real	prev, cur;
+	integer	n;
+
+	v = imprecise (v);
+	err = 1/errbounds (v);
+	prev = imprecise (1 / (0.75 * 2^(exponent(v)/2)), precision(v)*2);
+	for (;;)
+	{
+	    cur = 0.5 * prev * (3 - v * prev^2);
+	    printf ("cur %g prev %g - %e err %e\n",
+		    cur, prev, abs (cur-prev), err);
+	    if (abs (cur - prev) < err)
+		break;
+	    prev = cur;
+	}
+	return 1/cur;
+    }
+
+    public real function calculate_pi (integer prec)
+    {
+	real	tmp1, tmp2, a0, b0, c0, a1, b1, sum, pow_2;
+	integer	dflag, dprec, nn;
+
+	dprec = prec + 50;
+	dflag = 0;
+	a0 = 1;
+	sum = 1;
+	pow_2 = 4;
+	b0 = sqrt (imprecise (2, dprec));
+    }
+    
+    /*
+     * Compute an arctangent
+     *
+     * This is an infinite series:
+     *
+     * arctan(v) = v - v^3/3 + v^5/5 - v^7/7 + ...
+     *
+     * v = 1 / den
+     */
+
+    public real function arctan (real v)
+    {
+	real	p, q;
+	real	a;
+	real	err = errbounds (v);
+	real	term;
+
+	a = v;
+	p = 3;
+	q = 5;
+	for (;;)
+	{
+	    term = v^p/p - v^q/q;
+	    a -= term;
+	    if (abs (a) >= abs (term * err))
+		break;
+	    p += 4;
+	    q += 4;
+	}
+	return a;
+    }
+    
+}

@@ -459,6 +459,8 @@ Value	floorD(Value);
 Value	dim(Value);
 Value	dims(Value);
 Value	precision(Value);
+Value	exponentD(Value);
+Value	mantissaD(Value);
 Value	doHistoryInsert(Value);
 Value	doHistoryShow(int,Value*);
 Value	dofclose(Value);

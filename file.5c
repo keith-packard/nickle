@@ -6,6 +6,27 @@
  */
 
 extend namespace File {
+    public stdnull = open("/dev/null", "r+");
+
+    public typedef union {
+	file input;
+	file output;
+	file error;
+    } childfd;
+
+    /* this is what happens when you fork() */
+    public int mkchild(string path, string[*] argv, childfd fds ...) {
+	file[3] filter_fds = { stdnull, ... };
+	for (int i = 0; i < dim(fds); i++) {
+	    union switch(fds[i]) {
+	    case input f: filter_fds[0] = f; break;
+	    case output f: filter_fds[1] = f; break;
+	    case error f: filter_fds[2] = f; break;
+	    }
+	}
+	return filter(path, argv, filter_fds);
+    }
+
     public namespace FileGlobals {
 
 	public int getchar ()

@@ -263,7 +263,8 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_Command_lex_library,"lex_library",	    "i",    "s",    &CommandNamespace },
     { do_Command_lex_string,"lex_string",	    "i",    "s",    &CommandNamespace },
     { do_Command_edit,	    "edit",		    "i",    "A*s",  &CommandNamespace },
-    { do_Environ_get,	    "get",		    "p",    "s",    &EnvironNamespace },
+    { do_Environ_get,	    "get",		    "s",    "s",    &EnvironNamespace },
+    { do_Environ_check,	    "check",		    "i",    "s",    &EnvironNamespace },
     { do_Environ_unset,	    "unset",		    "i",    "s",    &EnvironNamespace },
     { 0,		    0 },
 };
@@ -1370,17 +1371,19 @@ do_String_substr (Value av, Value bv, Value cv)
     a = StringChars(&av->string);
     al = strlen(a);
     b = IntPart(bv, "substr: index not integer");
-    if (b < 0 || al < b)
+    c = IntPart(cv, "substr: count not integer");
+    if (c < 0) {
+	b += c;
+	c = -c;
+    }
+    if (b < 0 || b >= al)
     {
 	RaiseStandardException (exception_invalid_argument,
 				"substr: index out of range",
 				2, NewInt (1), bv);
 	RETURN (av);
     }
-    c = IntPart(cv, "substr: count not integer");
-    if (c < 0)
-	c = al - b;
-    if (b + al < c)
+    if (b + c > al)
     {
 	RaiseStandardException (exception_invalid_argument,
 				"substr: count out of range",
@@ -1944,9 +1947,25 @@ do_Environ_get (Value av)
     char    *c;
 
     c = getenv (StringChars (&av->string));
-    if (!c)
+    if (!c) {
+	RaiseStandardException (exception_invalid_argument,
+				"name not available",
+				2, NewInt(0), av);
 	RETURN (Zero);
+    }
     RETURN (NewStrString (c));
+}
+
+Value
+do_Environ_check (Value av)
+{
+    ENTER ();
+    char    *c;
+
+    c = getenv (StringChars (&av->string));
+    if (c)
+	RETURN (One);
+    RETURN (Zero);
 }
 
 Value

@@ -194,8 +194,9 @@ happen if a definition is re-evaluated.
 Here are the basic Nickle operators, grouped in order
 of decreasing precedence:
 .PP
-.IP "array[E,E,...,E]"
-Refers to the E'th element of this array,
+.IP "A[E,E,...,E]"
+Refers to the E'th element of the
+array expression A,
 or the E1'th/E2'th/etc
 element of a multi-dimensional array.
 Both arrays of arrays ala C and multidimensional
@@ -302,6 +303,9 @@ Short-circuit logical OR.
 Conditional expression: if first expression
 is logical true, value is second expression,
 else third.
+.IP "fork E"
+Create (and return) a thread.  See Thread
+below for details.
 .IP "= += -= *= /= //= %= **= <<= >>= ^= &= |="
 Assignment operators.  Left-hand-side must be
 assignable.
@@ -801,8 +805,32 @@ Bound to the standard output stream.
 .IP "file stderr"
 Bound to the standard error stream.
 .LP
+Exceptions:
+.PP
+A few standard exceptions are predeclared
+and used internally by Nickle.
+.IP "exception uninitialized_value(string msg)"
+Attempt to use an uninitialized value.
+.IP "exception invalid_argument(string msg, int arg, poly val)"
+The arg-th argument to a builtin function had invalid value
+val.
+.IP "exception readonly_box(string msg, poly val)"
+Attempt to change the value of a read-only quantity
+to val.
+.IP "exception invalid_array_bounds(string msg, poly a, poly i)"
+Attempt to access array a at index i is out of bounds.
+.IP "exception divide_by_zero(string msg, real num, real den)"
+Attempt to divide num by den with den == 0.
+.IP "exception invalid_struct_member(string msg, poly struct, string name)"
+Attempt to refer to member name of the object struct, which does
+not exist.
+.IP "exception invalid_binop_values(string msg, poly arg1, poly arg2)"
+Attempt to evaluate a binary operator with args arg1 and arg2,
+where at least one of these values is invalid.
+.IP "exception invalid_unop_values(string msg, poly arg)"
+Attempt to evaluate a unary operator with invalid argument arg.
+.LP
 Builtin Namespaces:
-.\" HERE
 .IP Math
 The math functions available in the Math
 namespace
@@ -995,6 +1023,188 @@ modifiers.
 .IP "int function vfscanf (file f, string fmt, (*poly)[*] args)"
 Given the file f, the format fmt, and the array of arguments args,
 fscanf() appropriately.
+.PP
+.IP Thread
+The namespace Thread supports various operations
+useful for programming with
+.IR threads ,
+which provide concurrent flow of control in the shared
+address space.  There is one piece of special
+syntax associated with threads.
+.RS
+.IP "fork(E)"
+Accepts an arbitrary expression, and evaluates it
+in a new child thread.  The parent thread receives
+the thread as the value of the fork expression.
+.RE
+.IP
+The remainder of the Thread functions are fairly standard.
+.IP "int function kill(thread list...)"
+Kills every running thread in the array list.  With
+no arguments, kills the currently running thread.
+Returns the number of threads killed.
+.IP "int function trace(poly list...)"
+Shows the state of
+every running thread in the array list.  With
+no arguments, traces the default continuation.
+Returns the number of threads traced.
+.IP "int function cont()"
+Continues execution of any interrupted threads,
+and returns the number of continued threads.
+.IP "thread function current()"
+Return the current thread.
+.IP "int function list()"
+Reports the currently running thread to stdout.
+.IP "int function get_priority(thread t)"
+Reports the priority of the given thread.
+.IP "thread function id_to_thread(int id)"
+Returns the thread with the given id,
+if found, and 0 otherwise.
+.IP "poly function join(thread t)"
+Waits for thread t to terminate, and returns whatever
+it returns.
+.IP "int function set_priority(thread t, int i)"
+Attempts to set the priority of thread t to level i,
+and returns the new priority.  Larger priorities
+mean more runtime: a task with higher priority will
+always run instead of a lower priority task.  Threads
+of equal highest priority will be pre-emptively multitasked.
+.PP
+.IP Semaphore
+The Semaphore namespace encapsulates operations on the
+semaphore built-in ADT.  A semaphore is used
+for thread synchronization.  Each signal() operation
+on the semaphore awakens the least-recent thread to
+wait() on that semaphore.  The ``count'' of waiting
+processes may be set at semaphore creation time.
+.IP "semaphore function new(int c)"
+Create a new semaphore with an initial count c of waiting
+processes.  If c is positive, it means that c threads
+may wait on the semaphore before one blocks.  If c is
+negative, it sets a count of threads which must be
+waiting on the semaphore before further waits will
+not block.
+.IP "semaphore function new()"
+Call semaphore(0) and return its result.
+.IP "int signal(semaphore s)"
+Increment semaphore s.  If s is non-positive, and
+some thread is blocked on s, release the least-recently-blocked
+thread.  Return 1 on success.
+.IP "int wait(semaphore s)"
+Decrement semaphore s.  If s is negative, block until released.
+Return 1 on success.
+.IP "int test(semaphore s)"
+Test whether wait() on semaphore s would cause the current
+thread to block.  If so, return 0.  Otherwise,
+attempt to decrement s, and return 1 if successful.
+.PP
+.IP String
+The String namespace contains a few basic operations
+on the string ADT.
+.IP "int function length(string s)"
+Returns the number of characters in s.
+.IP "string function new(int c)"
+Returns as a string the single character c.
+.IP "string function new(int cv[*])"
+Returns a string comprised of the characters of cv.
+.IP "int function index(string t, string p)"
+Returns the integer index of the pattern string p in
+the target string t, or -1 if p is not a substring of
+t.
+.IP "string function substr(string s, int i, int l)"
+Returns the substring of string s starting with the
+character at offset i (zero-based) and continuing
+for a total of l characters.  If l is negative,
+the substring will consist of characters preceding
+rather than succeeding i.
+.PP
+.IP Command
+The Command namespace is used by the top-level commands
+as described below.  It is also occasionally useful in
+its own right.
+.IP "string library_path"
+Contains the current library search path, a colon-separated
+list of directories to be searched for library files.
+.IP "int function undefine(string name)"
+Implements the top-level undefine
+command. Remove the name denoted by string name from the
+namespace.  This removes all visible definitions of
+the name.
+.IP "int function undefine(string[*] names)"
+Remove each of the names in the array names from the
+namespace.  This removes all visible definitions of
+each name.
+.IP "int function delete(string name)"
+Attempt to remove the command with the given string name from the top-level
+command list, and return 1 if successful.
+.IP "int function lex_file(string path)"
+Attempt to make the file at the given path the current source of
+Nickle code, and return 1 if successful.  Note that this
+effectively ``includes'' the file by pushing it onto a stack
+of files to be processed.
+.IP "int function lex_library(string filename)"
+Like lex_file(), but searches the directories given by the
+.I library_path
+variable for the first file with the given filename.
+.IP "int function lex_string(string code)"
+Attempt to make the Nickle code contained in the string code be
+the next input.
+.IP "int function edit(string[*] names)"
+Implements the top-level edit command. The names in the
+array are a path of namespace names leading to the symbol
+name, which is last.
+.IP "int function new(string name, poly func)"
+Binds function func to the top-level command
+string name: i.e., makes it part of the
+top-level command vocabulary.
+.IP "int function new_names(string name, poly func)"
+Binds function func to the top-level command
+string name: i.e., makes it part of the
+top-level command vocabulary.  Unlike new(),
+the string names given to func at the top
+level are passed unevaluated as an array of
+string names
+or as a single string name.
+.IP "int function pretty_print(file f, string[*] names)"
+Implements the top-level print command.  Each
+of the passed name strings is looked up and the
+corresponding code printed to file f.
+.IP "int function display(string fmt, poly val)"
+Uses printf() to display the value val in
+format fmt.
+.PP
+.IP History
+Nickle maintains a top-level value history, useful as an adjunct
+to command-line editing when calculating.  The
+History namespace contains functions to access this history.
+.IP "int function show(string fmt)"
+Implements the history top-level command with no arguments.
+Show the most recent history values with format fmt.
+.IP "int function show(string fmt, int count)"
+Implements the history top-level command with one argument.
+Show the last count history values with format fmt.
+.IP "int function show(string fmt, int first, int last)"
+Implements the history top-level command with two arguments.
+.IP "poly function insert(poly val)"
+Insert val in the history list, and return it.
+.PP
+.IP Environ
+Many operating systems have some notion of ``environment variables.''
+The Environ namespace contains functions to manipulate these.
+.IP "int function check(string name)"
+Returns 1 if the variable with the given name is
+in the environment, and 0 otherwise.
+.IP "string function get(string name)"
+Attempts to retrieve and return the value of
+the environment variable with the given
+name.  Throws an invalid_argument exception if
+the variable is not available.
+.IP "int function unset(string name)"
+Attempts to unset the environment variable with the given
+name, and returns an indication of success.
+.IP "string function set(string name, string value)"
+Attempts to unset the environment variable with the given
+name to the given value, and returns an indication of success.
 .\"
 .SH COMMANDS
 .PP
@@ -1011,7 +1221,7 @@ Load a file given by the string name E.
 .IP "library E"
 Load a library given by the string name E.  See the discussion of the
 NICKLELIB environment variable in ENVIRONMENT
-below.
+below, and the discussion of Command::library_path above.
 .IP "E # E"
 Print expr1 in base expr2 .
 .IP "print NAME"

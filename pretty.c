@@ -22,6 +22,7 @@ void printParameters (Value f, Expr *e, Bool nest);
 void printAinit (Value f, Expr *e, int level, Bool nest);
 void printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
 void printStatement (Value f, Expr *e, int level, int blevel, Bool nest);
+void printTypes (Value f, Types *t);
     
 void
 printtype (Value f, Type t)
@@ -91,8 +92,8 @@ printclass (Value f, Class class)
     case class_auto:
 	FilePuts (f, "auto");
 	break;
-    case class_struct:
-	FilePuts (f, "struct");
+    case class_typedef:
+	FilePuts (f, "typedef");
 	break;
     case class_scope:
 	FilePuts (f, "scope");
@@ -210,7 +211,7 @@ void
 printAinit (Value f, Expr *e, int level, Bool nest)
 {
     switch (e->base.tag) {
-    case AINIT:
+    case OC:
 	FilePuts (f, "{ ");
 	printAinits (f, e->tree.left, level, nest);
 	FilePuts (f, " }");
@@ -256,6 +257,7 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	    printParameters (f, e->tree.right, nest);
 	FilePuts (f, ")");
 	break;
+#if 0
     case ARRAY:
 	FilePuts (f, "[");
 	if (e->tree.left)
@@ -276,11 +278,12 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	printSinit (f, e->tree.right, level, nest);
 	FilePuts (f, " }");
 	break;
+#endif
     case CONST:
 	print (f, e->constant.constant);
 	break;
     case FUNCTION:
-	PrintCode (f, e->code.code, 0, publish_private, level + 1, nest);
+	PrintCode (f, e->code.code, 0, class_undef, publish_private, level + 1, nest);
 	break;
     case PLUS:
     case MINUS:
@@ -405,28 +408,29 @@ printDecl (Value f, Expr *e, int level, Bool nest)
     printpublish (f, e->decl.publish);
     switch (e->decl.class) {
     case class_global:
-	if (e->decl.type != type_undef)
-	    printtype (f, e->decl.type);
+	if (e->decl.type)
+	    fprintTypes (f, e->decl.type);
 	else
 	    FilePuts (f, "global");
 	break;
     case class_auto:
-	if (e->decl.type != type_undef)
-	    printtype (f, e->decl.type);
+	if (e->decl.type)
+	    fprintTypes (f, e->decl.type);
 	else
 	    FilePuts (f, "auto");
 	break;
     case class_static:
-	FilePuts (f, "static");
-	if (e->decl.type != type_undef)
+    case class_typedef:
+	printclass (f, e->decl.class);
+	if (!TypePoly (e->decl.type))
 	{
 	    FilePuts (f, " ");
-	    printtype (f, e->decl.type);
+	    fprintTypes (f, e->decl.type);
 	}
 	break;
     case class_undef:
     default:
-	printtype (f, e->decl.type);
+	fprintTypes (f, e->decl.type);
 	break;
     }
     for (decl = e->decl.decl; decl; decl = decl->next)
@@ -533,7 +537,8 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
     case FUNCTION:
 	printindent (f, level);
 	PrintCode (f, e->tree.right->tree.right->code.code, 
-		   AtomName (e->tree.left->decl.decl->name),
+		   e->tree.left->decl.decl->name,
+		   e->tree.left->decl.class,
 		   e->tree.left->decl.publish,
 		   level, nest);
 	FilePuts (f, "\n");
@@ -560,52 +565,52 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 }
 
 void
-PrintCode (Value f, CodePtr code, char *name, Publish publish, int level, Bool nest)
+PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
+	   int level, Bool nest)
 {
-    ExprPtr	args;
-    DeclListPtr	argd;
+    ArgType	*args;
     
-    FilePuts (f, "function ");
-    if (code->base.type != type_undef)
+    if (name)
     {
-	printtype (f, code->base.type);
+	printpublish (f, publish);
+	printclass (f, class);
+    }
+    if (!TypePoly (code->base.type))
+    {
+	fprintTypes (f, code->base.type);
 	FilePuts (f, " ");
     }
     if (name)
     {
-	printpublish (f, publish);
-	FilePuts (f, name);
+	FilePuts (f, "function ");
+	FilePuts (f, AtomName (name));
 	FileOutput (f, ' ');
     }
+    else
+	FilePuts (f, "func ");
+    FilePuts (f, "(");
+    for (args = code->base.args; args; args = args->next)
+    {
+	if (!TypePoly (args->type) || !args->name)
+	{
+	    fprintTypes (f, args->type);
+	    if (args->name)
+		FilePuts (f, " ");
+	}
+	if (args->name)
+	    FilePuts (f, AtomName (args->name));
+	if (args->next)
+	    FilePuts (f, ", ");
+    }
+    if (code->base.builtin && code->base.argc == -1)
+	FilePuts (f, "...");
+    FilePuts (f, ")");
     if (code->base.builtin)
     {
-	FileOutput (f, '(');
-	if (code->base.argc == -1)
-	    FilePuts (f, "...");
-	else
-	    FilePutInt (f, code->base.argc);
-	FilePuts (f, ") <builtin>");
+	FilePuts (f, " <builtin>");
     }
     else
     {
-	FilePuts (f, "(");
-	for (args = code->func.args; args; args = args->tree.right)
-	{
-	    for (argd = args->tree.left->decl.decl; argd; argd = argd->next)
-	    {
-		if (args->tree.left->decl.type != type_undef)
-		{
-		    printtype (f, args->tree.left->decl.type);
-		    FilePuts (f, " ");
-		}
-		FilePuts (f, AtomName (argd->name));
-		if (argd->next)
-		    FilePuts (f, ", ");
-	    }
-	    if (args->tree.right)
-		FilePuts (f, ", ");
-	}
-	FilePuts (f, ")");
 	if (nest)
 	{
 	    FilePuts (f, "\n");
@@ -622,31 +627,6 @@ void
 PrintStat (Value f, Expr *e, Bool nest)
 {
     printStatement (f, e, 1, 1, nest);
-}
-
-void
-printStruct (Value f, Symbol *name, int level)
-{
-    int		    i;
-    StructType	    *st;
-    StructElement   *se;
-    
-    printindent (f, level);
-    FilePuts (f, "struct ");
-    FilePuts (f, AtomName (name->symbol.name));
-    FilePuts (f, " {\n");
-    st = name->structs.type;
-    se = StructTypeElements (st);
-    for (i = 0; i < st->nelements; i++)
-    {
-	printindent (f, level + 1);
-	printtype (f, se[i].type);
-	FilePuts (f, " ");
-	FilePuts (f, AtomName (se[i].name));
-	FilePuts (f, ";\n");
-    }
-    printindent (f, level);
-    FilePuts (f, "};\n");
 }
 
 void
@@ -669,20 +649,19 @@ doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 {
     printindent (f, level);
     switch (name->symbol.class) {
-    case class_struct:
-	printStruct (f, name, level);
-	break;
     case class_global:
 	if (BoxValue (name->global.value, 0)->value.tag == type_func)
 	{
 	    PrintCode (f, BoxValue (name->global.value, 0)->func.code,
-		       AtomName (name->symbol.name), 
-		       name->symbol.publish, level, nest);
+		       name->symbol.name,
+		       class_undef,
+		       name->symbol.publish,
+		       level, nest);
 	}
 	else
 	{
 	    FilePuts (f, "(");
-	    printtype (f, name->symbol.type);
+	    fprintTypes (f, name->symbol.type);
 	    FilePuts (f, ") ");
 	    print (f, BoxValue (name->global.value, 0));
 	}
@@ -702,9 +681,9 @@ doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 	printpublish (f, name->symbol.publish);
 	printclass (f, name->symbol.class);
 	FilePuts (f, " ");
-	if (name->symbol.type != type_undef)
+	if (!TypePoly (name->symbol.type))
 	{
-	    printtype (f, name->symbol.type);
+	    fprintTypes (f, name->symbol.type);
 	    FilePuts (f, " ");
 	}
 	FilePuts (f, AtomName (name->symbol.name));

@@ -30,6 +30,9 @@ ObjMark (void *object)
 	case OpNameRef:
 	    MemReference (inst->var.name);
 	    break;
+	case OpBuildStruct:
+	    MemReference (inst->structs.structs);
+	    break;
 	case OpConst:
 	    MemReference (inst->constant.constant);
 	    break;
@@ -114,10 +117,54 @@ DefaultClass (ScopePtr scope)
     return class_global;
 }
 
+void
+CompileCanonType (ObjPtr obj, ScopePtr scope, TypesPtr type, ExprPtr stat)
+{
+    SymbolPtr	s;
+    int		depth;
+    ArgType	*arg;
+    
+    switch (type->base.tag) {
+    case types_prim:
+	break;
+    case types_name:
+	if (!type->name.type)
+	{
+	    s = ScopeFindSymbol (scope, type->name.name, &depth);
+	    if (!s)
+		CompileError (obj, stat, "No typedef \"%A\" in scope",
+			      type->name.name);
+	    else if (s->symbol.class != class_typedef)
+		CompileError (obj, stat, "Symbol \"%A\" not a typedef",
+			      type->name.name);
+	    else
+	    {
+		type->name.type = s->symbol.type;
+		CompileCanonType (obj, scope, type->name.type, stat);
+	    }
+	}
+	break;
+    case types_ref:
+    	CompileCanonType (obj, scope, type->ref.ref, stat);
+	break;
+    case types_func:
+	CompileCanonType (obj, scope, type->func.ret, stat);
+	for (arg = type->func.args; arg; arg = arg->next)
+	    CompileCanonType (obj, scope, arg->type, stat);
+	break;
+    case types_array:
+	CompileCanonType (obj, scope, type->array.type, stat);
+	break;
+    case types_struct:
+	break;
+    }
+}
+
 SymbolPtr
 CompileAddSymbol (ScopePtr scope, SymbolPtr symbol)
 {
     ENTER ();
+    
     ScopeAddSymbol (scope, symbol);
     /*
      * For symbols hanging from a frame (statics, locals and args),
@@ -146,22 +193,22 @@ CompileAddSymbol (ScopePtr scope, SymbolPtr symbol)
 }
 
 SymbolPtr
-AddSymbol (ScopePtr scope, Atom name, Type defType, Publish publish)
+AddSymbol (ScopePtr scope, Atom name, Types *type, Publish publish)
 {
     ENTER ();
     SymbolPtr	s;
     
     if (DefaultClass (scope) == class_auto)
-	s = NewSymbolAuto (name, defType);
+	s = NewSymbolAuto (name, type);
     else
-	s = NewSymbolGlobal (name, defType, publish);
+	s = NewSymbolGlobal (name, type, publish);
     CompileAddSymbol (scope, s);
     RETURN (s);
 }
 
 SymbolPtr
 FindSymbol (ObjPtr obj, ExprPtr stat, ScopePtr scope, Atom name, 
-	    int *depth, Type defType, Bool createIfNecessary)
+	    int *depth, Types *type, Bool createIfNecessary)
 {
     ENTER ();
     SymbolPtr   s;
@@ -169,14 +216,15 @@ FindSymbol (ObjPtr obj, ExprPtr stat, ScopePtr scope, Atom name,
     s = ScopeFindSymbol (scope, name, depth);
     if (!s)
     {
+	CompileCanonType (obj, scope, type, stat);
 	if (!createIfNecessary)
 	{
 	    CompileError (obj, stat, "No symbol \"%A\" in scope", name);
 	    if (DefaultClass (scope) == class_global)
-		s = NewSymbolGlobal (name, defType, publish_private);
+		s = NewSymbolGlobal (name, type, publish_private);
 	}
 	if (!s)
-	    s = AddSymbol (scope, name, defType, publish_private);
+	    s = AddSymbol (scope, name, type, publish_private);
 	*depth = 0;
     }
     /*
@@ -224,11 +272,16 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat,
     case NAME:
 	BuildInst(obj, OpNameRef, inst, stat);
 	inst->var.name = FindSymbol (obj, stat, scope, expr->atom.atom, 
-				     &inst->var.staticLink, type_undef,
+				     &inst->var.staticLink, typesPoly,
 				     createIfNecessary);
-	if (inst->var.name->symbol.class == class_scope)
-	    CompileError (obj, stat, "Invalid use of scope \"%A\"",
-			  expr->atom.atom);
+	expr->base.type = inst->var.name->symbol.type;
+	switch (inst->var.name->symbol.class) {
+	case class_scope:
+	case class_typedef:
+	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
+			  inst->var.name->symbol.class, expr->atom.atom);
+	    break;
+	}
 	break;
     case DOT:
 	/*
@@ -238,10 +291,16 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat,
 	{
 	    obj = _CompileLvalue (obj, expr->tree.right,
 				  s->scope.scope, stat, False);
+	    expr->base.type = expr->tree.right->base.type;
 	}
 	else
 	{
 	    obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+	    expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
+						 expr->base.tag,
+						 expr->tree.right->atom.atom);
+	    if (!expr->base.type)
+		CompileError (obj, stat, "Object left of '.' is not a struct");
 	    BuildInst (obj, OpDotRef, inst, stat);
 	    inst->atom.atom = expr->tree.right->atom.atom;
 	}
@@ -249,13 +308,25 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat,
     case ARROW:
 	obj = _CompileExpr (obj, expr->tree.left, scope, stat);
 	BuildInst (obj, OpArrowRef, inst, stat);
+	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
+					     expr->base.tag,
+					     expr->tree.right->atom.atom);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Object left of '->' is not a struct");
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case OS:
 	obj = _CompileArray (obj, expr, scope, OpArrayRef, stat);
+	/* FIXME expr->base.type = */
 	break;
     case STAR:
 	obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+	expr->base.type = TypeCombineUnary (expr->tree.left->base.type, expr->base.tag);
+	if (!expr->base.type)
+	{
+	    CompileError (obj, stat, "Incompatible type %t in unary operation",
+			  expr->tree.left->base.type);
+	}
 	break;
     }
     RETURN (obj);
@@ -270,6 +341,15 @@ _CompileBinary (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr
     obj = _CompileExpr (obj, expr->tree.left, scope, stat);
     SetPush (obj);
     obj = _CompileExpr (obj, expr->tree.right, scope, stat);
+    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+					 expr->base.tag,
+					 expr->tree.right->base.type);
+    if (!expr->base.type)
+    {
+	CompileError (obj, stat, "Incompatible types %t %t in binary operation",
+		      expr->tree.left->base.type,
+		      expr->tree.right->base.type);
+    }
     BuildInst (obj, opCode, inst, stat);
     RETURN (obj);
 }
@@ -279,11 +359,19 @@ _CompileUnary (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr 
 {
     ENTER ();
     InstPtr inst;
+    ExprPtr down;
     
     if (expr->tree.right)
-	obj = _CompileExpr (obj, expr->tree.right, scope, stat);
+	down = expr->tree.right;
     else
-	obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+	down = expr->tree.left;
+    obj = _CompileExpr (obj, down, scope, stat);
+    expr->base.type = TypeCombineUnary (down->base.type, expr->base.tag);
+    if (!expr->base.type)
+    {
+	CompileError (obj, stat, "Incompatible type %t in unary operation",
+		      down->base.type);
+    }
     BuildInst (obj, opCode, inst, stat);
     RETURN (obj);
 }
@@ -297,6 +385,15 @@ _CompileAssign (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr
     obj = _CompileExpr (obj, expr->tree.right, scope, stat);
     SetPush (obj);
     obj = _CompileLvalue (obj, expr->tree.left, scope, stat, opCode == OpAssign);
+    expr->base.type = TypeCombineAssign (expr->tree.left->base.type,
+					 expr->base.tag,
+					 expr->tree.right->base.type);
+    if (!expr->base.type)
+    {
+	CompileError (obj, stat, "Incompatible types in assignment %t = %t",
+		      expr->tree.left->base.type,
+		      expr->tree.right->base.type);
+    }
     BuildInst (obj, opCode, inst, stat);
     RETURN (obj);
 }
@@ -308,6 +405,8 @@ _CompileCall (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     ExprPtr arg;
     InstPtr inst;
     int	    argc;
+    int	    i;
+    ArgType *argt;
 
     arg = expr->tree.right;
     argc = 0;
@@ -316,9 +415,45 @@ _CompileCall (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	obj = _CompileExpr (obj, arg->tree.left, scope, stat);
 	SetPush (obj);
 	arg = arg->tree.right;
+	/* FIXME - typecheck arguments */
 	argc++;
     }
     obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+    expr->base.type = TypeCombineFunction (expr->tree.left->base.type);
+    if (!expr->base.type)
+    {
+	CompileError (obj, stat, "Incompatible type %t for function call",
+		      expr->tree.left->base.type);
+    }
+    if (expr->tree.left->base.type->base.tag == types_func)
+    {
+	argt = expr->tree.left->base.type->func.args;
+	arg = expr->tree.right;
+	i = 0;
+	while (argt || arg)
+	{
+	    if (!argt)
+	    {
+		if (!expr->tree.left->base.type->func.varargs)
+		    CompileError (obj, stat, "Too many parameters");
+		break;
+	    }
+	    if (!arg)
+	    {
+		CompileError (obj, stat, "Too few parameters");
+		break;
+	    }
+	    if (!TypeCompatible (argt->type, arg->tree.left->base.type, True))
+	    {
+		CompileError (obj, stat, "Incompatible types %t %t argument %d",
+			      argt->type, arg->tree.left->base.type, i);
+		break;
+	    }
+	    i++;
+	    argt = argt->next;
+	    arg = arg->tree.right;
+	}
+    }
     BuildInst (obj, OpCall, inst, stat);
     inst->ints.value = argc;
     BuildInst (obj, OpNoop, inst, stat);
@@ -343,6 +478,7 @@ _CompileArray (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr 
 	ndim++;
     }
     obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+    /* FIXME -- type compute */
     BuildInst (obj, opCode, inst, stat);
     inst->ints.value = ndim;
     RETURN (obj);
@@ -365,6 +501,7 @@ _CompileBuildArray (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	sub = sub->tree.right;
 	ndim++;
     }
+    /* FIXME -- type compute */
     BuildInst (obj, OpBuildArray, inst, stat);
     inst->ints.value = ndim;
     RETURN (obj);
@@ -376,7 +513,7 @@ _CompileCountDimensions (ExprPtr expr)
     int	    ndimMax, ndim;
     
     ndimMax = 0;
-    if (expr->base.tag == AINIT)
+    if (expr->base.tag == ARRAY)
     {
 	expr = expr->tree.left;
 	while (expr)
@@ -395,7 +532,7 @@ _CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 {
     int	    dim;
     
-    if (expr->base.tag == AINIT)
+    if (expr->base.tag == ARRAY)
     {
 	dim = 0;
 	expr = expr->tree.left;
@@ -443,7 +580,7 @@ ObjPtr
 _CompileArrayInits (ObjPtr obj, ExprPtr expr, ScopePtr scope, int *ninits, ExprPtr stat)
 {
     ENTER ();
-    if (expr->base.tag == AINIT)
+    if (expr->base.tag == ARRAY)
     {
 	expr = expr->tree.left;
 	while (expr)
@@ -475,7 +612,8 @@ _CompileStructInitValues (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat
 }
 
 ObjPtr
-_CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
+_CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, StructType *structs,
+			   ScopePtr scope, ExprPtr stat)
 {
     ENTER ();
     InstPtr inst;
@@ -483,6 +621,7 @@ _CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr sta
     {
 	BuildInst (obj, OpInitStruct, inst, stat);
 	inst->atom.atom = expr->tree.left->tree.left->atom.atom;
+	
 	expr = expr->tree.right;
     }
     RETURN (obj);
@@ -559,48 +698,91 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     int	    test_inst, middle_inst;
     InstPtr inst;
     SymbolPtr	s;
+    Types	*t;
     
     expr->base.scope = scope;
     switch (expr->base.tag) {
     case NAME:
 	BuildInst (obj, OpName, inst, stat);
 	inst->var.name = FindSymbol (obj, stat, scope, expr->atom.atom,
-				     &inst->var.staticLink, type_undef, False);
-	if (inst->var.name->symbol.class == class_scope)
-	    CompileError (obj, stat, "Invalid use of scope \"%A\"",
-			  expr->atom.atom);
-	break;
-    case ARRAY:
-	if (expr->tree.right)
-	{
-	    i = 0;
-	    obj = _CompileArrayInits (obj, expr->tree.right, scope, &i, stat);
-	}
-	if (expr->tree.left)
-	{
-	    obj = _CompileBuildArray (obj, expr->tree.left, scope, stat);
-	}
-	else
-	{
-	    obj = _CompileImplicitArray (obj, expr->tree.right, scope, stat);
-	}
-	if (expr->tree.right)
-	{
-	    BuildInst (obj, OpInitArray, inst, stat);
-	    inst->ints.value = i;
+				     &inst->var.staticLink, typesPoly, False);
+	expr->base.type = inst->var.name->symbol.type;
+	switch (inst->var.name->symbol.class) {
+	case class_scope:
+	case class_typedef:
+	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
+			  inst->var.name->symbol.class, expr->atom.atom);
+	    break;
 	}
 	break;
-    case STRUCT:
-	obj = _CompileStructInitValues (obj, expr->tree.right, scope, stat);
-	BuildInst (obj, OpName, inst, stat);
-	inst->var.name = FindSymbol (obj, stat, scope, 
-				     expr->tree.left->atom.atom,
-				     &inst->var.staticLink, type_struct, False);
-	obj = _CompileStructInitAssigns (obj, expr->tree.right, scope, stat);
+    case NEW:
+	CompileCanonType (obj, scope, expr->base.type, stat);
+	t = TypesCanon (expr->base.type);
+	switch (t->base.tag) {
+	case types_struct:
+	    if (expr->tree.left)
+	    {
+		if (expr->tree.left->base.tag != STRUCT)
+		{
+		    CompileError (obj, stat, "Non struct initializer");
+		    break;
+		}
+		obj = _CompileStructInitValues (obj, 
+						expr->tree.left->tree.left, 
+						scope, stat);
+	    }
+	    BuildInst (obj, OpBuildStruct, inst, stat);
+	    inst->structs.structs = t->structs.structs;
+	    if (expr->tree.left)
+	    {
+		obj = _CompileStructInitAssigns (obj, 
+						 expr->tree.left->tree.left, 
+						 t->structs.structs,
+						 scope, stat);
+	    }
+	    break;
+	case types_array:
+	    if (expr->tree.left)
+	    {
+		if (expr->tree.left->base.tag != ARRAY)
+		{
+		    CompileError (obj, stat, "Non array initializer");
+		    break;
+		}
+		i = 0;
+		obj = _CompileArrayInits (obj, expr->tree.left, 
+					  scope, &i, stat);
+	    }
+	    if (t->array.dimensions)
+	    {
+		obj = _CompileBuildArray (obj, t->array.dimensions,
+					  scope, stat);
+	    }
+	    else if (!expr->tree.left)
+	    {
+		CompileError (obj, stat, "Non-dimensioned array with no initializers");
+	    }
+	    else
+	    {
+		obj = _CompileImplicitArray (obj, expr->tree.left,
+					     scope, stat);
+	    }
+	    if (expr->tree.left)
+	    {
+		BuildInst (obj, OpInitArray, inst, stat);
+		inst->ints.value = i;
+	    }
+	    break;
+	default:
+	    CompileError (obj, stat, 
+			  "Non composite type %t in composite initializer", t);
+	    break;
+	}
 	break;
     case CONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
+	expr->base.type = NewTypesPrim (expr->constant.constant->value.tag);
 	break;
     case OS:	    
 	obj = _CompileArray (obj, expr, scope, OpArray, stat);
@@ -618,24 +800,41 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	{
 	    obj = _CompileExpr (obj, expr->tree.right,
 				s->scope.scope, stat);
+	    expr->base.type = expr->tree.right->base.type;
 	}
 	else
 	{
 	    obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+	    expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
+						 expr->base.tag,
+						 expr->tree.right->atom.atom);
+	    if (!expr->base.type)
+		CompileError (obj, stat, "Object left of '.' is not a struct");
 	    BuildInst (obj, OpDot, inst, stat);
 	    inst->atom.atom = expr->tree.right->atom.atom;
 	}
 	break;
     case ARROW:
 	obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
+					     expr->base.tag,
+					     expr->tree.right->atom.atom);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Object left of '->' is not a struct");
 	BuildInst (obj, OpArrow, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case FUNCTION:
 	obj = _CompileFunc (obj, expr->code.code, scope, stat);
+	expr->base.type = NewTypesFunc (expr->code.code->base.type,
+					False,
+					expr->code.code->base.args);
 	break;
     case STAR:	    obj = _CompileUnary (obj, expr, scope, OpStar, stat); break;
-    case AMPER:	    obj = _CompileLvalue (obj, expr->tree.left, scope, stat, False); break;
+    case AMPER:	    
+	obj = _CompileLvalue (obj, expr->tree.left, scope, stat, False);
+	expr->base.type = NewTypesRef (expr->tree.left->base.type);
+	break;
     case UMINUS:    obj = _CompileUnary (obj, expr, scope, OpUminus, stat); break;
     case LNOT:	    obj = _CompileUnary (obj, expr, scope, OpLnot, stat); break;
     case BANG:	    obj = _CompileUnary (obj, expr, scope, OpBang, stat); break;
@@ -644,25 +843,45 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	if (expr->tree.left)
 	{
 	    obj = _CompileLvalue (obj, expr->tree.left, scope, stat, False);
+	    expr->base.type = TypeCombineAssign (expr->tree.left->base.type,
+						 ASSIGNPLUS,
+						 NewTypesPrim (type_int));
 	    BuildInst (obj, OpPreInc, inst, stat);
 	}
 	else
 	{
 	    obj = _CompileLvalue (obj, expr->tree.right, scope, stat, False);
+	    expr->base.type = TypeCombineAssign (expr->tree.right->base.type,
+						 ASSIGNPLUS,
+						 NewTypesPrim (type_int));
 	    BuildInst (obj, OpPostInc, inst, stat);
 	}
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Invalid ++ type %t",
+			  expr->tree.left ? expr->tree.left->base.type :
+			  expr->tree.right->base.type);
 	break;
     case DEC:
 	if (expr->tree.left)
 	{
 	    obj = _CompileLvalue (obj, expr->tree.left, scope, stat, False);
+	    expr->base.type = TypeCombineAssign (expr->tree.left->base.type,
+						 ASSIGNMINUS,
+						 NewTypesPrim (type_int));
 	    BuildInst (obj, OpPreDec, inst, stat);
 	}
 	else
 	{
 	    obj = _CompileLvalue (obj, expr->tree.right, scope, stat, False);
+	    expr->base.type = TypeCombineAssign (expr->tree.right->base.type,
+						 ASSIGNMINUS,
+						 NewTypesPrim (type_int));
 	    BuildInst (obj, OpPostDec, inst, stat);
 	}
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Invalid -- type %t",
+			  expr->tree.left ? expr->tree.left->base.type :
+			  expr->tree.right->base.type);
 	break;
     case PLUS:	    obj = _CompileBinary (obj, expr, scope, OpPlus, stat); break;
     case MINUS:	    obj = _CompileBinary (obj, expr, scope, OpMinus, stat); break;
@@ -690,6 +909,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	inst = ObjCode (obj, middle_inst);
 	inst->base.opCode = OpColon;
 	inst->branch.offset = obj->used - middle_inst;
+	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
+					     COLON,
+					     expr->tree.right->tree.right->base.type);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Incompatible types %t %t in ?:",
+			  expr->tree.right->tree.left->base.type,
+			  expr->tree.right->tree.right->base.type);
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
     case LXOR:	    obj = _CompileBinary (obj, expr, scope, OpLxor, stat); break;
@@ -709,6 +935,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	inst->base.opCode = OpAnd;
 	inst->base.stat = stat;
 	inst->branch.offset = obj->used - test_inst;
+	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+					     COLON,
+					     expr->tree.right->base.type);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Incompatible types %t %t in &&",
+			  expr->tree.left->base.type,
+			  expr->tree.right->base.type);
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
     case OR:
@@ -725,6 +958,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	inst->base.opCode = OpOr;
 	inst->base.stat = stat;
 	inst->branch.offset = obj->used - test_inst;
+	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+					     COLON,
+					     expr->tree.right->base.type);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Incompatible types %t %t in ||",
+			  expr->tree.left->base.type,
+			  expr->tree.right->base.type);
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
     case ASSIGN:	obj = _CompileAssign (obj, expr, scope, OpAssign, stat); break;
@@ -746,12 +986,15 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     case GE:	    obj = _CompileBinary (obj, expr, scope, OpGe, stat); break;
     case COMMA:	    
 	obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+	expr->base.type = expr->tree.left->base.type;
 	if (expr->tree.right)
 	    obj = _CompileExpr (obj, expr->tree.right, scope, stat);
+	    expr->base.type = expr->tree.right->base.type;
 	break;
     case FORK:
 	BuildInst (obj, OpFork, inst, stat);
 	inst->obj.obj = CompileExpr (expr->tree.right, scope);
+	expr->base.type = NewTypesPrim (type_thread);
 	break;
     case THREAD:
 	obj = _CompileCall (obj, NewExprTree (OP, 
@@ -760,6 +1003,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 							   expr->tree.left,
 							   (Expr *) 0)),
 			    scope, stat);
+	expr->base.type = NewTypesPrim (type_thread);
 	break;
     }
     RETURN (obj);
@@ -960,8 +1204,12 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 	 * if declared in some enclosing scope, redeclare here
 	 */
 	if (!sym)
-	    AddSymbol (scope, expr->tree.left->decl.decl->name, type_func,
+	{
+	    CompileCanonType (obj, scope, expr->tree.left->decl.type, expr);
+	    AddSymbol (scope, expr->tree.left->decl.decl->name,
+		       expr->tree.left->decl.type,
 		       expr->tree.left->decl.publish);
+	}
 	obj = _CompileAssign (obj, expr, scope, OpAssign, 
 			      expr->tree.right);
 	break;
@@ -988,7 +1236,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
     case IMPORT:
 	sym = FindSymbol (obj, expr, scope,
 			  expr->tree.left->decl.decl->name,
-			  &top_inst, type_undef, False);
+			  &top_inst, typesPoly, False);
 	if (sym && sym->symbol.class == class_scope)
 	{
 	    sym = ScopeImport (scope,
@@ -1030,20 +1278,16 @@ _CompileFunc (ObjPtr obj, CodePtr code, ScopePtr scope, ExprPtr stat)
     ENTER ();
     InstPtr	    inst;
     SymbolPtr	    local;
-    ExprPtr	    args;
-    DeclListPtr	    argd;
+    ArgType	    *args;
     ObjPtr	    staticInit;
 
     scope = NewScope (scope);
     scope->code = code;
-    for (args = code->func.args; args; args = args->tree.right)
+    for (args = code->base.args; args; args = args->next)
     {
-	for (argd = args->tree.left->decl.decl; argd; argd = argd->next)
-	{
-	    local = NewSymbolArg (argd->name, 
-				  args->tree.left->decl.type);
-	    CompileAddSymbol (scope, local);
-	}
+	CompileCanonType (obj, scope, args->type, stat);
+	local = NewSymbolArg (args->name, args->type);
+	CompileAddSymbol (scope, local);
     }
     code->func.obj = _CompileFuncCode (code, scope, stat);
     BuildInst (obj, OpObj, inst, stat);
@@ -1075,6 +1319,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
     ScopePtr	    code_scope;
     ScopePtr	    compile_scope;
     ObjPtr	    *initObj;
+    Bool	    initialize = False;
     
     decls->base.scope = scope;
     class = decls->decl.class;
@@ -1121,6 +1366,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
 	CompileError (obj, decls, "Invalid storage class %C", class);
 	RETURN (obj);
     }
+    CompileCanonType (obj, scope, decls->decl.type, decls);
     for (decl = decls->decl.decl; decl; decl = decl->next) {
 	switch (class) {
 	case class_global:
@@ -1129,9 +1375,15 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
 	case class_static:
 	    s = NewSymbolStatic (decl->name, decls->decl.type);
 	    break;
+	case class_arg:
 	case class_auto:
-	default:
 	    s = NewSymbolAuto (decl->name, decls->decl.type);
+	    break;
+	case class_typedef:
+	    s = NewSymbolType (decl->name, decls->decl.type, decls->decl.publish);
+	    break;
+	default:
+	    s = 0;
 	    break;
 	}
 	/*
@@ -1158,9 +1410,57 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
 		code->func.inStaticInit = False;
 	    }
 	    SetPush (*initObj);
+	    initialize = True;
+	} else if (class != class_typedef) {
+	    Types   *t = TypesCanon (decls->decl.type);
+	    InstPtr inst;
+	    switch (t->base.tag) {
+	    case types_struct:
+		if (compile_scope && compile_scope->code)
+		{
+		    CodePtr	code = compile_scope->code;
+		    if (!code->func.staticInit)
+			code->func.staticInit = NewObj (OBJ_INCR);
+		    initObj = &code->func.staticInit;
+		    code->func.inStaticInit = True;
+		}
+		BuildInst (*initObj, OpBuildStruct, inst, decls);
+		inst->structs.structs = t->structs.structs;
+		if (compile_scope && compile_scope->code)
+		{
+		    CodePtr	code = compile_scope->code;
+		    code->func.inStaticInit = False;
+		}
+		SetPush (*initObj);
+		initialize = True;
+		break;
+	    case types_array:
+		if (t->array.dimensions) 
+		{
+		    if (compile_scope && compile_scope->code)
+		    {
+			CodePtr	code = compile_scope->code;
+			if (!code->func.staticInit)
+			    code->func.staticInit = NewObj (OBJ_INCR);
+			initObj = &code->func.staticInit;
+			code->func.inStaticInit = True;
+		    }
+		    *initObj = _CompileBuildArray (*initObj,
+						   t->array.dimensions,
+						   scope,
+						   decls);
+		    if (compile_scope && compile_scope->code)
+		    {
+			CodePtr	code = compile_scope->code;
+			code->func.inStaticInit = False;
+		    }
+		    SetPush (*initObj);
+		    initialize = True;
+		}
+	    }
 	}
 	CompileAddSymbol (scope, s);
-	if (decl->init)
+	if (initialize)
 	{
 	    InstPtr inst;
 	    

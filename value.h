@@ -32,6 +32,9 @@ extern char *AtomName (Atom id);
 extern int  AtomInit (void);
 
 typedef struct _AtomList    *AtomListPtr;
+typedef union _types	    *TypesPtr;
+typedef struct _structType  *StructTypePtr;
+typedef union _expr	    *ExprPtr;
 
 typedef struct _AtomList {
     DataType	*data;
@@ -156,16 +159,105 @@ typedef enum _type {
  	type_rational = 2,
  	type_double = 3,
  	type_string = 4,
- 	type_array = 5,
-	type_file = 6,
-	type_ref = 7,
-	type_struct = 8,
-	type_func = 9,
-	type_thread = 10,
-	type_mutex = 11,
-	type_semaphore = 12,
-	type_continuation = 13
+	type_file = 5,
+	type_thread = 6,
+	type_mutex = 7,
+	type_semaphore = 8,
+	type_continuation = 9,
+    
+ 	type_array = 10,
+	type_ref = 11,
+	type_struct = 12,
+	type_func = 13
 } Type;
+
+/*
+ * Aggregate types
+ */
+typedef struct _argType {
+    DataType	*data;
+    TypesPtr	type;
+    Atom	name;
+    struct _argType *next;
+} ArgType;
+
+ArgType *NewArgType (TypesPtr type, Atom name, ArgType *next);
+
+typedef enum _typesTag {
+    types_prim, types_name, types_ref, types_func, types_array, types_struct
+} TypesTag;
+    
+typedef struct _typesBase {
+    DataType	*data;
+    TypesTag	tag;
+} TypesBase;
+
+typedef struct _typesPrim {
+    TypesBase	base;
+    Type	prim;
+} TypesPrim;
+
+typedef struct _typesName {
+    TypesBase	base;
+    Atom	name;
+    TypesPtr	type;
+} TypesName;
+
+typedef struct _typesRef {
+    TypesBase	base;
+    TypesPtr	ref;
+} TypesRef;
+
+typedef struct _typesFunc {
+    TypesBase	base;
+    TypesPtr	ret;
+    Bool	varargs;
+    ArgType	*args;
+} TypesFunc;
+
+typedef struct _typesArray {
+    TypesBase	base;
+    TypesPtr	type;
+    ExprPtr	dimensions;
+} TypesArray;
+
+typedef struct _typesStruct {
+    TypesBase	    base;
+    StructTypePtr   structs;
+} TypesStruct;    
+
+typedef union _types {
+    TypesBase	base;
+    TypesPrim	prim;
+    TypesName	name;
+    TypesRef	ref;
+    TypesFunc	func;
+    TypesArray	array;
+    TypesStruct	structs;
+} Types;
+
+typedef struct _argDecl {
+    Types   *type;
+    Atom    name;
+} ArgDecl;
+
+extern Types	*typesPoly;
+
+Types	*NewTypesPrim (Type prim);
+Types	*NewTypesName (Atom name, Types *type);
+Types	*NewTypesRef (Types *ref);
+Types	*NewTypesFunc (Types *ret, Bool varargs, ArgType *args);
+Types	*NewTypesArray (Types *type, ExprPtr dimensions);
+Types	*NewTypesStruct (StructTypePtr structs);
+Types	*TypesCanon (Types *type);
+Type	BaseType (Types *type);
+int	TypesInit (void);
+
+Types	*TypeCombineAssign (Types *lvalue, int tag, Types *rvalue);
+Types	*TypeCombineBinary (Types *left, int tag, Types *right);
+Types	*TypeCombineUnary (Types *down, int tag);
+Types	*TypeCombineStruct (Types *type, int tag, Atom atom);
+Types	*TypeCombineFunction (Types *type);
 
 /*
  * storage classes
@@ -173,7 +265,7 @@ typedef enum _type {
 
 typedef enum _class {
     class_global, class_static, class_arg, class_auto, 
-    class_struct, class_scope, class_undef,
+    class_typedef, class_scope, class_undef,
 } Class;
 
 #define ClassLocal(c)	((c) == class_arg || (c) == class_auto)
@@ -223,7 +315,7 @@ typedef struct _string {
 
 typedef struct _array {
     BaseValue	base;
-    Type	type;
+    Types	*type;
     int		ndim;
     int		ents;
     int		*dim;
@@ -274,8 +366,8 @@ typedef struct _ref {
 #define RefConstant(r)    BoxConstant((r)->ref.box)
 
 typedef struct _structElement {
-    Type    type;
-    Atom    name;
+    TypesPtr	type;
+    Atom	name;
 } StructElement;
 
 typedef struct _structType {
@@ -408,7 +500,7 @@ struct _valueType {
 
 typedef struct _boxElement {
     Value	value;
-    Type	type;
+    Types	*type;
 } BoxElement;
 
 typedef struct _box {
@@ -430,12 +522,12 @@ typedef struct _boxTypes {
     int		size;
 } BoxTypes, *BoxTypesPtr;
 
-#define BoxTypesElements(bt)	((Type *) ((bt) + 1))
+#define BoxTypesElements(bt)	((TypesPtr *) ((bt) + 1))
 #define BoxTypesValue(bt,e)	(BoxTypesElements(bt)[e])
 
 extern BoxTypesPtr NewBoxTypes (int size);
 
-extern int	AddBoxTypes (BoxTypesPtr *btp, Type t);
+extern int	AddBoxTypes (BoxTypesPtr *btp, TypesPtr t);
 
 extern BoxPtr	NewTypedBox (Bool constant, BoxTypesPtr types);
 			     
@@ -452,7 +544,7 @@ Value	NewIntegerDouble (Integer *);
 Value	NewRationalDouble (Rational *);
 Value	NewString (int);
 Value	NewStrString (char *);
-Value	NewArray (Bool constant, Type type, int ndim, int *dims);
+Value	NewArray (Bool constant, TypesPtr type, int ndim, int *dims);
 Value	NewFile (int fd);
 Value	NewRef (BoxPtr box, int element);
 Value	NewStruct (StructType *type, Bool constant);
@@ -507,8 +599,8 @@ Bool	Print (Value, Value, char format, int base, int width, int prec, unsigned c
 void	RaiseError (char *s, ...);
 void	PrintError (char *s, ...);
 void	vPrintError (char *s, va_list args);
-Value	Copy (Value, Type);
-Value	Default (Type);
+Value	Copy (Value, TypesPtr);
+Value	Default (TypesPtr);
 
 /*
  * Some abort has occured
@@ -544,7 +636,7 @@ Bool	Integralp (Type);
 Bool	Zerop (Value);
 Bool	Negativep (Value);
 Bool	Evenp (Value);
-Bool	AssignTypeCompatiblep (Type dest, Value v);
+Bool	AssignTypeCompatiblep (TypesPtr dest, Value v);
 
 int	ArrayInit (void);
 int	AtomInit (void);

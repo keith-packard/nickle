@@ -16,7 +16,7 @@ int
 ArrayInit (void)
 {
     ENTER ();
-    Empty = NewArray (True, type_undef, 0, 0);
+    Empty = NewArray (True, typesPoly, 0, 0);
     MemAddRoot (Empty);
     EXIT ();
     return 1;
@@ -48,8 +48,9 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
     int	    i, j, k;
     int	    ndone;
     Bool    ret = True;
+    Bool    pretty = format == 'v' || format == 'g';
 
-    if (format == 'v')
+    if (pretty)
     {
 	FilePuts (f, "[");
 	for (i = 0; i < a->ndim; i++)
@@ -71,7 +72,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
 	}
 	i++;
         ndone = 0;
-	if (format == 'v')
+	if (pretty)
 	{
 	    j = i;
 	    k = a->ndim - 1;
@@ -86,15 +87,15 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
 	}
 	if (i < a->ents)
 	{
-	    if (format == 'v')
+	    if (pretty)
 		FileOutput (f, ',');
 	    FileOutput (f, ' ');
-	    if (format == 'v')
+	    if (pretty)
 		for (k = 0; k < ndone; k++)
 		    FileOutput (f, '{');
 	}
     }
-    if (format == 'v')
+    if (pretty)
 	FilePuts (f, "}");
     EXIT ();
     return True;
@@ -105,6 +106,7 @@ ArrayMark (void *object)
 {
     Array   *array = object;
 
+    MemReference (array->type);
     MemReference (array->values);
 }
 
@@ -123,7 +125,7 @@ ValueType    ArrayType = {
 };
 
 Value
-NewArray (Bool constant, Type type, int ndim, int *dims)
+NewArray (Bool constant, TypesPtr type, int ndim, int *dims)
 {
     ENTER ();
     Value   ret;
@@ -133,9 +135,14 @@ NewArray (Bool constant, Type type, int ndim, int *dims)
     BoxElement	*elements;
     int		i;
 
-    ents = 1;
-    for (dim = 0; dim < ndim; dim++)
-	ents *= dims[dim];
+    if (ndim)
+    {
+	ents = 1;
+	for (dim = 0; dim < ndim; dim++)
+	    ents *= dims[dim];
+    }
+    else
+	ents = 0;
     ret = ALLOCATE (&ArrayType.data, sizeof (Array) + ndim * sizeof (int));
     ret->value.tag = type_array;
     ret->array.type = type;

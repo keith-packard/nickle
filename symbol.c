@@ -10,14 +10,14 @@
 
 #include	"nickle.h"
 
-#if 0
 static void
 SymbolTypeMark (void *object)
 {
     SymbolType	    *st = object;
 
+    MemReference (st->symbol.next);
+    MemReference (st->symbol.type);
 }
-#endif
 
 static void
 SymbolGlobalMark (void *object)
@@ -25,6 +25,7 @@ SymbolGlobalMark (void *object)
     SymbolGlobal    *sg = object;
 
     MemReference (sg->symbol.next);
+    MemReference (sg->symbol.type);
     MemReference (sg->value);
 }
 
@@ -34,15 +35,7 @@ SymbolLocalMark (void *object)
     SymbolLocal	    *sl = object;
 
     MemReference (sl->symbol.next);
-}
-
-static void
-SymbolStructMark (void *object)
-{
-    SymbolStruct    *ss = object;
-
-    MemReference (ss->symbol.next);
-    MemReference (ss->type);
+    MemReference (sl->symbol.type);
 }
 
 static void
@@ -51,19 +44,31 @@ SymbolScopeMark (void *object)
     SymbolScope	    *ss = object;
 
     MemReference (ss->symbol.next);
+    MemReference (ss->symbol.type);
     MemReference (ss->scope);
 }
 
-#if 0
 DataType    SymbolTypeType = { SymbolTypeMark, 0 };
-#endif
 DataType    SymbolGlobalType = { SymbolGlobalMark, 0 };
 DataType    SymbolLocalType = { SymbolLocalMark, 0 };
-DataType    SymbolStructType = { SymbolStructMark, 0 };
 DataType    SymbolScopeType = { SymbolScopeMark, 0 };
 
 SymbolPtr
-NewSymbolGlobal (Atom name, Type type, Publish publish)
+NewSymbolType (Atom name, Types *type, Publish publish)
+{
+    ENTER ();
+    SymbolPtr	s;
+
+    s = ALLOCATE (&SymbolTypeType, sizeof (SymbolType));
+    s->symbol.name = name;
+    s->symbol.class = class_typedef;
+    s->symbol.type = type;
+    s->symbol.publish = publish;
+    RETURN (s);
+}
+
+SymbolPtr
+NewSymbolGlobal (Atom name, Types *type, Publish publish)
 {
     ENTER ();
     SymbolPtr	s;
@@ -80,7 +85,7 @@ NewSymbolGlobal (Atom name, Type type, Publish publish)
 }
 
 SymbolPtr
-NewSymbolArg (Atom name, Type type)
+NewSymbolArg (Atom name, Types *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -95,7 +100,7 @@ NewSymbolArg (Atom name, Type type)
 }
 
 SymbolPtr
-NewSymbolAuto (Atom name, Type type)
+NewSymbolAuto (Atom name, Types *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -110,7 +115,7 @@ NewSymbolAuto (Atom name, Type type)
 }
 
 SymbolPtr
-NewSymbolStatic (Atom name, Type type)
+NewSymbolStatic (Atom name, Types *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -125,21 +130,6 @@ NewSymbolStatic (Atom name, Type type)
 }
 
 SymbolPtr
-NewSymbolStruct (Atom name, StructType *type, Publish publish)
-{
-    ENTER ();
-    SymbolPtr	s;
-
-    s = ALLOCATE (&SymbolStructType, sizeof (SymbolStruct));
-    s->symbol.name = name;
-    s->symbol.class = class_struct;
-    s->symbol.type = type_struct;
-    s->symbol.publish = publish;
-    s->structs.type = type;
-    RETURN (s);
-}
-
-SymbolPtr
 NewSymbolScope (Atom name, ScopePtr scope, Publish publish)
 {
     ENTER ();
@@ -148,7 +138,7 @@ NewSymbolScope (Atom name, ScopePtr scope, Publish publish)
     s = ALLOCATE (&SymbolScopeType, sizeof (SymbolScope));
     s->symbol.name = name;
     s->symbol.class = class_scope;
-    s->symbol.type = type_undef;
+    s->symbol.type = 0;
     s->symbol.publish = publish;
     s->scope.scope = scope;
     RETURN (s);

@@ -8,7 +8,8 @@
 
 #include	<config.h>
 
-#include	"value.h"
+#include	"nickle.h"
+#include	"gram.h"
 
 Bool	abortError;
 
@@ -17,7 +18,7 @@ fprintType (Value f, Type tag)
 {
     switch (tag) {
     case type_undef:
-	FilePuts (f, "polymorph");
+	FilePuts (f, "poly");
 	break;
     case type_int:
 	FilePuts (f, "int");
@@ -34,6 +35,22 @@ fprintType (Value f, Type tag)
     case type_string:
 	FilePuts (f, "string");
 	break;
+    case type_file:
+	FilePuts (f, "file");
+	break;
+    case type_thread:
+	FilePuts (f, "thread");
+	break;
+    case type_mutex:
+	FilePuts (f, "mutex");
+	break;
+    case type_semaphore:
+	FilePuts (f, "semaphore");
+	break;
+    case type_continuation:
+	FilePuts (f, "continuation");
+	break;
+	
     case type_array:
 	FilePuts (f, "array");
 	break;
@@ -71,8 +88,8 @@ fprintClass (Value f, Class storage)
     case class_static:
 	FilePuts (f, "static");
 	break;
-    case class_struct:
-	FilePuts (f, "struct");
+    case class_typedef:
+	FilePuts (f, "typedef");
 	break;
     case class_scope:
 	FilePuts (f, "scope");
@@ -90,6 +107,79 @@ fprintPublish (Value f, Publish publish)
     case publish_public:
 	FilePuts (f, "public");
 	break;
+    }
+}
+
+void
+fprintArgTypes (Value f, ArgType *at)
+{
+    while (at)
+    {
+	if (at->type)
+	{
+	    fprintTypes (f, at->type);
+	    if (at->name)
+		FilePuts (f, " ");
+	}
+	if (at->name)
+	    FilePuts (f, AtomName (at->name));
+	at = at->next;
+	if (at)
+	    FilePuts (f, ", ");
+    }
+}
+
+void
+fprintTypes (Value f, Types *t)
+{
+    int		    i;
+    StructType	    *st;
+    StructElement   *se;
+    
+    if (!t)
+    {
+	fprintType (f, type_undef);
+    } 
+    else
+    {
+	switch (t->base.tag) {
+	case types_prim:
+	    fprintType (f, t->prim.prim);
+	    break;
+	case types_name:
+	    FilePuts (f, "type ");
+	    FilePuts (f, AtomName (t->name.name));
+	    break;
+	case types_ref:
+	    FilePuts (f, "*");
+	    fprintTypes (f, t->ref.ref);
+	    break;
+	case types_func:
+	    fprintTypes (f, t->func.ret);
+	    FilePuts (f, "(");
+	    fprintArgTypes (f, t->func.args);
+	    FilePuts (f, ")");
+	    break;
+	case types_array:
+	    fprintTypes (f, t->array.type);
+	    FilePuts (f, "[");
+	    /* FIXME dimensions */
+	    FilePuts (f, "]");
+	    break;
+	case types_struct:
+	    FilePuts (f, "struct { ");
+	    st = t->structs.structs;
+	    se = StructTypeElements (st);
+	    for (i = 0; i < st->nelements; i++)
+	    {
+		fprintTypes (f, se[i].type);
+		FilePuts (f, " ");
+		FilePuts (f, AtomName (se[i].name));
+		FilePuts (f, "; ");
+	    }
+	    FilePuts (f, "}");
+	    break;
+	}
     }
 }
 
@@ -154,6 +244,7 @@ void
 vPrintError (char *s, va_list args)
 {
     Type	tag;
+    Types	*type;
     Value	v;
     Class	storage;
     Publish	publish;
@@ -181,6 +272,10 @@ vPrintError (char *s, va_list args)
 		break;
 	    case 'A':
 		FilePuts (FileStderr, AtomName (va_arg (args, Atom)));
+		break;
+	    case 't':
+		type = va_arg (args, Types *);
+		fprintTypes (FileStderr, type);
 		break;
 	    case 'T':
 		tag = (Type) (va_arg (args, int));

@@ -38,6 +38,7 @@ typedef enum _OpCode {
     OpConst,
     OpBuildArray,
     OpInitArray,
+    OpBuildStruct,
     OpInitStruct,
     OpArray,
     OpArrayRef,

@@ -19,7 +19,10 @@ BoxMark (void *object)
 
     elements = BoxElements(box);
     for (i = 0; i < box->nvalues; i++)
+    {
 	MemReference (elements[i].value);
+	MemReference (elements[i].type);
+    }
 }
 
 DataType BoxType = { BoxMark, 0 };
@@ -36,7 +39,7 @@ NewBox (Bool constant, int nvalues)
     box->nvalues = nvalues;
     for (i = 0; i < nvalues; i++)
     {
-	BoxType(box, i) = type_undef;
+	BoxType(box, i) = typesPoly;
 	BoxValue(box, i) = Zero;
     }	
     RETURN (box);
@@ -48,7 +51,7 @@ NewTypedBox (Bool constant, BoxTypesPtr bt)
     ENTER ();
     BoxPtr  box;
     int	    i;
-    Type    t;
+    Types   *t;
 
     box = NewBox (constant, bt->count);
     for (i = 0; i < bt->count; i++)
@@ -93,7 +96,7 @@ NewBoxTypes (int size)
 }
 
 int
-AddBoxTypes (BoxTypesPtr *btp, Type t)
+AddBoxTypes (BoxTypesPtr *btp, Types *t)
 {
     ENTER ();
     BoxTypesPtr  bt, new;

@@ -86,12 +86,10 @@ function	{ yylval.tval = type_func; return FUNCTION; }
 undefine	{ return UNDEFINE; }
 quit		return QUIT;
 exit		return QUIT;
-shell		return SHELL;
 edit		return EDIT;
 history		return HISTORY;
 print		return PRINT;
 read		return READ;
-default		return DEFAULT;
 while		{ yylval.ival = WHILE; return WHILE; }
 for		{ yylval.ival = FOR; return FOR; }
 do		{ yylval.ival = DO; return DO; }
@@ -102,16 +100,19 @@ continue	{ yylval.ival = CONTINUE; return CONTINUE; }
 return		{ yylval.ival = RETURNTOK; return RETURNTOK; }
 try		{ yylval.ival = TRY; return TRY; }
 catch		{ yylval.ival = CATCH; return CATCH; }
+
 int		{ yylval.tval = type_int; return INT; }
 integer		{ yylval.tval = type_integer; return INTEGER; }
 rational    	{ yylval.tval = type_rational; return RATIONAL; }
 double		{ yylval.tval = type_double; return DOUBLE; }
 string		{ yylval.tval = type_string; return STRING; }
-array		{ yylval.tval = type_array; return ARRAY; }
-ref		{ yylval.tval = type_ref; return REF; }
 struct		{ yylval.tval = type_struct; return STRUCT; }
-func		{ yylval.tval = type_func; return FUNC; }
-polymorph	{ yylval.tval = type_undef; return POLYMORPH; }
+poly		{ yylval.tval = type_undef; return POLY; }
+
+typedef		{ yylval.ival = TYPEDEF; return TYPEDEF; }
+type		{ yylval.ival = TYPE; return TYPE; }
+new		{ yylval.ival = NEW; return NEW; }
+func		{ yylval.ival = FUNC; return FUNC; }
 fork		{ yylval.ival = FORK; return FORK; }
 scope		{ yylval.ival = SCOPE; return SCOPE; }
 import		{ yylval.ival = IMPORT; return IMPORT; }

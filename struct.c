@@ -40,6 +40,19 @@ StructValue (Value sv, Atom name)
     RETURN (0);
 }
 
+Types *
+StructTypes (StructType *st, Atom name)
+{
+    ENTER ();
+    int		    i;
+    StructElement   *se = StructTypeElements(st);
+
+    for (i = 0; i < st->nelements; i++)
+	if (se[i].name == name)
+	    RETURN (se[i].type);
+    RETURN (0);
+}
+
 Bool
 StructPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
@@ -144,7 +157,7 @@ NewStructType (int nelements)
     se = StructTypeElements (st);
     for (i = 0; i < nelements; i++)
     {
-	se[i].type = type_undef;
+	se[i].type = typesPoly;
 	se[i].name = 0;
     }
     RETURN (st);

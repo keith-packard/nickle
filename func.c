@@ -14,9 +14,10 @@ static void MarkFuncCode (void *object)
 {
     FuncCodePtr	fc = object;
 
+    MemReference (fc->base.type);
+    MemReference (fc->base.args);
     MemReference (fc->dynamics);
     MemReference (fc->statics);
-    MemReference (fc->args);
     MemReference (fc->code);
     MemReference (fc->obj);
     MemReference (fc->staticInit);
@@ -25,7 +26,7 @@ static void MarkFuncCode (void *object)
 DataType    FuncCodeType = { MarkFuncCode, 0 };
 
 CodePtr
-NewFuncCode (Type type, ExprPtr args, ExprPtr code)
+NewFuncCode (Types *type, ArgType *args, ExprPtr code)
 {
     ENTER ();
     CodePtr	fc;
@@ -33,9 +34,10 @@ NewFuncCode (Type type, ExprPtr args, ExprPtr code)
     fc = ALLOCATE (&FuncCodeType, sizeof (FuncCode));
     fc->base.builtin = False;
     fc->base.type = type;
+    fc->base.args = args;
+    fc->base.argc = 0;
     fc->func.dynamics = 0;
     fc->func.statics = 0;
-    fc->func.args = args;
     fc->func.code = code;
     fc->func.obj = 0;
     fc->func.staticInit = 0;
@@ -44,12 +46,16 @@ NewFuncCode (Type type, ExprPtr args, ExprPtr code)
 
 static void MarkBuiltinCode (void *object)
 {
+    BuiltinCodePtr	bc = object;
+
+    MemReference (bc->base.type);
+    MemReference (bc->base.args);
 }
 
 DataType BuiltinCodeType = { MarkBuiltinCode, 0 };
 
 CodePtr
-NewBuiltinCode (Type type, int argc, BuiltinFunc builtin, Bool needsNext)
+NewBuiltinCode (Types *type, ArgType *args, int argc, BuiltinFunc builtin, Bool needsNext)
 {
     ENTER ();
     CodePtr  bc;
@@ -57,6 +63,7 @@ NewBuiltinCode (Type type, int argc, BuiltinFunc builtin, Bool needsNext)
     bc = ALLOCATE (&BuiltinCodeType, sizeof (BuiltinCode));
     bc->base.builtin = True;
     bc->base.type = type;
+    bc->base.args = args;
     bc->base.argc = argc;
     bc->builtin.needsNext = needsNext;
     bc->builtin.b = builtin;
@@ -79,7 +86,7 @@ void printCode (Value f, CodePtr code, int level);
 Bool
 FuncPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
-    PrintCode (f, av->func.code, 0, publish_private, 0, True);
+    PrintCode (f, av->func.code, 0, class_undef, publish_private, 0, True);
     return True;
 }
 

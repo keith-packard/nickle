@@ -16,7 +16,7 @@ DebugAddVar (ScopePtr scope, char *name, Value v)
     ENTER ();
     SymbolPtr  s;
 
-    s = ScopeAddSymbol (scope, NewSymbolGlobal (AtomId(name), type_undef, 
+    s = ScopeAddSymbol (scope, NewSymbolGlobal (AtomId(name), 0, 
 						publish_private));
     BoxValue (s->global.value, 0) = v;
     EXIT ();

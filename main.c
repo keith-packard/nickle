@@ -30,7 +30,7 @@ setArgv (int argc, char **argv)
     int	    i;
 
     argc = argc + 1;
-    args = NewArray (False, type_undef, 1, &argc);
+    args = NewArray (False, NewTypesPrim (type_string), 1, &argc);
     for (i = 0; i < argc - 1; i++)
 	BoxValue (args->array.values, i) = NewStrString (argv[i]);
     BoxValue (args->array.values, i) = Zero;
@@ -94,6 +94,7 @@ void
 init (void)
 {
     MemInitialize ();
+    TypesInit ();
     ValueInit ();
     IoInit ();
     ScopeInit ();

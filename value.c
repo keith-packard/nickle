@@ -25,9 +25,9 @@ volatile Bool	exception;
 /* must be synchronized with Type enum */
 ValueType   *valueTypes[] = {
     &IntType, &IntegerType, &RationalType, &DoubleType,
-    &StringType, &ArrayType, &FileType,
-    &RefType, &structType, &FuncType, &ThreadType,
-    &MutexType, &SemaphoreType, &ContinuationType,
+    &StringType, &FileType,
+    &ThreadType, &MutexType, &SemaphoreType, &ContinuationType,
+    &ArrayType, &RefType, &structType, &FuncType,
 };
 
 Bool
@@ -109,13 +109,14 @@ Evenp (Value av)
  */
 
 Bool
-AssignTypeCompatiblep (Type dest, Value v)
+AssignTypeCompatiblep (TypesPtr dest, Value v)
 {
-    if (dest != type_undef && dest != v->value.tag)
+    Type    base = BaseType (dest);
+    if (base != type_undef && base != v->value.tag)
     {
-	if (!Numericp (dest))
+	if (!Numericp (base))
 	{
-	    switch (dest) {
+	    switch (base) {
 	    case type_string:
 	    case type_array:
 	    case type_struct:
@@ -127,7 +128,7 @@ AssignTypeCompatiblep (Type dest, Value v)
 	    }
 	    return False;
 	}
-	if (dest < v->value.tag)
+	if (base < v->value.tag)
 	    return False;
     }
     return True;
@@ -504,7 +505,7 @@ Print (Value f, Value v, char format, int base, int width, int prec, unsigned ch
  * Make a deep copy of 'v' and cooerce to type 't'
  */
 Value
-Copy (Value v, Type t)
+Copy (Value v, TypesPtr t)
 {
     ENTER ();
     Value   nv;
@@ -534,15 +535,15 @@ Copy (Value v, Type t)
     default:
 	break;
     }
-    if (t == type_double)
-	v = valueTypes[t]->promote(v);
+    if (BaseType(t) == type_double)
+	v = valueTypes[BaseType(t)]->promote(v);
     RETURN (v);
 }
 
 Value
-Default (Type t)
+Default (TypesPtr t)
 {
-    switch (t) {
+    switch (BaseType (t)) {
     default:
 	return Zero;
     case type_string:

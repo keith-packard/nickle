@@ -9,57 +9,22 @@
 #include	"value.h"
 #include	"opcode.h"
 
-typedef union _expr	*ExprPtr;
-#if 0
-typedef union _type	*TypePtr;
-#endif
 typedef union _symbol	*SymbolPtr;
 typedef struct _func	*FuncPtr;
 typedef struct _scope	*ScopePtr;
-
-#if 0
-typedef struct _typeBase {
-    DataType	*data;
-    int		tag;
-} TypeBase;
-
-typedef struct _typeRef {
-    TypeBase	type;
-    TypePtr	ref;
-} TypeTree;
-
-typedef struct _typeName {
-    TypeBase	type;
-    Atom	name;
-} TypeName;
-
-typedef struct _typeExpr {
-    TypeBase	type;
-    ExprPtr	expr;
-} TypeExpr;
-
-typedef union _type {
-    TypeBase	base;
-    TypeTree	tree;
-    TypeName	name;
-    TypeExpr	expr;
-} Type;
-#endif
 
 typedef struct _symbolBase {
     DataType	*data;
     SymbolPtr	next;
     Atom	name;
     Class	class;
-    Type	type;
+    Types	*type;
     Publish	publish;
 } SymbolBase;
 
-#if 0
 typedef struct _symbolType {
     SymbolBase	symbol;
 } SymbolType;
-#endif
 
 typedef struct _symbolGlobal {
     SymbolBase	symbol;
@@ -71,11 +36,6 @@ typedef struct _symbolLocal {
     int		element;
 } SymbolLocal;
 
-typedef struct _symbolStruct {
-    SymbolBase	symbol;
-    StructType	*type;
-} SymbolStruct;
-
 typedef struct _symbolScope {
     SymbolBase	symbol;
     ScopePtr	scope;
@@ -83,23 +43,17 @@ typedef struct _symbolScope {
 
 typedef union _symbol {
     SymbolBase	    symbol;
-#if 0
     SymbolType	    type;
-#endif
     SymbolGlobal    global;
     SymbolLocal	    local;
-    SymbolStruct    structs;
     SymbolScope	    scope;
 } Symbol;
 
-#if 0
-extern SymbolPtr    NewSymbolType (Atom name, Type type);
-#endif
-extern SymbolPtr    NewSymbolGlobal (Atom name, Type type, Publish publish);
-extern SymbolPtr    NewSymbolArg (Atom name, Type type);
-extern SymbolPtr    NewSymbolStatic (Atom name, Type type);
-extern SymbolPtr    NewSymbolAuto (Atom name, Type type);
-extern SymbolPtr    NewSymbolStruct (Atom name, StructType *type, Publish publish);
+extern SymbolPtr    NewSymbolType (Atom name, Types *type, Publish publish);
+extern SymbolPtr    NewSymbolGlobal (Atom name, Types *type, Publish publish);
+extern SymbolPtr    NewSymbolArg (Atom name, Types *type);
+extern SymbolPtr    NewSymbolStatic (Atom name, Types *Type);
+extern SymbolPtr    NewSymbolAuto (Atom name, Types *type);
 extern SymbolPtr    NewSymbolScope (Atom name, ScopePtr scope, Publish publish);
 
 typedef struct _scopeChain {
@@ -141,15 +95,15 @@ typedef struct _MemList    *MemListPtr;
 typedef struct _MemList {
     DataType	*data;
     MemListPtr	next;
-    Type	type;
+    Types	*type;
     DeclListPtr	names;
 } MemList;
 
-extern MemListPtr  NewMemList (DeclListPtr names, Type type, MemListPtr next);
+extern MemListPtr  NewMemList (DeclListPtr names, Types *type, MemListPtr next);
 
 typedef struct _Fulltype {
     Class   class;
-    Type    type;
+    Types   *type;
     Publish publish;
 } Fulltype;
     
@@ -179,6 +133,7 @@ typedef struct _exprBase {
     DataType	*data;
     int		tag;
     ScopePtr	scope;
+    Types	*type;
 } ExprBase;
 
 typedef struct _exprTree {
@@ -206,7 +161,7 @@ typedef struct _exprDecls {
     ExprBase	expr;
     DeclListPtr	decl;
     Class	class;
-    Type	type;
+    Types	*type;
     Publish	publish;
 } ExprDecl;
 
@@ -223,7 +178,7 @@ Expr	*NewExprTree (int tag, Expr *left, Expr *right);
 Expr	*NewExprConst (Value val);
 Expr	*NewExprAtom (Atom atom);
 Expr	*NewExprCode (CodePtr code, Atom name);
-Expr	*NewExprDecl (DeclListPtr decl, Class class, Type type, Publish publish);
+Expr	*NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish);
 
 typedef struct _catch {
     DataType	*data;
@@ -247,14 +202,14 @@ Except	*NewExcept (Atom exception, int nargs, Value *args);
 typedef struct _codeBase {
     DataType	*data;
     Bool	builtin;
-    Type	type;
+    Types	*type;
     int		argc;
+    ArgType	*args;
     Atom	name;
 } CodeBase;
 
 typedef struct _funcCode {
     CodeBase	base;
-    ExprPtr	args;
     ExprPtr	code;
     ObjPtr	obj;
     
@@ -294,8 +249,9 @@ typedef union _code {
     BuiltinCode	builtin;
 } Code;
 
-CodePtr	NewFuncCode (Type, ExprPtr args, ExprPtr code);
-CodePtr	NewBuiltinCode (Type, int, BuiltinFunc func, Bool needsNext);
+CodePtr	NewFuncCode (Types *type, ArgType *args, ExprPtr code);
+CodePtr	NewBuiltinCode (Types *type, ArgType *args, int argc, 
+			BuiltinFunc func, Bool needsNext);
 Value	NewFunc (CodePtr, FramePtr);
 
 typedef struct _instBase {
@@ -325,6 +281,11 @@ typedef struct _instInt {
     int		value;
 } InstInt;
 
+typedef struct _instStruct {
+    InstBase	inst;
+    StructType	*structs;
+} InstStruct;
+
 typedef struct _instCode {
     InstBase	inst;
     CodePtr	code;
@@ -352,6 +313,7 @@ typedef union _inst {
     InstConst	constant;
     InstAtom	atom;
     InstInt	ints;
+    InstStruct	structs;
     InstCode	code;
     InstBranch	branch;
     InstObj	obj;
@@ -440,7 +402,8 @@ void	IoInterrupt (void);
 void	*AllocateTemp (int size);
 
 void	PrettyPrint (Value f, SymbolPtr name);
-void	PrintCode (Value f, CodePtr code, char *name, Publish publish, int level, Bool nest);
+void	PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
+		   int level, Bool nest);
 void	PrintStat (Value F, Expr *e, Bool nest);
 void	EditFunction (SymbolPtr name);
 void	EditFile (Value file_name);
@@ -451,6 +414,8 @@ void	setVar (char *, Value);
 void	GetScope (ScopePtr *, FramePtr *);
 ExprPtr	BuildName (char *);
 ExprPtr	BuildCall (char *, int, ...);
+void	fprintTypes (Value f, Types *t);
+
 /* int	yywrap (void); */
 
 int	yylex (void);

@@ -33,81 +33,107 @@ ScopePtr    MathScope;
 ScopePtr    StringScope;
 
 struct fbuiltin_v {
-    Value	(*bf_func) (int, Value *);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (int, Value *);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_0 {
-    Value	(*bf_func) (void);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (void);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_1 {
-    Value	(*bf_func) (Value);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (Value);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_2 {
-    Value	(*bf_func) (Value, Value);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (Value, Value);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_3 {
-    Value	(*bf_func) (Value, Value, Value);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (Value, Value, Value);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_4 {
-    Value	(*bf_func) (Value, Value, Value, Value);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (Value, Value, Value, Value);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_5 {
-    Value	(*bf_func) (Value, Value, Value, Value, Value);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (Value, Value, Value, Value, Value);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_6 {
-    Value	(*bf_func) (Value, Value, Value, Value, Value, Value);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (Value, Value, Value, Value, Value, Value);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_7 {
-    Value	(*bf_func) (Value, Value, Value, Value, Value, Value, Value);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (Value, Value, Value, Value, Value, Value, Value);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_vj {
-    Value	(*bf_func) (InstPtr *, int, Value *);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (InstPtr *, int, Value *);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_0j {
-    Value	(*bf_func) (InstPtr *);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (InstPtr *);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_1j {
-    Value	(*bf_func) (InstPtr *, Value);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (InstPtr *, Value);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct fbuiltin_2j {
-    Value	(*bf_func) (InstPtr *, Value, Value);
-    char	*bf_name;
-    ScopePtr	*bf_scope;
+    Value	(*func) (InstPtr *, Value, Value);
+    char	*name;
+    Type	ret;
+    char	*args;
+    ScopePtr	*scope;
 };
 
 struct dbuiltin {
@@ -134,98 +160,98 @@ struct nbuiltin {
     ScopePtr	*bn_scope;
 };
 struct fbuiltin_v funcs_v[] = {
-    { doprintf,		"printf" },
-    { doscanf,		"scanf" },
-    { dofprintf,	"fprintf" },
-    { Kill,		"kill", &ThreadScope },
-    { Trace,		"trace", &ThreadScope },
-    { Trace,		"trace", &DebugScope },
-    { doHistoryShow,    "HistoryShow" },
+    { doprintf,		"printf",	type_int,   "s." },
+    { doscanf,		"scanf",	type_int,   "s." },
+    { dofprintf,	"fprintf",	type_int,   "fs." },
+    { Kill,		"kill",		type_int,   ".", &ThreadScope },
+    { Trace,		"trace",	type_int,   ".", &ThreadScope },
+    { Trace,		"trace",	type_int,   ".", &DebugScope },
+    { doHistoryShow,    "HistoryShow",	type_int,   "s." },
     { 0,		0 },
 };
 struct fbuiltin_0 funcs_0[] = {
-    { Cont,		"cont", &ThreadScope },
-    { CurrentThread,	"current", &ThreadScope },
-    { NewMutex,		"new", &MutexScope },
-    { NewSemaphore,	"new", &SemaphoreScope },
-    { ThreadsList,	"list", &ThreadScope },
-    { dogetchar,	"getchar" },
-    { dotime,		"time" },
-    { DebugUp,		"up", &DebugScope, },
-    { DebugDown,	"down", &DebugScope },
-    { DebugDone,	"done", &DebugScope },
+    { Cont,		"cont",		type_int,   "", &ThreadScope },
+    { CurrentThread,	"current",	type_int,   "", &ThreadScope },
+    { NewMutex,		"new",		type_mutex, "", &MutexScope },
+    { NewSemaphore,	"new",		type_semaphore,	"", &SemaphoreScope },
+    { ThreadsList,	"list",		type_int,   "", &ThreadScope },
+    { dogetchar,	"getchar",	type_int,   "" },
+    { dotime,		"time",		type_int,   "" },
+    { DebugUp,		"up",		type_int,   "", &DebugScope, },
+    { DebugDown,	"down",		type_int,   "", &DebugScope },
+    { DebugDone,	"done",		type_int,   "", &DebugScope },
     { 0,		0 },
 };
 struct fbuiltin_1 funcs_1[] = {
-    { Atof,		"atof" },
-    { Atoi,		"atoi" },
-    { GetPriority,	"getPriority", &ThreadScope },
-    { MutexAcquire,	"acquire", &MutexScope },
-    { MutexRelease,	"release", &MutexScope },
-    { MutexTryAcquire,	"tryAcquire", &MutexScope },
-    { SemaphoreSignal,	"signal", &SemaphoreScope },
-    { SemaphoreTest,	"test", &SemaphoreScope },
-    { SemaphoreWait,	"wait", &SemaphoreScope },
-    { Sleep,		"sleep" },
-    { ThreadFromId,	"threadFromId", &ThreadScope },
-    { ThreadJoin,	"join", &ThreadScope },
-    { acosD,		"acos", &MathScope },
-    { asinD,		"asin", &MathScope },
-    { atanD,		"atan", &MathScope },
-    { ceilD,		"ceil" },
-    { cosD,		"cos", &MathScope },
-    { coshD,		"cosh", &MathScope },
-    { dim,		"dim" },
-    { dims,		"dims" },
-    { doHistoryInsert,	"HistoryInsert" },
-    { dofclose,		"fclose" },
-    { dofflush,		"fflush" },
-    { dogetc,		"getc" },
-    { doputchar,	"putchar" },
-    { expD,		"exp", &MathScope },
-    { fabsD,		"abs" },
-    { floorD,		"floor" },
-    { j0D,		"j0", &MathScope },
-    { j1D,		"j1", &MathScope },
-    { lengthS,          "length", &StringScope },
-    { log10D,		"log10", &MathScope },
-    { logD,		"log", &MathScope },
-    { sinD,		"sin", &MathScope },
-    { sinhD,		"sinh", &MathScope },
-    { sqrtD,		"sqrt" },
-    { tanD,		"tan", &MathScope },
-    { tanhD,		"tanh", &MathScope },
-    { y0D,		"y0", &MathScope },
-    { y1D,		"y1", &MathScope },
-    { _random,		"random", &PrimitiveScope },
-    { _srandom,		"srandom", &PrimitiveScope },
+    { Atof,		"atof",		type_double,	"s" },
+    { Atoi,		"atoi",		type_integer,	"s" },
+    { GetPriority,	"getPriority",	type_int,	"t", &ThreadScope },
+    { MutexAcquire,	"acquire",	type_int,	"m", &MutexScope },
+    { MutexRelease,	"release",	type_int,	"m", &MutexScope },
+    { MutexTryAcquire,	"tryAcquire",	type_int,	"m", &MutexScope },
+    { SemaphoreSignal,	"signal",	type_int,	"S", &SemaphoreScope },
+    { SemaphoreTest,	"test",		type_int,	"S", &SemaphoreScope },
+    { SemaphoreWait,	"wait",		type_int,	"S", &SemaphoreScope },
+    { Sleep,		"sleep",	type_int,	"n" },
+    { ThreadFromId,	"threadFromId", type_thread,	"n", &ThreadScope },
+    { ThreadJoin,	"join",		type_undef,	"t", &ThreadScope },
+    { acosD,		"acos",		type_double,	"n", &MathScope },
+    { asinD,		"asin",		type_double,	"n", &MathScope },
+    { atanD,		"atan",		type_double,	"n", &MathScope },
+    { ceilD,		"ceil", 	type_double,	"n" },
+    { cosD,		"cos",		type_double,	"n", &MathScope },
+    { coshD,		"cosh",		type_double,	"n", &MathScope },
+    { dim,		"dim",		type_int,	"a" },
+    { dims,		"dims",		type_array,	"a" },
+    { doHistoryInsert,	"HistoryInsert",type_undef,	"p" },
+    { dofclose,		"fclose",	type_int,	"f" },
+    { dofflush,		"fflush",	type_int,	"f" },
+    { dogetc,		"getc",		type_int,	"f" },
+    { doputchar,	"putchar",	type_int,	"n" },
+    { expD,		"exp",		type_double,	"n", &MathScope },
+    { fabsD,		"abs",		type_double,	"n" },
+    { floorD,		"floor",	type_integer,	"n" },
+    { j0D,		"j0",		type_double,	"n", &MathScope },
+    { j1D,		"j1",		type_double,	"n", &MathScope },
+    { lengthS,          "length",	type_int,	"s", &StringScope },
+    { log10D,		"log10",	type_double,	"n", &MathScope },
+    { logD,		"log",		type_double,	"n", &MathScope },
+    { sinD,		"sin",		type_double,	"n", &MathScope },
+    { sinhD,		"sinh",		type_double,	"n", &MathScope },
+    { sqrtD,		"sqrt",		type_double,	"n" },
+    { tanD,		"tan",		type_double,	"n", &MathScope },
+    { tanhD,		"tanh",		type_double,	"n", &MathScope },
+    { y0D,		"y0",		type_double,	"n", &MathScope },
+    { y1D,		"y1",		type_double,	"n", &MathScope },
+    { _random,		"random",	type_int,	"n", &PrimitiveScope },
+    { _srandom,		"srandom",	type_int,	"n", &PrimitiveScope },
     { 0,		0 },
 };
 struct fbuiltin_2 funcs_2[] = {
-    { SetPriority,	"setPriority", &ThreadScope },
-    { Strtol,		"strtol" },
-    { atan2D,		"atan2", &MathScope },
-    { dofopen,		"fopen" },
-    { dogcd,		"gcd" },
-    { doputc,		"putc" },
-    { dosetbuf,		"setbuffer" },
-    { hypotD,		"hypot", &MathScope },
-    { indexS,           "index", &StringScope },
-    { jnD,		"jn", &MathScope },
-    { ynD,		"yn", &MathScope },
+    { SetPriority,	"setPriority",	type_int,	"tn", &ThreadScope },
+    { Strtol,		"strtol",	type_integer,	"sn" },
+    { atan2D,		"atan2",	type_double,	"nn", &MathScope },
+    { dofopen,		"fopen",	type_file,	"ss" },
+    { dogcd,		"gcd",		type_integer,	"nn" },
+    { doputc,		"putc",		type_int,	"nf" },
+    { dosetbuf,		"setbuffer",	type_int,	"fn" },
+    { hypotD,		"hypot",	type_double,	"nn", &MathScope },
+    { indexS,           "index",	type_int,	"ss", &StringScope },
+    { jnD,		"jn",		type_double,	"nn", &MathScope },
+    { ynD,		"yn",		type_double,	"nn", &MathScope },
     { 0,		0 },
 };
 struct fbuiltin_3 funcs_3[] = {
-    { substrS,          "substr", &StringScope },
+    { substrS,          "substr",	type_string,	"snn", &StringScope },
 };
 struct fbuiltin_7 funcs_7[] = {
-    { doprint,		"Print" },
+    { doprint,		"Print",	type_int,	"fpnnnns" },
     { 0,		0 },
 };
 
 struct fbuiltin_2j funcs_2j[] = {
-    { SetJump,		"setjump" },
-    { LongJump,		"longjump" },
+    { SetJump,		"setjump",	type_undef,	"*cp" },
+    { LongJump,		"longjump",	type_undef,	"cp" },
     { 0,		0 },
 };
 
@@ -270,7 +296,7 @@ struct nbuiltin nvars[] = {
 SymbolPtr
 BuiltinSymbol (ScopePtr *scopep,
 	       char	*name,
-	       Type	type)
+	       Types	*type)
 {
     ENTER ();
     ScopePtr	scope;
@@ -301,28 +327,82 @@ BuiltinScope (ScopePtr	*scopep,
 					    publish_public)));
 }
 
+ArgType *
+BuiltinArgTypes (char *format, int *argcp)
+{
+    ENTER ();
+    ArgType	*args, *a, **last;
+    int		argc;
+    Types	*t;
+    Bool	ref;
+    
+    last = &args;
+    argc = 0;
+    while (*format)
+    {
+	if (*format == '.')
+	{
+	    argc = -1;
+	    break;
+	}
+	ref = False;
+	if (*format == '*')
+	{
+	    ref = True;
+	    format++;
+	}
+	switch (*format++) {
+	case 'p': t = NewTypesPrim (type_undef); break;
+	case 'n': t = NewTypesPrim (type_double); break;
+	case 's': t = NewTypesPrim (type_string); break;
+	case 'f': t = NewTypesPrim (type_file); break;
+	case 't': t = NewTypesPrim (type_thread); break;
+	case 'm': t = NewTypesPrim (type_mutex); break;
+	case 'S': t = NewTypesPrim (type_semaphore); break;
+	case 'c': t = NewTypesPrim (type_continuation); break;
+	case 'r': t = NewTypesPrim (type_ref); break;
+	}
+	if (ref)
+	    t = NewTypesRef (t);
+	argc++;
+        a = NewArgType (t, 0, 0);
+	*last = a;
+	last = &a->next;
+    }
+    *argcp = argc;
+    RETURN(args);
+}
+
 void
-BuiltinAddFunction (ScopePtr *scopep, char *name,
-		    int argc, BuiltinFunc f)
+BuiltinAddFunction (ScopePtr *scopep, char *name, Type ret,
+		    char *format, BuiltinFunc f)
 {
     ENTER ();
     Value	func;
     SymbolPtr	sym;
-    sym = BuiltinSymbol (scopep, name, type_func);
-    func =  NewFunc (NewBuiltinCode (type_undef, argc, f, False), 0);
+    int		argc;
+    ArgType	*args;
+
+    args = BuiltinArgTypes (format, &argc);
+    sym = BuiltinSymbol (scopep, name, NewTypesFunc (NewTypesPrim (ret), True, args));
+    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, False), 0);
     BoxValue (sym->global.value, 0) = func;
     EXIT ();
 }
 
 void
-BuiltinAddJumpingFunction (ScopePtr *scopep, char *name,
-			   int argc, BuiltinFunc f)
+BuiltinAddJumpingFunction (ScopePtr *scopep, char *name, Type ret,
+			   char *format, BuiltinFunc f)
 {
     ENTER ();
     Value	func;
     SymbolPtr	sym;
-    sym = BuiltinSymbol (scopep, name, type_func);
-    func =  NewFunc (NewBuiltinCode (type_undef, argc, f, True), 0);
+    ArgType	*args;
+    int		argc;
+    
+    args = BuiltinArgTypes (format, &argc);
+    sym = BuiltinSymbol (scopep, name, NewTypesFunc (NewTypesPrim(ret), True, args));
+    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, True), 0);
     BoxValue (sym->global.value, 0) = func;
     EXIT ();
 }
@@ -349,44 +429,46 @@ BuiltinInit (void)
 	sym = BuiltinScope (n->bn_scope, n->bn_name);
 	*n->bn_value = sym->scope.scope;
     }
-    for (f_v = funcs_v; f_v->bf_name; f_v++) {
-	f.builtinN = f_v->bf_func;
-	BuiltinAddFunction (f_v->bf_scope, f_v->bf_name, -1, f);
+    for (f_v = funcs_v; f_v->name; f_v++) {
+	f.builtinN = f_v->func;
+	
+	BuiltinAddFunction (f_v->scope, f_v->name, f_v->ret, f_v->args, f);
     }
-    for (f_0 = funcs_0; f_0->bf_name; f_0++) {
-	f.builtin0 = f_0->bf_func;
-	BuiltinAddFunction (f_0->bf_scope, f_0->bf_name, 0, f);
+    for (f_0 = funcs_0; f_0->name; f_0++) {
+	f.builtin0 = f_0->func;
+	BuiltinAddFunction (f_0->scope, f_0->name, f_0->ret, f_0->args, f);
     }
-    for (f_1 = funcs_1; f_1->bf_name; f_1++) {
-	f.builtin1 = f_1->bf_func;
-	BuiltinAddFunction (f_1->bf_scope, f_1->bf_name, 1, f);
+    for (f_1 = funcs_1; f_1->name; f_1++) {
+	f.builtin1 = f_1->func;
+	BuiltinAddFunction (f_1->scope, f_1->name, f_1->ret, f_1->args, f);
     }
-    for (f_2 = funcs_2; f_2->bf_name; f_2++) {
-	f.builtin2 = f_2->bf_func;
-	BuiltinAddFunction (f_2->bf_scope, f_2->bf_name, 2, f);
+    for (f_2 = funcs_2; f_2->name; f_2++) {
+	f.builtin2 = f_2->func;
+	BuiltinAddFunction (f_2->scope, f_2->name, f_2->ret, f_2->args, f);
     }
-    for (f_3 = funcs_3; f_3->bf_name; f_3++) {
-	f.builtin3 = f_3->bf_func;
-	BuiltinAddFunction (f_3->bf_scope, f_3->bf_name, 3, f);
+    for (f_3 = funcs_3; f_3->name; f_3++) {
+	f.builtin3 = f_3->func;
+	BuiltinAddFunction (f_3->scope, f_3->name, f_3->ret, f_3->args, f);
     }
-    for (f_7 = funcs_7; f_7->bf_name; f_7++) {
-	f.builtin7 = f_7->bf_func;
-	BuiltinAddFunction (f_7->bf_scope, f_7->bf_name, 7, f);
+    for (f_7 = funcs_7; f_7->name; f_7++) {
+	f.builtin7 = f_7->func;
+	BuiltinAddFunction (f_7->scope, f_7->name, f_7->ret, f_7->args, f);
     }
-    for (f_2j = funcs_2j; f_2j->bf_name; f_2j++) {
-	f.builtin2J = f_2j->bf_func;
-	BuiltinAddJumpingFunction (f_2j->bf_scope, f_2j->bf_name, 2, f);
+    for (f_2j = funcs_2j; f_2j->name; f_2j++) {
+	f.builtin2J = f_2j->func;
+	BuiltinAddJumpingFunction (f_2j->scope, f_2j->name, f_2j->ret, f_2j->args, f);
     }
     
     for (d = dvars; d->bd_name; d++) {
 	sym = ScopeAddSymbol (GlobalScope, 
 			      NewSymbolGlobal (AtomId (d->bd_name), 
-					       type_double, publish_private));
+					       NewTypesPrim (type_double), 
+					       publish_private));
 	sym->global.value->constant = True;
 	BoxValue (sym->global.value, 0) = NewDouble (d->bd_value);
     }
     for (s = svars; s->bs_name; s++) {
-	sym = BuiltinSymbol (s->bs_scope, s->bs_name, type_string);
+	sym = BuiltinSymbol (s->bs_scope, s->bs_name, NewTypesPrim (type_string));
 	BoxValue (sym->global.value, 0) = NewStrString (s->bs_value);
     }
     for (i = ivars; i->is_name; i++) {
@@ -397,7 +479,7 @@ BuiltinInit (void)
         case 1: f = FileStdout; break;
 	default: f = FileStderr;  break;
 	}
-	sym = BuiltinSymbol (i->is_scope, i->is_name, type_file);
+	sym = BuiltinSymbol (i->is_scope, i->is_name, NewTypesPrim (type_file));
 	BoxValue (sym->global.value, 0) = f;
     }
     EXIT ();

@@ -31,7 +31,7 @@ BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
     CodePtr	    code = func->func.code;
     int		    fe;
     FramePtr	    frame;
-    Type	    type;
+    Types	    *type;
     
     frame = NewFrame (func, thread->thread.frame, 
 		      func->func.staticLink, 
@@ -42,10 +42,9 @@ BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
 	type = BoxTypesValue (code->func.dynamics, fe);
 	if (!AssignTypeCompatiblep (type, Stack(fe)))
 	{
-	    RaiseError ("Incompatible type for argument %d function %T = (%T) %v",
+	    RaiseError ("Incompatible type for argument %d function %t = %v",
 			fe+1,
 			type,
-			Stack(fe)->value.tag,
 			Stack(fe));
 	    RETURN (0);
 	}
@@ -217,7 +216,7 @@ ThreadArray (Value thread, int ndim)
 	if (exception)
 	    RETURN (0);
     }
-    RETURN (NewArray (False, type_undef, ndim, dims));
+    RETURN (NewArray (False, typesPoly, ndim, dims));
 }
 
 void
@@ -378,9 +377,6 @@ ThreadStep (Value thread)
 		fp = fp->staticLink;
 	    value = BoxValue(fp->frame, inst->var.name->local.element);
 	    break;
-	case class_struct:
-	    value = NewStruct (inst->var.name->structs.type, False);
-	    break;
 	default:
 	    break;
 	}
@@ -401,10 +397,6 @@ ThreadStep (Value thread)
 		fp = fp->staticLink;
 	    value = NewRef (fp->frame, inst->var.name->local.element);
 	    break;
-	case class_struct:
-	    RaiseError ("Can't assign to structure %A",
-		    inst->var.name->symbol.name);
-	    break;
 	default:
 	    break;
 	}
@@ -420,6 +412,9 @@ ThreadStep (Value thread)
 	stack = inst->ints.value;
 	ThreadInitArray (thread, value, stack);
 	break;
+    case OpBuildStruct:
+        value = NewStruct (inst->structs.structs, False);
+        break;
     case OpInitStruct:
 	v = StructRef (value, inst->atom.atom);
 	if (!v)

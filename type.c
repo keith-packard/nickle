@@ -603,7 +603,7 @@ TypeUnaryRef (Types *ref)
 static Types *
 TypeUnaryGroup (Types *type)
 {
-    if (TypePoly)
+    if (TypePoly (type))
 	return typesGroup;
     else if (TypeNumeric (type))
 	return type;
@@ -613,7 +613,7 @@ TypeUnaryGroup (Types *type)
 static Types *
 TypeUnaryIntegral (Types *type)
 {
-    if (TypePoly)
+    if (TypePoly (type))
 	return typesPrim[type_integer];
     if (TypeIntegral (type))
 	return type;

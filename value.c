@@ -144,8 +144,8 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
     if (!type || !type->binary[operator])
     {
 	if (operator != EqualOp)
-	    RaiseStandardException (exception_invalid_binop_types,
-				    "invalid operand types",
+	    RaiseStandardException (exception_invalid_binop_values,
+				    "invalid operands",
 				    2,
 				    av, bv);
 	RETURN (Zero);
@@ -164,8 +164,8 @@ UnaryOperate (Value v, UnaryOp operator)
     
     if (!v->value.type->unary[operator])
     {
-	RaiseStandardException (exception_invalid_unop_type,
-				"invalid operand type",
+	RaiseStandardException (exception_invalid_unop_value,
+				"invalid operand",
 				1, v);
 	RETURN (Zero);
     }
@@ -329,6 +329,14 @@ Factorial (Value av)
     ENTER ();
     Value   tv;
 
+    if (!Integralp (av->value.tag) || Negativep (av))
+    {
+	RaiseStandardException (exception_invalid_unop_value,
+				"invalid operand",
+				1,
+				av);
+	RETURN (Zero);
+    }
     if (aborting || !Zerop (Less (av, One))) 
 	RETURN (One);
     tv = Factorial (Minus (av, One));
@@ -363,8 +371,8 @@ Pow (Value av, Value bv)
 
     if (!Numericp (av->value.tag) || !Numericp (bv->value.tag))
     {
-	RaiseStandardException (exception_invalid_binop_types,
-				"invalid operand types",
+	RaiseStandardException (exception_invalid_binop_values,
+				"invalid operands",
 				2,
 				av, bv);
 	RETURN (Zero);
@@ -500,8 +508,8 @@ Gcd (Value av, Value bv)
     
     if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
     {
-	RaiseStandardException (exception_invalid_binop_types,
-				"invalid gcd argument types",
+	RaiseStandardException (exception_invalid_binop_values,
+				"invalid gcd argument values",
 				2,
 				av, bv);
 	RETURN (Zero);
@@ -519,8 +527,8 @@ Bdivmod (Value av, Value bv)
     
     if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
     {
-	RaiseStandardException (exception_invalid_binop_types,
-				"invalid gcd argument types",
+	RaiseStandardException (exception_invalid_binop_values,
+				"invalid gcd argument values",
 				2,
 				av, bv);
 	RETURN (Zero);
@@ -537,8 +545,8 @@ KaryReduction (Value av, Value bv)
     
     if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
     {
-	RaiseStandardException (exception_invalid_binop_types,
-				"invalid kary_reduction argument types",
+	RaiseStandardException (exception_invalid_binop_values,
+				"invalid kary_reduction argument values",
 				2,
 				av, bv);
 	RETURN (Zero);

@@ -651,14 +651,14 @@ ThreadStep (Value thread)
 	case type_string:
 	    if (inst->base.opCode != OpArray)
 	    {
-		RaiseStandardException (exception_invalid_unop_type,
+		RaiseStandardException (exception_invalid_unop_value,
 					"Strings aren't addressable",
 					1, value);
 		break;
 	    }
 	    if (inst->ints.value != 1)
 	    {
-		RaiseStandardException (exception_invalid_binop_types,
+		RaiseStandardException (exception_invalid_binop_values,
 					"Strings have only 1 dimension",
 					2, NewInt (inst->ints.value), value);
 		break;
@@ -671,7 +671,7 @@ ThreadStep (Value thread)
 	    s = StringChars (&value->string);
 	    if (i < 0 || strlen (s) < i)
 	    {
-		RaiseStandardException (exception_invalid_binop_types,
+		RaiseStandardException (exception_invalid_binop_values,
 					"String index out of bounds",
 					2, v, value);
 		break;
@@ -681,7 +681,7 @@ ThreadStep (Value thread)
 	case type_array:
 	    if (inst->ints.value != value->array.ndim)
 	    {
-		RaiseStandardException (exception_invalid_binop_types,
+		RaiseStandardException (exception_invalid_binop_values,
 					"Mismatching dimensionality",
 					2, NewInt (inst->ints.value), value);
 		break;
@@ -699,7 +699,7 @@ ThreadStep (Value thread)
 	    }
 	    break;
 	default:
-	    RaiseStandardException (exception_invalid_unop_type,
+	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not an array",
 				    1, value);
 	    break;
@@ -708,7 +708,7 @@ ThreadStep (Value thread)
     case OpCall:
 	if (value->value.tag != type_func)
 	{
-	    RaiseStandardException (exception_invalid_unop_type,
+	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not a function",
 				    1, value);
 	    break;
@@ -723,7 +723,7 @@ ThreadStep (Value thread)
 	    (RefValue (value)->value.tag != type_struct &&
 	     RefValue (value)->value.tag != type_union))
 	{
-	    RaiseStandardException (exception_invalid_unop_type,
+	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not a struct/union reference",
 				    1, value);
 	    break;
@@ -734,7 +734,7 @@ ThreadStep (Value thread)
     case OpDotRefStore:
 	switch (value->value.tag) {
 	default:
-	    RaiseStandardException (exception_invalid_unop_type,
+	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not a struct/union",
 				    1, value);
 	    break;
@@ -802,7 +802,7 @@ ThreadStep (Value thread)
     case OpStar:
 	if (value->value.tag != type_ref)
 	{
-	    RaiseStandardException (exception_invalid_unop_type,
+	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not a reference",
 				    1, value);
 	    break;
@@ -827,7 +827,7 @@ ThreadStep (Value thread)
     case OpPostDec:
 	if (value->value.tag != type_ref)
 	{
-	    RaiseStandardException (exception_invalid_unop_type,
+	    RaiseStandardException (exception_invalid_unop_value,
 				    "Not an lvalue",
 				    1, value);
 	    break;

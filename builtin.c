@@ -463,8 +463,8 @@ static struct ebuiltin excepts[] = {
     {"invalid_array_bounds",	exception_invalid_array_bounds,	"spp" },
     {"divide_by_zero",		exception_divide_by_zero,	"snn" },
     {"invalid_struct_member",	exception_invalid_struct_member,"sps" },
-    {"invalid_binop_types",	exception_invalid_binop_types,	"spp" },
-    {"invalid_unop_type",	exception_invalid_unop_type,	"sp" },
+    {"invalid_binop_values",	exception_invalid_binop_values,	"spp" },
+    {"invalid_unop_value",	exception_invalid_unop_value,	"sp" },
     {0,				0 },
 };
 

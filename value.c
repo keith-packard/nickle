@@ -402,7 +402,9 @@ Pow (Value av, Value bv)
 	}
 	break;
     default:
-	RaiseError ("pow: non-integer power %v", bv);
+	RaiseStandardException (exception_invalid_binop_values,
+				"non-integer pow right operand",
+				2, av, bv);
 	result = Void;
 	break;
     }
@@ -415,7 +417,9 @@ ShiftL (Value av, Value bv)
     ENTER ();
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
-	RaiseError ("non-integer %v << %v\n", av, bv);
+	RaiseStandardException (exception_invalid_binop_values,
+				"non-integer << operands",
+				2, av, bv);
 	RETURN (Void);
     }
     if (Negativep (bv))
@@ -444,7 +448,9 @@ ShiftR (Value av, Value bv)
     ENTER ();
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
-	RaiseError ("non-integer %v >> %v\n", av, bv);
+	RaiseStandardException (exception_invalid_binop_values,
+				"non-integer >> operands",
+				2, av, bv);
 	RETURN (Void);
     }
     if (Negativep (bv))

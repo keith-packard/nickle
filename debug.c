@@ -77,7 +77,7 @@ DebugSetFrame (Value continuation, int offset)
     FramePtr	    frame = continuation->continuation.frame;
     ObjPtr	    obj = continuation->continuation.obj;
     InstPtr	    pc = continuation->continuation.pc;
-    ExprPtr	    stat = ObjStatement (obj, pc);
+    ExprPtr	    stat = obj ? ObjStatement (obj, pc) : 0;
     NamespacePtr    namespace;
     int		    n = offset;
     Bool	    ret;

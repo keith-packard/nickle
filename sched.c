@@ -167,7 +167,9 @@ do_Thread_join (Value target)
     ENTER ();
     if (!ValueIsThread(target))
     {
-	RaiseError ("Join needs thread argument");
+	RaiseStandardException (exception_invalid_argument,
+				"Thread::join needs thread argument",
+				2, target, Void);
 	RETURN (Void);
     }
     if ((target->thread.state & ThreadFinished) == 0)
@@ -257,7 +259,9 @@ do_Thread_set_priority (Value thread, Value priority)
     int	    i;
     if (!ValueIsThread(thread))
     {
-	RaiseError ("SetPriority: %v not a thread", thread);
+	RaiseStandardException (exception_invalid_argument,
+				"Thread::set_priority: not a thread",
+				2, thread, priority);
 	RETURN (Void);
     }
     i = IntPart (priority, "Invalid thread priority");
@@ -278,7 +282,9 @@ do_Thread_get_priority (Value thread)
     ENTER ();
     if (!ValueIsThread(thread))
     {
-	RaiseError ("GetPriority: %v not a thread", thread);
+	RaiseStandardException (exception_invalid_argument,
+				"Thread::get_priority: not a thread",
+				2, thread, Void);
 	RETURN (Void);
     }
     RETURN (NewInt (thread->thread.priority));
@@ -300,7 +306,9 @@ KillThread (Value thread)
     
     if (!ValueIsThread(thread))
     {
-	RaiseError ("Kill: %v not a thread", thread);
+	RaiseStandardException (exception_invalid_argument,
+				"Thread::kill: not a thread",
+				2, thread, Void);
 	return 0;
     }
     if (thread->thread.state & ThreadFinished)
@@ -322,7 +330,9 @@ do_Thread_kill (int n, Value *p)
     {
 	thread = lookupVar (0, "thread");
 	if (!ValueIsThread(thread))
-	    RaiseError ("Kill: no default thread");
+	    RaiseStandardException (exception_invalid_argument,
+				    "Thread::kill: no default thread",
+				    2, thread, Void);
 	else
 	    ret = KillThread (thread);
     }
@@ -402,9 +412,13 @@ do_Thread_trace (int n, Value *p)
 	break;
     default:
 	if (n == 0)
-	    RaiseError ("trace: no default continuation");
+	    RaiseStandardException (exception_invalid_argument, 
+				    "Thread::trace: no default continuation",
+				    1, Zero);
 	else
-	    RaiseError ("trace: %v neither continuation nor thread", v);
+	    RaiseStandardException (exception_invalid_argument, 
+				    "Thread::trace: neither continuation nor thread",
+				    1, v);
 	RETURN (Void);
     }
     TraceFrame (frame, obj, pc);
@@ -758,6 +772,22 @@ NewJump (TwixtPtr leave, TwixtPtr enter, TwixtPtr parent,
 }
 
 /*
+ * An unhandled exception will attempt to jump to NULL,
+ * catch that and invoke the debugger.  When the exception
+ * was raised, the code carefully pushed a continuation from
+ * the point of the exception to pass to the debugger
+ */
+
+static void
+JumpUnhandledException (Value thread)
+{
+    Value   continuation = STACK_POP (thread->thread.continuation.stack);
+    
+    DebugStart (continuation);
+    SetSignalError ();
+}
+
+/*
  * Figure out where to go next in a longjmp through twixts
  */
 Value
@@ -801,7 +831,7 @@ JumpContinue (Value thread, InstPtr *next)
 	*next = ContinuationSet (&thread->thread.continuation, jump->continuation);
     }
     if (!*next)
-	SetSignalError ();
+	JumpUnhandledException (thread);
     RETURN (jump->ret);
 }
 
@@ -873,7 +903,7 @@ ContinuationJump (Value thread, ContinuationPtr continuation, Value ret, InstPtr
     else
 	*next = ContinuationSet (&thread->thread.continuation, continuation);
     if (!*next)
-        SetSignalError ();
+	JumpUnhandledException (thread);
     RETURN (ret);
 }
 
@@ -891,7 +921,9 @@ do_setjmp (Value continuation_ref, Value ret)
     
     if (!ValueIsRef(continuation_ref))
     {
-	RaiseError ("setjump: not a reference %v", continuation_ref);
+	RaiseStandardException (exception_invalid_argument,
+				"setjump: not a reference",
+				1, continuation_ref);
 	RETURN (Void);
     }
     continuation = NewContinuation (&running->thread.continuation,
@@ -916,7 +948,9 @@ do_longjmp (InstPtr *next, Value continuation, Value ret)
 	RETURN (Void);
     if (!ValueIsContinuation(continuation))
     {
-	RaiseError ("longjump: not a continuation %v", continuation);
+	RaiseStandardException (exception_invalid_argument,
+				"longjmp: non-continuation argument",
+				1, continuation);
 	RETURN (Void);
     }
     RETURN (ContinuationJump (running, &continuation->continuation, ret, next));
@@ -1028,6 +1062,8 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 		PrintError ("\t%v\n", BoxValueGet (args->array.values, i));
 	}
 	continuation = EmptyContinuation();
+	STACK_PUSH (continuation->stack, 
+		    NewContinuation (&thread->thread.continuation, pc));
     }
     ContinuationJump (thread, continuation, args, next);
     EXIT ();

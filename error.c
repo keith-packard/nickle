@@ -20,15 +20,3 @@ PrintError (char *s, ...)
     FileVPrintf (FileStderr, s, args);
     va_end (args);
 }
-
-void
-RaiseError (char *s, ...)
-{
-    va_list	args;
-
-    va_start (args, s);
-    FileVPrintf (FileStderr, s, args);
-    va_end (args);
-    FilePrintf (FileStderr, "\n");
-    SetSignalError ();
-}

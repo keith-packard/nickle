@@ -948,7 +948,6 @@ Value	KaryReduction (Value av, Value bv);
 Value	Lxor(Value, Value), Lnot (Value);
 Value   Popcount(Value);
 Bool	Print (Value, Value, char format, int base, int width, int prec, int fill);
-void	RaiseError (char *s, ...);
 void	PrintError (char *s, ...);
 Value	CopyMutable (Value v);
 #ifdef HAVE_C_INLINE

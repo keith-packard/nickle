@@ -1001,7 +1001,9 @@ ThreadsRun (Value thread, Value lex)
 		case OpReturn:
 		    if (!thread->thread.continuation.frame)
 		    {
-			RaiseError ("return outside of function");
+			RaiseStandardException (exception_invalid_argument,
+						"return outside of function",
+						2, Void, Void);
 			break;
 		    }
 		    if (!TypeCompatibleAssign (thread->thread.continuation.frame->function->func.code->base.type,
@@ -1177,7 +1179,9 @@ ThreadsRun (Value thread, Value lex)
 		case OpStaticDone:
 		    if (!thread->thread.continuation.frame)
 		    {
-			RaiseError ("StaticInitDone outside of function");
+			RaiseStandardException (exception_invalid_argument,
+						"StaticInitDone outside of function",
+						2, Void, Void);
 			break;
 		    }
 		    if (aborting)
@@ -1323,8 +1327,6 @@ ThreadsRun (Value thread, Value lex)
 		    if (signalError)
 		    {
 			signalError = False;
-			DebugStart (NewContinuation (&thread->thread.continuation,
-						     inst));
 			ThreadFinish (thread);
 		    }
 		    if (signalProfile)

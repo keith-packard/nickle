@@ -73,7 +73,9 @@ RefMinus (Value av, Value bv, int expandOk)
 	bref = &bv->ref;
 	if (ref->box != bref->box)
 	{
-	    RaiseError ("Attempt to subtract references to different objects %v - %v", av, bv);
+	    RaiseStandardException (exception_invalid_binop_values,
+				    "References to different objects are unordered",
+				    2, av, bv);
 	    RETURN (Void);
 	}
 	RETURN (NewInt (ref->element - bref->element));
@@ -97,8 +99,9 @@ RefLess (Value av, Value bv, int expandOk)
     if (aref->box != bref->box || 
 	(!aref->box->homogeneous && aref->element != bref->element))
     {
-	RaiseError ("Attempt to order references to different objects %v < %v",
-		    av, bv);
+	RaiseStandardException (exception_invalid_binop_values,
+				"References to different objects are unordered",
+				2, av, bv);
 	return FalseVal;
     }
     if (aref->element < bref->element)

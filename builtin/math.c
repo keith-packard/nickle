@@ -85,12 +85,16 @@ Popcount (Value av)
 
     if (!Integralp (ValueTag(av)))
     {
-	RaiseError ("popcount: non-integer argument %v", av);
+	RaiseStandardException (exception_invalid_argument,
+				"Math::popcount: not an integer",
+				2, av, Void);
 	RETURN (Void);
     }
     if (Negativep (av))
     {
-	RaiseError ("popcount: negative argument %v", av);
+	RaiseStandardException (exception_invalid_argument,
+				"Math::popcount: negative argument",
+				2, av, Void);
 	RETURN (Void);
     }
     switch (ValueTag(av)) {
@@ -120,7 +124,9 @@ Popcount (Value av)
 	    ret = Plus (ret, NewInt (part));
 	break;
     default:
-	RaiseError ("popcount: uncaught non-integer argument %v", av);
+	RaiseStandardException (exception_invalid_argument,
+				"Math::popcount: not an integer",
+				2, av, Void);
 	RETURN (Void);
     }
     RETURN (ret);

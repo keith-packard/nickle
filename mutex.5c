@@ -28,8 +28,8 @@ public typedef struct {
 public typedef *mutex_struct mutex;
 
 namespace Mutex {
-    exception deadlock (mutex m, thread self);
-    exception notowned (mutex m, thread self, mutex_owner owner);
+    public exception deadlock (mutex m, thread self);
+    public exception notowned (mutex m, thread self, mutex_owner owner);
 
     public integer function acquire (mutex m)
     {

@@ -106,7 +106,8 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <declList>   initnames typenames
 %type  <symbol>	    name opt_name
 %type  <funcDecl>   func_decl func_name
-%type  <atom>	    typename
+%type  <atom>	    typename 
+%type  <symbol>	    opt_typename
 %type  <expr>	    opt_init
 %type  <fulltype>   decl next_decl
 %type  <type>	    opt_type type subscripts subtype
@@ -114,7 +115,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <type>	    basetype
 %type  <expr>	    dims
 %type  <memList>    struct_members union_members
-%type  <class>	    class
+%type  <class>	    class opt_class
 %type  <publish>    opt_publish publish publish_extend
 %type  <atom>	    namespacename
 
@@ -208,7 +209,7 @@ ignorenl	:
 		    { ignorenl++; }
 		;
 attendnl	:
-		    { ignorenl--; }
+		    { if (ignorenl > 0) ignorenl--; }
 		;
 reset		:
 		    { 
@@ -779,6 +780,7 @@ typenames	: typename COMMA typenames
 typename	: TYPENAME
 		| NAME
 		;
+
 /*
  * Ok, a few cute hacks to fetch the fulltype from the
  * value stack -- initnames always immediately follows a decl,
@@ -880,20 +882,12 @@ opt_init	: ASSIGN simpleexpr
 /*
  * Full declaration including storage, type and publication
  */
-decl		: publish class type opt_nl
+decl		: publish opt_class opt_type opt_nl
 		    { $$.publish = $1; $$.class = $2; $$.type = $3; }
-		| class type opt_nl
+		| class opt_type opt_nl
 		    { $$.publish = publish_private; $$.class = $1; $$.type = $2; }
-		| publish type opt_nl
-		    { $$.publish = $1; $$.class = class_undef; $$.type = $2; }
 		| type opt_nl
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = $1; }
-		| publish class opt_nl
-		    { $$.publish = $1; $$.class = $2; $$.type = typePoly; }
-		| class opt_nl
-		    { $$.publish = publish_private; $$.class = $1; $$.type = typePoly; }
-		| publish opt_nl
-		    { $$.publish = $1; $$.class = class_undef; $$.type = typePoly; }
 		;
 /*
  * Type declarations
@@ -1080,12 +1074,15 @@ union_members	: opt_type atoms SEMI union_members
 /*
 * Declaration modifiers
 */
+opt_class	: class
+		|
+		    { $$ = class_undef; }
+		;
 class		: GLOBAL
 		| AUTO
 		| STATIC
 		| CONST
 		;
-
 opt_publish	: publish
 		|
 		    { $$ = publish_private; }
@@ -2090,5 +2087,6 @@ ParseError (char *fmt, ...)
 void
 yyerror (char *msg)
 {
+    ignorenl = 0;
     ParseError ("%s before %S", msg, yytext);
 }

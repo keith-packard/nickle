@@ -1163,6 +1163,12 @@ DoublePart (Value av, char *error)
     double  div;
     
     av = NewValueFloat (av, 64);
+    if (!ValueIsFloat (av))
+    {
+	RaiseStandardException (exception_invalid_argument, error, 
+				2, NewInt (0), av);
+	return 0.0;
+    }
     if (NaturalLess (av->floats.exp->mag, max_int_natural))
 	e = NaturalToInt (av->floats.exp->mag);
     else

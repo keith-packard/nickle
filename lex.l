@@ -203,8 +203,11 @@ LexGetInteractiveChar (void)
 	for (;;)
 	{
 	    FileFlush (FileStdout, False);
+	    FileFlush (FileStderr, False);
 	    if (FileStdout->file.flags & FileOutputBlocked)
 		ThreadsRun (0, FileStdout);
+	    else if (FileStderr->file.flags & FileOutputBlocked)
+		ThreadsRun (0, FileStderr);
 	    else
 		break;
 	}
@@ -368,12 +371,12 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 		    if (!ignorenl) { yylval.ints = NL; return NL; } 
 		}
 "("		{ yylval.ints = OP; ++ignorenl; return OP; }
-")"		{ yylval.ints = CP; --ignorenl; return CP; }
+")"		{ yylval.ints = CP; if (ignorenl > 0) --ignorenl; return CP; }
 "*["		{ yylval.ints = STAROS; ++ignorenl; return STAROS; }
 "["		{ yylval.ints = OS; ++ignorenl; return OS; }
-"]"		{ yylval.ints = CS; --ignorenl; return CS; }
+"]"		{ yylval.ints = CS; if (ignorenl > 0) --ignorenl; return CS; }
 "{"		{ yylval.ints = OC; ++ignorenl; return OC; }
-"}"		{ yylval.ints = CC; --ignorenl; return CC; }
+"}"		{ yylval.ints = CC; if (ignorenl > 0) --ignorenl; return CC; }
 "+="		{ yylval.ints = ASSIGNPLUS; return ASSIGNPLUS; }
 "-="		{ yylval.ints = ASSIGNMINUS; return ASSIGNMINUS; }
 "*="		{ yylval.ints = ASSIGNTIMES; return ASSIGNTIMES; }

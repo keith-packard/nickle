@@ -1,3 +1,24 @@
+2005-01-13  Keith Packard  <keithp@keithp.com>
+
+	reviewed by: <delete if not using a buddy>
+
+	* builtin-file.c: (import_File_namespace):
+	* file.c: (FileInitErrors), (FileGetError):
+	Use error_type typedef instead of directly using the type.
+	
+	* builtin-toplevel.c: (do_setdims):
+	* execute.c: (ThreadArrayInd):
+	* sched.c: (RaiseException):
+	Use ArrayValue to catch uninitialized values
+	
+	* float.c: (DoublePart):
+	Raise exception on non-float args
+	
+	* gram.y:
+	* lex.l:
+	Rearrange publish/class/type grammar elements to make them prettier
+	Fix ignorenl decrementing to avoid going below zero on syntax error.
+
 2004-12-24  Keith Packard  <keithp@keithp.com>
 version 2.45
 

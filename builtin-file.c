@@ -197,10 +197,10 @@ import_File_namespace()
     for (e = excepts; e->name; e++)
 	BuiltinAddException (&FileNamespace, e->exception, e->name, e->args, e->doc);
 
-    s = NewSymbolType (AtomId("errorType"), typeFileError);
+    s = typeFileError->name.name;
     NamespaceAddName (FileNamespace, s, publish_public);
     
-    s = NewSymbolType (AtomId("error_type"), typeFileError);
+    s = NewSymbolType (AtomId("errorType"), typeFileError);
     NamespaceAddName (FileNamespace, s, publish_public);
     
     EXIT ();

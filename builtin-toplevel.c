@@ -485,7 +485,7 @@ do_setdims (Value av, Value dv)
     for (i = 0; i < a->ndim; i++)
     {
 	int j = a->ndim - 1 - i;
-	dims[j] = IntPart (ArrayValueGet (d,i), "setdims: invalid dimension");
+	dims[j] = IntPart (ArrayValue (d,i), "setdims: invalid dimension");
 	if (aborting)
 	    RETURN (Void);
 	if (dims[j] < 0)

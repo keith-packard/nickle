@@ -348,7 +348,7 @@ ThreadArrayInd (Value thread, Bool resizable, Value dim, Type *type)
     dims = AllocateTemp (ndim * sizeof (int));
     for (i = 0; i < ndim; i++)
     {
-	Value	d = ArrayValueGet(a, i);
+	Value	d = ArrayValue (a, i);
 	dims[i] = IntPart (d, "Invalid array dimension");
 	if (dims[i] < 0)
 	    RaiseStandardException (exception_invalid_argument,

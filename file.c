@@ -423,7 +423,7 @@ const FileErrorMap   fileErrorMap[] = {
 
 #define NUM_FILE_ERRORS	(sizeof (fileErrorMap) / sizeof (fileErrorMap[0]))
 
-Type	*typeFileError;
+Type    *typeFileError;
 
 static int
 FileInitErrors (void)
@@ -432,7 +432,9 @@ FileInitErrors (void)
     StructType	    *st;
     Atom	    *atoms;
     int		    i;
+    SymbolPtr	    error_type;
 
+    error_type = NewSymbolType (AtomId("error_type"), 0);
     st = NewStructType (NUM_FILE_ERRORS);
     atoms = StructTypeAtoms (st);
     for (i = 0; i < NUM_FILE_ERRORS; i++)
@@ -440,7 +442,9 @@ FileInitErrors (void)
 	AddBoxType (&st->types, typePrim[rep_void]);
 	atoms[i] = AtomId (fileErrorMap[i].name);
     }
-    typeFileError = NewTypeUnion (st, True);
+    error_type->symbol.type = NewTypeUnion (st, True);
+    typeFileError = NewTypeName (NewExprAtom (AtomId ("error_type"), 0, False),
+				 error_type);
     MemAddRoot (typeFileError);
     EXIT ();
     return 1;
@@ -493,7 +497,7 @@ FileGetError (int err)
 	    break;
     if (i == NUM_FILE_ERRORS)
 	i = 0;	    /* XXX weird error */
-    st = typeFileError->structs.structs;
+    st = TypeCanon (typeFileError)->structs.structs;
     ret = NewUnion (st, True);
     ret->unions.tag = StructTypeAtoms(st)[i];
     BoxValueSet (ret->unions.value,0,Void);

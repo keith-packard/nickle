@@ -1170,7 +1170,7 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 	    int	    dim = ArrayLimits(&args->array)[0];
 	    for (i = 0; i < dim; i++)
 	    {
-		PrintError ("%g", ArrayValueGet (&args->array, i));
+		PrintError ("%g", ArrayValue (&args->array, i));
 		if (i < dim - 1)
 		    PrintError (", ");
 	    }

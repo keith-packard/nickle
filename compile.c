@@ -3198,21 +3198,21 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	
 	/* check for b */
 	bobj = 0;
-	if (expr->tree.left->tree.right)
+	if (expr->tree.left->tree.right->tree.left)
 	{
 	    bobj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
 	    bobj = _CompileBoolExpr (bobj, 
-				     expr->tree.left->tree.right,
+				     expr->tree.left->tree.right->tree.left,
 				     True, expr, code);
 	    NewInst (obj, OpBranch, start_inst, expr);
 	}
 
 	/* check for c */
 	cobj = 0;
-	if (expr->tree.right->tree.left)
+	if (expr->tree.left->tree.right->tree.right->tree.left)
 	{
 	    cobj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
-	    cobj = _CompileExpr (cobj, expr->tree.right->tree.left, False, expr, code);
+	    cobj = _CompileExpr (cobj, expr->tree.left->tree.right->tree.right->tree.left, False, expr, code);
 	}
 	    
 	top_inst = obj->used;
@@ -3220,7 +3220,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	/* d */
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
 				     NON_LOCAL_BREAK|NON_LOCAL_CONTINUE);
-	obj = _CompileStat (obj, expr->tree.right->tree.right, False, code);
+	obj = _CompileStat (obj, expr->tree.right, False, code);
 	obj->nonLocal = obj->nonLocal->prev;
 
 	/* glue c into place */

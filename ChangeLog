@@ -1,3 +1,11 @@
+2004-05-20  Bart Massey  <bart@cs.pdx.edu>
+
+	* gram.y, compile.c pretty.c
+	Two-argument for() loop is legal
+	now (no init expr).
+	* version.m4
+	Bumped the version to 2.33
+
 2004-05-17  Bart Massey  <bart@cs.pdx.edu>
 
 	* parse-args.5c:

@@ -35,7 +35,8 @@
  *
  *	This says that you can have multiple NLs in a row
  *	and the grammar can't tell which opt_nl is reduced.
- *	No big deal.
+ *	No big deal.  (Could be fixed by replacing with opt_nls
+ *      everywhere, but would change the semantics? --Bart)
  *
  *  shift/reduce conflict on CATCH:
  *
@@ -69,6 +70,9 @@ typedef enum _CanonTypeResult {
     CanonTypeDefined,
 } CanonTypeResult;
     
+static Expr *
+ParseCanonFor (Expr *expr);
+
 static CanonTypeResult
 ParseCanonType (TypePtr type, Bool forwardAllowed);
 
@@ -130,7 +134,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <argDecl>    argdefine
 %type  <bool>	    opt_dotdotdot
 
-%type  <expr>	    opt_expr expr opt_exprs exprs simpleexpr primary
+%type  <expr>	    opt_expr for_exprs expr opt_exprs exprs simpleexpr primary
 %type  <expr>	    opt_actuals actuals
 %type  <expr>	    comma_expr
 %type  <ints>	    assignop
@@ -447,10 +451,11 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 		    { $$ = NewExprTree(WHILE, $5, $7); }
 		| DO ignorenl namespace_start statement WHILE OP expr CP namespace_end attendnl
 		    { $$ = NewExprTree(DO, $4, $7); }
-		| FOR ignorenl namespace_start OP opt_expr SEMI opt_expr SEMI opt_expr CP statement namespace_end attendnl
-		    { $$ = NewExprTree(FOR, NewExprTree(FOR, $5, $7),
-				       NewExprTree(FOR, $9, $11));
-		    }
+		| FOR ignorenl namespace_start OP for_exprs CP statement namespace_end attendnl
+		    { Expr *expr = ParseCanonFor($5);
+		      if (!expr)
+                          YYERROR;
+		      $$ = NewExprTree(FOR, expr, $7); }
 		| SWITCH ignorenl namespace_start OP expr CP case_block namespace_end attendnl
 		    { $$ = NewExprTree (SWITCH, $5, $7); }
 		| UNION SWITCH ignorenl namespace_start OP expr CP union_case_block namespace_end attendnl
@@ -615,6 +620,11 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 					NewExprTree (TWIXT, $5, $7),
 					NewExprTree (TWIXT, $9, 0));
 		    }
+		;
+for_exprs       : opt_expr SEMI for_exprs
+                    { $$ = NewExprTree(SEMI, $1, $3); }
+		| opt_expr
+		    { $$ = NewExprTree(SEMI, $1, 0); }
 		;
 catches		:   catches catch
 		    { $$ = NewExprTree (CATCH, $1, $2); }
@@ -1742,6 +1752,27 @@ BuildCall (char *scope, char *name, int nargs, ...)
     printf ("\n");
 #endif
     RETURN (e);
+}
+
+/*
+ * Walk for() loop arguments and normalize the list
+ */
+static Expr *
+ParseCanonFor (Expr *expr)
+{
+    if (!expr || !expr->tree.right) {
+        ParseError ("Too few exprs in for()\n");
+        return 0;
+    }
+    if (!expr->tree.right->tree.right) {
+        /* 2-argument for() */
+        expr = NewExprTree(FOR, 0, expr);
+    }
+    if (expr->tree.right->tree.right->tree.right) {
+        ParseError ("Too many exprs in for()\n");
+        return 0;
+    }
+    return expr;
 }
 
 /*

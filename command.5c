@@ -79,6 +79,21 @@
      */
 
     Command::new ("library", Command::lex_library);
+
+    /*
+     * char
+     *
+     * char c1 c2 c3	    - Print characters for given integers
+     */
+
+    void function do_char (int c ...)
+    {
+	for (int i = 0; i < dim (c); i++)
+	    printf ("%3d 0x%02x: %v\n", 
+		    c[i], c[i], String::new (c[i]));
+    }
+    
+    Command::new ("char", do_char);
 }
 
 /*

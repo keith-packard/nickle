@@ -554,6 +554,7 @@ MarkJump (void *object)
     JumpPtr jump = object;
 
     MemReference (jump->enter);
+    MemReference (jump->entering);
     MemReference (jump->leave);
     MemReference (jump->parent);
     MemReference (jump->continuation);
@@ -571,6 +572,7 @@ NewJump (TwixtPtr leave, TwixtPtr enter,
     jump = ALLOCATE (&JumpType, sizeof (Jump));
     jump->leave = leave;
     jump->enter = enter;
+    jump->entering = TwixtNext (parent, enter);
     jump->parent = parent;
     jump->continuation = continuation;
     jump->ret = ret;
@@ -591,16 +593,13 @@ JumpContinuation (JumpPtr jump, InstPtr *next)
 	twixt = jump->leave;
 	jump->leave = twixt->previous;
 	if (jump->leave == jump->parent)
-	{
 	    jump->leave = 0;
-	    jump->parent = TwixtNext (jump->parent, jump->enter);
-	}
 	TwixtJump (running, twixt, False, next);
     }
-    else if (jump->parent)
+    else if (jump->entering)
     {
-	twixt = jump->parent;
-	jump->parent = TwixtNext (jump->parent, jump->enter);
+	twixt = jump->entering;
+	jump->entering = TwixtNext (jump->entering, jump->enter);
 	TwixtJump (running, twixt, True, next);
     }
     else
@@ -610,6 +609,7 @@ JumpContinuation (JumpPtr jump, InstPtr *next)
 	running->thread.frame = continuation->continuation.frame;
 	running->thread.stack = StackCopy (continuation->continuation.stack);
 	running->thread.catches = continuation->continuation.catches;
+	running->thread.twixts = continuation->continuation.twixts;
 	running->thread.jump = 0;
 	/*
 	 * Adjust stack for set jump return
@@ -710,6 +710,7 @@ do_long_jump (InstPtr *next, Value continuation, Value ret)
 	running->thread.frame = continuation->continuation.frame;
 	running->thread.stack = StackCopy (continuation->continuation.stack);
 	running->thread.catches = continuation->continuation.catches;
+	running->thread.twixts = continuation->continuation.twixts;
 	running->thread.jump = 0;
 	/*
 	 * Adjust stack for set jump return
@@ -792,6 +793,7 @@ TwixtJump (Value thread, TwixtPtr twixt, Bool enter, InstPtr *next)
     thread->thread.frame = twixt->frame;
     thread->thread.stack = StackCopy (twixt->stack);
     thread->thread.catches = twixt->catches;
+    thread->thread.twixts = twixt->previous;
     if (enter)
 	*next = twixt->enter;
     else

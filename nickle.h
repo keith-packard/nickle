@@ -348,6 +348,12 @@ typedef struct _instRaise {
     SymbolPtr	exception;
 } InstRaise;
 
+typedef struct _instTwixt {
+    InstBase	inst;
+    int		enter;
+    int		leave;
+} InstTwixt;
+
 typedef union _inst {
     InstBase	base;
     InstVar	var;
@@ -360,6 +366,7 @@ typedef union _inst {
     InstObj	obj;
     InstCatch	catch;
     InstRaise	raise;
+    InstTwixt	twixt;
 } Inst;
 
 typedef struct _obj {
@@ -390,6 +397,7 @@ void	    ThreadInit (void);
 typedef struct _jump {
     DataType	    *data;
     TwixtPtr	    enter;
+    TwixtPtr	    entering;
     TwixtPtr	    leave;
     TwixtPtr	    parent;
     Value	    continuation;

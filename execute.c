@@ -336,7 +336,7 @@ ThreadRaise (Value thread, SymbolPtr exception, InstPtr *next)
 }
 
 static void
-ThreadTwixt (Value thread, int leaveOffset)
+ThreadTwixt (Value thread, int enterOffset, int leaveOffset)
 {
     ENTER ();
     TwixtPtr	twixt, prev;
@@ -345,7 +345,7 @@ ThreadTwixt (Value thread, int leaveOffset)
 
     twixt = NewTwixt (prev,
 		      thread->thread.frame,
-		      thread->thread.pc + 1,
+		      thread->thread.pc + enterOffset,
 		      thread->thread.pc + leaveOffset,
 		      thread->thread.catches,
 		      StackCopy (thread->thread.stack));
@@ -702,7 +702,7 @@ ThreadStep (Value thread)
 			inst->raise.exception->symbol.name);
 	break;
     case OpTwixt:
-	ThreadTwixt (thread, inst->branch.offset);
+	ThreadTwixt (thread, inst->twixt.enter, inst->twixt.leave);
 	break;
     case OpTwixtDone:
 	thread->thread.twixts = thread->thread.twixts->previous;

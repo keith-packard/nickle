@@ -645,9 +645,10 @@ CompileRaise (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
  *
  *  twixt (enter; leave) body else _else
  *
- *	OpTwixt		leave:
+ *  enter:
  *		enter
  *	OpEnterDone	else:
+ *	OpTwixt		enter: leave:
  *		body
  *	OpTwixtDone
  *  leave:
@@ -663,15 +664,18 @@ static ObjPtr
 CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
-    int	    twixt_inst, enter_done_inst, leave_done_inst;
+    int	    enter_inst, twixt_inst, enter_done_inst, leave_done_inst;
     InstPtr inst;
     
-    NewInst (twixt_inst, obj);
+    enter_inst = obj->used;
 
     /* Compile enter expression */
     obj = _CompileExpr (obj, expr->tree.left->tree.left, namespace, stat);
     NewInst (enter_done_inst, obj);
     
+    /* here's where the twixt instruction goes */
+    NewInst (twixt_inst, obj);
+
     /* Compile the body */
     obj = _CompileStat (obj, expr->tree.right->tree.left, namespace);
     BuildInst (obj, OpTwixtDone, inst, stat);
@@ -680,7 +684,8 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     inst = ObjCode (obj, twixt_inst);
     inst->base.opCode = OpTwixt;
     inst->base.stat = stat;
-    inst->branch.offset = obj->used - twixt_inst;
+    inst->twixt.enter = enter_inst - twixt_inst;
+    inst->twixt.leave = obj->used - twixt_inst;
 
     /* Compile leave expression */
     obj = _CompileExpr (obj, expr->tree.left->tree.right, namespace, stat);
@@ -1968,7 +1973,7 @@ ObjDump (ObjPtr obj, int indent)
 	case OpAnd:
 	case OpOr:
 	case OpException:
-	case OpTwixtDone:
+	case OpLeaveDone:
 	    FilePrintf (FileStdout, "branch %d", inst->branch.offset);
 	    break;
 	case OpReturn:
@@ -1988,7 +1993,8 @@ ObjDump (ObjPtr obj, int indent)
 	    FilePrintf (FileStdout, " argc %d", inst->raise.argc);
 	    break;
 	case OpTwixt:
-	    FilePrintf (FileStdout, "leave %d", inst->branch.offset);
+	    FilePrintf (FileStdout, "enter %d leave %d",
+			inst->twixt.enter, inst->twixt.leave);
 	    break;
 	case OpName:
 	case OpNameRef:

@@ -1,4 +1,8 @@
-nickle (2.00-1) unstable; urgency=low
+nickle (2.20-1) unstable; urgency=low
+
+  * Many, many unlogged changes.
+
+ -- Bart Massey <bart@nickle.org>  Sun Dec 29 11:31:00 UTC 2002
 
   * Initial Release.
 

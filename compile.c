@@ -1077,8 +1077,12 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     /* here's where the twixt instruction goes */
     NewInst (obj, OpTwixt, twixt_inst, stat);
 
+    obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTwixt, 0);
+    
     /* Compile the body */
     obj = _CompileStat (obj, expr->tree.right->tree.left, False, code);
+
+    obj->nonLocal = obj->nonLocal->prev;
     
     BuildInst (obj, OpTwixtDone, inst, stat);
     

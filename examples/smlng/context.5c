@@ -58,7 +58,7 @@ function context_set (*context c, string value)
 	}
 	break;
     default:
-	if (value[0] >= '0' && value[0] <= 9) {
+	if (value[0] >= '0' && value[0] <= '9') {
 	    c->size = string_to_integer(value);
 	} else {
 	    c->color = color_index_for_name(value[0]);

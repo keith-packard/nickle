@@ -1,5 +1,10 @@
 2004-04-15  Keith Packard  <keithp@keithp.com>
 
+	* array.c: (ArrayResize):
+	Fix warning about uninit 'good'
+
+2004-04-15  Keith Packard  <keithp@keithp.com>
+
 	* autogen.sh:
 	Always regenerate configure in case version.m4 changes
 	* configure.in:

@@ -367,6 +367,7 @@ ArrayResize (Value av, int dim, int size)
 		dims[d] = 0;
 		limits[d] = 0;
 	    }
+	    good = 0;
 	}
 
 	nboxes = NewBoxVector (ents, a->u.resize->type);

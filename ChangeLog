@@ -1,3 +1,7 @@
+2004-08-04  Keith Packard  <keithp@keithp.com>
+version 2.42
+	* Bump version to 2.42
+
 2004-07-28  Keith Packard  <keithp@keithp.com>
 
 	* configure.in:

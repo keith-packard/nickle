@@ -2315,7 +2315,11 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 			      lvalue->base.type,
 			      init->base.type);
 	    }
-	    BuildInst (*initObj, OpInitialize, inst, decls);
+	    BuildInst (*initObj, OpAssign, inst, decls);
+	    /*
+	     * TODO: analyze rvalue to see when it no other reference
+	     * could exist and use OpInitialize
+	     */
 	}
     }
     if (evaluate)

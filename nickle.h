@@ -90,6 +90,7 @@ extern FramePtr	    CurrentFrame;
 extern void	    NamespaceInit (void);
 
 typedef struct _typespace {
+    DataType		*data;
     TypespacePtr	previous;
     Atom		name;
     Bool		mask;

@@ -106,7 +106,7 @@ extend namespace String {
 	 * Return whether 'c' is in 's'
 	 */
     {
-	return index(String::new(c), s) >= 0;
+	return index(s, String::new(c)) >= 0;
     }
 
     public string[*] wordsplit(string s, string sep) 

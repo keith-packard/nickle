@@ -258,7 +258,7 @@ public namespace Math {
     /*
      * Calculate pi using the formula:
      *
-     *  PI = 24*arctan (1/8) + 8*arctan (1/57) + 4*arctan (1/239);
+     *  PI = 24*atan (1/8) + 8*atan (1/57) + 4*atan (1/239);
      */
     
     real function calculate_pi (int prec)
@@ -303,11 +303,11 @@ public namespace Math {
 	}
 
 	/*
-	 * Compute arctan near zero
+	 * Compute atan near zero
 	 *
-	 * arctan(x) = x - x**3/3 + x**5/5 - ...
+	 * atan(x) = x - x**3/3 + x**5/5 - ...
 	 */
-	real function arctan (rational den, int digits)
+	real function atan (rational den, int digits)
 	{
 	    int	    p, q;
 	    int	    l;
@@ -346,9 +346,9 @@ public namespace Math {
 	real	value;
 	real	part1, part2, part3;
 
-	part1 = 24 *arctan (8, prec + 30);
-	part2 = 8 * arctan (57, prec + 30);
-	part3 = 4 * arctan (239, prec + 30);
+	part1 = 24 *atan (8, prec + 30);
+	part2 = 8 * atan (57, prec + 30);
+	part3 = 4 * atan (239, prec + 30);
 	value = part1 + part2 + part3;
 	return imprecise (value, prec);
     }
@@ -512,12 +512,12 @@ public namespace Math {
 	return s/c;
     }
     
-    public real function arctan (real v)
+    public real function atan (real v)
     {
 	/* 
-	 * arctan(x) = x - x**3/3 + x**5/5 - ...
+	 * atan(x) = x - x**3/3 + x**5/5 - ...
 	 */
-	real function raw_arctan (real v)
+	real function raw_atan (real v)
 	{
 	    real    err = errbounds (v);
 	    real    a, term;
@@ -552,29 +552,29 @@ public namespace Math {
 	
 	v = imprecise (v);
 	/*
-	 * arctan(v) = -arctan(-v) 
+	 * atan(v) = -atan(-v) 
 	 */
 	if (v < 0)
-	    return -arctan (-v);
+	    return -atan (-v);
 	/* 
-	 * arctan(v) = pi/2 - arctan(1/v)
+	 * atan(v) = pi/2 - atan(1/v)
 	 */
 	if (v > 1)
-	    return pi_value (precision(v))/2 - arctan (1/v);
+	    return pi_value (precision(v))/2 - atan (1/v);
 	/*
-	 * arctan(v) = pi/6 + arctan((v*sqrt(3) - 1) / (sqrt(3) + v))
+	 * atan(v) = pi/6 + atan((v*sqrt(3) - 1) / (sqrt(3) + v))
 	 */
 	if (v > .268)
 	{
 	    sqrt3 = sqrt (imprecise (3,precision(v)));
 	    return (pi_value (precision(v)) / 6 + 
-		    raw_arctan ((v * sqrt3 - 1) / (sqrt3 + v)));
+		    raw_atan ((v * sqrt3 - 1) / (sqrt3 + v)));
 	}
-	return raw_arctan (v);
+	return raw_atan (v);
     }
     
     /*
-     *	arctan(v) = arcsin(v/sqrt(1+v**2))
+     *	atan(v) = asin(v/sqrt(1+v**2))
      *
      *	q = v/sqrt(1+v**2)
      *	q*sqrt(1+v**2) = v
@@ -585,10 +585,10 @@ public namespace Math {
      *  v**2 = q**2/(1-q**2)
      *  v = q/sqrt(1-q**2)
      *
-     *  arcsin(q) = arctan(q/sqrt(1-q**2))
+     *  asin(q) = atan(q/sqrt(1-q**2))
      */
     
-    public real function arcsin (real v)
+    public real function asin (real v)
     {
 	v = imprecise (v);
 	if (abs (v) > 1)
@@ -597,16 +597,16 @@ public namespace Math {
 	    return pi_value (precision (v))/2;
 	if (v == -1)
 	    return -pi_value (precision (v))/2;
-	return arctan (v/sqrt(1-v**2));
+	return atan (v/sqrt(1-v**2));
     }
 
     /*
-     * arccos(v) = arcsin (sqrt (1 - v**2))
-     *		= arctan (sqrt(1-v**2) / sqrt (1-(sqrt (1-v**2))**2))
-     *		= arctan (sqrt(1-v**2) / sqrt (1-(1-v**2)))
-     *		= arctan (sqrt(1-v**2) / v)
+     * acos(v) = asin (sqrt (1 - v**2))
+     *		= atan (sqrt(1-v**2) / sqrt (1-(sqrt (1-v**2))**2))
+     *		= atan (sqrt(1-v**2) / sqrt (1-(1-v**2)))
+     *		= atan (sqrt(1-v**2) / v)
      */
-    public real function arccos (real v)
+    public real function acos (real v)
     {
 	v = imprecise(v);
 	if (abs (v) > 1)
@@ -617,13 +617,13 @@ public namespace Math {
 	    return pi_value(precision(v));
 	if (v == 0)
 	    return pi_value(precision(v))/2;
-	return arctan (sqrt (1-v**2)/v);
+	return atan (sqrt (1-v**2)/v);
     }
 	
     /*
-     * arctan (x/y)
+     * atan (x/y)
      */
-    public real function arctan2 (real x, real y)
+    public real function atan2 (real x, real y)
     {
 	x = imprecise (x);
 	y = imprecise (y);
@@ -642,7 +642,7 @@ public namespace Math {
 
 	real	a;
 
-	a = arctan (x/y);
+	a = atan (x/y);
 	if (x < 0)
 	{
 	    if (y > 0)

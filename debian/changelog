@@ -2,8 +2,8 @@ nickle (2.29-1) unstable; urgency=low
 
   * Add casts to avoid warnings where sizeof (int) != sizeof (void *)
   * Catch File::open_error when loading files and print
-    reasonable message.
-    exit(1) immediately if an file or library from the
+    reasonable message.   Closes: #241417.
+  * exit(1) immediately if an file or library from the
     command line fails load.
 
  -- Keith Packard <keithp@keithp.com>  Thu,  1 Apr 2004 11:52:51 -0800

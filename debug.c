@@ -49,6 +49,7 @@ static struct {
     { "up",	False, },
     { "down",	False, },
     { "done",	False, },
+    { "help",	False, },
 };
 
 #define NUM_DEBUG_COMMANDS  (sizeof (debugCommands) / sizeof (debugCommands[0]))
@@ -128,6 +129,15 @@ do_Debug_done (void)
     TopNamespace = CurrentNamespace = GlobalNamespace;
     CurrentFrame = 0;
     DebugDeleteCommands ();
+    RETURN (Void);
+}
+
+Value
+do_Debug_help (void)
+{
+    ENTER ();
+    FilePrintf (FileStderr,
+		"debug commands: trace, up, down, done, help\n");
     RETURN (Void);
 }
 

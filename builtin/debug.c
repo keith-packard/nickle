@@ -28,6 +28,7 @@ import_Debug_namespace()
         { do_Debug_done, "done", "v", "" },
         { do_Debug_down, "down", "b", "" },
         { do_Debug_up, "up", "b", "" },
+	{ do_Debug_help, "help", "v", ""},
         { 0 }
     };
 

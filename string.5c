@@ -52,7 +52,39 @@ extend namespace String {
     }
 
 
+    void shiftn(&(poly[...]) array, int n)
+    /*
+     * Shift a growable array n elements: left is positive
+     */
+    {
+	int f = dim(array);
+	for (int i = 0; i < f - n; i++)
+	    array[i] = array[i + n];
+	if (n < 0)
+	    for (int i = 0; i < -n; i++)
+		make_uninit(&array[i]);
+	if (n > 0)
+	    setdim(array, f - n);
+    }
 
+    void shift(&(poly[...]) array)
+    /*
+     * Shift a growable array one element to the left
+     */
+    {
+	shiftn(&array, 1);
+    }
+
+    string chump(string s)
+    /*
+     * Return s with any trailing newlines removed
+     */
+    {
+	int n = length(s);
+	while(n > 0 && s[n - 1] == '\n')
+	    --n;
+	return substr(s, 0, n);
+    }
 
     public string chomp(string s) 
 	/*

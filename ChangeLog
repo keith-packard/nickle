@@ -1,6 +1,11 @@
 2004-11-7  Bart Massey <bart@cs.pdx.edu>
 
 	* string.5c:
+	Add shiftn(), shift(), chump() functions.
+	
+2004-11-7  Bart Massey <bart@cs.pdx.edu>
+
+	* string.5c:
 	Add wordsplit() function.
 	
 2004-10-19  Keith Packard  <keithp@keithp.com>

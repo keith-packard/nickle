@@ -138,27 +138,7 @@ extend namespace Command {
 		    import_if_needed(name[i]);
 		continue;
 	    }
-	    if (!do_import && dim(name) > 1)
-	    {
-		string format_name()
-		{
-		    string result = name[0];
-		    for (int i = 1; i < dim(name); i++)
-		    {
-			result = result + "::";
-			result = result + name[i];
-		    }
-		    return result;
-		}
-		File::fprintf (stderr,
-			       "Cannot %s compound " +
-			       "name %s (without import), " +
-			       "giving up.\n",
-			       autotype,
-			       format_name());
-		return;
-	    }
-	    for (int j = 0; j < dim(name); j++)
+	    for (int j = dim(name) - 1; j >= 0; j--)
 	    {
 		import_if_needed(name[j]);
 		string f = make_filename(name[j]);

@@ -4,6 +4,7 @@
 ## All Rights Reserved.  See the file COPYING in this directory
 ## for licensing information.
 
+AUTOMAKE_OPTIONS = no-dependencies
 EXTRA_DIST = README.name
 
 bin_PROGRAMS = nickle
@@ -31,3 +32,6 @@ CDEBUGFLAGS = -O -g
 CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
 	-Wnested-externs $(DEFINES)
+
+$(nickle_OBJECTS): avl.h gram.h memp.h opcode.h stack.h \
+	config.h mem.h nickle.h ref.h value.h

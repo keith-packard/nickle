@@ -235,11 +235,13 @@ FilePopen (char *program, char *argv[], char *mode)
 	{
 	    close (1);
 	    dup2 (fds[1], 1);
+	    close (fds[0]);
 	}
 	else
 	{
 	    close (0);
 	    dup2 (fds[0], 0);
+	    close (fds[1]);
 	}
 	execvp (program, argv);
 	exit (1);

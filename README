@@ -1,0 +1,11 @@
+$Header$
+
+This contains the sources for 'nick' an interpretive language
+
+This program compiles on SunOS and Linux systems.  It uses only Posix
+style system call interfaces, and should compile on most anything.
+
+Have fun!
+
+Keith Packard
+keithp@ncd.com

@@ -1,0 +1,36 @@
+/*
+ * mem.h
+ *
+ * definitions for the memory manager
+ */
+
+struct bfree {
+	DataType	*type;
+	struct bfree	*next;
+};
+
+/* make sure we can store doubles in blocks */
+
+union block_round {
+    struct block    b;
+    double	    round;
+};
+
+# define MINHUNK	(sizeof (struct bfree))
+# define NUMSIZES	9
+# define MAXHUNK	(MINHUNK * 256)		/* MINHUNK * 2^(NUMSIZES-1) */
+
+# define TYPE(o)	(*((DataType **) (o)))
+# define HEADSIZE	(sizeof (union block_round))
+# define MINBLOCKSIZE	(MAXHUNK + MINHUNK + HEADSIZE)
+# define GOODBLOCKSIZE	(0x7fc)
+# define BLOCKSIZE	(GOODBLOCKSIZE < MINBLOCKSIZE ? \
+			 MINBLOCKSIZE : GOODBLOCKSIZE)
+
+# define GARBAGETIME	1000
+
+# define BITSPERCH		(8)
+# define NUMINBLOCK(size) 	(((BLOCKSIZE - HEADSIZE) * \
+				  BITSPERCH) / (1 + BITSPERCH * (size)))
+# define BITMAPSIZE(size)	((NUMINBLOCK(size) + (BITSPERCH-1)) / BITSPERCH)
+

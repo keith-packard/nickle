@@ -1,0 +1,505 @@
+/*
+ * $Id$
+ *
+ * Copyright 1996 Keith Packard
+ *
+ * Permission to use, copy, modify, distribute, and sell this software and its
+ * documentation for any purpose is hereby granted without fee, provided that
+ * the above copyright notice appear in all copies and that both that
+ * copyright notice and this permission notice appear in supporting
+ * documentation, and that the name of Keith Packard not be used in
+ * advertising or publicity pertaining to distribution of the software without
+ * specific, written prior permission.  Keith Packard makes no
+ * representations about the suitability of this software for any purpose.  It
+ * is provided "as is" without express or implied warranty.
+ *
+ * KEITH PACKARD DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
+ * EVENT SHALL KEITH PACKARD BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+ * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
+#include "nick.h"
+#include "ref.h"
+
+Value   running;
+Value   stopped;
+int	runnable;
+
+extern void dumpSleep (void), dumpThreads (void);
+
+void
+_ThreadInsert (Value thread)
+{
+    Value	*prev, t;
+
+    if (Runnable (thread))
+	++runnable;
+    if (thread->thread.state == ThreadRunning)
+	prev = &running;
+    else if (thread->thread.state & ThreadFinished)
+	return;
+    else
+	prev = &stopped;
+    for (; (t = *prev); prev = &t->thread.next)
+	if (t->thread.priority <= thread->thread.priority)
+	    break;
+    thread->thread.next = t;
+    *prev = thread;
+}
+
+void
+_ThreadRemove (Value thread)
+{
+    Value	*prev;
+
+    if (Runnable (thread))
+	--runnable;
+    if (thread->thread.state == ThreadRunning)
+	prev = &running;
+    else if (thread->thread.state & ThreadFinished)
+	return;
+    else
+	prev = &stopped;
+    for (; *prev != thread; prev = &(*prev)->thread.next);
+    *prev = thread->thread.next;
+}
+
+void
+ThreadSetState (Value thread, ThreadState state)
+{
+    _ThreadRemove (thread);
+    thread->thread.state |= state;
+    _ThreadInsert (thread);
+}
+
+void
+ThreadClearState (Value thread, ThreadState state)
+{
+    _ThreadRemove (thread);
+    thread->thread.state &= ~state;
+    _ThreadInsert (thread);
+}
+
+void
+ThreadSleep (Value thread, Value sleep, int priority)
+{
+    thread->thread.priority = priority;
+    thread->thread.sleep = sleep;
+    aborting = True;
+    exception = True;
+    abortSuspend = True;
+}
+
+void
+ThreadStepped (Value thread)
+{
+    Value   t;
+    
+    if (thread == running &&
+	thread->thread.priority > PriorityMin)
+    {
+	thread->thread.priority--;
+	if ((t = thread->thread.next) &&
+	    thread->thread.priority < t->thread.priority)
+	{
+	    _ThreadRemove (thread);
+	    _ThreadInsert (thread);
+	}
+    }
+}
+
+void
+ThreadsWakeup (Value sleep)
+{
+    Value	thread, next;
+
+    for (thread = stopped; thread; thread = next)
+    {
+	next = thread->thread.next;
+	if ((thread->thread.state & ThreadSuspended) && 
+	    thread->thread.sleep == sleep)
+	{
+	    thread->thread.sleep = 0;
+	    ThreadClearState (thread, ThreadSuspended);
+	}
+    }
+}
+
+void
+ThreadFinish (Value thread)
+{
+    ThreadSetState (thread, ThreadFinished);
+    ThreadsWakeup (thread);
+}
+
+void
+ThreadsInterrupt (void)
+{
+    Value   thread, next;
+    Value   t;
+
+    if (running)
+	t = running;
+    else
+	t = stopped;
+    for (thread = stopped; thread; thread = next)
+    {
+	next = thread->thread.next;
+	if (Runnable (thread))
+	    --runnable;
+	thread->thread.state |= ThreadInterrupted;
+    }
+    for (thread = running; thread; thread = next)
+    {
+	next = thread->thread.next;
+	ThreadSetState (thread, ThreadInterrupted);
+    }
+    if (t)
+	setVar ("thread", t);
+}
+
+int
+ThreadContinue (void)
+{
+    Value   thread, next;
+    int	    n;
+
+    n = 0;
+    for (thread = stopped; thread; thread = next)
+    {
+	next = thread->thread.next;
+
+	if (thread->thread.state & ThreadInterrupted)
+	{
+	    n++;
+	    ThreadClearState (thread, ThreadInterrupted);
+	}
+    }
+    return n;
+}
+	    
+Value
+ThreadJoin (Value target)
+{
+    ENTER ();
+    if (target->value.tag != type_thread)
+    {
+	RaiseError ("Join needs thread argument");
+	RETURN (Zero);
+    }
+    if ((target->thread.state & ThreadFinished) == 0)
+    {
+	ThreadSleep (running, target, PrioritySync);
+	RETURN (Zero);
+    }
+    RETURN (target->thread.v);
+}
+
+void
+ThreadListState (Value thread)
+{
+    int	state = thread->thread.state;
+    
+    if (state == ThreadRunning)
+	FilePuts (FileStdout, " running");
+    else
+    {
+	if (state & ThreadSuspended)
+	    FilePuts (FileStdout, " suspended");
+	if (state & ThreadInterrupted)
+	    FilePuts (FileStdout, " interrupted");
+	if (state & ThreadFinished)
+	    FilePuts (FileStdout, " finished");
+	if (state & ThreadError)
+	    FilePuts (FileStdout, " error");
+    }
+}
+
+Value
+ThreadsList (void)
+{
+    Value   t;
+
+    for (t = running; t; t = t->thread.next)
+    {
+	FilePuts (FileStdout, "\t%");
+	FilePutInt (FileStdout, t->thread.id);
+	ThreadListState (t);
+	FileOutput (FileStdout, '\n');
+    }
+    for (t = stopped; t; t = t->thread.next)
+    {
+	FilePuts (FileStdout, "\t%");
+	FilePutInt (FileStdout, t->thread.id);
+	ThreadListState (t);
+	if (t->thread.sleep)
+	{
+	    FileOutput (FileStdout, ' ');
+	    print (FileStdout, t->thread.sleep);
+	}
+	FileOutput (FileStdout, '\n');
+    }
+    return Zero;
+}
+
+Value
+ThreadFromId (Value id)
+{
+    ENTER ();
+    int	i;
+    Value   t;
+
+    i = IntPart (id, "Invalid thread id");
+    if (exception)
+	RETURN (Zero);
+    for (t = running; t; t = t->thread.next)
+	if (t->thread.id == i)
+	    RETURN (t);
+    for (t = stopped; t; t = t->thread.next)
+	if (t->thread.id == i)
+	    RETURN (t);
+    RETURN (Zero);
+}
+
+Value
+CurrentThread (void)
+{
+    ENTER ();
+    Value   ret;
+    if (running)
+	ret = running;
+    else
+	ret = Zero;
+    RETURN (ret);
+}
+
+Value
+SetPriority (Value thread, Value priority)
+{
+    ENTER ();
+    int	    i;
+    if (thread->value.tag != type_thread)
+    {
+	RaiseError ("SetPriority: %v not a thread", thread);
+	RETURN (Zero);
+    }
+    i = IntPart (priority, "Invalid thread priority");
+    if (exception)
+	RETURN (Zero);
+    if (i != thread->thread.priority)
+    {
+	_ThreadRemove (thread);
+	thread->thread.priority = i;
+	_ThreadInsert (thread);
+    }
+    RETURN (NewInt (thread->thread.priority));
+}
+
+Value
+GetPriority (Value thread)
+{
+    ENTER ();
+    if (thread->value.tag != type_thread)
+    {
+	RaiseError ("GetPriority: %v not a thread", thread);
+	RETURN (Zero);
+    }
+    RETURN (NewInt (thread->thread.priority));
+}
+
+Value
+Cont (void)
+{
+    int	    n;
+    
+    n = ThreadContinue ();
+    return NewInt (n);
+}
+
+int
+KillThread (Value thread)
+{
+    int	ret;
+    
+    if (thread->value.tag != type_thread)
+    {
+	RaiseError ("Kill: %v not a thread", thread);
+	return 0;
+    }
+    if (thread->thread.state & ThreadFinished)
+	ret = 0;
+    else
+	ret = 1;
+    ThreadFinish (thread);
+    return ret;
+}
+
+Value
+Kill (int n, Value *p)
+{
+    ENTER ();
+    Value   thread;
+    int	    ret = 0;
+
+    if (n == 0)
+    {
+	thread = lookupVar ("thread");
+	if (thread->value.tag != type_thread)
+	    RaiseError ("Kill: no default thread");
+	else
+	    ret = KillThread (thread);
+    }
+    else
+    {
+	while (n--)
+	    ret += KillThread (*p++);
+    }
+    RETURN (NewInt (ret));
+}
+
+void
+TraceFunction (Value thread, FramePtr frame, CodePtr code, Atom name)
+{
+    ScopeChainPtr   chain;
+    SymbolPtr	    arg;
+    int		    fe;
+    
+    FilePuts (FileStdout, name ? AtomName (name) : "<anonymous>");
+    FilePuts (FileStdout, " (");
+    fe = 0;
+    for (chain = code->func.locals->symbols; chain; chain = chain->next)
+    {
+	arg = chain->symbol;
+	if (arg->symbol.class == class_arg)
+	{
+	    if (fe)
+		FilePuts (FileStdout, ", ");
+	    FilePuts (FileStdout, AtomName (arg->symbol.name));
+	    FilePuts (FileStdout, " = ");
+	    print (FileStdout, BoxValue (frame->frame, arg->local.element));
+	    fe++;
+	}
+    }
+    FilePuts (FileStdout, ")\n");
+}
+
+Value
+Trace (int n, Value *p)
+{
+    ENTER ();
+    FramePtr	f;
+    int		max;
+    CodePtr	code;
+    Value	thread;
+    
+    if (n == 0)
+	thread = lookupVar ("thread");
+    else
+	thread = *p;
+    if (thread->value.tag != type_thread)
+    {
+	if (n == 0)
+	    RaiseError ("Trace: no default thread");
+	else
+	    RaiseError ("Trace: %v not a thread", thread);
+	RETURN (Zero);
+    }
+    PrintStat (FileStdout, thread->thread.pc->base.stat, False);
+    for (f = thread->thread.frame, max = 20; f && max--; f = f->previous)
+    {
+	code = f->function->func.code;
+	TraceFunction (thread, f, code, code->base.name);
+	PrintStat (FileStdout, f->savePc->base.stat, False);
+    }
+    RETURN(One);
+}
+
+static void
+ThreadMark (void *object)
+{
+    ThreadPtr	thread = object;
+
+    MemReference (thread->v);
+    MemReference (thread->stack);
+    MemReference (thread->frame);
+    MemReference (thread->code);
+    MemReference (thread->sleep);
+    MemReference (thread->next);
+}
+
+Bool
+ThreadPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+{
+    FileOutput (f, '%');
+    FilePutInt (f, av->thread.id);
+    return True;
+}
+
+ValueType    ThreadType = {
+    { ThreadMark, 0 },	/* base */
+    {			/* binary */
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+    },
+    {			    /* unary */
+	0,
+	0,
+	0,
+    },
+    0,
+    0,
+    ThreadPrint,
+    0,
+};
+    
+static int  ThreadId;
+
+Value
+NewThread (FramePtr frame, ObjPtr code)
+{
+    ENTER ();
+    Value ret;
+
+    ret = ALLOCATE (&ThreadType.data, sizeof (Thread));
+    ret->value.tag = type_thread;
+    ret->thread.v = Zero;
+    ret->thread.stack = StackCreate ();
+    ret->thread.pc = ObjCode (code, 0);
+    ret->thread.code = code;
+    ret->thread.frame = frame;
+    ret->thread.state = ThreadRunning;
+    ret->thread.priority = 0;
+    ret->thread.sleep = 0;
+    ret->thread.id = ++ThreadId;
+    ret->thread.partial = 0;
+    complete = True;
+    if (code->errors)
+	ret->thread.state = ThreadError;
+    _ThreadInsert (ret);
+    RETURN (ret);
+}
+
+ReferencePtr	RunningReference, StoppedReference;
+
+void
+ThreadInit (void)
+{
+    ENTER ();
+    RunningReference = NewReference ((void **) &running);
+    MemAddRoot (RunningReference);
+    StoppedReference = NewReference ((void **) &stopped);
+    MemAddRoot (StoppedReference);
+    EXIT ();
+}

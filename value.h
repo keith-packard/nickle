@@ -1,0 +1,523 @@
+/* $Header$ */
+/*
+ * This program is Copyright (C) 1988 by Keith Packard.  IC is provided to
+ * you without charge, and with no warranty.  You may give away copies of
+ * IC, including source, provided that this notice is included in all the
+ * files.
+ */
+/*
+ * value.h
+ *
+ * type definitions for functions returning values
+ */
+
+#ifndef _VALUE_H_
+#define _VALUE_H_
+#include <stdio.h>
+#include <stdarg.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <memory.h>
+#include <string.h>
+#include <math.h>
+#include "mem.h"
+
+typedef enum _Bool { False = 0, True = 1 }  	Bool;
+
+typedef unsigned long	Atom;
+
+extern Atom AtomId (char *name);
+extern char *AtomName (Atom id);
+extern int  AtomInit (void);
+
+typedef struct _AtomList    *AtomListPtr;
+
+typedef struct _AtomList {
+    DataType	*data;
+    AtomListPtr	next;
+    Atom	id;
+} AtomList;
+
+/*
+ * computational radix for natural numbers.  Make sure the
+ * definitions for digit, double_digit and signed_digit will
+ * still work correctly.
+ */
+
+#ifdef BASE10BASE
+# define BASE		10000
+# define LBASE10	4
+# define DIGITBITS	16
+#else
+# ifdef __GNUC__
+#  define BASE		((double_digit) 65536 * (double_digit) 65536)
+#  define LBASE2	32
+#  define LLBASE2	5
+#  define DIGITBITS	32
+# else
+#  define BASE		((double_digit) 65536)
+#  define LBASE2	16
+#  define DIGITBITS	16
+# endif
+#endif
+
+#define MAXDIGIT	((digit) (BASE - 1))
+
+/*
+ * Natural numbers form the basis for both the Integers and Rationals,
+ * but needn't ever be exposed to the user
+ */
+#if DIGITBITS <= 16
+typedef unsigned short	digit;		/* must hold 0 .. BASE - 1 */
+typedef unsigned int	double_digit;	/* must hold 0 .. (BASE - 1) * (BASE - 1) + BASE-2 */
+typedef int		signed_digit;	/* must hold -BASE .. BASE - 1 */
+#else
+typedef unsigned int	    digit;
+typedef unsigned long long  double_digit;
+typedef signed long long    signed_digit;
+#endif
+
+#ifdef LBASE2
+#define TwoDigits(n,i)	((double_digit) NaturalDigits(n)[i-1] | \
+			 ((double_digit) NaturalDigits(n)[i] << LBASE2))
+#define ModBase(t)  ((t) & (((double_digit) 1 << LBASE2) - 1))
+#define DivBase(t)  ((t) >> LBASE2)
+#else
+#define TwoDigits(n,i)	((double_digit) NaturalDigits(n)[i-1] + \
+			 (double_digit) NaturalDigits(n)[i] * BASE)
+#define ModBase(t)  ((t) % BASE)
+#define DivBase(t)  ((t) / BASE)
+#endif
+    
+typedef struct _natural {
+    DataType	*type;
+    int		length;
+} Natural;
+
+#define NaturalLength(n)    ((n)->length)
+#define NaturalDigits(n)    ((digit *) ((n) + 1))
+
+Natural	*NewNatural (unsigned value);
+Natural *NewDoubleNatural (double value);
+Natural	*AllocNatural (int size);
+int	NaturalEqual (Natural *, Natural *);
+int	NaturalLess (Natural *, Natural *);
+Natural	*NaturalPlus (Natural *, Natural *);
+Natural *NaturalMinus (Natural *, Natural *);
+Natural *NaturalTimes (Natural *, Natural *);
+Natural	*NaturalDivide (Natural *a, Natural *b, Natural **remp);
+Natural	*NaturalGcd (Natural *a, Natural *b);
+char	*NaturalSprint (char *, Natural *, int base, int *width);
+Natural	*NaturalSqrt (Natural *);
+int	NaturalEstimateLength (Natural *, int base);
+void	NaturalCopy (Natural *, Natural *);
+Bool	NaturalZero (Natural *);
+Bool	NaturalEven (Natural *);
+
+Natural	*max_int_natural;
+Natural *max_double_natural;
+Natural	*zero_natural;
+Natural	*one_natural;
+
+typedef enum _sign { Positive, Negative } Sign;
+
+#define SignNegate(sign)    ((sign) == Positive ? Negative : Positive)
+
+typedef enum _signcat {
+	BothPositive, FirstPositive, SecondPositive, BothNegative
+} Signcat;
+
+# define catagorize_signs(s1,s2)\
+	((s1) == Positive ? \
+		((s2) == Positive ? BothPositive : FirstPositive) \
+	: \
+		((s2) == Positive ? SecondPositive : BothNegative))
+
+typedef enum _binaryOp {
+    PlusOp, MinusOp, TimesOp, DivideOp, DivOp, ModOp,
+    LessOp, EqualOp, LandOp, LorOp, NumBinaryOp
+} BinaryOp;
+
+typedef enum _unaryOp {
+    NegateOp, FloorOp, CeilOp, NumUnaryOp
+} UnaryOp;
+
+typedef enum _type {
+	type_undef = -1,
+ 	type_int = 0,
+	type_integer = 1,
+ 	type_rational = 2,
+ 	type_double = 3,
+ 	type_string = 4,
+ 	type_array = 5,
+	type_file = 6,
+	type_ref = 7,
+	type_struct = 8,
+	type_func = 9,
+	type_thread = 10,
+	type_mutex = 11,
+	type_semaphore = 12,
+} Type;
+
+/*
+ * storage classes
+ */
+
+typedef enum _class {
+    class_global, class_static, class_arg, class_auto, class_struct, class_undef,
+} Class;
+
+typedef struct _valueType   ValueType;
+
+typedef struct _box	*BoxPtr;
+
+typedef struct _baseValue {
+    ValueType	*type;
+    Type	tag;
+} BaseValue;
+
+typedef struct _int {
+    BaseValue	base;
+    int		value;
+} Int;
+
+typedef struct _integer {
+    BaseValue	base;
+    Sign	sign;
+    Natural	*mag;
+} Integer;
+
+typedef struct _rational {
+    BaseValue	base;
+    Sign	sign;
+    Natural	*num;
+    Natural	*den;
+} Rational;
+
+typedef struct _double {
+    BaseValue	base;
+    double	value;
+} Double;
+
+typedef struct _string {
+    BaseValue	base;
+} String;
+
+#define StringChars(s)	    ((char *) ((s) + 1))
+
+typedef struct _array {
+    BaseValue	base;
+    Type	type;
+    int		ndim;
+    int		ents;
+    int		*dim;
+    BoxPtr	values;
+} Array;
+
+typedef struct _io_chain {
+    DataType		*data;
+    struct _io_chain	*next;
+    int			size;
+    int			used;
+    int			ptr;
+} FileChain, *FileChainPtr;
+
+typedef struct _file {
+    BaseValue	    base;
+    union _value    *next;	/* used to chain blocked files together */
+    int		    fd;
+    int		    flags;
+    int		    error;
+    FileChainPtr    input;
+    FileChainPtr    output;
+} File;
+
+#define FileBufferSize	4096
+#define FileEOF		-1
+#define FileBlocked	-2
+#define FileError	-3
+#define FileBuffer(ic)	((unsigned char *) ((ic) + 1))
+
+#define FileOutputBlocked   0x01
+#define FileInputBlocked    0x02
+#define FileLineBuf	    0x04
+#define FileInputError      0x08
+#define FileOutputError	    0x10
+#define FileClosed	    0x20
+#define FileBlockWrites	    0x40
+
+typedef struct _ref {
+    BaseValue	base;
+    BoxPtr	box;
+    int		element;
+} Ref;
+
+#define RefValue(r)	BoxValue((r)->ref.box, (r)->ref.element)
+#define RefType(r)	BoxType((r)->ref.box, (r)->ref.element)
+#define RefConstant(r)    BoxConstant((r)->ref.box)
+
+typedef struct _structElement {
+    Type    type;
+    Atom    name;
+} StructElement;
+
+typedef struct _structType {
+    DataType	data;
+    int		nelements;
+} StructType;
+
+#define StructTypeElements(st)	((StructElement *) (st + 1))
+
+typedef struct _struct {
+    BaseValue	base;
+    StructType	*type;
+    BoxPtr	values;
+} Struct;
+
+typedef union _code	*CodePtr;
+typedef struct _frame	*FramePtr;
+typedef struct _thread	*ThreadPtr;
+typedef union _value	*Value;
+typedef struct _obj	*ObjPtr;
+typedef union _inst	*InstPtr;
+
+typedef struct _func {
+    BaseValue	base;
+    CodePtr	code;
+    FramePtr	staticLink;
+    BoxPtr	statics;
+    ObjPtr	staticInit;
+} Func;
+
+typedef enum _ThreadState {
+    ThreadRunning = 0,
+    ThreadSuspended = 1,
+    ThreadInterrupted = 2,
+    ThreadFinished = 4,
+    ThreadError = 8
+} ThreadState;
+
+typedef struct _thread {
+    BaseValue	value;
+    /*
+     * Execution context
+     */
+    Value	v;
+    StackObject	*stack;
+    InstPtr	pc;
+    FramePtr	frame;
+    ObjPtr	code;
+    /*
+     * Thread status
+     */
+    ThreadState	state;
+    int		priority;
+    Value	sleep;
+    int		id;
+    int		partial;
+    /*
+     * Lower priority threads
+     */
+    Value	next;
+} Thread;
+
+#define PriorityMin	0
+#define PriorityStart	100
+#define PrioritySync	200
+#define PriorityIo	300
+
+typedef struct _mutex {
+    BaseValue	value;
+    Value	owner;
+} Mutex;
+
+typedef struct _semaphore {
+    BaseValue	value;
+    int		locked;
+} Semaphore;
+
+typedef union _value {
+    BaseValue	value;
+    Int		ints;
+    Integer	integer;
+    Rational	rational;
+    Double	doubles;
+    String	string;
+    Array	array;
+    File	file;
+    Ref		ref;
+    Struct	structs;
+    Func	func;
+    Thread	thread;
+    Mutex	mutex;
+    Semaphore	semaphore;
+} ValueRec;
+
+typedef Value	(*Binary) (Value, Value, int);
+
+typedef Value	(*Unary) (Value, int);
+
+typedef Value	(*Cooerce) (Value);
+
+#define DEFAULT_OUTPUT_PRECISION    -1
+#define INFINITE_OUTPUT_PRECISION   -2
+
+typedef	Bool	(*Output) (Value, Value, char format, int base, int width, int prec, unsigned char fill);
+
+typedef ValueType   *(*TypeCheck) (BinaryOp, Value, Value, int);
+
+struct _valueType {
+    DataType	data;
+    Binary	binary[NumBinaryOp];
+    Unary	unary[NumUnaryOp];
+    Cooerce	promote;
+    Cooerce	reduce;
+    Output	print;
+    TypeCheck	typecheck;
+};
+
+typedef struct _boxElement {
+    Value	value;
+    Type	type;
+} BoxElement;
+
+typedef struct _box {
+    DataType	*data;
+    Bool	constant;
+    int		nvalues;
+} Box;
+
+#define BoxElements(box)	((BoxElement *) ((box) + 1))
+#define BoxValue(box,e)		(BoxElements(box)[e].value)
+#define BoxConstant(box)	((box)->constant)
+#define BoxType(box,e)		(BoxElements(box)[e].type)
+
+extern BoxPtr	NewBox (Bool constant, int nvalues);
+
+Value	NewInt (int value);
+Value	NewInteger (Sign sign, Natural *mag);
+Value	NewIntInteger (int value);
+Value	NewDoubleInteger (double value);
+Value	NewRational (Sign sign, Natural *num, Natural *den);
+Value	NewIntRational (int value);
+Value	NewIntegerRational (Integer *);
+Value	NewDoubleRational (double value);
+Value	NewDouble (double value);
+Value	NewIntegerDouble (Integer *);
+Value	NewRationalDouble (Rational *);
+Value	NewString (int);
+Value	NewStrString (char *);
+Value	NewArray (Bool constant, Type type, int ndim, int *dims);
+Value	NewFile (int fd);
+Value	NewRef (BoxPtr box, int element);
+Value	NewStruct (StructType *type, Bool constant);
+StructType  *NewStructType (int nelements);
+Value	StructRef (Value sv, Atom name);
+Value	StructValue (Value sv, Atom name);
+
+Value	BinaryOperate (Value av, Value bv, BinaryOp operator);
+Value	UnaryOperate (Value v, UnaryOp operator);
+Value	NumericDiv (Value av, Value bv, int expandOk);
+
+# define	OK_TRUNC	1
+
+extern Value	Zero, One, Blank, Empty, Elementless;
+
+# define True(v)	(!Zerop(v))
+# define False(v)	(Zerop(v))
+
+int	FileInput (Value);
+void	FileOutput (Value, char);
+void	FileUnput (Value, unsigned char);
+Value   FileCreate (int fd);
+int	FileFlush (Value);
+int	FileClose (Value);
+void	FileSetFd (int fd), FileResetFd (int fd);
+void	FilePuts (Value, char *);
+void	FilePutInt (Value, int);
+Value	FileFopen (char *name, char *mode);
+void	FileCheckBlocked (void);
+void	FileSetBlocked (Value file, int flag);
+void	FilePrintf (Value, char *, ...);
+
+extern Bool	anyFileWriteBlocked;
+
+extern Value    FileStdin, FileStdout, FileStderr;
+
+Value	Plus (Value, Value), Minus (Value, Value);
+Value	Times (Value, Value), Divide (Value, Value), Div (Value, Value);
+Value	Mod (Value, Value);
+Value	Equal (Value, Value), Less (Value, Value);
+Value	Greater (Value, Value), LessEqual (Value, Value);
+Value	GreaterEqual (Value, Value), NotEqual (Value, Value);
+Value	Not (Value);
+Value	Negate (Value), Floor (Value), Ceil (Value);
+Value	Truncate (Value);
+Value	Pow (Value, Value), Factorial (Value), Reduce (Value);
+Value	Gcd (Value, Value);
+Value	Lxor(Value, Value), Land (Value, Value);
+Value	Lor (Value, Value), Lnot (Value);
+Bool	Print (Value, Value, char format, int base, int width, int prec, unsigned char fill);
+void	RaiseError (char *s, ...);
+void	PrintError (char *s, ...);
+void	vPrintError (char *s, va_list args);
+Value	Copy (Value, Type);
+Value	Default (Type);
+
+/*
+ * Some abort has occured
+ */
+
+extern volatile Bool aborting;	/* some exception has occured */
+extern volatile Bool exception;	/* abort the current computation */
+
+/*
+ * Any abort state set by an signal handler must be volatile
+ */
+
+extern volatile Bool abortInterrupt;	/* keyboard interrupt */
+extern volatile Bool abortTimer;	/* timer interrupt */
+extern volatile Bool abortIo;		/* i/o interrupt */
+
+/*
+ * Any abort state set by regular code doesn't need to be volatile
+ */
+
+extern Bool abortSuspend;	/* current thread suspend */
+extern Bool abortFinished;	/* current thread done */
+extern Bool abortError;		/* current thread run time error */
+extern volatile Bool abortException;	/* current thread floating point exception */
+
+int	NaturalToInt (Natural *);
+int	IntegerToInt (Integer *);
+int	IntPart (Value, char *error);
+double	DoublePart (Value);
+
+Bool	Numericp (Type);
+Bool	Integralp (Type);
+Bool	Zerop (Value);
+Bool	Negativep (Value);
+Bool	Evenp (Value);
+Bool	AssignTypeCompatiblep (Type dest, Value v);
+
+int	ArrayInit (void);
+int	AtomInit (void);
+int	FileInit (void);
+int	IntInit (void);
+int	NaturalInit (void);
+int	RationalInit (void);
+int	StringInit (void);
+int	StructInit (void);
+int	ValueInit (void);
+
+#ifndef MAXINT
+# define MAXINT	((int) (((unsigned) (~0)) >> 1))
+#endif
+#ifndef MININT
+# define MININT (-MAXINT - 1)
+#endif
+
+# define oneNp(n)	((n)->length == 1 && NaturalDigits(n)[0] == 1)
+# define zeroNp(n)	((n)->length == 0)
+
+#endif /* _VALUE_H_ */

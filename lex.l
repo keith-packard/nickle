@@ -718,6 +718,8 @@ aetov (char *s)
 	else
 	    v = Divide (v, sv);
     }
+    if (sign == -1)
+	v = Times (v, NewInt(-1));
     RETURN (v);
 }
 

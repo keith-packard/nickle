@@ -817,6 +817,8 @@ extend namespace Math {
 	real    result;
 	if (is_int (b))
 	{
+	    if (!is_int (a) && is_rational (a))
+		return pow (numerator(a), b) / pow (denominator (a), b);
 	    int flip = 0;
 
 	    if (b < 0)

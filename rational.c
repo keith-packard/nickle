@@ -711,6 +711,8 @@ CheckDecimalLength (int prec, Natural *nden, int ibase, int *initial, int *repea
 	    return;
 	}
 	offset++;
+	if (prec >= 0 && offset > prec)
+	    break;
 	nden = NaturalDivide (nden, g, &rem);
     }
     if (prec >= 0 && offset >= prec)

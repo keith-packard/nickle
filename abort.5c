@@ -1,7 +1,10 @@
 namespace Abort {
+    public int trace_depth = 20;
+
     public exception aborting(string);
 
     public void abort(string reason, args ...) {
+	Debug::trace(Thread::current(), trace_depth);
 	string reasonmsg = File::vsprintf(reason, args);
 	raise aborting(reasonmsg);
     }

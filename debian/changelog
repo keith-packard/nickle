@@ -2,8 +2,10 @@ nickle (2.20-1) unstable; urgency=low
 
   * Many, many unlogged changes.
 
- -- Bart Massey <bart@nickle.org>  Sun Dec 29 11:31:00 UTC 2002
+ -- Bart Massey <bart@nickle.org>  Sun, 29 Dec 2002 03:39:00 -0700
 
+nickle (2.00-1) unstable; urgency=low
+	
   * Initial Release.
 
  -- Bart Massey <bart@nickle.org>  Sat, 20 Oct 2001 23:09:13 -0700

@@ -352,7 +352,6 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	    if (!StructTypeElements(st)[n].name && 
 		TypeCompatible (StructTypeElements(st)[n].type, b, contains))
 		return True;
-	return False;
     }
 
     if (b->base.tag == types_union)
@@ -362,7 +361,6 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	    if (!StructTypeElements(st)[n].name && 
 		TypeCompatible (a, StructTypeElements(st)[n].type, contains))
 		return True;
-	return False;
     }
     
     if (a->base.tag != b->base.tag)
@@ -737,7 +735,7 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	    }
 	}
     }
-    else if (right->base.tag == types_union)
+    if (right->base.tag == types_union)
     {
         StructType  *st = right->structs.structs;
 	for (n = 0; n < st->nelements; n++)
@@ -749,7 +747,8 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 		    rets = TypeAdd (rets, ret, &nret, &sret);
 	    }
 	}
-    } else switch (tag) {
+    }
+    switch (tag) {
     case ASSIGN:
 	if (TypeCompatible (left, right, True))
 	{
@@ -873,7 +872,7 @@ TypeCombineUnary (Types *type, int tag)
 	    }
 	}
     }
-    else switch (tag) {
+    switch (tag) {
     case STAR:
 	ret = TypeUnaryRef (type);
 	if (ret)
@@ -1037,6 +1036,15 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
     if (TypePoly (a))
 	return True;
     
+    if (a->base.tag == types_union)
+    {
+	StructType  *st = a->structs.structs;
+	for (n = 0; n < st->nelements; n++)
+	    if (!StructTypeElements(st)[n].name && 
+		TypeCompatibleAssign (StructTypeElements(st)[n].type, b, shallow))
+		return True;
+    }
+
     switch (a->base.tag) {
     case types_prim:
 	if (a->prim.prim == b->value.tag)
@@ -1084,27 +1092,34 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 	}
 	break;
     case types_array:
-	adim = TypeCountDimensions (a->array.dimensions);
-	bdim = b->array.ndim;
-	if (adim == 0 || adim == bdim)
-	    return TypeCompatible (a->array.type, b->array.type, True);
+	if (b->value.tag == type_array)
+	{
+	    adim = TypeCountDimensions (a->array.dimensions);
+	    bdim = b->array.ndim;
+	    if (adim == 0 || adim == bdim)
+		return TypeCompatible (a->array.type, b->array.type, True);
+	}
 	break;
     case types_struct:
     case types_union:
-	for (n = 0; n < a->structs.structs->nelements; n++)
+	if ((b->value.tag == type_struct && a->base.tag == types_struct) ||
+	    (b->value.tag == type_union && a->base.tag == types_union))
 	{
-	    StructElement   *ae;
-	    Types	    *bt;
-
-	    ae = &StructTypeElements(a->structs.structs)[n];
-	    bt = StructTypes (b->structs.type, ae->name);
-	    if (!bt)
-		break;
-	    if (!TypeCompatible (ae->type, bt, True))
-		break;
+	    for (n = 0; n < a->structs.structs->nelements; n++)
+	    {
+		StructElement   *ae;
+		Types	    *bt;
+    
+		ae = &StructTypeElements(a->structs.structs)[n];
+		bt = StructTypes (b->structs.type, ae->name);
+		if (!bt)
+		    break;
+		if (!TypeCompatible (ae->type, bt, True))
+		    break;
+	    }
+	    if (n == a->structs.structs->nelements)
+		return True;
 	}
-	if (n == a->structs.structs->nelements)
-	    return True;
 	break;
     default:	
     }

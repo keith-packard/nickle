@@ -1,20 +1,20 @@
 import Mutex;
-integer die;
+int die;
 
 typedef struct {
     mutex	mut_ex;
     string	name;
 } named_mutex;
 
-integer[*]	owned;
+int[*]		owned;
 named_mutex[*]	mutexes;
 mutex		owned_mutex = Mutex::new();
 semaphore	started = Semaphore::new (0);
 
 function status ()
 {
-    integer nt = dim (owned);
-    integer i;
+    int nt = dim (owned);
+    int i;
 
     
     twixt (acquire (owned_mutex); release (owned_mutex))
@@ -30,9 +30,9 @@ function status ()
     }
 }
 
-function t (*(named_mutex[*]) mutexes, integer self, integer delay)
+function t (*(named_mutex[*]) mutexes, int self, int delay)
 {
-    integer i;
+    int i;
     
     Semaphore::signal (started);
     die = 0;
@@ -56,11 +56,11 @@ function t (*(named_mutex[*]) mutexes, integer self, integer delay)
     }
 }
 
-function start (integer nthread, integer nmut_ex, integer delay)
+function start (int nthread, int nmut_ex, int delay)
 {
-    integer i;
+    int i;
 
-    owned = (integer) [nthread];
+    owned = (int) [nthread];
     for (i = 0; i < nthread; i++)
 	owned[i] = -1;
     mutexes = (named_mutex) [nmut_ex];

@@ -471,7 +471,7 @@ FilePutType (Value f, Type tag, Bool minimal)
 	break;
     case type_int:
     case type_integer:
-	FilePuts (f, "integer");
+	FilePuts (f, "int");
 	break;
     case type_rational:
 	FilePuts (f, "rational");

@@ -117,7 +117,7 @@ catch		{ yylval.ival = CATCH; return CATCH; }
 twixt		{ yylval.ival = TWIXT; return TWIXT; }
 
 poly		{ yylval.tval = type_undef; return POLY; }
-integer		{ yylval.tval = type_integer; return INTEGER; }
+int		{ yylval.tval = type_integer; return INTEGER; }
 rational    	{ yylval.tval = type_rational; return RATIONAL; }
 real		{ yylval.tval = type_float; return REAL; }
 string		{ yylval.tval = type_string; return STRING; }
@@ -207,7 +207,7 @@ extend		{ yylval.pval = publish_extend; return EXTEND; }
 		    yylval.vval = NewInt (i);
 		    EXIT ();
 		    REFERENCE (yylval.vval);
-		    return CONST;
+		    return CCONST;
 		}
 \"([^\n\"]|\\\")*\"	{
 			ENTER ();

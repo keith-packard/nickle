@@ -105,13 +105,13 @@ NewExprTree(int tag, Expr *left, Expr *right)
 }
 
 Expr *
-NewExprConst (Value val)
+NewExprConst (int tag, Value val)
 {
     ENTER ();
     Expr    *e;
 
     e = ALLOCATE (&ExprConstType, sizeof (ExprConst));
-    ExprBaseInit (e, CONST);
+    ExprBaseInit (e, tag);
     e->constant.constant = val;
     RETURN (e);
 }

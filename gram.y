@@ -62,7 +62,7 @@ void yyerror (char *fmt, ...);
 %type  <eval>	opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
 %type  <eval>	initexpr
 %type  <ival>	assignop
-%type  <vval>	opt_const
+%type  <vval>	opt_const const
 %type  <eval>	opt_inits inits arrayinits arrayinit structinits structinit
 
 %token		VAR EXPR ARRAY STRUCT UNION
@@ -79,7 +79,7 @@ void yyerror (char *fmt, ...);
 %token		BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		TRY CATCH TWIXT
 %token <aval>	NAME TYPENAME
-%token <vval>	CONST
+%token <vval>	CONST CCONST
 %token		NEW
 
 %nonassoc 	POUND
@@ -155,7 +155,7 @@ command		: QUIT NL
 							       NewExprTree (DOLLAR, $1, 0))),
 					 BuildCall (0, "putchar",
 						    1,
-						    NewExprConst (NewInt ('\n'))));
+						    NewExprConst (CCONST, NewInt ('\n'))));
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, s));
 			ThreadsRun (t, 0);
@@ -174,16 +174,16 @@ command		: QUIT NL
 				       BuildName ("stdout"),
 				       BuildCall ("History", "insert",
 						  1, $1),
-				       NewExprConst (NewStrString ("g")),
+				       NewExprConst (CONST, NewStrString ("g")),
 				       $3,
-				       NewExprConst (Zero),
-				       NewExprConst (NewInt (-1)),
-				       NewExprConst (NewStrString (" ")));
+				       NewExprConst (CONST, Zero),
+				       NewExprConst (CONST, NewInt (-1)),
+				       NewExprConst (CONST, NewStrString (" ")));
 			e = NewExprTree (COMMA,
 					 e,
 					 BuildCall (0, "putchar",
 						    1,
-						    NewExprConst (NewInt ('\n'))));
+						    NewExprConst (CCONST, NewInt ('\n'))));
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, s));
 			ThreadsRun (t, 0);
@@ -227,7 +227,7 @@ command		: QUIT NL
 			}
 			EXIT ();
 		    }
-		| LOAD CONST NL
+		| LOAD const NL
 		    {
 			ENTER ();
 			Value	filename;
@@ -324,7 +324,7 @@ edit		: name NL
 			else
 			    EditFunction (s);
 		    }
-		| CONST NL
+		| const NL
 		    { ENTER (); EditFile ($1); EXIT (); }
 		| NL
 		    { EditFile ((Value) 0); }
@@ -754,7 +754,7 @@ lambdaexpr	: func_type FUNC OP opt_argdefines CP block
 * Fundemental expression production
 */
 simpleexpr	: primary
-		| MOD CONST						%prec THREADID
+		| MOD const						%prec THREADID
 		    {   Value	t;
 			t = do_Thread_id_to_thread ($2);
 			if (Zerop (t))
@@ -763,7 +763,7 @@ simpleexpr	: primary
 			    YYERROR;
 			}
 			else
-			    $$ = NewExprConst(t); 
+			    $$ = NewExprConst(CONST, t); 
 		    }
 		| TIMES simpleexpr					%prec STAR
 		    { $$ = NewExprTree(STAR, $2, (Expr *) 0); }
@@ -845,7 +845,7 @@ assignop	: ASSIGNPLUS
 		| ASSIGN
 		;
 initexpr	: primary
-		| MOD CONST						%prec THREADID
+		| MOD const						%prec THREADID
 		    {   Value	t;
 			t = do_Thread_id_to_thread ($2);
 			if (Zerop (t))
@@ -854,7 +854,7 @@ initexpr	: primary
 			    YYERROR;
 			}
 			else
-			    $$ = NewExprConst(t); 
+			    $$ = NewExprConst(CONST, t); 
 		    }
 		| TIMES initexpr					%prec STAR
 		    { $$ = NewExprTree(STAR, $2, (Expr *) 0); }
@@ -922,7 +922,9 @@ initexpr	: primary
 primary		: NAME
 		    { $$ = NewExprAtom ($1); }
 		| CONST
-		    { $$ = NewExprConst($1); }
+		    { $$ = NewExprConst(CONST, $1); }
+		| CCONST
+		    { $$ = NewExprConst(CCONST, $1); }
 		| OP type CP inits
 		    { 
 			$$ = NewExprTree (NEW, $4, 0); 
@@ -954,9 +956,9 @@ primary		: NAME
 			$$->base.type = $2;
 		    }
 		| DOLLAR opt_const
-		    { $$ = NewExprConst(History (0, $2)); }
+		    { $$ = NewExprConst(CONST, History (0, $2)); }
 		| DOT
-		    { $$ = NewExprConst(History (0, Zero)); }
+		    { $$ = NewExprConst(CONST, History (0, Zero)); }
 		| OP expr CP
 		    { $$ = $2; }
 		| primary REFARRAY exprs CS
@@ -974,9 +976,12 @@ primary		: NAME
 		| primary ARROW NAME
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3)); }
 		;
-opt_const	: CONST
+opt_const	: const
 		|
 		    { $$ = Zero; }
+		;
+const		: CONST
+		| CCONST
 		;
 /*
  * Initializers

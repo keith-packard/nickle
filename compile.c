@@ -903,7 +903,7 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, ExprPtr inits, NamespacePtr nam
     while (ndim--)
     {
 	sub = NewExprTree (COMMA,
-			   NewExprConst (NewInt (*dims++)),
+			   NewExprConst (CONST, NewInt (*dims++)),
 			   sub);
     }
     obj = CompileBuildArray (obj, array, sub, namespace, stat);
@@ -1187,6 +1187,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	}
 	break;
     case CONST:
+    case CCONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
 	/*
@@ -1197,8 +1198,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	{
 	    expr->base.type = typesNil;
 	}
-	else
+	else if (expr->constant.constant->value.tag <= type_continuation)
 	    expr->base.type = NewTypesPrim (expr->constant.constant->value.tag);
+	else
+	    expr->base.type = typesPoly;    /* FIXME composite const types */
 	break;
     case OS:	    
 	obj = CompileArrayIndex (obj, expr->tree.right,
@@ -2008,7 +2011,7 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
 	    local = NewSymbolArg (args->name, 
 				  NewTypesArray (args->type,
 						 NewExprTree (COMMA,
-							      NewExprConst (NewInt (0)),
+							      NewExprConst (CONST, NewInt (0)),
 							      0)));
 	    local->local.element = AddBoxTypes (&namespace->code->func.dynamics,
 						local->symbol.type);

@@ -166,7 +166,7 @@ struct ebuiltin {
 static struct fbuiltin_v funcs_v[] = {
     { do_printf,	    "printf",		    "i",    "s.p"   },
     { do_fprintf,	    "fprintf",		    "i",    "fs.p", &FileNamespace},
-    { do_imprecise,	    "imprecise",	    "R",    "n.i"   },
+    { do_imprecise,	    "imprecise",	    "R",    "R.i"   },
     { do_Thread_kill,	    "kill",		    "i",    ".t",   &ThreadNamespace },
     { do_Thread_trace,	    "trace",		    "i",    ".p",   &ThreadNamespace },
     { do_Thread_trace,	    "trace",		    "i",    ".p",   &DebugNamespace },
@@ -205,7 +205,7 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_denominator,	    "denominator",	    "i",    "R"	    },
     { do_precision,	    "precision",	    "i",    "R"	    },
     { do_sign,		    "sign",		    "i",    "R"	    },
-    { do_is_integer,	    "is_integer",	    "i",    "R"	    },
+    { do_is_int,	    "is_int",		    "i",    "R"	    },
     { do_is_rational,	    "is_rational",	    "i",    "R"	    },
     { do_is_number,	    "is_number",	    "i",    "R"	    },
     { do_is_string,	    "is_string",	    "i",    "s"	    },
@@ -682,9 +682,6 @@ BuiltinInit (void)
 	sym = BuiltinSymbol (i->namespace, i->name, NewTypesPrim (type_file));
 	BoxValueSet (sym->global.value, 0, f);
     }
-    
-    sym = BuiltinSymbol (0, "null", typesPoly);
-    BoxValueSet (sym->global.value, 0, Zero);
     
     for (e = excepts; e->name; e++)
 	BuiltinAddException (e->namespace, e->exception, e->name, e->args);
@@ -1523,7 +1520,7 @@ do_denominator (Value av)
 }
 
 Value
-do_is_integer (Value av)
+do_is_int (Value av)
 {
     ENTER ();
     switch (av->value.tag) {

@@ -84,12 +84,12 @@ real function Beta (real A)
 	return 0.0;
 }
 
-integer function M (real A, real deltaw)
+int function M (real A, real deltaw)
 {
     return ceil ((A - 8) / (2.285 * deltaw));
 }
 
-real function filter (real wpass, real wstop, real error, *integer mp)
+real function filter (real wpass, real wstop, real error, *int mp)
 {
     real  deltaw = wstop - wpass;
     real  A = -20 * log10 (error);

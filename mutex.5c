@@ -16,8 +16,8 @@
 
 /* A mutex is either owned by a thread or nobody (0) */
 typedef union { 
-    thread owner; 
-    integer nobody; 
+    thread  owner; 
+    int	    nobody; 
 } mutex_owner;
 
 public typedef struct { 
@@ -31,7 +31,7 @@ namespace Mutex {
     public exception deadlock (mutex m, thread self);
     public exception notowned (mutex m, thread self, mutex_owner owner);
 
-    public integer function acquire (mutex m)
+    public int function acquire (mutex m)
     {
 	if (m->owner == (mutex_owner.owner) Thread::current())
 	    raise deadlock (m, Thread::current ());
@@ -40,9 +40,9 @@ namespace Mutex {
 	return 1;
     }
 
-    public integer function try_acquire (mutex m)
+    public int function try_acquire (mutex m)
     {
-	integer ret = 0;
+	int ret = 0;
 	
 	if (m->owner == (mutex_owner.owner) Thread::current())
 	    raise deadlock (m, Thread::current());
@@ -52,7 +52,7 @@ namespace Mutex {
 	return ret;
     }
 
-    public integer function release (mutex m)
+    public int function release (mutex m)
     {
 	if (m->owner != (mutex_owner.owner) Thread::current())
 	    raise notowned (m, Thread::current (), m->owner);

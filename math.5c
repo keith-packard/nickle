@@ -1,8 +1,8 @@
 public namespace Math_helper 
 {
-    public integer function log2 (integer i)
+    public int function log2 (int i)
     {
-	integer	min, max, cur;
+	int	min, max, cur;
 
 	for (max = 1; 2**max < i; max *= 2)
 	    ;
@@ -20,7 +20,7 @@ public namespace Math_helper
     
     public real function errbounds (real v)
     {
-	integer	prec;
+	int	prec;
 
 	prec = precision (v);
 	if (prec == 0)
@@ -37,7 +37,7 @@ public real function sqrt (real v)
     {
 	real	err;
 	real	prev, cur;
-	integer	n, iter;
+	int	n, iter;
     
 	v = imprecise (v);
 	err = 1/(2**(precision (v)+3));
@@ -55,7 +55,7 @@ public real function sqrt (real v)
 
     if (is_rational (v))
     {
-	integer	num, den;
+	int	num, den;
 	real	num_s, den_s;
 
 	num = numerator (v);
@@ -80,8 +80,8 @@ public real function cbrt (real v)
     {
 	real	err;
 	real	prev, cur;
-	integer	n;
-	integer	s;
+	int	n;
+	int	s;
     
 	s = sign (v);
 	v = imprecise (abs (v));
@@ -99,7 +99,7 @@ public real function cbrt (real v)
 
     if (is_rational (v))
     {
-	integer	num, den;
+	int	num, den;
 	real	num_s, den_s;
 
 	num = numerator (v);
@@ -127,9 +127,9 @@ public namespace Math {
 	real	err;
 	real	term;
 	real	num;
-	integer	iter;
-	integer	prec;
-	integer	loop;
+	int	iter;
+	int	prec;
+	int	loop;
 
 	v = imprecise (v);
 	prec = precision (v);
@@ -162,9 +162,9 @@ public namespace Math {
 	{
 	    real    err = errbounds (a);
 	    real    v, term;
-	    integer i;
-	    integer iter;
-	    integer prec = precision(a);
+	    int	    i;
+	    int	    iter;
+	    int	    prec = precision(a);
 
 	    a = imprecise (a / (a + 2), prec*2);
 	    v = 0;
@@ -181,8 +181,8 @@ public namespace Math {
 	    return imprecise (v*2, prec);
 	}
 	
-	integer	maxiter, i;
-	integer	prec;
+	int	maxiter, i;
+	int	prec;
 	real	v, next;
 	real	err;
 
@@ -261,14 +261,14 @@ public namespace Math {
      *  PI = 24*arctan (1/8) + 8*arctan (1/57) + 4*arctan (1/239);
      */
     
-    real function calculate_pi (integer prec)
+    real function calculate_pi (int prec)
     {
 	/*
 	 * Estimate the number of digits available for
 	 * the specified value (v) after a certain number of
 	 * loops (p)
 	 */
-	real function avail_prec (real v, integer p)
+	real function avail_prec (real v, int p)
 	{
 	    real	ret;
 
@@ -281,9 +281,9 @@ public namespace Math {
 	 * Compute the number of loops needed to get
 	 * the desired precision
 	 */
-	integer function loops (real v, integer prec)
+	int function loops (real v, int prec)
 	{
-	    integer p, low, high;
+	    int p, low, high;
 
 	    for (high = 1; ; high *= 2)
 	    {
@@ -307,13 +307,13 @@ public namespace Math {
 	 *
 	 * arctan(x) = x - x**3/3 + x**5/5 - ...
 	 */
-	real function arctan (rational den, integer digits)
+	real function arctan (rational den, int digits)
 	{
-	    integer	p, q;
-	    integer	l;
-	    integer	prec, mult;
-	    real	partial, result;
-	    real	pv, qv, mden;
+	    int	    p, q;
+	    int	    l;
+	    int	    prec, mult;
+	    real    partial, result;
+	    real    pv, qv, mden;
 
 	    p = 3;
 	    q = 5;
@@ -353,7 +353,7 @@ public namespace Math {
 	return imprecise (value, prec);
     }
     
-    public real function pi_value (integer prec)
+    public real function pi_value (int prec)
     {
 	static real local_pi = pi;
     
@@ -380,12 +380,12 @@ public namespace Math {
 	 */
 	real function raw_sin (real a)
 	{
-	    real	err;
-	    real	v, term;
-	    real	a4, aj, ai;
-	    integer	i, j;
-	    integer	iter;
-	    integer	prec;
+	    real    err;
+	    real    v, term;
+	    real    a4, aj, ai;
+	    int	    i, j;
+	    int	    iter;
+	    int	    prec;
 
 	    err = errbounds (a);
 	    prec = precision(a);
@@ -439,12 +439,12 @@ public namespace Math {
 
 	real function raw_cos (real a)
 	{
-	    real	err = errbounds (a);
-	    real	v, term;
-	    real	ai, aj, a4;
-	    integer	i, j;
-	    integer	iter;
-	    integer	prec = precision(a);
+	    real    err = errbounds (a);
+	    real    v, term;
+	    real    ai, aj, a4;
+	    int	    i, j;
+	    int	    iter;
+	    int	    prec = precision(a);
 
 	    a = imprecise(a, prec*2);
 	    i = 0;
@@ -522,9 +522,9 @@ public namespace Math {
 	    real    err = errbounds (v);
 	    real    a, term;
 	    real    vi, vj, v4;
-	    integer i, j;
-	    integer iter;
-	    integer prec = precision(v);
+	    int	    i, j;
+	    int	    iter;
+	    int	    prec = precision(v);
 
 	    v = imprecise (v, prec*2);
 	    i = 1;
@@ -659,9 +659,9 @@ public namespace Math {
     public real function pow (real a, real b)
     {
 	real    result;
-	if (is_integer (b))
+	if (is_int (b))
 	{
-	    integer flip = 0;
+	    int flip = 0;
 
 	    if (b < 0)
 	    {

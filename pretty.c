@@ -148,6 +148,34 @@ PrettyStructInit (Value f, Expr *e, int level, Bool nest)
     }
 }
 
+static void
+PrettyChar (Value f, int c)
+{
+    FileOutput (f, '\'');
+    if (c < ' ' || '~' < c)
+	switch (c) {
+	case '\n':
+	    FilePuts (f, "\\n");
+	    break;
+	case '\r':
+	    FilePuts (f, "\\r");
+	    break;
+	case '\t':
+	    FilePuts (f, "\\t");
+	    break;
+	case '\b':
+	    FilePuts (f, "\\b");
+	    break;
+	default:
+	    FileOutput (f, '\\');
+	    Print (f, NewInt (c), 'o', 8, 3, 0, '0');
+	    break;
+	}
+    else
+	FileOutput (f, c);
+    FileOutput (f, '\'');
+}
+
 void
 PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 {
@@ -196,6 +224,9 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	break;
     case CONST:
 	FilePrintf (f, "%v", e->constant.constant);
+	break;
+    case CCONST:
+	PrettyChar (f, IntPart (e->constant.constant, "malformed character constant"));
 	break;
     case FUNCTION:
 	PrettyCode (f, e->code.code, 0, class_undef, publish_private, level + 1, nest);

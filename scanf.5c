@@ -11,9 +11,9 @@ public namespace File {
     /*
      * vfscanf
      */
-    public integer function vfscanf (file f, string format, (*poly)[*] args)
+    public int function vfscanf (file f, string format, (*poly)[*] args)
     {
-	integer function iswhite (integer c)
+	int function iswhite (int c)
 	{
 	    switch (c) {
 	    case ' ':
@@ -26,14 +26,14 @@ public namespace File {
 	/* Skip whitespace */
 	function whitespace ()
 	{
-	    integer c;
+	    int c;
 
 	    while (iswhite (c = File::getc (f)))
 		;
 	    File::ungetc (c, f);
 	}
 
-	integer function isnumber (integer c)
+	int function isnumber (int c)
 	{
 	    if ('0' <= c && c <= '9')
 		return 1;
@@ -51,8 +51,8 @@ public namespace File {
 	/* return next number in input */
 	real function number ()
 	{
-	    integer c;
-	    string	s;
+	    int	    c;
+	    string  s;
 
 	    whitespace();
 	    s = "";
@@ -64,8 +64,8 @@ public namespace File {
 
 	string function word ()
 	{
-	    integer	c;
-	    string	s;
+	    int	    c;
+	    string  s;
 
 	    whitespace();
 	    s = "";
@@ -75,9 +75,9 @@ public namespace File {
 	    return s;
 	}
 
-	integer i = 0;
-	integer argc = 0;
-	integer c;
+	int	i = 0;
+	int	argc = 0;
+	int	c;
 
 	while (i < Strings::length (format) && !File::end(f) && !File::error(f))
 	{
@@ -123,18 +123,18 @@ public namespace File {
 	return argc;
     }
 
-    integer function fscanf (file f, string format, *poly args...)
+    int function fscanf (file f, string format, *poly args...)
     {
 	return vfscanf (f, format, args);
     }
 }
 
-public integer function scanf (string format, *poly args...)
+public int function scanf (string format, *poly args...)
 {
     return File::vfscanf (stdin, format, args);
 }
 
-public integer function vscanf (string format, (*poly)[*] args)
+public int function vscanf (string format, (*poly)[*] args)
 {
     return File::vfscanf (stdin, format, args);
 }    

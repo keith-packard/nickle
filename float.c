@@ -539,7 +539,7 @@ FloatFloor (Value av, int expandOk)
     d = NaturalToInt (a->exp->mag);
     mant = FpartRsl (a->mant, d);
     if (d && a->mant->sign == Negative)
-	mant = FpartAdd (mant, one_fpart, False);
+	mant = FpartAdd (mant, one_fpart, True);
     exp = zero_fpart;
     RETURN (FloatInteger (NewFloat (mant, exp, a->prec - d)));
 }

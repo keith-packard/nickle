@@ -232,7 +232,7 @@ typedef union _expr {
 } Expr;
 
 Expr	*NewExprTree (int tag, Expr *left, Expr *right);
-Expr	*NewExprConst (Value val);
+Expr	*NewExprConst (int tag, Value val);
 Expr	*NewExprAtom (Atom atom);
 Expr	*NewExprCode (CodePtr code, Atom name);
 Expr	*NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish);
@@ -606,7 +606,7 @@ Value	do_numerator (Value);
 Value	do_denominator (Value);
 Value	do_precision (Value);
 Value	do_sign (Value);
-Value	do_is_integer (Value);
+Value	do_is_int (Value);
 Value	do_is_rational (Value);
 Value	do_is_number (Value);
 Value	do_is_string (Value);

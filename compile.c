@@ -419,9 +419,13 @@ CompileError (ObjPtr obj, ExprPtr stat, char *s, ...)
 }
 
 static TypePtr
-CompileRefType (TypePtr t)
+CompileRefType (ObjPtr obj, ExprPtr expr, TypePtr t)
 {
     t = TypeCanon (t);
+    if (!t) {
+	CompileError(obj, expr, "reference to incomplete type");
+	return 0;
+    }
 
     if (t->base.tag == type_ref && !t->ref.pointer)
 	return t->ref.ref;
@@ -622,7 +626,7 @@ isName:
     }
     if (flipTypes)
     {
-	t = CompileRefType (expr->base.type);
+	t = CompileRefType (obj, expr, expr->base.type);
 	if (amper)
 	{
 	    if (t)
@@ -2237,7 +2241,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	if (!inst)
 	    break;
 	expr->base.type = s->symbol.type;
-	t = CompileRefType (expr->base.type);
+	t = CompileRefType (obj, expr, expr->base.type);
 	if (t)
 	{
 	    BuildInst (obj, OpUnFunc, inst, stat);
@@ -2412,7 +2416,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	BuildInst (obj, OpDot, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
-	t = CompileRefType (expr->base.type);
+	t = CompileRefType (obj, expr, expr->base.type);
 	if (t)
 	{
 	    BuildInst (obj, OpUnFunc, inst, stat);
@@ -2435,7 +2439,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	BuildInst (obj, OpArrow, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
-	t = CompileRefType (expr->base.type);
+	t = CompileRefType (obj, expr, expr->base.type);
 	if (t)
 	{
 	    BuildInst (obj, OpUnFunc, inst, stat);
@@ -2452,7 +2456,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case AMPER:	    
 	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, 
 			     False, True);
-	t = CompileRefType (expr->tree.left->base.type);
+	t = CompileRefType (obj, expr->tree.left, expr->tree.left->base.type);
 	if (!t)
 	    t = expr->tree.left->base.type;
 	expr->base.type = NewTypeRef (t, True);
@@ -4064,7 +4068,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	    lvalue = NewExprAtom (decl->name, decl->symbol, False);
 	    *initObj = CompileLvalue (*initObj, lvalue,
 				       decls, code, False, True, True, 
-				      CompileRefType (s->symbol.type) != 0,
+				      CompileRefType (obj, lvalue, s->symbol.type) != 0,
 				      False);
 	    SetPush (*initObj);
 	    *initObj = CompileInit (*initObj, init, s->symbol.type, stat, code);

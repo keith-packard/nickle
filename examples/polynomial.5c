@@ -1,3 +1,11 @@
+/*
+ * Arithmetic on polynomials with (integer) coefficients
+ *
+ * Copyright © 2002  Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
 namespace Polynomial {
 
  /*

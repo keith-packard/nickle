@@ -1,6 +1,10 @@
 /*
  * Convert integer to string of roman numerals
- * Keith Packard 2001
+ *
+ * Copyright © 2001 Keith Packard
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ *
  * A classic, plus a good illustration of some
  * of the structuring, typing, and nesting
  * capabilities of the language.

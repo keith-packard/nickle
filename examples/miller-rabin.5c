@@ -7,6 +7,10 @@
  *                 (failure probability 1/2**d)
  * primebits(n,d): returns a random n-bit number k where !composite(k,d)
  *
+ * Copyright © 1999  Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ *
  * Bart Massey 1999/1
  */
 

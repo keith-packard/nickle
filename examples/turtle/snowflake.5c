@@ -1,5 +1,9 @@
 # von Koch / Snowflake curves
 # Bart 2001/05/28
+#
+# Copyright © 2001  Bart Massey.
+# All Rights Reserved.  See the file COPYING in this directory
+# for licensing information.
 
 # usage: ./snowflake.5c <width> <depth>
 # where <width> is the curve width in inches

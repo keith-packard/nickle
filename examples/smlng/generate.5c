@@ -1,3 +1,9 @@
+/*
+ * Copyright © 2001 Keith Packard and Carl Worth
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
 int function iswhite (int c)
 {
     switch (c) {

@@ -1,5 +1,10 @@
 /*
  * Some number-theoretic algorithms
+ *
+ * Copyright © 1999  Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ *
  * Bart Massey 1999/1
  *
  * bigpowmod(b,e,m): returns (b**e) mod m

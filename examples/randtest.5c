@@ -1,5 +1,10 @@
 /*
  * Check the PRNG for a balanced low bit
+ *
+ * Copyright © 2001  Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ *
  * Bart 2001/3
  */
 

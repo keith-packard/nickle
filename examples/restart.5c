@@ -3,6 +3,10 @@
  * restart execution after correcting
  * an exceptional condition.
  *
+ * Copyright © 2001  Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ *
  * Bart 2001/06/03
  */
 

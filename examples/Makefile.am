@@ -29,4 +29,4 @@ exampledir=$(pkgdatadir)/examples
 
 example_DATA=$(NICKLEFILES) COPYING
 
-EXTRA_DIST=$(NICKLEFILES)
+EXTRA_DIST=$(NICKLEFILES) COPYING

@@ -1,3 +1,12 @@
+/* $Header$ */
+/*
+ * Test skiplist implementation
+ *
+ * Copyright © 2004 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
 autoload Skiplist;
 
 int gt_count = "hi"; 

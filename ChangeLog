@@ -1,5 +1,34 @@
 2004-11-15  Keith Packard  <keithp@keithp.com>
 
+	* examples/COPYING:
+	* examples/Makefile.am:
+	* examples/miller-rabin.5c:
+	* examples/mutextest.5c:
+	* examples/numbers.5c:
+	* examples/polynomial.5c:
+	* examples/prime.5c:
+	* examples/randtest.5c:
+	* examples/restart.5c:
+	* examples/roman.5c:
+	* examples/rsa-demo.5c:
+	* examples/rsa.5c:
+	* examples/shortpaths.5c:
+	* examples/skiplisttest.5c:
+	* examples/smlng/COPYING:
+	* examples/smlng/Makefile.am:
+	* examples/smlng/context.5c:
+	* examples/smlng/generate.5c:
+	* examples/smlng/parse.5c:
+	* examples/smlng/test.5c:
+	* examples/turtle/COPYING:
+	* examples/turtle/Makefile.am:
+	* examples/turtle/snowflake.5c:
+	* examples/turtle/snowflake.tex:
+	* examples/turtle/turtle.5c:
+	Add a bunch of copyright and license information
+
+2004-11-15  Keith Packard  <keithp@keithp.com>
+
 	* lex.l:
 	Lost **= somehow.
 

@@ -1,5 +1,9 @@
 /*
  * Parse simple sgml-style grammar
+ *
+ * Copyright © 2001 Keith Packard and Carl Worth
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
 library "context.5c"

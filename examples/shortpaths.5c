@@ -1,3 +1,11 @@
+/*
+ * Floyd-Warshall all-pairs shortest-path algorithm.
+ *
+ * Copyright © 2004  Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
 autoimport APSP;
 autoimport PRNG;
 autoload SVG;

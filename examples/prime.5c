@@ -1,6 +1,10 @@
 /*
  * factor(): Return an array of factors of a number
- * Keith Packard 2001
+ *
+ * Copyright © 2001  Keith Packard.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ *
  * Very inefficient, but demonstrates the use of disjoint unions
  * and dynamic arrays.
  */

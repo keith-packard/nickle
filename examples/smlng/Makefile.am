@@ -1,3 +1,10 @@
+#
+# SGML-like parser
+#
+# Copyright © 2001 Keith Packard and Carl Worth
+# All Rights Reserved.  See the file COPYING in this directory
+# for licensing information.
+#
 NICKLEFILES=\
 	context.5c \
 	generate.5c \
@@ -6,10 +13,10 @@ NICKLEFILES=\
 
 exampledir=$(pkgdatadir)/examples/smlng
 
-example_DATA=$(NICKLEFILES)
+example_DATA=$(NICKLEFILES) COPYING
 
 TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir):$(top_srcdir)/$(subdir) $(top_builddir)/nickle < $(top_srcdir)/$(subdir)/data.sgml > /dev/null
 
 TESTS=test.5c
 
-EXTRA_DIST=$(NICKLEFILES) data.sgml
+EXTRA_DIST=$(NICKLEFILES) data.sgml COPYING

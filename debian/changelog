@@ -1,3 +1,14 @@
+nickle (2.41-1) unstable; urgency=low
+  * Make a few grammar tweaks to improve NL handling
+  * Fix crash with empty array/hash initializers
+  * Add doc string support -- a comment following a function
+    or exception.
+  * Eliminate visible uses of nasty implicit unions.
+  * Accept ** and && as unary operators
+  * Fix some uses of & in lvalues
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 17 Jun 2004 17:02:13 -0700
+
 nickle (2.38-1) unstable; urgency=low
   * fix manual to include correct version and date
   

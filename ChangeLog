@@ -1,5 +1,14 @@
 2004-06-17  Keith Packard  <keithp@keithp.com>
-2.39
+version 2.41
+
+	* Makefile.am:
+	Add commands to upload release files to nickle.org
+	
+	* debian/changelog:
+	Note changes since last debian package (2.38)
+
+2004-06-17  Keith Packard  <keithp@keithp.com>
+
 	* compile.c: (CompileLvalue):
 	Generalize the previous fix to handle the remaining cases,
 	including names.

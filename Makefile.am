@@ -90,10 +90,21 @@ nickle.spec: nickle.spec.in ChangeLog config.h
 # This assumes you've got Mike Harris's rpmbuild-nonroot stuff installed
 # using the defaults
 #
+RPMDIR=$(HOME)/rpmbuild
+
 rpm: dist-gzip nickle.spec
-	mkdir -p $(HOME)/rpmbuild/$(PACKAGE)-$(VERSION)
-	cp $(PACKAGE)-$(VERSION).tar.gz $(HOME)/rpmbuild/$(PACKAGE)-$(VERSION)
+	mkdir -p $(RPMDIR)/$(PACKAGE)-$(VERSION)
+	cp $(PACKAGE)-$(VERSION).tar.gz $(RPMDIR)/$(PACKAGE)-$(VERSION)
 	rpm -ba nickle.spec
+
+RELEASE_FILES = \
+	$(PACKAGE)-$(VERSION).tar.gz \
+	$(PACKAGE)_$(VERSION)-1_i386.deb \
+	$(RPMDIR)/SRPMS/$(PACKAGE)-$(VERSION)-1.src.rpm \
+	$(RPMDIR)/RPMS/$(PACKAGE)-$(VERSION)-1.i386.rpm
+
+release: $(RELEASE_FILES)
+	scp $(RELEASE_FILES) nickle.org:/var/www/nickle/release
 
 .PHONY: debuild debuild-signed debuild-unsigned debuild-dirs rpm
 

@@ -147,16 +147,45 @@ extend namespace File {
 		}
 
 		/*
-		 * format
+		 * typecheck and select base
 		 */
-		int base = 10;
-		switch (fmt::c()) {
-		case 'b': case 'B': base = 2; break;
-		case 'x': case 'X': base = 16; break;
-		case 'o': case 'O': base = 8; break;
-		}
-		print (f, arg::next(), String::new(fmt::c()), base, 
-		       width, prec, fill);
+
+		const struct {
+		    string	formats;
+		    bool(poly)	test;
+		    string	message;
+		    int		base;
+		}[*] fmts = {
+		    { formats = "s",	    test = is_string,
+		      message = "string",   base = 10 },
+		    { formats = "dD",	    test = is_int,
+		      message = "int",	    base = 10 },
+		    { formats = "bB",	    test = is_int,
+		      message = "int",	    base = 2 },
+		    { formats = "oO",	    test = is_int,
+		      message = "int",	    base = 8 },
+		    { formats = "xX",	    test = is_int,
+		      message = "int",	    base = 16 },
+		    { formats = "efEF",	    test = is_number,
+		      message = "real",	    base = 10 }
+		};
+		
+		poly	this_arg = arg::next();
+		string	this_fmt = String::new (fmt::c());
+		int	this_base = 10;
+		
+		for (int i = 0; i < dim (fmts); i++)
+		    if (String::index (fmts[i].formats, this_fmt) >= 0)
+		    {
+			if (!fmts[i].test (this_arg))
+			    raise invalid_argument (fmts[i].message +
+						    "format with non-" +
+						    fmts[i].message,
+						    1, this_arg);
+			this_base = fmts[i].base;
+			break;
+		    }
+		print (f, this_arg, this_fmt, this_base, width, prec, fill);
 	    } else
 		putc (fmt::c(), f);
 	    fmt::step ();

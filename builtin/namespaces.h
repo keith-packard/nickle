@@ -14,4 +14,4 @@ extern void import_Command_namespace(void);
 extern void import_Gcd_namespace(void);
 #endif
 extern void import_Environ_namespace(void);
-extern void import_Sockets_namespace(void);
+extern void import_Socket_namespace(void);

@@ -57,6 +57,7 @@ static const struct sbuiltin svars[] = {
 };
 
 extern NamespacePtr CommandNamespace;
+extern Type	    *typeSockaddr;
 
 static const struct envbuiltin envvars[] = {
 #ifdef CENVIRON
@@ -150,6 +151,7 @@ BuiltinType (char *format, Type **type)
     case 'c': t = typePrim[rep_continuation]; break;
     case 'b': t = typePrim[rep_bool]; break;
     case 'v': t = typePrim[rep_void]; break;
+    case 'a': t = typeSockaddr; break;
     default: 
 	t = 0;
 	write (2, "Invalid builtin argument type\n", 30);
@@ -282,7 +284,7 @@ BuiltinInit (void)
     import_Gcd_namespace();
 #endif
     import_Environ_namespace();
-		import_Sockets_namespace();
+    import_Socket_namespace();
 
     /* Import builtin strings with predefined values */
     for (s = svars; s->name; s++) {

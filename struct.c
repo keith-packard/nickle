@@ -196,3 +196,26 @@ StructInit (void)
     EXIT ();
     return 1;
 }
+
+Type *
+BuildStructType (int nelements, ...)
+{
+    ENTER ();
+    StructType	*st;
+    int		i;
+    char	*name;
+    Type	*type;
+    va_list	ap;
+
+    st = NewStructType (nelements);
+    va_start (ap, nelements);
+    for (i = 0; i < nelements; i++)
+    {
+	type = va_arg (ap, Type *);
+	name = va_arg (ap, char *);
+	AddBoxType (&st->types, type);
+	StructTypeAtoms (st)[i] = AtomId (name);
+    }
+    va_end (ap);
+    RETURN (NewTypeStruct (st));
+}

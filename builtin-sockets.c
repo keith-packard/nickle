@@ -9,9 +9,10 @@
 /*
  *	sockets.c
  *
- *	provide builtin functions for the Sockets namespace
+ *	provide builtin functions for the Socket namespace
  */
 
+#include	<unistd.h>
 #include	<sys/types.h>
 #include	<sys/socket.h>
 #include        <netinet/in.h>
@@ -27,70 +28,93 @@
 #define herror(s) FilePrintf(FileStderr, s ": network error %d\n", h_errno);
 #endif
 
-NamespacePtr SocketsNamespace;
+NamespacePtr SocketNamespace;
+Type	     *typeSockaddr;
 
-Value do_Sockets_create (Value type);
-Value do_Sockets_connect (Value s, Value host, Value port);
-Value do_Sockets_bind (Value s, Value host, Value port);
-Value do_Sockets_listen (Value s, Value backlog);
-Value do_Sockets_accept (Value s);
-Value do_Sockets_shutdown (Value s, Value how);
+Value do_Socket_create (Value type);
+Value do_Socket_connect (Value s, Value host, Value port);
+Value do_Socket_bind (Value s, Value host, Value port);
+Value do_Socket_listen (Value s, Value backlog);
+Value do_Socket_accept (Value s);
+Value do_Socket_shutdown (Value s, Value how);
+Value do_Socket_gethostname (void);
+Value do_Socket_getsockname (Value s);
 
 void
-import_Sockets_namespace()
+import_Socket_namespace()
 {
     ENTER ();
+
+    static const struct fbuiltin_0 funcs_0[] = {
+	{ do_Socket_gethostname, "gethostname", "s", "" },
+	{ 0 },
+    };
+
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_Sockets_create, "create", "f", "i" },
-        { do_Sockets_accept, "accept", "f", "f" },
+        { do_Socket_create, "create", "f", "i" },
+        { do_Socket_accept, "accept", "f", "f" },
+	{ do_Socket_getsockname, "getsockname", "a", "f" },
         { 0 }
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_Sockets_listen, "listen", "v", "fi" },
-        { do_Sockets_shutdown, "shutdown", "v", "fi" },
+        { do_Socket_listen, "listen", "v", "fi" },
+        { do_Socket_shutdown, "shutdown", "v", "fi" },
         { 0 }
     };
 
     static const struct fbuiltin_3 funcs_3[] = {
-        { do_Sockets_connect, "connect", "v", "fss" },
-        { do_Sockets_bind, "bind", "v", "fss" },
+        { do_Socket_connect, "connect", "v", "fss" },
+        { do_Socket_bind, "bind", "v", "fss" },
         { 0 }
     };
 
-    SymbolPtr sym;
+    SymbolPtr	sym;
+    Type	*type;
 
-    SocketsNamespace = BuiltinNamespace (/*parent*/ 0, "Sockets")->namespace.namespace;
+    SocketNamespace = BuiltinNamespace (/*parent*/ 0, "Socket")->namespace.namespace;
 
-    BuiltinFuncs1 (&SocketsNamespace, funcs_1);
-    BuiltinFuncs2 (&SocketsNamespace, funcs_2);
-    BuiltinFuncs3 (&SocketsNamespace, funcs_3);
+    type = BuildStructType (2, 
+			    typePrim[rep_integer], "addr",
+			    typePrim[rep_integer], "port");
+    
+    sym = NewSymbolType (AtomId ("sockaddr"), type);
 
-    sym = BuiltinSymbol (&SocketsNamespace, "SOCK_STREAM", typePrim[rep_int]);
+    typeSockaddr = NewTypeName (NewExprAtom (AtomId ("sockaddr"), 0, False),
+				sym);
+    
+    NamespaceAddName (SocketNamespace, sym, publish_public);
+
+    BuiltinFuncs0 (&SocketNamespace, funcs_0);
+    BuiltinFuncs1 (&SocketNamespace, funcs_1);
+    BuiltinFuncs2 (&SocketNamespace, funcs_2);
+    BuiltinFuncs3 (&SocketNamespace, funcs_3);
+
+    sym = BuiltinSymbol (&SocketNamespace, "SOCK_STREAM", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SOCK_STREAM));
-    sym = BuiltinSymbol (&SocketsNamespace, "SOCK_DGRAM", typePrim[rep_int]);
+    sym = BuiltinSymbol (&SocketNamespace, "SOCK_DGRAM", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SOCK_DGRAM));
 
-    sym = BuiltinSymbol (&SocketsNamespace, "SHUT_RD", typePrim[rep_int]);
+    sym = BuiltinSymbol (&SocketNamespace, "SHUT_RD", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SHUT_RD));
-    sym = BuiltinSymbol (&SocketsNamespace, "SHUT_WR", typePrim[rep_int]);
+    sym = BuiltinSymbol (&SocketNamespace, "SHUT_WR", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SHUT_WR));
-    sym = BuiltinSymbol (&SocketsNamespace, "SHUT_RDWR", typePrim[rep_int]);
+    sym = BuiltinSymbol (&SocketNamespace, "SHUT_RDWR", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SHUT_RDWR));
 
-    sym = BuiltinSymbol (&SocketsNamespace, "INADDR_ANY", typePrim[rep_string]);
+    sym = BuiltinSymbol (&SocketNamespace, "INADDR_ANY", typePrim[rep_string]);
     BoxValueSet (sym->global.value, 0, NewStrString ("0.0.0.0"));
-    sym = BuiltinSymbol (&SocketsNamespace, "INADDR_LOOPBACK", typePrim[rep_string]);
+    sym = BuiltinSymbol (&SocketNamespace, "INADDR_LOOPBACK", typePrim[rep_string]);
     BoxValueSet (sym->global.value, 0, NewStrString ("127.0.0.1"));
-    sym = BuiltinSymbol (&SocketsNamespace, "INADDR_BROADCAST", typePrim[rep_string]);
+    sym = BuiltinSymbol (&SocketNamespace, "INADDR_BROADCAST", typePrim[rep_string]);
     BoxValueSet (sym->global.value, 0, NewStrString ("255.255.255.255"));
 
     EXIT ();
 }
 
-/* File::file do_Sockets_create ({SOCK_STREAM,SOCK_DGRAM} type); */
+/* File::file do_Socket_create ({SOCK_STREAM,SOCK_DGRAM} type); */
 Value
-do_Sockets_create (Value type)
+do_Socket_create (Value type)
 {
     ENTER ();
     int itype, s;
@@ -147,9 +171,9 @@ static Bool address_lookup (Value hostname, Value portname,
     return True;
 }
 
-/* void do_Sockets_connect (File::file s, String host, String port); */
+/* void do_Socket_connect (File::file s, String host, String port); */
 Value
-do_Sockets_connect (Value s, Value host, Value port)
+do_Socket_connect (Value s, Value host, Value port)
 {
     ENTER ();
     struct sockaddr_in addr;
@@ -172,7 +196,7 @@ do_Sockets_connect (Value s, Value host, Value port)
 					FileGetErrorMessage (errno),
 					2, FileGetError (errno),
 					s);
-		RETURN (Void); /* FIXME: more here? */
+		RETURN (Void);
 	    }
 	}
     }
@@ -186,9 +210,9 @@ do_Sockets_connect (Value s, Value host, Value port)
     RETURN (Void);
 }
 
-/* void do_Sockets_bind (File::file s, String host, String port); */
+/* void do_Socket_bind (File::file s, String host, String port); */
 Value
-do_Sockets_bind (Value s, Value host, Value port)
+do_Socket_bind (Value s, Value host, Value port)
 {
     ENTER ();
     struct sockaddr_in addr;
@@ -203,14 +227,20 @@ do_Sockets_bind (Value s, Value host, Value port)
     }
 #endif
     if (bind (s->file.fd, (struct sockaddr *) &addr, sizeof addr) == -1)
-	RETURN (Void); /* FIXME: more here? */
+    {
+	RaiseStandardException (exception_io_error,
+				FileGetErrorMessage (errno),
+				2, FileGetError (errno),
+				s);
+	RETURN (Void);
+    }
 
     RETURN (Void);
 }
 
-/* void do_Sockets_listen (File::file s, int backlog); */
+/* void do_Socket_listen (File::file s, int backlog); */
 Value
-do_Sockets_listen (Value s, Value backlog)
+do_Socket_listen (Value s, Value backlog)
 {
     ENTER ();
     int ibacklog;
@@ -227,9 +257,9 @@ do_Sockets_listen (Value s, Value backlog)
     RETURN (Void);
 }
 
-/* File::file do_Sockets_accept (File::file s); */
+/* File::file do_Socket_accept (File::file s); */
 Value
-do_Sockets_accept (Value s)
+do_Socket_accept (Value s)
 {
     ENTER ();
     int f;
@@ -261,9 +291,9 @@ do_Sockets_accept (Value s)
     RETURN (FileCreate (f, FileReadable|FileWritable));
 }
 
-/* void do_Sockets_shutdown (File::file s, {SHUT_RD,SHUT_WR,SHUT_RDWR} how); */
+/* void do_Socket_shutdown (File::file s, {SHUT_RD,SHUT_WR,SHUT_RDWR} how); */
 Value
-do_Sockets_shutdown (Value s, Value how)
+do_Socket_shutdown (Value s, Value how)
 {
     ENTER ();
     int ihow;
@@ -278,4 +308,51 @@ do_Sockets_shutdown (Value s, Value how)
     }
 
     RETURN (Void);
+}
+
+Value
+do_Socket_gethostname (void)
+{
+    ENTER ();
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX	255
+#endif
+    char    hostname[HOST_NAME_MAX+1];
+
+    if (gethostname (hostname, sizeof (hostname)) == -1)
+    {
+	RaiseStandardException (exception_io_error,
+				FileGetErrorMessage (errno),
+				2, FileGetError (errno),
+				Void);
+	RETURN (Void);
+    }
+    /* null termination is not promised */
+    hostname[HOST_NAME_MAX] = '\0';
+    RETURN (NewStrString (hostname));
+}
+
+Value
+do_Socket_getsockname (Value s)
+{
+    ENTER ();
+    struct sockaddr_in	addr;
+    socklen_t		len = sizeof (addr);
+    Value		ret;
+    BoxPtr		box;
+
+    if (getsockname (s->file.fd, (struct sockaddr *) &addr, &len) == -1)
+    {
+	RaiseStandardException (exception_io_error,
+				FileGetErrorMessage (errno),
+				2, FileGetError (errno),
+				s);
+	RETURN (Void);
+    }
+    ret = NewStruct (TypeCanon (typeSockaddr)->structs.structs, False);
+    box = ret->structs.values;
+    BoxValueSet (box, 0, NewInteger (Positive, 
+				     NewNatural (ntohl (addr.sin_addr.s_addr))));
+    BoxValueSet (box, 1, NewInt (ntohs (addr.sin_port)));
+    RETURN (ret);
 }

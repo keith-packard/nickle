@@ -28,7 +28,34 @@ extend namespace File {
 	    File::ungetc (c, f);
 	}
 
-	bool isnumber (int c)
+	bool isbinary (int c)
+	{
+	    if ('0' <= c && c <= '1')
+		return true;
+	    if (c == '-')
+		return true;
+	    return false;
+	}
+	
+	bool isoctal (int c)
+	{
+	    if ('0' <= c && c <= '7')
+		return true;
+	    if (c == '-')
+		return true;
+	    return false;
+	}
+	
+	bool isdecimal (int c)
+	{
+	    if ('0' <= c && c <= '9')
+		return true;
+	    if (c == '-')
+		return true;
+	    return false;
+	}
+
+	bool ishex (int c)
 	{
 	    if ('0' <= c && c <= '9')
 		return true;
@@ -38,20 +65,45 @@ extend namespace File {
 		return true;
 	    if (c == '-')
 		return true;
+	    return false;
+	}
+
+	bool isfloat (int c)
+	{
+	    if ('0' <= c && c <= '9')
+		return true;
+	    if (c == 'e')
+		return true;
+	    if (c == '-')
+		return true;
 	    if (c == '.')
 		return true;
 	    return false;
 	}
 
-	/* return next number in input */
-	real number ()
+	/* return next integer in input */
+	int integer (bool(int c) test, int base)
 	{
 	    int	    c;
 	    string  s;
 
 	    whitespace();
 	    s = "";
-	    while (isnumber (c = File::getc (f)))
+	    while (test (c = File::getc (f)))
+		s = s + String::new(c);
+	    File::ungetc (c, f);
+	    return string_to_integer (s, base);
+	}
+
+	/* return next number in input */
+	real number (bool(int c) test)
+	{
+	    int	    c;
+	    string  s;
+
+	    whitespace();
+	    s = "";
+	    while (test (c = File::getc (f)))
 		s = s + String::new(c);
 	    File::ungetc (c, f);
 	    return string_to_real (s);
@@ -84,10 +136,22 @@ extend namespace File {
 	    case '%':
 		i++;
 		switch (format[i]) {
-		case 'd':
-		case 'e':
-		case 'f':
-		    *args[argc++] = number();
+		case 'b': case 'B':
+		    *args[argc++] = integer (isbinary, 2);
+		    break;
+		case 'o': case 'O':
+		    *args[argc++] = integer (isoctal, 8);
+		    break;
+		case 'd': case 'D':
+		    *args[argc++] = integer (isdecimal, 10);
+		    break;
+		case 'x': case 'X':
+		    *args[argc++] = integer (ishex, 16);
+		    break;
+		case 'e': case 'E':
+		case 'f': case 'F':
+		case 'g': case 'G':
+		    *args[argc++] = number(isfloat);
 		    break;
 		case 'c':
 		    *args[argc++] = File::getc(f);

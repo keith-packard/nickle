@@ -857,6 +857,7 @@ Value	NewRef (BoxPtr box, int element);
 #endif
 Value	NewStruct (StructType *type, Bool constant);
 StructType  *NewStructType (int nelements);
+Type	*BuildStructType (int nelements, ...);
 Type	*StructMemType (StructType *st, Atom name);
 Value	StructMemRef (Value sv, Atom name);
 Value	StructMemValue (Value sv, Atom name);

@@ -395,9 +395,19 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
     TypePtr	t;
     
     switch (expr->base.tag) {
+    case VAR:
+	obj = CompileDecl (obj, expr, False, stat, code);
+	{
+	    DeclListPtr	decl;
+	    s = 0;
+	    for (decl = expr->decl.decl; decl; decl = decl->next)
+		s = decl->symbol;
+	}
+        goto isName;
     case NAME:
 	s = CompileCheckSymbol (obj, stat, expr, code,
 				&depth, createIfNecessary);
+isName:
 	if (!s)
 	{
 	    expr->base.type = typePoly;

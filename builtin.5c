@@ -91,7 +91,7 @@ library "command.5c";
 library "math.5c";
 import Math;
 library "scanf.5c";
-library "socket.5c"
+library "socket.5c";
 
 # Now autoload/autoimport the bonus stuff
 autoimport Abort;

@@ -104,6 +104,7 @@ AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(unsetenv setenv putenv gettimeofday hstrerror select)
 AC_CHECK_FUNCS(sigaction sigrelse sigignore setrlimit getrlimit)
+AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
 
 AC_FUNC_GETPGRP
 

@@ -15,7 +15,7 @@ NamespacePtr	ForeignNamespace;
 
 #if HAVE_EXTERN_SYMS
 
-#if HAVE_DLFCN_H && HAVE_LIBDL
+#if HAVE_DLFCN_H && HAVE_DLOPEN && HAVE_DLSYM
 #define HAVE_FOREIGN_LOAD 1
 #include	<dlfcn.h>
 
@@ -34,7 +34,10 @@ do_Foreign_load (Value av)
     lib = dlopen (name, RTLD_NOW);
     if (!lib)
     {
-	char	*err = dlerror ();
+	char	*err = 0;
+#if HAVE_DLERROR
+	err = dlerror ();
+#endif
 	if (!err)
 	    err = "cannot open";
 	RaiseStandardException (exception_invalid_argument,
@@ -45,12 +48,17 @@ do_Foreign_load (Value av)
     init = (Value (*) (void)) dlsym (lib, "nickle_init");
     if (!init)
     {
-	char	*err = dlerror ();
+	char	*err = 0;
+#if HAVE_DLERROR
+	err = dlerror ();
+#endif
 	if (!err)
 	    err = "missing nickle_init";
 	RaiseStandardException (exception_invalid_argument,
 				err, 2, NewInt (0), av);
+#if HAVE_DLCLOSE
 	dlclose (lib);
+#endif
 	RETURN (Void);
     }
     ret = (*init) ();

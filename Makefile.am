@@ -61,6 +61,7 @@ AM_CFLAGS = \
 	-Wnested-externs -fno-strict-aliasing
 
 USES_GRAM_H = \
+	array.o \
 	compile.o \
 	error.o \
 	expr.o \

@@ -36,12 +36,12 @@ import_Command_namespace()
     static struct fbuiltin_2 funcs_2[] = {
         { do_Command_new, "new", "v", "sp" },
         { do_Command_new_names, "new_names", "v", "sp" },
-        { do_Command_pretty_print, "pretty_print", "v", "fA*s" },
         { 0 }
     };
 
     static struct fbuiltin_v funcs_v[] = {
         { do_Command_undefine, "undefine", "v", ".A*s" },
+        { do_Command_pretty_print, "pretty_print", "v", "f.A*s" },
         { 0 }
     };
 
@@ -149,15 +149,23 @@ do_Command_lex_string (Value name)
 }
 
 Value
-do_Command_pretty_print (Value f, Value names)
+do_Command_pretty_print (int argc, Value *args)
 {
     ENTER();
+    Value	    f;
+    Value	    names;
     NamespacePtr    namespace;
     SymbolPtr	    symbol;
     Publish	    publish;
+    int		    i;
 
-    if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
-	PrettyPrint (f, publish, symbol);
+    f = args[0];
+    for (i = 1; i < argc; i++)
+    {
+	names = args[i];
+	if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
+	    PrettyPrint (f, publish, symbol);
+    }
     RETURN (Void);
 }
 

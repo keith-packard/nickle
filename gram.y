@@ -584,7 +584,11 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			}
 			NamespaceImport (CurrentNamespace, 
 					 symbol->namespace.namespace, $1);
-			$$ = NewExprTree (IMPORT, $4, 0);
+			$$ = NewExprTree (IMPORT, $4, NewExprDecl (IMPORT,
+								   0, 
+								   class_undef,
+								   0,
+								   $1));
 		    }
 		| TRY ignorenl statement catches attendnl
 		    { $$ = NewExprTree (CATCH, $3, $4); }

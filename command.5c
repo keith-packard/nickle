@@ -47,9 +47,9 @@
      *
      * print name	- pretty print name
      */
-    void do_pretty_print (string[*] names)
+    void do_pretty_print (string[*] names...)
     {
-	Command::pretty_print (stdout, names);
+	Command::pretty_print (stdout, names ...);
     }
 
     Command::new_names ("print", do_pretty_print);

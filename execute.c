@@ -23,7 +23,7 @@ Bool	complete;
 Bool	signalFinished;	    /* current thread is finished */
 Bool	signalSuspend;	    /* current thread is suspending */
 
-#define Arg(n)	((n) < argc-1 ? Stack(base - (n)) : value)
+#define Arg(n)	((n) <= base ? Stack(base - (n)) : value)
 
 static FramePtr
 BuildFrame (Value thread, Value func, Value value, Bool staticInit, Bool tail,
@@ -79,14 +79,13 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
     ENTER ();
     int		argc = *stack;
     Value	value = thread->thread.continuation.value;
-    Value	func = argc ? Stack(argc - 1) : value;
-    CodePtr	code = func->func.code;
+    Value	func;
+    CodePtr	code;
     FramePtr	frame;
     ArgType	*argt;
     int		fe;
     int		base;
     
-    argt = code->base.args;
     /*
      * Typecheck actuals
      */
@@ -104,9 +103,22 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 	    RETURN (Void);
 	}
 	argc = -argc - 1 + numvar->ints.value;
-	base = argc;
+	base = argc - 1;
 	*stack = 1 + argc;  /* count + args */
+	func = Stack(argc);
     }
+    else
+	func = argc ? Stack(argc-1) : value;
+    if (!ValueIsFunc(func))
+    {
+	ThreadStackDump (thread);
+	RaiseStandardException (exception_invalid_unop_value,
+				"Not a function",
+				1, func);
+	RETURN (Void);
+    }
+    code = func->func.code;
+    argt = code->base.args;
     while (fe < argc || (argt && !argt->varargs))
     {
 	if (!argt)
@@ -1039,15 +1051,6 @@ ThreadsRun (Value thread, Value lex)
 	    case OpCall:
 	    case OpTailCall:
 		stack = inst->ints.value;
-		v = stack ? Stack(stack - 1) : value;
-		if (!ValueIsFunc(v))
-		{
-		    ThreadStackDump (thread);
-		    RaiseStandardException (exception_invalid_unop_value,
-					    "Not a function",
-					    1, v);
-		    break;
-		}
 		value = ThreadCall (thread, inst->base.opCode == OpTailCall,
 				    &next, &stack);
 		break;

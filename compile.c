@@ -851,7 +851,8 @@ CompileTypecheckArgs (ObjPtr	obj,
 	argt = func_type->func.args;
 	arg = args;
 	i = 0;
-	while (arg || (argt && !argt->varargs))
+	varactual = False;
+	while ((arg && !varactual) || (argt && !argt->varargs))
 	{
 	    if (!argt)
 	    {

@@ -703,8 +703,9 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest, ProfileData
 	break;
     case IMPORT:
 	PrettyIndent (f, e, level, pd);
-	FilePrintf (f, "%pimport %A;\n", e->tree.left->decl.publish,
-		    e->tree.left->decl.decl->name);
+	FilePrintf (f, "%pimport ", e->tree.right->decl.publish);
+	PrettyExpr (f, e->tree.left, -1, level, nest, pd);
+	FilePuts (f, ";\n");
 	break;
     case TWIXT:
 	PrettyIndent (f, e, level, pd);

@@ -773,6 +773,7 @@ Value	do_History_show (int, Value *);
 Value	do_string_to_integer (int, Value *);
 Value	do_Semaphore_new (int, Value *);
 Value	do_Command_undefine (int, Value *);
+Value	do_Command_pretty_print (int , Value *);
 
 /* zero argument builtins */
 Value	do_Thread_cont (void);
@@ -867,7 +868,6 @@ Value	do_String_index (Value, Value);
 Value	do_setjmp (Value, Value);
 Value	do_Command_new (Value, Value);
 Value	do_Command_new_names (Value, Value);
-Value	do_Command_pretty_print (Value, Value);
 #ifdef GCD_DEBUG
 Value	do_Gcd_bdivmod (Value, Value);
 Value	do_Gcd_kary_reduction (Value, Value);

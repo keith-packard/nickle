@@ -5,7 +5,7 @@
 <replaceable>expr</replaceable>;
 </synopsis>
 <synopsis>
-;
+; /* null statement */
 </synopsis>
 <synopsis>
 { <replaceable>statement</replaceable> ... }

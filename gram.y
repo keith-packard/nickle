@@ -339,7 +339,7 @@ rawatom		: NAME
 		| NAMESPACENAME
 		| TYPENAME
 		;
-rawnamespace	: rawnamespace NAMESPACENAME COLONCOLON
+rawnamespace	: rawnamespace rawatom COLONCOLON
 		    { $$ = NewExprTree (COLONCOLON, $1, NewExprAtom ($2, 0, False)); }
                 |
 		    { $$ = 0; }

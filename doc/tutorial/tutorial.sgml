@@ -42,8 +42,10 @@
 
 <abstract>
 <para>
-This is a user tutorial for Nickle, a powerful desktop calculator language with many features of advanced languages and support for arbitrary precision numbers.
-It is written to teach Nickle to someone who is already fairly familiar with programming, using descriptions with examples.
+This is a user tutorial for Nickle, a powerful desktop
+calculator language. Nickle supports many features of
+advanced languages, as well as arbitrary precision numbers.
+This tutorial is intended to teach Nickle to someone who is already fairly familiar with programming, using descriptions with examples.
 Topics are covered progressively, beginning with invocation and commands, moving on to learning the language, and finally to more advanced topics.
 </para>
 </abstract>

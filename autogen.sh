@@ -26,14 +26,14 @@ $aclocal  --version </dev/null >/dev/null 2>&1 || aclocal=aclocal
 $automake --version </dev/null >/dev/null 2>&1 || automake=automake
 
 # require libtool >= 1.5
-libtool_version=`libtool --version | head -1 | awk '{print $4}'`
-libtool_major=`echo $libtool_version | awk -F . '{print $1}'`
-libtool_minor=`echo $libtool_version | awk -F . '{print $2}'`
-if [ $libtool_major -lt 1 ] || [ $libtool_major -eq 1 -a $libtool_minor -lt 5 ]
-then
-    echo "libtool 1.5 or later is required. You have $libtool_version."
-    exit 1
-fi
+#libtool_version=`libtool --version | head -1 | awk '{print $4}'`
+#libtool_major=`echo $libtool_version | awk -F . '{print $1}'`
+#libtool_minor=`echo $libtool_version | awk -F . '{print $2}'`
+#if [ $libtool_major -lt 1 ] || [ $libtool_major -eq 1 -a $libtool_minor -lt 5 ]
+#then
+#    echo "libtool 1.5 or later is required. You have $libtool_version."
+#    exit 1
+#fi
 
 rm -f config.guess config.sub depcomp install-sh missing mkinstalldirs
 rm -f config.cache acconfig.h

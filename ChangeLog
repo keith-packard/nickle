@@ -1,5 +1,11 @@
 2004-11-29  Keith Packard  <keithp@keithp.com>
 
+	* configure.in:
+	Move AC_CONFIG_AUX_DIR above AM_INIT_AUTOMAKE as needed for new
+	automake version
+
+2004-11-29  Keith Packard  <keithp@keithp.com>
+
 	* mem.c: (newBlock), (MemAddRoot):
 	Call to panic had wrong arguments and caused a segfault.
 

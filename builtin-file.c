@@ -215,6 +215,12 @@ do_File_print (Value file, Value value, Value format,
     ibase = IntPart (base, "Illegal base");
     if (aborting)
 	return Void;
+    if (ibase < 2) {
+	RaiseStandardException (exception_invalid_argument,
+				"base is less than 2",
+				2, NewInt (0), base);
+	return Void;
+    }
     iwidth = IntPart (width, "Illegal width");
     if (aborting)
 	return Void;

@@ -23,9 +23,10 @@ namespace APSP {
 	  {{{dist = -1, first_hop = -1}, ...},...};
 	for (int i = 0; i < n; i++) {
 	    for (int j = 0; j < n; j++) {
-		path[i,j].dist = adjacencies[i,j];
-		if (i != j && adjacencies[i,j] >= 0)
+		if (i != j && adjacencies[i,j] >= 0) {
+		    path[i,j].dist = adjacencies[i,j];
 		    path[i,j].first_hop = j;
+		}
 	    }
 	}
 	/* do the computation */
@@ -36,10 +37,10 @@ namespace APSP {
 			continue;
 		    real dik = path[i,k].dist;
 		    real dkj = path[k,j].dist;
-		    if (dik <= 0 || dkj <= 0)
+		    if (dik < 0 || dkj < 0)
 			continue;
 		    real dij = path[i,j].dist;
-		    if (dij <= 0 || dik + dkj < dij) {
+		    if (dij < 0 || dik + dkj < dij) {
 			path[i,j].dist = dik + dkj;
 			path[i,j].first_hop = path[i,k].first_hop;
 		    }

@@ -319,7 +319,7 @@ do_reference (Value av)
     Value   ret;
 
     ret = NewRef (NewBox (False, False, 1), 0);
-    RefValueSet (ret, av);
+    RefValueSet (ret, Copy (av));
     RETURN (ret);
 }
 

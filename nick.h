@@ -261,10 +261,15 @@ typedef union _builtinFunc {
     Value   (*builtin6)(Value,Value,Value,Value,Value,Value);
     Value   (*builtin7)(Value,Value,Value,Value,Value,Value,Value);
     Value   (*builtin8)(Value,Value,Value,Value,Value,Value,Value,Value);
+    Value   (*builtinNJ)(InstPtr *, int, Value *);
+    Value   (*builtin0J)(InstPtr *);
+    Value   (*builtin1J)(InstPtr *,Value);
+    Value   (*builtin2J)(InstPtr *,Value,Value);
 } BuiltinFunc;
 
 typedef struct _builtinCode {
     CodeBase	base;
+    Bool	needsNext;
     BuiltinFunc	b;
 } BuiltinCode, *BuiltinCodePtr;
 
@@ -275,7 +280,7 @@ typedef union _code {
 } Code;
 
 CodePtr	NewFuncCode (Type, ExprPtr args, ExprPtr code);
-CodePtr	NewBuiltinCode (Type, int, BuiltinFunc func);
+CodePtr	NewBuiltinCode (Type, int, BuiltinFunc func, Bool needsNext);
 Value	NewFunc (CodePtr, FramePtr);
 
 typedef struct _instBase {
@@ -452,3 +457,56 @@ void	stop (int), die (int), segv (int);
 void	ignore_ferr (void);
 
 extern Value    yyinput;
+
+Value	Atof (Value);
+Value	Atoi (Value);
+Value	Cont (void);
+Value	CurrentThread (void);
+Value	GetPriority (Value);
+Value	Kill (int, Value *);
+Value	SetPriority (Value,Value);
+Value	Strtol (Value, Value);
+Value	ThreadsList (void);
+Value	Trace (int, Value *);
+Value	acosD(Value);
+Value	asinD(Value);
+Value	atan2D(Value, Value);
+Value	atanD(Value);
+Value	ceilD(Value);
+Value	cosD(Value);
+Value	coshD(Value);
+Value	doHistoryInsert(Value);
+Value	doHistoryShow(int,Value*);
+Value	dofclose(Value);
+Value	dofflush(Value);
+Value	dofopen(Value,Value);
+Value	dofprintf(int, Value *);
+Value	dogcd(Value,Value);
+Value	dogetc(Value);
+Value	dogetchar(void);
+Value	dotime(void);
+Value	doprint(Value,Value,Value,Value,Value,Value,Value);
+Value	doputc(Value,Value);
+Value	doputchar(Value);
+Value	doscanf(int,Value *);
+Value	expD(Value);
+Value	fabsD(Value);
+Value	floorD(Value);
+Value	hypotD(Value, Value);
+Value	j0D(Value);
+Value	j1D(Value);
+Value	jnD(Value,Value);
+Value	log10D(Value);
+Value	logD(Value);
+Value	sinD(Value);
+Value	sinhD(Value);
+Value	sqrtD(Value);
+Value	tanD(Value);
+Value	tanhD(Value);
+Value	y0D(Value);
+Value	y1D(Value);
+Value	ynD(Value,Value);
+Value	_random(Value);
+Value	_srandom(Value);
+Value	SetJump(InstPtr *, Value, Value);
+Value	LongJump(InstPtr *, Value, Value);

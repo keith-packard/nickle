@@ -159,7 +159,7 @@ ThreadsInterrupt (void)
 	ThreadSetState (thread, ThreadInterrupted);
     }
     if (t)
-	setVar ("thread", t);
+	DebugSetFrame (t, 0);
 }
 
 int
@@ -492,4 +492,90 @@ ThreadInit (void)
     StoppedReference = NewReference ((void **) &stopped);
     MemAddRoot (StoppedReference);
     EXIT ();
+}
+
+static void
+ContinuationMark (void *object)
+{
+    ContinuationPtr continuation = object;
+
+    MemReference (continuation->frame);
+}
+
+Bool
+ContinuationPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+{
+    FilePuts (f, "continutation");
+    return True;
+}
+
+ValueType    ContinuationType = {
+    { ContinuationMark, 0 },	/* base */
+    {			/* binary */
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+    },
+    {			    /* unary */
+	0,
+	0,
+	0,
+    },
+    0,
+    0,
+    ContinuationPrint,
+    0,
+};
+
+Value
+NewContinuation (FramePtr frame, InstPtr pc)
+{
+    ENTER ();
+    Value   ret;
+
+    ret = ALLOCATE (&ContinuationType.data, sizeof (Continuation));
+    ret->value.tag = type_continuation;
+    ret->continuation.frame = frame;
+    ret->continuation.pc = pc;
+    RETURN (ret);
+}
+
+Value
+SetJump (InstPtr *next, Value continuation_ref, Value ret)
+{
+    ENTER ();
+    Value   continuation;
+    
+    if (continuation_ref->value.tag != type_ref)
+    {
+	RaiseError ("setjump: not a reference %v", continuation_ref);
+	RETURN (Zero);
+    }
+    continuation = NewContinuation (running->thread.frame, *next);
+    RefValue (continuation_ref) = continuation;
+    RETURN (ret);
+}
+
+Value
+LongJump (InstPtr *next, Value continuation, Value ret)
+{
+    ENTER ();
+
+    if (!running)
+	RETURN (Zero);
+    if (continuation->value.tag != type_continuation)
+    {
+	RaiseError ("longjump: not a continuation %v", continuation);
+	RETURN (Zero);
+    }
+    running->thread.frame = continuation->continuation.frame;
+    *next = continuation->continuation.pc;
+    RETURN (ret);
 }

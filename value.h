@@ -157,6 +157,7 @@ typedef enum _type {
 	type_thread = 10,
 	type_mutex = 11,
 	type_semaphore = 12,
+	type_continuation = 13
 } Type;
 
 /*
@@ -285,6 +286,7 @@ typedef struct _struct {
 typedef union _code	*CodePtr;
 typedef struct _frame	*FramePtr;
 typedef struct _thread	*ThreadPtr;
+typedef struct _continuation	*ContinuationPtr;
 typedef union _value	*Value;
 typedef struct _obj	*ObjPtr;
 typedef union _inst	*InstPtr;
@@ -344,6 +346,12 @@ typedef struct _semaphore {
     int		locked;
 } Semaphore;
 
+typedef struct _continuation {
+    BaseValue	value;
+    FramePtr	frame;
+    InstPtr	pc;
+} Continuation;
+
 typedef union _value {
     BaseValue	value;
     Int		ints;
@@ -359,6 +367,7 @@ typedef union _value {
     Thread	thread;
     Mutex	mutex;
     Semaphore	semaphore;
+    Continuation    continuation;
 } ValueRec;
 
 typedef Value	(*Binary) (Value, Value, int);

@@ -24,6 +24,18 @@
 
 #include "nick.h"
 
+void
+DebugAddVar (ScopePtr scope, char *name, Value v)
+{
+    ENTER ();
+    SymbolPtr  s;
+
+    s = ScopeAddSymbol (scope, NewSymbolGlobal (AtomId(name), type_undef, 
+						publish_private));
+    BoxValue (s->global.value, 0) = v;
+    EXIT ();
+}
+
 Bool
 DebugSetFrame (Value thread, int offset)
 {
@@ -57,8 +69,8 @@ DebugSetFrame (Value thread, int offset)
 	CurrentScope = NewScope (scope);
 	CurrentFrame = frame;
 	ScopeImport (CurrentScope, DebugScope, publish_public);
-	setVar ("thread", thread);
-	setVar ("frame", NewInt (offset));
+	DebugAddVar (CurrentScope, "thread", thread);
+	DebugAddVar (CurrentScope, "frame", NewInt (offset));
     }
     EXIT ();
     return ret;

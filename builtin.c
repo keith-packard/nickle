@@ -23,6 +23,10 @@
 
 ScopePtr    PrimitiveScope;
 ScopePtr    DebugScope;
+ScopePtr    ThreadScope;
+ScopePtr    MutexScope;
+ScopePtr    SemaphoreScope;
+ScopePtr    MathScope;
 
 struct fbuiltin_v {
     Value	(*bf_func) (int, Value *);
@@ -78,6 +82,30 @@ struct fbuiltin_7 {
     ScopePtr	*bf_scope;
 };
 
+struct fbuiltin_vj {
+    Value	(*bf_func) (InstPtr *, int, Value *);
+    char	*bf_name;
+    ScopePtr	*bf_scope;
+};
+
+struct fbuiltin_0j {
+    Value	(*bf_func) (InstPtr *);
+    char	*bf_name;
+    ScopePtr	*bf_scope;
+};
+
+struct fbuiltin_1j {
+    Value	(*bf_func) (InstPtr *, Value);
+    char	*bf_name;
+    ScopePtr	*bf_scope;
+};
+
+struct fbuiltin_2j {
+    Value	(*bf_func) (InstPtr *, Value, Value);
+    char	*bf_name;
+    ScopePtr	*bf_scope;
+};
+
 struct dbuiltin {
     double	bd_value;
     char	*bd_name;
@@ -101,76 +129,22 @@ struct nbuiltin {
     ScopePtr	*bn_value;
     ScopePtr	*bn_scope;
 };
-
-Value	Atof (Value);
-Value	Atoi (Value);
-Value	Cont (void);
-Value	CurrentThread (void);
-Value	GetPriority (Value);
-Value	Kill (int, Value *);
-Value	SetPriority (Value,Value);
-Value	Sleep(Value);
-Value	Strtol (Value, Value);
-Value	ThreadsList (void);
-Value	Trace (int, Value *);
-Value	acosD(Value);
-Value	asinD(Value);
-Value	atan2D(Value, Value);
-Value	atanD(Value);
-Value	ceilD(Value);
-Value	cosD(Value);
-Value	coshD(Value);
-Value	doHistoryInsert(Value);
-Value	doHistoryShow(int,Value*);
-Value	dofclose(Value);
-Value	dofflush(Value);
-Value	dofopen(Value,Value);
-Value	dofprintf(int, Value *);
-Value	dogcd(Value,Value);
-Value	dogetc(Value);
-Value	dogetchar(void);
-Value	dotime(void);
-Value	doprint(Value,Value,Value,Value,Value,Value,Value);
-Value	doprintf(int,Value *);
-Value	doputc(Value,Value);
-Value	doputchar(Value);
-Value	doscanf(int,Value *);
-Value	expD(Value);
-Value	fabsD(Value);
-Value	floorD(Value);
-Value	hypotD(Value, Value);
-Value	j0D(Value);
-Value	j1D(Value);
-Value	jnD(Value,Value);
-Value	log10D(Value);
-Value	logD(Value);
-Value	sinD(Value);
-Value	sinhD(Value);
-Value	sqrtD(Value);
-Value	tanD(Value);
-Value	tanhD(Value);
-Value	y0D(Value);
-Value	y1D(Value);
-Value	ynD(Value,Value);
-Value	_random(Value);
-Value	_srandom(Value);
-
 struct fbuiltin_v funcs_v[] = {
     { doprintf,		"printf" },
     { doscanf,		"scanf" },
     { dofprintf,	"fprintf" },
-    { Kill,		"Kill" },
-    { Trace,		"Trace" },
+    { Kill,		"kill", &ThreadScope },
+    { Trace,		"trace", &ThreadScope },
     { Trace,		"trace", &DebugScope },
     { doHistoryShow,    "HistoryShow" },
     { 0,		0 },
 };
 struct fbuiltin_0 funcs_0[] = {
-    { Cont,		"Cont" },
-    { CurrentThread,	"CurrentThread" },
-    { NewMutex,		"NewMutex" },
-    { NewSemaphore,	"NewSemaphore" },
-    { ThreadsList,	"ThreadsList" },
+    { Cont,		"cont", &ThreadScope },
+    { CurrentThread,	"current", &ThreadScope },
+    { NewMutex,		"new", &MutexScope },
+    { NewSemaphore,	"new", &SemaphoreScope },
+    { ThreadsList,	"list", &ThreadScope },
     { dogetchar,	"getchar" },
     { dotime,		"time" },
     { DebugUp,		"up", &DebugScope, },
@@ -181,59 +155,65 @@ struct fbuiltin_0 funcs_0[] = {
 struct fbuiltin_1 funcs_1[] = {
     { Atof,		"atof" },
     { Atoi,		"atoi" },
-    { GetPriority,	"GetPriority" },
-    { MutexAcquire,	"MutexAcquire" },
-    { MutexRelease,	"MutexRelease" },
-    { MutexTryAcquire,	"MutexTryAcquire" },
-    { SemaphoreSignal,	"SemaphoreSignal" },
-    { SemaphoreTest,	"SemaphoreTest" },
-    { SemaphoreWait,	"SemaphoreWait" },
+    { GetPriority,	"getPriority", &ThreadScope },
+    { MutexAcquire,	"acquire", &MutexScope },
+    { MutexRelease,	"release", &MutexScope },
+    { MutexTryAcquire,	"tryAcquire", &MutexScope },
+    { SemaphoreSignal,	"signal", &SemaphoreScope },
+    { SemaphoreTest,	"test", &SemaphoreScope },
+    { SemaphoreWait,	"wait", &SemaphoreScope },
     { Sleep,		"sleep" },
-    { ThreadFromId,	"ThreadFromId" },
-    { ThreadJoin,	"join" },
-    { acosD,		"acos" },
-    { asinD,		"asin" },
-    { atanD,		"atan" },
+    { ThreadFromId,	"threadFromId", &ThreadScope },
+    { ThreadJoin,	"join", &ThreadScope },
+    { acosD,		"acos", &MathScope },
+    { asinD,		"asin", &MathScope },
+    { atanD,		"atan", &MathScope },
     { ceilD,		"ceil" },
-    { cosD,		"cos" },
-    { coshD,		"cosh" },
+    { cosD,		"cos", &MathScope },
+    { coshD,		"cosh", &MathScope },
     { doHistoryInsert,	"HistoryInsert" },
     { dofclose,		"fclose" },
     { dofflush,		"fflush" },
     { dogetc,		"getc" },
     { doputchar,	"putchar" },
-    { expD,		"exp" },
+    { expD,		"exp", &MathScope },
     { fabsD,		"abs" },
     { floorD,		"floor" },
-    { j0D,		"j0" },
-    { j1D,		"j1" },
-    { log10D,		"log10" },
-    { logD,		"log" },
-    { sinD,		"sin" },
-    { sinhD,		"sinh" },
+    { j0D,		"j0", &MathScope },
+    { j1D,		"j1", &MathScope },
+    { log10D,		"log10", &MathScope },
+    { logD,		"log", &MathScope },
+    { sinD,		"sin", &MathScope },
+    { sinhD,		"sinh", &MathScope },
     { sqrtD,		"sqrt" },
-    { tanD,		"tan" },
-    { tanhD,		"tanh" },
-    { y0D,		"y0" },
-    { y1D,		"y1" },
+    { tanD,		"tan", &MathScope },
+    { tanhD,		"tanh", &MathScope },
+    { y0D,		"y0", &MathScope },
+    { y1D,		"y1", &MathScope },
     { _random,		"random", &PrimitiveScope },
     { _srandom,		"srandom", &PrimitiveScope },
     { 0,		0 },
 };
 struct fbuiltin_2 funcs_2[] = {
-    { SetPriority,	"SetPriority" },
+    { SetPriority,	"setPriority", &ThreadScope },
     { Strtol,		"strtol" },
-    { atan2D,		"atan2" },
+    { atan2D,		"atan2", &MathScope },
     { dofopen,		"fopen" },
     { dogcd,		"gcd" },
     { doputc,		"putc" },
-    { hypotD,		"hypot" },
-    { jnD,		"jn" },
-    { ynD,		"yn" },
+    { hypotD,		"hypot", &MathScope },
+    { jnD,		"jn", &MathScope },
+    { ynD,		"yn", &MathScope },
     { 0,		0 },
 };
 struct fbuiltin_7 funcs_7[] = {
     { doprint,		"Print" },
+    { 0,		0 },
+};
+
+struct fbuiltin_2j funcs_2j[] = {
+    { SetJump,		"setjump" },
+    { LongJump,		"longjump" },
     { 0,		0 },
 };
 
@@ -263,6 +243,10 @@ struct ibuiltin ivars[] = {
 struct nbuiltin nvars[] = {
     { "primitive",  &PrimitiveScope },
     { "debugger",   &DebugScope },
+    { "thread",	    &ThreadScope },
+    { "math",	    &MathScope },
+    { "mutex",	    &MutexScope },
+    { "semaphore",  &SemaphoreScope },
     { 0,	    0 },
 };
 
@@ -308,7 +292,20 @@ BuiltinAddFunction (ScopePtr *scopep, char *name,
     Value	func;
     SymbolPtr	sym;
     sym = BuiltinSymbol (scopep, name, type_func);
-    func =  NewFunc (NewBuiltinCode (type_undef, argc, f), 0);
+    func =  NewFunc (NewBuiltinCode (type_undef, argc, f, False), 0);
+    BoxValue (sym->global.value, 0) = func;
+    EXIT ();
+}
+
+void
+BuiltinAddJumpingFunction (ScopePtr *scopep, char *name,
+			   int argc, BuiltinFunc f)
+{
+    ENTER ();
+    Value	func;
+    SymbolPtr	sym;
+    sym = BuiltinSymbol (scopep, name, type_func);
+    func =  NewFunc (NewBuiltinCode (type_undef, argc, f, True), 0);
     BoxValue (sym->global.value, 0) = func;
     EXIT ();
 }
@@ -322,6 +319,7 @@ BuiltinInit (void)
     struct fbuiltin_1	*f_1;
     struct fbuiltin_2	*f_2;
     struct fbuiltin_7	*f_7;
+    struct fbuiltin_2j	*f_2j;
     struct dbuiltin	*d;
     struct sbuiltin	*s;
     struct ibuiltin	*i;
@@ -353,6 +351,11 @@ BuiltinInit (void)
 	f.builtin7 = f_7->bf_func;
 	BuiltinAddFunction (f_7->bf_scope, f_7->bf_name, 7, f);
     }
+    for (f_2j = funcs_2j; f_2j->bf_name; f_2j++) {
+	f.builtin2J = f_2j->bf_func;
+	BuiltinAddJumpingFunction (f_2j->bf_scope, f_2j->bf_name, 2, f);
+    }
+    
     for (d = dvars; d->bd_name; d++) {
 	sym = ScopeAddSymbol (GlobalScope, 
 			      NewSymbolGlobal (AtomId (d->bd_name), 

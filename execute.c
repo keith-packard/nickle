@@ -91,7 +91,24 @@ ThreadCall (Value thread, InstPtr *next)
 	Value	*values;
 	int	arg;
 
-	switch (code->base.argc) {
+	if (code->builtin.needsNext) switch (code->base.argc) {
+	case -1:
+	    values = AllocateTemp (inst->ints.value * sizeof (Value));
+	    for (arg = 0; arg < inst->ints.value; arg++)
+		values[arg] = Stack(arg);
+	    value = (*code->builtin.b.builtinNJ)(next, inst->ints.value, values);
+	    break;
+	case 0:
+	    value = (*code->builtin.b.builtin0J)(next);
+	    break;
+	case 1:
+	    value = (*code->builtin.b.builtin1J)(next, Stack(0));
+	    break;
+	case 2:
+	    value = (*code->builtin.b.builtin2J)(next, Stack(0), Stack(1));
+	    break;
+	}
+	else switch (code->base.argc) {
 	case -1:
 	    values = AllocateTemp (inst->ints.value * sizeof (Value));
 	    for (arg = 0; arg < inst->ints.value; arg++)

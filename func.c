@@ -63,7 +63,7 @@ static void MarkBuiltinCode (void *object)
 DataType BuiltinCodeType = { MarkBuiltinCode, 0 };
 
 CodePtr
-NewBuiltinCode (Type type, int argc, BuiltinFunc builtin)
+NewBuiltinCode (Type type, int argc, BuiltinFunc builtin, Bool needsNext)
 {
     ENTER ();
     CodePtr  bc;
@@ -72,6 +72,7 @@ NewBuiltinCode (Type type, int argc, BuiltinFunc builtin)
     bc->base.builtin = True;
     bc->base.type = type;
     bc->base.argc = argc;
+    bc->builtin.needsNext = needsNext;
     bc->builtin.b = builtin;
     RETURN (bc);
 }

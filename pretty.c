@@ -66,6 +66,9 @@ printtype (Value f, Type t)
     case type_semaphore:
 	FilePuts (f, "semaphore");
 	break;
+    case type_continuation:
+	FilePuts (f, "continuation");
+	break;
     }
 }
 
@@ -526,7 +529,7 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	break;
     case FUNCTION:
 	printindent (f, level);
-	PrintCode (f, e->tree.right->code.code, 
+	PrintCode (f, e->tree.right->tree.right->code.code, 
 		   AtomName (e->tree.left->decl.decl->name),
 		   e->tree.left->decl.publish,
 		   level, nest);
@@ -578,8 +581,7 @@ PrintCode (Value f, CodePtr code, char *name, Publish publish, int level, Bool n
 	    FilePuts (f, "...");
 	else
 	    FilePutInt (f, code->base.argc);
-	FileOutput (f, ')');
-	FilePuts (f, "builtin");
+	FilePuts (f, ") <builtin>");
     }
     else
     {
@@ -645,18 +647,34 @@ printStruct (Value f, Symbol *name, int level)
 }
 
 void
-PrettyPrint (Value f, Symbol *name)
+doPrettyPrint (Value f, Symbol *name, int level, Bool nest);
+    
+void
+PrintScope (Value f, ScopePtr scope, int level)
 {
+    ScopeChainPtr   chain;
+
+    for (chain = scope->symbols; chain; chain = chain->next)
+    {
+	if (chain->publish == publish_public)
+	    doPrettyPrint (f, chain->symbol, level, False);
+    }
+}
+
+void
+doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
+{
+    printindent (f, level);
     switch (name->symbol.class) {
     case class_struct:
-	printStruct (f, name, 0);
+	printStruct (f, name, level);
 	break;
     case class_global:
 	if (BoxValue (name->global.value, 0)->value.tag == type_func)
 	{
 	    PrintCode (f, BoxValue (name->global.value, 0)->func.code,
 		       AtomName (name->symbol.name), 
-		       name->symbol.publish, 0, True);
+		       name->symbol.publish, level, nest);
 	}
 	else
 	{
@@ -667,13 +685,33 @@ PrettyPrint (Value f, Symbol *name)
 	}
 	FilePuts (f, "\n");
 	break;
+    case class_scope:
+	printpublish (f, name->symbol.publish);
+	printclass (f, name->symbol.class);
+	FilePuts (f, " ");
+	FilePuts (f, AtomName (name->symbol.name));
+	FilePuts (f, " {\n");
+	PrintScope (f, name->scope.scope, level + 1);
+	printindent (f, level);
+	FilePuts (f, "}\n");
+	break;
     default:
 	printpublish (f, name->symbol.publish);
 	printclass (f, name->symbol.class);
-	printtype (f, name->symbol.type);
 	FilePuts (f, " ");
+	if (name->symbol.type != type_undef)
+	{
+	    printtype (f, name->symbol.type);
+	    FilePuts (f, " ");
+	}
 	FilePuts (f, AtomName (name->symbol.name));
 	FilePuts (f, ";\n");
 	break;
     }
+}
+
+void
+PrettyPrint (Value f, Symbol *name)
+{
+    doPrettyPrint (f, name, 0, True);
 }

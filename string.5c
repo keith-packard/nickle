@@ -61,8 +61,9 @@ extend namespace String {
     public string _dequote(string s, quote_context q) {
 	string result = "";
 	qstate t = qstate.normal;
+	int c;
 	for (int cur = 0; cur < length(s); cur++) {
-	    int c = s[cur];
+	    c = s[cur];
 	    switch(t) {
 	    case qstate.normal:
 		if (inchars(c, q.oq)) {
@@ -79,6 +80,7 @@ extend namespace String {
 		if (inchars(c, q.cq)) {
 		    if (cur != length(s) - 1)
 			raise invalid_argument("_dequote: trailing garbage", 0, s);
+		    t = qstate.normal;
 		    continue;
 		}
 		break;
@@ -88,7 +90,7 @@ extend namespace String {
 	    }
 	    result = result + String::new(c);
 	}
-	if (q.qq == q.cq && t == qstate.xq)
+	if (t == qstate.normal || t == qstate.xq && inchars(c, q.cq))
 	    return result;
 	raise invalid_argument("_dequote: unexpected end of string", 0, s);
     }
@@ -144,8 +146,9 @@ extend namespace String {
 	    curs = curs + String::new(c);
 	    cur++;
 	}
-	if (t != qstate.normal)
-	    raise invalid_argument("readcsv: unexpected end of csv line", 0, s);
+	if (t == qstate.openq)
+	    raise invalid_argument("parse_csv: unexpected " +
+				   "end of csv line", 0, s);
 	ss[dim(ss)] = curs;
 	return ss;
     }

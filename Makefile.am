@@ -71,11 +71,14 @@ builtin.o: version.h
 version.h: $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
 	sh $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
 
-# make debuild DEBUILD_OPTS="-us -uc" to leave them unsigned
-
-debuild: distdir
+debuild debuild-signed: distdir
 	cp -a $(PACKAGE)-$(VERSION) $(PACKAGE)-$(VERSION).orig
 	rm -rf $(PACKAGE)-$(VERSION).orig/debian
-	(cd $(PACKAGE)-$(VERSION)/debian && debuild $(DEBUILD_OPTS))
+	(cd $(PACKAGE)-$(VERSION)/debian && debuild)
 
-.PHONY: debuild
+debuild-unsigned: distdir
+	cp -a $(PACKAGE)-$(VERSION) $(PACKAGE)-$(VERSION).orig
+	rm -rf $(PACKAGE)-$(VERSION).orig/debian
+	(cd $(PACKAGE)-$(VERSION)/debian && debuild -us -uc)
+
+.PHONY: debuild debuild-signed debuild-unsigned

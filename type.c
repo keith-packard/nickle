@@ -200,17 +200,17 @@ BaseType (Types *t)
     return type_undef;
 }
 
-static Bool
-TypesEqual (Types *a, Types *b)
+Bool
+TypeEqual (Types *a, Types *b)
 {
     if (a == b)
 	return True;
     if (!a || !b)
 	return False;
     if (a->base.tag == types_name)
-        return TypesEqual (a->name.type, b);
+        return TypeEqual (a->name.type, b);
     if (b->base.tag == types_name)
-	return TypesEqual (a, b->name.type);
+	return TypeEqual (a, b->name.type);
     if (a->base.tag != b->base.tag)
 	return False;
     switch (a->base.tag) {
@@ -219,9 +219,9 @@ TypesEqual (Types *a, Types *b)
 	    return True;
 	break;
     case types_ref:
-	return TypesEqual (a->ref.ref, b->ref.ref);
+	return TypeEqual (a->ref.ref, b->ref.ref);
     case types_func:
-	if (TypesEqual (a->func.ret, b->func.ret))
+	if (TypeEqual (a->func.ret, b->func.ret))
 	{
 	    /* FIXME arg checking */
 	    return True;
@@ -254,9 +254,23 @@ TypePoly (Types *t)
     return False;
 }
 
+static int
+TypeCountDimensions (ExprPtr dims)
+{
+    int	ndim = 0;
+    while (dims)
+    {
+	ndim++;
+	dims = dims->tree.right;
+    }
+    return ndim;
+}
+
 Bool
 TypeCompatible (Types *a, Types *b, Bool contains)
 {
+    int	    n;
+    
     if (a == b)
 	return True;
     if (TypePoly (a) || TypePoly (b))
@@ -294,10 +308,27 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	}
 	break;
     case types_array:
-	/* FIXME */
-	return True;
+	if (TypeCountDimensions (a->array.dimensions) ==
+	    TypeCountDimensions (b->array.dimensions))
+	    return TypeCompatible (a->array.type, b->array.type, contains);
+	break;
     case types_struct:
-	/* FIXME */
+	if (!contains && a->structs.structs->nelements != b->structs.structs->nelements)
+	    break;
+	for (n = 0; n < a->structs.structs->nelements; n++)
+	{
+	    StructElement   *ae;
+	    Types	    *bt;
+
+	    ae = &StructTypeElements(a->structs.structs)[n];
+	    bt = StructTypes (b->structs.structs, ae->name);
+	    if (!bt)
+		break;
+	    if (!TypeCompatible (ae->type, bt, contains))
+		break;
+	}
+	if (n != a->structs.structs->nelements)
+	    break;
 	return True;
     default:
     }
@@ -431,6 +462,10 @@ TypeCombineUnary (Types *type, int tag)
 	if (type->base.tag == types_prim && Numericp (type->prim.prim))
 	    return type;
 	break;
+    case OS:
+	if (type->base.tag == types_array)
+	    return type->array.type;
+	break;
     }
     return 0;
 }
@@ -448,7 +483,7 @@ TypeCombineStruct (Types *type, int tag, Atom atom)
     case DOT:
 	if (type->base.tag == types_struct)
 	{
-	    return typesPoly;	/* FIXME */
+	    return StructTypes (type->structs.structs, atom);
 	}
 	break;
     case ARROW:

@@ -94,6 +94,9 @@ fprintClass (Value f, Class storage)
     case class_namespace:
 	FilePuts (f, "namespace");
 	break;
+    case class_exception:
+	FilePuts (f, "exception");
+	break;
     }
 }
 

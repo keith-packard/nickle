@@ -40,8 +40,8 @@ void yyerror (char *fmt, ...);
 
 %type  <nsval>	dotnames
 %type  <eval>	history
-%type  <eval>	block statements statement
-%type  <dval>	names typenames opt_initnames initnames
+%type  <eval>	block func_body statements statement catches catch
+%type  <dval>	names opt_initnames initnames
 %type  <aval>	typename
 %type  <eval>	opt_init
 %type  <ftval>	decl opt_decl
@@ -69,13 +69,14 @@ void yyerror (char *fmt, ...);
 %token		NL SEMI MOD OC CC DOLLAR
 %token		UNDEFINE LOAD HISTORY PRINT EDIT QUIT
 %token <cval>	GLOBAL AUTO STATIC
-%token <tval>	POLY INT INTEGER NATURAL RATIONAL REAL STRING
+%token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
 %token <tval>	FILET MUTEX SEMAPHORE CONTINUATION
-%token		FUNCTION FUNC
+%token		FUNCTION FUNC EXCEPTION
 %token		TYPEDEF IMPORT NAMESPACE NEW
 %token		EXCEPTION
 %token <pval>	PUBLIC
-%token		IF ELSE WHILE DO FOR BREAK CONTINUE RETURNTOK FORK TRY CATCH
+%token		IF ELSE WHILE DO FOR BREAK CONTINUE RETURNTOK FORK
+%token		TRY CATCH TWIXT
 %token <aval>	NAME
 %token <vval>	CONST
 %token		NEW
@@ -352,23 +353,34 @@ statement	: IF ignorenl OP expr CP statement
 		| block
 		| SEMI ignorenl
 		    { $$ = NewExprTree(SEMI, (Expr *) 0, (Expr *) 0); }
-		| opt_decl FUNCTION ignorenl NAME OP opt_argdefines CP block
+		| opt_decl FUNCTION ignorenl NAME OP opt_argdefines CP func_body
 		    { 
-			$$ = NewExprTree (FUNCTION,
-					  NewExprDecl (NewDeclList ($4, 0, 0),
-						       $1.class,
-							NewTypesFunc ($1.type, False, $6),
-						       $1.publish),
-					  NewExprTree (ASSIGN,
-						       NewExprAtom ($4),
-						       NewExprCode (NewFuncCode ($1.type,
-										 $6,
-										 $8),
-								    $4)));
+			ExprPtr	decl;
+
+			decl = NewExprDecl (NewDeclList ($4, 0, 0),
+					    $1.class,
+					    NewTypesFunc ($1.type, False, $6),
+					    $1.publish);
+			if ($8)
+			    $$ = NewExprTree (FUNCTION, decl,
+					      NewExprTree (ASSIGN,
+							   NewExprAtom ($4),
+							   NewExprCode (NewFuncCode ($1.type,
+										     $6,
+										     $8),
+									$4)));
+			else
+			    $$ = decl;
+		    }
+		| publish EXCEPTION ignorenl NAME OP opt_argdefines CP SEMI
+		    { $$ = NewExprDecl (NewDeclList ($4, 0, 0),
+					class_exception,
+					NewTypesFunc (0, False, $6),
+					$1);
 		    }
 		| decl ignorenl opt_initnames SEMI
 		    { $$ = NewExprDecl ($3, $1.class, $1.type, $1.publish); }
-		| publish TYPEDEF ignorenl opt_type typenames SEMI
+		| publish TYPEDEF ignorenl opt_type names SEMI
 		    { $$ = NewExprDecl ($5, class_typedef, $4, $1); }
 		| publish NAMESPACE ignorenl NAME block
 		    {
@@ -390,6 +402,29 @@ statement	: IF ignorenl OP expr CP statement
 						       $1),
 					  0);
 		    }
+		| TRY ignorenl statement catches
+		    { $$ = NewExprTree (TRY, $3, $4); }
+		| TWIXT ignorenl OP opt_expr SEMI opt_expr CP statement
+		    { $$ = NewExprTree (TWIXT, 
+					NewExprTree (TWIXT, $4, $6),
+					NewExprTree (TWIXT, $8, 0));
+		    }
+		| TWIXT ignorenl OP opt_expr SEMI opt_expr CP statement ELSE statement
+		    { $$ = NewExprTree (TWIXT, 
+					NewExprTree (TWIXT, $4, $6),
+					NewExprTree (TWIXT, $8, $10));
+		    }
+		;
+catches		:   catch catches
+		    { $$ = NewExprTree (CATCH, $1, $2); }
+		|   
+		    { $$ = 0; }
+		;
+catch		: CATCH NAME OP opt_argdefines CP block
+		    { $$ = 0; }
+func_body    	: block
+		| SEMI
+		    { $$ = 0; }
 		;
 
 /*
@@ -398,11 +433,6 @@ statement	: IF ignorenl OP expr CP statement
 names		: NAME COMMA names
 		    { $$ = NewDeclList ($1, 0, $3); }
 		| NAME
-		    { $$ = NewDeclList ($1, 0, 0); }
-		;
-typenames	: typename COMMA typenames
-		    { $$ = NewDeclList ($1, 0, $3); }
-		| typename
 		    { $$ = NewDeclList ($1, 0, 0); }
 		;
 typename	: COLON NAME
@@ -505,7 +535,6 @@ type		: basetype
 		    { $$ = NewTypesName ($1, 0); }
 		;
 basetype    	: POLY
-		| INT
 		| INTEGER
 		| RATIONAL
 		| REAL
@@ -595,7 +624,7 @@ opt_exprs	: exprs
 exprs		: exprs COMMA lambdaexpr
 		    { $$ = NewExprTree (COMMA, $3, $1); }
 		| lambdaexpr
-		    { $$ = NewExprTree (COMMA, $1, (Expr *) 0); }
+		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
 
 /*

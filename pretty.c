@@ -46,6 +46,9 @@ printclass (Value f, Class class)
     case class_namespace:
 	FilePuts (f, "namespace");
 	break;
+    case class_exception:
+	FilePuts (f, "exception");
+	break;
     case class_undef:
 	break;
     }
@@ -618,6 +621,16 @@ doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 	FilePuts (f, "\n");
 	break;
     case class_namespace:
+	printpublish (f, name->symbol.publish);
+	printclass (f, name->symbol.class);
+	FilePuts (f, " ");
+	FilePuts (f, AtomName (name->symbol.name));
+	FilePuts (f, " {\n");
+	PrintNamespace (f, name->namespace.namespace, level + 1);
+	printindent (f, level);
+	FilePuts (f, "}\n");
+	break;
+    case class_exception:
 	printpublish (f, name->symbol.publish);
 	printclass (f, name->symbol.class);
 	FilePuts (f, " ");

@@ -41,20 +41,26 @@ typedef struct _symbolNamespace {
     NamespacePtr    namespace;
 } SymbolNamespace;
 
+typedef struct _symbolException {
+    SymbolBase	    symbol;
+} SymbolException;
+
 typedef union _symbol {
     SymbolBase	    symbol;
     SymbolType	    type;
     SymbolGlobal    global;
     SymbolLocal	    local;
     SymbolNamespace namespace;
+    SymbolException exception;
 } Symbol;
 
 extern SymbolPtr    NewSymbolType (Atom name, Types *type, Publish publish);
+extern SymbolPtr    NewSymbolException (Atom name, Types *type, Publish publish);
 extern SymbolPtr    NewSymbolGlobal (Atom name, Types *type, Publish publish);
 extern SymbolPtr    NewSymbolArg (Atom name, Types *type);
 extern SymbolPtr    NewSymbolStatic (Atom name, Types *Type);
 extern SymbolPtr    NewSymbolAuto (Atom name, Types *type);
-extern SymbolPtr    NewSymbolNamespace (Atom name, NamespacePtr namespace, Publish publish);
+extern SymbolPtr    NewSymbolNamespace (Atom name, Publish publish);
 
 typedef struct _namespaceChain {
     DataType		    *data;

@@ -37,12 +37,13 @@ public real function sqrt (real v)
     {
 	real	err;
 	real	prev, cur;
-	integer	n;
+	integer	n, iter;
     
 	v = imprecise (v);
 	err = 1/(2^(precision (v)+3));
 	prev = imprecise (1 / (0.75 * 2^(floor (exponent(v)/2))), precision(v));
-	for (;;)
+	iter = log2(precision(v)) + 15;
+	while (iter--)
 	{
 	    cur = 0.5 * prev * (3 - v * prev^2);
 	    if (abs (cur - prev) < err)
@@ -107,7 +108,7 @@ public real function cbrt (real v)
 	den_s = real_cbrt (imprecise (den, log2(den) + 128));
 	num = floor (num_s + 0.5);
 	den = floor (den_s + 0.5);
-	printf ("num %g den %g\n", num, den);
+	/* printf ("num %g den %g\n", num, den); */
 	if (num ^ 3 == numerator (v) && den ^ 3 == denominator (v))
 	{
 	    return num/den;
@@ -131,14 +132,14 @@ namespace math {
 	err = errbounds (v);
 	loop = 0;
 	e = 0;
-/*	printf ("Precision e %g\n", precision (v)); */
+	printf ("Precision e %g\n", precision (v));
 	for (loop = 0; ; loop++)
 	{
 	    term = v^loop/loop!;
 	    e = e + term;
-/*	    printf ("Precision e %g term %g\n",
+	    printf ("Precision e %g term %g\n",
 		    precision (v), precision (term));
-	    printf ("e %g term %g term*err %g\n", e, term, term*err); */
+	    printf ("e %g term %g term*err %g\n", e, term, term*err);
 	    if (abs (e) >= abs (term * err))
 		break;
 	}
@@ -164,7 +165,8 @@ namespace math {
 	    {
 		term = a^i/i;
 		v = v + term;
-		printf ("v %g term %g term * err %g\n", v, term, term*err);
+		/* printf ("v %g term %g term * err %g\n", v, term,
+			   term*err); */
 		if (v > term * err)
 		    break;
 	    }
@@ -222,34 +224,102 @@ namespace math {
 	return loge * log(a);
     }
     
+    /*
+     * Calculate pi using the formula:
+     *
+     *  PI = 24*arctan (1/8) + 8*arctan (1/57) + 4*arctan (1/239);
+     */
+    
     real function calculate_pi (integer prec)
     {
-	real	tmp1, tmp2, a0, b0, c0, a1, b1, sum, pow_2;
-	integer	dflag, dprec, nn;
-
-	dprec = prec + 50;
-	dflag = 0;
-	a0 = imprecise (1, dprec);
-	sum = imprecise (1, dprec);
-	pow_2 = imprecise (4, dprec);
-	b0 = sqrt (imprecise (2, dprec)) / 2;
-	for (;;)
+	/*
+	 * Estimate the number of digits available for
+	 * the specified value (v) after a certain number of
+	 * loops (p)
+	 */
+	real function avail_prec (real v, integer p)
 	{
-	    a1 = (a0 + b0) / 2;
-	    if (dflag)
-		break;
-	    b1 = sqrt (a0 * b0);
-	    c0 = (a0 - b0) / 2;
-	    nn = floor (1.2 * -exponent (c0));
-	    if (nn > dprec)
-		dflag = 1;
+	    real	ret;
 
-	    sum = sum - c0*c0*pow_2;
-	    a0 = a1;
-	    b0 = b1;
-	    pow_2 = pow_2 * 2;
+	    ret = log2(p) - p * exponent (imprecise (v));
+	    /* printf ("v %g p %g avail %g\n", v, p, ret); */
+	    return ret;
 	}
-	return imprecise (a1*a1*4/sum, prec);
+	
+	/*
+	 * Compute the number of loops needed to get
+	 * the desired precision
+	 */
+	integer function loops (real v, integer prec)
+	{
+	    integer p, low, high;
+
+	    for (high = 1; ; high *= 2)
+	    {
+		if (avail_prec (v, high) > prec)
+		    break;
+	    }
+	    low = 1;
+	    while (high - low > 1)
+	    {
+		p = (high + low) // 2;
+		if (avail_prec (v, p) > prec)
+		    high = p;
+		else
+		    low = p;
+	    }
+	    return high;
+	}
+
+	/*
+	 * Compute arctan near zero
+	 *
+	 * arctan(x) = x - x^3/3 + x^5/5 - ...
+	 */
+	real function arctan (rational den, integer digits)
+	{
+	    integer	p, q;
+	    integer	l;
+	    integer	prec, mult;
+	    real	partial, result;
+	    real	pv, qv, mden;
+
+	    p = 3;
+	    q = 5;
+	    mden = imprecise (den, digits * 4) ^ 4;
+	    l = loops (1 / den, digits) // 2;
+	    /*
+	     * Need at least digits + log10(loops) for all intermediate
+	     * computations
+	     */
+	    /* printf ("loops %d\n", l); File.flush (stdout); */
+	    result = 1 / den;
+	    pv = 1 / (den ^ p);
+	    qv = 1 / (den ^ q);
+	    while (l--)
+	    {
+		partial = pv / p - qv / q;
+		if (partial == 0)
+		    break;
+		result = result - partial;
+		/* if (l % 10 == 0) { printf ("."); File.flush (stdout); } */
+		p += 4;
+		q += 4;
+		pv = pv / mden;
+		qv = qv / mden;
+	    }
+	    /* printf ("\n"); */
+	    return result;
+	}
+	
+	real	value;
+	real	part1, part2, part3;
+
+	part1 = 24 *arctan (8, prec + 30);
+	part2 = 8 * arctan (57, prec + 30);
+	part3 = 4 * arctan (239, prec + 30);
+	value = part1 + part2 + part3;
+	return imprecise (value, prec);
     }
     
     public real function get_pi (integer prec)
@@ -258,14 +328,15 @@ namespace math {
     
 	if (precision (local_pi) < prec)
 	    local_pi = calculate_pi (prec);
-	return local_pi;
+	return imprecise (local_pi, prec);
     }
     
     real function limit_angle_to_pi (real aa)
     {
-	real	my_pi = get_pi (precision (aa) + 20);
+	real	my_pi;
 
 	aa = imprecise (aa);
+	my_pi = get_pi (precision (aa));
 	if (aa > my_pi)
 	    aa = aa - 2 * my_pi;
 	return aa % (2 * my_pi);
@@ -279,12 +350,15 @@ namespace math {
 	    real	err;
 	    real	v, term;
 	    integer	i, j;
+	    integer	iter;
 
-	    a = imprecise (a);
 	    err = errbounds (a);
 	    i = 1;
 	    j = 3;
-	    for (;;)
+	    iter = floor (log (precision (v) + 8)) + 8;
+	    if (iter < 5)
+		iter = 5;
+	    while (iter--)
 	    {
 		term = a^i/i! - a^j/j!;
 		/* printf ("v %g term %g term * err %g\n", 
@@ -316,12 +390,15 @@ namespace math {
 	    real	err;
 	    real	v, term;
 	    integer	i, j;
+	    integer	iter;
 
-	    a = imprecise (a);
 	    err = errbounds (a);
 	    i = 0;
 	    j = 2;
-	    for (;;)
+	    iter = floor (log (precision (v) + 8)) + 8;
+	    if (iter < 5)
+		iter = 5;
+	    while (iter--)
 	    {
 		term = a^i/i! - a^j/j!;
 		/* printf ("v %g term %g term * err %g\n", 
@@ -343,6 +420,11 @@ namespace math {
 	 
 	real	v;
 	
+	/*
+	 * Get a value near zero so that the
+	 * series converges quickly, then use the 1/4 angle formula
+	 * to compute the real value
+	 */
 	a = limit_angle_to_pi (a);
 	if (a >= 1)
 	{
@@ -443,7 +525,7 @@ namespace math {
 	while (iter--)
 	{
 	    term = (sin (a) - v) / cos (a);
-	    a -= term;
+	    a = limit_angle_to_pi (a - term);
 	    if (abs (a) > abs (term) * err)
 		break;
 	}
@@ -467,7 +549,7 @@ namespace math {
 	    return arccos_near_0 (v);
 
 	real	err = errbounds (v);
-	real	a, term, oa;
+	real	a, term;
 	integer	iter;
 
 	iter = floor (log (precision (v) + 8)) + 8;
@@ -477,10 +559,9 @@ namespace math {
 	while (iter--)
 	{
 	    term = (cos(a) - v) / sin(a);
-	    oa = a;
-	    a += term;
-	    /*printf ("a %g term %g term * err %g\n", a, term ,term*err); */
-	    if (abs (a) > abs (term) * err || oa == a)
+	    a = limit_angle_to_pi (a + term);
+	    /* printf ("a %g term %g term * err %g\n", a, term ,term*err); */
+	    if (abs (a) > abs (term) * err)
 		break;
 	}
 	return a;

@@ -68,6 +68,20 @@ NewSymbolType (Atom name, Types *type, Publish publish)
 }
 
 SymbolPtr
+NewSymbolException (Atom name, Types *type, Publish publish)
+{
+    ENTER ();
+    SymbolPtr	s;
+
+    s = ALLOCATE (&SymbolTypeType, sizeof (SymbolType));
+    s->symbol.name = name;
+    s->symbol.class = class_exception;
+    s->symbol.type = type;
+    s->symbol.publish = publish;
+    RETURN (s);
+}
+
+SymbolPtr
 NewSymbolGlobal (Atom name, Types *type, Publish publish)
 {
     ENTER ();
@@ -130,7 +144,7 @@ NewSymbolStatic (Atom name, Types *type)
 }
 
 SymbolPtr
-NewSymbolNamespace (Atom name, NamespacePtr namespace, Publish publish)
+NewSymbolNamespace (Atom name, Publish publish)
 {
     ENTER ();
     SymbolPtr	s;
@@ -140,7 +154,7 @@ NewSymbolNamespace (Atom name, NamespacePtr namespace, Publish publish)
     s->symbol.class = class_namespace;
     s->symbol.type = 0;
     s->symbol.publish = publish;
-    s->namespace.namespace = namespace;
+    s->namespace.namespace = 0;
     RETURN (s);
 }
 

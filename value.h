@@ -246,6 +246,7 @@ Types	*TypeCombineBinary (Types *left, int tag, Types *right);
 Types	*TypeCombineUnary (Types *down, int tag);
 Types	*TypeCombineStruct (Types *type, int tag, Atom atom);
 Types	*TypeCombineFunction (Types *type);
+Bool	TypeEqual (Types *a, Types *b);
 Bool	TypeCompatible (Types *a, Types *b, Bool contains);
 Bool	TypePoly (Types *t);
 Bool	TypeNumeric (Types *t);
@@ -256,11 +257,12 @@ Bool	TypeNumeric (Types *t);
 
 typedef enum _class {
     class_global, class_static, class_arg, class_auto, 
-    class_typedef, class_namespace, class_undef,
+    class_typedef, class_namespace, class_exception, class_undef,
 } Class;
 
 #define ClassLocal(c)	((c) == class_arg || (c) == class_auto)
 #define ClassFrame(c)	((c) == class_static || ClassLocal(c))
+#define ClassStorage(c)	((c) <= class_auto)
 
 typedef enum _publish {
     publish_public, publish_private

@@ -19,6 +19,7 @@ int	    yylineno;
 int	    at_eof = False;
     
 #undef YY_INPUT
+#define YY_NO_UNPUT
 
 #define	    FILE_END_CHAR	-2
     
@@ -109,9 +110,9 @@ continue	{ yylval.ival = CONTINUE; return CONTINUE; }
 return		{ yylval.ival = RETURNTOK; return RETURNTOK; }
 try		{ yylval.ival = TRY; return TRY; }
 catch		{ yylval.ival = CATCH; return CATCH; }
+twixt		{ yylval.ival = TWIXT; return TWIXT; }
 
 poly		{ yylval.tval = type_undef; return POLY; }
-int		{ yylval.tval = type_int; return INT; }
 integer		{ yylval.tval = type_integer; return INTEGER; }
 rational    	{ yylval.tval = type_rational; return RATIONAL; }
 real		{ yylval.tval = type_float; return REAL; }
@@ -120,6 +121,7 @@ file		{ yylval.tval = type_file; return FILET; }
 mutex		{ yylval.tval = type_mutex; return MUTEX; }
 semaphore	{ yylval.tval = type_semaphore; return SEMAPHORE; }
 continuation	{ yylval.tval = type_continuation; return CONTINUATION; }
+struct		{ yylval.ival = STRUCT; return STRUCT; }
 
 typedef		{ yylval.ival = TYPEDEF; return TYPEDEF; }
 func		{ yylval.ival = FUNC; return FUNC; }

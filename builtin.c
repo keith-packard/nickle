@@ -417,15 +417,15 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 {
     ENTER ();
     NamespacePtr	namespace;
+    SymbolPtr		sym;
 
     if (namespacep)
 	namespace = *namespacep;
     else
 	namespace = GlobalNamespace;
-    RETURN (NamespaceAddSymbol (namespace,
-				NewSymbolNamespace (AtomId (name), 
-						    NewNamespace (0),
-						    publish_public)));
+    sym = NewSymbolNamespace (AtomId (name), publish_public);
+    sym->namespace.namespace = NewNamespace (namespace);
+    RETURN (NamespaceAddSymbol (namespace, sym));
 }
 
 static ArgType *
@@ -1023,11 +1023,13 @@ do_string_to_integer (int n, Value *p)
 	break;
     default:
 	RaiseError ("string_to_integer: wrong number of arguments %d", n);
+	RETURN(Zero);
     }
     
     if (str->value.tag != type_string)
     {
 	RaiseError ("string_to_integer: first argument must be string %v", str);
+	RETURN(Zero);
     }
     else
     {

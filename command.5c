@@ -1,7 +1,7 @@
 /*
  * Add common commands
  */
-namespace Syntax {
+{
     
     /*
      * quit

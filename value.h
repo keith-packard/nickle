@@ -318,7 +318,7 @@ typedef enum _class {
 #define ClassStorage(c)	((c) <= class_auto)
 
 typedef enum _publish {
-    publish_public, publish_private, publish_extend
+    publish_private, publish_protected, publish_public, publish_extend
 } Publish;
 
 typedef struct _baseValue {

@@ -712,7 +712,7 @@ PrintNames (Value f, NamelistPtr names, int level)
     if (!names)
 	return;
     PrintNames (f, names->next, level);
-    if (names->publish == publish_public)
+    if (names->publish != publish_private)
 	doPrettyPrint (f, names->publish, names->symbol, level, False);
 }
 

@@ -95,8 +95,8 @@ NamespaceFindNamelist (NamespacePtr namespace, Atom atom, Bool search)
     {
 	for (namelist = namespace->names; namelist; namelist = namelist->next)
 	    if (namelist->symbol->symbol.name == atom &&
-		(namespace->publish == publish_public ||
-		 namelist->publish == publish_public))
+		(namespace->publish != publish_private ||
+		 namelist->publish != publish_private))
 		return namelist;
 	namespace = namespace->previous;
     } while (search && namespace);

@@ -763,6 +763,9 @@ FilePutPublish (Value f, Publish publish, Bool minimal)
 	if (!minimal)
 	    FilePuts (f, "private");
 	break;
+    case publish_protected:
+	FilePuts (f, "protected");
+	break;
     case publish_public:
 	FilePuts (f, "public");
 	break;

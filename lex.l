@@ -45,7 +45,7 @@ static DataType lexInputType = {
 };
 
 static void
-NewLexInput (Value file, Atom name, Bool after)
+NewLexInput (Value file, Atom name, Bool after, Bool interactive)
 {
     ENTER ();
     LexInput	*lex;
@@ -56,7 +56,7 @@ NewLexInput (Value file, Atom name, Bool after)
     lex->lineno = 0;
     lex->at_bol = True;
     lex->at_eof = False;
-    lex->interactive = False;
+    lex->interactive = interactive;
     if (after)
     {
 	LexInput **prev;
@@ -124,8 +124,7 @@ LexResetInteractive (void)
 void
 LexStdin (void)
 {
-    NewLexInput(FileStdin, 0, True);
-    lexInput->interactive = stdin_interactive;
+    NewLexInput(FileStdin, 0, True, stdin_interactive);
 }
 	
 Bool
@@ -139,7 +138,7 @@ LexFile (char *s, Bool complain, Bool after)
 	    (void) FilePrintf (FileStderr, "cannot open file %s\n", s);
 	return False;
     }
-    NewLexInput(f, AtomId (s), after);
+    (void) NewLexInput(f, AtomId (s), after, False);
     return True;
 }
 
@@ -193,7 +192,7 @@ LexString (char *s, Bool after)
     Value   f;
 
     f = FileStringRead (s, strlen (s));
-    NewLexInput (f, 0, after);
+    (void) NewLexInput (f, 0, after, False);
 }
 
 static int
@@ -381,6 +380,7 @@ namespace    	{ yylval.ints = NAMESPACE; return NAMESPACE; }
 import		{ yylval.ints = IMPORT; return IMPORT; }
 exception	{ yylval.ints = EXCEPTION; return EXCEPTION; }
 raise		{ yylval.ints = RAISE; return RAISE; }
+protected	{ yylval.publish = publish_protected; return PROTECTED; }
 public		{ yylval.publish = publish_public; return PUBLIC; }
 extend		{ yylval.publish = publish_extend; return EXTEND; }
 ";"		{ yylval.ints = SEMI; return SEMI; }

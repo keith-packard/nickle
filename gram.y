@@ -66,7 +66,7 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %type  <type>	    struct_or_union
 %type  <memList>    struct_members
 %type  <class>	    class
-%type  <publish>    publish publish_extend
+%type  <publish>    opt_publish publish publish_extend
 %type  <atom>	    namespacename
 
 %type  <argType>    opt_argdecls argdecls
@@ -92,7 +92,7 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %token		    FUNCTION FUNC EXCEPTION RAISE
 %token		    TYPEDEF IMPORT NEW
 %token <namespace>  NAMESPACE
-%token <publish>    PUBLIC EXTEND
+%token <publish>    PUBLIC PROTECTED EXTEND
 %token		    IF ELSE WHILE DO FOR SWITCH
 %token		    BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		    TRY CATCH TWIXT
@@ -446,7 +446,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			}
 			$$ = NewExprDecl (decl, class, type, publish);
 		    }
-		| publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end SEMI attendnl
+		| opt_publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end SEMI attendnl
 		    { 
 			DeclListPtr decl;
 
@@ -461,7 +461,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 		    }
 		| RAISE fullname OP opt_exprs CP SEMI
 		    { $$ = NewExprTree (RAISE, $2, $4); }
-		| publish TYPEDEF ignorenl typenames SEMI attendnl
+		| opt_publish TYPEDEF ignorenl typenames SEMI attendnl
 		    { 
 			DeclListPtr decl;
 
@@ -470,7 +470,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 							   0, decl->name);
 			$$ = NewExprTree (TYPEDEF, NewExprDecl ($4, class_typedef, 0, $1), 0);
 		    }
-		| publish TYPEDEF ignorenl type typenames SEMI attendnl
+		| opt_publish TYPEDEF ignorenl type typenames SEMI attendnl
 		    { 
 			DeclListPtr decl;
 
@@ -534,7 +534,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			CurrentNamespace = $2;
 			$$ = NewExprTree (NAMESPACE, NewExprAtom ($4, 0), $7);
 		    }
-		| publish IMPORT ignorenl fullname SEMI attendnl
+		| opt_publish IMPORT ignorenl fullname SEMI attendnl
 		    {
 			SymbolPtr	symbol;
 			ExprPtr		e;
@@ -671,19 +671,19 @@ opt_decl	: decl
 		|
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = typesPoly; }
 		;
-decl		: PUBLIC class type
+decl		: publish class type
 		    { $$.publish = $1; $$.class = $2; $$.type = $3; }
 		| class type
 		    { $$.publish = publish_private; $$.class = $1; $$.type = $2; }
-		| PUBLIC type
+		| publish type
 		    { $$.publish = $1; $$.class = class_undef; $$.type = $2; }
 		| type
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = $1; }
-		| PUBLIC class
+		| publish class
 		    { $$.publish = $1; $$.class = $2; $$.type = typesPoly; }
 		| class
 		    { $$.publish = publish_private; $$.class = $1; $$.type = typesPoly; }
-		| PUBLIC
+		| publish
 		    { $$.publish = $1; $$.class = class_undef; $$.type = typesPoly; }
 		;
 /*
@@ -786,15 +786,16 @@ class		: GLOBAL
 		| STATIC
 		;
 
-publish		: PUBLIC
+opt_publish	: publish
 		|
 		    { $$ = publish_private; }
 		;
 
-publish_extend	: PUBLIC
+publish		: PUBLIC
+		| PROTECTED
+		;
+publish_extend	: opt_publish
 		| EXTEND
-		|
-		    { $$ = publish_private; }
 		;
 
 /*

@@ -1,0 +1,10 @@
+bool[*] make_sieve(int size) {
+  bool[size] sieve = {true ...};
+  for (int k = 2; k < size; k++) {
+    if (!sieve[k])
+      continue;
+    for (int i = 2 * k; i < size; i += k)
+      sieve[i] = false;
+  }
+  return sieve;
+}

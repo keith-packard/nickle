@@ -772,15 +772,15 @@ IntBinaryOperate (Value av, Value bv, BinaryOp operator) {
     signed_digit rd;
     switch (operator) {
     case PlusOp:
-	r = ValueUInt(av) + ValueUInt(bv);
+	r = ValueInt(av) + ValueInt(bv);
 
-	if (r & NICKLE_INT_CARRY)
+	if (NICKLE_INT_CARRIED(r))
 	    return Plus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
 	return NewInt(r);
     case MinusOp:
-	r = ValueUInt(av) - ValueUInt(bv);
+	r = ValueInt(av) - ValueInt(bv);
 
-	if (r & NICKLE_INT_CARRY)
+	if (NICKLE_INT_CARRIED(r))
 	    return Minus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
 	return NewInt(r);    
     case TimesOp:
@@ -886,7 +886,7 @@ IntIncDec (Value av, BinaryOp operator)
 	a++;
     else
 	a--;
-    if ((a << 1 ^ a) & NICKLE_INT_CARRY)
+    if (NICKLE_INT_CARRIED(a))
 	return NewIntInteger (a);
     return NewInt (a);
 }

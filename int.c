@@ -11,9 +11,9 @@
 static Value
 IntPlus (Value av, Value bv, int expandOk)
 {
-    int	    r = ValueUInt(av) + ValueUInt(bv);
+    int	    r = ValueInt(av) + ValueInt(bv);
     
-    if (expandOk && (r & NICKLE_INT_CARRY))
+    if (expandOk && NICKLE_INT_CARRIED(r))
 	return Plus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
     return NewInt(r);
 }
@@ -21,9 +21,9 @@ IntPlus (Value av, Value bv, int expandOk)
 static Value
 IntMinus (Value av, Value bv, int expandOk)
 {
-    int	    r = ValueUInt(av) - ValueUInt(bv);
+    int	    r = ValueInt(av) - ValueInt(bv);
     
-    if (expandOk && (r & NICKLE_INT_CARRY))
+    if (expandOk && NICKLE_INT_CARRIED(r))
 	return Minus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
     return NewInt(r);
 }

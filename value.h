@@ -303,10 +303,30 @@ extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 #define NewInt(i)	((Value) IntToPtr ((((i) << 1) | 1)))
 #define IntSign(i)	((i) < 0 ? Negative : Positive)
 
+/*
+ * Use all but one bit to hold immediate integer values
+ */
 #define NICKLE_INT_BITS	    ((sizeof (int) * 8) - 1)
-#define NICKLE_INT_CARRY    (1 << (NICKLE_INT_BITS - 1))
+#define NICKLE_INT_SIGN	    (1 << (NICKLE_INT_BITS - 1))
+/*
+ * this bit holds any overflow; when different from SIGN,
+ * an addition/subtraction has overflowed
+ */
+#define NICKLE_INT_CARRY    (1 << NICKLE_INT_BITS)
+/*
+ * An int fits in a 'nickle int' if the top two bits
+ * are the same.  There are four initial values:
+ *
+ *  00 + 01 = 01
+ *  01 + 01 = 10
+ *  10 + 01 = 11
+ *  11 + 01 = 00
+ *
+ * So, the two 'naughty' ones end up with the high bit set
+ */
+#define NICKLE_INT_CARRIED(r)	(((r) + NICKLE_INT_SIGN) & NICKLE_INT_CARRY)
 
-#define MAX_NICKLE_INT	    ((int) ((unsigned) NICKLE_INT_CARRY - 1))
+#define MAX_NICKLE_INT	    ((int) ((unsigned) NICKLE_INT_SIGN - 1))
 #define MIN_NICKLE_INT	    (-MAX_NICKLE_INT - 1)
 
 #define One NewInt(1)
@@ -315,7 +335,6 @@ extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 #define ValueIsPtr(v)	((PtrToInt(v) & 1) == 0)
 #define ValueIsInt(v)	(!ValueIsPtr(v))
 #define ValueInt(v)	(PtrToInt (v) >> 1)
-#define ValueUInt(v)	(PtrToUInt (v) >> 1)
 
 #define ValueRep(v) (ValueIsInt(v) ? &IntRep : (v)->value.type)
 #define ValueIsInteger(v) (ValueRep(v) == &IntegerRep)

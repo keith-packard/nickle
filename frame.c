@@ -52,7 +52,8 @@ NewFrame (Value		function,
     frame->previous = previous;
     frame->staticLink = staticLink;
     frame->function = function;
-    frame->frame = NewTypedBox (False, dynamics);
+    if (dynamics)
+	frame->frame = NewTypedBox (False, dynamics);
     frame->statics = statics;
     RETURN (frame);
 }

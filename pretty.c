@@ -350,11 +350,25 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	    FilePuts (f, ")");
 	}
 	break;
-    case TEN_CONST:
-    case OCTAL_CONST:
-    case BINARY_CONST:
-    case HEX_CONST:
-    case FLOAT_CONST:
+    case OCTAL_NUM:
+    case OCTAL0_NUM:
+    case OCTAL_FLOAT:
+    case OCTAL0_FLOAT:
+	FilePrintf (f, "0o");
+	Print (f, e->constant.constant, 'o', 8, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+	break;
+    case BINARY_NUM:
+    case BINARY_FLOAT:
+	FilePrintf (f, "0b");
+	Print (f, e->constant.constant, 'b', 2, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+	break;
+    case HEX_NUM:
+    case HEX_FLOAT:
+	FilePrintf (f, "0x");
+	Print (f, e->constant.constant, 'x', 16, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+	break;
+    case TEN_NUM:
+    case TEN_FLOAT:
     case STRING_CONST:
     case POLY_CONST:
     case THREAD_CONST:

@@ -123,9 +123,6 @@ do_time (void)
     RETURN (NewInt (time (0)));
 }
 
-extern Value	atov (char *, int);
-extern Value	aetov (char *);
-
 Value
 do_string_to_integer (int n, Value *p)
 {
@@ -210,7 +207,7 @@ Value
 do_string_to_real (Value str)
 {
     ENTER ();
-    RETURN (aetov (StringChars (&str->string)));
+    RETURN (aetov (StringChars (&str->string), 10));
 }
 
 

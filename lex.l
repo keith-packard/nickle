@@ -491,31 +491,71 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 		}
 0[0-7]*		{
 		yylval.value = atov(yytext+1, 8);
-		return OCTAL_CONST;
+		return OCTAL0_NUM;
+		}
+0o[0-7]+	{
+		yylval.value = atov(yytext+2, 8);
+		return OCTAL_NUM;
+		}
+0o[0-7]+\./\.\.\.   {
+		yylval.value = aetov(yytext+2, 8);
+		return OCTAL_FLOAT;
+		}
+0o[0-7]+/\.\.	{
+		yylval.value = atov(yytext+2, 8);
+		return OCTAL_NUM;
+		}
+0o(([0-7]+((\.[0-7]*(\{[0-7]+\})?)?))|(\.[0-7]+)|(\.[0-7]*\{[0-7]+\}))(([Ee][-+]?[0-7]+)?) {
+		yylval.value = aetov (yytext+2, 8);
+		return OCTAL_FLOAT;
 		}
 0b[01]+		{
 		yylval.value = atov(yytext+2, 2);
-		return BINARY_CONST;
+		return BINARY_NUM;
+		}
+0b[0-1]+\./\.\.\.   {
+		yylval.value = aetov(yytext+2, 2);
+		return BINARY_FLOAT;
+		}
+0b[0-1]+/\.\.	{
+		yylval.value = atov(yytext+2, 2);
+		return BINARY_NUM;
+		}
+0b(([0-1]+((\.[0-1]*(\{[0-1]+\})?)?))|(\.[0-1]+)|(\.[0-1]*\{[0-1]+\}))(([Ee][-+]?[0-1]+)?) {
+		yylval.value = aetov (yytext+2, 2);
+		return BINARY_FLOAT;
 		}
 0x[0-9a-fA-F]+	{
 		yylval.value = atov(yytext+2, 16);
-		return HEX_CONST;
+		return HEX_NUM;
+		}
+0x[0-9a-fA-F]+\./\.\.\.   {
+		yylval.value = aetov(yytext+2, 16);
+		return HEX_FLOAT;
+		}
+0x[0-9a-fA-F]+/\.\.	{
+		yylval.value = atov(yytext+2, 16);
+		return HEX_NUM;
+		}
+0x(([0-9a-fA-F]+((\.[0-9a-fA-F]*(\{[0-9a-fA-F]+\})?)?))|(\.[0-9a-fA-F]+)|(\.[0-9a-fA-F]*\{[0-9a-fA-F]+\}))(([Ee][-+]?[0-9a-fA-F]+)?) {
+		yylval.value = aetov (yytext+2, 16);
+		return HEX_FLOAT;
 		}
 [0-9]+		{
 		yylval.value = atov(yytext, 10);
-		return TEN_CONST;
+		return TEN_NUM;
 		}
 [0-9]+\./\.\.\.	{
-		yylval.value = aetov(yytext);
-		return FLOAT_CONST;
+		yylval.value = aetov(yytext, 10);
+		return TEN_FLOAT;
 		}
 [0-9]+/\.\.	{
 		yylval.value = atov(yytext, 10);
-		return TEN_CONST;
+		return TEN_NUM;
 		}
 (([0-9]+((\.[0-9]*(\{[0-9]+\})?)?))|(\.[0-9]+)|(\.[0-9]*\{[0-9]+\}))(([Ee][-+]?[0-9]+)?) {
-		yylval.value = aetov (yytext);
-		return FLOAT_CONST;
+		yylval.value = aetov (yytext, 10);
+		return TEN_FLOAT;
 		}
 [a-zA-Z][0-9a-zA-Z_]* {
 	        CommandPtr	c;
@@ -645,7 +685,7 @@ atov (char *s, int base)
 }
 
 Value
-aetov (char *s)
+aetov (char *s, int base)
 {
     ENTER ();
     char    *int_part, *frac_part, *rep_part, *exp_part, *next;
@@ -696,28 +736,28 @@ aetov (char *s)
 	}
     } else if (frac_len < 0 && frac_part)
 	frac_len = strlen(frac_part);
-    v = atov (int_part, 10);
+    v = atov (int_part, base);
     if (frac_part)
     {
-	v = Plus (v, Divide (atov (frac_part, 10),
-				 Pow (NewInt (10),
+	v = Plus (v, Divide (atov (frac_part, base),
+				 Pow (NewInt (base),
 				       NewInt (frac_len))));
     }
     if (rep_part)
     {
 	Value	rep;
 	
-	rep = Divide (atov (rep_part, 10), Minus (Pow (NewInt (10),
+	rep = Divide (atov (rep_part, base), Minus (Pow (NewInt (base),
 						       NewInt (rep_len)),
 						  One));
 	if (frac_len)
-	    rep = Divide (rep, Pow (NewInt (10),
+	    rep = Divide (rep, Pow (NewInt (base),
 				    NewInt (frac_len)));
 	v = Plus (v, rep);
     }
     if (exp_part) 
     {
-	sv = Pow (NewInt (10), atov (exp_part, 10));
+	sv = Pow (NewInt (base), atov (exp_part, base));
 	if (esign > 0)
 	    v = Times (v, sv);
 	else

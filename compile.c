@@ -1043,7 +1043,7 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
     for (n = 0; n < ndim; n++)
     {
 	sub = NewExprTree (COMMA,
-			   NewExprConst (TEN_CONST, NewInt (*dims++)),
+			   NewExprConst (TEN_NUM, NewInt (*dims++)),
 			   sub);
     }
     obj = CompileBuildArray (obj, array, type, sub, ndim, stat, code);
@@ -1558,10 +1558,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    break;
 	}
 	break;
-    case TEN_CONST:
-    case OCTAL_CONST:
-    case BINARY_CONST:
-    case HEX_CONST:
+    case TEN_NUM:
+    case OCTAL0_NUM:
+    case OCTAL_NUM:
+    case BINARY_NUM:
+    case HEX_NUM:
     case CHAR_CONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
@@ -1576,7 +1577,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	else
 	    expr->base.type = typesPrim[type_integer];
 	break;
-    case FLOAT_CONST:
+    case TEN_FLOAT:
+    case OCTAL_FLOAT:
+    case BINARY_FLOAT:
+    case HEX_FLOAT:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
 	expr->base.type = typesPrim[type_rational];

@@ -101,7 +101,8 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %token		    BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		    TRY CATCH TWIXT
 %token <atom>	    NAME TYPENAME NAMESPACENAME COMMAND NAMECOMMAND
-%token <value>	    TEN_CONST OCTAL_CONST BINARY_CONST HEX_CONST FLOAT_CONST
+%token <value>	    TEN_NUM OCTAL0_NUM OCTAL_NUM BINARY_NUM HEX_NUM
+%token <value>	    TEN_FLOAT OCTAL0_FLOAT OCTAL_FLOAT BINARY_FLOAT HEX_FLOAT
 %token <value>	    CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
 %token <value>	    VOIDVAL
 
@@ -960,7 +961,7 @@ opt_argdefines	: argdefines
 			    {
 				type = NewTypesArray (type,
 						      NewExprTree (COMMA,
-								   NewExprConst (TEN_CONST, 
+								   NewExprConst (TEN_NUM, 
 										 NewInt (0)),
 								   0));
 			    }
@@ -1159,16 +1160,26 @@ assignop	: ASSIGNPLUS
 		| ASSIGN
 		;
 primary		: fullname
-		| TEN_CONST
-		    { $$ = NewExprConst(TEN_CONST, $1); }
-		| OCTAL_CONST
-		    { $$ = NewExprConst(OCTAL_CONST, $1); }
-		| BINARY_CONST
-		    { $$ = NewExprConst(BINARY_CONST, $1); }
-		| HEX_CONST
-		    { $$ = NewExprConst(HEX_CONST, $1); }
-		| FLOAT_CONST
-		    { $$ = NewExprConst(FLOAT_CONST, $1); }
+		| TEN_NUM
+		    { $$ = NewExprConst(TEN_NUM, $1); }
+		| OCTAL_NUM
+		    { $$ = NewExprConst(OCTAL_NUM, $1); }
+		| OCTAL0_NUM
+		    { $$ = NewExprConst(OCTAL0_NUM, $1); }
+		| BINARY_NUM
+		    { $$ = NewExprConst(BINARY_NUM, $1); }
+		| HEX_NUM
+		    { $$ = NewExprConst(HEX_NUM, $1); }
+		| TEN_FLOAT
+		    { $$ = NewExprConst(TEN_FLOAT, $1); }
+		| OCTAL_FLOAT
+		    { $$ = NewExprConst(OCTAL_FLOAT, $1); }
+		| OCTAL0_FLOAT
+		    { $$ = NewExprConst(OCTAL0_FLOAT, $1); }
+		| BINARY_FLOAT
+		    { $$ = NewExprConst(BINARY_FLOAT, $1); }
+		| HEX_FLOAT
+		    { $$ = NewExprConst(HEX_FLOAT, $1); }
 		| CHAR_CONST
 		    { $$ = NewExprConst(CHAR_CONST, $1); }
 		| STRING_CONST
@@ -1205,9 +1216,9 @@ primary		: fullname
 			$$->base.type = $1;
 		    }
 		| DOLLAR opt_integer
-		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_CONST, $2)); }
+		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_NUM, $2)); }
 		| DOT
-		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_CONST, Zero)); }
+		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_NUM, Zero)); }
 		| OP expr CP
 		    { $$ = $2; }
 		| primary STAROS dims CS
@@ -1230,10 +1241,11 @@ opt_integer	: integer
 		|
 		    { $$ = Zero; }
 		;
-integer		: TEN_CONST
-		| OCTAL_CONST
-		| BINARY_CONST
-		| HEX_CONST
+integer		: TEN_NUM
+		| OCTAL_NUM
+		| OCTAL0_NUM
+		| BINARY_NUM
+		| HEX_NUM
 		;
 opt_cast_arg	: OP expr CP
 		    { $$ = $2; }

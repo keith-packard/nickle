@@ -658,7 +658,7 @@ Bool	LexFile (char *file, Bool complain, Bool after);
 Bool	LexLibrary (char *file, Bool complain, Bool after);
 void	LexString (char *, Bool after);
 void	LexStdin (void);
-Value	atov (char *, int), aetov (char *);
+Value	atov (char *, int), aetov (char *, int);
 extern int  ignorenl;
 void	skipcomment (void);
 void	skipline (void);

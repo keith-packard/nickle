@@ -1,3 +1,19 @@
+2004-04-10  Keith Packard  <keithp@keithp.com>
+
+	reviewed by: <delete if not using a buddy>
+
+	* compile.c: (CompileHashInit):
+	* execute.c: (ThreadsRun):
+	* gram.y:
+	* hash.c: (HashPrint), (HashMark), (NewHash), (HashGet),
+	(HashSetDef), (HashRef), (HashCopy):
+	* opcode.h:
+	* value.h:
+	Add default hash table values, and initializes for same.
+
+	* type.c: (TypeUnaryRef):
+	Oops.  Poly couldn't be a ref
+
 2004-04-01  Keith Packard  <keithp@keithp.com>
 
 	* debian/changelog:

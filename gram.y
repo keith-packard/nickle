@@ -1453,8 +1453,10 @@ hashelts	: hashelts COMMA hashelt
 		| hashelt
 		    { $$ = NewExprTree (COMMA, 0, $1); }
 		;
-hashelt		: hashvalue DARROW hashvalue
+hashelt		: simpleexpr DARROW hashvalue
 		    { $$ = NewExprTree (DARROW, $1, $3); }
+		| DARROW hashvalue
+		    { $$ = NewExprTree (DARROW, 0, $2); }
 		;
 hashvalue	: simpleexpr
 		| init

@@ -600,7 +600,7 @@ static Type *
 TypeUnaryRef (Type *ref)
 {
     if (TypePoly (ref))
-	ref = typePoly;
+	return typePoly;
     if (ref->base.tag == type_ref)
 	return ref->ref.ref;
     return 0;

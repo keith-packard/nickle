@@ -796,6 +796,7 @@ typedef struct _hashTable {
     TypePtr	type;
     TypePtr	keyType;
     BoxPtr	elts;
+    Value	def;
 } HashTable, *HashTablePtr;
 
 typedef union _value {
@@ -921,6 +922,7 @@ void	ArraySetDimensions (Value av, int *dims);
 Value	NewHash (Bool constant, TypePtr keyType, TypePtr valueType);
 Value	HashGet (Value hv, Value key);
 void	HashSet (Value hv, Value key, Value value);
+void	HashSetDef (Value hv, Value def);
 Value	HashKeys (Value hv);
 Value	HashRef (Value hv, Value key);
 Value	HashTest (Value hv, Value key);

@@ -1128,6 +1128,12 @@ ThreadsRun (Value thread, Value lex)
 		    HashSet (w, v, value);
 		    value = w;
 		    break;
+		case OpInitHashDef:
+		    v = CStack (0);
+		    stack = 1;
+		    HashSetDef (v, value);
+		    value = v;
+		    break;
 		case OpBuildStruct:
 		    value = NewStruct (inst->structs.structs, False);
 		    break;

@@ -1784,19 +1784,22 @@ CompileHashInit (ObjPtr obj, ExprPtr expr, Type *type,
 
 	    SetPush (obj);	/* push the hash */
 
-	    /*
-	     * Compute the key
-	     */
-	    obj = CompileInit (obj, key, type->hash.keyType, stat, code);
-
-	    if (!TypeIsOrdered (type->hash.keyType, key->base.type))
+	    if (key)
 	    {
-		CompileError (obj, stat, "Incompatible expression type '%T', for hash index type '%T'",
-			      key->base.type, type->hash.keyType);
-		RETURN (obj);
-	    }
+		/*
+		 * Compute the key
+		 */
+		obj = CompileInit (obj, key, type->hash.keyType, stat, code);
 
-	    SetPush (obj);	/* push the key */
+		if (!TypeIsOrdered (type->hash.keyType, key->base.type))
+		{
+		    CompileError (obj, stat, "Incompatible expression type '%T', for hash index type '%T'",
+				  key->base.type, type->hash.keyType);
+		    RETURN (obj);
+		}
+
+		SetPush (obj);	/* push the key */
+	    }
 
 	    /*
 	     * Compute the value
@@ -1806,7 +1809,7 @@ CompileHashInit (ObjPtr obj, ExprPtr expr, Type *type,
 	    /*
 	     * Store the pair
 	     */
-	    BuildInst (obj, OpInitHash, inst, stat);
+	    BuildInst (obj, key ? OpInitHash : OpInitHashDef, inst, stat);
 	}
     }
     RETURN (obj);
@@ -4115,6 +4118,7 @@ const char *const OpNames[] = {
     "InitArray",
     "BuildHash",
     "InitHash",
+    "InitHashDef",
     "BuildStruct",
     "InitStruct",
     "BuildUnion",

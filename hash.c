@@ -216,6 +216,14 @@ HashPrint (Value f, Value av, char format, int base, int width, int prec, int fi
     }
     if (pretty)
     {
+	if (ht->def)
+	{
+	    if (!first)
+		FilePuts (f, ",");
+	    FilePuts (f, " => ");
+	    Print (f, ht->def, format, base, width, prec, fill);
+	    first = False;
+	}
 	if (!first)
 	    FilePuts (f, " ");
 	FilePuts (f, "}");
@@ -249,6 +257,7 @@ HashMark (void *object)
     MemReference (ht->type);
     MemReference (ht->keyType);
     MemReference (ht->elts);
+    MemReference (ht->def);
 }
 
 ValueRep    HashRep = { 
@@ -286,6 +295,7 @@ NewHash (Bool constant, TypePtr keyType, TypePtr type)
     ret->hash.type = type;
     ret->hash.keyType = keyType;
     ret->hash.elts = 0;
+    ret->hash.def = 0;
     Resize (&ret->hash, &hashSets[0]);
     RETURN (ret);
 }
@@ -300,6 +310,8 @@ HashGet (Value hv, Value key)
     he = Find (ht, hash, key);
     if (!HashEltValid (he))
     {
+	if (ht->def)
+	    return ht->def;
 	RaiseStandardException (exception_uninitialized_value,
 				"uninitialized hash element", 0);
 	return (Void);
@@ -327,6 +339,14 @@ HashSet (Value hv, Value key, Value value)
     HashEltValue (he) = value;
 }
 
+void
+HashSetDef (Value hv, Value def)
+{
+    HashTablePtr    ht = &hv->hash;
+
+    ht->def = def;
+}
+
 Value
 HashRef (Value hv, Value key)
 {
@@ -346,6 +366,8 @@ HashRef (Value hv, Value key)
 	ht->count++;
 	HashEltHash (he) = hash;
 	HashEltKey (he) = key;
+	if (ht->def)
+	    HashEltValue (he) = ht->def;
     }
     RETURN (NewRef (ht->elts, 
 		    &HashEltValue(he) - BoxElements (ht->elts)));
@@ -410,6 +432,7 @@ HashCopy (Value hv)
 {
     ENTER ();
     Value   new = NewHash (False, hv->hash.keyType, hv->hash.type);
+    new->hash.def = hv->hash.def;
     Resize (&new->hash, hv->hash.hashSet);
     Rehash (hv->hash.elts, &new->hash);
     RETURN (new);

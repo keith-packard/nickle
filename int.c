@@ -277,6 +277,7 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
     int	    a = av->ints.value;
     int	    digit;
     int	    w;
+    int	    fraction_width;
     char    space[64], *s;
     char    letter;
     int	    neg;
@@ -319,12 +320,43 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
 	}
     }
     w = (space + sizeof (space) - s) - 1;
+    fraction_width = 0;
+    if (prec >= 0)
+    {
+	int avail_width;
+	
+	if (width > 0)
+	    avail_width = width;
+	else
+	    avail_width = -width;
+        fraction_width = prec + 1;
+	if (avail_width > 0)
+	{
+	    if (w + fraction_width > avail_width)
+	    {
+		fraction_width = avail_width - w;
+		if (fraction_width < 0)
+		    fraction_width = 0;
+	    }
+	}
+    }
+    w += fraction_width;
     while (width > w)
     {
 	FileOutput (f, fill);
 	width--;
     }
     FilePuts (f, s);
+    if (fraction_width)
+    {
+	FileOutput (f, '.');
+	--fraction_width;
+	while (fraction_width)
+	{
+	    FileOutput (f, '0');
+	    --fraction_width;
+	}
+    }
     while (-width > w)
     {
 	FileOutput (f, fill);

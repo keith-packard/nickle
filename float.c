@@ -739,6 +739,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
     Value	int_part;
     Value	frac_part;
     unsigned	length;
+    int		orig_prec = prec;
     int		mant_prec;
     int		frac_prec;
     int		dig_max;
@@ -788,9 +789,6 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
     if (FpartLength (a->mant) == a->prec)
 	m = Plus (m, One);
     m = Times (m, fratio);
-    if (prec > 0)
-    {
-    }
     if (True (Less (m, One)))
     {
 	m = Times (m, NewInt (base));
@@ -874,15 +872,29 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
 	int_width++;
     }
     
-    frac_width = prec - int_width - exp_width;
-    
-    if (frac_prec + 1 < frac_width || prec == INFINITE_OUTPUT_PRECISION)
-	frac_width = frac_prec + 1;
+    if (width)
+    {
+	if (width > 0)
+	    frac_width = width - int_width - exp_width;
+	else
+	    frac_width = -width - int_width - exp_width;
+	if (prec > 0)
+	    if (frac_width > prec + 1)
+		frac_width = prec + 1;
+    }
+    else
+    {
+	if (prec == INFINITE_OUTPUT_PRECISION)
+	    frac_width = frac_prec + 1;
+	else
+	    frac_width = prec + 1;
+    }
+
     if (frac_width < 2)
 	frac_width = 0;
     frac_buffer = 0;
     frac_string = 0;
-    if (frac_width && !Zerop (frac_part))
+    if (frac_width && (!Zerop (frac_part) || orig_prec > 0))
     {
 	int	frac_wrote;
 	
@@ -903,6 +915,8 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
 	}
 	*--frac_string = '.';
     }
+    else
+	frac_width = 0;
 
     print_width = int_width + frac_width + exp_width;
     while (width > print_width)
@@ -921,6 +935,11 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
 	if (exp->sign == Negative)
 	    FilePuts (f, "-");
 	FilePuts (f, exp_string);
+    }
+    while (-width > print_width)
+    {
+	FileOutput (f, fill);
+	width++;
     }
     free (int_buffer);
     if (frac_buffer)

@@ -872,7 +872,11 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
      */
     if (width)
     {
-	fraction_width = width - (whole_width + exponent_width);
+	if (width < 0)
+	    fraction_width = -width;
+	else
+	    fraction_width = width;
+	fraction_width = fraction_width - (whole_width + exponent_width);
 	if (fraction_width < 0)
 	    fraction_width = 0;
 	if (prec > 0 && fraction_width > prec + dot_width)

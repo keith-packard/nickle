@@ -329,6 +329,7 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, uns
     Integer *i = &iv->integer;
     char    *result;
     int	    print_width;
+    int	    fraction_width;
     
     if (base == 0)
 	base = 10;
@@ -337,6 +338,27 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, uns
     {
 	if (i->sign == Negative)
 	    print_width++;
+	fraction_width = 0;
+	if (prec >= 0)
+	{
+	    int avail_width;
+
+	    if (width > 0)
+		avail_width = width;
+	    else
+		avail_width = -width;
+	    fraction_width = prec + 1;
+	    if (avail_width > 0)
+	    {
+		if (print_width + fraction_width > avail_width)
+		{
+		    fraction_width = avail_width - print_width;
+		    if (fraction_width < 0)
+			fraction_width = 0;
+		}
+	    }
+	}
+	print_width += fraction_width;
 	while (width > print_width)
 	{
 	    FileOutput (f, fill);
@@ -345,6 +367,16 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, uns
 	if (i->sign == Negative)
 	    FileOutput (f, '-');
 	FilePuts (f, result);
+	if (fraction_width)
+	{
+	    FileOutput (f, '.');
+	    --fraction_width;
+	    while (fraction_width)
+	    {
+		FileOutput (f, '0');
+		--fraction_width;
+	    }
+	}
 	while (-width > print_width)
 	{
 	    FileOutput (f, fill);

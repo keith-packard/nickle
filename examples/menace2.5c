@@ -225,8 +225,8 @@ void go(int n) {
 		union switch (p) {
 		case x: return "X";
 		case o: return "O";
+		case none: abort("label: blank label"); return "";
 		}
-		abort("label: blank label");
 	    }
 	    if (b[i,j] == piece.none)
 		printf("%8d", t->val[i,j]);

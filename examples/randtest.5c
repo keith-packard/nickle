@@ -13,4 +13,4 @@ int[*] function t(int n) {
   return s;
 }
 
-printf ("%d\n", t (string_to_integer (argv[1])));
+File::vprintf ("%d %d\n", t (string_to_integer (argv[1])));

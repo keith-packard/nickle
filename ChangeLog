@@ -1,5 +1,30 @@
-2004-05-25  Keith Packard  <keithp@keithp.com>
+2004-05-26  Keith Packard  <keithp@keithp.com>
 version 2.35
+
+	* compile.c: (CompileArrayDimValue):
+	Array dimension values are always local in static initializers
+	
+	* Makefile.am:
+	* bench/Makefile.am:
+	* configure.in:
+	* examples/Makefile.am:
+	* examples/menace2.5c:
+	* examples/randtest.5c:
+	* examples/rsa.5c:
+	* examples/smlng/.cvsignore:
+	* examples/smlng/Makefile.am:
+	* examples/smlng/data.sgml:
+	* examples/smlng/parse.5c:
+	* examples/smlng/test.5c:
+	* examples/turtle/Makefile.am:
+	* examples/turtle/snowflake.5c:
+	* make-version.sh:
+	* scanf.5c:
+	* update-version.sh:
+	Clean up examples so they all work again.  Remove old files.
+	add 'scanf' to top-level namespace
+
+2004-05-25  Keith Packard  <keithp@keithp.com>
 
 	* Makefile.am:
 	* builtin.c:

@@ -3846,14 +3846,10 @@ CompileArrayDimValue (ObjPtr obj, TypePtr type, Bool lvalue, ExprPtr stat, CodeP
 	d = 0;
 	for (c = code; c && c != type->array.u.frame.code; c = c->base.previous)
 	    d++;
-	if (type->array.u.frame.staticScope)
-	{
-	    BuildInst (obj, OpStatic, inst, stat);
-	}
-	else
-	{
-	    BuildInst (obj, OpLocal, inst, stat);
-	}
+	/*
+	 * non-global array dimensions are always local
+	 */
+	BuildInst (obj, OpLocal, inst, stat);
 	inst->frame.staticLink = d;
 	inst->frame.element = type->array.u.frame.element;
 	break;

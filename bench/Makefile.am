@@ -14,3 +14,4 @@ HARNESS=runbench.sh
 
 EXTRA_DIST=$(CFILES) $(BCFILES) $(NICKLEFILES) $(HARNESS)
 
+CLEANFILES=choose composite ifact rfact

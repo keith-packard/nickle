@@ -87,6 +87,9 @@ AC_CONFIG_FILES(
  Makefile
  test/Makefile
  bench/Makefile
+ examples/Makefile
+ examples/smlng/Makefile
+ examples/turtle/Makefile
  date-sh
  version-sh
  nickle.1

@@ -7,8 +7,7 @@
 # where <width> is the curve width in inches
 # and <depth> is the iteration depth
 
-load "turtle.5c"
-import Turtle;
+autoimport Turtle;
 
 void
 do_flake(int depth, rational scale) {
@@ -24,6 +23,9 @@ do_flake(int depth, rational scale) {
     turn_turtle(-1/6);
     do_flake(depth - 1, scale / 3);
 }
+
+if (dim(argv) < 3)
+    argv = (string[*]) { "snowflake.5c", "3", "3" };
 
 int width = string_to_integer(argv[1]);
 real height = sqrt((width / 3) ** 2 - (width / 6) ** 2) + 0.05 * width;

@@ -22,9 +22,9 @@
  *   return the decryption of c
  */
 
-namespace RSA {
+autoimport Numbers
 
-  import Numbers;
+namespace RSA {
 
   global int e;   /* encryption exponent */
   global int n;   /* public key */

@@ -4,7 +4,7 @@
 ## All Rights Reserved.  See the file COPYING in this directory
 ## for licensing information.
 
-SUBDIRS = bench test
+SUBDIRS = bench test examples
 
 VERSION = $(shell sh $(top_builddir)/version-sh $(top_srcdir)/ChangeLog)
 BUILD_DATE = $(shell sh $(top_builddir)/date-sh)
@@ -13,18 +13,12 @@ NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c \
 	arc4.5c prng.5c command.5c abort.5c \
         printf.5c history.5c ctype.5c string.5c socket.5c \
 	file.5c parse-args.5c
-EXAMPLES = examples/circle.5c examples/comb.5c examples/kaiser.5c \
-	examples/miller-rabin.5c examples/numbers.5c examples/prime.5c \
-	examples/qbrating.5c examples/roman.5c examples/rsa-demo.5c \
-	examples/rsa.5c
-TEST = test/gcdtest.5c test/inttest.5c test/rattest.5c
 
 DEBIAN = debian/nickle.install debian/changelog debian/compat \
 	 debian/control debian/copyright debian/rules
 	 
-EXTRA_DIST = README.name autogen.sh update-version.sh make-version.sh \
-	$(NICKLEFILES) gram.h $(EXAMPLES) $(TEST) $(DEBIAN) ChangeLog \
-	nickle.spec.in
+EXTRA_DIST = README.name autogen.sh \
+	$(NICKLEFILES) $(DEBIAN) ChangeLog
 
 bin_PROGRAMS = nickle
 

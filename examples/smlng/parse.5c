@@ -2,7 +2,7 @@
  * Parse simple sgml-style grammar
  */
 
-load "context.5c"
+library "context.5c"
 
 public namespace Lexc {
     public global int Eof = 0;

@@ -1,0 +1,15 @@
+NICKLEFILES=\
+	context.5c \
+	generate.5c \
+	parse.5c \
+	test.5c
+
+exampledir=$(pkgdatadir)/examples/smlng
+
+example_DATA=$(NICKLEFILES)
+
+TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir):$(top_srcdir)/$(subdir) $(top_builddir)/nickle < $(top_srcdir)/$(subdir)/data.sgml > /dev/null
+
+TESTS=test.5c
+
+EXTRA_DIST=$(NICKLEFILES) data.sgml

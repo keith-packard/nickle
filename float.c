@@ -668,6 +668,12 @@ FloatExp (Value exp2, Value *ratio, int ibase)
     done = False;
     do
     {
+	if (aborting)
+	{
+	    EXIT ();
+	    *ratio = Zero;
+	    return Zero;
+	}
 	nmean = Div (Plus (min, max), two);
 	if (mean && True(Equal (nmean, mean)))
 	{

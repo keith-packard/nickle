@@ -61,7 +61,8 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
 	for (i = 0; i < a->ndim; i++)
 	    FileOutput (f, '{');
     }
-    for (i = 0; i < a->ents; )
+    i = 0;
+    while (i < a->ents)
     {
 	if (!Print (f, BoxValueGet (a->values, i), format, base, width, prec, fill))
 	{
@@ -69,32 +70,32 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
 	    break;
 	}
 	i++;
-        ndone = 0;
-	if (pretty)
-	{
-	    j = i;
-	    k = 0;
-	    while (k < a->ndim - 1 && j % a->dim[k] == 0)
-	    {
-		ndone++;
-		j = j / a->dim[k];
-		k++;
-	    }
-	    for (k = 0; k < ndone; k++)
-		FileOutput (f, '}');
-	}
 	if (i < a->ents)
 	{
+	    ndone = 0;
 	    if (pretty)
+	    {
+		j = i;
+		k = 0;
+		while (k < a->ndim - 1 && j % a->dim[k] == 0)
+		{
+		    ndone++;
+		    j = j / a->dim[k];
+		    k++;
+		}
+		for (k = 0; k < ndone; k++)
+		    FileOutput (f, '}');
 		FileOutput (f, ',');
+	    }
 	    FileOutput (f, ' ');
 	    if (pretty)
 		for (k = 0; k < ndone; k++)
 		    FileOutput (f, '{');
 	}
     }
-    if (pretty && a->ndim)
-	FilePuts (f, "}");
+    if (pretty)
+	for (i = 0; i < a->ndim; i++)
+	    FileOutput (f, '}');
     EXIT ();
     return True;
 }
@@ -112,8 +113,16 @@ ValueRep    ArrayRep = {
     { ArrayMark, 0 },
     rep_array,
     {
-	0, 0, 0, 0, 0, 0,
-	0, ArrayEqual, 0, 0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	ArrayEqual,
+	0,
+	0,
     },
     {
 	0,

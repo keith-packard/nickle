@@ -42,6 +42,8 @@ namespace History {
 
     public poly fetch (int id)
     {
+	if (count == 0)
+	    return <>;
 	if (id <= 0)
 	    return elt (head, count+id-1).ref->value;
 	else

@@ -90,7 +90,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    comma_expr
 %type  <ints>	    assignop
 %type  <value>	    opt_integer integer
-%type  <expr>	    opt_arrayinit arrayinit arrayelts  arrayelt
+%type  <expr>	    opt_arrayinit arrayinit opt_arrayelts arrayelts  arrayelt
 %type  <expr>	    structinit structelts structelt
 %type  <expr>	    init
 
@@ -1284,14 +1284,12 @@ integer		: TEN_NUM
  * Array initializers
  */
 opt_arrayinit	: arrayinit
-		| OC CC
-		    { $$ = 0; }
 		|
 		    { $$ = 0; }
 		;
-arrayinit    	: OC arrayelts opt_comma opt_dots CC
+arrayinit    	: OC opt_arrayelts opt_comma opt_dots CC
 		    { 
-			ExprPtr	elts = ExprRehang ($2, 0);
+			ExprPtr	elts = $2 ? ExprRehang ($2, 0) : 0;
 			if ($4)
 			{
 			    ExprPtr i = elts;
@@ -1332,6 +1330,10 @@ comparray	:
 					    typePoly, a);
 			$$ = NewExprAtom (a, s, False);
 		    }
+		;
+opt_arrayelts	: arrayelts
+		|
+		    { $$ = 0; }
 		;
 arrayelts	: arrayelts COMMA arrayelt
 		    { $$ = NewExprTree (COMMA, $1, $3); }

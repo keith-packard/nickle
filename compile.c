@@ -1096,28 +1096,30 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr,
 static int
 CompileCountInitDimensions (ExprPtr expr)
 {
-    int	    ndimMax, ndim;
+    int	    ndimMax, ndimSub, ndim;
     
-    ndimMax = 0;
     if (expr->base.tag == ARRAY)
     {
 	expr = expr->tree.left;
+	ndimMax = 0;
 	while (expr)
 	{
 	    if (expr->tree.left->base.tag != DOTS)
 	    {
-		ndim = CompileCountInitDimensions (expr->tree.left) + 1;
-		if (ndim < 0)
-		    return ndim;
-		if (ndimMax && ndim != ndimMax)
+		ndimSub = CompileCountInitDimensions (expr->tree.left);
+		if (ndimSub < 0)
+		    return ndimSub;
+		if (ndimMax && ndimSub != ndimMax)
 		    return -1;
-		if (ndim > ndimMax)
-		    ndimMax = ndim;
+		ndimMax = ndimSub;
 	    }
 	    expr = expr->tree.right;
 	}
+	ndim = ndimMax + 1;
     }
-    return ndimMax;
+    else
+	ndim = 0;
+    return ndim;
 }
 
 static int
@@ -1172,17 +1174,24 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 {
     int	    dim;
     
-    if (expr->base.tag == ARRAY) 
+    if (!expr)
+	dim = 0;
+    else if (expr->base.tag == ARRAY) 
     {
 	dim = 0;
 	expr = expr->tree.left;
 	while (expr)
 	{
-	    dim++;
 	    if (expr->tree.left->base.tag == DOTS)
 		return False;
 	    if (ndims != 1)
+	    {
 		CompileSizeDimensions (expr->tree.left, dims + 1, ndims - 1);
+		if (dims[1])
+		    dim++;
+	    }
+	    else
+		dim++;
 	    expr = expr->tree.right;
 	}
     }
@@ -1361,16 +1370,11 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
     }
     if (type->array.dimensions && type->array.dimensions->tree.left)
 	dimensions = type->array.dimensions;
-    else if (expr)
+    else
     {
 	dimensions = CompileImplicitArray (obj, stat, expr, ndim);
 	if (!dimensions)
 	    RETURN (obj);
-    }
-    else
-    {
-	CompileError (obj, stat, "Non-dimensioned array with no initializers");
-	RETURN(obj);
     }
     if (expr && expr->base.tag == COMP)
     {

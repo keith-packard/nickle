@@ -1002,6 +1002,8 @@ void	FileSetBlocked (Value file, int flag);
 void	FilePrintf (Value, char *, ...);
 void	FileVPrintf (Value, char *, va_list);
 void	FileSetBuffer (Value file, int buf);
+Bool	FileIsReadable (int fd);
+Bool	FileIsWritable (int fd);
 
 extern Bool	anyFileWriteBlocked;
 extern Bool	anyFileReadBlocked;

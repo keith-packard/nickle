@@ -13,6 +13,7 @@
  */
 
 #include	<unistd.h>
+#include	<fcntl.h>
 #include	<sys/types.h>
 #include	<sys/socket.h>
 #include        <netinet/in.h>
@@ -183,9 +184,17 @@ do_Socket_connect (Value s, Value host, Value port)
 
     if (!running->thread.partial)
     {
-	if (connect (s->file.fd, (struct sockaddr *) &addr, sizeof addr) == -1)
+	int flags = fcntl (s->file.fd, F_GETFL);
+	int n, err;
+	flags |= O_NONBLOCK;
+	fcntl (s->file.fd, F_SETFL, flags);
+	n = connect (s->file.fd, (struct sockaddr *) &addr, sizeof addr);
+	flags &= ~O_NONBLOCK;
+	fcntl (s->file.fd, F_SETFL, flags);
+	err = errno;
+	if (n == -1)
 	{
-	    if (errno == EWOULDBLOCK || errno == EINPROGRESS)
+	    if (err == EWOULDBLOCK || err == EINPROGRESS)
 	    {
 		FileSetBlocked (s, FileOutputBlocked);
 		running->thread.partial = 1;
@@ -193,8 +202,8 @@ do_Socket_connect (Value s, Value host, Value port)
 	    else
 	    {
 		RaiseStandardException (exception_io_error,
-					FileGetErrorMessage (errno),
-					2, FileGetError (errno),
+					FileGetErrorMessage (err),
+					2, FileGetError (err),
 					s);
 		RETURN (Void);
 	    }
@@ -262,12 +271,17 @@ Value
 do_Socket_accept (Value s)
 {
     ENTER ();
-    int f;
-
+    int f, err;
+    int flags = fcntl (s->file.fd, F_GETFL);
+    flags |= O_NONBLOCK;
+    fcntl (s->file.fd, F_SETFL, flags);
     f = accept (s->file.fd, 0, 0);
+    flags &= ~O_NONBLOCK;
+    fcntl (s->file.fd, F_SETFL, flags);
+    err = errno;
     if (f == -1)
     {
-        if (errno == EWOULDBLOCK || errno == EAGAIN)
+        if (err == EWOULDBLOCK || err == EAGAIN)
         {
 	    FileSetBlocked (s, FileInputBlocked);
 	    running->thread.partial = 1;
@@ -275,8 +289,8 @@ do_Socket_accept (Value s)
 	else
 	{
 	    RaiseStandardException (exception_io_error,
-				    FileGetErrorMessage (errno),
-				    2, FileGetError (errno),
+				    FileGetErrorMessage (err),
+				    2, FileGetError (err),
 				    s);
 	    RETURN (Void);
 	}

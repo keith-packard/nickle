@@ -936,7 +936,7 @@ FileStringString (Value file)
 
 #define DontBlockIO	(runnable && running)
 
-static Bool
+Bool
 FileIsReadable (int fd)
 {
     fd_set	    bits;
@@ -956,7 +956,7 @@ FileIsReadable (int fd)
     return n > 0;
 }
 
-static Bool
+Bool
 FileIsWritable (int fd)
 {
     fd_set	    bits;

@@ -20,6 +20,7 @@ typedef struct _symbolBase {
     Atom	name;
     Class	class;
     Types	*type;
+    Bool	forward;    /* forward declaration of a function */
 } SymbolBase;
 
 typedef struct _symbolType {

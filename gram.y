@@ -439,6 +439,8 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			    type = symbol->symbol.type;
 			    ret = type->func.ret;
 			    argType = type->func.args;
+			    if (!$2)
+				symbol->symbol.forward = True;
 			}
 			else
 			{
@@ -674,15 +676,34 @@ func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start opt_argdefines
 			DeclList    *decl = NewDeclList ($4, 0, 0);
 			
 			NamespacePtr	save = CurrentNamespace;
+			SymbolPtr	symbol;
+			Types		*type = NewTypesFunc ($1.type, $6);
 			/*
 			 * namespace_start pushed a new namespace, make sure
 			 * this symbol is placed in the original namespace
 			 */
 			CurrentNamespace = save->previous;
-			decl->symbol = ParseNewSymbol ($1.publish,
-						       $1.class, 
-						       NewTypesFunc ($1.type, $6),
-						       $4);
+			symbol = NamespaceFindName (CurrentNamespace, $4, True);
+			if (symbol && symbol->symbol.forward)
+			{
+			    if (!TypeCompatible (symbol->symbol.type, type, 
+						 False))
+			    {
+				ParseError ("%A redefinition with different type",
+					    $4);
+				symbol = 0;
+			    }
+			    else
+				symbol->symbol.type = type;
+			}
+			else
+			{
+			    symbol = ParseNewSymbol ($1.publish,
+						     $1.class, 
+						     type,
+						     $4);
+			}
+			decl->symbol = symbol;
 			CurrentNamespace = save;
 			$$.publish = $1.publish;
 			$$.class = $1.class;
@@ -958,6 +979,8 @@ argdefines	: argdefine COMMA argdefines
 		;
 argdefine	: opt_type NAME
 		    { $$.type = $1; $$.name = $2; }
+		| type
+		    { $$.type = $1; $$.name = 0; }
 		;
 opt_dots	: DOTS
 		    { $$ = True; }

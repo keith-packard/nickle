@@ -61,6 +61,7 @@ NewSymbolType (Atom name, Types *type)
     s->symbol.name = name;
     s->symbol.class = class_typedef;
     s->symbol.type = type;
+    s->symbol.forward = False;
     RETURN (s);
 }
 

@@ -131,7 +131,7 @@ do_String_substr (Value av, Value bv, Value cv)
 	b += c;
 	c = -c;
     }
-    if (b < 0 || b >= al)
+    if (b < 0 || b > al)
     {
 	RaiseStandardException (exception_invalid_argument,
 				"substr: index out of range",

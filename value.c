@@ -429,11 +429,25 @@ ShiftL (Value av, Value bv)
     if (ValueIsInt(bv))
     {
 	Sign	sign = Positive;
-	if (Negativep (av))
-	    sign = Negative;
-	av = Reduce (NewInteger (sign,
-				 NaturalLsl (IntegerMag(IntegerRep.promote (av,0)),
-					     ValueInt(bv))));
+	int	b = ValueInt(bv);
+	
+	if (ValueIsInt (av) && b < NICKLE_INT_BITS)
+	{
+	    signed_digit    rd = (signed_digit) ValueInt (av) << b;
+	    
+	    if (rd > (signed_digit) MAX_NICKLE_INT || rd < (signed_digit) MIN_NICKLE_INT)
+		av = NewSignedDigitInteger (rd);
+	    else
+		av = NewInt ((int) rd);
+	}
+	else
+	{
+	    if (Negativep (av))
+		sign = Negative;
+	    av = Reduce (NewInteger (sign,
+				     NaturalLsl (IntegerMag(IntegerRep.promote (av,0)),
+						 ValueInt(bv))));
+	}
     }
     else
     {
@@ -460,14 +474,23 @@ ShiftR (Value av, Value bv)
     if (ValueIsInt(bv))
     {
 	Sign	sign = Positive;
-	if (Negativep (av))
+	int	b = ValueInt(bv);
+	
+	if (ValueIsInt (av) && b < NICKLE_INT_BITS)
 	{
-	    av = Minus (av, Minus (ShiftL (One, bv), One));
-	    sign = Negative;
+	    av = NewInt (ValueInt (av) >> b);
 	}
-	av = Reduce (NewInteger (sign,
-				 NaturalRsl (IntegerMag(IntegerRep.promote (av,0)),
-					     ValueInt(bv))));
+	else
+	{
+	    if (Negativep (av))
+	    {
+		av = Minus (av, Minus (ShiftL (One, bv), One));
+		sign = Negative;
+	    }
+	    av = Reduce (NewInteger (sign,
+				     NaturalRsl (IntegerMag(IntegerRep.promote (av,0)),
+						 b)));
+	}
     }
     else
     {

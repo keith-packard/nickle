@@ -1,3 +1,8 @@
+2004-10-09  Keith Packard  <keithp@keithp.com>
+
+	* value.c: (ShiftL), (ShiftR):
+	Optimize shifts of small ints by small ints
+
 2004-09-22  Bart Massey  <bart@cs.pdx.edu>
 
 	* gram.y:

@@ -169,7 +169,8 @@ PrettyArrayInits (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
 {
     while (e)
     {
-	PrettyArrayInit (f, e->tree.left, 0, nest, pd);
+	if (e->tree.left)
+	    PrettyArrayInit (f, e->tree.left, 0, nest, pd);
 	e = e->tree.right;
 	if (e)
 	{
@@ -360,6 +361,9 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest, ProfileData 
 	    PrettyExpr (f, e->tree.right, selfPrec, level, nest, pd);
 	}
 	FilePuts (f, " }");
+	break;
+    case ANONINIT:
+	FilePuts (f, "{}");
 	break;
     case STRUCT:
 	FilePuts (f, "{ ");

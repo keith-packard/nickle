@@ -10,6 +10,35 @@
 #include	"nickle.h"
 #include	<stdio.h>
 
+/*
+ * This grammar generates:
+ * 
+ * reduce/reduce conflict on:
+ *
+ *	    *int . func
+ *
+ *	Is the '*' a dereference operator or a pointer type modifier?
+ *	The grammar is ordered to make this a type modifier since
+ *	the other way is less common.  Use parens when you want this.
+ *
+ *  shift/reduce conflict on NL:
+ *
+ *	    opt_nl : .
+ *
+ *	This says that you can have multiple NLs in a row
+ *	and the grammar can't tell which opt_nl is reduced.
+ *	No big deal.
+ *
+ *  2 shift/reduce conflicts on CATCH:
+ *
+ *	That's because CATCH blocks are optional and chained.
+ *	Shifting binds the CATCH to the nearest enclosing TRY,
+ *	just like ELSE
+ *
+ *  shift/reduce conflict on ELSE
+ *
+ *	Need we say more?
+ */
 int ignorenl;
 int notCommand;
 NamespacePtr	LexNamespace;
@@ -70,7 +99,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <atom>	    typename
 %type  <expr>	    opt_init
 %type  <fulltype>   decl next_decl
-%type  <type>	    opt_type type
+%type  <type>	    opt_type type subscripts subtype
 %type  <expr>	    opt_stars stars
 %type  <type>	    basetype
 %type  <expr>	    dims
@@ -90,7 +119,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    comma_expr
 %type  <ints>	    assignop
 %type  <value>	    opt_integer integer
-%type  <expr>	    opt_arrayinit arrayinit opt_arrayelts arrayelts  arrayelt
+%type  <expr>	    opt_arrayinit arrayinit arrayelts  arrayelt
 %type  <expr>	    structinit structelts structelt
 %type  <expr>	    init
 
@@ -101,7 +130,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %token <type>	    POLY INTEGER NATURAL RATIONAL REAL STRING
 %token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID BOOL
 %token		    FUNCTION FUNC EXCEPTION RAISE
-%token		    TYPEDEF IMPORT NEW
+%token		    TYPEDEF IMPORT NEW ANONINIT
 %token <namespace>  NAMESPACE
 %token <publish>    PUBLIC PROTECTED EXTEND
 %token		    IF ELSE WHILE DO FOR SWITCH
@@ -136,6 +165,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %left		UNIONCAST
 %right		UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
 %left		OS CS DOT ARROW STAROS CALL OP CP
+%right		POINTER
 %right		COLONCOLON
 
 %%
@@ -772,15 +802,44 @@ decl		: publish class type ignorenl opt_nl
 /*
  * Type declarations
  */
-type		: basetype
-		| TIMES type			%prec STAR
+subscripts	: opt_argdecls subscripts	    %prec CALL
+		    { $$ = NewTypeFunc ($2, $1); }
+		| OS opt_stars CS subscripts    
+		    { $$ = NewTypeArray ($4, $2); }
+		| OS dims CS subscripts
+		    { $$ = NewTypeArray ($4, $2); }
+		|
+		    { $$ = 0; }
+		;
+type		: subtype subscripts	    %prec CALL
+		    {
+			Type	*top = $2;
+			Type	*t, **bot = &top;
+
+			/*
+			 * Walk down the type chain to hang the
+			 * base type off of the end.  This
+			 * makes int[]() be an array of functions
+			 * rather than a function returning an array
+			 */
+			while ((t = *bot))
+			    switch (t->base.tag) {
+			    case type_array:
+				bot = &t->array.type;
+				break;
+			    case type_func:
+				bot = &t->func.ret;
+				break;
+			    default:
+				assert(0);
+			    }
+			*bot = $1;
+			$$ = top;
+		    }
+		| TIMES type			%prec POINTER
 		    { $$ = NewTypeRef ($2); }
-		| type opt_argdecls		%prec CALL
-		    { $$ = NewTypeFunc ($1, $2); }
-		| type OS opt_stars CS
-		    { $$ = NewTypeArray ($1, $3); }
-		| type OS dims CS
-		    { $$ = NewTypeArray ($1, $3); }
+		;
+subtype		: basetype
 		| STRUCT OC struct_members CC
 		    {
 			AtomListPtr	al;
@@ -1220,8 +1279,10 @@ primary		: fullname
 		| OP type CP namespace_start init namespace_end
 		    { 
 			ParseCanonType ($2, False);
-			$5->base.type = $2;
+			if ($5)
+			    $5->base.type = $2;
 			$$ = NewExprTree (NEW, $5, 0);
+			$$->base.type = $2;
 		    }
 		| OP OS stars CS CP namespace_start arrayinit namespace_end
 		    { 
@@ -1285,10 +1346,12 @@ integer		: TEN_NUM
  * Array initializers
  */
 opt_arrayinit	: arrayinit
+		| OC CC
+		    { $$ = 0; }
 		|
 		    { $$ = 0; }
 		;
-arrayinit    	: OC opt_arrayelts opt_comma opt_dots CC
+arrayinit    	: OC arrayelts opt_comma opt_dots CC
 		    { 
 			ExprPtr	elts = $2 ? ExprRehang ($2, 0) : 0;
 			if ($4)
@@ -1332,10 +1395,6 @@ comparray	:
 			$$ = NewExprAtom (a, s, False);
 		    }
 		;
-opt_arrayelts	: arrayelts
-		|
-		    { $$ = 0; }
-		;
 arrayelts	: arrayelts COMMA arrayelt
 		    { $$ = NewExprTree (COMMA, $1, $3); }
 		| arrayelt
@@ -1365,7 +1424,7 @@ structelt	: NAME ASSIGN simpleexpr
 init		: arrayinit
 		| structinit
 		| OC CC
-		    { $$ = 0; }
+		    { $$ = NewExprTree (ANONINIT, 0, 0); }
 		;
 %%
 

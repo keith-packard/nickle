@@ -9,6 +9,7 @@
 #include	"config.h"
 #include	"value.h"
 #include	"opcode.h"
+#include	<assert.h>
 
 typedef struct _func	    *FuncPtr;
 typedef struct _namespace   *NamespacePtr;

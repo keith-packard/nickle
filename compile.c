@@ -8,7 +8,6 @@
 
 #include	"nickle.h"
 #include	"gram.h"
-#include	<assert.h>
 
 #undef DEBUG
 
@@ -1099,13 +1098,16 @@ CompileCountInitDimensions (ExprPtr expr)
 {
     int	    ndimMax, ndimSub, ndim;
     
-    if (expr->base.tag == ARRAY)
-    {
+    switch (expr->base.tag) {
+    case ANONINIT:
+	ndim = 1;
+	break;
+    case ARRAY:
 	expr = expr->tree.left;
 	ndimMax = 0;
 	while (expr)
 	{
-	    if (expr->tree.left->base.tag != DOTS)
+	    if (expr->tree.left && expr->tree.left->base.tag != DOTS)
 	    {
 		ndimSub = CompileCountInitDimensions (expr->tree.left);
 		if (ndimSub < 0)
@@ -1117,9 +1119,11 @@ CompileCountInitDimensions (ExprPtr expr)
 	    expr = expr->tree.right;
 	}
 	ndim = ndimMax + 1;
-    }
-    else
+	break;
+    default:
 	ndim = 0;
+	break;
+    }
     return ndim;
 }
 
@@ -1143,6 +1147,8 @@ CompileCountImplicitDimensions (ExprPtr expr)
     switch (expr->base.tag) {
     case ARRAY:
 	return 1 + CompileCountImplicitDimensions (expr->tree.left);
+    case ANONINIT:
+	return 0;
     case COMMA:
 	return CompileCountImplicitDimensions (expr->tree.left);
     default:
@@ -1177,8 +1183,8 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
     
     if (!expr)
 	dim = 0;
-    else if (expr->base.tag == ARRAY) 
-    {
+    else switch (expr->base.tag) {
+    case ARRAY:
 	dim = 0;
 	expr = expr->tree.left;
 	while (expr)
@@ -1195,16 +1201,19 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 		dim++;
 	    expr = expr->tree.right;
 	}
-    }
-    else if (expr->base.tag == COMP)
+	break;
+    case COMP:
 	return False;
-    else
-    {
+    case ANONINIT:
+	dim = 0;
+	break;
+    default:
 	dim = 1;
 	if (expr->tree.left->base.tag == DOTS)
 	    return False;
 	if (ndims != 1)
 	    CompileSizeDimensions (expr, dims + 1, ndims - 1);
+	break;
     }
     if (dim > *dims)
 	*dims = dim;
@@ -1251,25 +1260,47 @@ static ObjPtr
 CompileInit (ObjPtr obj, ExprPtr expr, Type *type,
 	     ExprPtr stat, CodePtr code)
 {
-    type = TypeCanon (type);
+    ENTER ();
 
-    switch (type->base.tag) {
-    case type_array:
-	if (!expr || expr->base.tag == ARRAY || expr->base.tag == COMP)
-	    return CompileArrayInit (obj, expr, type, stat, code);
+    type = TypeCanon (type);
+    
+    if (!expr || expr->base.tag == ANONINIT) 
+    {
+	switch (type->base.tag) {
+	case type_array:
+	    obj = CompileArrayInit (obj, 0, type, stat, code);
+	    break;
+	case type_struct:
+	    obj = CompileStructInit (obj, 0, type, stat, code);
+	    break;
+	default:
+	    CompileError (obj, stat, "Invalid empty initializer , type '%T'", type);
+	    break;
+	}
+    }
+    else switch (expr->base.tag) {
+    case ARRAY:
+    case COMP:
+	if (type->base.tag != type_array)
+	    CompileError (obj, stat, "Initializer type mismatch, type '%T'",
+			  type);
+	else
+	    obj = CompileArrayInit (obj, expr, type, stat, code);
 	break;
-    case type_struct:
-	if (!expr || expr->base.tag == STRUCT)
-	    return CompileStructInit (obj, expr, type, stat, code);
+    case STRUCT:
+	if (type->base.tag != type_struct)
+	    CompileError (obj, stat, "Initializer type mismatch, type '%T'",
+			  type);
+	else
+	    obj = CompileStructInit (obj, expr, type, stat, code);
 	break;
     default:
-	break;
+	obj = _CompileExpr (obj, expr, True, stat, code);
+	if (!TypeCombineBinary (type, ASSIGN, expr->base.type))
+	    CompileError (obj, stat, "Incompatible types, storage '%T', value '%T', for initializer",
+		      type, expr->base.type);
     }
-    obj = _CompileExpr (obj, expr, True, stat, code);
-    if (!TypeCombineBinary (type, ASSIGN, expr->base.type))
-        CompileError (obj, stat, "Incompatible types, storage '%T', value '%T', for initializer",
-    		  type, expr->base.type);
-    return obj;
+    RETURN (obj);
 }
 
 static ObjPtr
@@ -1287,10 +1318,10 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
     }
     else
     {
-	if (expr->base.tag == ARRAY)
-	{
-	    ExprPtr next;
-	    
+	ExprPtr next;
+
+	switch (expr->base.tag) {
+	case ARRAY:
 	    for (e = expr->tree.left; e; e = next)
 	    {
 		AInitMode   subMode = AInitModeElement;
@@ -1304,9 +1335,13 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
 		obj = CompileArrayInits (obj, e->tree.left, type,
 					 ndim-1, stat, code, subMode);
 	    }
-	}
-	else
+	    break;
+	case ANONINIT:
+	    break;
+	default:
 	    CompileError (obj, stat, "Not enough initializer dimensions");
+	    break;
+	}
     }
     BuildInst (obj, OpInitArray, inst, stat);
     inst->ainit.dim = ndim;
@@ -1356,7 +1391,14 @@ CompileComprehension (ObjPtr	obj,
      * Convert a single expression into a block containing a 
      * return statement
      */
-    body->base.type = type;
+    switch (body->base.tag) {
+    case STRUCT:
+    case COMP:
+    case ARRAY:
+    case ANONINIT:
+	body = NewExprTree (NEW, body, 0);
+	body->base.type = type;
+    }
     if (body->base.tag != OC)
 	body = NewExprTree (OC,
 			    NewExprTree (RETURNTOK, 0, body),
@@ -1498,7 +1540,7 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 	else
 	{
 	    int	    ninitdim;
-	    if (expr->base.tag != ARRAY)
+	    if (expr->base.tag != ARRAY && expr->base.tag != ANONINIT)
 	    {
 		CompileError (obj, stat, "Non array initializer");
 		RETURN (obj);
@@ -1555,9 +1597,10 @@ CompileImplicitInit (Type *type)
 		dim = CompileCountDeclDimensions (type->array.dimensions);
 		while (--dim)
 		    init = NewExprTree (OC, init, 0);
+		init = NewExprTree (ARRAY, init, 0);
 	    }
-	    init = NewExprTree (ARRAY, init, 0);
-	    init->base.type = type;
+	    else
+		init = NewExprTree (ANONINIT, 0, 0);
 	}
 	break;
     case type_struct:
@@ -1580,8 +1623,10 @@ CompileImplicitInit (Type *type)
 				    init);
 	    }
 	}
-	init = NewExprTree (STRUCT, init, 0);
-	init->base.type = type;
+	if (init)
+	    init = NewExprTree (STRUCT, init, 0);
+	else
+	    init = NewExprTree (ANONINIT, 0, 0);
 	break;
     default:
 	break;
@@ -1814,14 +1859,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	obj = CompileDecl (obj, expr, evaluate, stat, code);
 	break;
     case NEW:
-	obj = _CompileExpr (obj, expr->tree.left, evaluate, stat, code);
-	expr->base.type = expr->tree.left->base.type;
-	break;
-    case ARRAY:
-    case STRUCT:
-    case COMP:
-	t = TypeCanon (expr->base.type);
-	obj = CompileInit (obj, expr, t, stat, code);
+	obj = CompileInit (obj, expr->tree.left, expr->base.type, stat, code);
 	break;
     case UNION:
 	if (expr->tree.right)
@@ -2336,6 +2374,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->constant.constant = Void;
 	expr->base.type = typePrim[rep_void];
 	break;
+    default:
+	assert(0);
     }
     assert (!evaluate || expr->base.type);
     RETURN (obj);

@@ -228,7 +228,7 @@ PrettyDecl (Value f, Expr *e, int level, Bool nest)
     for (decl = e->decl.decl; decl; decl = decl->next)
     {
 	FileOutput (f, ' ');
-	FilePuts (f, AtomName (decl->name->atom));
+	FilePuts (f, AtomName (decl->name));
 	if (decl->init)
 	{
 	    FilePuts (f, " = ");
@@ -255,9 +255,6 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePuts (f, "(");
     switch (e->base.tag) {
     case NAME:
-	FilePuts (f, AtomName (e->name.name->atom));
-	break;
-    case ATOM:
 	FilePuts (f, AtomName (e->atom.atom));
 	break;
     case VAR:
@@ -420,7 +417,7 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     case COLONCOLON:
 	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
 	FilePuts (f, "::");
-	FilePuts (f, AtomName (e->tree.right->name.name->atom));
+	FilePuts (f, AtomName (e->tree.right->atom.atom));
 	break;
     case DOT:
 	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
@@ -568,7 +565,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
     case FUNCTION:
 	PrettyIndent (f, level);
 	PrettyCode (f, e->tree.right->tree.right->code.code, 
-		   e->tree.left->decl.decl->name->atom,
+		   e->tree.left->decl.decl->name,
 		   e->tree.left->decl.class,
 		   e->tree.left->decl.publish,
 		   level, nest);
@@ -592,7 +589,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
     case IMPORT:
 	PrettyIndent (f, level);
 	FilePrintf (f, "%pimport %A;\n", e->tree.left->decl.publish,
-		    e->tree.left->decl.decl->name->atom);
+		    e->tree.left->decl.decl->name);
 	break;
     case TWIXT:
 	PrettyIndent (f, level);
@@ -634,7 +631,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	break;
     case RAISE:
 	PrettyIndent (f, level);
-	FilePrintf (f, "raise %A (", e->tree.left->name.name->atom);
+	FilePrintf (f, "raise %A (", e->tree.left->atom.atom);
 	if (e->tree.right)
 	    PrettyParameters (f, e->tree.right, nest);
 	FilePuts (f, ");\n");
@@ -655,7 +652,7 @@ PrintArgs (Value f, ArgType *args)
     {
         FilePutTypes (f, args->type, args->name != 0);
 	if (args->name)
-	    FilePuts (f, AtomName (args->name->atom));
+	    FilePuts (f, AtomName (args->name));
 	if (args->varargs)
 	    FilePuts (f, " ...");
 	if (args->next)
@@ -695,6 +692,8 @@ PrettyCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
 	    PrettyIndent (f, level);
 	    FilePuts (f, "}");
 	}
+	else
+	    FilePuts (f, ";");
     }
 }
 
@@ -705,16 +704,16 @@ PrettyStat (Value f, Expr *e, Bool nest)
 }
 
 void
-doPrettyPrint (Value f, NamePtr name, int level, Bool nest);
+doPrettyPrint (Value f, Publish publish, SymbolPtr symbol, int level, Bool nest);
     
 static void
-PrintNames (Value f, NamePtr name, int level)
+PrintNames (Value f, NamelistPtr names, int level)
 {
-    if (!name)
+    if (!names)
 	return;
-    PrintNames (f, name->next, level);
-    if (name->symbol && name->publish == publish_public)
-	doPrettyPrint (f, name, level, False);
+    PrintNames (f, names->next, level);
+    if (names->publish == publish_public)
+	doPrettyPrint (f, names->publish, names->symbol, level, False);
 }
 
 static void
@@ -724,67 +723,55 @@ PrintNamespace (Value f, NamespacePtr namespace, int level)
 }
 
 void
-doPrettyPrint (Value f, NamePtr name, int level, Bool nest)
+doPrettyPrint (Value f, Publish publish, SymbolPtr symbol, int level, Bool nest)
 {
     Value  v;
-    SymbolPtr	sym = name->symbol;
 
-    if (!sym)
+    if (!symbol)
 	return;
     PrettyIndent (f, level);
-    switch (sym->symbol.class) {
+    switch (symbol->symbol.class) {
     case class_global:
-	v = BoxValueGet (sym->global.value, 0);
+	v = BoxValueGet (symbol->global.value, 0);
 	if (v && v->value.tag == type_func)
 	{
 	    PrettyCode (f, v->func.code,
-		       name->atom,
+		       symbol->symbol.name,
 		       class_undef,
-		       name->publish,
+		       publish,
 		       level, nest);
 	}
 	else
 	{
-	    FilePrintf (f, "%T %A = %v;", sym->symbol.type, name->atom, v);
+	    FilePrintf (f, "%p%k%t%A = %v;",
+			publish, symbol->symbol.class, symbol->symbol.type,
+			symbol->symbol.name, v);
 	}
 	FilePuts (f, "\n");
 	break;
     case class_namespace:
-	FilePutPublish (f, name->publish, True);
-	FilePrintf (f, "%C %A {\n", sym->symbol.class, name->atom);
-	PrintNamespace (f, sym->namespace.namespace, level + 1);
+	FilePrintf (f, "%p%C %A {\n", publish, symbol->symbol.class, symbol->symbol.name);
+	PrintNamespace (f, symbol->namespace.namespace, level + 1);
 	PrettyIndent (f, level);
 	FilePuts (f, "}\n");
 	break;
     case class_exception:
-	FilePrintf (f, "%p%C %A ", name->publish, 
-		    sym->symbol.class, name->atom);
-	PrintArgs (f, sym->symbol.type->func.args);
+	FilePrintf (f, "%p%C %A ", publish, 
+		    symbol->symbol.class, symbol->symbol.name);
+	PrintArgs (f, symbol->symbol.type->func.args);
 	FilePuts (f, ";\n");
 	break;
-    case class_typedef:
-	if (!sym->symbol.type)
-	    FilePrintf (f, "%p%k",
-			name->publish, sym->symbol.class,
-			sym->symbol.type);
-	else
-	    FilePrintf (f, "%p%k%t",
-			name->publish, sym->symbol.class,
-			sym->symbol.type);
-	FilePrintf (f, "%A;\n", name->atom);
-	break;
     default:
-	FilePrintf (f, "%p%k%t",
-		    name->publish, sym->symbol.class,
-		    sym->symbol.type);
-	FilePrintf (f, "%A;\n", name->atom);
+	FilePrintf (f, "%p%k%t%A;\n",
+		    publish, symbol->symbol.class,
+		    symbol->symbol.type, symbol->symbol.name);
 	break;
     }
 }
 
 void
-PrettyPrint (Value f, NamePtr name)
+PrettyPrint (Value f, Publish publish, SymbolPtr name)
 {
-    doPrettyPrint (f, name, 0, True);
+    doPrettyPrint (f, publish, name, 0, True);
 }
 

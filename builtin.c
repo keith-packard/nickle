@@ -462,9 +462,9 @@ static struct ebuiltin excepts[] = {
     {0,				0 },
 };
 
-static NamePtr
-BuiltinName (NamespacePtr   *namespacep,
-	     char	    *string)
+static SymbolPtr
+BuiltinAddName (NamespacePtr	*namespacep,
+		SymbolPtr	symbol)
 {
     ENTER ();
     NamespacePtr    namespace;
@@ -473,7 +473,7 @@ BuiltinName (NamespacePtr   *namespacep,
 	namespace = *namespacep;
     else
 	namespace = GlobalNamespace;
-    RETURN(NamespaceNewName (namespace, AtomId (string)));
+    RETURN(NamespaceAddName (namespace, symbol, publish_public));
 }
 
 static SymbolPtr
@@ -482,12 +482,9 @@ BuiltinSymbol (NamespacePtr *namespacep,
 	       Types	    *type)
 {
     ENTER ();
-    NamePtr	    name;
-
-    name = BuiltinName (namespacep, string);
-    name->symbol = NewSymbolGlobal (name->atom, type);
-    name->publish = publish_public;
-    RETURN (name->symbol);
+    RETURN (BuiltinAddName (namespacep, 
+			    NewSymbolGlobal (AtomId (string),
+					     type)));
 }
 
 static SymbolPtr
@@ -495,13 +492,9 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 		  char		*string)
 {
     ENTER ();
-    NamePtr	    name;
-
-    name = BuiltinName (namespacep, string);
-    name->symbol = NewSymbolNamespace (name->atom);
-    name->publish = publish_public;
-    name->symbol->namespace.namespace = NewNamespace (GlobalNamespace);
-    RETURN (name->symbol);
+    RETURN (BuiltinAddName (namespacep, 
+			    NewSymbolNamespace (AtomId (string),
+						NewNamespace (GlobalNamespace))));
 }
 
 static SymbolPtr
@@ -510,12 +503,8 @@ BuiltinException (NamespacePtr  *namespacep,
 		  Types		*type)
 {
     ENTER ();
-    NamePtr	    name;
-
-    name = BuiltinName (namespacep, string);
-    name->symbol = NewSymbolException (name->atom, type);
-    name->publish = publish_public;
-    RETURN (name->symbol);
+    RETURN (BuiltinAddName (namespacep, 
+			    NewSymbolException (AtomId (string), type)));
 }
 
 static char *
@@ -591,7 +580,7 @@ BuiltinArgTypes (char *format, int *argcp)
 	format = BuiltinType (format, &t);
 	if (!varargs)
 	    argc++;
-        a = NewArgType (t, varargs, 0, 0);
+        a = NewArgType (t, varargs, 0, 0, 0);
 	*last = a;
 	last = &a->next;
     }
@@ -1965,11 +1954,12 @@ Value
 do_Command_pretty_print (Value f, Value names)
 {
     ENTER();
-    NamespacePtr    s;
-    NamePtr	    name;
+    NamespacePtr    namespace;
+    SymbolPtr	    symbol;
+    Publish	    publish;
 
-    if (NamespaceLocate (names, &s, &name) && name && name->symbol)
-	PrettyPrint (f, name); 
+    if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
+	PrettyPrint (f, publish, symbol);
     RETURN (One);
 }
 
@@ -1992,13 +1982,14 @@ Value
 do_Command_undefine (int argc, Value *args)
 {
     ENTER ();
-    NamespacePtr    s;
-    NamePtr	    name;
+    NamespacePtr    namespace;
+    SymbolPtr	    symbol;
+    Publish	    publish;
     int		    i;
     
     for (i = 0; i < argc; i++)
-	if (NamespaceLocate (args[i], &s, &name) && name)
-	    NamespaceRemoveName (GlobalNamespace, name);
+	if (NamespaceLocate (args[i], &namespace, &symbol, &publish) && symbol)
+	    NamespaceRemoveName (namespace, symbol->symbol.name);
     RETURN (One);
 }
 
@@ -2006,11 +1997,12 @@ Value
 do_Command_edit (Value names)
 {
     ENTER();
-    NamespacePtr    s;
-    NamePtr	    name;
+    NamespacePtr    namespace;
+    SymbolPtr	    symbol;
+    Publish	    publish;
 
-    if (NamespaceLocate (names, &s, &name) && name && name->symbol)
-	EditFunction (name); 
+    if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
+	EditFunction (symbol, publish); 
     RETURN (One);
 }
 

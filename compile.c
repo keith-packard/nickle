@@ -164,7 +164,7 @@ CompileStorage (SymbolPtr symbol, CodePtr code)
  * Make sure a symbol is valid
  */
 static SymbolPtr
-CompileCheckSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
+CompileCheckSymbol (ObjPtr obj, ExprPtr stat, ExprPtr name, CodePtr code,
 		    int *depth, Bool createIfNecessary)
 {
     ENTER ();
@@ -172,11 +172,11 @@ CompileCheckSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
     int		d;
     CodePtr	c;
 
-    s = name->symbol;
+    s = name->atom.symbol;
     if (!s)
     {
         CompileError (obj, stat, "No symbol \"%A\" in namespace", 
-		      name->atom);
+		      name->atom.atom);
 	RETURN (0);
     }
     /*
@@ -262,7 +262,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
     
     switch (expr->base.tag) {
     case NAME:
-	s = CompileCheckSymbol (obj, stat, expr->name.name, code,
+	s = CompileCheckSymbol (obj, stat, expr, code,
 				&depth, createIfNecessary);
 	if (!s)
 	{
@@ -272,7 +272,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	if (!ClassStorage (s->symbol.class))
 	{
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
-			  s->symbol.class, expr->name.name->atom);
+			  s->symbol.class, expr->atom.atom);
 	
 	    expr->base.type = typesPoly;
 	    break;
@@ -599,16 +599,16 @@ CompileRaise (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 {
     ENTER();
     int		argc;
-    NamePtr	name;
+    ExprPtr	name;
     SymbolPtr	sym;
     InstPtr	inst;
     
     if (expr->tree.left->base.tag == COLONCOLON)
-	name = expr->tree.left->tree.right->name.name;
+	name = expr->tree.left->tree.right;
     else
-	name = expr->tree.left->name.name;
+	name = expr->tree.left;
 
-    sym = name->symbol;
+    sym = name->atom.symbol;
 
     if (!sym)
 	RETURN (obj);
@@ -939,7 +939,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
     int		catch_inst, exception_inst;
     InstPtr	inst;
     ExprPtr	catch;
-    NamePtr	name;
+    ExprPtr	name;
     SymbolPtr	exception;
     Types	*catch_type;
     
@@ -955,11 +955,11 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	 */
 	
 	if (catch->code.code->base.name->base.tag == COLONCOLON)
-	    name = catch->code.code->base.name->tree.right->name.name;
+	    name = catch->code.code->base.name->tree.right;
 	else
-	    name = catch->code.code->base.name->name.name;
+	    name = catch->code.code->base.name;
 	
-	exception = name->symbol;
+	exception = name->atom.symbol;
 
 	if (!exception)
 	    RETURN(obj);
@@ -1018,7 +1018,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     switch (expr->base.tag) {
     case NAME:
 	BuildInst (obj, OpName, inst, stat);
-	s = CompileCheckSymbol (obj, stat, expr->name.name, code,
+	s = CompileCheckSymbol (obj, stat, expr, code,
 				&inst->var.staticLink, False);
 	if (!s)
 	{
@@ -1028,7 +1028,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	if (!ClassStorage (s->symbol.class))
 	{
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
-			  s->symbol.class, expr->name.name->atom);
+			  s->symbol.class, expr->atom.atom);
 	
 	    expr->base.type = typesPoly;
 	    break;
@@ -1493,11 +1493,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	expr->base.type = typesPrim[type_thread];
 	break;
     case THREAD:
-	obj = CompileCall (obj, NewExprTree (OP, 
-					      NewExprAtom (AtomId ("ThreadFromId")),
-					      NewExprTree (COMMA, 
-							   expr->tree.left,
-							   (Expr *) 0)),
+	obj = CompileCall (obj, NewExprTree (OP,
+					     expr->tree.right,
+					     NewExprTree (COMMA, 
+							  expr->tree.left,
+							  (Expr *) 0)),
 			    stat, code);
 	expr->base.type = typesPrim[type_thread];
 	break;
@@ -1943,14 +1943,14 @@ CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
 
     for (args = code->base.args; args; args = args->next)
     {
-	if (!args->name->symbol)
+	if (!args->symbol)
 	{
 	    obj->state |= OBJ_STATE_ERROR;
 	    break;
 	}
 	if (!args->varargs)
 	    code->base.argc++;
-	CompileStorage (args->name->symbol, code);
+	CompileStorage (args->symbol, code);
     }
     code->func.body.obj = CompileFuncCode (code, stat, previous);
     obj->state |= code->func.body.obj->state & OBJ_STATE_ERROR;
@@ -2029,13 +2029,12 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	RETURN (obj);
     }
     for (decl = decls->decl.decl; decl; decl = decl->next) {
-	s = decl->name->symbol;
+	s = decl->symbol;
 	if (!s)
 	{
 	    obj->state |= OBJ_STATE_ERROR;
 	    break;
 	}
-	decl->name->publish = decls->decl.publish;
 	CompileStorage (s, code);
 	/*
 	 * Compile initializers in two steps
@@ -2069,7 +2068,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	    InstPtr inst;
 	    ExprPtr lvalue;
 	    
-	    lvalue = NewExprName (decl->name);
+	    lvalue = NewExprAtom (s->symbol.name, s);
 	    *initObj = CompileLvalue (*initObj, lvalue,
 				       decls, code, False, True);
 	    if (!TypeCombineBinary (lvalue->base.type,

@@ -25,7 +25,7 @@
 #include	"opcode.h"
 
 typedef enum _Bool { False = 0, True = 1 }  	Bool;
-typedef unsigned long	Atom;
+typedef char		*Atom;
 typedef struct _valueType   ValueType;
 typedef struct _box	*BoxPtr;
 typedef union _code	*CodePtr;
@@ -35,10 +35,10 @@ typedef struct _continuation	*ContinuationPtr;
 typedef union _value	*Value;
 typedef struct _obj	*ObjPtr;
 typedef union _inst	*InstPtr;
-typedef struct _name	*NamePtr;
+typedef union _symbol	*SymbolPtr;
 
 extern Atom AtomId (char *name);
-extern char *AtomName (Atom id);
+#define AtomName(a) (a)
 extern int  AtomInit (void);
 
 typedef struct _AtomList    *AtomListPtr;
@@ -52,10 +52,10 @@ typedef struct _jump	    *JumpPtr;
 typedef struct _AtomList {
     DataType	*data;
     AtomListPtr	next;
-    Atom	id;
+    Atom	atom;
 } AtomList;
 
-AtomListPtr  NewAtomList (AtomListPtr next, Atom id);
+AtomListPtr  NewAtomList (AtomListPtr next, Atom atom);
 
 /*
  * computational radix for natural numbers.  Make sure the
@@ -198,11 +198,13 @@ typedef struct _argType {
     DataType	*data;
     TypesPtr	type;
     Bool	varargs;
-    NamePtr	name;
+    Atom	name;
+    SymbolPtr	symbol;
     struct _argType *next;
 } ArgType;
 
-ArgType *NewArgType (TypesPtr type, Bool varargs, NamePtr name, ArgType *next);
+ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name, 
+		     SymbolPtr symbol, ArgType *next);
 
 typedef enum _typesTag {
     types_prim, types_name, types_ref, types_func, types_array, 
@@ -259,7 +261,7 @@ typedef union _types {
 
 typedef struct _argDecl {
     Types   *type;
-    NamePtr name;
+    Atom    name;
 } ArgDecl;
 
 typedef struct _argList {
@@ -283,7 +285,7 @@ Types	*NewTypesUnion (StructTypePtr structs);
 Types	*TypesCanon (Types *type);
 Type	BaseType (Types *type);
 int	TypesInit (void);
-NamePtr	TypeNameName (Types *t);
+SymbolPtr   TypeNameName (Types *t);
 
 #define TypesUnionElements(t) ((Types **) (&t->unions + 1))
 

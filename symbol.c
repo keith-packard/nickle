@@ -135,7 +135,7 @@ NewSymbolStatic (Atom name, Types *type)
 }
 
 SymbolPtr
-NewSymbolNamespace (Atom name)
+NewSymbolNamespace (Atom name, NamespacePtr namespace)
 {
     ENTER ();
     SymbolPtr	s;
@@ -144,7 +144,7 @@ NewSymbolNamespace (Atom name)
     s->symbol.name = name;
     s->symbol.class = class_namespace;
     s->symbol.type = 0;
-    s->namespace.namespace = 0;
+    s->namespace.namespace = namespace;
     RETURN (s);
 }
 

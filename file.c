@@ -709,7 +709,7 @@ FilePutArgTypes (Value f, ArgType *at)
 	if (at->type)
 	    FilePutTypes (f, at->type, at->name != 0);
 	if (at->name)
-	    FilePuts (f, AtomName (at->name->atom));
+	    FilePuts (f, AtomName (at->name));
 	if (at->varargs)
 	    FilePuts (f, " ...");
 	at = at->next;
@@ -747,7 +747,7 @@ FilePutTypename (Value f, ExprPtr e)
 	FilePutTypename (f, e->tree.right);
 	break;
     case NAME:
-	FilePuts (f, AtomName (e->name.name->atom));
+	FilePuts (f, AtomName (e->atom.atom));
 	break;
     }
 }

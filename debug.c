@@ -12,32 +12,25 @@ static void
 DebugAddVar (NamespacePtr namespace, char *string, Value v, Types *type)
 {
     ENTER ();
-    NamePtr	name;
+    SymbolPtr	symbol;
 
-    name = NamespaceFindName (namespace, AtomId (string), False);
-    if (!name)
-	name = NamespaceNewName (namespace, AtomId (string));
-    
-    name->symbol = NewSymbolGlobal (name->atom, type);
-    name->publish = publish_private;
-    BoxValueSet (name->symbol->global.value, 0, v);
+    symbol = NamespaceAddName (namespace,
+			       NewSymbolGlobal (AtomId (string), type),
+			       publish_private);
+    BoxValueSet (symbol->global.value, 0, v);
     EXIT ();
 }
 
 static void
 DebugAddCommand (char *function, Bool names)
 {
-    SymbolPtr	sym;
-    NamePtr	name;
+    SymbolPtr	symbol;
 
-    name = NamespaceFindName (CurrentNamespace, AtomId (function), True);
-    if (!name)
-	return;
-    sym = name->symbol;
-    if (sym && sym->symbol.class == class_global)
+    symbol = NamespaceFindName (CurrentNamespace, AtomId (function), True);
+    if (symbol && symbol->symbol.class == class_global)
     {
-	CurrentCommands = NewCommand (CurrentCommands, name->atom, 
-				      BoxValue (sym->global.value, 0), 
+	CurrentCommands = NewCommand (CurrentCommands, symbol->symbol.name, 
+				      BoxValue (symbol->global.value, 0), 
 				      names);
     }
 }

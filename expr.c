@@ -42,15 +42,7 @@ ExprAtomMark (void *object)
     ExprAtom	*ea = object;
     MemReference (ea->expr.namespace);
     MemReference (ea->expr.type);
-}
-
-static void
-ExprNameMark (void *object)
-{
-    ExprName	*en = object;
-    MemReference (en->expr.namespace);
-    MemReference (en->expr.type);
-    MemReference (en->name);
+    MemReference (ea->symbol);
 }
 
 static void
@@ -77,7 +69,6 @@ ExprDeclMark (void *object)
 DataType    ExprTreeType = { ExprTreeMark, 0 };
 DataType    ExprConstType = { ExprConstMark, 0 };
 DataType    ExprAtomType = { ExprAtomMark, 0 };
-DataType    ExprNameType = { ExprNameMark, 0 };
 DataType    ExprCodeType = { ExprCodeMark, 0 };
 DataType    ExprDeclType = { ExprDeclMark, 0 };
 
@@ -126,26 +117,15 @@ NewExprConst (int tag, Value val)
 }
 
 Expr *
-NewExprAtom (Atom atom)
+NewExprAtom (Atom atom, SymbolPtr symbol)
 {
     ENTER ();
     Expr    *e;
 
     e = ALLOCATE (&ExprAtomType, sizeof (ExprAtom));
-    ExprBaseInit (e, ATOM);
-    e->atom.atom = atom;
-    RETURN (e);
-}
-
-Expr *
-NewExprName (NamePtr name)
-{
-    ENTER ();
-    Expr    *e;
-
-    e = ALLOCATE (&ExprNameType, sizeof (ExprName));
     ExprBaseInit (e, NAME);
-    e->name.name = name;
+    e->atom.atom = atom;
+    e->atom.symbol = symbol;
     RETURN (e);
 }
 

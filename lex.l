@@ -450,7 +450,7 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 		}
 [a-zA-Z][0-9a-zA-Z_]* {
 	        CommandPtr	c;
-		NamePtr		name;
+		SymbolPtr	symbol;
 		yylval.atom = AtomId (yytext);
 		if ((c = CommandFind (CurrentCommands, yylval.atom)))
 		{
@@ -459,12 +459,12 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 		    return COMMAND;
 		}
 		if (LexNamespace)
-		    name = NamespaceFindName (LexNamespace, yylval.atom, False);
+		    symbol = NamespaceFindName (LexNamespace, yylval.atom, False);
 	        else
-		    name = NamespaceFindName (CurrentNamespace, yylval.atom, True);
-		if (name && name->symbol)
+		    symbol = NamespaceFindName (CurrentNamespace, yylval.atom, True);
+		if (symbol)
 		{
-		    switch (name->symbol->symbol.class) {
+		    switch (symbol->symbol.class) {
 		    case class_namespace:
 			return NAMESPACENAME;
 		    case class_typedef:

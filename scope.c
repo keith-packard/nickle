@@ -34,27 +34,27 @@ NewNamespace (NamespacePtr previous)
 }
 
 static void
-NameMark (void *object)
+NamelistMark (void *object)
 {
-    NamePtr   name = object;
+    NamelistPtr	namelist = object;
 
-    MemReference (name->next);
-    MemReference (name->symbol);
+    MemReference (namelist->next);
+    MemReference (namelist->symbol);
 }
 
-DataType nameType = { NameMark, 0 };
+DataType namelistType = { NamelistMark, 0 };
 
-NamePtr
-NewName (NamePtr next, Atom atom)
+static NamelistPtr
+NewNamelist (NamelistPtr next, SymbolPtr symbol, Publish publish)
 {
     ENTER ();
-    NamePtr   name;
+    NamelistPtr   namelist;
 
-    name = ALLOCATE (&nameType, sizeof (Name));
-    name->next = next;
-    name->atom = atom;
-    name->symbol = 0;
-    RETURN (name);
+    namelist = ALLOCATE (&namelistType, sizeof (Namelist));
+    namelist->next = next;
+    namelist->symbol = symbol;
+    namelist->publish = publish;
+    RETURN (namelist);
 }
 
 NamespacePtr	GlobalNamespace, CurrentNamespace;
@@ -78,50 +78,64 @@ NamespaceInit (void)
     EXIT ();
 }
 
-NamePtr
-NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search)
+static NamelistPtr
+NamespaceFindNamelist (NamespacePtr namespace, Atom atom, Bool search)
 {
-    NamePtr name;
+    NamelistPtr	namelist;
 
     do
     {
-	for (name = namespace->names; name; name = name->next)
-	    if (name->atom == atom &&
+	for (namelist = namespace->names; namelist; namelist = namelist->next)
+	    if (namelist->symbol->symbol.name == atom &&
 		(namespace->publish == publish_public ||
-		 (name->symbol && name->publish == publish_public)))
-		return name;
+		 namelist->publish == publish_public))
+		return namelist;
 	namespace = namespace->previous;
     } while (search && namespace);
     return 0;
 }
 
-NamePtr
-NamespaceNewName (NamespacePtr namespace, Atom atom)
+SymbolPtr
+NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search)
 {
-    NamePtr name;
-    NamePtr *prev;
+    NamelistPtr	namelist;
 
-    for (prev = &namespace->names; (name = *prev); prev = &name->next)
-	if (name->atom == atom)
+    namelist = NamespaceFindNamelist (namespace, atom, search);
+    if (namelist)
+	return namelist->symbol;
+    return 0;
+}
+
+SymbolPtr
+NamespaceAddName (NamespacePtr namespace, SymbolPtr symbol, Publish publish)
+{
+    NamelistPtr namelist;
+    NamelistPtr	*prev;
+
+    /*
+     * Remove old symbol
+     */
+    for (prev = &namespace->names; (namelist = *prev); prev = &namelist->next)
+	if (namelist->symbol->symbol.name == symbol->symbol.name)
 	{
-	    *prev = name->next;
+	    *prev = namelist->next;
 	    break;
 	}
 
-    name = NewName (namespace->names, atom);
-    namespace->names = name;
-    return name;
+    namelist = NewNamelist (namespace->names, symbol, publish);
+    namespace->names = namelist;
+    return symbol;
 }
 
 Bool
-NamespaceRemoveName (NamespacePtr namespace, NamePtr name)
+NamespaceRemoveName (NamespacePtr namespace, Atom atom)
 {
-    NamePtr *prev;
+    NamelistPtr	namelist, *prev;
 
-    for (prev = &namespace->names; *prev; prev = &(*prev)->next)
-	if (*prev == name)
+    for (prev = &namespace->names; (namelist = *prev); prev = &namelist->next)
+	if (namelist->symbol->symbol.name == atom)
 	{
-	    *prev = name->next;
+	    *prev = namelist->next;
 	    return True;
 	    break;
 	}
@@ -131,17 +145,11 @@ NamespaceRemoveName (NamespacePtr namespace, NamePtr name)
 void
 NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish)
 {
-    NamePtr	old, new;
+    NamelistPtr	namelist;
 
-    for (old = import->names; old; old = old->next)
-    {
-	if (old->publish == publish_public)
-	{
-	    new = NamespaceNewName (namespace, old->atom);
-	    new->symbol = old->symbol;
-	    new->publish = publish;
-	}
-    }
+    for (namelist = import->names; namelist; namelist = namelist->next)
+	if (namelist->publish == publish_public)
+	    NamespaceAddName (namespace, namelist->symbol, publish);
 }
 
 static void
@@ -194,14 +202,14 @@ CommandRemove (CommandPtr command, Atom name)
 }
 
 Bool
-NamespaceLocate (Value names, NamespacePtr *namespacep, NamePtr *namep)
+NamespaceLocate (Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publish *publishp)
 {
     int		    i;
-    NamespacePtr    s;
+    NamespacePtr    namespace;
     FramePtr	    f;
     Value	    string;
-    NamePtr	    name = 0;
-    SymbolPtr	    sym;
+    NamelistPtr	    namelist = 0;
+    SymbolPtr	    symbol;
     Bool	    search = True;
     
     if (names->value.tag != type_array || names->array.ndim != 1)
@@ -214,7 +222,7 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, NamePtr *namep)
     }
     if (names->array.dim[0] == 0)
 	return False;
-    GetNamespace (&s, &f);
+    GetNamespace (&namespace, &f);
     for (i = 0; i < names->array.dim[0]; i++)
     {
 	string = BoxValue (names->array.values, i);
@@ -228,28 +236,31 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, NamePtr *namep)
 				    NewInt (0), string);
 	    return False;
 	}
-	name = NamespaceFindName (s, AtomId (StringChars (&string->string)),
-				  search);
+	namelist = NamespaceFindNamelist (namespace, 
+					  AtomId (StringChars (&string->string)),
+					  search);
 	search = False;
-	if (!name || ! (sym = name->symbol))
+	if (!namelist)
 	{
 	    FilePrintf (FileStdout, "No symbol \"%s\" in scope\n",
 			StringChars (&string->string));
 	    return False;
 	}
+	symbol = namelist->symbol;
 	if (i != names->array.dim[0] - 1)
 	{
-	    if (sym->symbol.class != class_namespace)
+	    if (symbol->symbol.class != class_namespace)
 	    {
 		FilePrintf (FileStdout, "\"%s\" is not a namespace\n",
 			    StringChars (&string->string));
 		return False;
 	    }
-	    s = sym->namespace.namespace;
+	    namespace = symbol->namespace.namespace;
 	}
     }
-    *namespacep = s;
-    *namep = name;
+    *namespacep = namespace;
+    *symbolp = namelist->symbol;
+    *publishp = namelist->publish;;
     return True;
 }
 

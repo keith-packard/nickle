@@ -122,7 +122,7 @@ NewTypesRef (Types *ref)
 }
 
 ArgType *
-NewArgType (Types *type, Bool varargs, NamePtr name, ArgType *next)
+NewArgType (Types *type, Bool varargs, Atom name, SymbolPtr symbol, ArgType *next)
 {
     ENTER ();
     ArgType *a;
@@ -131,6 +131,7 @@ NewArgType (Types *type, Bool varargs, NamePtr name, ArgType *next)
     a->type = type;
     a->varargs = varargs;
     a->name = name;
+    a->symbol = symbol;
     a->next = next;
     RETURN (a);
 }
@@ -262,7 +263,7 @@ TypeEqual (Types *a, Types *b)
 }
 #endif
 
-NamePtr
+SymbolPtr
 TypeNameName (Types *t)
 {
     ExprPtr e;
@@ -271,7 +272,7 @@ TypeNameName (Types *t)
 	e = t->name.expr;
 	if (e->base.tag == COLONCOLON)
 	    e = e->tree.right;
-	return e->name.name;
+	return e->atom.symbol;
     }
     return 0;
 }

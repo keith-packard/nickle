@@ -39,7 +39,7 @@ edit (char *file_name)
 }
 
 void
-EditFunction (NamePtr name)
+EditFunction (SymbolPtr symbol, Publish publish)
 {
     Value	tmp;
     static char	template[] = "/tmp/nXXXXXX";
@@ -63,7 +63,7 @@ EditFunction (NamePtr name)
     tmp = FileCreate (fd);
     if (tmp)
     {
-	PrettyPrint (tmp, name);
+	PrettyPrint (tmp, publish, symbol);
 	(void) FileClose (tmp);
 	edit (nickleName);
 	LexFile (nickleName, True);

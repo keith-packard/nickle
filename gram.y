@@ -20,7 +20,7 @@ static Bool
 ParseCanonType (TypesPtr type);
 
 static SymbolPtr
-ParseNewSymbol (Class class, Types *type, NamePtr name);
+ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 
 %}
 
@@ -38,11 +38,11 @@ ParseNewSymbol (Class class, Types *type, NamePtr name);
     MemListPtr	    memList;
     Fulltype	    fulltype;
     ArgDecl	    argDecl;
-    NamePtr	    name;
     NamespacePtr    namespace;
     CodePtr	    code;
     Bool	    bool;
     AtomListPtr	    atomList;
+    FuncDecl	    funcDecl;
 }
 
 %type  <expr>	    fullname
@@ -54,10 +54,11 @@ ParseNewSymbol (Class class, Types *type, NamePtr name);
 %type  <expr>	    fulltype
 %type  <expr>	    namespace
 %type  <atomList>   atoms
-%type  <declList>   initnames newtypenames
-%type  <name>	    newname newtypename
+%type  <declList>   initnames typenames
+%type  <funcDecl>   func_decl
+%type  <atom>	    typename
 %type  <expr>	    opt_init
-%type  <fulltype>   decl func_decl
+%type  <fulltype>   decl opt_decl
 %type  <types>	    opt_type type
 %type  <expr>	    opt_stars stars
 %type  <type>	    basetype
@@ -94,7 +95,7 @@ ParseNewSymbol (Class class, Types *type, NamePtr name);
 %token		    IF ELSE WHILE DO FOR SWITCH
 %token		    BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		    TRY CATCH TWIXT
-%token <atom>	    NAME TYPENAME NAMESPACENAME COMMAND NAMECOMMAND ATOM
+%token <atom>	    NAME TYPENAME NAMESPACENAME COMMAND NAMECOMMAND
 %token <value>	    TEN_CONST OCTAL_CONST BINARY_CONST HEX_CONST FLOAT_CONST
 %token <value>	    CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
 %token <value>	    VOIDVAL
@@ -283,7 +284,7 @@ rawatom		: NAME
 		| TYPENAME
 		;
 rawnamespace	: rawnamespace NAMESPACENAME COLONCOLON
-		    { $$ = NewExprTree (COLONCOLON, $1, NewExprAtom ($2)); }
+		    { $$ = NewExprTree (COLONCOLON, $1, NewExprAtom ($2, 0)); }
                 |
 		    { $$ = 0; }
                 ;
@@ -312,47 +313,47 @@ fullname	: namespace namespacename
 namespace	: namespace NAMESPACENAME COLONCOLON
 		    { 
 			ExprPtr	    e;
-			NamePtr	name;
+			SymbolPtr   symbol;
 
 			e = BuildFullname ($1, $2);
 			if (e->base.tag == COLONCOLON)
-			    name = e->tree.right->name.name;
+			    symbol = e->tree.right->atom.symbol;
 			else
-			    name = e->name.name;
-			if (!name || !name->symbol)
+			    symbol = e->atom.symbol;
+			if (!symbol)
 			{
 			    yyerror ("non-existant namespace \"%A\"", $2);
 			    YYERROR;
 			}
-			else if (name->symbol->symbol.class != class_namespace)
+			else if (symbol->symbol.class != class_namespace)
 			{
 			    yyerror ("%A is not a namespace", $2);
 			    YYERROR;
 			}
-			LexNamespace = name->symbol->namespace.namespace;
+			LexNamespace = symbol->namespace.namespace;
 			$$ = e;
 		    }
 		| NAMESPACENAME COLONCOLON
 		    { 
 			ExprPtr	    e;
-			NamePtr	name;
+			SymbolPtr   symbol;
 
 			e = BuildFullname (0, $1);
 			if (e->base.tag == COLONCOLON)
-			    name = e->tree.right->name.name;
+			    symbol = e->tree.right->atom.symbol;
 			else
-			    name = e->name.name;
-			if (!name || !name->symbol)
+			    symbol = e->atom.symbol;
+			if (!symbol)
 			{
 			    yyerror ("non-existant namespace \"%A\"", $1);
 			    YYERROR;
 			}
-			else if (name->symbol->symbol.class != class_namespace)
+			else if (symbol->symbol.class != class_namespace)
 			{
 			    yyerror ("%A is not a namespace", $1);
 			    YYERROR;
 			}
-			LexNamespace = name->symbol->namespace.namespace;
+			LexNamespace = symbol->namespace.namespace;
 			$$ = e;
 		    }
 		;
@@ -407,80 +408,79 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 		| block
 		| SEMI ignorenl
 		    { $$ = NewExprTree(SEMI, (Expr *) 0, (Expr *) 0); }
-		| func_decl FUNCTION ignorenl newname namespace_start OP opt_argdefines CP func_body namespace_end
+		| func_decl func_body namespace_end
 		    { 
-			ExprPtr	decl;
-			Types	*type = NewTypesFunc ($1.type, $7);
-			ExprPtr	nameExpr;
+			DeclList    *decl = $1.decl;
+			ExprPtr	    expr, nameExpr;
+			SymbolPtr   symbol = decl->symbol;
+			Class	    class = $1.class;
+			Publish	    publish = $1.publish;
+			TypesPtr    type, ret;
+			ArgType	    *argType;
 
-			$4->symbol = ParseNewSymbol ($1.class, type, $4);
-			$4->publish = $1.publish;
-
-			decl = NewExprDecl (NewDeclList ($4, 0, 0),
-					    $1.class,
-					    type,
-					    $1.publish);
-			if ($9)
+			if (symbol)
 			{
-			    nameExpr = NewExprName ($4);
-			    $$ = NewExprTree (FUNCTION, decl,
-					      NewExprTree (ASSIGN,
-							   nameExpr,
-							   NewExprCode (NewFuncCode ($1.type,
-										     $7,
-										     $9),
-									nameExpr)));
+			    type = symbol->symbol.type;
+			    ret = type->func.ret;
+			    argType = type->func.args;
 			}
 			else
-			    $$ = decl;
-		    }
-		| publish EXCEPTION ignorenl newname namespace_start opt_argdecls namespace_end SEMI
-		    { 
-			$4->symbol = ParseNewSymbol (class_exception, typesPoly, $4);
-			$4->publish = $1;
+			{
+			    type = typesPoly;
+			    ret = typesPoly;
+			    argType = 0;
+			}
 
-			$$ = NewExprDecl (NewDeclList ($4, 0, 0),
-					class_exception,
-					NewTypesFunc (typesPoly, $6),
-					$1);
+			expr = NewExprDecl (decl, class, type, publish);
+			if ($2)
+			{
+			    nameExpr = NewExprAtom (symbol->symbol.name, symbol);
+			    expr = NewExprTree (FUNCTION, expr,
+						NewExprTree (ASSIGN,
+							     nameExpr,
+							     NewExprCode (NewFuncCode (ret,
+										       argType,
+										       $2),
+									  nameExpr)));
+			}
+			$$ = expr;
+		    }
+		| publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end SEMI
+		    { 
+			DeclListPtr decl;
+
+			decl = NewDeclList ($4, 0, 0);
+			decl->symbol = ParseNewSymbol ($1, 
+						       class_exception, 
+						       typesPoly, $4);
+			$$ = NewExprDecl (decl,
+					  class_exception,
+					  NewTypesFunc (typesPoly, $6),
+					  $1);
 		    }
 		| RAISE fullname OP opt_exprs CP SEMI
 		    { $$ = NewExprTree (RAISE, $2, $4); }
-		| publish TYPEDEF ignorenl newtypenames SEMI
+		| publish TYPEDEF ignorenl typenames SEMI
 		    { 
 			DeclListPtr decl;
 
 			for (decl = $4; decl; decl = decl->next)
-			{
-			    decl->name->symbol = NewSymbolType (decl->name->atom, 0);
-			    decl->name->publish = $1;
-			}
+			    decl->symbol = ParseNewSymbol ($1, class_typedef,
+							   0, decl->name);
 			$$ = NewExprTree (TYPEDEF, NewExprDecl ($4, class_typedef, 0, $1), 0);
 		    }
-		| publish TYPEDEF ignorenl type newtypenames SEMI
+		| publish TYPEDEF ignorenl type typenames SEMI
 		    { 
 			DeclListPtr decl;
 
 			for (decl = $5; decl; decl = decl->next)
-			{
-			    if (decl->name->symbol)
-			    {
-				if (decl->name->symbol->symbol.type)
-				{
-				    yyerror ("redefinition of typedef %A", decl->name->atom);
-				    YYERROR;
-				}
-				decl->name->symbol->symbol.type = $4;
-			    }
-			    else
-				decl->name->symbol = NewSymbolType (decl->name->atom, $4);
-			    decl->name->publish = $1;
-			}
+			    decl->symbol = ParseNewSymbol ($1, class_typedef,
+							   $4, decl->name);
 			$$ = NewExprTree (TYPEDEF, NewExprDecl ($5, class_typedef, $4, $1), 0);
 		    }
 		| publish_extend NAMESPACE ignorenl namespacename
 		    {
-			NamePtr	    name = 0;
+			SymbolPtr   symbol;
 			Publish	    publish = $1;
 			
 			/*
@@ -491,27 +491,26 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			$2 = CurrentNamespace;
 			if (publish == publish_extend)
 			{
-			    name = NamespaceFindName (CurrentNamespace, $4, True);
-			    if (!name || !name->symbol)
+			    symbol = NamespaceFindName (CurrentNamespace, $4, True);
+			    if (!symbol)
 			    {
 				yyerror ("non-existant namespace %A", $4);
 				YYERROR;
 			    }
-			    else if (name->symbol->symbol.class != class_namespace)
+			    else if (symbol->symbol.class != class_namespace)
 			    {
 				yyerror ("%A is not a namespace", $4);
 				YYERROR;
 			    }
 			    else
-				CurrentNamespace = name->symbol->namespace.namespace;
+				CurrentNamespace = symbol->namespace.namespace;
 			}
 			else
 			{
-			    name = NamespaceNewName (CurrentNamespace, $4);
+			    symbol = ParseNewSymbol ($1, class_namespace,
+						     0, $4);
 			    CurrentNamespace = NewNamespace (CurrentNamespace);
-			    name->symbol = NewSymbolNamespace ($4);
-			    name->symbol->namespace.namespace = CurrentNamespace;
-			    name->publish = publish;
+			    symbol->namespace.namespace = CurrentNamespace;
 			}
 			/*
 			 * Make all of the symbols visible while compiling within
@@ -532,31 +531,29 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			 * the parser stack
 			 */
 			CurrentNamespace = $2;
-			$$ = NewExprTree (NAMESPACE, 
-					  NewExprName (NamespaceFindName (CurrentNamespace, 
-									  $4, True)),
-					  $7);
+			$$ = NewExprTree (NAMESPACE, NewExprAtom ($4, 0), $7);
 		    }
 		| publish IMPORT ignorenl fullname SEMI
 		    {
-			NamePtr	name;
+			SymbolPtr	symbol;
+			ExprPtr		e;
 
+			e = $4;
 			if ($4->base.tag == COLONCOLON)
-			    name = $4->tree.right->name.name;
-			else
-			    name = $4->name.name;
-			if (!name->symbol)
+			    e = e->tree.right;
+			symbol = e->atom.symbol;
+			if (!symbol)
 			{
-			    yyerror ("non-existant namespace %A", name->atom);
+			    yyerror ("non-existant namespace %A", e->atom.atom);
 			    YYERROR;
 			}
-			else if (name->symbol->symbol.class != class_namespace)
+			else if (symbol->symbol.class != class_namespace)
 			{
-			    yyerror ("%A is not a namespace", name->atom);
+			    yyerror ("%A is not a namespace", e->atom.atom);
 			    YYERROR;
 			}
 			NamespaceImport (CurrentNamespace, 
-					 name->symbol->namespace.namespace, $1);
+					 symbol->namespace.namespace, $1);
 			$$ = NewExprTree (IMPORT, $4, 0);
 		    }
 		| TRY ignorenl statement catches
@@ -606,7 +603,7 @@ union_cases	: union_case union_cases
 		    { $$ = 0; }
 		;
 union_case	: CASE NAME COLON statements
-		    { $$ = NewExprTree (CASE, NewExprAtom ($2), $4); }
+		    { $$ = NewExprTree (CASE, NewExprAtom ($2, 0), $4); }
 		| DEFAULT COLON statements
 		    { $$ = NewExprTree (CASE, 0, $3); }
 		;
@@ -618,38 +615,41 @@ atoms		: NAME COMMA atoms
 		| NAME
 		    { $$ = NewAtomList (0, $1); }
 		;
-newname		: NAME
-		    { $$ = NamespaceNewName (CurrentNamespace, $1); }
-		;
-newtypenames	: newtypename COMMA newtypenames
+typenames	: typename COMMA typenames
 		    { $$ = NewDeclList ($1, 0, $3); }
-		| newtypename
+		| typename
 		    { $$ = NewDeclList ($1, 0, 0); }
 		;
-newtypename	: TYPENAME
-		    { 
-			NamePtr	name;
-
-			name = NamespaceFindName (CurrentNamespace, $1, False);
-			if (!name || 
-			    (name->symbol && name->symbol->symbol.type))
-			    name = NamespaceNewName (CurrentNamespace, $1);
-			$$ = name;
-		    }
+typename	: TYPENAME
 		| NAME
-		    { 
-			NamePtr	name;
-
-			name = NamespaceFindName (CurrentNamespace, $1, False);
-			if (!name || name->symbol)
-			    name = NamespaceNewName (CurrentNamespace, $1); 
-			$$ = name;
-		    }
 		;
-initnames	: newname opt_init COMMA initnames
+initnames	: NAME opt_init COMMA initnames
 		    { $$ = NewDeclList ($1, $2, $4); }
-		| newname opt_init
+		| NAME opt_init
 		    { $$ = NewDeclList ($1, $2, 0); }
+		;
+/*
+ * Declaration of a function
+ */
+func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start OP opt_argdefines CP
+		    {
+			DeclList    *decl = NewDeclList ($4, 0, 0);
+			
+			NamespacePtr	save = CurrentNamespace;
+			/*
+			 * namespace_start pushed a new namespace, make sure
+			 * this symbol is placed in the original namespace
+			 */
+			CurrentNamespace = save->previous;
+			decl->symbol = ParseNewSymbol ($1.publish,
+						       $1.class, 
+						       NewTypesFunc ($1.type, $7),
+						       $4);
+			CurrentNamespace = save;
+			$$.publish = $1.publish;
+			$$.class = $1.class;
+			$$.decl = decl;
+		    }
 		;
 opt_init	: ASSIGN simpleexpr
 		    { $$ = $2; }
@@ -659,7 +659,7 @@ opt_init	: ASSIGN simpleexpr
 /*
 * Full declaration including storage, type and publication
 */
-func_decl	: decl
+opt_decl	: decl
 		|
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = typesPoly; }
 		;
@@ -720,7 +720,7 @@ type		: basetype
 			    for (al = ml->atoms; al; al = al->next)
 			    {
 				se[nelements].type = ml->type;
-				se[nelements].name = al->id;
+				se[nelements].name = al->atom;
 				nelements++;
 			    }
 			}
@@ -796,10 +796,10 @@ opt_argdecls	: OP argdecls CP
 		    { $$ = 0; }
 		;
 argdecls	: argdecl COMMA argdecls
-		    { $$ = NewArgType ($1.type, False, $1.name, $3); }
+		    { $$ = NewArgType ($1.type, False, $1.name, 0, $3); }
 		| argdecl opt_dots
-		    { $$ = NewArgType ($1.type, $2, $1.name, 0); }
-argdecl		: type newname
+		    { $$ = NewArgType ($1.type, $2, $1.name, 0, 0); }
+argdecl		: type NAME
 		    { 
 			ParseCanonType ($1);
 			$$.type = $1; 
@@ -811,7 +811,7 @@ argdecl		: type newname
 			$$.type = $1;
 			$$.name = 0; 
 		    }
-		| newname
+		| NAME
 		    { $$.type = typesPoly; $$.name = $1; }
 		;
 
@@ -836,19 +836,20 @@ opt_argdefines	: argdefines
 										 NewInt (0)),
 								   0));
 			    }
-			    args->name->symbol = ParseNewSymbol (class_arg, type, args->name);
-			    args->name->publish = publish_private;
+			    args->symbol = ParseNewSymbol (publish_private,
+							   class_arg, 
+							   type, args->name);
 			}
 		    }
 		|
 		    { $$ = 0; }
 		;
 argdefines	: argdefine COMMA argdefines
-		    { $$ = NewArgType ($1.type, False, $1.name, $3); }
+		    { $$ = NewArgType ($1.type, False, $1.name, 0, $3); }
 		| argdefine opt_dots
-		    { $$ = NewArgType ($1.type, $2, $1.name, 0); }
+		    { $$ = NewArgType ($1.type, $2, $1.name, 0, 0); }
 		;
-argdefine	: opt_type newname
+argdefine	: opt_type NAME
 		    { $$.type = $1; $$.name = $2; }
 		;
 opt_dots	: DOTS
@@ -870,10 +871,9 @@ expr		: comma_expr
 			DeclList    *decl;
 
 			for (decl = $2; decl; decl = decl->next)
-			{
-			    decl->name->symbol = ParseNewSymbol ($1.class, $1.type, decl->name);
-			    decl->name->publish = $1.publish;
-			}
+			    decl->symbol = ParseNewSymbol ($1.publish,
+							   $1.class, 
+							   $1.type, decl->name);
 
 			$$ = NewExprDecl ($2, $1.class, $1.type, $1.publish); 
 		    }
@@ -980,18 +980,20 @@ simpleexpr	: primary
 					      NewExprTree (ASSIGNPOW, $1, $3));
 			else
 			{
+			    ExprPtr left = $1;
 			    /*
 			     * Automatically declare names used in
 			     * simple assignements at the top level
 			     */
 			    if ($2 == ASSIGN && 
 				funcDepth == 0 &&
-				$1->base.tag == NAME && 
-				!($1->name.name->symbol))
+				left->base.tag == NAME && 
+				!(left->atom.symbol))
 			    {
-				NamePtr	name = $1->name.name;
-				name->symbol = ParseNewSymbol (class_undef, typesPoly, name);
-				name->publish = publish_private;
+				$1->atom.symbol = ParseNewSymbol (publish_private,
+								  class_undef, 
+								  typesPoly, 
+								  $1->atom.atom);
 			    }
 			    $$ = NewExprTree($2, $1, $3); 
 			}
@@ -1066,7 +1068,7 @@ primary		: fullname
 		| OP type DOT NAME CP primary			%prec UNIONCAST
 		    {
 			ParseCanonType ($2);
-			$$ = NewExprTree (UNION, NewExprAtom ($4), $6); 
+			$$ = NewExprTree (UNION, NewExprAtom ($4, 0), $6); 
 			$$->base.type = $2;
 		    }
 		| DOLLAR opt_integer
@@ -1084,9 +1086,9 @@ primary		: fullname
 		| FORK OP expr CP					%prec CALL
 		    { $$ = NewExprTree (FORK, (Expr *) 0, $3); }
 		| primary DOT NAME
-		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3)); }
+		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0)); }
 		| primary ARROW NAME
-		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3)); }
+		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3, 0)); }
 		;
 opt_integer	: integer
 		|
@@ -1144,7 +1146,7 @@ structelts	: structelts COMMA structelt
 		    { $$ = NewExprTree (COMMA, 0, $1); }
 		;
 structelt	: NAME ASSIGN lambdaexpr
-		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1), $3); }
+		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0), $3); }
 		;
 
 init		: arrayinit
@@ -1164,7 +1166,7 @@ DeclListMark (void *object)
 DataType DeclListType = { DeclListMark, 0 };
 
 DeclListPtr
-NewDeclList (NamePtr name, ExprPtr init, DeclListPtr next)
+NewDeclList (Atom name, ExprPtr init, DeclListPtr next)
 {
     ENTER ();
     DeclListPtr	dl;
@@ -1210,11 +1212,11 @@ lookupVar (char *n)
 {
     ENTER ();
     Value	v;
-    NamePtr	name;
+    SymbolPtr	symbol;
 
-    name = NamespaceFindName (CurrentNamespace, AtomId (n), True);
-    if (name && name->symbol && name->symbol->symbol.class == class_global)
-	v = BoxValue (name->symbol->global.value, 0);
+    symbol = NamespaceFindName (CurrentNamespace, AtomId (n), True);
+    if (symbol && symbol->symbol.class == class_global)
+	v = BoxValue (symbol->global.value, 0);
     else
 	v = Zero;
     RETURN (v);
@@ -1225,21 +1227,16 @@ setVar (NamespacePtr namespace, char *n, Value v, Types *type)
 {
     ENTER ();
     Atom	atom;
-    SymbolPtr	s;
-    NamePtr	name;
+    SymbolPtr	symbol;
 
     atom = AtomId (n);
-    name = NamespaceFindName (namespace, atom, True);
-    if (!name)
-	name = NamespaceNewName (namespace, atom);
-    if (!name->symbol)
-    {
-	name->symbol = NewSymbolGlobal (atom, type);
-	name->publish = publish_private;
-    }
-    s = name->symbol;
-    if (s->symbol.class == class_global)
-	BoxValueSet (s->global.value, 0, v);
+    symbol = NamespaceFindName (namespace, atom, True);
+    if (!symbol)
+	symbol = NamespaceAddName (namespace,
+				   NewSymbolGlobal (atom, type),
+				   publish_private);
+    if (symbol->symbol.class == class_global)
+	BoxValueSet (symbol->global.value, 0, v);
     EXIT ();
 }
 
@@ -1254,28 +1251,30 @@ ExprPtr
 BuildName (char *ns, char *n)
 {
     ENTER ();
-    NamePtr	    name, ns_name = 0;
+    SymbolPtr	    symbol, ns_symbol = 0;
+    Atom	    atom, ns_atom = 0;
     Bool	    search = True;
     NamespacePtr    namespace = CurrentNamespace;
     ExprPtr	    e;
 
     if (ns)
     {
-	ns_name = NamespaceFindName (namespace, AtomId (ns), search);
-	if (ns_name && ns_name->symbol && ns_name->symbol->symbol.class == class_namespace)
-	    namespace = ns_name->symbol->namespace.namespace;
+	ns_atom = AtomId (ns);
+	ns_symbol = NamespaceFindName (namespace, ns_atom, search);
+	if (ns_symbol && ns_symbol->symbol.class == class_namespace)
+	    namespace = ns_symbol->namespace.namespace;
 	else
 	    namespace = 0;
 	search = False;
     }
-    name = 0;
+    atom = AtomId (n);
     if (namespace)
-	name = NamespaceFindName (namespace, AtomId (n), search);
-    if (!name)
-	name = NewName (0, AtomId (n));
-    e = NewExprName (name);
-    if (ns_name)
-	e = NewExprTree (COLONCOLON, NewExprName (ns_name), e);
+	symbol = NamespaceFindName (namespace, atom, search);
+    else
+	symbol = 0;
+    e = NewExprAtom (atom, symbol);
+    if (ns_atom)
+	e = NewExprTree (COLONCOLON, NewExprAtom (ns_atom, ns_symbol), e);
     RETURN (e);
 }
 
@@ -1316,34 +1315,32 @@ BuildFullname (ExprPtr left, Atom atom)
 {
     ENTER ();
     NamespacePtr    namespace;
-    NamePtr	    name;
-    SymbolPtr	    sym;
+    SymbolPtr	    symbol;
     Bool	    search;
     ExprPtr	    nameExpr;
 
     if (left)
     {
 	if (left->base.tag == COLONCOLON)
-	    sym = left->tree.right->name.name->symbol;
+	    symbol = left->tree.right->atom.symbol;
 	else
-	    sym = left->name.name->symbol;
-    }
-    else
-	sym = 0;
-    if (sym && sym->symbol.class == class_namespace)
-    {
-	namespace = sym->namespace.namespace;
-	search = False;
+	    symbol = left->atom.symbol;
+	if (symbol && symbol->symbol.class == class_namespace)
+	    namespace = symbol->namespace.namespace;
+	else
+	    namespace = 0;
+        search = False;
     }
     else
     {
 	namespace = CurrentNamespace;
 	search = True;
     }
-    name = NamespaceFindName (namespace, atom, search);
-    if (!name)
-	name = NamespaceNewName (namespace, atom);
-    nameExpr = NewExprName (name);
+    if (namespace)
+	symbol = NamespaceFindName (namespace, atom, search);
+    else
+	symbol = 0;
+    nameExpr = NewExprAtom (atom, symbol);
     if (left)
 	nameExpr = NewExprTree (COLONCOLON, left, nameExpr);
     RETURN (nameExpr);
@@ -1375,15 +1372,12 @@ BuildCall (char *scope, char *name, int nargs, ...)
 }
 
 /*
- * Create a new symbol in the specified namespace, as a special
- * case, re-use symbols if not inside a function, but require
- * that the types match exactly
+ * Walk a type structure and resolve any type names
  */
 static Bool
 ParseCanonType (TypesPtr type)
 {
-    NamePtr	name;
-    SymbolPtr	s;
+    SymbolPtr	symbol;
     ArgType	*arg;
     int		n;
     Bool	ret = True;
@@ -1399,29 +1393,30 @@ ParseCanonType (TypesPtr type)
     case types_name:
 	if (!type->name.type)
 	{
-	    name = TypeNameName (type);
-	    s = name->symbol;
-	    if (!s)
+	    ExprPtr e;
+	    e = type->name.expr;
+	    if (e->base.tag == COLONCOLON)
+		e = e->tree.right;
+	    symbol = e->atom.symbol;
+	    if (!symbol)
 	    {
 		yyerror ("No typedef \"%A\" in namespace",
-			      name->atom);
+			 e->atom.atom);
 		ret = False;
 	    }
-	    else if (s->symbol.class != class_typedef)
+	    else if (symbol->symbol.class != class_typedef)
 	    {
-		yyerror ("Symbol \"%A\" not a typedef",
-			      name->atom);
+		yyerror ("Symbol \"%A\" not a typedef", e->atom.atom);
 		ret = False;
 	    }
-	    else if (!s->symbol.type)
+	    else if (!symbol->symbol.type)
 	    {
-		yyerror ("Typedef \"%A\" not defined yet",
-			      name->atom);
+		yyerror ("Typedef \"%A\" not defined yet", e->atom.atom);
 		ret = False;
 	    }
 	    else
 	    {
-		type->name.type = s->symbol.type;
+		type->name.type = symbol->symbol.type;
 		ret = ParseCanonType (type->name.type);
 	    }
 	}
@@ -1453,7 +1448,7 @@ ParseCanonType (TypesPtr type)
 }
 
 static SymbolPtr
-ParseNewSymbol (Class class, Types *type, NamePtr name)
+ParseNewSymbol (Publish publish, Class class, Types *type, Atom name)
 {
     ENTER ();
     SymbolPtr	s = 0;
@@ -1461,27 +1456,37 @@ ParseNewSymbol (Class class, Types *type, NamePtr name)
     if (class == class_undef)
 	class = funcDepth ? class_auto : class_global;
 
-    if (ParseCanonType (type))
+    if (class == class_typedef || 
+	class == class_namespace || 
+	ParseCanonType (type))
     {
 	switch (class) {
 	case class_global:
-	    s = NewSymbolGlobal (name->atom, type);
+	    s = NewSymbolGlobal (name, type);
 	    break;
 	case class_static:
-	    s = NewSymbolStatic (name->atom, type);
+	    s = NewSymbolStatic (name, type);
 	    break;
 	case class_arg:
-	    s = NewSymbolArg (name->atom, type);
+	    s = NewSymbolArg (name, type);
 	    break;
 	case class_auto:
-	    s = NewSymbolAuto (name->atom, type);
+	    s = NewSymbolAuto (name, type);
 	    break;
 	case class_exception:
-	    s = NewSymbolException (name->atom, type);
+	    s = NewSymbolException (name, type);
 	    break;
-	default:
+	case class_typedef:
+	    s = NewSymbolType (name, type);
+	    break;
+	case class_namespace:
+	    s = NewSymbolNamespace (name, NewNamespace (CurrentNamespace));
+	    break;
+	case class_undef:
 	    break;
 	}
+	if (s)
+	    NamespaceAddName (CurrentNamespace, s, publish);
     }
     RETURN (s);
 }

@@ -10,7 +10,6 @@
 #include	"value.h"
 #include	"opcode.h"
 
-typedef union _symbol	    *SymbolPtr;
 typedef struct _func	    *FuncPtr;
 typedef struct _namespace   *NamespacePtr;
 typedef struct _command	    *CommandPtr;
@@ -63,28 +62,28 @@ extern SymbolPtr    NewSymbolGlobal (Atom name, Types *type);
 extern SymbolPtr    NewSymbolArg (Atom name, Types *type);
 extern SymbolPtr    NewSymbolStatic (Atom name, Types *Type);
 extern SymbolPtr    NewSymbolAuto (Atom name, Types *type);
-extern SymbolPtr    NewSymbolNamespace (Atom name);
+extern SymbolPtr    NewSymbolNamespace (Atom name, NamespacePtr namespace);
 
-typedef struct _name {
-    DataType	*data;
-    NamePtr	next;
-    Atom	atom;
-    SymbolPtr	symbol;
-    Publish	publish;
-} Name;
+typedef struct _namelist	*NamelistPtr;
+
+typedef struct _namelist {
+    DataType	    *data;
+    NamelistPtr	    next;
+    SymbolPtr	    symbol;
+    Publish	    publish;
+} Namelist;
 
 typedef struct _namespace {
     DataType	    *data;
     NamespacePtr    previous;
-    NamePtr	    names;
+    NamelistPtr	    names;
     Publish	    publish;
 } Namespace;
 
-NamePtr		NewName (NamePtr next, Atom atom);
 NamespacePtr	NewNamespace (NamespacePtr previous);
-NamePtr		NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search);
-NamePtr		NamespaceNewName (NamespacePtr namespace, Atom atom);
-Bool		NamespaceRemoveName (NamespacePtr namespace, NamePtr name);
+SymbolPtr	NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search);
+SymbolPtr	NamespaceAddName (NamespacePtr namespace, SymbolPtr symbol, Publish publish);
+Bool		NamespaceRemoveName (NamespacePtr namespace, Atom atom);
 void		NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish);
 void		NamespaceInit (void);
 
@@ -109,11 +108,12 @@ typedef struct _DeclList    *DeclListPtr;
 typedef struct _DeclList {
     DataType	*data;
     DeclListPtr	next;
-    NamePtr	name;
+    Atom	name;
+    SymbolPtr	symbol;
     ExprPtr	init;
 } DeclList;
 
-extern DeclListPtr  NewDeclList (NamePtr name, ExprPtr init, DeclListPtr next);
+extern DeclListPtr  NewDeclList (Atom name, ExprPtr init, DeclListPtr next);
 
 typedef struct _MemList    *MemListPtr;
 typedef struct _MemList {
@@ -125,10 +125,16 @@ typedef struct _MemList {
 
 extern MemListPtr  NewMemList (AtomListPtr atoms, Types *type, MemListPtr next);
 
+typedef struct _funcDecl {
+    Publish	publish;
+    Class	class;
+    DeclList	*decl;
+} FuncDecl;
+
 typedef struct _Fulltype {
+    Publish publish;
     Class   class;
     Types   *type;
-    Publish publish;
 } Fulltype;
     
 typedef struct _frame {
@@ -208,12 +214,8 @@ typedef struct _exprConst {
 typedef struct _exprAtom {
     ExprBase	expr;
     Atom	atom;
+    SymbolPtr	symbol;
 } ExprAtom;
-
-typedef struct _exprName {
-    ExprBase	expr;
-    NamePtr	name;
-} ExprName;
 
 typedef struct _exprCode {
     ExprBase	expr;
@@ -233,15 +235,13 @@ typedef union _expr {
     ExprTree	tree;
     ExprConst	constant;
     ExprAtom	atom;
-    ExprName	name;
     ExprCode	code;
     ExprDecl	decl;
 } Expr;
 
 Expr	*NewExprTree (int tag, Expr *left, Expr *right);
 Expr	*NewExprConst (int tag, Value val);
-Expr	*NewExprAtom (Atom atom);
-Expr	*NewExprName (NamePtr name);
+Expr	*NewExprAtom (Atom atom, SymbolPtr symbol);
 Expr	*NewExprCode (CodePtr code, ExprPtr name);
 Expr	*NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish);
 
@@ -569,19 +569,19 @@ void	IoInterrupt (void);
 
 void	*AllocateTemp (int size);
 
-void	PrettyPrint (Value f, NamePtr name);
+void	PrettyPrint (Value f, Publish publish, SymbolPtr name);
 void	PrettyCode (Value f, CodePtr code, Atom name, Class class, 
 		    Publish publish, int level, Bool nest);
 void	PrettyStat (Value F, Expr *e, Bool nest);
 void	PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
 
-void	EditFunction (NamePtr name);
+void	EditFunction (SymbolPtr name, Publish publish);
 void	EditFile (Value file_name);
 
 Value	lookupVar (char *);
 void	setVar (NamespacePtr, char *, Value, Types *type);
 void	GetNamespace (NamespacePtr *, FramePtr *);
-Bool	NamespaceLocate (Value names, NamespacePtr  *s, NamePtr *name);
+Bool	NamespaceLocate (Value names, NamespacePtr  *s, SymbolPtr *symbol, Publish *publish);
 ExprPtr	BuildName (char *ns_name, char *name);
 ExprPtr	BuildCall (char *, char *, int, ...);
 ExprPtr	BuildFullname (ExprPtr colonnames, Atom name);

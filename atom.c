@@ -8,12 +8,9 @@
 
 #include	"nickle.h"
 
-static int  nextAtomValue;
-
 typedef struct _atom {
     DataType	    *data;
     struct _atom    *next;
-    int		    id;
 } AtomEntry;
 
 #define AtomEntryName(ae)   ((char *) ((ae) + 1))
@@ -87,24 +84,10 @@ AtomId (char *name)
 	atomEntry = ALLOCATE (&AtomEntryType, sizeof (AtomEntry) + strlen (name) + 1);
 	atomEntry->next = *bucket;
 	*bucket = atomEntry;
-	atomEntry->id = ++nextAtomValue;
 	strcpy (AtomEntryName(atomEntry), name);
 	EXIT();
     }
-    return atomEntry->id;
-}
-
-char *
-AtomName (Atom id)
-{
-    int		i;
-    AtomEntry	*atomEntry;
-
-    for (i = 0; i < HASHSIZE; i++)
-	for (atomEntry = atomTable->hash[i]; atomEntry; atomEntry = atomEntry->next)
-	    if (atomEntry->id == id)
-		return AtomEntryName (atomEntry);
-    return 0;
+    return AtomEntryName (atomEntry);
 }
 
 static void
@@ -118,13 +101,13 @@ AtomListMark (void *object)
 DataType AtomListType = { AtomListMark, 0 };
 
 AtomListPtr
-NewAtomList (AtomListPtr next, Atom id)
+NewAtomList (AtomListPtr next, Atom atom)
 {
     ENTER ();
     AtomListPtr	al;
 
     al = ALLOCATE (&AtomListType, sizeof (AtomList));
     al->next = next;
-    al->id = id;
+    al->atom = atom;
     RETURN (al);
 }

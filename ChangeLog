@@ -1,6 +1,14 @@
 2004-02-26  Keith Packard  <keithp@keithp.com>
 
 	* Makefile.am:
+	* builtin.c:
+	version.h has moved
+	* Every file
+	Change copyright to 2004
+
+2004-02-26  Keith Packard  <keithp@keithp.com>
+
+	* Makefile.am:
 	* debian/changelog:
 	* debian/compat:
 	* debian/control:

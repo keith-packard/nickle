@@ -1,7 +1,7 @@
 /* $Header$ */
 
 /*
- * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * Copyright © 1988-2004 Keith Packard and Bart Massey.
  * All Rights Reserved.  See the file COPYING in this directory
  * for licensing information.
  */
@@ -13,7 +13,7 @@
  */
 
 #include	"builtin.h"
-#include	"builtin/version.h"
+#include	"version.h"
 
 struct sbuiltin {
     char	    *value;

@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-## Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+## Copyright © 1988-2004 Keith Packard and Bart Massey.
 ## All Rights Reserved.  See the file COPYING in this directory
 ## for licensing information.
 
@@ -66,7 +66,7 @@ USES_GRAM_H = \
 
 $(USES_GRAM_H): gram.h
 
-builtin.o: builtin/version.h
+builtin.o: version.h
 
 version.h: $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
 	sh $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4

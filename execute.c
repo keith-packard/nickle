@@ -422,7 +422,7 @@ ThreadBoxCheck (BoxPtr box, int i, Types *type)
 #define ThreadBoxCheck(b,i,t)
 #endif
 
-static /* inline */ ThreadState
+static inline ThreadState
 ThreadStep (Value thread)
 {
     ENTER ();

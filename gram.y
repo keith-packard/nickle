@@ -108,6 +108,7 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 		ASSIGNDIV ASSIGNMOD ASSIGNPOW
 		ASSIGNSHIFTL ASSIGNSHIFTR
 		ASSIGNLXOR ASSIGNLAND ASSIGNLOR
+%right		FORK
 %right		QUEST COLON
 %left		OR
 %left		AND
@@ -962,6 +963,8 @@ simpleexpr	: primary
 		    { $$ = NewExprTree(DEC, $2, (Expr *) 0); }
 		| simpleexpr DEC
 		    { $$ = NewExprTree(DEC, (Expr *) 0, $1); }
+		| FORK simpleexpr
+		    { $$ = NewExprTree (FORK, (Expr *) 0, $2); }
 		| simpleexpr PLUS simpleexpr
 		    { $$ = NewExprTree(PLUS, $1, $3); }
 		| simpleexpr MINUS simpleexpr
@@ -1101,8 +1104,6 @@ primary		: fullname
 		    { $$ = NewExprTree(OS, $1, $3); }
 		| primary OP opt_exprs CP				%prec CALL
 		    { $$ = NewExprTree (OP, $1, $3); }
-		| FORK OP expr CP					%prec CALL
-		    { $$ = NewExprTree (FORK, (Expr *) 0, $3); }
 		| primary DOT NAME
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0)); }
 		| primary ARROW NAME

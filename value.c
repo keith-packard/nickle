@@ -332,6 +332,8 @@ Factorial (Value av)
 {
     ENTER ();
     Value   tv;
+    Value   i;    
+    StackPointer    iref, tvref;
 
     if (!Integralp (av->value.tag) || Negativep (av))
     {
@@ -341,11 +343,32 @@ Factorial (Value av)
 				av);
 	RETURN (Zero);
     }
-    if (aborting || !Zerop (Less (av, One))) 
-	RETURN (One);
-    tv = Factorial (Minus (av, One));
-    if (!aborting)
-	tv = Times (av, tv);
+    /*
+     * A bit of reference magic here to avoid churning
+     * through megabytes.  Build a couple of spots
+     * on the reference stack for the two intermediate
+     * values and then reuse them after each iteration
+     */
+    tv = One;
+    i = One;
+    REFERENCE (tv);
+    tvref = STACK_TOP(MemStack);
+    REFERENCE (i);
+    iref = STACK_TOP(MemStack);
+    for (;;)
+    {
+	ENTER ();
+	if (aborting || Zerop (Less (i, av)))
+	{
+	    EXIT ();
+	    break;
+	}
+	i = Plus (i, One);
+	tv = Times (i, tv);
+	EXIT ();
+	*iref = i;
+	*tvref = tv;
+    }
     RETURN (tv);
 }
 

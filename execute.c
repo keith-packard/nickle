@@ -194,6 +194,13 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 	    }
 	}
 #undef Arg
+	if (tail && !aborting)
+	{
+	    complete = True;
+	    *next = thread->thread.frame->savePc;
+	    thread->thread.code = thread->thread.frame->saveCode;
+	    thread->thread.frame = thread->thread.frame->previous;
+	}
     }
     else
     {

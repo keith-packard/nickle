@@ -111,15 +111,17 @@ AddInst (ObjPtr obj)
  */
 #define CodeBody(c) ((c)->func.inStaticInit ? &(c)->func.staticInit : &(c)->func.body)
 
+typedef enum _tail { TailNever, TailVoid, TailAlways } Tail;
+
 ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createIfNecessary, Bool assign);
 ObjPtr	CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
 ObjPtr	CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
 ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
 ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, int *ndimp);
-ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Bool tail, ExprPtr stat, CodePtr code);
+ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code);
 ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
 void	CompilePatchLoop (ObjPtr obj, int start, int continue_offset);
-ObjPtr	_CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code);
+ObjPtr	_CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code);
 ObjPtr	CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous);
 ObjPtr	CompileDecl (ObjPtr obj, ExprPtr decls, Bool evaluate, ExprPtr stat, CodePtr code);
 ObjPtr	CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous);
@@ -574,7 +576,7 @@ CompileTypecheckArgs (ObjPtr	obj,
  *   no place to hang a push bit
  */
 ObjPtr
-CompileCall (ObjPtr obj, ExprPtr expr, Bool tail, ExprPtr stat, CodePtr code)
+CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr inst;
@@ -589,7 +591,9 @@ CompileCall (ObjPtr obj, ExprPtr expr, Bool tail, ExprPtr stat, CodePtr code)
 	RETURN (obj);
     }
     expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
-    if (tail)
+    if (tail == TailAlways || 
+	(tail == TailVoid && 
+	 TypesCanon (expr->base.type) == typesPrim[type_void]))
     {
 	BuildInst (obj, OpTailCall, inst, stat);
 	inst->ints.value = argc;
@@ -688,7 +692,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     twixt_body_inst = obj->used;
     state = obj->state;
     obj->state |= OBJ_STATE_SWITCH;
-    obj = _CompileStat (obj, expr->tree.right->tree.left, code);
+    obj = _CompileStat (obj, expr->tree.right->tree.left, False, code);
     CompilePatchLoop (obj, twixt_body_inst, -1);
     obj->state = (obj->state & ~OBJ_STATE_SWITCH) | (state & OBJ_STATE_SWITCH);
     BuildInst (obj, OpTwixtDone, inst, stat);
@@ -713,7 +717,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     
     /* Compile else */
     if (expr->tree.right->tree.right)
-	obj = _CompileStat (obj, expr->tree.right->tree.right, code);
+	obj = _CompileStat (obj, expr->tree.right->tree.right, False, code);
     
     /* finish the leave_done instruction */
     inst = ObjCode (obj, leave_done_inst);
@@ -1212,7 +1216,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	inst->branch.offset = obj->used - exception_inst;
     }
     else
-	obj = _CompileStat (obj, body, code);
+	obj = _CompileStat (obj, body, False, code);
     RETURN (obj);
 }
 
@@ -1377,7 +1381,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->ints.value = ndim;
 	break;
     case OP:	    /* function call */
-	obj = CompileCall (obj, expr, False, stat, code);
+	obj = CompileCall (obj, expr, TailNever, stat, code);
 	break;
     case COLONCOLON:
 	obj = _CompileExpr (obj, expr->tree.right, evaluate, stat, code);
@@ -1665,7 +1669,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 					     NewExprTree (COMMA, 
 							  expr->tree.left,
 							  (Expr *) 0)),
-			   False,
+			   TailNever,
 			   stat, code);
 	expr->base.type = typesPrim[type_thread];
 	break;
@@ -1706,7 +1710,7 @@ CompilePatchLoop (ObjPtr obj, int start, int continue_offset)
 }
 
 ObjPtr
-_CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
+_CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 {
     ENTER ();
     int		top_inst, continue_inst, test_inst, middle_inst, bottom_inst;
@@ -1726,7 +1730,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	 */
 	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
-	obj = _CompileStat (obj, expr->tree.right, code);
+	obj = _CompileStat (obj, expr->tree.right, last, code);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpIf;
 	inst->base.stat = expr;
@@ -1742,13 +1746,13 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	 */
 	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
-	obj = _CompileStat (obj, expr->tree.right->tree.left, code);
+	obj = _CompileStat (obj, expr->tree.right->tree.left, last, code);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpIf;
 	inst->base.stat = expr;
 	inst->branch.offset = obj->used - test_inst;
-	obj = _CompileStat (obj, expr->tree.right->tree.right, code);
+	obj = _CompileStat (obj, expr->tree.right->tree.right, last, code);
 	inst = ObjCode (obj, middle_inst);
 	inst->base.opCode = OpElse;
 	inst->base.stat = expr;
@@ -1767,7 +1771,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	NewInst (test_inst, obj);
 	state = obj->state;
 	obj->state |= OBJ_STATE_LOOP;
-	obj = _CompileStat (obj, expr->tree.right, code);
+	obj = _CompileStat (obj, expr->tree.right, False, code);
 	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
 	NewInst (bottom_inst, obj);
 	inst = ObjCode (obj, test_inst);
@@ -1790,7 +1794,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	continue_inst = obj->used;
 	state = obj->state;
 	obj->state |= OBJ_STATE_LOOP;
-	obj = _CompileStat (obj, expr->tree.left, code);
+	obj = _CompileStat (obj, expr->tree.left, False, code);
 	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
 	obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
 	NewInst (test_inst, obj);
@@ -1820,7 +1824,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	}
 	state = obj->state;
 	obj->state |= OBJ_STATE_LOOP;
-	obj = _CompileStat (obj, expr->tree.right->tree.right, code);
+	obj = _CompileStat (obj, expr->tree.right->tree.right, False, code);
 	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
 	continue_inst = obj->used;
 	if (expr->tree.right->tree.left)
@@ -1926,7 +1930,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	    }
 	    while (s->tree.left)
 	    {
-		obj = _CompileStat (obj, s->tree.left, code);
+		obj = _CompileStat (obj, s->tree.left, False, code);
 		s = s->tree.right;
 	    }
 	    c = c->tree.right;
@@ -1952,7 +1956,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
     case OC:
 	while (expr->tree.left)
 	{
-	    obj = _CompileStat (obj, expr->tree.left, code);
+	    obj = _CompileStat (obj, expr->tree.left, last && !expr->tree.right->tree.left, code);
 	    expr = expr->tree.right;
 	}
 	break;
@@ -1984,7 +1988,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	{
 	    if (expr->tree.right->base.tag == OP)
 	    {
-		obj = CompileCall (obj, expr->tree.right, True, expr, code);
+		obj = CompileCall (obj, expr->tree.right, TailAlways, expr, code);
 	    }
 	    else
 	    {
@@ -2008,7 +2012,10 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	}
 	break;
     case EXPR:
-	obj = _CompileExpr (obj, expr->tree.left, False, expr, code);
+	if (last && expr->tree.left->base.tag == OP)
+	    obj = CompileCall (obj, expr->tree.left, TailVoid, expr, code);
+	else
+	    obj = _CompileExpr (obj, expr->tree.left, False, expr, code);
 	break;
     case SEMI:
 	break;
@@ -2017,7 +2024,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	obj = CompileAssign (obj, expr->tree.right, OpInitialize, expr, code);
 	break;
     case NAMESPACE:
-	obj = _CompileStat (obj, expr->tree.right, code);
+	obj = _CompileStat (obj, expr->tree.right, last, code);
 	break;
     case IMPORT:
 	break;
@@ -2081,7 +2088,7 @@ CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous)
     
     code->base.previous = previous;
     obj = NewObj (OBJ_INCR);
-    obj = _CompileStat (obj, code->func.code, code);
+    obj = _CompileStat (obj, code->func.code, True, code);
     needReturn = False;
     if (!obj->used || !CompileOpIsReturn (ObjCode (obj, ObjLast(obj))->base.opCode))
 	needReturn = True;
@@ -2273,7 +2280,7 @@ CompileStat (ExprPtr expr, CodePtr code)
     InstPtr inst;
 
     obj = NewObj (OBJ_INCR);
-    obj = _CompileStat (obj, expr, code);
+    obj = _CompileStat (obj, expr, False, code);
     BuildInst (obj, OpEnd, inst, expr);
 #ifdef DEBUG
     ObjDump (obj, 0);

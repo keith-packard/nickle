@@ -126,11 +126,13 @@ tokenToPrecedence (int token)
 static void
 PrettyParameters (Value f, Expr *e, Bool nest)
 {
-    if (e->tree.right) {
-	PrettyParameters (f, e->tree.right, nest);
-	FilePuts (f, ", ");
+    while (e) 
+    {
+	PrettyExpr (f, e->tree.left, -1, 0, nest);
+	e = e->tree.right;
+	if (e)
+	    FilePuts (f, ", ");
     }
-    PrettyExpr (f, e->tree.left, -1, 0, nest);
 }
 
 static void

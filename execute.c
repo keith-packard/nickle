@@ -512,8 +512,11 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
     case AInitModeRepeat:
         ndim = Stack(0)->ints.value;
 	array = Stack(ndim+1);
-	i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2);
-	ThreadArrayReplicate (thread, array, dim, i);
+	if (Stack(dim+1)->ints.value < array->array.dim[dim])
+	{
+	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2);
+	    ThreadArrayReplicate (thread, array, dim, i);
+	}
 	break;
     }
     RETURN (value);

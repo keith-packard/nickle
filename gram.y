@@ -93,7 +93,9 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    fullname
 %type  <expr>	    opt_rawnames rawname rawnames rawnamespace
 %type  <atom>	    rawatom
-%type  <expr>	    block opt_func_body func_body func_right statements statement if_statement try_statement catches catch
+%type  <expr>	    block opt_func_body func_body func_right catches catch
+%type  <expr>	    statements statement simple_statement
+%type  <expr>	    if_statement try_statement try_body_statement
 %type  <expr>	    block_or_expr
 %type  <expr>	    case_block cases case
 %type  <expr>	    union_case_block union_cases union_case
@@ -456,7 +458,11 @@ if_statement	: IF ignorenl namespace_start OP expr CP statement %prec IF
 		| IF ignorenl namespace_start OP expr CP statement ELSE statement
 		    { $$ = NewExprTree(ELSE, $5, NewExprTree(ELSE, $7, $9)); }
 
-statement	: if_statement namespace_end attendnl
+statement:	simple_statement
+		| block
+		;
+
+simple_statement: if_statement namespace_end attendnl
                     { $$ = $1; }
 		| WHILE ignorenl namespace_start OP expr CP statement namespace_end attendnl
 		    { $$ = NewExprTree(WHILE, $5, $7); }
@@ -479,7 +485,6 @@ statement	: if_statement namespace_end attendnl
 		    { $$ = NewExprTree (RETURNTOK, (Expr *) 0, $2); }
 		| expr SEMI
 		    { $$ = NewExprTree(EXPR, $1, (Expr *) 0); }
-		| block
 		| SEMI
 		    { $$ = NewExprTree(SEMI, (Expr *) 0, (Expr *) 0); }
 		| func_decl doc_string opt_func_body namespace_end
@@ -640,7 +645,11 @@ for_exprs       : opt_expr SEMI for_exprs
 		    { $$ = NewExprTree(SEMI, $1, 0); }
 		;
 
-try_statement:  TRY ignorenl statement catches
+try_body_statement:  simple_statement
+		| OC statements CC
+		    { $$ = $2; }
+
+try_statement:  TRY ignorenl try_body_statement catches
 		    { $$ = NewExprTree (CATCH, $4, $3); }
                 ;
 

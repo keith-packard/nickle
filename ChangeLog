@@ -1,3 +1,10 @@
+2004-09-22  Bart Massey  <bart@cs.pdx.edu>
+
+	* gram.y:
+	Made try blocks as well as try statements not create a new
+	scope, for convenience in using try the way it is intended
+	to be used.
+	
 2004-09-21  Bart Massey  <bart@cs.pdx.edu>
 
 	* gram.y:

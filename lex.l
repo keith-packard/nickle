@@ -103,7 +103,6 @@ LexResetInteractive (void)
     }
     if (lexInput->interactive)
 	return True;
-    FileClose (lexInput->file);
     return False;
 }
 

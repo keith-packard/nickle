@@ -2251,6 +2251,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace,
     if (ClassFrame (class) && !code_namespace)
     {
 	CompileError (obj, decls, "Invalid storage class %C", class);
+	decls->base.type = typesPoly;
 	RETURN (obj);
     }
     for (decl = decls->decl.decl; decl; decl = decl->next) {
@@ -2277,7 +2278,6 @@ CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace,
 	    }
 	    *initObj = _CompileExpr (*initObj, decl->init, 
 				     namespace, True, decls);
-	    decls->base.type = decl->init->base.type;
 	    if (compile_namespace && compile_namespace->code)
 	    {
 		CodePtr	code = compile_namespace->code;
@@ -2307,12 +2307,17 @@ CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace,
 	    BuildInst (*initObj, OpAssign, inst, decls);
 	}
     }
-    if (evaluate && s)
+    if (evaluate)
     {
-	InstPtr	inst;
-	BuildInst (obj, OpName, inst, stat);
-	inst->var.name = s;
-	decls->base.type = s->symbol.type;
+	if (s)
+	{
+	    InstPtr	inst;
+	    BuildInst (obj, OpName, inst, stat);
+	    inst->var.name = s;
+	    decls->base.type = s->symbol.type;
+	}
+	else
+	    decls->base.type = typesPoly;
     }
     RETURN (obj);
 }

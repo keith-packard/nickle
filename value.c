@@ -481,6 +481,24 @@ Gcd (Value av, Value bv)
 					    IntegerType.promote (bv, 0)->integer.mag))));
 }
 
+Value
+Bdivmod (Value av, Value bv)
+{
+    ENTER ();
+    
+    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    {
+	RaiseStandardException (exception_invalid_binop_types,
+				"invalid gcd argument types",
+				2,
+				av, bv);
+	RETURN (Zero);
+    }
+    RETURN (Reduce (NewInteger (Positive,
+				NaturalBdivmod (IntegerType.promote (av, 0)->integer.mag,
+						IntegerType.promote (bv, 0)->integer.mag))));
+}
+
 StackObject *ValuePrintStack;
 int	    ValuePrintLevel;
 

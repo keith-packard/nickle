@@ -697,6 +697,7 @@ Value	do_Command_new (Value, Value);
 Value	do_Command_new_names (Value, Value);
 Value	do_Command_pretty_print (Value, Value);
 Value	do_Command_display (Value, Value);
+Value	do_bdivmod (Value, Value);
 
 /* three argument builtins */
 Value	do_String_substr (Value, Value, Value);

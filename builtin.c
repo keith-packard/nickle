@@ -259,6 +259,7 @@ static struct fbuiltin_2 funcs_2[] = {
     { do_File_open,	    "open",		    "f",    "ss",   &FileNamespace },
     { do_gcd,		    "gcd",		    "i",    "ii"    },
     { do_xor,		    "xor",		    "i",    "ii"    },
+    { do_bdivmod,	    "bdivmod",		    "i",    "ii"    },
     { do_Math_pow,	    "pow",		    "n",    "Ri",   &MathNamespace },
     { do_Math_assignpow,    "assign_pow",	    "n",    "*Ri",  &MathNamespace },
     { do_File_putc,	    "putc",		    "i",    "if",   &FileNamespace },
@@ -1148,6 +1149,13 @@ do_xor (Value a, Value b)
 }
 
 Value
+do_bdivmod (Value a, Value b)
+{
+    ENTER ();
+    RETURN (Bdivmod (a, b));
+}
+
+Value
 do_Math_pow (Value a, Value b)
 {
     ENTER ();
@@ -1623,39 +1631,10 @@ do_bit_width (Value av)
     ENTER ();
     switch (av->value.tag) {
     case type_int:
-	{
-	    int	    i, j;
-	    j = av->ints.value;
-	    if (j < 0)
-		j = -j;
-	    i = 0;
-	    while (j)
-	    {
-		i++;
-		j >>= 1;
-	    }
-	    av = NewInt (i);
-	}
+	av = NewInt (IntWidth (av->ints.value));
 	break;
     case type_integer:
-	{
-	    int	    i;
-	    digit   j;
-
-	    i = 0;
-	    if (NaturalLength (av->integer.mag))
-	    {
-		i = NaturalLength (av->integer.mag) - 1;
-		j = NaturalDigits(av->integer.mag)[i];
-		i <<= LLBASE2;
-		while (j)
-		{
-		    i++;
-		    j >>= 1;
-		}
-	    }
-	    av = NewInt (i);
-	}
+	av = NewInt (NaturalWidth (av->integer.mag));
 	break;
     default:
 	RaiseStandardException (exception_invalid_argument,

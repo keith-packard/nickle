@@ -36,12 +36,6 @@ prs (char *s, Natural *n)
 }
 #endif
 
-static digit subtract(Natural *, Natural *, int);
-static void multiply (Natural *, digit, Natural *);
-#if 0
-static Bool greaterequal (Natural *, Natural *, int);
-#endif
-
 /*
  * Return shift amount needed to normalize d (MSB (d << shift) == 1)
  */
@@ -59,145 +53,6 @@ static int normalize (digit d)
     }
     return n;
 }
-
-
-/* 
- * magic divide support routines, these do
- * pretty special functions...
- */
-
-/*
- * subtract b from a in place with offset implied zeros to the
- * right of b. Return if a carry out occured
- */
-
-static digit
-subtract (Natural *a, Natural *b, int offset)
-{
-    int		    index;
-    digit	    carry;
-    digit	    *at, *bt;
-    digit	    av, bv;
-    int		    len;
-
-    carry = 0;
-    at = NaturalDigits(a) + offset;
-    bt = NaturalDigits(b);
-    index = a->length - offset;
-    if (index > b->length)
-	index = b->length;
-    while (index--)
-    {
-	av = *at;
-	bv = *bt++ + carry;
-	if (bv)
-	{
-	    carry = 0;
-	    if ((*at = av - bv) > av)
-		carry = 1;
-	}
-	at++;
-    }
-    if (carry && a->length > b->length + offset)
-    {
-	*at = *at - carry;
-	carry = 0;
-    }
-    len = a->length;
-    at = NaturalDigits(a) + len;
-    while (len > 0 && *--at == 0)
-	len--;
-    a->length = len;
-    return carry;
-}
-
-static void
-add (Natural *a, Natural *b, int offset)
-{
-    int	    index;
-    digit   carry;
-    digit   *at, *bt;
-    digit   av, bv;
-
-    carry = 0;
-    at = NaturalDigits(a) + offset;
-    bt = NaturalDigits(b);
-    index = b->length;
-    while (index--)
-    {
-	av = *at;
-	bv = *bt++ + carry;
-	if (bv)
-	{
-	    carry = 0;
-	    if ((*at = av + bv) < av)
-		carry = 1;
-	}
-	at++;
-    }
-    if (carry)
-	*at = *at + carry;
-    if (at == NaturalDigits(a) + a->length - 1)
-    {
-	while (a->length && *at == 0)
-	{
-	    at--;
-	    a->length--;
-	}
-    }
-}
-
-static __inline void
-multiply (Natural *a, digit i, Natural *result)
-{
-    double_digit    q;
-    digit	    carry;
-    digit	    *at, *rt;
-    int		    index;
-
-    at = NaturalDigits(a);
-    rt = NaturalDigits(result);
-    carry = 0;
-    index = a->length;
-    while (index--) {
-	q = (double_digit) i * (double_digit) *at++ + (double_digit) carry;
-	carry = DivBase (q);
-	*rt++ = ModBase (q);
-    }
-    result->length = a->length;
-    if (carry)
-    {
-	*rt++ = carry;
-	result->length++;
-    }
-}
-
-#if 0
-static __inline Bool
-greaterequal (Natural *a, Natural *b, int offset)
-{
-    digit	*ad, *bd;
-    int		index;
-
-    if (a->length > b->length + offset)
-	return True;
-    if (a->length < b->length + offset)
-	return False;
-    ad = NaturalDigits(a) + a->length - 1;
-    bd = NaturalDigits(b) + b->length - 1;
-    index = b->length;
-    while (index--)
-    {
-	if (*ad > *bd)
-	    return True;
-	if (*ad < *bd)
-	    return False;
-	--ad;
-	--bd;
-    }
-    return True;
-}
-#endif
 
 Natural *
 NaturalDivide (Natural *a, Natural *b, Natural **remp)
@@ -357,12 +212,12 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 		}
 		if (d == 1)
 		{
-		    carry = subtract (rem, b, offset);
+		    carry = NaturalSubtractOffset (rem, b, offset);
 		}
 		else
 		{
-		    multiply (b, d, partial);
-		    carry = subtract (rem, partial, offset);
+		    NaturalDigitMultiply (b, d, partial);
+		    carry = NaturalSubtractOffset (rem, partial, offset);
 		}
 		if (carry)
 		{
@@ -374,7 +229,7 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 		    prs ("rem", rem);
 		    prs ("partial", partial);
 #endif
-		    add (rem, b, offset);
+		    NaturalAddOffset (rem, b, offset);
 #ifdef DEBUG
 		    prs ("rem", rem);
 #endif

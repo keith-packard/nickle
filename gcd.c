@@ -62,45 +62,130 @@ gcd_right_shift (Natural *v, int shift)
     }
 }
 
-static void
-gcd_subtract (Natural *a, Natural *b)
+/*
+ * compute u/v mod 2**s
+ */
+digit
+DigitBmod (digit u, digit v, int s)
 {
-    int		    index;
-    digit	    carry;
-    digit	    *at, *bt;
-    digit	    av, bv;
-    int		    len;
+    int	    i;
+    digit   umask = 0;
+    digit   imask = 1;
+    digit   m = 0;
 
-    carry = 0;
-    at = NaturalDigits(a);
-    bt = NaturalDigits(b);
-    index = b->length;
-    while (index--)
+    for (i = 0; i < s; i++)
     {
-	av = *at;
-	bv = *bt++ + carry;
-	if (bv)
+	umask |= imask;
+	if (u & umask)
 	{
-	    carry = 0;
-	    if ((*at = av - bv) > av)
-		carry = 1;
+	    u = u - v;
+	    m = m | imask;
 	}
-	at++;
+	imask <<= 1;
+	v <<= 1;
     }
-    if (carry && a->length > b->length)
+    return m;
+}
+
+int
+NaturalWidth (Natural *u)
+{
+    int	    w;
+    digit   top;
+    
+    if (NaturalZero (u))
+	return 0;
+    w = NaturalLength (u) - 1;
+    top = NaturalDigits(u)[w];
+    w <<= LLBASE2;
+    while (top)
     {
-	*at = *at - carry;
-	carry = 0;
+	w++;
+	top >>= 1;
     }
-    len = a->length;
-    at = NaturalDigits(a) + len;
-    while (len > 0 && *--at == 0)
-	len--;
-    a->length = len;
+    return w;
+}
+
+int
+IntWidth (int i)
+{
+    int	w;
+
+    if (i < 0)
+	i = -i;
+    w = 0;
+    while (i)
+    {
+	w++;
+	i >>= 1;
+    }
+    return w;
+}
+
+#ifdef DEBUG
+#define START	    int steps = 0
+#define STEP	    steps++
+#define FINISH(op)  FilePrintf (FileStdout, "%s %d steps\n", op, steps)
+#else
+#define START
+#define STEP
+#define FINISH(op)
+#endif
+
+Natural *
+NaturalBdivmod (Natural *u_orig, Natural *v)
+{
+    ENTER ();
+    Natural *u;
+    digit   b, v0;
+    Natural *t;
+    int	    i;
+    int	    d;
+    digit   dmask;
+    START;
+    
+    u = AllocNatural (u_orig->length);
+    NaturalCopy (u_orig, u);
+    t = AllocNatural (v->length + 2);
+    d = NaturalWidth (u) - NaturalWidth (v) + 1;
+    v0 = NaturalDigits(v)[0];
+    i = 0;
+    while (d > DIGITBITS)
+    {
+	if (NaturalDigits(u)[i])
+	{
+	    b = DigitBmod (NaturalDigits(u)[i], v0, DIGITBITS);
+	    NaturalDigitMultiply (v, b, t);
+	    if (NaturalGreaterEqualOffset (u, t, i))
+		NaturalSubtractOffset (u, t, i);
+	    else
+		NaturalSubtractOffsetReverse (u, t, i);
+	    d = NaturalWidth (u) - NaturalWidth (v) - (i << LLBASE2) + 1;
+	}
+	i++;
+	d -= DIGITBITS;
+	STEP;
+    }
+    if (d == DIGITBITS)
+	dmask = MAXDIGIT;
+    else
+	dmask = (((digit) 1) << d) - 1;
+    if (NaturalDigits(u)[i] & dmask)
+    {
+	b = DigitBmod (NaturalDigits(u)[i], v0, d);
+	NaturalDigitMultiply (v, b, t);
+	if (NaturalGreaterEqualOffset (u, t, i))
+	    NaturalSubtractOffset (u, t, i);
+	else
+	    NaturalSubtractOffsetReverse (u, t, i);
+	STEP;
+    }
+    FINISH("bdivmod");
+    RETURN (NaturalRsl (u, (i << LLBASE2) + d));;
 }
 
 #ifdef CHECK
-Natural *
+static Natural *
 RegularGcd (Natural *u, Natural *v)
 {
     ENTER ();
@@ -118,45 +203,62 @@ RegularGcd (Natural *u, Natural *v)
 
 #define Odd(n)	(NaturalDigits(n)[0] & 1)
 
+static int
+NaturalZeroBits (Natural *u)
+{
+    digit   *ut = NaturalDigits (u);
+    digit   d;
+    int	    z = 0;
+
+    while ((d = *ut++) == 0)
+	z += LBASE2;
+    while ((d & 1) == 0)
+    {
+	z++;
+	d >>= 1;
+    }
+    return z;
+}
+
 Natural *
-NaturalGcd (u, v)
-    Natural	*u, *v;
+NaturalGcd (Natural *u, Natural *v)
 {
     ENTER ();
 #ifdef CHECK
     Natural	*true = RegularGcd (u, v);
 #endif
     Natural	*t;
-    digit	*ut, *vt;
-    digit	mask;
-    digit	match;
-    int		i;
     int		normal;
+    int		u_zeros, v_zeros;
 
-    ut = NaturalDigits (u);
-    vt = NaturalDigits (v);
-    for (normal = 0; (match = (*ut++|*vt++)) == 0; normal += LBASE2)
-	;
-    mask = 1;
-    while (!(match & mask))
+    u_zeros = NaturalZeroBits (u);
+    v_zeros = NaturalZeroBits (v);
+    normal = u_zeros;
+    if (u_zeros > v_zeros)
+	normal = v_zeros;
+    u = NaturalRsl (u, u_zeros);
+    v = NaturalRsl (v, v_zeros);
+    if (NaturalLess (u, v))
     {
-	mask <<= 1;
-	normal++;
+	t = u;
+	u = v;
+	v = t;
     }
-    u = NaturalRsl (u, normal);
-    v = NaturalRsl (v, normal);
+#if 0
+    if (NaturalLength (u) > NaturalLength (v) + 1)
+    {
+	u = NaturalBdivmod (u, v);
+	if (NaturalZero (u))
+	    RETURN (v);
+    }
+#endif
     if (NaturalLength (u) == 1 && NaturalLength (v) == 1)
     {
 	digit	ud = NaturalDigits(u)[0];
 	digit	vd = NaturalDigits(v)[0];
 	digit	td;
+	START;
 
-	if (vd & 1)
-	{
-	    td = ud;
-	    ud = vd;
-	    vd = td;
-	}
 	while (vd)
 	{
 	    while (!(vd&1))
@@ -168,14 +270,17 @@ NaturalGcd (u, v)
 		vd = td;
 	    }
 	    vd -= ud;
+	    STEP;
 	}
 	NaturalDigits(u)[0] = ud;
+	FINISH ("gcd1");
     }
     else if (NaturalLength (u) <= 2 && NaturalLength (v) <= 2)
     {
 	double_digit	ud;
 	double_digit	vd;
 	double_digit	td;
+	START;
 	
 	ud = NaturalDigits(u)[0];
 	if (NaturalLength (u) == 2)
@@ -183,12 +288,6 @@ NaturalGcd (u, v)
 	vd = NaturalDigits(v)[0];
 	if (NaturalLength (v) == 2)
 	    vd |= ((double_digit) NaturalDigits(v)[1]) << LBASE2;
-	if (vd & 1)
-	{
-	    td = ud;
-	    ud = vd;
-	    vd = td;
-	}
 	while (vd)
 	{
 	    while (!(vd&1))
@@ -200,6 +299,7 @@ NaturalGcd (u, v)
 		vd = td;
 	    }
 	    vd -= ud;
+	    STEP;
 	}
 	td = ud >> LBASE2;
 	if (td)
@@ -212,36 +312,26 @@ NaturalGcd (u, v)
 	else
 	    NaturalLength (u) = 1;
 	NaturalDigits(u)[0] = (digit) ud;
+	FINISH ("gcd2");
     }
     else
     {
-	if (Odd (v))
-	{
-	    t = u;
-	    u = v;
-	    v = t;
-	}
+	START;
 	while (v->length)
 	{
-	    vt = NaturalDigits (v);
-	    for (i = 0; (match = *vt++) == 0; i += LBASE2)
-		;
-	    mask = 1;
-	    while (!(match & mask))
-	    {
-		mask <<= 1;
-		i++;
-	    }
-	    if (i)
-		gcd_right_shift (v, i);
+	    v_zeros = NaturalZeroBits (v);
+	    if (v_zeros)
+		gcd_right_shift (v, v_zeros);
 	    if (NaturalLess (v, u))
 	    {
 		t = u;
 		u = v;
 		v = t;
 	    }
-	    gcd_subtract (v, u);
+	    NaturalSubtractOffset (v, u, 0);
+	    STEP;
 	}
+	FINISH ("gcd");
     }
     u = NaturalLsl (u, normal);
 #ifdef CHECK

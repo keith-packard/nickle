@@ -912,3 +912,174 @@ NaturalPowerOfTwo (Natural *v)
     }
     return bit;
 }
+
+void
+NaturalDigitMultiply (Natural *a, digit i, Natural *result)
+{
+    double_digit    q;
+    digit	    carry;
+    digit	    *at, *rt;
+    int		    index;
+
+    at = NaturalDigits(a);
+    rt = NaturalDigits(result);
+    carry = 0;
+    index = a->length;
+    while (index--) {
+	q = (double_digit) i * (double_digit) *at++ + (double_digit) carry;
+	carry = DivBase (q);
+	*rt++ = ModBase (q);
+    }
+    result->length = a->length;
+    if (carry)
+    {
+	*rt++ = carry;
+	result->length++;
+    }
+}
+
+/*
+ * subtract b from a in place with offset implied zeros to the
+ * right of b. Return if a carry out occured
+ */
+
+digit
+NaturalSubtractOffset (Natural *a, Natural *b, int offset)
+{
+    int		    index;
+    digit	    carry;
+    digit	    *at, *bt;
+    digit	    av, bv;
+    int		    len;
+
+    carry = 0;
+    at = NaturalDigits(a) + offset;
+    bt = NaturalDigits(b);
+    index = a->length - offset;
+    if (index > b->length)
+	index = b->length;
+    while (index--)
+    {
+	av = *at;
+	bv = *bt++ + carry;
+	if (bv)
+	{
+	    carry = 0;
+	    if ((*at = av - bv) > av)
+		carry = 1;
+	}
+	at++;
+    }
+    if (carry && a->length > b->length + offset)
+    {
+	*at = *at - carry;
+	carry = 0;
+    }
+    len = a->length;
+    at = NaturalDigits(a) + len;
+    while (len > 0 && *--at == 0)
+	len--;
+    a->length = len;
+    return carry;
+}
+
+digit
+NaturalSubtractOffsetReverse (Natural *a, Natural *b, int offset)
+{
+    int		    index;
+    digit	    carry;
+    digit	    *at, *bt;
+    digit	    av, bv;
+    int		    len;
+
+    carry = 0;
+    at = NaturalDigits(a) + offset;
+    bt = NaturalDigits(b);
+    index = a->length - offset;
+    if (index > b->length)
+	index = b->length;
+    while (index--)
+    {
+	av = *at + carry;
+	bv = *bt++;
+	if (bv)
+	{
+	    carry = 0;
+	    if ((*at = bv - av) > bv)
+		carry = 1;
+	}
+	at++;
+    }
+    if (carry && a->length > b->length + offset)
+    {
+	*at = carry;
+	carry = 0;
+    }
+    len = a->length;
+    at = NaturalDigits(a) + len;
+    while (len > 0 && *--at == 0)
+	len--;
+    a->length = len;
+    return carry;
+}
+
+void
+NaturalAddOffset (Natural *a, Natural *b, int offset)
+{
+    int	    index;
+    digit   carry;
+    digit   *at, *bt;
+    digit   av, bv;
+
+    carry = 0;
+    at = NaturalDigits(a) + offset;
+    bt = NaturalDigits(b);
+    index = b->length;
+    while (index--)
+    {
+	av = *at;
+	bv = *bt++ + carry;
+	if (bv)
+	{
+	    carry = 0;
+	    if ((*at = av + bv) < av)
+		carry = 1;
+	}
+	at++;
+    }
+    if (carry)
+	*at = *at + carry;
+    if (at == NaturalDigits(a) + a->length - 1)
+    {
+	while (a->length && *at == 0)
+	{
+	    at--;
+	    a->length--;
+	}
+    }
+}
+
+Bool
+NaturalGreaterEqualOffset (Natural *a, Natural *b, int offset)
+{
+    digit       *ad, *bd;
+    int         index;
+
+    if (a->length > b->length + offset)
+	return True;
+    if (a->length < b->length + offset)
+	return False;
+    ad = NaturalDigits(a) + a->length - 1;
+    bd = NaturalDigits(b) + b->length - 1;
+    index = b->length;
+    while (index--)
+    {
+	if (*ad > *bd)
+	    return True;
+	if (*ad < *bd)
+	    return False;
+	--ad;
+	--bd;
+    }
+    return True;
+}

@@ -1682,7 +1682,6 @@ BuildCall (char *scope, char *name, int nargs, ...)
 static CanonTypeResult
 ParseCanonType (TypePtr type, Bool forwardAllowed)
 {
-    SymbolPtr	    symbol;
     ArgType	    *arg;
     int		    n;
     CanonTypeResult ret = CanonTypeDefined, t;
@@ -1697,34 +1696,39 @@ ParseCanonType (TypePtr type, Bool forwardAllowed)
     case type_prim:
 	break;
     case type_name:
-	if (!type->name.type)
+	if (!TypeNameType(type))
 	{
-	    ExprPtr e;
-	    e = type->name.expr;
-	    if (e->base.tag == COLONCOLON)
-		e = e->tree.right;
-	    symbol = e->atom.symbol;
-	    if (!symbol)
+	    if (!type->name.name)
 	    {
-		ParseError ("No typedef \"%A\" in namespace",
-			 e->atom.atom);
+		ExprPtr e;
+		e = type->name.expr;
+		if (e->base.tag == COLONCOLON)
+		    e = e->tree.right;
+		type->name.name = e->atom.symbol;
+		if (!type->name.name)
+		{
+		    ParseError ("No typedef \"%A\" in namespace",
+				e->atom.atom);
+		    ret = CanonTypeUndefined;
+		    break;
+		}
+	    }
+	    if (type->name.name->symbol.class != class_typedef)
+	    {
+		ParseError ("Symbol \"%A\" not a typedef", 
+			    type->name.name->symbol.name);
 		ret = CanonTypeUndefined;
 	    }
-	    else if (symbol->symbol.class != class_typedef)
-	    {
-		ParseError ("Symbol \"%A\" not a typedef", e->atom.atom);
-		ret = CanonTypeUndefined;
-	    }
-	    else if (!symbol->symbol.type)
+	    else if (!TypeNameType(type))
 	    {
 		if (!forwardAllowed)
-		    ParseError ("Typedef \"%A\" not defined yet", e->atom.atom);
+		    ParseError ("Typedef \"%A\" not defined yet", 
+				type->name.name->symbol.name);
 		ret = CanonTypeForward;
 	    }
 	    else
 	    {
-		type->name.type = symbol->symbol.type;
-		ret = ParseCanonType (type->name.type, forwardAllowed);
+		ret = ParseCanonType (TypeNameType(type), forwardAllowed);
 	    }
 	}
 	break;

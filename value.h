@@ -348,8 +348,10 @@ typedef struct _typePrim {
 typedef struct _typeName {
     TypeBase	base;
     ExprPtr	expr;
-    TypePtr	type;
+    SymbolPtr	name;
 } TypeName;
+
+#define TypeNameType(t)	((t)->name.name ? (t)->name.name->symbol.type : 0)
 
 typedef struct _typeRef {
     TypeBase	base;
@@ -413,7 +415,7 @@ extern Type	    *typeRefPoly;
 extern Type	    *typeFileError;
 extern Type	    *typePrim[rep_void + 1];
 
-Type	*NewTypeName (ExprPtr expr, Type *type);
+Type	*NewTypeName (ExprPtr expr, SymbolPtr name);
 Type	*NewTypeRef (Type *ref);
 Type	*NewTypeFunc (Type *ret, ArgType *args);
 Type	*NewTypeArray (Type *type, ExprPtr dimensions);

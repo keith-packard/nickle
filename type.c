@@ -26,7 +26,7 @@ TypeNameMark (void *object)
 {
     TypeName	*tn = object;
 
-    MemReference (tn->type);
+    MemReference (tn->name);
 }
 
 static void
@@ -102,15 +102,15 @@ NewTypePrim (Rep prim)
 }
 
 Type *
-NewTypeName (ExprPtr name, Type *type)
+NewTypeName (ExprPtr expr, Symbol *name)
 {
     ENTER ();
     Type   *t;
 
     t = ALLOCATE (&TypeNameType, sizeof (TypeName));
     t->base.tag = type_name;
-    t->name.expr = name;
-    t->name.type = type;
+    t->name.expr = expr;
+    t->name.name = name;
     RETURN (t);
 }
 
@@ -274,9 +274,9 @@ TypeCompatible (Type *a, Type *b, Bool contains)
 	return False;
 
     if (a->base.tag == type_name)
-        return TypeCompatible (a->name.type, b, contains);
+        return TypeCompatible (TypeNameType(a), b, contains);
     if (b->base.tag == type_name)
-	return TypeCompatible (a, b->name.type, contains);
+	return TypeCompatible (a, TypeNameType(b), contains);
     
     if (a->base.tag == type_types)
     {
@@ -719,9 +719,9 @@ TypeCombineBinary (Type *left, int tag, Type *right)
 	RETURN(0);
     
     if (left->base.tag == type_name)
-	RETURN (TypeCombineBinary (left->name.type, tag, right));
+	RETURN (TypeCombineBinary (TypeNameType(left), tag, right));
     if (right->base.tag == type_name)
-	RETURN (TypeCombineBinary (left, tag, right->name.type));
+	RETURN (TypeCombineBinary (left, tag, TypeNameType(right)));
     
     if (left->base.tag == type_types)
     {
@@ -839,7 +839,7 @@ TypeCombineUnary (Type *type, int tag)
 	RETURN(typePoly);
 
     if (type->base.tag == type_name)
-	RETURN(TypeCombineUnary (type->name.type, tag));
+	RETURN(TypeCombineUnary (TypeNameType(type), tag));
     
     if (type->base.tag == type_types)
     {
@@ -891,7 +891,7 @@ TypeCombineArray (Type *type, int ndim, Bool lvalue)
 	RETURN(typePoly);
 
     if (type->base.tag == type_name)
-	RETURN(TypeCombineArray (type->name.type, ndim, lvalue));
+	RETURN(TypeCombineArray (TypeNameType(type), ndim, lvalue));
     
     if (type->base.tag == type_types)
     {
@@ -928,7 +928,7 @@ TypeCombineStruct (Type *type, int tag, Atom atom)
 	return typePoly;
 	
     if (type->base.tag == type_name)
-	return TypeCombineStruct (type->name.type, tag, atom);
+	return TypeCombineStruct (TypeNameType(type), tag, atom);
 	
     switch (tag) {
     case DOT:
@@ -950,7 +950,7 @@ TypeCombineReturn (Type *type)
 	return typePoly;
 	
     if (type->base.tag == type_name)
-	return TypeCombineReturn (type->name.type);
+	return TypeCombineReturn (TypeNameType(type));
 
     if (type->base.tag == type_func)
 	return type->func.ret;
@@ -965,7 +965,7 @@ TypeCombineFunction (Type *type)
 	return typePoly;
 	
     if (type->base.tag == type_name)
-	return TypeCombineFunction (type->name.type);
+	return TypeCombineFunction (TypeNameType(type));
 
     if (type->base.tag == type_func)
 	return type;
@@ -1010,7 +1010,7 @@ TypeCompatibleAssign (TypePtr a, Value b)
 	}
 	break;
     case type_name:
-	return TypeCompatibleAssign (a->name.type, b);
+	return TypeCompatibleAssign (TypeNameType(a), b);
     case type_ref:
 	if (ValueIsRef(b))
 	{
@@ -1102,7 +1102,7 @@ Type *
 TypeCanon (Type *type)
 {
     if (type && type->base.tag == type_name)
-	return TypeCanon (type->name.type);
+	return TypeCanon (TypeNameType(type));
     return type;
 }
 

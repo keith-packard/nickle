@@ -1,0 +1,34 @@
+#!/usr/local/bin/nickle
+
+# von Koch / Snowflake curves
+# Bart 2001/05/28
+
+# usage: ./snowflake.5c <width> <depth>
+# where <width> is the curve width in inches
+# and <depth> is the iteration depth
+
+load "turtle.5c"
+import Turtle;
+
+void function
+do_flake(int depth, rational scale) {
+    if (depth == 0) {
+	stroke_turtle(scale);
+	return;
+    }
+    do_flake(depth - 1, scale / 3);
+    turn_turtle(-1/6);
+    do_flake(depth - 1, scale / 3);
+    turn_turtle(1/3);
+    do_flake(depth - 1, scale / 3);
+    turn_turtle(-1/6);
+    do_flake(depth - 1, scale / 3);
+}
+
+int width = string_to_integer(argv[1]);
+real height = sqrt((width / 3) ** 2 - (width / 6) ** 2) + 0.05 * width;
+start_turtle("snowflake.eepic", width, height);
+move_turtle(0.0, 0.025);
+aim_turtle(0.25);
+do_flake(string_to_integer(argv[2]), 1.0);
+stop_turtle();

@@ -1,0 +1,97 @@
+/*
+ * Turtle Graphics for LaTeX eepic
+ * Bart 2001/05/28
+ */
+
+namespace Turtle {
+    import File;
+
+    /* configuration */
+    file target;
+    int scale;
+
+    /* current turtle state */
+    struct {
+	real x, y;
+    } pos;
+    rational theta;
+
+    /* keep theta in range */
+    void function
+    normalize_theta() {
+	while (theta < 0)
+	    theta += 1;
+	while (theta >= 1)
+	    theta -= 1;
+    }
+
+    /* angles used by trig functions */
+    real function
+    radians(rational angle) {
+	return 2 * pi * (1 - angle) + pi / 2;
+    }
+
+    /* for various conversions */
+    int function
+    round(real arg) {
+	return floor(arg + 0.5);
+    }
+
+    /*
+     * Create a new turtle drawing.
+     * Sizes are in inches.
+     * Coordinates normalized s.t. given x_size is 1.0
+     */
+    public void function
+    start_turtle(string outfile, real x_size, real y_size) {
+	target = open(outfile, "w");
+	scale = floor(x_size * 1000);
+	int yscale = floor(y_size * 1000);
+	pos.x = 0;
+	pos.y = 0;
+	theta = 0;
+	fprintf(target, "\\setlength{\\unitlength}{0.001in}\n");
+	fprintf(target, "\\begin{picture}(%d,%d)\n",
+		scale, yscale);
+    }
+
+    /* finish the drawing */
+    public void function
+    stop_turtle() {
+	fprintf(target, "\\end{picture}\n");
+	close(target);
+    }
+
+    /* move to normalized absolute position */
+    public void function
+    move_turtle(real x, real y) {
+	pos.x = x * scale;
+	pos.y = y * scale;
+    }
+
+    /* turn *to* normalized rational angle */
+    public void function
+    aim_turtle(rational angle) {
+	theta = angle;
+	normalize_theta();
+    }
+
+    /* turn *by* angle */
+    public void function
+    turn_turtle(rational angle) {
+	theta += angle;
+	normalize_theta();
+    }
+
+    /* travel turtle while making mark */
+    public void function
+    stroke_turtle(rational dist) {
+	real dx = scale * dist * cos(radians(theta));
+	real dy = scale * dist * sin(radians(theta));
+	fprintf(target, "\\path(%d,%d)(%d,%d)\n",
+		round(pos.x), round(pos.y),
+		round(pos.x + dx), round(pos.y + dy));
+	pos.x += dx;
+	pos.y += dy;
+    }
+}

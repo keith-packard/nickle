@@ -1069,11 +1069,11 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 	PrintError ("Unhandled exception %A (", except->symbol.name);
 	if (args)
 	{
-	    BoxPtr  values = args->array.values;
-	    for (i = 0; i < values->nvalues; i++)
+	    int	    dim = ArrayLimits(&args->array)[0];
+	    for (i = 0; i < dim; i++)
 	    {
-		PrintError ("%v", BoxValueGet (values, i));
-		if (i < values->nvalues - 1)
+		PrintError ("%v", ArrayValueGet (&args->array, i));
+		if (i < dim - 1)
 		    PrintError (", ");
 	    }
 	}
@@ -1135,10 +1135,10 @@ RaiseStandardException (StandardException   se,
     va_start (va, argc);
     i = argc + 1;
     args = NewArray (False, False, typePoly, 1, &i);
-    BoxValueSet (args->array.values, 0, NewStrString (string));
+    ArrayValueSet (&args->array, 0, NewStrString (string));
     if (argc)
 	for (i = 0; i < argc; i++)
-	    BoxValueSet (args->array.values, i + 1, va_arg (va, Value));
+	    ArrayValueSet (&args->array, i + 1, va_arg (va, Value));
     standardException = se;
     standardExceptionArgs = args;
     SetSignalException ();

@@ -243,7 +243,7 @@ NamespaceLocate (Value		names,
     GetNamespace (&namespace, &f);
     for (i = 0; i < ArrayLimits(&names->array)[0]; i++)
     {
-	string = BoxValue (names->array.values, i);
+	string = ArrayValue (&names->array, i);
 	if (aborting)
 	    return False;
 	if (!ValueIsString(string))

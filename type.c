@@ -1099,15 +1099,16 @@ TypeCompatibleAssign (TypePtr a, Value b)
 		if (TypePoly (ArrayType(&b->array)))
 		{
 		    int	i;
-		    BoxPtr  box = b->array.values;
 
-		    for (i = 0; i < box->nvalues; i++)
-			if (BoxValueGet (box, i) &&
-			    !TypeCompatibleAssign (a->array.type,
-						   BoxValueGet (box, i)))
+		    for (i = 0; i < ArrayNvalues(&b->array); i++)
+		    {
+			Value	v = ArrayValueGet (&b->array, i);
+			if (v &&
+			    !TypeCompatibleAssign (a->array.type, v))
 			{
 			    return False;
 			}
+		    }
 		    return True;
 		}
 		else

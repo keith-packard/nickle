@@ -140,6 +140,8 @@ AppendObj (ObjPtr first, ObjPtr last)
 	firsti = ObjCode (first, ObjLast (first));
 	*firsti = *lasti;
     }
+    if (last->error)
+	first->error = True;
     return first;
 }
 

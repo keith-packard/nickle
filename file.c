@@ -778,7 +778,7 @@ FileFilter (char *program, char *args[], Value filev, int *errp)
 
     /* set up process files */
     for (i = 0; i < 3; i++) {
-	Value f = BoxValue (filev->array.values, i);
+	Value f = ArrayValue (&filev->array, i);
 	if (i == 0 && !(f->file.flags & FileReadable)) {
 	    RaiseStandardException (exception_invalid_argument,
 				    "File::filter: process input not readable",
@@ -835,7 +835,7 @@ FileFilter (char *program, char *args[], Value filev, int *errp)
 	RETURN(0);
     }
     for (i = 0; i < 3; i++) {
-	Value f = BoxValue (filev->array.values, i);
+	Value f = ArrayValue (&filev->array, i);
 	if (f->file.flags & FilePipe)
 	    f->file.pid = pid;
     }
@@ -859,10 +859,10 @@ FileMakePipe (int *errp)
     files = NewArray (False, False, typePrim[rep_file], 1, &two);
     file = FileCreate (fds[0], FileReadable);
     file->file.flags |= FilePipe;
-    BoxValueSet (files->array.values, 0, file);
+    ArrayValueSet (&files->array, 0, file);
     file = FileCreate (fds[1], FileWritable);
     file->file.flags |= FilePipe;
-    BoxValueSet (files->array.values, 1, file);
+    ArrayValueSet (&files->array, 1, file);
     RETURN (files);
 }
 

@@ -331,8 +331,8 @@ do_dims(Value av)
 
     ret = NewArray(True, False, typePrim[rep_int], 1, &ndim);
     for (i = 0; i < av->array.ndim; i++) {
-      Value d = NewInt(ArrayLimits(&av->array)[i]);
-      BoxValueSet(ret->array.values, i, d);
+	Value d = NewInt(ArrayLimits(&av->array)[i]);
+	ArrayValueSet(&ret->array, i, d);
     }
     RETURN (ret);
 }
@@ -343,13 +343,12 @@ do_setdims (Value av, Value dv)
     ENTER ();
     Array   *a = &av->array;
     Array   *d = &dv->array;
-    BoxPtr  db = d->values;
 #define DIM_LOCAL   32
     int dimLocal[DIM_LOCAL];
     int	*dims = a->ndim < DIM_LOCAL ? dimLocal : AllocateTemp (a->ndim * sizeof (int));
     int	i;
 
-    if (a->ndim != db->nvalues)
+    if (a->ndim != ArrayNvalues(d))
     {
 	RaiseStandardException (exception_invalid_argument,
 				"setdims: size of dimensions must match dimensionality of array",
@@ -366,7 +365,7 @@ do_setdims (Value av, Value dv)
     for (i = 0; i < a->ndim; i++)
     {
 	int j = a->ndim - 1 - i;
-	dims[j] = IntPart (BoxValueGet (db,i), "setdims: invalid dimension");
+	dims[j] = IntPart (ArrayValueGet (d,i), "setdims: invalid dimension");
 	if (aborting)
 	    RETURN (Void);
 	if (dims[j] < 0)

@@ -577,18 +577,35 @@ CopyMutable (Value v)
     int	    i;
     BoxPtr  box, nbox;
     int	    n;
-    
+
     switch (ValueTag(v)) {
     case rep_array:
-	if (v->array.values->constant)
+	if (!v->array.resizable && ArrayValueBox(&v->array,0)->constant)
 	    RETURN (v);
 	nv = NewArray (False, v->array.resizable, ArrayType(&v->array),
 		       v->array.ndim, ArrayDims(&v->array));
 	for (i = 0; i < v->array.ndim; i++)
 	    ArrayLimits(&nv->array)[i] = ArrayLimits(&v->array)[i];
-	box = v->array.values;
-	nbox = nv->array.values;
-	n = box->nvalues;
+	if (v->array.resizable)
+	{
+	    BoxPtr  *o, *n;
+	    int	    l = ArrayNvalues (&v->array);
+	    o = BoxVectorBoxes (v->array.u.resize);
+	    n = BoxVectorBoxes (nv->array.u.resize);
+	    for (i = 0; i < l; i++)
+	    {
+		BoxValueSet (*n, 0, Copy (BoxValueGet (*o, 0)));
+		n++;
+		o++;
+	    }
+	    RETURN(nv);
+	}
+	else
+	{
+	    box = v->array.u.fix;
+	    nbox = nv->array.u.fix;
+	    n = ArrayNvalues (&v->array);
+	}
 	break;
     case rep_struct:
 	if (v->structs.values->constant)

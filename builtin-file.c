@@ -209,10 +209,10 @@ do_File_filter (Value path, Value argv, Value filev)
     int	    err;
 
     /* set up arguments */
-    args = AllocateTemp ((ArrayDims(&argv->array)[0] + 1) * sizeof (char *));
-    for (argc = 0; argc < ArrayDims(&argv->array)[0]; argc++)
+    args = AllocateTemp ((ArrayLimits(&argv->array)[0] + 1) * sizeof (char *));
+    for (argc = 0; argc < ArrayLimits(&argv->array)[0]; argc++)
     {
-	arg = BoxValue (argv->array.values, argc);
+	arg = ArrayValue (&argv->array, argc);
 	args[argc] = StringChars (&arg->string);
     }
     args[argc] = 0;
@@ -364,10 +364,21 @@ Value
 do_File_end (Value f)
 {
     ENTER ();
+    
     if (f->file.flags & FileEnd)
 	RETURN (TrueVal);
     else
+    {
+	Value   b = do_File_getb(f);
+
+	if (b == Void)
+	    RETURN(Void);
+	
+	do_File_ungetb (b, f);
+	if (f->file.flags & FileEnd)
+	    RETURN (TrueVal);
 	RETURN (FalseVal);
+    }
 }
 
 Value
@@ -441,15 +452,10 @@ do_File_ungetb (Value v, Value f)
 {
     ENTER ();
     
-    if (f->file.flags & FileOutputBlocked)
-	ThreadSleep (running, f, PriorityIo);
-    else
+    if (!aborting)
     {
-	if (!aborting)
-	{
-	    complete = True;
-	    FileUnput (f, IntPart (v, "ungetb: non integer"));
-	}
+	complete = True;
+	FileUnput (f, IntPart (v, "ungetb: non integer"));
     }
     RETURN (v);
 }

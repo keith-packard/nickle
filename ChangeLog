@@ -1,3 +1,42 @@
+2004-04-15  Keith Packard  <keithp@keithp.com>
+
+	* array.c: (ArrayEqual), (ArrayPrint), (ArrayHash), (ArrayMark),
+	(BoxVectorMark), (NewBoxVector), (FillBoxVector), (NewArray),
+	(ArrayResize):
+	* builtin-toplevel.c: (do_dims), (do_setdims):
+	* execute.c: (BuildFrame), (ThreadArrayInd),
+	(ThreadArrayReplicate), (ThreadArrayInit), (ThreadRaise),
+	(ThreadExceptionCall), (ThreadOpArray), (ThreadsRun):
+	* file.c: (FileFilter), (FileMakePipe):
+	* gram.y:
+	* hash.c: (HashKeys):
+	* main.c: (setArgv):
+	* sched.c: (RaiseException), (RaiseStandardException):
+	* scope.c: (NamespaceLocate):
+	* type.c: (TypeCompatibleAssign):
+	* value.c: (CopyMutable):
+	* value.h:
+	Change resizable array representation to be a vector
+	of single entry boxes.  This allows clean semantics
+	for array shrinking -- outranged elements still have
+	storage, but are no longer accessible through the
+	array, even if the array is subsequently enlarged.
+
+	* builtin-file.c: (do_File_filter), (do_File_end),
+	(do_File_ungetb):
+	Change File::end semantic to actually peek at the file
+	and check whether the next read would return EOF.
+	This seems like the only useful semantic here.
+
+	* builtin-string.c: (do_String_new):
+	Was using ArrayDims instead of ArrayLimits
+	
+	* builtin.5c:
+	white space change
+
+	* compile.c: (AppendObj):
+	Must propogate error when appending objects together
+
 2004-04-15  Bart Massey  <bart@cs.pdx.edu>
 
 	* lex.l:

@@ -556,16 +556,40 @@ typedef struct _string {
 
 #define StringChars(s)	    ((char *) ((s) + 1))
 
+/*
+ * Resizable arrays are actually vectors of single entry
+ * boxes.  Otherwise shrinking the array leaves old references
+ * dangling.
+ */
+
+typedef struct _boxVector {
+    DataType	*data;
+    int		nvalues;
+    TypePtr	type;
+} BoxVector, *BoxVectorPtr;
+
+#define BoxVectorBoxes(v)   ((BoxPtr *) ((v) + 1))
+
 typedef struct _array {
     BaseValue	base;
     unsigned int	resizable : 1;
     unsigned int	ndim : (sizeof (int) * 8 - 1);
-    BoxPtr	values;
+    union {
+	BoxPtr		fix;
+	BoxVectorPtr	resize;
+    } u;
 } Array;
 
 #define ArrayDims(a)	    ((int *) ((a) + 1))
 #define ArrayLimits(a)	    (ArrayDims(a) + (a)->ndim)
-#define ArrayType(a)	    ((a)->values->u.type)
+#define ArrayConstant
+#define ArrayNvalues(a)	    ((a)->resizable ? (a)->u.resize->nvalues : (a)->u.fix->nvalues)
+#define ArrayValueBox(a,i)  ((a)->resizable ? BoxVectorBoxes((a)->u.resize)[i] : (a)->u.fix)
+#define ArrayValueElt(a,i)  ((a)->resizable ? 0 : (i))
+#define ArrayType(a)	    ((a)->resizable ? (a)->u.resize->type : (a)->u.fix->u.type)
+#define ArrayValue(a,i)	    (BoxValue(ArrayValueBox(a,i),ArrayValueElt(a,i)))
+#define ArrayValueGet(a,i)  (BoxValueGet(ArrayValueBox(a,i),ArrayValueElt(a,i)))
+#define ArrayValueSet(a,i,v) (BoxValueSet(ArrayValueBox(a,i),ArrayValueElt(a,i), v))
 
 typedef struct _io_chain {
     DataType		*data;

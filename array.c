@@ -66,8 +66,8 @@ ArrayEqual (Value av, Value bv, int expandOk)
     ai = 0; bi = 0;
     while (ai < alimit && bi < blimit)
     {
-	if (False (Equal ( BoxValue (a->values, ai), 
-			  BoxValue (b->values, bi))))
+	if (False (Equal ( ArrayValue (a, ai), 
+			  ArrayValue (b, bi))))
 	    return FalseVal;
 	ai = ArrayNextI (a, ai);
 	bi = ArrayNextI (b, bi);
@@ -118,7 +118,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
     i = 0;
     while (i < limit)
     {
-	if (!Print (f, BoxValueGet (a->values, i), format, base, width, prec, fill))
+	if (!Print (f, ArrayValueGet (a, i), format, base, width, prec, fill))
 	{
 	    ret = False;
 	    break;
@@ -165,7 +165,7 @@ ArrayHash (Value av)
     int		limit = ArrayLimit (av);
 
     for (i = 0; i < limit; i = ArrayNextI (a, i))
-	h = hrot(h) ^ ValueInt (ValueHash (BoxValueGet (a->values, i)));
+	h = hrot(h) ^ ValueInt (ValueHash (ArrayValueGet (a, i)));
     return h;
 }
 
@@ -174,7 +174,10 @@ ArrayMark (void *object)
 {
     Array   *array = object;
 
-    MemReference (array->values);
+    if (array->resizable)
+	MemReference (array->u.resize);
+    else
+	MemReference (array->u.fix);
 }
 
 ValueRep    ArrayRep = { 
@@ -202,6 +205,46 @@ ValueRep    ArrayRep = {
     ArrayHash,
 };
 
+static void
+BoxVectorMark (void *object)
+{
+    BoxVectorPtr    bv = object;
+    int		    i;
+    BoxPtr	    *boxes = BoxVectorBoxes (bv);
+
+    MemReference (bv->type);
+    for (i = 0; i < bv->nvalues; i++)
+	MemReference (boxes[i]);
+}
+
+DataType BoxVectorType = { BoxVectorMark, 0, "BoxVectorType" };
+
+static BoxVectorPtr
+NewBoxVector (int nvalues, TypePtr type)
+{
+    ENTER ();
+    BoxVectorPtr    bv = ALLOCATE (&BoxVectorType, 
+				   sizeof (BoxVector) +
+				   nvalues * sizeof (BoxPtr));
+    int		    i;
+    BoxPtr	    *boxes = BoxVectorBoxes (bv);
+    
+    bv->nvalues = nvalues;
+    bv->type = type;
+    for (i = 0; i < nvalues; i++)
+	boxes[i] = 0;
+    RETURN (bv);
+}
+
+static void
+FillBoxVector (BoxVectorPtr bv, BoxPtr *boxes, int n)
+{
+    ENTER();
+    while (n--)
+	*boxes++ = NewBox (False, False, 1, bv->type);
+    EXIT ();
+}
+
 Value
 NewArray (Bool constant, Bool resizable, TypePtr type, int ndim, int *dims)
 {
@@ -220,67 +263,86 @@ NewArray (Bool constant, Bool resizable, TypePtr type, int ndim, int *dims)
 	ents = 0;
     ret = ALLOCATE (&ArrayRep.data, sizeof (Array) + (ndim * 2) * sizeof (int));
     ret->array.ndim = ndim;
-    ret->array.resizable = resizable;
-    ret->array.values = 0;
-    ret->array.values = NewBox (constant, True, ents, type);
     for (dim = 0; dim < ndim; dim++)
 	ArrayLimits(&ret->array)[dim] = ArrayDims(&ret->array)[dim] = dims[dim];
+    ret->array.resizable = resizable;
+    if (resizable)
+    {
+	ret->array.u.resize = 0;
+	ret->array.u.resize = NewBoxVector (ents, type);
+	FillBoxVector (ret->array.u.resize, 
+		       BoxVectorBoxes (ret->array.u.resize),
+		       ents);
+    }
+    else
+    {
+	ret->array.u.fix = 0;
+	ret->array.u.fix = NewBox (constant, True, ents, type);
+    }
     RETURN (ret);
 }
 
 void
 ArrayResize (Value av, int dim, int size)
 {
-    Array   *a = &av->array;
-    int	    *dims = ArrayDims(a);
-    int	    *limits = ArrayLimits(a);
+    ENTER ();
+    Array	    *a = &av->array;
+    int		    *dims = ArrayDims(a);
+    int		    *limits = ArrayLimits(a);
+    int		    odim = dims[dim];
+    int		    ents;
+    int		    d;
+    int		    stride;	/* size of each chunk */
+    int		    nchunk;	/* number of chunks */
+    int		    c;
+    int		    unit;
+    int		    good;
+    BoxPtr	    *b;
 
     assert (av->array.resizable);
+
+    if (size == limits[dim])
+	return;
+
+    ents = a->u.resize->nvalues;
+
+    stride = 1;
+    for (d = 0; d <= dim; d++)
+        stride *= dims[d];
+    if (stride)
+	nchunk = ents / stride;
+    else
+	nchunk = 1;
+    
+    /*
+     * Resize if necessary.
+     */
     if (dims[dim] < size || dims[dim] > size * 2)
     {
-	ENTER ();
-	BoxPtr	obox = a->values;
-	BoxPtr	nbox;
-	int	odim = dims[dim];
-	int	ents = obox->nvalues;
-	int	chunk_size;
-	int	chunk_ostride;
-	int	chunk_nstride;
-	int	chunk_zero;
-	int	d;
-	int	nchunk;
-	Value	*o, *n;
-
-	if (!ents)
-	{
-	    chunk_ostride = 0;
-	    for (d = 0; d < a->ndim; d++)
-	    {
-		dims[d] = 1;
-		limits[d] = 1;
-	    }
-	    odim = 1;
-	    ents = 1;
-	    nchunk = 1;
-	}
-	else
-	{
-	    chunk_ostride = 1;
-	    for (d = 0; d <= dim; d++)
-		chunk_ostride *= dims[d];
-	    nchunk = ents / chunk_ostride;
-	}
-	chunk_nstride = chunk_ostride;
+	int		ostride = stride;
+	int		nstride = stride;
+	BoxVectorPtr	nboxes;
+	BoxPtr		*o, *n;
+	
 	if (odim < size)
 	{
+	    /* was empty */
+	    if (odim == 0)
+	    {
+		odim = 1;
+		ents = 1;
+		nstride = 1;
+		for (d = 0; d < a->ndim; d++)
+		    dims[d] = 1;
+	    }
 	    /* bigger */
 	    while (odim < size)
 	    {
 		odim <<= 1;
 		ents <<= 1;
-		chunk_nstride <<= 1;
+		nstride <<= 1;
 	    }
-	    chunk_size = chunk_ostride;
+	    good = ostride;
 	}
 	else if (size > 0)
 	{
@@ -289,40 +351,63 @@ ArrayResize (Value av, int dim, int size)
 	    {
 		odim >>= 1;
 		ents >>= 1;
-		chunk_nstride >>= 1;
+		nstride >>= 1;
 	    }
-	    chunk_size = chunk_nstride;
+	    good = nstride;
 	}
 	else
 	{
 	    /* empty */
 	    ents = 0;
-	    chunk_nstride = 0;
-	    chunk_size = 0;
+	    nstride = 0;
+	    size = 0;
+	    nchunk = 0;
 	    for (d = 0; d < a->ndim; d++)
 	    {
 		dims[d] = 0;
 		limits[d] = 0;
 	    }
 	}
-	nbox = NewBox (a->values->constant, True, ents, a->values->u.type);
-	o = BoxElements (a->values);
-	n = BoxElements (nbox);
-        chunk_zero = chunk_nstride - chunk_size;
-	while (nchunk--)
+
+	nboxes = NewBoxVector (ents, a->u.resize->type);
+	o = BoxVectorBoxes (a->u.resize);
+	n = BoxVectorBoxes (nboxes);
+	for (c = 0; c < nchunk; c++)
 	{
-	    memcpy (n, o, chunk_size * sizeof (Value));
-	    o += chunk_ostride;
-	    n += chunk_size;
-	    memset (n, '\0', chunk_zero * sizeof (Value));
-	    n += chunk_zero;
+	    memcpy (n, o, good * sizeof (BoxPtr));
+	    if (nstride > good)
+		FillBoxVector (nboxes, n + good, nstride - good);
+	    o += ostride;
+	    n += nstride;
 	}
-	BoxSetReplace (a->values, nbox, chunk_ostride, chunk_nstride);
-	a->values = nbox;
+	a->u.resize = nboxes;
 	dims[dim] = odim;
-	EXIT ();
+	limits[dim] = size;
+	stride = nstride;
+    }
+    /*
+     * When shrinking the array, replace the
+     * now discarded entries with new boxes.
+     * This leaves growing trivial; all unused
+     * elements of the array have clean boxes
+     */
+    if (limits[dim] > size)
+    {
+	b = BoxVectorBoxes (a->u.resize);
+	
+	unit = stride / dims[dim];
+	good = size * unit;
+	
+	for (c = 0; c < nchunk; c++)
+	{
+	    FillBoxVector (a->u.resize,
+			   b + good,
+			   stride - good);
+	    b += stride;
+	}
     }
     limits[dim] = size;
+    EXIT ();
 }
 
 void

@@ -1664,11 +1664,11 @@ BuildRawname (ExprPtr colonnames, Atom name)
 	len++;
     array = NewArray (False, False, typePrim[rep_string], 1, &len);
     len--;
-    BoxValueSet (array->array.values, len, AtomString (name));
+    ArrayValueSet (&array->array, len, AtomString (name));
     e = colonnames;
     while (--len >= 0)
     {
-	BoxValueSet (array->array.values, len, AtomString (e->tree.right->atom.atom));
+	ArrayValueSet (&array->array, len, AtomString (e->tree.right->atom.atom));
 	e = e->tree.left;
     }
     e = NewExprConst (POLY_CONST, array);

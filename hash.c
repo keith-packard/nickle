@@ -427,7 +427,7 @@ HashKeys (Value hv)
     {
 	if (HashEltValid (e)) 
 	{
-	    BoxValueSet (keys->array.values, i, HashEltKey (e));
+	    ArrayValueSet (&keys->array, i, HashEltKey (e));
 	    i++;
 	}
 	HashEltStep (e);

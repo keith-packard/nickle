@@ -66,16 +66,16 @@ do_String_new (Value av)
 
     if (ValueIsArray(av) && av->array.ndim == 1)
     {
-	len = ArrayDims(&av->array)[0];
+	len = ArrayLimits(&av->array)[0];
 	size = 0;
 	for (i = 0; i < len; i++)
-	    size += StringCharSize (IntPart (BoxValue (av->array.values, i),
+	    size += StringCharSize (IntPart (ArrayValue (&av->array, i),
 					     "new: array element not integer"));
 	ret = NewString (size);
 	s = StringChars (&ret->string);
 	for (i = 0; i < len; i++)
 	{
-	    s += StringPutChar (IntPart (BoxValue (av->array.values, i),
+	    s += StringPutChar (IntPart (ArrayValue (&av->array, i),
 					 "new: array element not integer"),
 				s);
 	}

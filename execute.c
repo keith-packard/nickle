@@ -60,7 +60,7 @@ BuildFrame (Value thread, Value func, Value value, Bool staticInit, Bool tail,
 	array = NewArray (True, False, typePoly, 1, &extra);
 	BoxValueSet (frame->frame, fe, array);
 	for (; fe < argc; fe++)
-	    BoxValueSet (array->array.values, fe-nformal, Copy (Arg(fe)));
+	    ArrayValueSet (&array->array, fe-nformal, Copy (Arg(fe)));
     }
     if (tail)
     {
@@ -334,13 +334,13 @@ ThreadArrayInd (Value thread, Bool resizable, Value dim, Type *type)
     ENTER ();
     Array   *a = &dim->array;
     int	    i;
-    int	    ndim = ArrayDims(a)[0];
+    int	    ndim = ArrayLimits(a)[0];
     int	    *dims;
 
     dims = AllocateTemp (ndim * sizeof (int));
     for (i = 0; i < ndim; i++)
     {
-	dims[i] = IntPart (BoxValueGet(a->values, i), "Invalid array dimension");
+	dims[i] = IntPart (ArrayValueGet(a, i), "Invalid array dimension");
 	if (aborting)
 	    RETURN (0);
     }
@@ -426,11 +426,12 @@ ThreadArrayReplicate (Value thread, Value array, int dim, int start)
     int		total;
     Value	*elements;
 
+    assert (!array->array.resizable);
     for (i = 0; i < dim; i++)
 	dimsize *= ArrayDims(&array->array)[i];
     start = start - dimsize;
     total = ArrayDims(&array->array)[dim] * dimsize;
-    elements = BoxElements (array->array.values);
+    elements = BoxElements (array->array.u.fix);
     for (i = start + dimsize; i % total; i += dimsize)
 	memmove (elements + i, elements + start,
 		 dimsize * sizeof (elements[0]));
@@ -492,7 +493,7 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	    if (aborting)
 		break;
 	    complete=True;
-	    BoxValueSet (array->array.values, i, Copy (value));
+	    ArrayValueSet (&array->array, i, Copy (value));
 	}
 	complete = True;
 	/*
@@ -595,7 +596,7 @@ ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *
      */
     args = NewArray (False, False, typePoly, 1, &argc);
     for (i = 0; i < argc; i++)
-        BoxValueSet (args->array.values, i, Arg(i));
+        ArrayValueSet (&args->array, i, Arg(i));
     if (!aborting)
     {
 	RaiseException (thread, exception, args, next);
@@ -636,12 +637,12 @@ ThreadExceptionCall (Value thread, InstPtr *next, int *stack)
 	RETURN (Void);
     }
     complete = True;
-    argc = args->array.values->nvalues;
+    argc = ArrayLimits(&args->array)[0];
     for (i = 0; i < argc; i++)
     {
 	STACK_PUSH (thread->thread.continuation.stack,
 		    thread->thread.continuation.value);
-	thread->thread.continuation.value = BoxValue(args->array.values, i);
+	thread->thread.continuation.value = ArrayValue(&args->array, i);
     }
     /*
      * Call the function
@@ -777,12 +778,14 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
 	i = ThreadArrayIndex (v, thread, stack, value, 0, True, !fetch);
 	if (!aborting)
 	{
+	    BoxPtr  box = ArrayValueBox (&v->array, i);
+	    int	    elt = ArrayValueElt (&v->array, i);
 	    if (typeCheck)
-		ThreadBoxCheck (v->array.values, i);
+		ThreadBoxCheck (box, elt);
 	    if (fetch)
-		value = BoxValue (v->array.values, i);
+		value = BoxValue (box, elt);
 	    else
-		value = NewRef (v->array.values, i);
+		value = NewRef (box, elt);
 	}
 	break;
     case rep_hash:
@@ -1190,19 +1193,19 @@ ThreadsRun (Value thread, Value lex)
 						1, value);
 			break;
 		    }
-		    for (i = 0; i < ArrayDims(&value->array)[0]; i++)
+		    for (i = 0; i < ArrayLimits(&value->array)[0]; i++)
 		    {
-			STACK_PUSH (cstack, BoxValue (value->array.values, i));
+			STACK_PUSH (cstack, ArrayValue (&value->array, i));
 			if (aborting)
 			{
 			    STACK_DROP (cstack, i + 1);
 			    break;
 			}
 		    }
-		    if (i != ArrayDims(&value->array)[0])
+		    if (i != ArrayLimits(&value->array)[0])
 			break;
 		    complete = True;
-		    value = NewInt (ArrayDims(&value->array)[0]);
+		    value = NewInt (ArrayLimits(&value->array)[0]);
 		    break;
 		case OpCall:
 		case OpTailCall:

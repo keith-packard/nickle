@@ -21,6 +21,8 @@ typedef enum _OpCode {
     OpDo,
     OpFor, 
     OpEndFor,
+    OpCase,
+    OpDefault,
     OpBreak, 
     OpContinue,
     OpReturn,

@@ -105,8 +105,11 @@ for		{ yylval.ival = FOR; return FOR; }
 do		{ yylval.ival = DO; return DO; }
 if		{ yylval.ival = IF; return IF; }
 else		{ yylval.ival = ELSE; return ELSE; }
+switch		{ yylval.ival = SWITCH; return SWITCH; }
 break		{ yylval.ival = BREAK; return BREAK; }
 continue	{ yylval.ival = CONTINUE; return CONTINUE; }
+case		{ yylval.ival = CASE; return CASE; }
+default		{ yylval.ival = DEFAULT; return DEFAULT; }
 return		{ yylval.ival = RETURNTOK; return RETURNTOK; }
 try		{ yylval.ival = TRY; return TRY; }
 catch		{ yylval.ival = CATCH; return CATCH; }
@@ -174,6 +177,7 @@ public		{ yylval.pval = publish_public; return PUBLIC; }
 "<<"		{ yylval.ival = SHIFTL; return SHIFTL; }
 ">>"		{ yylval.ival = SHIFTR; return SHIFTR; }
 "?"		{ yylval.ival = QUEST; return QUEST; }
+"::"		{ yylval.ival = COLONCOLON; return COLONCOLON; }
 ":"		{ yylval.ival = COLON; return COLON; }
 " "		;
 "\t"		;

@@ -361,7 +361,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	inst->var.staticLink = depth;
 	expr->base.type = s->symbol.type;
 	break;
-    case COLON:
+    case COLONCOLON:
 	s = CompileNamespace (expr->tree.left, namespace);
 	if (!s)
 	{
@@ -966,7 +966,7 @@ CompileNamespace (ExprPtr expr, NamespacePtr namespace)
     int		depth;
     
     switch (expr->base.tag) {
-    case COLON:
+    case COLONCOLON:
 	s = CompileNamespace (expr->tree.left, namespace);
 	if (s)
 	    return CompileNamespace (expr->tree.right, s->namespace.namespace);
@@ -1083,7 +1083,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     case OP:	    /* function call */
 	obj = CompileCall (obj, expr, namespace, stat);
 	break;
-    case COLON:
+    case COLONCOLON:
 	s = CompileNamespace (expr->tree.left, namespace);
 	if (!s)
 	{
@@ -1187,7 +1187,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
 	SetPush (obj);
-	obj = _CompileExpr (obj, NewExprTree (COLON, BuildName ("Math"), BuildName ("pow")),
+	obj = _CompileExpr (obj, NewExprTree (COLONCOLON, BuildName ("Math"), BuildName ("pow")),
 			    namespace, stat);
 	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					     expr->base.tag,
@@ -1287,7 +1287,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	SetPush (obj);
 	obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False);
 	SetPush (obj);
-	obj = _CompileExpr (obj, NewExprTree (COLON, BuildName ("Math"), BuildName ("assign_pow")),
+	obj = _CompileExpr (obj, NewExprTree (COLONCOLON, BuildName ("Math"), BuildName ("assign_pow")),
 			    namespace, stat);
 	expr->base.type = TypeCombineAssign (expr->tree.left->base.type,
 					     expr->base.tag,
@@ -1354,7 +1354,7 @@ CompilePatchLoop (ObjPtr obj, int start, int continue_offset)
 		inst->branch.offset = break_offset - start;
 	    break;
 	case OpContinue:
-	    if (inst->branch.offset == 0)
+	    if (inst->branch.offset == 0 && continue_offset > 0)
 		inst->branch.offset = continue_offset - start;
 	    break;
 	default:
@@ -1369,6 +1369,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 {
     ENTER ();
     int		top_inst, continue_inst, test_inst, middle_inst, bottom_inst;
+    ExprPtr	c;
+    int		ncase, *case_inst, icase;
+    Bool	has_default;
     InstPtr	inst;
     SymbolPtr	sym;
     Bool	new;
@@ -1486,6 +1489,94 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	inst->base.stat = expr;
 	inst->branch.offset = top_inst - bottom_inst;
 	CompilePatchLoop (obj, top_inst, continue_inst);
+	break;
+    case SWITCH:
+	/*
+	 * switch (a) { case b: c; case d: e; }
+	 *
+	 *  a b CASE d CASE DEFAULT c e
+	 *       +------------------+
+	 *              +-------------+
+	 *                     +--------+
+	 */
+	obj = _CompileExpr (obj, expr->tree.left, namespace, expr);
+	SetPush (obj);
+	c = expr->tree.right;
+	has_default = False;
+	ncase = 0;
+	while (c)
+	{
+	    if (!c->tree.left->tree.left)
+		has_default = True;
+	    else
+		ncase++;
+	    c = c->tree.right;
+	}
+	case_inst = AllocateTemp (ncase * sizeof (int));
+	/*
+	 * Compile the comparisons
+	 */
+	c = expr->tree.right;
+	icase = 0;
+	while (c)
+	{
+	    if (c->tree.left->tree.left)
+	    {
+		obj = _CompileExpr (obj, c->tree.left->tree.left, namespace, c);
+		NewInst (case_inst[icase], obj);
+		icase++;
+	    }
+	    c = c->tree.right;
+	}
+	/* add default case at the bottom */
+    	NewInst (test_inst, obj);
+	top_inst = obj->used;
+	/*
+	 * Create an anonymous namespace
+	 */
+	namespace = NewNamespace (namespace);
+	/*
+	 * Compile the statements
+	 */
+	c = expr->tree.right;
+	icase = 0;
+	while (c)
+	{
+	    ExprPtr s = c->tree.left->tree.right;
+
+	    /*
+	     * Patch the branch
+	     */
+	    if (c->tree.left->tree.left)
+	    {
+		inst = ObjCode (obj, case_inst[icase]);
+		inst->base.opCode = OpCase;
+		inst->base.stat = expr;
+		inst->branch.offset = obj->used - case_inst[icase];
+		icase++;
+	    }
+	    else
+	    {
+		inst = ObjCode (obj, test_inst);
+		inst->base.opCode = OpDefault;
+		inst->base.stat = expr;
+		inst->branch.offset = obj->used - test_inst;
+	    }
+	    while (s->tree.left)
+	    {
+		obj = _CompileStat (obj, s->tree.left, namespace);
+		s = s->tree.right;
+	    }
+	    c = c->tree.right;
+	}
+	if (!has_default)
+	{
+	    inst = ObjCode (obj, test_inst);
+	    inst->base.opCode = OpDefault;
+	    inst->base.stat = expr;
+	    inst->branch.offset = obj->used - test_inst;
+	}
+	CompilePatchLoop (obj, top_inst, -1);
 	break;
     case OC:
 	/*
@@ -1905,6 +1996,8 @@ char *OpNames[] = {
     "Do",
     "For",
     "EndFor",
+    "Case",
+    "Default",
     "Break",
     "Continue",
     "Return",
@@ -2016,6 +2109,8 @@ ObjDump (ObjPtr obj, int indent)
 	case OpDo:
 	case OpFor:
 	case OpEndFor:
+	case OpCase:
+	case OpDefault:
 	case OpBreak:
 	case OpContinue:
 	case OpQuest:

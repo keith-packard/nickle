@@ -41,6 +41,7 @@ void yyerror (char *fmt, ...);
 %type  <nsval>	colonnames
 %type  <eval>	history
 %type  <eval>	block func_body statements statement catches catch
+%type  <eval>	case_block cases case
 %type  <dval>	enames names opt_initnames initnames
 %type  <aval>	typename name
 %type  <eval>	opt_init
@@ -68,7 +69,7 @@ void yyerror (char *fmt, ...);
 %token		ASSIGNPOW ASSIGNLXOR ASSIGNLAND ASSIGNLOR
 %token		VAR EXPR ARRAY STRUCT
 
-%token		NL SEMI MOD OC CC DOLLAR DOTS
+%token		NL SEMI MOD OC CC DOLLAR DOTS COLONCOLON COLON
 %token		UNDEFINE LOAD HISTORY PRINT EDIT QUIT
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
@@ -76,7 +77,8 @@ void yyerror (char *fmt, ...);
 %token		FUNCTION FUNC EXCEPTION RAISE
 %token		TYPEDEF IMPORT NAMESPACE NEW
 %token <pval>	PUBLIC
-%token		IF ELSE WHILE DO FOR BREAK CONTINUE RETURNTOK FORK
+%token		IF ELSE WHILE DO FOR SWITCH
+%token		BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		TRY CATCH TWIXT
 %token <aval>	NAME TYPENAME
 %token <vval>	CONST
@@ -85,7 +87,7 @@ void yyerror (char *fmt, ...);
 %nonassoc 	POUND
 %right		COMMA
 %right		ASSIGN
-%right		QUEST COLON
+%right		QUEST
 %left		OR
 %left		AND
 %left		LOR
@@ -262,7 +264,7 @@ command		: QUIT NL
 		| EDIT edit
 		| NL
 		;
-colonnames	: colonnames name COLON
+colonnames	: colonnames name COLONCOLON
 		    {
 			SymbolPtr   sym;
 			int	    depth;
@@ -357,6 +359,8 @@ statement	: IF ignorenl OP expr CP statement
 		    { $$ = NewExprTree(FOR, NewExprTree(FOR, $4, $6),
 				       NewExprTree(FOR, $8, $10));
 		    }
+		| SWITCH ignorenl OP expr CP case_block
+		    { $$ = NewExprTree (SWITCH, $4, $6); }
 		| BREAK ignorenl SEMI
 		    { $$ = NewExprTree(BREAK, (Expr *) 0, (Expr *) 0); }
 		| CONTINUE ignorenl SEMI
@@ -451,7 +455,19 @@ func_body    	: block
 		| SEMI
 		    { $$ = 0; }
 		;
-
+case_block	: block_start cases block_end
+		    { $$ = $2; }
+		;
+cases		: case cases
+		    { $$ = NewExprTree (CASE, $1, $2); }
+		|
+		    { $$ = 0; }
+		;
+case		: CASE expr COLON statements
+		    { $$ = NewExprTree (CASE, $2, $4); }
+		| DEFAULT COLON statements
+		    { $$ = NewExprTree (CASE, 0, $3); }
+		;
 /*
 * Identifiers
 */
@@ -878,8 +894,8 @@ primary		: NAME
 		    { $$ = NewExprTree (FORK, (Expr *) 0, $3); }
 		| primary DOT NAME
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3)); }
-		| primary COLON NAME
-		    { $$ = NewExprTree(COLON, $1, NewExprAtom ($3)); }
+		| primary COLONCOLON NAME
+		    { $$ = NewExprTree(COLONCOLON, $1, NewExprAtom ($3)); }
 		| primary ARROW NAME
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3)); }
 		;
@@ -1043,7 +1059,7 @@ BuildCall (char *scope, char *name, int nargs, ...)
     va_end (alist);
     f = BuildName (name);
     if (scope)
-	f = NewExprTree (COLON, BuildName (scope), f);
+	f = NewExprTree (COLONCOLON, BuildName (scope), f);
     e = NewExprTree (OP, f, args);
 #ifdef DEBUG
     printExpr (stdout, e, -1, 0);

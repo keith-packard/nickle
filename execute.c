@@ -437,7 +437,7 @@ ThreadStep (Value thread)
     case OpColon:
 	if (!inst->branch.offset)
 	{
-	    RaiseError ("break/continue outside of loop");
+	    RaiseError ("break/continue outside of loop/switch");
 	    break;
 	}
 	next = inst + inst->branch.offset;
@@ -446,6 +446,18 @@ ThreadStep (Value thread)
     case OpOr:
 	if (True (value))
 	    next = inst + inst->branch.offset;
+	break;
+    case OpCase:
+	value = Equal (Stack(stack), value);
+	if (True (value))
+	{
+	    next = inst + inst->branch.offset;
+	    stack++;
+	}
+	break;
+    case OpDefault:
+        next = inst + inst->branch.offset;
+	stack++;
 	break;
     case OpEnd:
 	aborting = True;

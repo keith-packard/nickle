@@ -365,14 +365,15 @@ do_setdims (Value av, Value dv)
     }
     for (i = 0; i < a->ndim; i++)
     {
-	dims[i] = IntPart (BoxValueGet (db,i), "setdims: invalid dimension");
+	int j = a->ndim - 1 - i;
+	dims[j] = IntPart (BoxValueGet (db,i), "setdims: invalid dimension");
 	if (aborting)
 	    RETURN (Void);
-	if (dims[i] < 0)
+	if (dims[j] < 0)
 	{
 	    RaiseStandardException (exception_invalid_argument,
 				    "setdims: dimensions must be non-negative",
-				    2, NewInt (i), NewInt (dims[i]));
+				    2, NewInt (i), NewInt (dims[j]));
 	    RETURN (Void);
 	}
     }

@@ -40,7 +40,7 @@ void yyerror (char *fmt, ...);
 %type  <eval>	case_block cases case
 %type  <eval>	union_case_block union_cases union_case
 %type  <dval>	enames names initnames
-%type  <aval>	typename name
+%type  <aval>	typename name ename
 %type  <eval>	opt_init
 %type  <ftval>	decl func_decl
 %type  <tsval>	opt_type type type_or_void func_type
@@ -429,18 +429,20 @@ union_case	: CASE NAME COLON statements
 /*
 * Identifiers
 */
-enames		: name COMMA enames
+enames		: ename COMMA enames
 		    { $$ = NewDeclList ($1, 0, $3); }
-		| name
+		| ename
 		    { $$ = NewDeclList ($1, 0, 0); }
 		;
-name		: NAME
+ename		: NAME
 		| TYPENAME
 		;
 names		: NAME COMMA names
 		    { $$ = NewDeclList ($1, 0, $3); }
 		| NAME
 		    { $$ = NewDeclList ($1, 0, 0); }
+		;
+name		: NAME
 		;
 typename	: TYPENAME
 		;
@@ -482,6 +484,12 @@ decl		: PUBLIC class type
 		    { $$.publish = $1; $$.class = class_undef; $$.type = $2; }
 		| type
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = $1; }
+		| PUBLIC class
+		    { $$.publish = $1; $$.class = $2; $$.type = typesPoly; }
+		| class
+		    { $$.publish = publish_private; $$.class = $1; $$.type = typesPoly; }
+		| PUBLIC
+		    { $$.publish = $1; $$.class = class_undef; $$.type = typesPoly; }
 		;
 /*
 * Type declarations

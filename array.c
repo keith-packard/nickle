@@ -146,6 +146,7 @@ NewArray (Bool constant, TypesPtr type, int ndim, int *dims)
     ret->array.ndim = ndim;
     ret->array.ents = ents;
     ret->array.dim = (int *) (&ret->array + 1);
+    ret->array.values = 0;
     ret->array.values = NewBox (constant, True, ents);
     elements = BoxElements (ret->array.values);
     for (i = 0; i < ents; i++)

@@ -21,7 +21,7 @@ Bool		ownTty[3];
 Bool		anyTtyUnowned;
 Bool		ioTimeoutQueued;
 
-RETSIGTYPE
+static RETSIGTYPE
 sigio (int sig)
 {
     (void) signal (SIGIO, sigio);
@@ -54,7 +54,7 @@ IoStop (void)
 #define GetPgrp()   getpgrp(0)
 #endif
 
-Bool
+static Bool
 IoOwnTty (int fd)
 {
     int	tpgrp;
@@ -113,7 +113,7 @@ IoTimeout (void *closure)
     return False;
 }
 
-void
+static void
 IoSetupTimeout (void)
 {
     if (!ioTimeoutQueued)

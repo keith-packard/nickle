@@ -293,7 +293,7 @@ struct nbuiltin nvars[] = {
     { 0,	    0 },
 };
 
-SymbolPtr
+static SymbolPtr
 BuiltinSymbol (ScopePtr *scopep,
 	       char	*name,
 	       Types	*type)
@@ -310,7 +310,7 @@ BuiltinSymbol (ScopePtr *scopep,
 					     publish_public)));
 }
 
-SymbolPtr
+static SymbolPtr
 BuiltinScope (ScopePtr	*scopep,
 	      char	*name)
 {
@@ -327,7 +327,7 @@ BuiltinScope (ScopePtr	*scopep,
 					    publish_public)));
 }
 
-ArgType *
+static ArgType *
 BuiltinArgTypes (char *format, int *argcp)
 {
     ENTER ();
@@ -373,7 +373,7 @@ BuiltinArgTypes (char *format, int *argcp)
     RETURN(args);
 }
 
-void
+static void
 BuiltinAddFunction (ScopePtr *scopep, char *name, Type ret,
 		    char *format, BuiltinFunc f)
 {
@@ -390,7 +390,7 @@ BuiltinAddFunction (ScopePtr *scopep, char *name, Type ret,
     EXIT ();
 }
 
-void
+static void
 BuiltinAddJumpingFunction (ScopePtr *scopep, char *name, Type ret,
 			   char *format, BuiltinFunc f)
 {

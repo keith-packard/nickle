@@ -20,7 +20,7 @@ typedef struct _atom {
 
 #define AtomEntryName(ae)   ((char *) ((ae) + 1))
 
-void
+static void
 AtomEntryMark (void *object)
 {
     ;
@@ -35,7 +35,7 @@ typedef struct _atomTable {
     AtomEntry	    *hash[HASHSIZE];
 } AtomTable;
 
-void
+static void
 AtomTableMark (void *object)
 {
     AtomTable	*table = object;
@@ -61,7 +61,7 @@ AtomInit (void)
     return 1;
 }
 
-int
+static int
 hash (char *name)
 {
     int h;
@@ -109,6 +109,7 @@ AtomName (Atom id)
     return 0;
 }
 
+#if 0
 static void
 AtomListMark (void *object)
 {
@@ -130,3 +131,4 @@ NewAtomList (AtomListPtr next, Atom id)
     al->id = id;
     RETURN (al);
 }
+#endif

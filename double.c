@@ -30,7 +30,7 @@ ignore_ferr (void)
 #endif
 }
 
-Value
+static Value
 DoublePlus (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -39,7 +39,7 @@ DoublePlus (Value av, Value bv, int expandOk)
     RETURN (NewDouble (a + b));
 }
 
-Value
+static Value
 DoubleMinus (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -48,7 +48,7 @@ DoubleMinus (Value av, Value bv, int expandOk)
     RETURN (NewDouble (a - b));
 }
 
-Value
+static Value
 DoubleTimes (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -57,7 +57,7 @@ DoubleTimes (Value av, Value bv, int expandOk)
     RETURN (NewDouble (a * b));
 }
 
-Value
+static Value
 DoubleDivide (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -66,7 +66,7 @@ DoubleDivide (Value av, Value bv, int expandOk)
     RETURN (NewDouble (a / b));
 }
 
-Value
+static Value
 DoubleMod (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -75,7 +75,7 @@ DoubleMod (Value av, Value bv, int expandOk)
     RETURN (NewDouble (((int) a) % ((int) b)));
 }
 
-Value
+static Value
 DoubleEqual (Value av, Value bv, int expandOk)
 {
     double	a = av->doubles.value, b = bv->doubles.value;
@@ -85,7 +85,7 @@ DoubleEqual (Value av, Value bv, int expandOk)
     return Zero;
 }
 
-Value
+static Value
 DoubleLess (Value av, Value bv, int expandOk)
 {
     double	a = av->doubles.value, b = bv->doubles.value;
@@ -95,14 +95,14 @@ DoubleLess (Value av, Value bv, int expandOk)
     return Zero;
 }
 
-Value
+static Value
 DoubleNegate (Value av, int expandOk)
 {
     ENTER ();
     RETURN (NewDouble (-av->doubles.value));
 }
 
-Value
+static Value
 DoubleFloor (Value av, int expandOk)
 {
     double  floor (double);
@@ -111,7 +111,7 @@ DoubleFloor (Value av, int expandOk)
     RETURN (NewDoubleInteger (floor (av->doubles.value)));
 }
 
-Value
+static Value
 DoubleCeil (Value av, int expandOk)
 {
     double  ceil (double);
@@ -119,7 +119,7 @@ DoubleCeil (Value av, int expandOk)
     RETURN (NewDoubleInteger (ceil (av->doubles.value)));
 }
 
-Value
+static Value
 DoublePromote (Value av)
 {
     ENTER ();
@@ -139,7 +139,7 @@ DoublePromote (Value av)
     RETURN (av);
 }
 
-Value
+static Value
 DoubleReduce (Value av)
 {
     ENTER ();
@@ -152,7 +152,7 @@ DoubleReduce (Value av)
     RETURN (av);
 }
 
-Bool
+static Bool
 DoublePrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     char    fmt[20];

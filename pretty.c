@@ -24,59 +24,7 @@ void printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
 void printStatement (Value f, Expr *e, int level, int blevel, Bool nest);
 void printTypes (Value f, Types *t);
     
-void
-printtype (Value f, Type t)
-{
-    switch (t) {
-    case type_undef:
-	FilePuts (f, "polymorph");
-	break;
-    case type_int:
-	FilePuts (f, "int");
-	break;
-    case type_integer:
-	FilePuts (f, "integer");
-	break;
-    case type_rational:
-	FilePuts (f, "rational");
-	break;
-    case type_double:
-	FilePuts (f, "double");
-	break;
-    case type_string:
-	FilePuts (f, "string");
-	break;
-    case type_array:
-	FilePuts (f, "array");
-	break;
-    case type_ref:
-	FilePuts (f, "ref");
-	break;
-    case type_struct:
-	FilePuts (f, "struct");
-	break;
-    case type_func:
-	FilePuts (f, "function");
-	break;
-    case type_file:
-	FilePuts (f, "file");
-	break;
-    case type_thread:
-	FilePuts (f, "thread");
-	break;
-    case type_mutex:
-	FilePuts (f, "mutex");
-	break;
-    case type_semaphore:
-	FilePuts (f, "semaphore");
-	break;
-    case type_continuation:
-	FilePuts (f, "continuation");
-	break;
-    }
-}
-
-void
+static void
 printclass (Value f, Class class)
 {
     switch (class) {
@@ -103,7 +51,7 @@ printclass (Value f, Class class)
     }
 }
 
-void
+static void
 printpublish (Value f, Publish publish)
 {
     switch (publish) {
@@ -115,7 +63,7 @@ printpublish (Value f, Publish publish)
     }
 }
 
-void
+static void
 printindent (Value f, int level)
 {
     int	i;
@@ -125,7 +73,7 @@ printindent (Value f, int level)
 	FilePuts (f, "    ");
 }
 
-void
+static void
 printBlock (Value f, Expr *e, int level, Bool nest)
 {
     while (e->tree.left) {
@@ -134,7 +82,7 @@ printBlock (Value f, Expr *e, int level, Bool nest)
     }
 }
 
-int
+static int
 tokenToPrecedence (int token)
 {
     switch (token) {
@@ -197,7 +145,7 @@ printParameters (Value f, Expr *e, Bool nest)
     printExpr (f, e->tree.left, -1, 0, nest);
 }
 
-void
+static void
 printAinits (Value f, Expr *e, int level, Bool nest)
 {
     printAinit (f, e->tree.left, 0, nest);
@@ -222,7 +170,8 @@ printAinit (Value f, Expr *e, int level, Bool nest)
     }
 }
 
-void
+#if 0
+static void
 printSinit (Value f, Expr *e, int level, Bool nest)
 {
     while (e)
@@ -235,6 +184,7 @@ printSinit (Value f, Expr *e, int level, Bool nest)
 	    FilePuts (f, ", ");
     }
 }
+#endif
 
 void
 printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
@@ -400,7 +350,7 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePuts (f, ")");
 }
 
-void
+static void
 printDecl (Value f, Expr *e, int level, Bool nest)
 {
     DeclListPtr	decl;
@@ -632,7 +582,7 @@ PrintStat (Value f, Expr *e, Bool nest)
 void
 doPrettyPrint (Value f, Symbol *name, int level, Bool nest);
     
-void
+static void
 PrintScope (Value f, ScopePtr scope, int level)
 {
     ScopeChainPtr   chain;

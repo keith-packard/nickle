@@ -24,7 +24,7 @@
 #define DEFAULT_EDITOR	"ed"
 #endif
 
-void
+static void
 edit (char *file_name)
 {
     char	buf[1024];

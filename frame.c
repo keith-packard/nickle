@@ -10,7 +10,7 @@
 
 #include	"nickle.h"
 
-void
+static void
 FrameMark (void *object)
 {
     Frame   *frame = object;

@@ -24,7 +24,7 @@ Bool	abortSuspend;	    /* current thread is suspending */
 
 static ThreadState ThreadStep (Value thread);
 
-FramePtr
+static FramePtr
 BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
 {
     ENTER ();
@@ -58,7 +58,7 @@ BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
     RETURN (frame);
 }
 
-Value
+static Value
 ThreadCall (Value thread, InstPtr *next)
 {
     ENTER ();
@@ -152,7 +152,7 @@ ThreadCall (Value thread, InstPtr *next)
 /*
  * Call the pseudo function to initialize static values
  */
-void
+static void
 ThreadStaticInit (Value thread, InstPtr *next)
 {
     ENTER ();
@@ -173,7 +173,7 @@ ThreadStaticInit (Value thread, InstPtr *next)
     EXIT ();
 }
 
-void
+static void
 ThreadAssign (Value ref, Value v)
 {
     ENTER ();
@@ -202,7 +202,7 @@ ThreadAssign (Value ref, Value v)
     EXIT ();
 }
 
-Value
+static Value
 ThreadArray (Value thread, int ndim)
 {
     ENTER ();
@@ -219,7 +219,7 @@ ThreadArray (Value thread, int ndim)
     RETURN (NewArray (False, typesPoly, ndim, dims));
 }
 
-void
+static void
 ThreadInitArray (Value thread, Value a, int ninit)
 {
     ENTER ();
@@ -258,7 +258,7 @@ ThreadInitArray (Value thread, Value a, int ninit)
     EXIT ();
 }
 
-int
+static int
 ThreadArrayIndex (Value thread, int ndim)
 {
     ENTER ();
@@ -286,7 +286,7 @@ ThreadArrayIndex (Value thread, int ndim)
     return i;
 }
 
-void
+static void
 ThreadCatch (Value thread, Atom exception, int offset)
 {
     ENTER ();

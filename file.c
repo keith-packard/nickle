@@ -48,7 +48,7 @@ FileInit (void)
     return 1;
 }
 
-void
+static void
 FileMark (void *object)
 {
     File    *file = object;
@@ -58,7 +58,7 @@ FileMark (void *object)
     MemReference (file->output);
 }
 
-void
+static void
 FileFree (void *object)
 {
     File    *file = object;
@@ -129,7 +129,7 @@ FileChainMark (void *object)
 
 DataType    FileChainType = { FileChainMark, 0 };
 
-FileChainPtr
+static FileChainPtr
 NewFileChain (FileChainPtr next, int size)
 {
     ENTER ();
@@ -286,7 +286,7 @@ FileUnput (Value file, unsigned char c)
     EXIT ();
 }
 
-void
+static void
 FileWaitForWriteable (Value file)
 {
     int	    n;
@@ -401,7 +401,7 @@ FilePuts (Value file, char *s)
 	FileOutput (file, *s++);
 }
 
-void
+static void
 FilePutIntBase (Value file, int a, int base)
 {
     int	    digit;

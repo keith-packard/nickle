@@ -40,7 +40,8 @@ void yyerror (char *fmt, ...);
 
 %type  <eval>	history
 %type  <eval>	block statements statement
-%type  <dval>	names opt_initnames initnames
+%type  <dval>	names typenames opt_initnames initnames
+%type  <aval>	typename
 %type  <eval>	opt_init
 %type  <ftval>	decl opt_decl
 %type  <tsval>	opt_type type
@@ -67,13 +68,14 @@ void yyerror (char *fmt, ...);
 %token		NL SEMI MOD OC CC DOLLAR
 %token		UNDEFINE READ HISTORY PRINT EDIT QUIT
 %token <cval>	GLOBAL AUTO STATIC
-%token <tval>	INT INTEGER NATURAL RATIONAL DOUBLE STRING POLY
+%token <tval>	POLY INT INTEGER NATURAL RATIONAL DOUBLE STRING
+%token <tval>	FILET MUTEX SEMAPHORE CONTINUATION
 %token		FUNCTION FUNC
-%token		TYPEDEF TYPE IMPORT SCOPE NEW
+%token		TYPEDEF IMPORT SCOPE NEW
 %token		EXCEPTION
 %token <pval>	PUBLIC
 %token		IF ELSE WHILE DO FOR BREAK CONTINUE RETURNTOK FORK TRY CATCH
-%token <aval>	NAME TYPENAME
+%token <aval>	NAME
 %token <vval>	CONST
 %token		NEW
 
@@ -339,7 +341,7 @@ statement	: IF ignorenl OP expr CP statement
 		    }
 		| decl ignorenl opt_initnames SEMI
 		    { $$ = NewExprDecl ($3, $1.class, $1.type, $1.publish); }
-		| publish TYPEDEF ignorenl opt_type names SEMI
+		| publish TYPEDEF ignorenl opt_type typenames SEMI
 		    { $$ = NewExprDecl ($5, class_typedef, $4, $1); }
 		| publish SCOPE ignorenl NAME block
 		    {
@@ -370,6 +372,14 @@ names		: NAME COMMA names
 		    { $$ = NewDeclList ($1, 0, $3); }
 		| NAME
 		    { $$ = NewDeclList ($1, 0, 0); }
+		;
+typenames	: typename COMMA typenames
+		    { $$ = NewDeclList ($1, 0, $3); }
+		| typename
+		    { $$ = NewDeclList ($1, 0, 0); }
+		;
+typename	: COLON NAME
+		    { $$ = $2; }
 		;
 opt_initnames	: initnames
 		|
@@ -437,7 +447,6 @@ type		: basetype
 		| STRUCT OC members CC
 		    {
 			DeclListPtr	dl;
-			SymbolPtr	s;
 			StructType	*st;
 			StructElement	*se;
 			MemListPtr	ml;
@@ -465,15 +474,19 @@ type		: basetype
 		    }
 		| OP type CP
 		    { $$ = $2; }
-		| TYPE NAME
-		    { $$ = NewTypesName ($2, 0); }
+		| typename
+		    { $$ = NewTypesName ($1, 0); }
 		;
-basetype	: INT
+basetype    	: POLY
+		| INT
 		| INTEGER
 		| RATIONAL
 		| DOUBLE
 		| STRING
-		| POLY
+		| FILET
+		| MUTEX
+		| SEMAPHORE
+		| CONTINUATION
 		;
 
 /*

@@ -113,6 +113,9 @@ Natural	*NaturalDivide (Natural *a, Natural *b, Natural **remp);
 Natural	*NaturalGcd (Natural *a, Natural *b);
 char	*NaturalSprint (char *, Natural *, int base, int *width);
 Natural	*NaturalSqrt (Natural *);
+Natural *NaturalFactor (Natural *n, Natural *max);
+Natural *NaturalPow (Natural *n, int p);
+Natural *NaturalPowMod (Natural *n, Natural *p, Natural *m);
 #ifdef LBASE2
 Natural	*NaturalRsl (Natural *v, int shift);
 Natural	*NaturalLsl (Natural *v, int shift);
@@ -258,6 +261,9 @@ Types	*TypeCombineBinary (Types *left, int tag, Types *right);
 Types	*TypeCombineUnary (Types *down, int tag);
 Types	*TypeCombineStruct (Types *type, int tag, Atom atom);
 Types	*TypeCombineFunction (Types *type);
+Bool	TypeCompatible (Types *a, Types *b, Bool contains);
+Bool	TypePoly (Types *t);
+Bool	TypeNumeric (Types *t);
 
 /*
  * storage classes
@@ -549,6 +555,7 @@ Value	NewFile (int fd);
 Value	NewRef (BoxPtr box, int element);
 Value	NewStruct (StructType *type, Bool constant);
 StructType  *NewStructType (int nelements);
+Types	*StructTypes (StructType *st, Atom name);
 Value	StructRef (Value sv, Atom name);
 Value	StructValue (Value sv, Atom name);
 
@@ -659,5 +666,6 @@ int	ValueInit (void);
 # define zeroNp(n)	((n)->length == 0)
 
 void	ferr(int);
+void	ignore_ferr (void);
 
 #endif /* _VALUE_H_ */

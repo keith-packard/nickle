@@ -416,7 +416,7 @@ ExprPtr	BuildName (char *);
 ExprPtr	BuildCall (char *, int, ...);
 void	fprintTypes (Value f, Types *t);
 
-/* int	yywrap (void); */
+int	yywrap (void);
 
 int	yylex (void);
 Bool	pushinput (char *, Bool);
@@ -440,7 +440,6 @@ extern int	interactive, stdin_interactive;
 
 void	intr(int);
 void	stop (int), die (int), segv (int);
-void	ignore_ferr (void);
 
 extern Value    yyinput;
 

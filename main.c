@@ -22,7 +22,7 @@
 int	stdin_interactive;
 int	interactive;
 
-void
+static void
 setArgv (int argc, char **argv)
 {
     ENTER ();
@@ -38,7 +38,7 @@ setArgv (int argc, char **argv)
     EXIT ();
 }
 
-void
+static void
 try_nickrc (void)
 {
     char    nickrc[1024];

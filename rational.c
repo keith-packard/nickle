@@ -22,14 +22,16 @@ RationalInit (void)
     return 1;
 }
 	
-Value
+#if 0
+static Value
 natural_to_rational (Natural *n)
 {
     ENTER ();
     RETURN (NewRational (Positive, n, one_natural));
 }
+#endif
 
-Value
+static Value
 RationalPlusHelper (Sign sign, Rational *a, Rational *b)
 {
     ENTER ();
@@ -39,7 +41,7 @@ RationalPlusHelper (Sign sign, Rational *a, Rational *b)
 			  NaturalTimes (a->den, b->den)));
 }
 
-Value
+static Value
 RationalMinusHelper (Sign sign, Rational *a, Rational *b)
 {
     ENTER ();
@@ -57,7 +59,7 @@ RationalMinusHelper (Sign sign, Rational *a, Rational *b)
 			  NaturalTimes (a->den, b->den)));
 }
 
-Value
+static Value
 RationalPlus (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -80,7 +82,7 @@ RationalPlus (Value av, Value bv, int expandOk)
     RETURN (ret);
 }
 
-Value
+static Value
 RationalMinus (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -103,7 +105,7 @@ RationalMinus (Value av, Value bv, int expandOk)
     RETURN (ret);
 }
 
-Value
+static Value
 RationalTimes (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -118,7 +120,7 @@ RationalTimes (Value av, Value bv, int expandOk)
 			 NaturalTimes (a->den, b->den)));
 }
 
-Value
+static Value
 RationalDivide (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -161,7 +163,7 @@ RationalDivide (Value av, Value bv, int expandOk)
  *  e / f = ((a * d) % (c * b)) / (b * d)
  */
     
-Value
+static Value
 RationalMod (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -181,7 +183,7 @@ RationalMod (Value av, Value bv, int expandOk)
 }
 
 
-Value
+static Value
 RationalLess (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -212,7 +214,7 @@ RationalLess (Value av, Value bv, int expandOk)
     RETURN (ret ? One : Zero);
 }
 
-Value
+static Value
 RationalEqual (Value av, Value bv, int expandOk)
 {
     Rational	*a = &av->rational, *b = &bv->rational;
@@ -226,7 +228,7 @@ RationalEqual (Value av, Value bv, int expandOk)
     return Zero;
 }
 
-Value
+static Value
 RationalNegate (Value av, int expandOk)
 {
     ENTER ();
@@ -235,7 +237,7 @@ RationalNegate (Value av, int expandOk)
     RETURN (NewRational (SignNegate (a->sign), a->num, a->den));
 }
 
-Value
+static Value
 RationalFloor (Value av, int expandOk)
 {
     ENTER ();
@@ -248,7 +250,7 @@ RationalFloor (Value av, int expandOk)
     RETURN (NewInteger (a->sign, quo));
 }
 
-Value
+static Value
 RationalCeil (Value av, int expandOk)
 {
     ENTER ();
@@ -261,7 +263,7 @@ RationalCeil (Value av, int expandOk)
     RETURN (NewInteger (a->sign, quo));
 }
 
-Value
+static Value
 RationalPromote (Value av)
 {
     ENTER ();
@@ -279,7 +281,7 @@ RationalPromote (Value av)
     RETURN (av);
 }
 	    
-Value
+static Value
 RationalReduce (Value av)
 {
     ENTER ();
@@ -298,7 +300,7 @@ extern Natural	*NaturalPow (Natural *, int);
 extern Natural	*NaturalPowMod (Natural *, Natural *, Natural *);
 extern Natural	*two_natural;
 
-Natural *
+static Natural *
 NaturalPsi(Natural *a, Natural *max)
 {
     ENTER ();
@@ -337,7 +339,8 @@ NaturalPsi(Natural *a, Natural *max)
     RETURN (ret);
 }
 
-int
+#if 0
+static int
 IntSqrt (int a)
 {
     int	    l, h, m;
@@ -355,7 +358,7 @@ IntSqrt (int a)
     return h;
 }
 
-int
+static int
 IntFactor (int a)
 {
     int	    v, lim;
@@ -373,7 +376,7 @@ IntFactor (int a)
     return a;
 }
 
-int
+static int
 IntPow (int a, int p)
 {
     int	result;
@@ -390,7 +393,7 @@ IntPow (int a, int p)
     return result;
 }
 
-int
+static int
 IntPowMod (int a, int p, int m)
 {
     int	result;
@@ -432,7 +435,7 @@ IntPowMod (int a, int p, int m)
     return result;
 }
 
-int
+static int
 IntPsi (int a)
 {
     int	    p;
@@ -453,6 +456,7 @@ IntPsi (int a)
     }
     return ret;
 }
+#endif
 
 typedef struct _partial {
     DataType	    *data;
@@ -471,7 +475,7 @@ static void PartialMark (void *object)
 
 DataType PartialType = { PartialMark, 0 };
 
-PartialPtr
+static PartialPtr
 NewPartial (Natural *partial)
 {
     ENTER ();
@@ -505,7 +509,7 @@ static void FactorMark (void *object)
 
 DataType    FactorType = { FactorMark, 0 };
 
-FactorPtr
+static FactorPtr
 NewFactor (Natural *prime, int power, FactorPtr next)
 {
     ENTER ();
@@ -520,7 +524,7 @@ NewFactor (Natural *prime, int power, FactorPtr next)
     RETURN (f);
 }
 
-Natural *
+static Natural *
 NaturalMod (Natural *n, Natural *m)
 {
     ENTER ();
@@ -532,7 +536,7 @@ NaturalMod (Natural *n, Natural *m)
 
 #define evenp(n)    ((NaturalDigits(n)[0] & 1) == 0)
 
-Bool
+static Bool
 IsPrime (Natural *n)
 {
     Natural *lim;
@@ -551,7 +555,7 @@ IsPrime (Natural *n)
     return 1;
 }
 
-Natural *
+static Natural *
 NextPrime (Natural *n)
 {
     if (NaturalEqual (n, two_natural))
@@ -563,7 +567,7 @@ NextPrime (Natural *n)
     return n;
 }
 
-FactorPtr
+static FactorPtr
 GenerateFactors (Natural *n, Natural *p, Natural *max)
 {
     ENTER ();
@@ -606,7 +610,7 @@ GenerateFactors (Natural *n, Natural *p, Natural *max)
     RETURN (factors);
 }
 
-Natural *
+static Natural *
 FactorBump (FactorPtr	f)
 {
     PartialPtr	p, minp;
@@ -644,7 +648,7 @@ FactorBump (FactorPtr	f)
     RETURN (factor);
 }
 
-int
+static int
 RationalRepeatLength (int prec, Natural *nden, int ibase)
 {
     ENTER ();
@@ -709,7 +713,7 @@ RationalRepeatLength (int prec, Natural *nden, int ibase)
     return digits;
 }
 
-void
+static void
 CheckDecimalLength (int prec, Natural *nden, int ibase, int *initial, int *repeat)
 {
     ENTER ();
@@ -754,7 +758,7 @@ CheckDecimalLength (int prec, Natural *nden, int ibase, int *initial, int *repea
     EXIT ();
 }
 
-Bool
+static Bool
 RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int prec, unsigned char fill)
 {
     ENTER ();
@@ -951,7 +955,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     return True;
 }
 
-Bool
+static Bool
 RationalPrint (Value f, Value rv, char format, int base, int width, int prec, unsigned char fill)
 {
     Rational	*r = &rv->rational;
@@ -1011,7 +1015,7 @@ RationalPrint (Value f, Value rv, char format, int base, int width, int prec, un
     return ret;
 }
 
-void
+static void
 RationalMark (void *object)
 {
     Rational   *rational = object;

@@ -10,7 +10,7 @@
 
 #include	"value.h"
 
-Value
+static Value
 RefPlus (Value av, Value bv, int expandOk)
 {
     ENTER();
@@ -42,7 +42,7 @@ RefPlus (Value av, Value bv, int expandOk)
     RETURN (NewRef (ref->box, i));
 }
 
-Value
+static Value
 RefMinus (Value av, Value bv, int expandOk)
 {
     ENTER();
@@ -86,7 +86,7 @@ RefMinus (Value av, Value bv, int expandOk)
     RETURN (NewRef (ref->box, i));
 }
 
-Value
+static Value
 RefLess (Value av, Value bv, int expandOk)
 {
     Ref	*aref = &av->ref, *bref = &bv->ref;
@@ -102,7 +102,7 @@ RefLess (Value av, Value bv, int expandOk)
     return Zero;
 }
 
-Value
+static Value
 RefEqual (Value av, Value bv, int expandOk)
 {
     Ref	*aref = &av->ref, *bref = &bv->ref;
@@ -112,7 +112,7 @@ RefEqual (Value av, Value bv, int expandOk)
     return One;
 }
 
-ValueType *
+static ValueType *
 RefTypeCheck (BinaryOp op, Value av, Value bv, int expandOk)
 {
     switch (op) {
@@ -136,7 +136,7 @@ RefTypeCheck (BinaryOp op, Value av, Value bv, int expandOk)
     return 0;
 }
 
-Bool
+static Bool
 RefPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     FileOutput (f, '&');

@@ -27,7 +27,7 @@ IntegerToInt (Integer *i)
     return result;
 }
 
-Value
+static Value
 IntegerPlus (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -58,7 +58,7 @@ IntegerPlus (Value av, Value bv, int expandOk)
     RETURN (ret);
 }
 
-Value
+static Value
 IntegerMinus (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -89,7 +89,7 @@ IntegerMinus (Value av, Value bv, int expandOk)
     RETURN (ret);
 }
 
-Value
+static Value
 IntegerTimes (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -102,7 +102,7 @@ IntegerTimes (Value av, Value bv, int expandOk)
     RETURN (NewInteger (sign, NaturalTimes (a->mag, b->mag)));
 }
 
-Value
+static Value
 IntegerDivide (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -124,7 +124,7 @@ IntegerDivide (Value av, Value bv, int expandOk)
 	RETURN (NewInteger (sign, NaturalDivide (a->mag, b->mag, &rem)));
 }
 
-Value
+static Value
 IntegerDiv (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -146,7 +146,7 @@ IntegerDiv (Value av, Value bv, int expandOk)
     RETURN (NewInteger (sign, quo));
 }
 
-Value
+static Value
 IntegerMod (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -164,7 +164,7 @@ IntegerMod (Value av, Value bv, int expandOk)
     RETURN (NewInteger (Positive, rem));
 }
 
-Value
+static Value
 IntegerLess (Value av, Value bv, int expandOk)
 {
     Integer	*a = &av->integer, *b = &bv->integer;
@@ -189,7 +189,7 @@ IntegerLess (Value av, Value bv, int expandOk)
     return ret;
 }
 
-Value
+static Value
 IntegerEqual (Value av, Value bv, int expandOk)
 {
     Integer	*a = &av->integer, *b = &bv->integer;
@@ -199,7 +199,7 @@ IntegerEqual (Value av, Value bv, int expandOk)
     return Zero;
 }
 
-Value
+static Value
 IntegerNegate (Value av, int expandOk)
 {
     ENTER ();
@@ -208,19 +208,19 @@ IntegerNegate (Value av, int expandOk)
     RETURN (NewInteger (SignNegate (a->sign), a->mag));
 }
 
-Value
+static Value
 IntegerFloor (Value av, int expandOk)
 {
     return av;
 }
 
-Value
+static Value
 IntegerCeil (Value av, int expandOk)
 {
     return av;
 }
 
-Value
+static Value
 IntegerPromote (Value av)
 {
     ENTER ();
@@ -234,7 +234,7 @@ IntegerPromote (Value av)
     RETURN (av);
 }
 
-Value
+static Value
 IntegerReduce (Value av)
 {
     ENTER ();
@@ -245,7 +245,7 @@ IntegerReduce (Value av)
     RETURN (av);
 }
 
-Bool
+static Bool
 IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, unsigned char fill)
 {
     ENTER ();
@@ -278,7 +278,7 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, uns
     return result != 0;
 }
 
-void
+static void
 IntegerMark (void *object)
 {
     Integer *integer = object;

@@ -100,7 +100,8 @@ NaturalCopy (Natural *a, Natural *b)
 	*bd++ = *ad++;
 }
 
-void
+#if 0
+static void
 NaturalClear (Natural *n)
 {
     int	i;
@@ -108,6 +109,7 @@ NaturalClear (Natural *n)
     for (i = 0; i < length(n); i++)
 	data(n)[i] = 0;
 }
+#endif
 
 Bool
 NaturalEven (Natural *n)
@@ -123,11 +125,13 @@ NaturalZero (Natural *n)
     return length (n) == 0;
 }
 
-int
+#if 0
+static int
 NaturalOne (Natural *n)
 {
     return length (n) == 1 && data(n)[0] == 1;
 }
+#endif
     
 int
 NaturalLess (Natural *a, Natural *b)
@@ -419,7 +423,7 @@ NaturalEstimateLength (Natural *a, int base)
 char	*naturalBuffer;
 int	naturalBufferSize;
 
-char *
+static char *
 NaturalBottom (char *result, digit partial, int base, int digits, Bool fill)
 {
     digit   dig;
@@ -441,7 +445,7 @@ NaturalBottom (char *result, digit partial, int base, int digits, Bool fill)
     return result;
 }
 
-char *
+static char *
 NaturalSplit (char *result, Natural *a, Natural **divisors, int base, int digits, Bool fill)
 {
     ENTER ();
@@ -632,7 +636,7 @@ logBASE (double d)
     return log (d) / log ((double) BASE);
 }
 
-double
+static double
 expBASE (int i)
 {
     double	result;

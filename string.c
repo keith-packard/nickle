@@ -22,7 +22,7 @@ StringInit (void)
     return 1;
 }
 
-Value
+static Value
 StringPlus (Value av, Value bv, int expandOk)
 {
     ENTER();
@@ -37,7 +37,7 @@ StringPlus (Value av, Value bv, int expandOk)
     RETURN (ret);
 }
 
-Value
+static Value
 StringEqual (Value av, Value bv, int expandOk)
 {
     if (!strcmp (StringChars (&av->string), StringChars(&bv->string)))
@@ -45,7 +45,7 @@ StringEqual (Value av, Value bv, int expandOk)
     return Zero;
 }
 
-Value
+static Value
 StringLess (Value av, Value bv, int expandOk)
 {
     if (strcmp (StringChars (&av->string), StringChars(&bv->string)) < 0)
@@ -78,7 +78,7 @@ printWidth (char *s)
     return width;
 }
 
-Bool
+static Bool
 StringPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     char    *string = StringChars (&av->string);

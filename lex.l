@@ -101,16 +101,18 @@ return		{ yylval.ival = RETURNTOK; return RETURNTOK; }
 try		{ yylval.ival = TRY; return TRY; }
 catch		{ yylval.ival = CATCH; return CATCH; }
 
+poly		{ yylval.tval = type_undef; return POLY; }
 int		{ yylval.tval = type_int; return INT; }
 integer		{ yylval.tval = type_integer; return INTEGER; }
 rational    	{ yylval.tval = type_rational; return RATIONAL; }
 double		{ yylval.tval = type_double; return DOUBLE; }
 string		{ yylval.tval = type_string; return STRING; }
-struct		{ yylval.tval = type_struct; return STRUCT; }
-poly		{ yylval.tval = type_undef; return POLY; }
+File		{ yylval.tval = type_file; return FILET; }
+Mutex		{ yylval.tval = type_mutex; return MUTEX; }
+Semaphore	{ yylval.tval = type_semaphore; return SEMAPHORE; }
+Continuation	{ yylval.tval = type_continuation; return CONTINUATION; }
 
 typedef		{ yylval.ival = TYPEDEF; return TYPEDEF; }
-type		{ yylval.ival = TYPE; return TYPE; }
 new		{ yylval.ival = NEW; return NEW; }
 func		{ yylval.ival = FUNC; return FUNC; }
 fork		{ yylval.ival = FORK; return FORK; }

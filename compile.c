@@ -51,7 +51,7 @@ ObjMark (void *object)
 
 DataType    ObjType = { ObjMark, 0 };
 
-ObjPtr
+static ObjPtr
 NewObj (int size)
 {
     ENTER ();
@@ -66,7 +66,7 @@ NewObj (int size)
 
 #define OBJ_INCR    32
 
-ObjPtr
+static ObjPtr
 AddInst (ObjPtr obj)
 {
     ENTER ();
@@ -107,7 +107,7 @@ ObjPtr	_CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope);
 ObjPtr	_CompileFuncCode (CodePtr code, ScopePtr scope, ExprPtr stat);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
-Class
+static Class
 DefaultClass (ScopePtr scope)
 {
     while (scope && !scope->code)
@@ -117,7 +117,7 @@ DefaultClass (ScopePtr scope)
     return class_global;
 }
 
-void
+static void
 CompileCanonType (ObjPtr obj, ScopePtr scope, TypesPtr type, ExprPtr stat)
 {
     SymbolPtr	s;
@@ -160,7 +160,7 @@ CompileCanonType (ObjPtr obj, ScopePtr scope, TypesPtr type, ExprPtr stat)
     }
 }
 
-SymbolPtr
+static SymbolPtr
 CompileAddSymbol (ScopePtr scope, SymbolPtr symbol)
 {
     ENTER ();
@@ -192,7 +192,7 @@ CompileAddSymbol (ScopePtr scope, SymbolPtr symbol)
     RETURN (symbol);
 }
 
-SymbolPtr
+static SymbolPtr
 AddSymbol (ScopePtr scope, Atom name, Types *type, Publish publish)
 {
     ENTER ();
@@ -206,7 +206,7 @@ AddSymbol (ScopePtr scope, Atom name, Types *type, Publish publish)
     RETURN (s);
 }
 
-SymbolPtr
+static SymbolPtr
 FindSymbol (ObjPtr obj, ExprPtr stat, ScopePtr scope, Atom name, 
 	    int *depth, Types *type, Bool createIfNecessary)
 {
@@ -281,6 +281,7 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat,
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  inst->var.name->symbol.class, expr->atom.atom);
 	    break;
+	default:
 	}
 	break;
     case DOT:
@@ -398,6 +399,14 @@ _CompileAssign (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr
     RETURN (obj);
 }
 
+static ExprPtr
+_CompileArg (ExprPtr arg, int i)
+{
+    while (arg && --i)
+	arg = arg->tree.right;
+    return arg;
+}
+
 ObjPtr
 _CompileCall (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 {
@@ -415,7 +424,6 @@ _CompileCall (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	obj = _CompileExpr (obj, arg->tree.left, scope, stat);
 	SetPush (obj);
 	arg = arg->tree.right;
-	/* FIXME - typecheck arguments */
 	argc++;
     }
     obj = _CompileExpr (obj, expr->tree.left, scope, stat);
@@ -428,9 +436,8 @@ _CompileCall (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     if (expr->tree.left->base.type->base.tag == types_func)
     {
 	argt = expr->tree.left->base.type->func.args;
-	arg = expr->tree.right;
 	i = 0;
-	while (argt || arg)
+	while ((arg = _CompileArg (expr->tree.right, argc - i)) || argt)
 	{
 	    if (!argt)
 	    {
@@ -451,7 +458,6 @@ _CompileCall (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	    }
 	    i++;
 	    argt = argt->next;
-	    arg = arg->tree.right;
 	}
     }
     BuildInst (obj, OpCall, inst, stat);
@@ -484,7 +490,7 @@ _CompileArray (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr 
     RETURN (obj);
 }
 
-ObjPtr
+static ObjPtr
 _CompileBuildArray (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 {
     ENTER ();
@@ -507,7 +513,7 @@ _CompileBuildArray (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     RETURN (obj);
 }
 
-int
+static int
 _CompileCountDimensions (ExprPtr expr)
 {
     int	    ndimMax, ndim;
@@ -527,7 +533,7 @@ _CompileCountDimensions (ExprPtr expr)
     return ndimMax;
 }
 
-void
+static void
 _CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 {
     int	    dim;
@@ -554,7 +560,7 @@ _CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 	*dims = dim;
 }
 
-ObjPtr
+static ObjPtr
 _CompileImplicitArray (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 {
     ENTER ();
@@ -576,7 +582,7 @@ _CompileImplicitArray (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     RETURN (obj);
 }
 
-ObjPtr
+static ObjPtr
 _CompileArrayInits (ObjPtr obj, ExprPtr expr, ScopePtr scope, int *ninits, ExprPtr stat)
 {
     ENTER ();
@@ -598,7 +604,7 @@ _CompileArrayInits (ObjPtr obj, ExprPtr expr, ScopePtr scope, int *ninits, ExprP
     RETURN (obj);
 }
 
-ObjPtr
+static ObjPtr
 _CompileStructInitValues (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 {
     ENTER ();
@@ -611,7 +617,7 @@ _CompileStructInitValues (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat
     RETURN (obj);
 }
 
-ObjPtr
+static ObjPtr
 _CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, StructType *structs,
 			   ScopePtr scope, ExprPtr stat)
 {
@@ -627,7 +633,7 @@ _CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, StructType *structs,
     RETURN (obj);
 }
 
-ObjPtr
+static ObjPtr
 _CompileTry (ObjPtr obj, ExprPtr catches, ExprPtr body, ScopePtr scope, ExprPtr stat)
 {
     ENTER ();
@@ -713,6 +719,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  inst->var.name->symbol.class, expr->atom.atom);
 	    break;
+	default:
 	}
 	break;
     case NEW:
@@ -1457,6 +1464,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
 		    SetPush (*initObj);
 		    initialize = True;
 		}
+	    default:
 	    }
 	}
 	CompileAddSymbol (scope, s);

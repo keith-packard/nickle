@@ -22,7 +22,6 @@ Types		*typesPrim[type_continuation - type_int + 1];
 static void
 TypesPrimMark (void *object)
 {
-    TypesPrim	*tp = object;
 }
 
 static void
@@ -181,25 +180,27 @@ NewTypesStruct (StructType *structs)
 Type
 BaseType (Types *t)
 {
-    if (!t)
-	return type_undef;
-    switch (t->base.tag) {
-    case types_prim:
-	return t->prim.prim;
-    case types_name:
-	return BaseType (t->name.type);
-    case types_ref:
-	return type_ref;
-    case types_func:
-	return type_func;
-    case types_array:
-	return type_array;
-    case types_struct:
-	return type_struct;
+    if (t)
+    {
+	switch (t->base.tag) {
+	case types_prim:
+	    return t->prim.prim;
+	case types_name:
+	    return BaseType (t->name.type);
+	case types_ref:
+	    return type_ref;
+	case types_func:
+	    return type_func;
+	case types_array:
+	    return type_array;
+	case types_struct:
+	    return type_struct;
+	}
     }
+    return type_undef;
 }
 
-Bool
+static Bool
 TypesEqual (Types *a, Types *b)
 {
     if (a == b)
@@ -230,6 +231,7 @@ TypesEqual (Types *a, Types *b)
 	return True;
     case types_struct:
 	return True;
+    default:
     }
     return False;
 }
@@ -247,7 +249,7 @@ TypeNumeric (Types *t)
 Bool
 TypePoly (Types *t)
 {
-    if (!t || t->base.tag == types_prim && t->prim.prim == type_undef)
+    if (!t || (t->base.tag == types_prim && t->prim.prim == type_undef))
 	return True;
     return False;
 }
@@ -297,6 +299,7 @@ TypeCompatible (Types *a, Types *b, Bool contains)
     case types_struct:
 	/* FIXME */
 	return True;
+    default:
     }
     return False;
 	

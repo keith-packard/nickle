@@ -26,7 +26,7 @@ typedef struct _History {
     Value	*array;
 } Hist;
 
-void
+static void
 HistoryMark (void *object)
 {
     Hist *history = object;

@@ -41,7 +41,7 @@ addChunk (StackObject *stack)
     stack->current = chunk;
 }
 
-void
+static void
 StackValidate (StackObject *stack)
 {
     StackChunk	*chunk;

@@ -23,7 +23,7 @@
 
 #ifdef BINARY_GCD
 
-void
+static void
 gcd_right_shift (Natural *v, int shift)
 {
     digit   *vt, *rt;
@@ -71,7 +71,7 @@ gcd_right_shift (Natural *v, int shift)
     }
 }
 
-void
+static void
 gcd_subtract (Natural *a, Natural *b)
 {
     int		    index;

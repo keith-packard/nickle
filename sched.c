@@ -17,7 +17,7 @@ int	runnable;
 
 extern void dumpSleep (void), dumpThreads (void);
 
-void
+static void
 _ThreadInsert (Value thread)
 {
     Value	*prev, t;
@@ -37,7 +37,7 @@ _ThreadInsert (Value thread)
     *prev = thread;
 }
 
-void
+static void
 _ThreadRemove (Value thread)
 {
     Value	*prev;
@@ -148,7 +148,7 @@ ThreadsInterrupt (void)
 	DebugSetFrame (t, 0);
 }
 
-int
+static int
 ThreadContinue (void)
 {
     Value   thread, next;
@@ -185,7 +185,7 @@ ThreadJoin (Value target)
     RETURN (target->thread.v);
 }
 
-void
+static void
 ThreadListState (Value thread)
 {
     int	state = thread->thread.state;
@@ -306,7 +306,7 @@ Cont (void)
     return NewInt (n);
 }
 
-int
+static int
 KillThread (Value thread)
 {
     int	ret;
@@ -347,7 +347,7 @@ Kill (int n, Value *p)
     RETURN (NewInt (ret));
 }
 
-void
+static void
 TraceFunction (Value thread, FramePtr frame, CodePtr code, Atom name)
 {
     int		    fe;
@@ -407,7 +407,7 @@ ThreadMark (void *object)
     MemReference (thread->next);
 }
 
-Bool
+static Bool
 ThreadPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     FileOutput (f, '%');
@@ -488,7 +488,7 @@ ContinuationMark (void *object)
     MemReference (continuation->frame);
 }
 
-Bool
+static Bool
 ContinuationPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     FilePuts (f, "continutation");
@@ -520,7 +520,7 @@ ValueType    ContinuationType = {
     0,
 };
 
-Value
+static Value
 NewContinuation (FramePtr frame, InstPtr pc, StackObject *stack)
 {
     ENTER ();

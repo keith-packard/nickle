@@ -53,7 +53,7 @@ StructTypes (StructType *st, Atom name)
     RETURN (0);
 }
 
-Bool
+static Bool
 StructPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     Struct	    *s = &av->structs;

@@ -13,7 +13,7 @@
 
 Bool	abortError;
 
-void
+static void
 fprintType (Value f, Type tag)
 {
     switch (tag) {
@@ -69,7 +69,7 @@ fprintType (Value f, Type tag)
     }
 }
 
-void
+static void
 fprintClass (Value f, Class storage)
 {
     switch (storage) {
@@ -97,7 +97,7 @@ fprintClass (Value f, Class storage)
     }
 }
 
-void
+static void
 fprintPublish (Value f, Publish publish)
 {
     switch (publish) {
@@ -110,7 +110,7 @@ fprintPublish (Value f, Publish publish)
     }
 }
 
-void
+static void
 fprintArgTypes (Value f, ArgType *at)
 {
     while (at)
@@ -183,7 +183,7 @@ fprintTypes (Value f, Types *t)
     }
 }
 
-void
+static void
 fprintBinOp (Value f, BinaryOp o)
 {
     switch (o) {
@@ -222,7 +222,7 @@ fprintBinOp (Value f, BinaryOp o)
     }
 }
 
-void
+static void
 fprintUnaryOp (Value f, UnaryOp o)
 {
     switch (o) {

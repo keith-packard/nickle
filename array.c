@@ -22,7 +22,7 @@ ArrayInit (void)
     return 1;
 }
 
-Value
+static Value
 ArrayEqual (Value av, Value bv, int expandOk)
 {
     Array   *a = &av->array, *b = &bv->array;
@@ -40,7 +40,7 @@ ArrayEqual (Value av, Value bv, int expandOk)
     return One;
 }
 
-Bool
+static Bool
 ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     ENTER ();
@@ -101,7 +101,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
     return True;
 }
 
-void
+static void
 ArrayMark (void *object)
 {
     Array   *array = object;

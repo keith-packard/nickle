@@ -14,7 +14,7 @@
 
 Value	One, Zero;
 
-Value
+static Value
 IntPlus (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -43,7 +43,7 @@ IntPlus (Value av, Value bv, int expandOk)
     RETURN (ret);
 }
 
-Value
+static Value
 IntMinus (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -72,7 +72,7 @@ IntMinus (Value av, Value bv, int expandOk)
     RETURN (ret);
 }
 
-int
+static int
 logbase2(int a)
 {
     int	log = 0;
@@ -96,7 +96,7 @@ logbase2(int a)
     return log;
 }
 
-Value
+static Value
 IntTimes (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -110,7 +110,7 @@ IntTimes (Value av, Value bv, int expandOk)
     RETURN (ret);
 }
 
-Value
+static Value
 IntDivide (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -129,7 +129,7 @@ IntDivide (Value av, Value bv, int expandOk)
     RETURN (ret);
 }
 
-Value
+static Value
 IntDiv (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -172,7 +172,7 @@ IntDiv (Value av, Value bv, int expandOk)
  * 0 <= remainder < abs (dividend)
  */
  
-Value
+static Value
 IntMod (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -206,7 +206,7 @@ IntMod (Value av, Value bv, int expandOk)
     RETURN (NewInt (r));
 }
 
-Value
+static Value
 IntEqual (Value av, Value bv, int expandOk)
 {
     int		a = av->ints.value, b = bv->ints.value;
@@ -215,7 +215,7 @@ IntEqual (Value av, Value bv, int expandOk)
     return Zero;
 }
 
-Value
+static Value
 IntLess (Value av, Value bv, int expandOk)
 {
     int		a = av->ints.value, b = bv->ints.value;
@@ -224,7 +224,7 @@ IntLess (Value av, Value bv, int expandOk)
     return Zero;
 }
 
-Value
+static Value
 IntLand (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -232,7 +232,7 @@ IntLand (Value av, Value bv, int expandOk)
     RETURN (NewInt (a & b));
 }
 
-Value
+static Value
 IntLor (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -240,7 +240,7 @@ IntLor (Value av, Value bv, int expandOk)
     RETURN (NewInt (a | b));
 }
 
-Value
+static Value
 IntNegate (Value av, int expandOk)
 {
     ENTER ();
@@ -251,19 +251,19 @@ IntNegate (Value av, int expandOk)
     RETURN (NewInt (-a));
 }
 
-Value
+static Value
 IntFloor (Value av, int expandOk)
 {
     return av;
 }
 
-Value
+static Value
 IntCeil (Value av, int expandOk)
 {
     return av;
 }
 
-Bool
+static Bool
 IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     int		    a = av->ints.value;

@@ -48,7 +48,7 @@ ScopeChainMark (void *object)
 
 DataType scopeChainType = { ScopeChainMark, 0 };
 
-ScopeChainPtr
+static ScopeChainPtr
 NewScopeChain (ScopeChainPtr next, SymbolPtr symbol, Publish publish)
 {
     ENTER ();

@@ -10,7 +10,7 @@
 
 #include	"nickle.h"
 
-void
+static void
 DebugAddVar (ScopePtr scope, char *name, Value v)
 {
     ENTER ();

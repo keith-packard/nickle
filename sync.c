@@ -85,7 +85,7 @@ MutexMark (void *object)
     MemReference (m->owner);
 }
 
-Bool
+static Bool
 MutexPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     FilePuts (f, "mutex ");
@@ -194,7 +194,7 @@ SemaphoreMark (void *object)
 {
 }
 
-Bool
+static Bool
 SemaphorePrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     FilePuts (f, "semaphore");

@@ -1,4 +1,14 @@
 2004-08-10  Keith Packard  <keithp@keithp.com>
+
+	* mem.c: (newBlock), (MemAllocateHunk), (MemAllocateHuge),
+	(activeReference), (activeReset), (MemInitialize), (MemAddRoot),
+	(MemReference), (MemReferenceNoRecurse), (mark), (sweep),
+	(MemCollect):
+	* mem.h:
+	* memp.h:
+	Clean up new allocator implementation.
+
+2004-08-10  Keith Packard  <keithp@keithp.com>
 version 2.43
 
 	* Makefile.am:

@@ -15,148 +15,129 @@
  *			- returns a hunk of at least "size" bytes
  * void MemReference (void *object)
  *			- marks the indicated object as referenced
- * DataType *MemType (void *object)
- *			- returns the type of the indicated object
  * void MemAddRoot (void *object)
  *			- adds the indicated object as a root
  * void MemCollect (void)
  *			- sweeps the entire heap freeing unused storage
  *
- * local routines:
- *
- * gimmeBlock()		- calls iGarbageCollect (if it is time) or malloc
- * allocBlock()		- calls malloc
- * disposeBlock()	- calls free
- *
- * tossFree()		- erases the free lists
- * checkRef()		- puts unreferenced hunks on free lists
- * checkBlockRef(b)	- puts unreferenced hunks in a block on free lists
  */
 
 #include	<config.h>
 
 #include	<memory.h>
-#define MEM_NEED_ALLOCATE
+#define MEM_NEED_ALLOCATE 1
 #include	"mem.h"
 #include	"memp.h"
 #include	<stdlib.h>
 
-#if HAVE_STDINT_H
-#include	<stdint.h>
-#define PtrToInt(p)	((int) (intptr_t) (p))
-#else
-#define PtrToInt(p)	((int) (p))
-#endif
+static struct block *head;
+struct bfree	    *freeList[NUMSIZES];
 
-int		GarbageTime;
+static int	    garbageTime;
+static int	    sinceGarbage;
 
-void		*TemporaryData;
-
-#undef DEBUG
+StackObject	    *MemStack;
+void		    *TemporaryData;
+static void	    **Roots;
+static int	    RootCount;
+static int	    RootSize;
 
 #ifdef DEBUG
-int	GCdebug;
+int		    GCdebug;
+int		    totalBytesFree;
+int		    totalBytesUsed;
+int		    totalObjectsFree;
+int		    totalObjectsUsed;
+int		    useMap[NUMSIZES+1];
 #endif
 
-StackObject *MemStack;
-
-struct bfree *freeList[NUMSIZES];
-
-int	sinceGarbage;
-
-static void **Roots;
-static int  RootCount;
-
-struct bfree		*lastFree[NUMSIZES];
-
-static struct block	*head;
-
-int	totalBytesFree;
-int	totalBytesUsed;
-int	totalObjectsFree;
-int	totalObjectsUsed;
-int	useMap[NUMSIZES+1];
+/*
+ * Allocate a new block
+ */
 
 static struct block *
-MemNewBlock (unsigned size, int sizeIndex)
+newBlock (int sizeIndex)
 {
     struct block    *b;
-    if (++sinceGarbage >= GarbageTime)
+    int		    size;
+    
+    if (sizeIndex < NUMSIZES)
+	size = BLOCKSIZE;
+    else
+	size = sizeIndex + HEADSIZE;
+
+    if (++sinceGarbage >= garbageTime)
     {
 	MemCollect ();
-	if (sizeIndex >= 0 && freeList[sizeIndex])
+	if (sizeIndex < NUMSIZES && freeList[sizeIndex])
 	    return 0;
     }
     b = (struct block *) malloc (size);
     if (!b)
     {
 	MemCollect ();
-	if (sizeIndex >= 0 && freeList[sizeIndex])
+	if (sizeIndex < NUMSIZES && freeList[sizeIndex])
 	    return 0;
 	b = (struct block *) malloc (size);
 	if (!b)
 	    panic (0, "out of memory - quiting\n");
     }
-    return b;
-}
-
-void *
-MemHunkMore (int sizeIndex)
-{
-    unsigned char	*new;
-    struct block	*b;
-    int			n;
-
-    b = MemNewBlock ((unsigned) BLOCKSIZE, sizeIndex);
-    if (!b)
-	return freeList[sizeIndex];
-    /*
-     * fill in per-block data fields
-     */
     b->sizeIndex = sizeIndex;
     b->next = head;
     head = b; 
-
-    /*
-     * put it's contents on the free list
-     */
-    new = HUNKS(b);
-    n = NUMHUNK(sizeIndex) - 1;
-    while (n--)
-    {
-	unsigned char	*next = new + HUNKSIZE(sizeIndex);
-	((struct bfree *) new)->type = 0;
-	((struct bfree *) new)->next = (struct bfree *) next;
-	new = next;
-    }
-    ((struct bfree *) new)->type = 0;
-    ((struct bfree *) new)->next = freeList[sizeIndex];
-    return freeList[sizeIndex] = (struct bfree *) HUNKS(b);
+    return b;
 }
 
 /*
- * take care of giant requests
+ * Allocate a small block of memory
  */
 
-void *
-MemAllocateHuge (DataType *type, int size)
+struct bfree *
+MemAllocateHunk (int sizeIndex)
 {
     struct block	*b;
-    unsigned char	*data;
+    struct bfree    	*new;
 
-    b = MemNewBlock ((unsigned) (size + HEADSIZE), -1);
-    
-    b->sizeIndex = size;
-    b->next = head;
-    head = b;
+    b = newBlock (sizeIndex);
+    if (b)
+    {
+	unsigned char	*data = HUNKS (b);
+	int		n = NUMHUNK(sizeIndex);
+	/*
+	 * put the contents on the free list
+	 */
+	while (--n)
+	{
+	    unsigned char	*next = data + HUNKSIZE(sizeIndex);
+	    
+	    ((struct bfree *) data)->type = 0;
+	    ((struct bfree *) data)->next = (struct bfree *) next;
+	    data = next;
+	}
+	((struct bfree *) data)->type = 0;
+	((struct bfree *) data)->next = freeList[sizeIndex];
+	freeList[sizeIndex] = (struct bfree *) HUNKS(b);
+    }
+    new = freeList[sizeIndex];
+    freeList[sizeIndex] = new->next;
+    return new;
+}
 
-    data = HUNKS(b);
-    *((DataType **) data) = type;
-    return data;
+/*
+ * Allocate a large block of memory
+ */
+
+struct bfree *
+MemAllocateHuge (int size)
+{
+    return (struct bfree *) HUNKS (newBlock (size));
 }
 
 #ifdef MEM_TRACE
-DataType	*allDataTypes;
+/*
+ * Allocation tracing.  Track usage of each type of object
+ */
+static DataType	*allDataTypes;
 
 void
 MemAddType (DataType *type)
@@ -172,14 +153,14 @@ MemAddType (DataType *type)
 }
 
 static void
-MemActiveReference (DataType *type, int size)
+activeReference (DataType *type, int size)
 {
     type->active++;
     type->active_bytes += size;
 }
 
 static void
-MemActiveReset (void)
+activeReset (void)
 {
     DataType	*type;
 
@@ -205,152 +186,11 @@ MemActiveDump (void)
 	       type->active, type->active_bytes);
     }
 }
-
 #endif
 
 /*
- * garbage collection scheme
+ * Initialize the allocator
  */
-
-#define isReferenced(a)	    (*((PtrInt *)(a)) & 1)
-#define clrReference(a)	    (*((PtrInt *)(a)) &= ~1)
-#define setReference(a)	    (*((PtrInt *)(a)) |= 1)
-
-/*
- * eliminate any remaining free list
- */
-
-static void
-tossFree (void)
-{
-    memset (freeList, '\0', NUMSIZES * sizeof(freeList[0]));
-}
-
-static int
-busy (unsigned char *data)
-{
-    DataType	*type;
-
-    if (isReferenced (data))
-	return 1;
-    type = TYPE(data);
-    if (!type)
-	return 0;
-    if (!type->Free)
-	return 0;
-    if ((*type->Free) (data))
-	return 0;
-    return 1;
-}
-
-static int
-checkBlockRef (struct block *b)
-{
-    int		    sizeIndex = b->sizeIndex;
-    unsigned char   *data = HUNKS(b);
-    
-    if (sizeIndex >= NUMSIZES)
-    {
-	if (busy (data))
-	{
-	    clrReference(HUNKS(b));
-	    totalObjectsUsed++;
-	    totalBytesUsed += sizeIndex;
-	    useMap[NUMSIZES]++;
-#ifdef MEM_TRACE
-	    MemActiveReference (TYPE(data), b->sizeIndex);
-#endif
-	    return 1;
-	}
-	else
-	{
-	    totalBytesFree += sizeIndex;
-	    totalObjectsFree++;
-	    return 0;
-	}
-    }
-    else
-    {
-	struct bfree	*first = 0;
-	struct bfree    **prev = &first;
-	int		n = NUMHUNK(sizeIndex);
-	int		anybusy = 0;
-	int		size = HUNKSIZE(sizeIndex);
-
-	while (n--)
-	{
-	    if (busy (data))
-	    {
-		clrReference(data);
-#ifdef MEM_TRACE
-		MemActiveReference (TYPE(data), size);
-#endif
-		totalObjectsUsed++;
-		useMap[sizeIndex]++;
-		totalBytesUsed += size;
-		anybusy = 1;
-	    }
-	    else
-	    {
-		TYPE(data) = 0;
-		*prev = (struct bfree *) data;
-		prev = &((struct bfree *) data)->next;
-		totalBytesFree += size;
-		totalObjectsFree++;
-	    }
-	    data += size;
-	}
-	if (anybusy)
-	{
-	    *prev = freeList[sizeIndex];
-	    freeList[sizeIndex] = first;
-	    return 1;
-	}
-	else
-	{
-	    return 0;
-	}
-    }
-}
-
-/*
- * checkRef: rebuild the free lists from unused data
- */
-
-static void
-checkRef (void)
-{
-    int	i;
-    struct block    *b, **p;
-
-    for (i = 0; i < NUMSIZES; i++)
-	lastFree[i] = 0;
-    for (p = &head; (b = *p); )
-    {
-	if (checkBlockRef (b))
-	    p = &b->next;
-	else
-	{
-	    *p = b->next;
-	    free (b);
-	}
-    }
-    GarbageTime = GARBAGETIME/* - (totalBytesFree / BLOCKSIZE) */;
-    if (GarbageTime < 10)
-	GarbageTime = 10;
-#ifdef DEBUG
-    if (GCdebug) {
-	debug ("GC: used: bytes %7d objects %7d\n",
-	       totalBytesUsed, totalObjectsUsed);
-	debug ("GC: free: bytes %7d objects %7d\n",
-	       totalBytesFree, totalObjectsFree);
-	for (i = 0; i <= NUMSIZES; i++)
-	    debug ("used %5d: %7d\n",
-		   i == NUMSIZES ? 0 : HUNKSIZE(i), useMap[i]);
-	debug ("GC: GarbageTime set to %d\n", GarbageTime);
-    }
-#endif
-}
 
 void
 MemInitialize (void)
@@ -364,8 +204,40 @@ MemInitialize (void)
 	MemStack = StackCreate ();
 	MemAddRoot (MemStack);
     }
-    GarbageTime = GARBAGETIME;
+    garbageTime = GARBAGETIME;
 }
+
+/*
+ * Add a root to the memory system, objects
+ * referenced through this will be marked as busy
+ */
+
+void
+MemAddRoot (void *object)
+{
+    void    **roots;
+
+    if (RootCount == RootSize)
+    {
+	if (RootSize == 0)
+	    RootSize = 128;
+	else
+	    RootSize *= 2;
+	roots = malloc (sizeof (void *) * RootSize);
+	if (!roots)
+	    panic ("out of memory");
+	memcpy (roots, Roots, RootCount * sizeof (void *));
+	if (Roots)
+	    free (Roots);
+	Roots = roots;
+    }
+    Roots[RootCount++] = object;
+}
+
+/*
+ * Mark an object as referenced, recurse through
+ * the Mark routine for the type to mark referenced objects
+ */
 
 void
 MemReference (void *object)
@@ -403,58 +275,169 @@ MemReferenceNoRecurse (void *object)
     return 0;
 }
 
-DataType *
-MemType (void *object)
+/*
+ * mark: walk roots marking referenced memory
+ */
+
+static void
+mark (void)
 {
-    return TYPE (object);
+    int	    rootCount = RootCount;
+    void    **roots = Roots;
+    
+    while (rootCount--)
+	MemReference (*roots++);
+    if (TemporaryData)
+	MemReference (TemporaryData);
 }
 
-void
-MemAddRoot (void *object)
+#if HAVE_C_INLINE
+static inline int
+#else
+static int
+#endif
+busy (unsigned char *data)
 {
-    void    **roots;
+    DataType	*type;
 
-    roots = malloc (sizeof (void *) * (RootCount + 1));
-    if (!roots)
-	panic ("out of memory");
-    if (RootCount)
-	memcpy (roots, Roots, RootCount * sizeof (void *));
-    if (Roots)
-	free (Roots);
-    Roots = roots;
-    Roots[RootCount++] = object;
+    if (isReferenced (data))
+	return 1;
+    type = TYPE(data);
+    if (!type)
+	return 0;
+    if (!type->Free)
+	return 0;
+    if ((*type->Free) (data))
+	return 0;
+    return 1;
 }
 
+/*
+ * sweep: rebuild the free lists from unused data
+ */
+
+static void
+sweep (void)
+{
+    struct block    *b, **p;
+
+    /* Erase free list */
+    memset (freeList, '\0', NUMSIZES * sizeof(freeList[0]));
+    /*
+     * Walk all blocks
+     */
+    for (p = &head; (b = *p); )
+    {
+	int		sizeIndex = b->sizeIndex;
+	int		n = NUMHUNK_ALL(sizeIndex);
+	int		size = HUNKSIZE_ALL(sizeIndex);
+	unsigned char   *data = HUNKS(b);
+	struct bfree    *first = 0;
+	struct bfree    **prev = &first;
+	int		anybusy = 0;
+
+	while (n--)
+	{
+	    if (busy (data))
+	    {
+		clrReference(data);
+		anybusy = 1;
+#ifdef MEM_TRACE
+		activeReference (TYPE(data), size);
+#endif
+#ifdef DEBUG
+		totalObjectsUsed++;
+		useMap[sizeIndex]++;
+		totalBytesUsed += size;
+#endif
+	    }
+	    else
+	    {
+		TYPE(data) = 0;
+		*prev = (struct bfree *) data;
+		prev = &((struct bfree *) data)->next;
+#ifdef DEBUG
+		totalBytesFree += size;
+		totalObjectsFree++;
+#endif
+	    }
+	    data += size;
+	}
+	if (anybusy)
+	{
+	    if (sizeIndex < NUMSIZES)
+	    {
+		*prev = freeList[sizeIndex];
+		freeList[sizeIndex] = first;
+	    }
+	    p = &b->next;
+	}
+	else
+	{
+	    *p = b->next;
+	    free (b);
+	}
+    }
+}
+
+/*
+ * Garbage collect
+ */
 
 void
 MemCollect (void)
 {
-    void    	**roots;
-    int		rootCount;
-
 #ifdef DEBUG
     if (GCdebug)
 	debug ("GC:\n");
-#endif
     memset (useMap, '\0', sizeof useMap);
     totalBytesFree = 0;
     totalObjectsFree = 0;
     totalBytesUsed = 0;
     totalObjectsUsed = 0;
-    sinceGarbage = 0;
-#ifdef MEM_TRACE
-    MemActiveReset ();
 #endif
-    tossFree ();
+    sinceGarbage = 0;
+    
+#ifdef MEM_TRACE
+    activeReset ();
+#endif
+    
+    /*
+     * Mark
+     */
 #ifdef DEBUG
     if (GCdebug)
-	debug ("GC: reference objects\n");
+	debug ("GC: mark objects\n");
 #endif
-    rootCount = RootCount;
-    roots = Roots;
-    while (rootCount--)
-	MemReference (*roots++);
-    if (TemporaryData)
-	MemReference (TemporaryData);
-    checkRef ();
+    mark ();
+    
+    /*
+     * Sweep
+     */
+#ifdef DEBUG
+    if (GCdebug)
+	debug ("GC: sweep objects\n");
+#endif
+    sweep ();
+    
+    /*
+     * Set the garbage collection time
+     */
+    garbageTime = GARBAGETIME/* - (totalBytesFree / BLOCKSIZE) */;
+    if (garbageTime < 10)
+	garbageTime = 10;
+
+#ifdef DEBUG
+    if (GCdebug) {
+	debug ("GC: used: bytes %7d objects %7d\n",
+	       totalBytesUsed, totalObjectsUsed);
+	debug ("GC: free: bytes %7d objects %7d\n",
+	       totalBytesFree, totalObjectsFree);
+	for (i = 0; i <= NUMSIZES; i++)
+	    debug ("used %5d: %7d\n",
+		   i == NUMSIZES ? 0 : HUNKSIZE(i), useMap[i]);
+	debug ("GC: garbageTime set to %d\n", garbageTime);
+    }
+#endif
 }
+

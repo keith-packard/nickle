@@ -16,13 +16,13 @@
 #include	<strings.h>
 #endif
 
-#undef MEM_TRACE
-
-#ifndef MEM_TRACE
-typedef const struct _DataType DataType;
-#else
+#ifdef MEM_TRACE
 typedef struct _DataType DataType;
+#else
+typedef const struct _DataType DataType;
 #endif
+
+#include	"stack.h"
 
 struct _DataType {
     void    (*Mark) (void *);
@@ -61,39 +61,61 @@ union block_round {
 # define NUMSIZES	12
 # define HUNKSIZE(i)	(MINHUNK << (i))
 # define MAXHUNK	HUNKSIZE(NUMSIZES-1)
+# define HEADSIZE	(sizeof (union block_round))
+# define HUNKS(b)	((unsigned char *) (b) + HEADSIZE)
 
 #if HAVE_C_INLINE
 #define USE_C_INLINE 1
 #endif
 
-extern void	MemInitialize (void);
+struct bfree *
+MemAllocateHunk (int sizeIndex);
+
+struct bfree *
+MemAllocateHuge (int size);
+
 #ifndef USE_C_INLINE
-extern void	*MemAllocate (DataType *type, int size);
-extern void	*MemAllocateRef (DataType *type, int size);
+void
+*MemAllocate (DataType *type, int size);
+
+void
+*MemAllocateRef (DataType *type, int size);
 #endif
-extern void	MemFree (void *object, int size);
-extern void	*MemAllocateHuge (DataType *type, int size);
-extern void	*MemHunkMore (int sizeIndex);
-extern void	MemReference (void *object);
-extern int	MemReferenceNoRecurse (void *object);
-extern DataType	*MemType (void *object);
-extern void	MemAddRoot (void *object);
-extern void	MemCollect (void);
-extern void	MemCheckPointer (void *base, void *address, int size);
+
 #ifdef MEM_TRACE
-extern void	MemAddType (DataType *type);
-extern void	MemActiveDump (void);
+void
+MemAddType (DataType *type);
+
+void
+MemActiveDump (void);
 #endif
 
-extern void	debug (char *, ...);
-extern void	panic (char *, ...);
+void
+MemInitialize (void);
 
-extern int	GCdebug;
+void
+MemAddRoot (void *object);
 
-#include	"stack.h"
+void
+MemReference (void *object);
 
-extern	StackObject *MemStack;
+int
+MemReferenceNoRecurse (void *object);
 
+void
+MemCollect (void);
+    
+/*
+ * These are used by the mem system and defined externally
+ */
+
+void
+debug (char *, ...);
+
+void
+panic (char *, ...);
+
+extern StackObject  *MemStack;
 extern void	    *TemporaryData;
 
 extern struct bfree *freeList[NUMSIZES];
@@ -105,13 +127,13 @@ extern struct bfree *freeList[NUMSIZES];
 #define RETURN(r)	    return (STACK_RETURN (MemStack, __stackPointer, (r)))
 #define NOREFRETURN(r)	    return (EXIT(), (r))
 
-#if defined(USE_C_INLINE) || defined(MEM_NEED_ALLOCATE)
+#if USE_C_INLINE || MEM_NEED_ALLOCATE
 
 /*
  * Allocator entry point
  */
 
-#ifdef USE_C_INLINE
+#if USE_C_INLINE
 static inline struct bfree *
 #else
 static struct bfree *
@@ -121,7 +143,7 @@ _MemAllocateInt (DataType *type, int size)
     int	sizeIndex = 0;
     struct bfree    *new;
     
-#if NUMSIZES > 16
+#if NUMSIZES > 15    
     bad NUMSIZES
 #endif
 #ifdef MEM_TRACE
@@ -142,16 +164,15 @@ _MemAllocateInt (DataType *type, int size)
 	sizeIndex += 1;
     
     if (sizeIndex >= NUMSIZES)
-	return MemAllocateHuge (type, size);
-    
-    new = freeList[sizeIndex];
-    if (!new)
-	new = MemHunkMore (sizeIndex);
-    freeList[sizeIndex] = new->next;
+	new = MemAllocateHuge (size);
+    else if ((new = freeList[sizeIndex]))
+	freeList[sizeIndex] = new->next;
+    else
+	new = MemAllocateHunk (sizeIndex);
     return new;
 }
 
-#ifdef USE_C_INLINE
+#if USE_C_INLINE
 static inline void *
 #else
 void *
@@ -166,7 +187,7 @@ MemAllocateRef (DataType *type, int size)
     return (void *) new;
 }
 
-#ifdef USE_C_INLINE
+#if USE_C_INLINE
 static inline void *
 #else
 void *
@@ -179,6 +200,6 @@ MemAllocate (DataType *type, int size)
     return (void *) new;
 }
 
-#endif
+#endif	/* USE_C_INLINE */
 
 #endif /* _MEM_H_ */

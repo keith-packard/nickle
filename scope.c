@@ -250,7 +250,7 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publ
 	search = False;
 	if (!namelist)
 	{
-	    FilePrintf (FileStdout, "No symbol \"%s\" in scope\n",
+	    FilePrintf (FileStdout, "No symbol \"%s\" in namespace\n",
 			StringChars (&string->string));
 	    return False;
 	}

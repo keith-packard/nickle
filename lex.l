@@ -30,6 +30,7 @@ typedef struct _lexInput {
 
 LexInput    *lexInput;
 extern int  ignorenl;
+extern int  notCommand;
 #define	    FILE_END_CHAR	-2
     
 static void lexInputMark (void *object)
@@ -508,7 +509,7 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 	        CommandPtr	c;
 		SymbolPtr	symbol;
 		yylval.atom = AtomId (yytext);
-		if ((c = CommandFind (CurrentCommands, yylval.atom)))
+		if (!notCommand && (c = CommandFind (CurrentCommands, yylval.atom)))
 		{
 		    if (c->names)
 			return NAMECOMMAND;

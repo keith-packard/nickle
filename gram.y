@@ -11,6 +11,7 @@
 #include	<stdio.h>
 
 int ignorenl;
+int notCommand;
 NamespacePtr	LexNamespace;
 int funcDepth;
 
@@ -154,7 +155,12 @@ reset		:
 			LexNamespace = 0; 
 			CurrentNamespace = TopNamespace; 
 			funcDepth = 0; 
+			notCommand = 0;
 		    }
+
+		;
+not_command	:
+		    { notCommand = 1; }
 		;
 opt_nl		: NL
 		|
@@ -168,7 +174,7 @@ opt_comma	: COMMA
 /*
  * Interpreter command level
  */
-command		: expr reset NL
+command		: not_command expr reset NL
 		    {
 			ENTER ();
 			ExprPtr	e;
@@ -180,13 +186,13 @@ command		: expr reset NL
 				       2,
 				       BuildName (0, "format"),
 				       BuildCall ("History", "insert",
-						  1, NewExprTree (DOLLAR, $1, 0)));
+						  1, NewExprTree (DOLLAR, $2, 0)));
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, 0));
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
-		| expr POUND expr reset NL
+		| not_command expr POUND expr reset NL
 		    {
 			ENTER ();
 			ExprPtr	e;
@@ -198,9 +204,9 @@ command		: expr reset NL
 				       7,
 				       BuildName (0, "stdout"),
 				       BuildCall ("History", "insert",
-						  1, $1),
+						  1, $2),
 				       NewExprConst (STRING_CONST, NewStrString ("g")),
-				       $3,
+				       $4,
 				       NewExprConst (TEN_CONST, Zero),
 				       NewExprConst (TEN_CONST, NewInt (-1)),
 				       NewExprConst (STRING_CONST, NewStrString (" ")));
@@ -214,7 +220,7 @@ command		: expr reset NL
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
-		| statement reset opt_nl
+		| not_command statement reset opt_nl
 		    { 
 			ENTER ();
 			NamespacePtr    s;
@@ -222,11 +228,11 @@ command		: expr reset NL
 			Value	    t;
 			
 			GetNamespace (&s, &f);
-			t = NewThread (f, CompileStat ($1, 0));
+			t = NewThread (f, CompileStat ($2, 0));
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
-		| COMMAND opt_exprs reset opt_semi NL
+		| not_command COMMAND opt_exprs reset opt_semi NL
 		    {
 			ENTER();
 			ExprPtr	e;
@@ -235,21 +241,21 @@ command		: expr reset NL
 			FramePtr	f;
 			CommandPtr	c;
 
-			c = CommandFind (CurrentCommands, $1);
+			c = CommandFind (CurrentCommands, $2);
 			if (!c)
-			    ParseError ("Undefined command \"%s\"", AtomName ($1));
+			    ParseError ("Undefined command \"%s\"", AtomName ($2));
 			else
 			{
 			    e = NewExprTree (OP, 
 					     NewExprConst (POLY_CONST, c->func),
-					     $2);
+					     $3);
 			    GetNamespace (&s, &f);
 			    t = NewThread (f, CompileExpr (e, 0));
 			    ThreadsRun (t, 0);
 			}
 			EXIT ();
 		    }
-		| NAMECOMMAND opt_rawnames reset opt_semi NL
+		| not_command NAMECOMMAND opt_rawnames reset opt_semi NL
 		    {
 			ENTER ();
 			ExprPtr e;
@@ -259,14 +265,14 @@ command		: expr reset NL
 			FramePtr	f;
 			CommandPtr	c;
 
-			c = CommandFind (CurrentCommands, $1);
+			c = CommandFind (CurrentCommands, $2);
 			if (!c)
-			    ParseError ("Undefined command \"%s\"", AtomName ($1));
+			    ParseError ("Undefined command \"%s\"", AtomName ($2));
 			else
 			{
 			    e = NewExprTree (OP, 
 					     NewExprConst (POLY_CONST, c->func),
-					     $2);
+					     $3);
 			    GetNamespace (&s, &f);
 			    t = NewThread (f, CompileExpr (e, 0));
 			    ThreadsRun (t, 0);

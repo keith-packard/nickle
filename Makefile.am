@@ -4,9 +4,9 @@
 ## All Rights Reserved.  See the file COPYING in this directory
 ## for licensing information.
 
-SUBDIRS = builtin
+SUBDIRS = builtin bench test
 
-NICKLEFILES = math.5c scanf.5c mutex.5c arc4.5c prng.5c command.5c abort.5c \
+NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c arc4.5c prng.5c command.5c abort.5c \
         printf.5c history.5c ctype.5c string.5c
 EXAMPLES = examples/circle.5c examples/comb.5c examples/kaiser.5c \
 	examples/miller-rabin.5c examples/numbers.5c examples/prime.5c \
@@ -14,9 +14,12 @@ EXAMPLES = examples/circle.5c examples/comb.5c examples/kaiser.5c \
 	examples/rsa.5c
 TEST = test/gcdtest.5c test/inttest.5c test/rattest.5c
 
+DEBIAN = debian/changelog  debian/control debian/copyright \
+	debian/docs debian/files debian/rules
+
 AUTOMAKE_OPTIONS = no-dependencies
 EXTRA_DIST = README.name autoconfigure.sh $(NICKLEFILES) \
-	gram.h $(EXAMPLES) $(TEST)
+	gram.h $(EXAMPLES) $(TEST) $(DEBIAN)
 
 bin_PROGRAMS = nickle
 
@@ -32,7 +35,7 @@ nickle_SOURCES = alarm.c array.c atom.c avl.c box.c \
 nickle_LDADD = -Lbuiltin -lbuiltin
 nickle_DEPENDENCIES = builtin/libbuiltin.a
 
-pkgdata_DATA = builtin.5c $(NICKLEFILES)
+pkgdata_DATA = $(NICKLEFILES)
 
 man_MANS = nickle.1
 

@@ -3,12 +3,12 @@
 # GNU copyright 1997 to 1999 by Joey Hess.
 
 # Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+export DH_VERBOSE=1
 
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	./configure --prefix=/ \
+	./configure --prefix= \
           --bindir='$${prefix}/usr/bin' \
           --mandir='$${prefix}/usr/share/man' \
           --datadir='$${prefix}/usr/share'
@@ -58,6 +58,7 @@ binary-arch: build install
 	dh_installinfo
 #	dh_undocumented
 	dh_installchangelogs ChangeLog
+	dh_install
 	dh_link
 	dh_strip
 	dh_compress

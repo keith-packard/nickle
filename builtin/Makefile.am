@@ -12,12 +12,5 @@ libbuiltin_a_SOURCES =	builtin.h namespaces.h builtin.c \
 			string.c thread.c toplevel.c \
 			sockets.c # bsdrandom.c gcd.c
 
-$(libbuiltin_a_OBJECTS): builtin.h namespaces.h ../gram.h
-
-../gram.h:
-	$(MAKE) -C .. gram.h
-
-version.h: ../version.m4
+version.h:
 	( cd .. && sh update-version.sh )
-
-builtin.o: version.h

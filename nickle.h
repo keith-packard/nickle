@@ -234,6 +234,7 @@ typedef union _expr {
 } Expr;
 
 Expr	*NewExprTree (int tag, Expr *left, Expr *right);
+Expr	*NewExprComma (Expr *left, Expr *right);
 Expr	*NewExprConst (int tag, Value val);
 Expr	*NewExprAtom (Atom atom, SymbolPtr symbol, Bool privateFound);
 Expr	*NewExprCode (CodePtr code, ExprPtr name);

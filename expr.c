@@ -118,6 +118,12 @@ NewExprTree(int tag, Expr *left, Expr *right)
 }
 
 Expr *
+NewExprComma (Expr *left, Expr *right)
+{
+    return NewExprTree (COMMA, left, right);
+}
+
+Expr *
 NewExprConst (int tag, Value val)
 {
     ENTER ();

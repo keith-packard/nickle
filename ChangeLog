@@ -1,3 +1,26 @@
+2003-10-25  Keith Packard  <keithp@keithp.com>
+
+	* builtin/Makefile.am:
+	* builtin/builtin.c: (BuiltinType):
+	* builtin/builtin.h:
+	* expr.c: (NewExprComma):
+	* nickle.h:
+	* version.m4:
+	Eliminate bogus explicit dependencies from Makefile.am
+	Eliminate need for gram.h in builtins
+	Move #include version.h from builtin.h to builtin.c
+
+2003-10-24  Keith Packard  <keithp@keithp.com>
+
+	* compile.c: (CompileLvalue):
+	* version.m4:
+	Couple of valgrind problems:
+	Initialize branch.offset field in all instructions so that
+	CompileIsReachable can blindly fetch them before the real
+	offset is set.
+	Set the static link offset to zero for names contained in
+	declarations; it was otherwise uninitialized.
+
 1.99.0:	First semi-public test release
 2.00:	Stable enough for Debian package
 2.20:   Things are pretty good now

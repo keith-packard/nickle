@@ -13,6 +13,7 @@
  */
 
 #include	"builtin.h"
+#include	"version.h"
 
 struct sbuiltin {
     char	    *value;
@@ -138,7 +139,7 @@ BuiltinType (char *format, Type **type)
 	format++;
 	while (*format == '*')
 	{
-	    dims = NewExprTree (COMMA, 0, dims);
+	    dims = NewExprComma (0, dims);
 	    format++;
 	}
     }

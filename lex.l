@@ -269,6 +269,7 @@ LexGetInteractiveChar (void)
 		break;
 	}
 	rl_getc_function = ReadlineGetChar;
+	rl_inhibit_completion = 1;
 	line_base = readline (p);
 	line = line_base;
 	if (!line)

@@ -188,9 +188,9 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %left		SHIFTL SHIFTR
 %left		PLUS MINUS
 %left		TIMES DIVIDE DIV MOD
-%right		POW
+%right		POW STARSTAR
 %left		UNIONCAST
-%right		UMINUS BANG FACT LNOT INC DEC STAR STARSTAR AMPER THREADID
+%right		UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
 %left		OS CS DOT ARROW STAROS CALL OP CP
 %right		POINTER
 %right		COLONCOLON

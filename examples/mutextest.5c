@@ -17,7 +17,7 @@ named_mutex[*]	mutexes;
 mutex		owned_mutex = Mutex::new();
 semaphore	started = Semaphore::new (0);
 
-function status ()
+void status ()
 {
     int nt = dim (owned);
     int i;
@@ -36,7 +36,7 @@ function status ()
     }
 }
 
-function t (*(named_mutex[*]) mutexes, int self, int delay)
+void t (*(named_mutex[*]) mutexes, int self, int delay)
 {
     int i;
     
@@ -62,7 +62,7 @@ function t (*(named_mutex[*]) mutexes, int self, int delay)
     }
 }
 
-function start (int nthread, int nmut_ex, int delay)
+void start (int nthread, int nmut_ex, int delay)
 {
     int i;
 
@@ -84,7 +84,7 @@ function start (int nthread, int nmut_ex, int delay)
     }
 }
 
-function monitor (int delay)
+void monitor (int delay)
 {
     for (;;)
     {

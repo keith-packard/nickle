@@ -243,7 +243,6 @@ static int yy_input (char *buf, int max_size)
     int	    c;
     int	    result = 0;
     
-    if (lexInput->at_bol) { lexInput->lineno++; }
     while (result < max_size) {
 	if (lexInput->at_eof)
 	{
@@ -254,6 +253,7 @@ static int yy_input (char *buf, int max_size)
 	    c = LexGetInteractiveChar ();
 	else
 	    c = LexGetChar ();
+	if (lexInput->at_bol) { lexInput->lineno++; }
 	lexInput->at_bol = False;
 	if (c < 0) 
 	    break;

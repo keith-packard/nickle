@@ -12,13 +12,18 @@
  *	main routine for nick
  */
 
+#include	"nickle.h"
+#include	"gram.h"
+
 #include	<setjmp.h>
 #define __USE_UNIX98 /* Get sigignore() and sigrelse()
 			prototype for Linux */
 #include	<signal.h>
 #include	<stdio.h>
-#include	"nickle.h"
-#include	"gram.h"
+
+#if HAVE_SYS_RESOURCE_H
+#include	<sys/resource.h>
+#endif
 
 int	stdin_interactive;
 
@@ -65,6 +70,20 @@ releaseSignal(int sig) {
 int
 main (int argc, char **argv)
 {
+#if HAVE_GETRLIMIT && HAVE_SETRLIMIT
+    /*
+     * Allow stack to grow as large as possible to avoid
+     * crashes during recursive datastructure marking in the
+     * garbage collector
+     */
+    struct rlimit   lim;
+
+    if (getrlimit (RLIMIT_STACK, &lim) == 0)
+    {
+	lim.rlim_cur = lim.rlim_max;
+	(void) setrlimit (RLIMIT_STACK, &lim);
+    }
+#endif
     (void) catchSignal (SIGHUP, die);
     (void) catchSignal (SIGINT, intr);
     (void) catchSignal (SIGQUIT, die);

@@ -1,0 +1,110 @@
+autoload Skiplist;
+
+int gt_count = "hi"; 
+
+bool int_gt (int a, int b) {
+    ++gt_count;
+    return a > b;
+}
+
+public int[*] rand_array (int n)
+{
+    int[n] a = { [i] = i };
+    PRNG::shuffle (&a);
+    return a;
+}
+
+public void validate (Sortlist::List l) {
+    bool    first = true;
+    poly    prev;
+
+    void visit (poly x)
+    {
+	if (!first)
+	    assert (int_gt (x, prev), "list out of order");
+	assert (x == Sortlist::search (l, x), "list missing element");
+    }
+
+    Sortlist::walk (l, visit);
+}
+
+public void insert_int (Sortlist::List l, int i) {
+    Sortlist::insert (l, i);
+}
+
+public void insert_ints (Sortlist::List l, int[*] i) {
+    for (int j = 0; j < dim(i); j++)
+	insert_int (l, i[j]);
+}
+
+public Sortlist::List rand_ints (int n)
+{
+    Sortlist::List    l = Sortlist::new (int_gt);
+    
+    insert_ints (l, rand_array(n));
+    return l;
+}
+
+public int search_len (Sortlist::List l, int i)
+{
+    int	old_count = gt_count;
+
+    Sortlist::search (l, i);
+    return gt_count - old_count;
+}
+
+public void dump (Sortlist::List l)
+{
+    for (bool (&poly) next = Sortlist::iterate (l);
+	 next (&(int value));)
+    {
+	printf ("%4d", value);
+	for (int i = Sortlist::storage (l, value); i > 0; i--)
+	    printf (" |");
+	printf ("\n");
+    }
+}
+
+public void histogram (real[*] l)
+{
+    int	largest = 0;
+    for (int i = 0; i < dim (l); i++)
+	if (l[i] > largest)
+	    largest = l[i];
+
+    int width = 80 - 17;
+    real scale = width / largest;
+
+    for (int i = 0; i < dim (l); i++)
+    {
+	printf ("%5d %10g ", i, l[i]);
+	int lim = floor (l[i] * scale + 0.5);
+	for (int j = 0; j < lim; j++)
+	    printf ("*");
+	printf ("\n");
+    }
+}
+
+public void analyse (Sortlist::List l)
+{
+    int[...]	store = {};
+    int[...]	search = {};
+    
+    void inc_array(&int[...] a, int i) {
+	while (dim(a) <= i)
+	    a[dim(a)] = 0;
+	a[i]++;
+    }
+
+    for (bool (&poly) next = Sortlist::iterate (l); next (&(int value));)
+    {
+	inc_array (&store, Sortlist::storage (l, value));
+	inc_array (&search, search_len (l, value));
+    }
+
+    printf ("storage distribution\n");
+    histogram (store);
+    
+    printf ("search distribution\n");
+    histogram (search);
+}

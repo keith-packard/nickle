@@ -21,6 +21,8 @@ NICKLEFILES=\
 	roman.5c \
 	rsa-demo.5c \
 	rsa.5c \
+	skiplist.5c \
+	skiplisttest.5c \
 	sort.5c
 
 exampledir=$(pkgdatadir)/examples

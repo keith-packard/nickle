@@ -163,7 +163,7 @@ HashEqual (Value av, Value bv, int expandOk)
 	if (HashEltValid (ae)) 
 	{
 	    be = Find (bt, HashEltHash(ae), HashEltKey (ae));
-	    if (!be)
+	    if (!be || !HashEltValid (be))
 		return FalseVal;
 	    if (Equal (HashEltValue (be), HashEltValue (ae)) != TrueVal)
 		return FalseVal;

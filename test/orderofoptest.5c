@@ -19,16 +19,16 @@ void check (poly value, poly correct)
 int x = 10;
 
 
-check(++x%x, 0);
-check(x%++x, 11);
-check(-++x, -13);
-check((++x)!, 87178291200);
-check(++x**2, 225);
-check(2**++x, 65536);
-check(++x*2, 34);
-check(2*++x, 36);
-check(++x/2, 9.5);
-check(2/++x, 0.1);
+check(++x%x, 0);	/* 11 */
+check(x%++x, 11);	/* 12 */
+check(-++x, -13);	/* 13 */
+check((++x)!, 87178291200); /* 14 */
+check(++x**2, 225);	/* 15 */
+check(2**++x, 65536);	/* 16 */
+check(++x*2, 34);	/* 17 */
+check(2*++x, 36);	/* 18 */
+check(++x/2, 9.5);	/* 19 */
+check(2/++x, 0.1);	/* 20 */
 check(++x//2, 10);	/* 21 */
 check(2//++x, 0);	/* 22 */
 check(++x%2, 1);	/* 23 */

@@ -1,0 +1,220 @@
+/* $Header$ */
+
+/*
+ * Copyright © 2004 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+namespace Skiplist {
+    public typedef *struct {
+    } List;
+
+    public typedef bool (poly a, poly b) Greater;
+
+    public typedef void (poly a) Visit;
+    
+    public exception not_found (poly missing);
+    
+    /*
+     * Private representation of an element
+     */
+    typedef Element;
+
+    typedef union {
+	*Element	element;
+	void		nil;
+    } ElementPtr;
+
+    const MaxLevel = 16;
+
+    typedef struct {
+	poly		value;
+	ElementPtr[*]	forward;
+    } Element;
+
+    typedef struct {
+	int		level;
+	Greater		greater;
+	Element		header;
+    } SkipRec;
+
+    typedef *SkipRec Skip;
+
+    int random_level ()
+	/*
+	 * This uses a fixed probability of 1/4 for each level
+	 */
+    {
+	int bits = PRNG::randbits(MaxLevel * 2);
+	int level = 0;
+	
+	while (++level < MaxLevel)
+	{
+	    if ((bits & 3) != 0)
+		break;
+	    bits >>= 2;
+	}
+	return level;
+    }
+    
+    public List new (Greater greater)
+	/*
+	 * Allocate a new list with 'greater' as the ordering function
+	 */
+    {
+	return &(SkipRec) {
+	    level = 0,
+	    greater = greater,
+	    header = { 
+		forward = (ElementPtr[MaxLevel]) { [i] = ElementPtr.nil },
+		value = <> 
+	    }
+	};
+    }
+
+    public poly search (Skip list, poly value)
+	/*
+	 * Search 'list' for 'value', returning a
+	 * matching value in the list else Raise 'not_found'.
+	 */
+    {
+	ElementPtr x = (ElementPtr.element) &list->header;
+
+	for (int i = list->level; --i >= 0; )
+	{
+	    while (x.element->forward[i] != ElementPtr.nil &&
+		   list->greater (value, 
+				  x.element->forward[i].element->value))
+		x = x.element->forward[i];
+	}
+	x = x.element->forward[0];
+	if (x == ElementPtr.nil || list->greater (x.element->value, value))
+	    raise not_found (value);
+	return x.element->value;
+    }
+
+    public void insert (Skip list, poly value)
+	/*
+	 * Insert 'value' into 'list'
+	 */
+    {
+	ElementPtr[MaxLevel] update = {};
+	ElementPtr x = (ElementPtr.element) &list->header;
+
+	for (int i = list->level; --i >= 0;)
+	{
+	    while (x.element->forward[i] != ElementPtr.nil && 
+		   list->greater (value, 
+				  x.element->forward[i].element->value))
+		x = x.element->forward[i];
+	    update[i] = x;
+	}
+	x = x.element->forward[0];
+	int level = random_level ();
+	if (level > list->level)
+	{
+	    level = list->level + 1;
+	    list->level = level;
+	    update[level-1] = (ElementPtr.element) &list->header;
+	}
+
+	/*
+	 * Allocate new list entry
+	 */
+	ElementPtr new = (ElementPtr.element) &(Element) {
+	    value = value,
+	    forward = (ElementPtr[level]) {}
+	};
+	
+	for (int i = 0; i < level; i++)
+	{
+	    new.element->forward[i] = update[i].element->forward[i];
+	    update[i].element->forward[i] = new;
+	}
+    }
+
+    public void delete (Skip list, poly value)
+	 /*
+	  * delete entry matching 'value' from 'list', else
+	  * raise not_found.
+	  */
+    {
+	ElementPtr[MaxLevel] update = {};
+	ElementPtr x = (ElementPtr.element) &list->header;
+
+	for (int i = list->level; --i >= 0;)
+	{
+	    while (x.element->forward[i] != ElementPtr.nil && 
+		   list->greater (value, 
+				  x.element->forward[i].element->value))
+		x = x.element->forward[i];
+	    update[i] = x;
+	}
+	x = x.element->forward[0];
+	if (x == ElementPtr.nil || list->greater (x.element->value, value))
+	    raise not_found (value);
+
+	for (int i = 0; 
+	     i < list->level && update[i].element->forward[i] == x; 
+	     i++)
+	{
+	    update[i].element->forward[i] = x.element->forward[i];
+	}
+	
+	while (list->level > 0 &&
+	       list->header.forward[list->level-1] == ElementPtr.nil)
+	    list->level--;
+    }
+
+    public void walk (Skip list, Visit visit)
+	/*
+	 * Invoke 'visit' for each element of 'list'.
+	 * Operations on 
+	 */
+    {
+	for (ElementPtr e = list->header.forward[0];
+	     e != ElementPtr.nil;
+	     e = (ElementPtr next))
+	 {
+	    next = e.element->forward[0];
+	    visit (e.element->value);
+	 }
+    }
+
+    public bool (&poly) iterate (Skip list)
+    {
+	ElementPtr  e = list->header.forward[0];
+
+	bool next (&poly value) {
+	    if (e == ElementPtr.nil)
+		return false;
+	    value = e.element->value;
+	    e = e.element->forward[0];
+	    return true;
+	}
+
+	return next;
+    }
+
+    public int storage (Skip list, poly value)
+    {
+	ElementPtr x = (ElementPtr.element) &list->header;
+
+	for (int i = list->level; --i >= 0;)
+	{
+	    while (x.element->forward[i] != ElementPtr.nil && 
+		   list->greater (value, 
+				  x.element->forward[i].element->value))
+		x = x.element->forward[i];
+	}
+	x = x.element->forward[0];
+	if (x == ElementPtr.nil || list->greater (x.element->value, value))
+	    raise not_found (value);
+	return dim (x.element->forward);
+    }
+}
+
+namespace Sortlist {
+    public import Skiplist;
+}

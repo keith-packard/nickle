@@ -694,9 +694,10 @@ FilePutPublish (Value f, Publish publish, Bool minimal)
 	FilePuts (f, " ");
 }
 
-static void
+void
 FilePutArgTypes (Value f, ArgType *at)
 {
+    FilePuts (f, "(");
     while (at)
     {
 	if (at->type)
@@ -709,6 +710,7 @@ FilePutArgTypes (Value f, ArgType *at)
 	if (at)
 	    FilePuts (f, ", ");
     }
+    FilePuts (f, ")");
 }
 
 static void
@@ -750,9 +752,7 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	break;
     case types_func:
 	FilePutTypes (f, t->func.ret, False);
-	FilePuts (f, "(");
 	FilePutArgTypes (f, t->func.args);
-	FilePuts (f, ")");
 	break;
     case types_array:
 	FilePutTypes (f, t->array.type, False);

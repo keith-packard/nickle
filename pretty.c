@@ -197,13 +197,17 @@ PrettyDecl (Value f, Expr *e, int level, Bool nest)
 	break;
     case class_static:
     case class_typedef:
+    case class_namespace:
 	FilePutClass (f, e->decl.class, !TypePoly (e->decl.type));
 	if (!TypePoly (e->decl.type))
 	    FilePutTypes (f, e->decl.type, False);
 	break;
     case class_undef:
-    default:
+    case class_arg:
 	FilePutTypes (f, e->decl.type, False);
+	break;
+    case class_exception:
+	FilePutClass (f, e->decl.class, False);
 	break;
     }
     for (decl = e->decl.decl; decl; decl = decl->next)
@@ -217,6 +221,10 @@ PrettyDecl (Value f, Expr *e, int level, Bool nest)
 	}
 	if (decl->next)
 	    FilePuts (f, ",");
+    }
+    if (e->decl.class == class_exception)
+    {
+	FilePutArgTypes (f, e->decl.type->func.args);
     }
 }
 

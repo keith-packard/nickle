@@ -643,6 +643,7 @@ void	FilePutClass (Value f, Class storage, Bool minimal);
 void	FilePutPublish (Value f, Publish publish, Bool minimal);
 void	FilePutTypes (Value f, Types *t, Bool minimal);
 Value	FileFopen (char *name, char *mode);
+void	FilePutArgTypes (Value f, ArgType *at);
 Value	FilePopen (char *program, char *args[], char *mode);
 int	FileStatus (Value file);
 void	FileCheckBlocked (void);

@@ -328,7 +328,7 @@ statement	: IF ignorenl OP expr CP statement
 			else
 			    $$ = decl;
 		    }
-		| publish EXCEPTION ignorenl NAME OP opt_argdefines CP SEMI
+		| publish EXCEPTION ignorenl NAME OP opt_argdecls CP SEMI
 		    { $$ = NewExprDecl (NewDeclList ($4, 0, 0),
 					class_exception,
 					NewTypesFunc (typesPoly, $6),

@@ -1604,7 +1604,7 @@ CompilePatchLoop (ObjPtr obj, int start, int continue_offset)
 		inst->branch.offset = break_offset - start;
 	    break;
 	case OpContinue:
-	    if (inst->branch.offset == 0 && continue_offset > 0)
+	    if (inst->branch.offset == 0 && continue_offset >= 0)
 		inst->branch.offset = continue_offset - start;
 	    break;
 	default:

@@ -476,7 +476,7 @@ ThreadStep (Value thread)
     case OpColon:
 	if (!inst->branch.offset)
 	{
-	    RaiseError ("break/continue outside of loop/switch");
+	    RaiseError ("break/continue outside of loop/switch/twixt");
 	    break;
 	}
 	next = inst + inst->branch.offset;

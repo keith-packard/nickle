@@ -352,7 +352,7 @@ void unput (char c)
 %}
 %%
 "/\052"		skipcomment();
-^#		skipline();
+^[ \t]*#	skipline();
 auto		{ yylval.class = class_auto; return AUTO; }
 const		{ yylval.class = class_const; return CONST; }
 global		{ yylval.class = class_global; return GLOBAL; }
@@ -691,29 +691,25 @@ atov (char *s, int base)
 {
     ENTER ();
     Value	result;
-    Value	d, b;
+    Value	b;
+    char	c;
+    int		i;
 
     b = NewInt (base);
     result = NewInt (0);
     for (;;) {
-	switch (*s) {
-	case '0': case '1': case '2': case '3': case '4':
-	case '5': case '6': case '7': case '8': case '9':
-	    d = NewInt (*s - '0');
+	c = *s++;
+	if ('0' <= c  && c < '9')
+	    i = c - '0';
+	else if ('a' <= c && c <= 'z')
+	    i = c - 'a' + 10;
+	else if ('A' <= c && c <= 'Z')
+	    i = c - 'A' + 10;
+	else
 	    break;
-	case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    d = NewInt (*s - 'a' + 10);
+	if (i >= base)
 	    break;
-	case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    d = NewInt (*s - 'A' + 10);
-	    break;
-	default:
-	    RETURN (result);
-	}
-	if (d->ints.value >= base)
-	    break;
-	result = Plus (d, Times (result, b));
-	++s;
+	result = Plus (NewInt (i), Times (result, b));
     }
     RETURN (result);
 }

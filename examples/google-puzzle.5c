@@ -213,12 +213,12 @@ string edigits = ("2" +
 
 autoimport MillerRabin;
 
-while (length(edigits) >= 10) {
+while (length(edigits) > 10) {
     string nextdigits = substr(edigits, 0, 10);
     if (!MillerRabin::composite(atoi(nextdigits, 10), 256)) {
-	printf("%s %d\n", nextdigits, atoi(nextdigits,10));
+	printf("%s\n", nextdigits);
 	exit(0);
     }
-    edigits = substr(edigits, 10, length(edigits) - 10);
+    edigits = substr(edigits, 1, length(edigits) - 1);
 }
 printf("no\n");

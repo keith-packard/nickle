@@ -300,12 +300,12 @@ RationalReduce (Value av)
     RETURN (av);
 }
 
-static Value
+static HashValue
 RationalHash (Value av)
 {
     Rational	*a = &av->rational;
 
-    return NewInt (NaturalHash (a->den) ^ NaturalHash(a->num) ^ a->sign);
+    return NaturalHash (a->den) ^ NaturalHash(a->num) ^ a->sign;
 }
 
 extern ValueRep    IntegerRep;

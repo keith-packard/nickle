@@ -161,6 +161,10 @@ typedef unsigned short digit;
 #define ModBase(t)  ((t) & (((double_digit) 1 << LBASE2) - 1))
 #define DivBase(t)  ((t) >> LBASE2)
     
+/* HashValues are stored in rep_int */
+
+typedef int HashValue;
+
 /*
  * Natural numbers form the basis for both the Integers and Rationals,
  * but needn't ever be exposed to the user
@@ -213,7 +217,7 @@ int	NaturalWidth (Natural *u);
 digit	DigitBmod (digit u, digit v, int s);
 int	IntWidth (int i);
 int	DoubleDigitWidth (double_digit i);
-int	NaturalHash (Natural *a);
+HashValue   NaturalHash (Natural *a);
 
 extern Natural	*max_int_natural;
 extern Natural	*zero_natural;
@@ -270,7 +274,8 @@ typedef enum _rep {
 	/* mutable type */
  	rep_array = 13,
 	rep_struct = 14,
-	rep_union = 15
+	rep_union = 15,
+	rep_hash = 16
 } Rep;
 
 /* because rep_undef is -1, using (unsigned) makes these a single compare */
@@ -280,7 +285,8 @@ typedef enum _rep {
 
 extern ValueRep    IntRep, IntegerRep, RationalRep, FloatRep;
 extern ValueRep    StringRep, ArrayRep, FileRep;
-extern ValueRep    RefRep, StructRep, UnionRep, FuncRep, ThreadRep;
+extern ValueRep    RefRep, StructRep, UnionRep, HashRep;
+extern ValueRep	   FuncRep, ThreadRep;
 extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 
 #define NewInt(i)	((Value) (((i) << 1) | 1))
@@ -310,6 +316,7 @@ extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 #define ValueIsRef(v) (ValueRep(v) == &RefRep)
 #define ValueIsStruct(v) (ValueRep(v) == &StructRep)
 #define ValueIsUnion(v) (ValueRep(v) == &UnionRep)
+#define ValueIsHash(v) (ValueRep(v) == &HashRep)
 #define ValueIsFunc(v) (ValueRep(v) == &FuncRep)
 #define ValueIsThread(v) (ValueRep(v) == &ThreadRep)
 #define ValueIsSemaphore(v) (ValueRep(v) == &SemaphoreRep)
@@ -334,7 +341,7 @@ ArgType *NewArgType (TypePtr type, Bool varargs, Atom name,
 
 typedef enum _typeTag {
     type_prim, type_name, type_ref, type_func, type_array, 
-    type_struct, type_union, type_types
+    type_struct, type_union, type_types, type_hash
 } TypeTag;
     
 typedef struct _typeBase {
@@ -373,6 +380,12 @@ typedef struct _typeArray {
     ExprPtr	dimensions;
 } TypeArray;
 
+typedef struct _typeHash {
+    TypeBase	base;
+    TypePtr	type;
+    TypePtr	keyType;
+} TypeHash;
+
 typedef struct _typeStruct {
     TypeBase	    base;
     StructTypePtr   structs;
@@ -397,6 +410,7 @@ typedef union _type {
     TypeRef	ref;
     TypeFunc	func;
     TypeArray	array;
+    TypeHash	hash;
     TypeStruct	structs;
     TypeTypes	types;
 } Type;
@@ -423,6 +437,7 @@ Type	*NewTypeRef (Type *ref, Bool pointer);
 Type	*NewTypePointer (Type *ref);
 Type	*NewTypeFunc (Type *ret, ArgType *args);
 Type	*NewTypeArray (Type *type, ExprPtr dimensions);
+Type	*NewTypeHash (Type *type, Type *keyType);
 Type	*NewTypeStruct (StructTypePtr structs);
 Type	*NewTypeUnion (StructTypePtr structs, Bool enumeration);
 Type	*NewTypeTypes (TypeElt *elt);
@@ -710,6 +725,55 @@ void	    ContinuationTrace (char *where, Continuation *continuation, int indent)
 void	    ContinuationTrace (char	*where, Value continuation);
 #endif
 
+/*
+ * Hash tables.  Indexed by multiple typed values
+ */
+
+typedef const struct _HashSet {
+    HashValue	entries;
+    HashValue	size;
+    HashValue	rehash;
+} HashSetRec, *HashSetPtr;
+
+/*
+ * Hash elements are stored in boxes, with three elements
+ * for each element (hash, key, value)
+ *
+ * Hash element states:
+ *
+ *  key	    value
+ *  0	    0		    empty
+ *  v	    0		    reference to uninitialized element
+ *  0	    v		    deleted
+ *  v	    v		    valid entry
+ *
+ *  So:
+ *	key != 0		-> count includes
+ *	value != 0		-> hash chain includes
+ *	value != 0 && key != 0	-> hash table includes
+ */
+
+#define HashEltHash(e)	    ((e)[0])
+#define HashEltKey(e)	    ((e)[1])
+#define HashEltValue(e)	    ((e)[2])
+#define HashEltSize	    3
+#define HashEltStep(e)	    ((e) += HashEltSize)
+#define HashEltCopy(d,s)    (((d)[0] = (s)[0]), \
+			     ((d)[1] = (s)[1]), \
+			     ((d)[2] = (s)[2]))
+#define HashEltCounted(e)   (HashEltKey(e) != 0)
+#define HashEltChained(e)   (HashEltValue(e) != 0)
+#define HashEltValid(e)	    (HashEltKey(e) != 0 && HashEltValue(e) != 0)
+
+typedef struct _hashTable {
+    BaseValue	base;
+    HashSetRec	*hashSet;
+    HashValue	count;
+    TypePtr	type;
+    TypePtr	keyType;
+    BoxPtr	elts;
+} HashTable, *HashTablePtr;
+
 typedef union _value {
     BaseValue	value;
     Integer	integer;
@@ -725,6 +789,7 @@ typedef union _value {
     Thread	thread;
     Semaphore	semaphore;
     Continuation    continuation;
+    HashTable	hash;
 } ValueRec;
 
 typedef Value	(*Binary) (Value, Value, int);
@@ -735,7 +800,7 @@ typedef Value	(*Promote) (Value, Value);
 
 typedef Value	(*Coerce) (Value);
 
-typedef Value	(*Hash) (Value);
+typedef int	(*Hash) (Value);
 
 #define DEFAULT_OUTPUT_PRECISION    -1
 #define INFINITE_OUTPUT_PRECISION   -2
@@ -746,7 +811,7 @@ typedef ValueRep   *(*TypeCheck) (BinaryOp, Value, Value, int);
 
 struct _valueType {
     DataType	data;
-    Rep	tag;
+    Rep		tag;
     Binary	binary[NumBinaryOp];
     Unary	unary[NumUnaryOp];
     Promote	promote;
@@ -829,6 +894,14 @@ Value	NewStrString (char *);
 Value	NewArray (Bool constant, Bool resizable, TypePtr type, int ndim, int *dims);
 void	ArrayResize (Value av, int dim, int size);
 void	ArraySetDimensions (Value av, int *dims);
+Value	NewHash (Bool constant, TypePtr keyType, TypePtr valueType);
+Value	HashGet (Value hv, Value key);
+void	HashSet (Value hv, Value key, Value value);
+Value	HashRef (Value hv, Value key);
+Value	HashTest (Value hv, Value key);
+void	HashDelete (Value hv, Value key);
+Value	HashCopy (Value hv);
+
 Value	NewFile (int fd);
 Value	NewRefReal (BoxPtr box, int element, Value *re);
 char	*StringNextChar (char *src, unsigned *dst);
@@ -872,7 +945,7 @@ Value	NumericDiv (Value av, Value bv, int expandOk);
 
 # define	OK_TRUNC	1
 
-extern Value	Blank, Empty, Elementless, Void, TrueVal, FalseVal;
+extern Value	Blank, Elementless, Void, TrueVal, FalseVal;
 
 # define True(v)	((v) == TrueVal)
 # define False(v)	((v) != TrueVal)
@@ -902,6 +975,8 @@ void	FilePutRep (Value f, Rep tag, Bool minimal);
 void	FilePutClass (Value f, Class storage, Bool minimal);
 void	FilePutPublish (Value f, Publish publish, Bool minimal);
 void	FilePutType (Value f, Type *t, Bool minimal);
+void	FilePutBaseType (Value f, Type *t, Bool minimal);
+void	FilePutSubscriptType (Value f, Type *t, Bool minimal);
 Value	FileFopen (char *name, char *mode, int *errp);
 Value	FileReopen (char *name, char *mode, Value file, int *errp);
 void	FilePutArgType (Value f, ArgType *at);
@@ -1040,6 +1115,7 @@ int	ArrayInit (void);
 int	AtomInit (void);
 int	FileInit (void);
 int	IntInit (void);
+int	HashInit (void);
 int	NaturalInit (void);
 int	IntegerInit (void);
 int	RationalInit (void);

@@ -164,18 +164,18 @@ StringCharSize (unsigned c)
     else return 0;
 }
 
-#define irot(i)	(((i) << 1) | ((i) >> (sizeof (int) * 8 - 1)))
+#define hrot(i)	(((i) << 1) | ((i) >> (sizeof (HashValue) * 8 - 1)))
 
-static Value
+static HashValue
 StringHash (Value av)
 {
-    char    *string = StringChars (&av->string);
-    char    c;
-    int	    i = 0;
+    char	*string = StringChars (&av->string);
+    char	c;
+    HashValue	h = 0;
 
     while ((c = *string++))
-	i = irot(i) ^ c;
-    return NewInt(i);
+	h = hrot(h) ^ (HashValue) c;
+    return h;
 }
 
 ValueRep   StringRep = {

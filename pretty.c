@@ -201,6 +201,20 @@ PrettyArrayInit (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
 }
 
 static void
+PrettyHashInit (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
+{
+    while (e)
+    {
+	PrettyExpr (f, e->tree.left->tree.left, -1, level, nest, pd);
+	FilePuts (f, " : ");
+	PrettyExpr (f, e->tree.left->tree.right, -1, level, nest, pd);
+	e = e->tree.right;
+	if (e)
+	    FilePuts (f, ", ");
+    }
+}
+
+static void
 PrettyStructInit (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
 {
     while (e)
@@ -360,6 +374,11 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest, ProfileData 
 	    FilePuts (f, "= ");
 	    PrettyExpr (f, e->tree.right, selfPrec, level, nest, pd);
 	}
+	FilePuts (f, " }");
+	break;
+    case HASH:
+	FilePuts (f, "{ ");
+	PrettyHashInit (f, e->tree.left, level, nest, pd);
 	FilePuts (f, " }");
 	break;
     case ANONINIT:

@@ -382,10 +382,10 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, int
     return result != 0;
 }
 
-static Value
+static HashValue
 IntegerHash (Value iv)
 {
-    return NewInt (NaturalHash (IntegerMag(iv)) ^ IntegerSign(iv));
+    return NaturalHash (IntegerMag(iv)) ^ IntegerSign(iv);
 }
 
 static void

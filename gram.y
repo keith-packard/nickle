@@ -118,7 +118,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <type>	    opt_type type subscripts subtype
 %type  <expr>	    opt_stars stars
 %type  <type>	    basetype
-%type  <expr>	    dims types
+%type  <expr>	    dims
 %type  <memList>    struct_members union_members
 %type  <class>	    class
 %type  <publish>    opt_publish publish publish_extend
@@ -136,10 +136,11 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <ints>	    assignop
 %type  <value>	    opt_integer integer
 %type  <expr>	    opt_arrayinit arrayinit arrayelts  arrayelt
+%type  <expr>	    opt_hashinit hashinit hashelts hashelt hashvalue
 %type  <expr>	    structinit structelts structelt
 %type  <expr>	    init
 
-%token		    VAR EXPR ARRAY STRUCT UNION ENUM COMP
+%token		    VAR EXPR ARRAY STRUCT UNION ENUM COMP HASH
 
 %token		    NL SEMI MOD OC CC DOLLAR DOTS
 %token <class>	    GLOBAL AUTO STATIC CONST
@@ -827,8 +828,8 @@ subscripts	: opt_argdecls subscripts	    %prec CALL
 		    { $$ = NewTypeArray ($4, $2); }
 		| OS dims CS subscripts
 		    { $$ = NewTypeArray ($4, $2); }
-		| OS types CS subscripts
-		    { $$ = NewTypeArray ($4, $2); }
+		| OS type CS subscripts
+		    { $$ = NewTypeHash ($4, $2); }
 		|
 		    { $$ = 0; }
 		;
@@ -847,6 +848,9 @@ type		: subtype subscripts	    %prec CALL
 			    switch (t->base.tag) {
 			    case type_array:
 				bot = &t->array.type;
+				break;
+			    case type_hash:
+				bot = &t->hash.type;
 				break;
 			    case type_func:
 				bot = &t->func.ret;
@@ -971,11 +975,6 @@ dims		: simpleexpr COMMA dims
 		    { $$ = NewExprTree (COMMA, $1, $3); }
 		| simpleexpr
 		    { $$ = NewExprTree (COMMA, $1, 0); }
-		;
-types		: type COMMA types
-		    { $$ = 0; }
-		| type
-		    { $$ = 0; }
 		;
 /*
 * Structure member declarations
@@ -1318,6 +1317,13 @@ primary		: fullname
 			$$ = NewExprTree (NEW, $7, 0); 
 			$$->base.type = $7->base.type;
 		    }
+		| OP OS type CS CP namespace_start opt_hashinit namespace_end
+		    {
+			$7->base.type = NewTypeHash (typePoly, $3);
+			ParseCanonType ($7->base.type, False);
+			$$ = NewExprTree (NEW, $7, 0);
+			$$->base.type = $7->base.type;
+		    }
 		| type DOT NAME						%prec UNIONCAST
 		    {
 			ParseCanonType ($1, False);
@@ -1426,6 +1432,32 @@ arrayelt	: simpleexpr
 		| init
 		;
 
+/*
+ * Hash initializers
+ */
+opt_hashinit	: hashinit
+		| OC CC
+		    { $$ = 0; }
+		|
+		    { $$ = 0; }
+		;
+hashinit	: OC hashelts opt_comma CC
+		    {
+			ExprPtr elts = $2 ? ExprRehang ($2, 0) : 0;
+			$$ = NewExprTree (HASH, elts, 0);
+		    }
+		;
+hashelts	: hashelts COMMA hashelt
+		    { $$ = NewExprTree (COMMA, $1, $3); }
+		| hashelt
+		    { $$ = NewExprTree (COMMA, 0, $1); }
+		;
+hashelt		: hashvalue COLON hashvalue
+		    { $$ = NewExprTree (COLON, $1, $3); }
+		;
+hashvalue	: simpleexpr
+		| init
+		;
 /* 
 * Structure initializers
 */
@@ -1445,6 +1477,7 @@ structelt	: NAME ASSIGN simpleexpr
 
 init		: arrayinit
 		| structinit
+		| hashinit
 		| OC CC
 		    { $$ = NewExprTree (ANONINIT, 0, 0); }
 		;
@@ -1773,6 +1806,12 @@ ParseCanonType (TypePtr type, Bool forwardAllowed)
 	break;
     case type_array:
 	ret = ParseCanonType (type->array.type, forwardAllowed);
+	break;
+    case type_hash:
+	ret = ParseCanonType (type->hash.type, forwardAllowed);
+	t = ParseCanonType (type->hash.keyType, forwardAllowed);
+	if (t < ret)
+	    ret = t;
 	break;
     case type_struct:
 	for (n = 0; n < type->structs.structs->nelements; n++)

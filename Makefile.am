@@ -26,7 +26,7 @@ bin_PROGRAMS = nickle
 nickle_SOURCES = alarm.c array.c atom.c avl.c box.c \
 	compile.c debug.c divide.c edit.c \
 	error.c execute.c expr.c file.c float.c frame.c func.c \
-	gcd.c int.c integer.c io.c main.c mem.c \
+	gcd.c hash.c int.c integer.c io.c main.c mem.c \
 	natural.c pretty.c profile.c rational.c ref.c refer.c \
 	sched.c scope.c stack.c string.c struct.c \
 	symbol.c sync.c type.c union.c util.c value.c \
@@ -43,7 +43,7 @@ AM_YFLAGS = -d
 
 AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
-	-Wnested-externs
+	-Wnested-externs -fno-strict-aliasing
 
 $(nickle_OBJECTS): avl.h gram.h memp.h opcode.h stack.h \
 	config.h mem.h nickle.h ref.h value.h

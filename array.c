@@ -8,15 +8,9 @@
 
 #include	"nickle.h"
 
-Value	Empty;
-
 int
 ArrayInit (void)
 {
-    ENTER ();
-    Empty = NewArray (True, False, typePoly, 0, 0);
-    MemAddRoot (Empty);
-    EXIT ();
     return 1;
 }
 
@@ -99,7 +93,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 	FilePuts (f, "(");
 	if (!TypePoly (ArrayType(a)))
 	{
-	    FilePutType (f, ArrayType (a), False);
+	    FilePutBaseType (f, ArrayType (a), False);
 	    FilePuts (f, " ");
 	}
 	FilePuts (f, "[");
@@ -109,7 +103,12 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 	    if (i)
 		FilePuts (f, ",");
 	}
-	FilePuts (f, "]) ");
+	FilePuts (f, "]");
+	if (!TypePoly (ArrayType(a)))
+	{
+	    FilePutSubscriptType (f, ArrayType (a), False);
+	}
+	FilePuts (f, ") ");
 	for (i = 0; i < a->ndim; i++)
 	    FileOutput (f, '{');
     }
@@ -152,21 +151,19 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
     return True;
 }
 
-#define MAX_HASH    1024
+#define hrot(i)	(((i) << 1) | ((i) >> (sizeof (HashValue) * 8 - 1)))
 
-#define irot(i)	(((i) << 1) | ((i) >> (sizeof (int) * 8 - 1)))
-
-static Value
+static HashValue
 ArrayHash (Value av)
 {
-    Array   *a = &av->array;
-    int	    i;
-    int	    h = 0;
-    int	    limit = ArrayLimit (av);
+    Array	*a = &av->array;
+    int		i;
+    HashValue	h = 0;
+    int		limit = ArrayLimit (av);
 
     for (i = 0; i < limit; i = ArrayNextI (a, i))
-	h = irot(h) ^ ValueInt (ValueHash (BoxValueGet (a->values, i)));
-    return NewInt (h);
+	h = hrot(h) ^ ValueInt (ValueHash (BoxValueGet (a->values, i)));
+    return h;
 }
 
 static void

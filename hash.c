@@ -1,0 +1,384 @@
+/* $Header$ */
+
+/*
+ * Copyright © 2003 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+#include "nickle.h"
+
+/*
+ * From Knuth -- a good choice for hash/rehash values is p, p-2 where
+ * p and p-2 are both prime.  These tables are sized to have an extra 10%
+ * free to avoid exponential performance degradation as the hash table fills
+ */
+
+static HashSetRec hashSets[] = {
+    { 2,		5,		3	  },
+    { 4,		7,		5	  },
+    { 8,		13,		11	  },
+    { 16,		19,		17	  },
+    { 32,		43,		41        },
+    { 64,		73,		71        },
+    { 128,		151,		149       },
+    { 256,		283,		281       },
+    { 512,		571,		569       },
+    { 1024,		1153,		1151      },
+    { 2048,		2269,		2267      },
+    { 4096,		4519,		4517      },
+    { 8192,		9013,		9011      },
+    { 16384,		18043,		18041     },
+    { 32768,		36109,		36107     },
+    { 65536,		72091,		72089     },
+    { 131072,		144409,		144407    },
+    { 262144,		288361,		288359    },
+    { 524288,		576883,		576881    },
+    { 1048576,		1153459,	1153457   },
+    { 2097152,		2307163,	2307161   },
+    { 4194304,		4613893,	4613891   },
+    { 8388608,		9227641,	9227639   },
+    { 16777216,		18455029,	18455027  },
+    { 33554432,		36911011,	36911009  },
+    { 67108864,		73819861,	73819859  },
+    { 134217728,	147639589,	147639587 },
+    { 268435456,	295279081,	295279079 },
+    { 536870912,	590559793,	590559791 },
+    { 1073741824,	1181116273,	1181116271},
+    { 2147483648ul,	2362232233ul,	2362232231ul}
+};
+
+#define NHASHSETS	(sizeof(hashSets)/sizeof(hashSets[0]))
+
+static Value *
+Find (HashTablePtr ht, Value hash, Value key)
+{
+    HashSetPtr	    hs = ht->hashSet;
+    HashValue	    size = hs->size;
+    HashValue	    h = ValueInt (hash);
+    HashValue	    elt = h % size;
+    HashValue	    step = 0;
+    Value	    *elts = BoxElements (ht->elts);
+    Value	    *er, *del = 0;
+
+    for (;;)
+    {
+	er = &elts[elt * HashEltSize];
+	if (!HashEltKey(er))
+	{
+	    /* check for a deleted entry */
+	    if (HashEltValue (er))
+	    {
+		/* save first deleted entry found */
+		if (!del)
+		    del = er;
+		else if (er == del)
+		    break;
+	    }
+	    else
+	    {
+		/* pull reference as far forward on the chain as posible */
+		if (del)
+		    er = del;
+		break;
+	    }
+	}
+	else if (HashEltHash(er) == hash && 
+		 Equal(HashEltKey(er), key) == TrueVal)
+	{
+	    break;
+	}
+	if (!step)
+	{
+	    step = h % hs->rehash;
+	    if (!step)
+		step = 1;
+	}
+	elt += step;
+	if (elt >= size)
+	    elt -= size;
+    }
+    return er;
+}
+
+static void
+Rehash (BoxPtr old, HashTablePtr ht)
+{
+    Value	*o, *n;
+    HashValue	h;
+    
+    o = BoxElements (old);
+    for (h = old->nvalues / HashEltSize; h > 0; h--)
+    {
+	if (HashEltCounted (o))
+	{
+	    /* XXX must rewrite references */
+	    n = Find (ht, HashEltHash(o), HashEltKey(o));
+	    HashEltCopy (n, o);
+	}
+	HashEltStep (o);
+    }
+}
+
+static void
+Resize (HashTablePtr ht, const HashSetPtr hs)
+{
+    ENTER ();
+    BoxPtr	old;
+    
+    if (ht->hashSet == hs)
+	return;
+
+    old = ht->elts;
+    ht->elts = NewBox (False, False, hs->size * HashEltSize,
+		       ht->type);
+    ht->hashSet = hs;
+    if (old)
+	Rehash (old, ht);
+    EXIT ();
+}
+
+static void
+Set (Value hv, Value key, Value hash, Value value)
+{
+    HashTablePtr    ht = &hv->hash;
+    Value	    *he;
+
+    if (ht->count == ht->hashSet->entries && 
+	ht->hashSet != &hashSets[NHASHSETS - 1])
+    {
+	Resize (ht, ht->hashSet + 1);
+    }
+    he = Find (ht, hash, key);
+    if (!HashEltCounted (he))
+	ht->count++;
+    HashEltHash (he) = hash;
+    HashEltKey (he) = key;
+    HashEltValue (he) = value;
+}
+
+static Value
+Get (Value hv, Value key, Value hash)
+{
+    HashTablePtr    ht = &hv->hash;
+    Value	    *he;
+
+    he = Find (ht, hash, key);
+    if (!HashEltValid (he))
+    {
+	RaiseStandardException (exception_uninitialized_value,
+				"uninitialized hash element", 0);
+	return (Void);
+    }
+    return HashEltValue (he);
+}
+
+static Value
+Refer (Value hv, Value key, Value hash)
+{
+    ENTER ();
+    HashTablePtr    ht = &hv->hash;
+    Value	    *he;
+
+    if (ht->count == ht->hashSet->entries && 
+	ht->hashSet != &hashSets[NHASHSETS - 1])
+    {
+	Resize (ht, ht->hashSet + 1);
+    }
+    he = Find (ht, hash, key);
+    if (!HashEltCounted (he))
+    {
+	ht->count++;
+	HashEltHash (he) = hash;
+	HashEltKey (he) = key;
+    }
+    RETURN (NewRef (ht->elts, 
+		    &HashEltValue(he) - BoxElements (ht->elts)));
+}
+
+static void
+Delete (Value hv, Value key, Value hash)
+{
+    HashTablePtr    ht = &hv->hash;
+    Value	    *he;
+
+    he = Find (ht, hash, key);
+    if (HashEltCounted (he))
+    {
+	/* mark this entry as deleted -- value Void, key NULL */
+	HashEltValue (he) = Void;
+	HashEltKey (he) = 0;
+	HashEltHash (he) = 0;
+	--ht->count;
+	if (ht->count < ht->hashSet->entries / 4 &&
+	    ht->hashSet != &hashSets[0])
+	{
+	    Resize (ht, ht->hashSet - 1);
+	}
+    }
+}
+
+static Value
+Test (Value hv, Value key, Value hash)
+{
+    HashTablePtr    ht = &hv->hash;
+    Value	    *he;
+
+    he = Find (ht, hash, key);
+    return HashEltValid (he) ? TrueVal : FalseVal;
+}
+
+int
+HashInit (void)
+{
+    return 1;
+}
+
+static Value
+HashEqual (Value av, Value bv, int expandOk)
+{
+    HashTable	*at = &av->hash;
+    HashTable	*bt = &bv->hash;
+    HashValue	i;
+    Value	*ae, *be;
+
+    /* if they have different numbers of valid elements, they're not equal */
+    if (at->count != bt->count)
+	return FalseVal;
+    ae = BoxElements (at->elts);
+    for (i = 0; i < at->hashSet->size; i++)
+    {
+	if (HashEltValid (ae)) 
+	{
+	    be = Find (bt, HashEltHash(ae), HashEltKey (ae));
+	    if (!be)
+		return FalseVal;
+	    if (Equal (HashEltValue (be), HashEltValue (ae)) != TrueVal)
+		return FalseVal;
+	}
+	HashEltStep (ae);
+    }
+    return TrueVal;
+}
+
+static Bool
+HashPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
+{
+    HashTable	*ht = &av->hash;
+    HashValue	h;
+    Value	*e;
+    Bool	first = True;
+    
+    FilePuts (f, "{ ");
+    e = BoxElements (ht->elts);
+    for (h = ht->hashSet->size; h-- > 0; )
+    {
+	if (HashEltValid (e))
+	{
+	    if (!first)
+		FilePuts (f, ", ");
+	    first = False;
+	    Print (f, HashEltKey (e), format, base, width, prec, fill);
+	    FilePuts (f, " : ");
+	    Print (f, HashEltValue (e), format, base, width, prec, fill);
+	}
+	HashEltStep (e);
+    }
+    FilePuts (f, " }");
+    return True;
+}
+
+static HashValue
+HashHash (Value av)
+{
+    return 0;
+}
+
+static void
+HashMark (void *object)
+{
+    HashTable	*ht = (HashTable *) object;
+
+    MemReference (ht->type);
+    MemReference (ht->keyType);
+    MemReference (ht->elts);
+}
+
+ValueRep    HashRep = { 
+    { HashMark, 0, "HashRep" },
+    rep_hash,
+    {
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	HashEqual,
+	0,
+	0,
+    },
+    {
+	0,
+    },
+    0,
+    0,
+    HashPrint,
+    0,
+    HashHash,
+};
+
+Value
+NewHash (Bool constant, TypePtr keyType, TypePtr type)
+{
+    ENTER ();
+    Value   ret = ALLOCATE (&HashRep.data, sizeof (HashTable));
+    ret->hash.hashSet = 0;
+    ret->hash.count = 0;
+    ret->hash.type = type;
+    ret->hash.keyType = keyType;
+    ret->hash.elts = 0;
+    Resize (&ret->hash, &hashSets[0]);
+    RETURN (ret);
+}
+
+Value
+HashGet (Value hv, Value key)
+{
+    return Get (hv, key, ValueHash (key));
+}
+
+void
+HashSet (Value hv, Value key, Value value)
+{
+    Set (hv, key, ValueHash (key), value);
+}
+
+Value
+HashRef (Value hv, Value key)
+{
+    return Refer (hv, key, ValueHash (key));
+}
+
+Value
+HashTest (Value hv, Value key)
+{
+    return Test (hv, key, ValueHash (key));
+}
+
+void
+HashDelete (Value hv, Value key)
+{
+    Delete (hv, key, ValueHash (key));
+}
+
+Value
+HashCopy (Value hv)
+{
+    ENTER ();
+    Value   new = NewHash (False, hv->hash.keyType, hv->hash.type);
+    Resize (&new->hash, hv->hash.hashSet);
+    Rehash (hv->hash.elts, &new->hash);
+    RETURN (new);
+}

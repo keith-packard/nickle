@@ -101,17 +101,17 @@ StructEqual (Value a, Value b, int expandOk)
     return TrueVal;
 }
 
-static Value
+static HashValue
 StructHash (Value a)
 {
     Struct	*s = &a->structs;
     StructType	*at = s->type;
-    int	    h = 0;
-    int	    i;
+    HashValue	h = 0;
+    int		i;
 
     for (i = 0; i < at->nelements; i++)
 	h = h ^ ValueInt (ValueHash (BoxValue (a->structs.values, i)));
-    return NewInt (h);
+    return h;
 }
 
 ValueRep    StructRep = { 

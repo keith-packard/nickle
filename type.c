@@ -65,6 +65,15 @@ TypeArrayMark (void *object)
 }
 
 static void
+TypeHashMark (void *object)
+{
+    TypeHash	*th = object;
+
+    MemReference (th->type);
+    MemReference (th->keyType);
+}
+
+static void
 TypeStructMark (void *object)
 {
     TypeStruct	*ts = object;
@@ -85,6 +94,7 @@ DataType    TypeRefType = { TypeRefMark, 0, "TypeRefType" };
 DataType    ArgTypeType = { ArgTypeMark, 0, "ArgTypeType" };
 DataType    TypeFuncType = { TypeFuncMark, 0, "TypeFuncType" };
 DataType    TypeArrayType = { TypeArrayMark, 0, "TypeArrayType" };
+DataType    TypeHashType = { TypeHashMark, 0, "TypeHashType" };
 DataType    TypeStructType = { TypeStructMark, 0, "TypeStructType" };
 DataType    TypeUnitType = { 0, 0, "TypeUnitType" };
 DataType    TypeTypesType = { TypeTypesMark, 0, "TypeTypesType" };
@@ -167,6 +177,19 @@ NewTypeArray (Type *type, Expr *dimensions)
     t->base.tag = type_array;
     t->array.type = type;
     t->array.dimensions = dimensions;
+    RETURN (t);
+}
+
+Type *
+NewTypeHash (Type *type, Type *keyType)
+{
+    ENTER ();
+    Type   *t;
+
+    t = ALLOCATE (&TypeHashType, sizeof (TypeHash));
+    t->base.tag = type_hash;
+    t->hash.type = type;
+    t->hash.keyType = keyType;
     RETURN (t);
 }
 
@@ -361,6 +384,10 @@ TypeIsSupertype (Type *super, Type *sub)
 	if (super_dim == 0 || sub_dim == 0 || super_dim == sub_dim)
 	    return TypeIsSupertype (super->array.type, sub->array.type);
 	return False;
+    case type_hash:
+	/* contravariant */
+	return (TypeIsSupertype (super->hash.type, sub->hash.type) &&
+		TypeIsSupertype (sub->hash.keyType, super->hash.keyType));
     case type_struct:
     case type_union:
         super_st = super->structs.structs;
@@ -602,7 +629,7 @@ TypeUnaryString (Type *type)
 }
 		
 /*
- * Type of an array reference
+ * Type of an array or hash reference
  */
 static Type *
 TypeUnaryArray (Type *type)
@@ -611,6 +638,8 @@ TypeUnaryArray (Type *type)
 	return typePoly;
     if (type->base.tag == type_array)
 	return type->array.type;
+    if (type->base.tag == type_hash)
+	return type->hash.type;
     return 0;
 }
 
@@ -913,6 +942,11 @@ TypeCombineArray (Type *type, int ndim, Bool lvalue)
 	    if (n == 0 || n == ndim)
 		ret = TypeAdd (ret, type->array.type);
 	}
+	else if (type->base.tag == type_hash)
+	{
+	    if (ndim == 1)
+		ret = TypeAdd (ret, type->hash.type);
+	}
     }
     RETURN (TypeCombineFlatten (ret));
 }
@@ -1069,6 +1103,36 @@ TypeCompatibleAssign (TypePtr a, Value b)
 	    }
 	}
 	break;
+    case type_hash:
+	if (ValueIsHash (b))
+	{
+	    if (TypePoly (a->hash.type))
+		return True;
+	    if (TypePoly (b->hash.type))
+	    {
+		HashValue   h;
+		Value	    *e = BoxElements (b->hash.elts);
+
+		for (h = 0; h < b->hash.hashSet->size; h++)
+		{
+		    if (!TypeCompatibleAssign (a->hash.type,
+					       HashEltValue(e)))
+		    {
+			return False;
+		    }
+		    if (!TypeCompatibleAssign (a->hash.keyType,
+					       HashEltKey (e)))
+		    {
+			return False;
+		    }
+		    HashEltStep (e);
+		}
+		return True;
+	    }
+	    else
+		return (TypeIsOrdered (a->hash.type, b->hash.type) &&
+		        TypeIsOrdered (a->hash.keyType, b->hash.keyType));
+	}
     case type_struct:
     case type_union:
 	if ((ValueIsStruct(b) && a->base.tag == type_struct) ||

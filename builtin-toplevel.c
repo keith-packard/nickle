@@ -24,6 +24,7 @@ import_Toplevel_namespace()
     static const struct fbuiltin_0 funcs_0[] = {
         { do_getbyte, "getbyte", "i", "" },
         { do_time, "time", "i", "" },
+	{ do_hash_new, "hash_new", "p", "" },
         { 0 }
     };
 
@@ -71,12 +72,20 @@ import_Toplevel_namespace()
         { do_xor, "xor", "i", "ii" },
 	{ do_setdims, "setdims", "v", "ApAi" },
 	{ do_setdim, "setdim", "v", "Api" },
+	{ do_hash_get, "hash_get", "p", "pp" },
+	{ do_hash_del, "hash_del", "v", "pp" },
+	{ do_hash_test, "hash_test", "b", "pp" },
         { 0 }
     };
 
     static const struct fbuiltin_2j funcs_2j[] = {
         { do_longjmp, "longjmp", "p", "cp" },
         { 0 }
+    };
+
+    static const struct fbuiltin_3 funcs_3[] = {
+	{ do_hash_set, "hash_set", "v", "ppp" },
+	{ 0 }
     };
 
     static const struct fbuiltin_v funcs_v[] = {
@@ -88,6 +97,7 @@ import_Toplevel_namespace()
     BuiltinFuncs0 (/*parent*/ 0, funcs_0);
     BuiltinFuncs1 (/*parent*/ 0, funcs_1);
     BuiltinFuncs2 (/*parent*/ 0, funcs_2);
+    BuiltinFuncs3 (/*parent*/ 0, funcs_3);
     BuiltinFuncs2J (/*parent*/ 0, funcs_2j);
     BuiltinFuncsV (/*parent*/ 0, funcs_v);
     EXIT ();
@@ -738,5 +748,33 @@ do_is_func (Value av)
 Value
 do_hash (Value a)
 {
-    return ValueHash(a);
+    return ValueHash (a);
+}
+
+/* hash builtins (for testing) */
+Value	do_hash_new (void)
+{
+    return NewHash (False, typePoly, typePoly);
+}
+
+Value	do_hash_get (Value hv, Value key)
+{
+    return HashGet (hv, key);
+}
+
+Value	do_hash_del (Value hv, Value key)
+{
+    HashDelete (hv, key);
+    return Void;
+}
+
+Value	do_hash_test (Value hv, Value key)
+{
+    return HashTest (hv, key);
+}
+   
+Value	do_hash_set (Value hv, Value key, Value value)
+{
+    HashSet (hv, key, value);
+    return Void;
 }

@@ -732,7 +732,7 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
 	{
 	    RaiseStandardException (exception_invalid_binop_values,
 				    "Strings have only 1 dimension",
-				    2, NewInt (stack), value);
+				    2, NewInt (stack), v);
 	    break;
 	}
 	i = IntPart (value, "Invalid string index");
@@ -766,6 +766,19 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
 	    else
 		value = NewRef (v->array.values, i);
 	}
+	break;
+    case rep_hash:
+	if (stack != 1)
+	{
+	    RaiseStandardException (exception_invalid_binop_values,
+				    "Hashes have only one dimension",
+				    2, NewInt (stack), v);
+	    break;
+	}
+	if (fetch)
+	    value = HashGet (v, value);
+	else
+	    value = HashRef (v, value);
 	break;
     default:
 	RaiseStandardException (exception_invalid_unop_value,
@@ -1084,6 +1097,17 @@ ThreadsRun (Value thread, Value lex)
 		    stack = 0;
 		    value = ThreadArrayInit (thread, value, inst->ainit.mode,
 					     inst->ainit.dim, &stack, &next);
+		    break;
+		case OpBuildHash:
+		    value = NewHash (False, inst->hash.type->hash.keyType,
+				     inst->hash.type->hash.type);
+		    break;
+		case OpInitHash:
+		    w = CStack (1);
+		    v = CStack (0);
+		    stack = 2;
+		    HashSet (w, v, value);
+		    value = w;
 		    break;
 		case OpBuildStruct:
 		    value = NewStruct (inst->structs.structs, False);

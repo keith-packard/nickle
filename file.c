@@ -1451,6 +1451,50 @@ FilePutTypename (Value f, ExprPtr e)
 }
 
 void
+FilePutBaseType (Value f, Type *t, Bool minimal)
+{
+    switch (t->base.tag) {
+    case type_func:
+	FilePutBaseType (f, t->func.ret, minimal);
+	break;
+    case type_array:
+	FilePutBaseType (f, t->array.type, minimal);
+	break;
+    case type_hash:
+	FilePutBaseType (f, t->hash.type, minimal);
+	break;
+    default:
+	FilePutType (f, t, minimal);
+	break;
+    }
+}
+
+void
+FilePutSubscriptType (Value f, Type *t, Bool minimal)
+{
+    switch (t->base.tag) {
+    case type_func:
+	FilePutArgType (f, t->func.args);
+	FilePutSubscriptType (f, t->func.ret, minimal);
+	break;
+    case type_array:
+	FilePuts (f, "[");
+	FilePutDimensions (f, t->array.dimensions);
+	FilePuts (f, "]");
+	FilePutSubscriptType (f, t->array.type, minimal);
+	break;
+    case type_hash:
+	FilePuts (f, "[");
+	FilePutType (f, t->hash.keyType, False);
+	FilePuts (f, "]");
+	FilePutSubscriptType (f, t->hash.type, minimal);
+	break;
+    default:
+	break;
+    }
+}
+
+void
 FilePutType (Value f, Type *t, Bool minimal)
 {
     int		    i;
@@ -1481,14 +1525,10 @@ FilePutType (Value f, Type *t, Bool minimal)
 	FilePutType (f, t->ref.ref, False);
 	break;
     case type_func:
-	FilePutType (f, t->func.ret, False);
-	FilePutArgType (f, t->func.args);
-	break;
     case type_array:
-	FilePutType (f, t->array.type, False);
-	FilePuts (f, "[");
-	FilePutDimensions (f, t->array.dimensions);
-	FilePuts (f, "]");
+    case type_hash:
+	FilePutBaseType (f, t, False);
+	FilePutSubscriptType (f, t, False);
 	break;
     case type_struct:
     case type_union:

@@ -320,10 +320,10 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, int fil
     return True;
 }
 
-static Value
+static HashValue
 IntHash (Value av)
 {
-    return av;
+    return (HashValue) ValueInt (av);;
 }
 
 ValueRep IntRep = {

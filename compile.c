@@ -42,6 +42,9 @@ ObjMark (void *object)
 	case OpBuildArray:
 	    MemReference (inst->array.type);
 	    break;
+	case OpBuildHash:
+	    MemReference (inst->hash.type);
+	    break;
 	case OpConst:
 	    MemReference (inst->constant.constant);
 	    break;
@@ -217,7 +220,7 @@ ObjPtr	CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, Co
 ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, Bool initialize, ExprPtr stat, CodePtr code);
 ObjPtr	CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code);
 ObjPtr	CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code, char *name);
-ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, int *ndimp);
+ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, TypePtr indexType, ExprPtr stat, CodePtr code, int *ndimp);
 ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code);
 ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
 ObjPtr	_CompileBoolExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
@@ -378,6 +381,27 @@ CompileRefType (TypePtr t)
     return 0;
 }
 
+static TypePtr
+CompileIndexType (ExprPtr expr)
+{
+    TypePtr type = expr->base.type, indexType = typePoly;
+    
+    if (type)
+    {
+	switch (type->base.tag) {
+	case type_array:
+	    indexType = typePrim[rep_integer];
+	    break;
+	case type_hash:
+	    indexType = type->hash.keyType;
+	    break;
+	default:
+	    break;
+	}
+    }
+    return indexType;
+}
+
 /*
  * Compile the left side of an assignment statement.
  * The result is a 'ref' left in the value register
@@ -519,14 +543,23 @@ isName:
 	break;
     case OS:
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	
 	obj = CompileArrayIndex (obj, expr->tree.right,
+				 CompileIndexType (expr->tree.left),
 				 stat, code, &ndim);
+
+	if (!ndim)
+	{
+	    expr->base.type = typePoly;
+	    break;
+	}
+
 	expr->base.type = TypeCombineArray (expr->tree.left->base.type,
 					    ndim,
 					    True);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible type, array '%T', for %d dimension operation",
+	    CompileError (obj, stat, "Incompatible type '%T', for %d dimension operation",
 			  expr->tree.left->base.type, ndim);
 	    expr->base.type = typePoly;
 	    break;
@@ -1111,13 +1144,11 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 }
 
 /*
- * Return an expression that will build an
- * initializer for a fully specified composite
- * type
+ * Compile an array index expression tree
  */
 
 ObjPtr
-CompileArrayIndex (ObjPtr obj, ExprPtr expr, 
+CompileArrayIndex (ObjPtr obj, ExprPtr expr, TypePtr indexType,
 		   ExprPtr stat, CodePtr code, int *ndimp)
 {
     ENTER ();
@@ -1128,11 +1159,11 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr,
     {
 	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
-	if (!TypeIsOrdered (typePrim[rep_integer],
+	if (!TypeIsOrdered (indexType,
 			    expr->tree.left->base.type))
 	{
-	    CompileError (obj, stat, "Incompatible type, index '%T', for array index %d",
-			  expr->tree.left->base.type, ndim);
+	    CompileError (obj, stat, "Incompatible expression type '%T', for index %d type '%T'",
+			  expr->tree.left->base.type, ndim, indexType);
 	    break;
 	}
 	expr = expr->tree.right;
@@ -1141,6 +1172,12 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr,
     *ndimp = ndim;
     RETURN (obj);
 }
+
+/*
+ * Return an expression that will build an
+ * initializer for a fully specified composite
+ * type
+ */
 
 /*
  * Calculate the number of dimensions in an array by looking at
@@ -1307,6 +1344,10 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type,
 		  ExprPtr stat, CodePtr code);
 
 static ObjPtr
+CompileHashInit (ObjPtr obj, ExprPtr expr, Type *type,
+		 ExprPtr stat, CodePtr code);
+
+static ObjPtr
 CompileStructUnionInit (ObjPtr obj, ExprPtr expr, Type *type, 
 			ExprPtr stat, CodePtr code);
 
@@ -1327,6 +1368,9 @@ CompileInit (ObjPtr obj, ExprPtr expr, Type *type,
 	case type_array:
 	    obj = CompileArrayInit (obj, 0, type, stat, code);
 	    break;
+	case type_hash:
+	    obj = CompileHashInit (obj, 0, type, stat, code);
+	    break;
 	case type_struct:
 	    obj = CompileStructUnionInit (obj, 0, type, stat, code);
 	    break;
@@ -1344,6 +1388,13 @@ CompileInit (ObjPtr obj, ExprPtr expr, Type *type,
 			  type);
 	else
 	    obj = CompileArrayInit (obj, expr, type, stat, code);
+	break;
+    case HASH:
+	if (type->base.tag != type_hash)
+	    CompileError (obj, stat, "Hash initializer type mismatch, type '%T'",
+			  type);
+	else
+	    obj = CompileHashInit (obj, expr, type, stat, code);
 	break;
     case STRUCT:
 	if (type->base.tag != type_struct && type->base.tag != type_union)
@@ -1650,6 +1701,61 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
     RETURN (obj);
 }
 
+static ObjPtr
+CompileHashInit (ObjPtr obj, ExprPtr expr, Type *type,
+		 ExprPtr stat, CodePtr code)
+{
+    ENTER ();
+    InstPtr inst;
+    ExprPtr inits = expr ? expr->tree.left : 0;
+    ExprPtr init;
+
+    if (type->base.tag == type_hash)
+    {
+	BuildInst (obj, OpBuildHash, inst, stat);
+	inst->hash.type = type;
+	if (expr)
+	    expr->base.type = type;
+
+	/*
+	 * Initialize any elements given values
+	 */
+	for (init = inits; init; init = init->tree.right)
+	{
+	    ExprPtr key = init->tree.left->tree.left;
+	    ExprPtr value = init->tree.left->tree.right;
+
+	    SetPush (obj);	/* push the hash */
+
+	    /*
+	     * Compute the key
+	     */
+	    obj = CompileInit (obj, key, type->hash.keyType, stat, code);
+
+	    if (!TypeIsOrdered (type->hash.keyType, key->base.type))
+	    {
+		CompileError (obj, stat, "Incompatible expression type '%T', for hash index type '%T'",
+			      key->base.type, type->hash.keyType);
+		RETURN (obj);
+	    }
+
+	    SetPush (obj);	/* push the key */
+
+	    /*
+	     * Compute the value
+	     */
+	    obj = CompileInit (obj, value, type->hash.type, stat, code);
+
+	    /*
+	     * Store the pair
+	     */
+	    BuildInst (obj, OpInitHash, inst, stat);
+	}
+    }
+    RETURN (obj);
+}
+
+		    
 static ExprPtr
 CompileImplicitInit (Type *type)
 {
@@ -1687,6 +1793,9 @@ CompileImplicitInit (Type *type)
 	    else
 		init = NewExprTree (ANONINIT, 0, 0);
 	}
+	break;
+    case type_hash:
+	init = NewExprTree (HASH, 0, 0);
 	break;
     case type_struct:
 	structs = type->structs.structs;
@@ -2124,14 +2233,24 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	break;
     case OS:	    
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
-	obj = CompileArrayIndex (obj, expr->tree.right,
+	
+	obj = CompileArrayIndex (obj, expr->tree.right, 
+				 CompileIndexType (expr->tree.left),
 				 stat, code, &ndim);
+
+	if (!ndim)
+	{
+	    expr->base.type = typePoly;
+	    break;
+	}
+
 	expr->base.type = TypeCombineArray (expr->tree.left->base.type,
 					    ndim,
 					    False);
+
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible type, array '%T', for %d dimension operation",
+	    CompileError (obj, stat, "Incompatible type '%T', for %d dimension operation",
 			  expr->tree.left->base.type, ndim);
 	    expr->base.type = typePoly;
 	    break;
@@ -3507,6 +3626,60 @@ CompileFunc (ObjPtr	    obj,
 }
 
 /*
+ * Compile a type.  This consists only of compiling array dimension expressions
+ * so those values can be used later
+ */
+
+static ObjPtr
+CompileArrayType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code)
+{
+    return obj;
+}
+
+static ObjPtr
+CompileType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code)
+{
+    ENTER();
+    ArgType *at;
+    StructType *st;
+    TypeElt *et;
+    int i;
+    
+    switch (type->base.tag) {
+    case type_prim:
+	break;
+    case type_name:
+	break;
+    case type_ref:
+	obj = CompileType (obj, decls, type->ref.ref, stat, code);
+    case type_func:
+	obj = CompileType (obj, decls, type->func.ret, stat, code);
+	for (at = type->func.args; at; at = at->next)
+	    obj = CompileType (obj, decls, at->type, stat, code);
+	break;
+    case type_array:
+	obj = CompileArrayType (obj, decls, type, stat, code);
+	break;
+    case type_hash:
+	obj = CompileType (obj, decls, type->hash.type, stat, code);
+	obj = CompileType (obj, decls, type->hash.keyType, stat, code);
+	break;
+    case type_struct:
+    case type_union:
+	st = type->structs.structs;
+	for (i = 0; i < st->nelements; i++)
+	    obj = CompileType (obj, decls, BoxTypesElements(st->types)[i], stat, code);
+	break;
+    case type_types:
+	for (et = type->types.elt; et; et = et->next)
+	    obj = CompileType (obj, decls, et->type, stat, code);
+	break;
+    }
+    RETURN (obj);
+	
+}
+
+/*
  * Compile a declaration expression.  Allocate storage for the symbol,
  * Typecheck and compile initializers, make sure a needed value
  * is left in the accumulator
@@ -3567,10 +3740,13 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	decls->base.type = typePoly;
 	RETURN (obj);
     }
+    if (decls->base.type)
+	obj = CompileType (obj, decls, decls->base.type, stat, code);
     for (decl = decls->decl.decl; decl; decl = decl->next) {
 	ExprPtr	init;
-        CompileStorage (obj, decls, decl->symbol, code);
+
 	s = decl->symbol;
+        CompileStorage (obj, decls, s, code);
 	/*
 	 * Automatically build initializers for composite types
 	 * which fully specify the storage
@@ -3704,6 +3880,8 @@ const char *const OpNames[] = {
     "Const",
     "BuildArray",
     "InitArray",
+    "BuildHash",
+    "InitHash",
     "BuildStruct",
     "InitStruct",
     "BuildUnion",

@@ -607,6 +607,8 @@ CopyMutable (Value v)
 	nbox = nv->unions.value;
 	n = 1;
 	break;
+    case rep_hash:
+	RETURN (HashCopy (v));
     default:
 	RETURN (v);
     }
@@ -637,11 +639,11 @@ ValueHash (Value v)
     ValueRep	*rep;
 
     if (!v)
-	return Zero;
+	return 0;
     rep = ValueRep(v);
     if (!rep->hash)
-	return Zero;
-    return (*rep->hash) (v);
+	return 0;
+    return NewInt ((*rep->hash) (v) & MAX_NICKLE_INT);
 }
 
 #ifndef HAVE_C_INLINE
@@ -781,6 +783,8 @@ ValueInit (void)
     if (!ArrayInit ())
 	return 0;
     if (!FileInit ())
+	return 0;
+    if (!HashInit ())
 	return 0;
     if (!IntInit ())
 	return 0;

@@ -409,6 +409,11 @@ typedef struct _instAInit {
     AInitMode	mode;
 } InstAInit;
 
+typedef struct _instHash {
+    InstBase	inst;
+    TypePtr	type;
+} InstHash;
+
 typedef struct _instCode {
     InstBase	inst;
     CodePtr	code;
@@ -500,6 +505,7 @@ typedef union _inst {
     InstStruct	structs;
     InstArray	array;
     InstAInit	ainit;
+    InstHash	hash;
     InstCode	code;
     InstBranch	branch;
     InstBinOp	binop;
@@ -1043,3 +1049,9 @@ Value	do_File_print (Value, Value, Value, Value, Value, Value, Value);
 /* two argument non-local builtins */
 Value	do_longjmp (InstPtr *, Value, Value);
 
+/* hash builtins (for testing) */
+Value	do_hash_new (void);
+Value	do_hash_get (Value, Value);
+Value	do_hash_del (Value, Value);
+Value	do_hash_test (Value, Value);
+Value	do_hash_set (Value, Value, Value);

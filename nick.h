@@ -506,6 +506,7 @@ Value	dofclose(Value);
 Value	dofflush(Value);
 Value	dofopen(Value,Value);
 Value	dofprintf(int, Value *);
+Value	dosetbuf(Value, Value);
 Value	dogcd(Value,Value);
 Value	dogetc(Value);
 Value	dogetchar(void);

@@ -749,7 +749,7 @@ ThreadsRun (Value thread, Value lex)
 	{
 	    sigset_t	set, oset;
 
-	    set = ~0;
+	    sigfillset (&set);
 	    sigprocmask (SIG_SETMASK, &set, &oset);
 	    if (!aborting)
 		sigsuspend (&oset);

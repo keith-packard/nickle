@@ -256,10 +256,11 @@ typedef struct _file {
 #define FileOutputBlocked   0x01
 #define FileInputBlocked    0x02
 #define FileLineBuf	    0x04
-#define FileInputError      0x08
-#define FileOutputError	    0x10
-#define FileClosed	    0x20
-#define FileBlockWrites	    0x40
+#define FileUnBuf	    0x08
+#define FileInputError      0x10
+#define FileOutputError	    0x20
+#define FileClosed	    0x40
+#define FileBlockWrites	    0x80
 
 typedef struct _ref {
     BaseValue	base;
@@ -482,6 +483,7 @@ Value	FileFopen (char *name, char *mode);
 void	FileCheckBlocked (void);
 void	FileSetBlocked (Value file, int flag);
 void	FilePrintf (Value, char *, ...);
+void	FileSetBuffer (Value file, int buf);
 
 extern Bool	anyFileWriteBlocked;
 

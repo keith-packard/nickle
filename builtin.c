@@ -201,6 +201,7 @@ struct fbuiltin_2 funcs_2[] = {
     { dofopen,		"fopen" },
     { dogcd,		"gcd" },
     { doputc,		"putc" },
+    { dosetbuf,		"setbuffer" },
     { hypotD,		"hypot", &MathScope },
     { jnD,		"jn", &MathScope },
     { ynD,		"yn", &MathScope },
@@ -725,6 +726,22 @@ doputchar (Value v)
 {
     ENTER ();
     RETURN (doputc (v, FileStdout));
+}
+
+Value
+dosetbuf (Value f, Value v)
+{
+    ENTER ();
+    int	i;
+
+    if (f->value.tag != type_file) {
+	RaiseError ("parameter to setbuffer should be file");
+	RETURN (Zero);
+    }
+    i = IntPart (v, "setbuffer non integer");
+    if (!aborting)
+	FileSetBuffer (f, i);
+    RETURN (v);
 }
 
 Value 

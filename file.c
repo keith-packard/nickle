@@ -225,7 +225,10 @@ FileInput (Value file)
 		    }
 		    else
 		    {
-			n = read (file->file.fd, buf, ic->size);
+			n = ic->size;
+			if (file->file.flags & FileUnBuf)
+			    n = 1;
+			n = read (file->file.fd, buf, n);
 			err = errno;
 		    }
 		    if (n <= 0)
@@ -372,7 +375,8 @@ FileOutput (Value file, char c)
 	FileFlush (file);
     ic = file->file.output;
     FileBuffer(ic)[ic->used++] = c;
-    if (c == '\n' && file->file.flags & FileLineBuf)
+    if ((c == '\n' && file->file.flags & FileLineBuf) ||
+	file->file.flags & FileUnBuf)
 	FileFlush (file);
     EXIT ();
 }
@@ -559,4 +563,20 @@ FileSetBlocked (Value file, int flag)
     file->file.flags |= flag;
     file->file.next = fileBlocked;
     fileBlocked = file;
+}
+
+void
+FileSetBuffer (Value file, int mode)
+{
+    file->file.flags &= ~(FileLineBuf|FileUnBuf);
+    switch (mode) {
+    case 0:
+	break;
+    case 1:
+	file->file.flags |= FileLineBuf;
+	break;
+    case 2:
+	file->file.flags |= FileUnBuf;
+	break;
+    }
 }

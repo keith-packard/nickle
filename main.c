@@ -139,11 +139,12 @@ stop (int sig)
 {
     sigset_t	set, oset;
 
-    set = ~0;
+    sigfillset (&set);
     sigprocmask (SIG_SETMASK, &set, &oset);
     IoStop ();
     (void) signal (sig, SIG_DFL);
-    set = ~sigmask (sig);
+    sigfillset (&set);
+    sigdelset (&set, sig);
     sigprocmask (SIG_SETMASK, &set, &set);
     kill (getpid(), sig);
     sigprocmask (SIG_SETMASK, &oset, &set);

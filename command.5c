@@ -77,34 +77,6 @@ namespace Syntax {
      * library "filename"   - Search library path for "filename" and
      *			      read commands from the first found
      */
-    void function lex_library (string lib_file)
-    {
-	poly	library_path = Environ::get ("NICKLELIB");
 
-	if (!library_path)
-	    library_path = Command::library_path;
-	while (library_path)
-	{
-	    int	    i = String::index (library_path, ":");
-	    string  dir;
-
-	    if (i >= 0)
-	    {
-		dir = String::substr (library_path, 0, i);
-		library_path = String::substr (library_path, i + 1, -1);
-	    }
-	    else
-	    {
-		dir = library_path;
-		library_path = 0;
-	    }
-	    if (Command::lex_file (dir + "/" + lib_file))
-		break;
-	    if (!library_path)
-		File::fprintf (stderr, "Cannot load library \"%s\"\n",
-			       lib_file);
-	}
-    }
-
-    Command::new ("library", lex_library);
+    Command::new ("library", Command::lex_library);
 }

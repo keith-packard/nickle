@@ -318,7 +318,7 @@ do_Thread_kill (int n, Value *p)
 
     if (n == 0)
     {
-	thread = lookupVar ("thread");
+	thread = lookupVar (0, "thread");
 	if (thread->value.tag != type_thread)
 	    RaiseError ("Kill: no default thread");
 	else
@@ -434,7 +434,7 @@ do_Thread_trace (int n, Value *p)
     InstPtr	pc;
     
     if (n == 0)
-	v = lookupVar ("cont");
+	v = lookupVar (0, "cont");
     else
 	v = *p;
     switch (v->value.tag) {

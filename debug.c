@@ -136,8 +136,8 @@ do_Debug_up (void)
     Value   frame;
     Value   continuation;
     
-    continuation = lookupVar ("cont");
-    frame = lookupVar ("frame");
+    continuation = lookupVar (0, "cont");
+    frame = lookupVar (0, "frame");
     if (continuation->continuation.value.tag == type_continuation && frame->value.tag == type_int)
     {
 	if (DebugSetFrame (continuation, frame->ints.value + 1))
@@ -154,8 +154,8 @@ do_Debug_down (void)
     Value   frame;
     Value   continuation;
     
-    continuation = lookupVar ("cont");
-    frame = lookupVar ("frame");
+    continuation = lookupVar (0, "cont");
+    frame = lookupVar (0, "frame");
     if (continuation->value.tag == type_continuation && frame->value.tag == type_int)
     {
 	if (frame->ints.value <= 0)

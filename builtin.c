@@ -151,6 +151,13 @@ struct sbuiltin {
     NamespacePtr    *namespace;
 };
 
+struct envbuiltin {
+    char	    *var;
+    char	    *def;
+    char	    *name;
+    NamespacePtr    *namespace;
+};
+    
 struct ibuiltin {
     char	    *name;
     int	    	    file;
@@ -253,6 +260,7 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_Debug_dump,	    "dump",		    "i",    "p",    &DebugNamespace },
     { do_Command_delete,    "delete",		    "i",    "s",    &CommandNamespace },
     { do_Command_lex_file,  "lex_file",		    "i",    "s",    &CommandNamespace },
+    { do_Command_lex_library,"lex_library",	    "i",    "s",    &CommandNamespace },
     { do_Command_lex_string,"lex_string",	    "i",    "s",    &CommandNamespace },
     { do_Command_edit,	    "edit",		    "i",    "A*s",  &CommandNamespace },
     { do_Environ_get,	    "get",		    "p",    "s",    &EnvironNamespace },
@@ -421,6 +429,15 @@ static struct sbuiltin svars[] = {
 #else
     { "?",	    "build" },
 #endif
+    { 0,    0 },
+};
+
+#ifndef NICKLELIB
+#define NICKLELIB "/usr/local/share/nickle"
+#endif
+
+static struct envbuiltin envvars[] = {
+    { "NICKLELIB",  NICKLELIB,	"library_path",	&CommandNamespace },
     { 0,    0 },
 };
 
@@ -658,11 +675,14 @@ BuiltinInit (void)
     struct fbuiltin_2j	*f_2j;
     struct rbuiltin	*r;
     struct sbuiltin	*s;
+    struct envbuiltin	*env;
     struct ibuiltin	*i;
     struct nbuiltin	*n;
     struct ebuiltin	*e;
     BuiltinFunc		f;
     SymbolPtr		sym;
+    char		*home;
+    Value		home_val;
 
     for (n = nvars; n->name; n++) {
 	sym = BuiltinNamespace (n->namespace, n->name);
@@ -707,6 +727,25 @@ BuiltinInit (void)
     for (s = svars; s->name; s++) {
 	sym = BuiltinSymbol (s->namespace, s->name, typesPrim[type_string]);
 	BoxValueSet (sym->global.value, 0, NewStrString (s->value));
+    }
+    home = getenv ("HOME");
+    if (!home)
+	home = "/tmp";
+    if (home[0] == '/' && home[1] == '\0')
+	home = "";
+    home_val = NewStrString (home);
+    for (env = envvars; env->name; env++) {
+	char	*v;
+	Value	val;
+	sym = BuiltinSymbol (env->namespace, env->name, typesPrim[type_string]);
+	v = getenv (env->var);
+	if (!v)
+	    v = env->def;
+	if (*v == '~')
+	    val = Plus (home_val, NewStrString (v + 1));
+	else
+	    val = NewStrString (v);
+	BoxValueSet (sym->global.value, 0, val);
     }
     for (i = ivars; i->name; i++) {
 	Value   f;
@@ -1934,7 +1973,20 @@ do_Command_lex_file (Value name)
     ENTER ();
     Value   r;
 
-    if (LexFile (StringChars (&name->string), False))
+    if (LexFile (StringChars (&name->string), False, False))
+	r = One;
+    else
+	r = Zero;
+    RETURN (r);
+}
+
+Value
+do_Command_lex_library (Value name)
+{
+    ENTER ();
+    Value   r;
+
+    if (LexLibrary (StringChars (&name->string), False, False))
 	r = One;
     else
 	r = Zero;

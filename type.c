@@ -873,9 +873,9 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	}
 	break;
     case EQ:
+    case NE:
     	rets = TypeAdd (rets, typesPrim[type_integer], &nret, &sret);
 	break;
-    case NE:
     case LT:
     case GT:
     case LE:

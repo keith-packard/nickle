@@ -46,54 +46,23 @@ try_nicklerc (void)
 
     if ((nicklerc = getenv ("NICKLERC")))
     {
-	LexFile (nicklerc, True);
+	LexFile (nicklerc, True, False);
     }
     else if ((home = getenv ("HOME")))
     {
 	nicklerc = AllocateTemp (strlen (home) + strlen (filename) + 1);
 	strcpy (nicklerc, home);
 	strcat (nicklerc, filename);
-	LexFile (nicklerc, False);
+	LexFile (nicklerc, False, False);
     }
     EXIT ();
 }
-
-#ifndef NICKLELIB
-#define NICKLELIB "/usr/local/share/nickle"
-#endif
 
 static void
 try_nicklelib (void)
 {
-    ENTER ();
-    char	*lib;
-    char	*colon;
-    char	*nicklelib;
-    static char filename[] = "builtin.5c";
-
-    lib = getenv ("NICKLELIB");
-    if (!lib)
-	lib = NICKLELIB;
-    setVar (CommandNamespace, "library_path", NewStrString (lib),
-	    typesPrim[type_string]);
-    while (*lib)
-    {
-	colon = strchr (lib, ':');
-	if (!colon)
-	    colon = lib + strlen (lib);
-	nicklelib = AllocateTemp (colon - lib + strlen (filename) + 2);
-	strncpy (nicklelib, lib, colon-lib);
-	nicklelib[colon-lib] = '\0';
-	strcat (nicklelib, "/");
-	strcat (nicklelib, filename);
-	if (LexFile (nicklelib, False))
-	    break;
-	lib = colon;
-	if (*lib == ':')
-	    lib++;
-    }
-    EXIT ();
-}
+    LexLibrary ("builtin.5c", True, False);
+}    
 
 RETSIGTYPE	intr(int), ferr(int);
 RETSIGTYPE	stop (int), die (int), segv (int);
@@ -144,7 +113,7 @@ main (int argc, char **argv)
 	{
 	    tryrc = False;
 	    setArgv (argc - 1, argv + 1);
-	    if (!LexFile (argv[1], True))
+	    if (!LexFile (argv[1], True, False))
 	    {
 		IoFini ();
 		return 1;

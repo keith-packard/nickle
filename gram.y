@@ -1225,13 +1225,28 @@ extern NamespacePtr	CurrentNamespace;
 FramePtr	CurrentFrame;
 
 Value
-lookupVar (char *n)
+lookupVar (char *ns, char *n)
 {
     ENTER ();
-    Value	v;
-    SymbolPtr	symbol;
+    Value	    v;
+    SymbolPtr	    symbol;
+    NamespacePtr    namespace;
+    Bool	    search;
 
-    symbol = NamespaceFindName (CurrentNamespace, AtomId (n), True);
+    search = True;
+    namespace = CurrentNamespace;
+    if (ns)
+    {
+	symbol = NamespaceFindName (CurrentNamespace, AtomId (ns), True);
+	if (symbol && symbol->symbol.class == class_namespace)
+	    namespace = symbol->namespace.namespace;
+	else
+	    namespace = 0;
+    }
+    if (namespace)
+	symbol = NamespaceFindName (namespace, AtomId (n), search);
+    else
+	symbol = 0;
     if (symbol && symbol->symbol.class == class_global)
 	v = BoxValue (symbol->global.value, 0);
     else

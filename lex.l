@@ -118,22 +118,7 @@ LexStdin (void)
 }
 	
 Bool
-LexFile (char *s, Bool complain)
-{
-    Value	f;
-
-    f = FileFopen (s, "r");
-    if (f == 0) {
-	if (complain)
-	    (void) FilePrintf (FileStderr, "cannot open file %s\n", s);
-	return False;
-    }
-    lexInput = NewLexInput (lexInput, f, AtomId (s));
-    return True;
-}
-
-Bool
-LexFileAfter (char *s, Bool complain)
+LexFile (char *s, Bool complain, Bool after)
 {
     Value	f;
     LexInput	*n, **prev;
@@ -144,10 +129,53 @@ LexFileAfter (char *s, Bool complain)
 	    (void) FilePrintf (FileStderr, "cannot open file %s\n", s);
 	return False;
     }
-    n = NewLexInput (0, f, AtomId (s));
-    for (prev = &lexInput; *prev; prev = &(*prev)->next)
-	;
-    *prev = n;
+    if (after)
+    {
+	n = NewLexInput (0, f, AtomId (s));
+	for (prev = &lexInput; *prev; prev = &(*prev)->next)
+	    ;
+	*prev = n;
+    }
+    else
+	lexInput = NewLexInput (lexInput, f, AtomId (s));
+    return True;
+}
+
+Bool
+LexLibrary (char *filename, Bool complain, Bool after)
+{
+    ENTER ();
+    Value   library_path;
+    char    *nicklelib;
+    char    *lib;
+    char    *colon;
+
+    library_path = lookupVar ("Command", "library_path");
+    if (library_path == Zero || library_path->value.tag != type_string)
+    {
+	if (complain)
+	    (void) FilePrintf (FileStderr, "Command::library_path not set\n");
+	EXIT ();
+	return False;
+    }
+    lib = StringChars (&library_path->string);
+    while (*lib)
+    {
+	colon = strchr (lib, ':');
+	if (!colon)
+	    colon = lib + strlen (lib);
+	nicklelib = AllocateTemp (colon - lib + strlen (filename) + 2);
+	strncpy (nicklelib, lib, colon-lib);
+	nicklelib[colon-lib] = '\0';
+	strcat (nicklelib, "/");
+	strcat (nicklelib, filename);
+        if (LexFile (nicklelib, False, after))
+	    break;
+	lib = colon;
+	if (*lib == ':')
+	    lib++;
+    }
+    EXIT ();
     return True;
 }
 
@@ -199,11 +227,11 @@ prompt (void)
     Value	v;
     
     if (ignorenl)
-	v = lookupVar ("prompt2");
+	v = lookupVar (0, "prompt2");
     else if (CurrentFrame)
-	v = lookupVar ("prompt3");
+	v = lookupVar (0, "prompt3");
     else
-	v = lookupVar ("prompt");
+	v = lookupVar (0, "prompt");
     return v;
 }
 

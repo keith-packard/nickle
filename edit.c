@@ -80,9 +80,9 @@ EditFile (Value file_name)
     }
     else
     {
-	if (ValueIsString(file_name)) 
-	    edit (StringChars (&file_name->string));
-	else
-	    PrintError ("edit: non-string filename %v", file_name);
+	char	*name = StrzPart (file_name, "invalid filename");
+
+	if (name)
+	    edit (name);
     }
 }

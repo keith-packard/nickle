@@ -119,8 +119,13 @@ do_File_print (Value file, Value value, Value format,
 	ThreadSleep (running, file, PriorityIo);
     else
     {
-	Print (file, value, *StringChars(&format->string), ibase, iwidth,
-	       iprec, *StringChars(&fill->string));
+	Print (file, value, 
+	       StringGet (StringChars (&format->string),
+			  format->string.length, 0),
+	       ibase, iwidth,
+	       iprec,
+	       StringGet (StringChars (&fill->string),
+			  fill->string.length, 0));
 	if (file->file.flags & FileOutputError)
 	{
 	    RaiseStandardException (exception_io_error, 
@@ -139,8 +144,12 @@ do_File_open (Value name, Value mode)
     Value	ret;
     int		err;
 
-    n = StringChars (&name->string);
-    m = StringChars (&mode->string);
+    n = StrzPart (name, "invalid file name");
+    if (!n)
+	RETURN (Void);
+    m = StrzPart (mode, "invalid file mode");
+    if (!m)
+	RETURN (Void);
     if (aborting)
 	RETURN (Void);
     ret = FileFopen (n, m, &err);
@@ -202,26 +211,31 @@ Value
 do_File_filter (Value path, Value argv, Value filev)
 {
     ENTER ();
+    char    *p = StrzPart (path, "invalid program path");
     char    **args;
     int	    argc;
     Value   arg;
     Value   ret;
     int	    err;
 
+    if (!p)
+	RETURN (Void);
+    
     /* set up arguments */
     args = AllocateTemp ((ArrayLimits(&argv->array)[0] + 1) * sizeof (char *));
     for (argc = 0; argc < ArrayLimits(&argv->array)[0]; argc++)
     {
 	arg = ArrayValue (&argv->array, argc);
-	args[argc] = StringChars (&arg->string);
+	args[argc] = StrzPart (arg, "invalid argument");
+	if (!args[argc])
+	    RETURN (Void);
     }
     args[argc] = 0;
 
     /* run the filter */
     if (aborting)
 	RETURN(Void);
-    ret = FileFilter (StringChars (&path->string), args, 
-		      filev, &err);
+    ret = FileFilter (p, args, filev, &err);
     if (!ret)
     {
 	RaiseStandardException (exception_open_error,
@@ -259,8 +273,12 @@ do_File_reopen (Value name, Value mode, Value file)
     Value	ret;
     int		err;
 
-    n = StringChars (&name->string);
-    m = StringChars (&mode->string);
+    n = StrzPart (name, "invalid file name");
+    if (!n)
+	RETURN (Void);
+    m = StrzPart (mode, "invalid file mode");
+    if (!m)
+	RETURN (Void);
     if (aborting)
 	RETURN (Void);
     ret = FileReopen (n, m, file, &err);
@@ -279,10 +297,8 @@ Value
 do_File_string_read (Value s)
 {
     ENTER ();
-    char    *str;
 
-    str = StringChars (&s->string);
-    RETURN (FileStringRead (str, strlen (str)));
+    RETURN (FileStringRead (StringChars (&s->string), s->string.length));
 }
 
 Value

@@ -69,7 +69,7 @@ esac
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(gettimeofday hstrerror select sigaction sigrelse sigignore)
+AC_CHECK_FUNCS(unsetenv setenv putenv gettimeofday hstrerror select sigaction sigrelse sigignore)
 
 AC_FUNC_GETPGRP
 

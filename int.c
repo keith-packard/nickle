@@ -235,6 +235,7 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, int fil
     char    space[64], *s;
     char    letter;
     int	    neg;
+    long    len;
 
     if ('A' <= format && format <= 'Z')
 	letter = 'A';
@@ -274,7 +275,8 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, int fil
 		*--s = '-';
 	}
     }
-    w = StringLength (s);
+    len = strlen (s);
+    w = StringLength (s, len);
     fraction_width = 0;
     if (prec >= 0)
     {
@@ -301,7 +303,7 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, int fil
 	FileOutchar (f, fill);
 	width--;
     }
-    FilePuts (f, s);
+    FilePutsc (f, s, len);
     if (fraction_width)
     {
 	FileOutput (f, '.');

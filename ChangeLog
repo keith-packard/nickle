@@ -1,3 +1,33 @@
+2004-04-16  Keith Packard  <keithp@keithp.com>
+
+	* builtin-command.c: (command_name), (do_Command_new_common),
+	(do_Command_delete):
+	* builtin-environ.c: (do_Environ_get), (do_Environ_check),
+	(do_Environ_unset), (do_Environ_set):
+	* builtin-file.c: (do_File_print), (do_File_open),
+	(do_File_filter), (do_File_reopen), (do_File_string_read):
+	* builtin-sockets.c: (address_lookup):
+	* builtin-string.c: (do_String_length), (do_String_new),
+	(do_String_index), (do_String_substr):
+	* configure.in:
+	* edit.c: (EditFile):
+	* execute.c: (ThreadOpArray):
+	* file.c: (FilePutsc), (FileStringWidth), (FilePutString),
+	(FileVPrintf):
+	* int.c: (IntPrint):
+	* lex.l:
+	* scope.c: (NamespaceLocate):
+	* string.c: (StringPlus), (StringEqual), (StringLess),
+	(StringPrint), (StringNextChar), (StringGet), (StringLength),
+	(StrzPart), (StringHash), (NewString):
+	* value.h:
+	Change string representation to counted rather than
+	null-terminated.
+	Allow nulls in the middle of strings.
+	Trap strings with nulls passed to the operating system.
+	Raise exception when attempting to access the null which
+	is stored off the end of the string.
+
 2004-04-16  Bart Massey  <bart@cs.pdx.edu>
 
 	* string.5c: (parse_csv):

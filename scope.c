@@ -261,8 +261,8 @@ NamespaceLocate (Value		names,
 	if (!namelist)
 	{
 	    if (complain)
-		FilePrintf (FileStdout, "No symbol \"%s\" in namespace\n",
-			    StringChars (&string->string));
+		FilePrintf (FileStdout, "No symbol %v in namespace\n",
+			    string);
 	    return False;
 	}
 	symbol = namelist->symbol;

@@ -26,19 +26,24 @@ StringPlus (Value av, Value bv, int expandOk)
     ENTER();
     Value	ret;
 
-    ret = NewString (strlen (StringChars(&av->string)) + 
-		     strlen (StringChars(&bv->string)));
-    (void) strcpy (StringChars(&ret->string),
-		   StringChars(&av->string));
-    (void) strcat (StringChars(&ret->string),
-		   StringChars(&bv->string));
+    ret = NewString (av->string.length + bv->string.length);
+    (void) memcpy (StringChars(&ret->string),
+		   StringChars(&av->string),
+		   av->string.length);
+    (void) memcpy (StringChars(&ret->string) + av->string.length,
+		   StringChars(&bv->string),
+		   bv->string.length);
     RETURN (ret);
 }
 
 static Value
 StringEqual (Value av, Value bv, int expandOk)
 {
-    if (!strcmp (StringChars (&av->string), StringChars(&bv->string)))
+    if (av->string.length != bv->string.length)
+	return FalseVal;
+    if (!memcmp (StringChars (&av->string), 
+		 StringChars(&bv->string),
+		 av->string.length))
 	return TrueVal;
     return FalseVal;
 }
@@ -46,7 +51,16 @@ StringEqual (Value av, Value bv, int expandOk)
 static Value
 StringLess (Value av, Value bv, int expandOk)
 {
-    if (strcmp (StringChars (&av->string), StringChars(&bv->string)) < 0)
+    long    len;
+    int	    c;
+
+    len = av->string.length;
+    if (len > bv->string.length)
+	len = bv->string.length;
+    c = memcmp (StringChars (&av->string), StringChars(&bv->string), len);
+    if (c < 0)
+	return TrueVal;
+    if (c == 0 && av->string.length < bv->string.length)
 	return TrueVal;
     return FalseVal;
 }
@@ -56,15 +70,16 @@ static Bool
 StringPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     char    *string = StringChars (&av->string);
+    long    len = av->string.length;
     int	    print_width;
     
-    print_width = FileStringWidth (string, format);
+    print_width = FileStringWidth (string, len, format);
     while (width > print_width)
     {
 	FileOutchar (f, fill);
 	width--;
     }
-    FilePutString (f, string, format);
+    FilePutString (f, string, len, format);
     while (-width > print_width)
     {
 	FileOutchar (f, fill);
@@ -74,12 +89,13 @@ StringPrint (Value f, Value av, char format, int base, int width, int prec, int 
 }
 
 char *
-StringNextChar (char *src, unsigned *dst)
+StringNextChar (char *src, unsigned *dst, long *len)
 {
     unsigned	result = *src++;
     
-    if (!result)
+    if (!*len)
 	return 0;
+    (*len)--;
     
     if (result & 0x80)
     {
@@ -95,9 +111,11 @@ StringNextChar (char *src, unsigned *dst)
 	{
 	    char c = *src++;
 
+	    (*len)--;
 	    if ((c & 0x80) == 0)
 	    {
 		src--;
+		(*len)++;
 		result = 0;
 		break;
 	    }
@@ -109,13 +127,13 @@ StringNextChar (char *src, unsigned *dst)
 }
 
 unsigned
-StringGet (char *src, int i)
+StringGet (char *src, long len, int i)
 {
     unsigned c;
 
     do
     {
-	src = StringNextChar (src, &c);
+	src = StringNextChar (src, &c, &len);
 	if (!src)
 	    return 0;
     } while (i-- > 0);
@@ -123,13 +141,13 @@ StringGet (char *src, int i)
 }
 
 int
-StringLength (char *src)
+StringLength (char *src, long len)
 {
-    int	len = 0;
+    int	l = 0;
     unsigned c;
-    while ((src = StringNextChar (src, &c)))
-	len++;
-    return len;
+    while ((src = StringNextChar (src, &c, &len)))
+	l++;
+    return l;
 }
 
 int
@@ -164,17 +182,29 @@ StringCharSize (unsigned c)
     else return 0;
 }
 
+char *
+StrzPart (Value v, char *error)
+{
+    if (!ValueIsString (v) || strlen (StringChars(&v->string)) != v->string.length)
+    {
+	RaiseStandardException (exception_invalid_argument, error,
+				2, NewInt (0), v);
+	return 0;
+    }
+    return StringChars (&v->string);
+}
+
 #define hrot(i)	(((i) << 1) | ((i) >> (sizeof (HashValue) * 8 - 1)))
 
 static HashValue
 StringHash (Value av)
 {
     char	*string = StringChars (&av->string);
-    char	c;
+    long	len = av->string.length;
     HashValue	h = 0;
 
-    while ((c = *string++))
-	h = hrot(h) ^ (HashValue) c;
+    while (len--)
+	h = hrot(h) ^ (HashValue) *string++;
     return h;
 }
 
@@ -204,12 +234,14 @@ ValueRep   StringRep = {
 };
 
 Value
-NewString (int len)
+NewString (long length)
 {
     ENTER ();
     Value   ret;
 
-    ret = ALLOCATE (&StringRep.data, sizeof (String) + len + 1);
+    ret = ALLOCATE (&StringRep.data, sizeof (String) + length + 1);
+    ret->string.length = length;
+    StringChars(&ret->string)[length] = '\0';
     RETURN (ret);
 }
 

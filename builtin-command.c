@@ -57,26 +57,20 @@ import_Command_namespace()
     EXIT ();
 }
 
-static Value
-do_Command_new_common (Value name, Value func, Bool names)
+static char *
+command_name (Value name)
 {
-    ENTER();
-    char	*cmd;
-    int		c;
+    char    *cmd_base = StrzPart (name, "argument must be valid name");
+    char    *cmd = cmd_base;
+    int	    c;
     
-    if (!ValueIsFunc(func))
-    {
-	RaiseStandardException (exception_invalid_argument,
-				"argument must be func",
-				2, NewInt (1), func);
-	RETURN (Void);
-    }
-    cmd = StringChars (&name->string);
+    if (!cmd_base)
+	return 0;
     while ((c = *cmd++))
     {
 	if (isupper (c) || islower (c))
 	    continue;
-	if (cmd != StringChars (&name->string) + 1)
+	if (cmd != cmd_base + 1)
 	{
 	    if (isdigit ((int)c) || c == '_')
 	     continue;
@@ -84,10 +78,27 @@ do_Command_new_common (Value name, Value func, Bool names)
 	RaiseStandardException (exception_invalid_argument,
 				"argument must be valid name",
 				2, NewInt (0), name);
+	return 0;
+    }
+    return cmd_base;
+}
+
+static Value
+do_Command_new_common (Value name, Value func, Bool names)
+{
+    ENTER();
+    char    *cmd = command_name (name);
+    
+    if (!cmd)
+	RETURN (Void);
+    if (!ValueIsFunc(func))
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"argument must be func",
+				2, NewInt (1), func);
 	RETURN (Void);
     }
-    CurrentCommands = NewCommand (CurrentCommands, 
-				  AtomId (StringChars (&name->string)),
+    CurrentCommands = NewCommand (CurrentCommands, AtomId (cmd),
 				  func, names);
     RETURN (Void);
 }
@@ -109,8 +120,11 @@ do_Command_delete (Value name)
 {
     ENTER();
     Atom    id;
+    char    *cmd = command_name (name);
 
-    id = AtomId (StringChars (&name->string));
+    if (!cmd)
+	RETURN (Void);
+    id = AtomId (cmd);
     if (!CommandFind (CurrentCommands, id))
 	RETURN (FalseVal);
     CurrentCommands = CommandRemove (CurrentCommands, id);

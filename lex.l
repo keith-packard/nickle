@@ -199,9 +199,8 @@ LexGetInteractiveChar (void)
 	Value	v;
 
 	v = prompt ();
-	if (v && ValueIsString(v))
-	    p = StringChars (&v->string);
-	else
+	p = StrzPart (prompt (), "invalid prompt");
+	if (!p)
 	    p = "??? ";
 	for (;;)
 	{
@@ -406,20 +405,20 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 \'([^\n\']|\\\')*\'	{
 			ENTER ();
 			char	 *s;
+			long	len = yyleng - 1;
 			int	c;
-    			yytext[yyleng - 1] = '\0';
 			s = yytext + 1;
-			s = StringNextChar (s, &c);
+			s = StringNextChar (s, &c, &len);
 			if (c == '\\')
 			{
-			    if (!(s = StringNextChar (s, &c)))
+			    if (!(s = StringNextChar (s, &c, &len)))
 				c = 0;
 			    else if ('0' <= c && c <= '7')
 			    {
 				int	ch;
 				char    *ps = s;
 				c = c - '0';
-				while ((s = StringNextChar (s, &ch)) &&
+				while ((s = StringNextChar (s, &ch, &len)) &&
 				       '0' <= ch && ch <= '7')
 				{
 				    c = (c << 3) | (ch - '0');
@@ -439,28 +438,32 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 			ENTER ();
 			char	*d, *s;
 			int	c;
-    			yytext[yyleng - 1] = '\0';
-			yylval.value = NewString (yyleng-2);
+			long	len = yyleng - 2;
+
+			yylval.value = NewString (len);
 			d = StringChars (&yylval.value->string);
 			s = yytext + 1;
-			while ((s = StringNextChar (s, &c)))
+			while ((s = StringNextChar (s, &c, &len)))
 			{
 			    if (c == '\\')
 			    {
-				if (!(s = StringNextChar (s, &c)))
+				if (!(s = StringNextChar (s, &c, &len)))
 				    break;
 				if ('0' <= c && c <= '7')
 				{
 				    int	    ch;
     				    char    *ps = s;
+				    long    plen = len;
 				    c = c - '0';
-				    while ((s = StringNextChar (s, &ch)) &&
+				    while ((s = StringNextChar (s, &ch, &len)) &&
 					   '0' <= ch && ch <= '7')
 				    {
 					c = (c << 3) | (ch - '0');
 					ps = s;
+					plen = len;
 				    }
 				    s = ps;
+				    len = plen;
 				}
 				else
 				    c = lexEscape (c);
@@ -468,6 +471,7 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 			    d += StringPutChar (c, d);
 			}
 			*d = '\0';
+			yylval.value->string.length = d - StringChars(&yylval.value->string);
 			EXIT ();
 			REFERENCE (yylval.value);
 			return STRING_CONST;

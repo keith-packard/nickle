@@ -758,14 +758,14 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
 	if (aborting)
 	    break;
 	s = StringChars (&v->string);
-	if (i < 0 || StringLength (s) < i)
+	if (i < 0 || StringLength (s, v->string.length) <= i)
 	{
 	    RaiseStandardException (exception_invalid_binop_values,
 				    "String index out of bounds",
 				    2, value, v);
 	    break;
 	}
-	value = NewInt (StringGet (s, i));
+	value = NewInt (StringGet (s, v->string.length, i));
 	break;
     case rep_array:
 	if (stack != v->array.ndim)

@@ -1243,6 +1243,13 @@ FilePuts (Value file, char *s)
 }
 
 void
+FilePutsc (Value file, char *s, long length)
+{
+    while (length--)
+	FileOutput (file, *s++);
+}
+
+void
 FilePutDoubleDigitBase (Value file, double_digit a, int base)
 {
     int	    digit;
@@ -1291,15 +1298,15 @@ void	FilePutInt (Value file, int a)
 }
 
 int
-FileStringWidth (char *string, char format)
+FileStringWidth (char *string, long length, char format)
 {
     if (format == 's')
-	return StringLength (string);
+	return StringLength (string, length);
     else
     {
 	int	    width = 2;
 	int	    c;
-	while ((string = StringNextChar (string, &c)))
+	while ((string = StringNextChar (string, &c, &length)))
 	{
 	    if (c < ' ' || '~' < c)
 		switch (c) {
@@ -1309,6 +1316,7 @@ FileStringWidth (char *string, char format)
 		case '\b':
 		case '\f':
 		case '\v':
+		case '\0':
 		    width += 2;
 		    break;
 		default:
@@ -1325,15 +1333,15 @@ FileStringWidth (char *string, char format)
 }
 
 void
-FilePutString (Value f, char *string, char format)
+FilePutString (Value f, char *string, long length, char format)
 {
     if (format == 's')
-	FilePuts (f, string);
+	FilePutsc (f, string, length);
     else
     {
 	int c;
 	FileOutput (f, '"');
-	while ((string = StringNextChar (string, &c))) 
+	while ((string = StringNextChar (string, &c, &length))) 
 	{
 	    if (c < ' ')
 		switch (c) {
@@ -1354,6 +1362,8 @@ FilePutString (Value f, char *string, char format)
 		    break;
 		case '\v':
 		    FilePuts (f, "\\v");
+		case '\0':
+		    FilePuts (f, "\\0");
 		    break;
 		default:
 		    FileOutput (f, '\\');
@@ -1774,9 +1784,11 @@ FileVPrintf (Value file, char *fmt, va_list args)
 	    case 's':
 		(void) FilePuts (file, va_arg (args, char *));
 		break;
-	    case 'S':
-		FilePutString (file, va_arg (args, char *), 'v');
+	    case 'S': {
+		char *s = va_arg (args, char *);
+		FilePutString (file, s, strlen(s), 'v');
 		break;
+	    }
 	    case 'A':
 		(void) FilePuts (file, AtomName (va_arg (args, Atom)));
 		break;

@@ -46,9 +46,12 @@ Value
 do_Environ_get (Value av)
 {
     ENTER ();
+    char    *name = StrzPart (av, "invalid environment variable name");
     char    *c;
 
-    c = getenv (StringChars (&av->string));
+    if (!name)
+	RETURN (Void);
+    c = getenv (name);
     if (!c) {
 	RaiseStandardException (exception_invalid_argument,
 				"name not available",
@@ -62,33 +65,31 @@ Value
 do_Environ_check (Value av)
 {
     ENTER ();
-    char    *c;
+    char    *name = StrzPart (av, "invalid environment variable name");
 
-    c = getenv (StringChars (&av->string));
-    if (c)
+    if (!name)
+	RETURN (Void);
+    if (getenv (name))
 	RETURN (TrueVal);
     RETURN (FalseVal);
 }
-
-extern char **environ;
 
 Value
 do_Environ_unset (Value av)
 {
     ENTER ();
-    char *name = StringChars(&av->string);
-    int n = strlen(name);
-    while(*environ) {
-	if (!strncmp(*environ, name, n) && (*environ)[n] == '=') {
-	    char **tail = environ;
-	    while(*(tail+1))
-		tail++;
-	    *environ = *tail;
-	    *tail = 0;
-	    RETURN(TrueVal);
-	}
-	environ++;
+    char    *name = StrzPart (av, "invalid environment variable name");
+    
+    if (!name)
+	RETURN (Void);
+    
+#if HAVE_UNSETENV
+    if (getenv (name))
+    {
+	unsetenv (name);
+	RETURN (TrueVal);
     }
+#endif
     RETURN (FalseVal);
 }
 
@@ -96,14 +97,28 @@ Value
 do_Environ_set (Value name, Value value)
 {
     ENTER ();
-    Value binding = NewString(strlen (StringChars(&name->string)) + 1 +
-			      strlen (StringChars(&value->string)));
-    (void) strcpy (StringChars(&binding->string),
-		   StringChars(&name->string));
-    (void) strcat (StringChars(&binding->string), "=");
-    (void) strcat (StringChars(&binding->string),
-		   StringChars(&value->string));
-    if (putenv (StringChars (&binding->string)) < 0)
-	RETURN (FalseVal);
-    RETURN (TrueVal);
+    char    *n = StrzPart (name, "invalid environment variable name");
+    char    *v = StrzPart (value, "invalid environment variable value");
+
+    if (!n || !v)
+	RETURN (Void);
+#if HAVE_SETENV
+    if (setenv (n, v, 1) >= 0)
+	RETURN (TrueVal);
+#else
+#if HAVE_PUTENV
+    {
+	Value	binding = Plus (name,
+				Plus (NewStrString ("="),
+				      value));
+	char	*b = StrzPart (binding, "invalid environment variable binding");
+
+	if (!b)
+	    RETURN (Void);
+	if (putenv (b) >= 0)
+	    RETURN (TrueVal);
+    }
+#endif
+#endif
+    RETURN (FalseVal);
 }

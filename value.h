@@ -551,7 +551,8 @@ typedef struct _float {
 } Float;
 
 typedef struct _string {
-    BaseValue	base;
+    BaseValue	    base;
+    long	    length;
 } String;
 
 #define StringChars(s)	    ((char *) ((s) + 1))
@@ -939,7 +940,7 @@ unsigned    FpartLength (Fpart *a);
 
 extern DataCachePtr	refCache;
 
-Value	NewString (int);
+Value	NewString (long length);
 Value	NewStrString (char *);
 Value	NewArray (Bool constant, Bool resizable, TypePtr type, int ndim, int *dims);
 void	ArrayResize (Value av, int dim, int size);
@@ -956,11 +957,12 @@ Value	HashCopy (Value hv);
 
 Value	NewFile (int fd);
 Value	NewRefReal (BoxPtr box, int element, Value *re);
-char	*StringNextChar (char *src, unsigned *dst);
+char	*StringNextChar (char *src, unsigned *dst, long *length);
 int	StringPutChar (unsigned c, char *dest);
-int	StringLength (char *src);
+int	StringLength (char *src, long length);
 int	StringCharSize (unsigned c);
-unsigned    StringGet (char *src, int i);
+unsigned    StringGet (char *src, long len, int i);
+char	*StrzPart (Value, char *error);
 
 #ifdef HAVE_C_INLINE
 
@@ -1019,13 +1021,14 @@ Value	FileStringString (Value file);
 void	FileSetFd (int fd), FileResetFd (int fd);
 Bool	FileIsReadable (int fd);
 Bool	FileIsWritable (int fd);
+void	FilePutsc (Value, char *, long length);
 void	FilePuts (Value, char *);
 void	FilePutDoubleDigitBase (Value file, double_digit a, int base);
 void	FilePutUIntBase (Value file, unsigned int a, int base);
 void	FilePutIntBase (Value file, int a, int base);
 void	FilePutInt (Value, int);
-int	FileStringWidth (char *string, char format);
-void	FilePutString (Value f, char *string, char format);
+int	FileStringWidth (char *string, long length, char format);
+void	FilePutString (Value f, char *string, long length, char format);
 void	FilePutRep (Value f, Rep tag, Bool minimal);
 void	FilePutClass (Value f, Class storage, Bool minimal);
 void	FilePutPublish (Value f, Publish publish, Bool minimal);

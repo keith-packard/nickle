@@ -52,7 +52,7 @@ do_String_length (Value av)
 {
     ENTER();
     Value ret;
-    ret = NewInt(StringLength(StringChars(&av->string)));
+    ret = NewInt(StringLength(StringChars(&av->string), av->string.length));
     RETURN (ret);
 }
 
@@ -79,7 +79,6 @@ do_String_new (Value av)
 					 "new: array element not integer"),
 				s);
 	}
-	*s = '\0';
     }
     else
     {
@@ -88,7 +87,6 @@ do_String_new (Value av)
 	ret = NewString (size);
 	s = StringChars (&ret->string);
 	s += StringPutChar (c, s);
-	*s = '\0';
     }
     RETURN (ret);
 }
@@ -98,9 +96,11 @@ do_String_index (Value av, Value bv)
 {
     ENTER();
     char *a, *b, *p;
+    long al;
     Value ret;
     int i;
     a = StringChars(&av->string);
+    al = av->string.length;
     b = StringChars(&bv->string);
     p = strstr(a, b);
     if (!p)
@@ -109,7 +109,7 @@ do_String_index (Value av, Value bv)
     while (a < p)
     {
 	int c;
-	a = StringNextChar (a, &c);
+	a = StringNextChar (a, &c, &al);
 	i++;
     }
     ret = NewInt(i);
@@ -123,8 +123,11 @@ do_String_substr (Value av, Value bv, Value cv)
     char *a, *rchars, *e;
     int b, c, al, size;
     Value ret;
+    long alen = av->string.length;
+    long elen;
+
     a = StringChars(&av->string);
-    al = StringLength (a);
+    al = StringLength (a, alen);
     b = IntPart(bv, "substr: index not integer");
     c = IntPart(cv, "substr: count not integer");
     if (c < 0) {
@@ -151,23 +154,23 @@ do_String_substr (Value av, Value bv, Value cv)
     while (b > 0)
     {
 	int ch;
-	a = StringNextChar (a, &ch);
+	a = StringNextChar (a, &ch, &alen);
 	b--;
     }
     /*
      * Find size of substring
      */
     e = a;
+    elen = alen;
     while (c > 0)
     {
 	int ch;
-	e = StringNextChar (e, &ch);
+	e = StringNextChar (e, &ch, &elen);
 	c--;
     }
     size = e - a;
     ret = NewString(size);
     rchars = StringChars(&ret->string);
-    strncpy(rchars, a, size);
-    rchars[size] = '\0';
+    memcpy (rchars, a, size);
     RETURN (ret);
 }

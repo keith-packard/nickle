@@ -133,11 +133,18 @@ static Bool address_lookup (Value hostname, Value portname,
 {
     struct hostent *host;
     struct servent *port;
-    char *hostchars = StringChars (&hostname->string);
-    char *portchars = StringChars (&portname->string);
+    char *hostchars;
+    char *portchars;
     char *endptr = 0;
     long int portnum;
 
+    hostchars = StrzPart (hostname, "invalid hostname");
+    if (!hostchars)
+	return False;
+    portchars = StrzPart (portname, "invalid portname");
+    if (!portchars)
+	return False;
+    
     if (*hostchars == '\0' || *portchars == '\0')
 	return False; /* FIXME: more here? */
 
@@ -157,7 +164,7 @@ static Bool address_lookup (Value hostname, Value portname,
     if (*endptr != '\0') /* non-numeric port specification */
     {
 	/* FIXME: this should not always be "tcp"! */
-	port = getservbyname (StringChars (&portname->string), "tcp");
+	port = getservbyname (portchars, "tcp");
 	if (port == 0)
 	    return False; /* FIXME: more here? */
 	addr->sin_port = port->s_port;

@@ -424,6 +424,18 @@ DigitsGradeSchool (digit *x_orig, int xlen, digit *y_orig, int ylen, digit *resu
 
 #define KARATSUBA_LIMIT	100
 
+/*
+ * Karatsuba multiplication as found in
+ @article{ karatsuba62multiplication,
+     author = "A. Karatsuba and Yu Ofman",
+     title = "Multiplication of multidigit numbers on automata",
+     journal = "Doklady Akademii Nauk SSSR",
+     volume = "145",
+     number = "2",
+     pages = "293--294",
+     year = "1962"
+ }
+ */
 static int
 DigitsKaratsuba (digit *x, int xlen, digit *y, int ylen, digit *result, digit *tmp)
 {

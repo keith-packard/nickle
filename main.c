@@ -121,8 +121,8 @@ main (int argc, char **argv)
 	    LexString (StringChars (&s->string), True);
 	    EXIT ();
 	    stdin_prog = False;
-	    argc -= i;   /* argc == 0 */
-	    argv += i;   /* *argv == 0 */
+	    argc -= (i - 1);	/* argc == 1 */
+	    argv += (i - 1);	/* argv[1] == 0 */
 	    break;
 	}
 	if (argc > 2 && !strcmp (argv[1], "-f"))

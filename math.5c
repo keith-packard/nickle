@@ -29,7 +29,7 @@ extend namespace Math {
 
 	    v = imprecise (v);
 	    err = 1/(2**(precision (v)+3));
-	    prev = imprecise (1 / (0.75 * 2**(floor (exponent(v)/2))), precision(v));
+	    prev = imprecise (1 / (2**(floor (exponent(v)/2))), precision(v));
 	    iter = precision (v) + 15;
 	    while (iter--)
 	    {
@@ -110,53 +110,48 @@ extend namespace Math {
 	if (v == 0)
 	    return 1;
 	v = imprecise (v);
-	int prec = precision (v);
+	
 	/*
-	 * For values greater than one,
-	 * use e ** floor (v) * exp (v - floor (v));
-	 *
-	 * Otherwise the power series takes a long time
-	 * to converge
+	 * Emperically determined scale factor.  This
+	 * reduces the computation to working on values
+	 * near zero so that the power series converges
+	 * rapidly.  Increasing this further makes the
+	 * power series converge more rapidly, but
+	 * makes the expansion step more expensive.
 	 */
-	if (v > 1)
-	{
-	    int	    p = floor (v);
-	    static  real big_e = e;
-	    static  int big_e_bits = precision (big_e);
-
-	    if (big_e_bits < prec * 2)
-	    {
-		big_e_bits = prec * 2;
-		big_e = exp (imprecise (1, big_e_bits));
-	    }
-	    real    my_e = imprecise (big_e, prec * 2);
-	    return imprecise (exp (v - p) * (my_e ** p), prec);
-	}
+	static int scale = 29;
+	static int div = (1 << scale);
 	
-	real err = errbounds (v);
-	real e = imprecise (0, prec*2);
-	real num = imprecise (1, prec*2);
-	real den = imprecise (1, prec*2);
-	real loop = imprecise (0, prec*2);
+	int prec = precision (v);
+	int iter = prec // scale + 1;
+	int iprec = prec + iter;
 	
-	v = imprecise (v, prec*2);
+	real mant = imprecise (mantissa(v), prec + iter) / div;
+	int expo = exponent(v) + scale;
+	
+	real err = errbounds (mant);
+	real e = imprecise (0, iprec);
+	real num = imprecise (1, iprec);
+	real den = imprecise (1, iprec);
+	real loop = imprecise (0, iprec);
 	
 	/*
 	 * Traditional power series
 	 *
 	 *  exp(n) = 1 + n/1 + n**2/2! + n**3/3!
 	 */
-	int iter = prec;
 	while (iter--)
 	{
 	    real term = num/den;
 	    e = e + term;
 	    if (abs (e) >= abs (term * err))
 		break;
-	    num *= v;
+	    num *= mant;
 	    loop++;
 	    den *= loop;
 	}
+	e = e ** (1 << expo);
+	
 	return imprecise (e, prec);
     }
 
@@ -232,7 +227,10 @@ extend namespace Math {
 	while (maxiter--)
 	{
 	    real term = a * exp (-v) - one;
+	    /* printf ("v: %g term: %g err: %g term*err: %g\n",
+		       v, term, err, term * err); */
 	    v = v + term;
+
 	    if (v > abs (term) * err)
 		break;
 	}
@@ -710,7 +708,3 @@ extend namespace Math {
 }
 
 import Math;
-
-extend namespace Math {
-    
-}

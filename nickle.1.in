@@ -128,8 +128,8 @@ In addition to being able to initialize a definition with
 a Nickle value, C-style array, structure, and union definitions
 are also allowed: For example, the following
 .nf
-  int name[*,*] = {{0,1},{2,3}}
-  int name[2,2] = {{0...}...}
+  int[*,*] name = {{0,1},{2,3}}
+  int[2,2] name = {{0...}...}
 .fi
 are permitted with the obvious semantics.  This is the context
 in which the dimensions in a type may be expressions: see the

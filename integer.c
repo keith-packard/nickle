@@ -430,7 +430,7 @@ Value
 NewInteger (Sign sign, Natural *mag)
 {
     ENTER ();
-    unsigned	c = ((unsigned) mag ^ (unsigned) sign) % INTEGER_CACHE_SIZE;
+    unsigned	c = (PtrToUInt(mag) ^ (unsigned) sign) % INTEGER_CACHE_SIZE;
     Value	*re = (Value *) DataCacheValues(integerCache) + c;
     Value	ret = *re;
 

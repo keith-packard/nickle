@@ -48,6 +48,13 @@
 #include	"memp.h"
 #include	<stdlib.h>
 
+#if HAVE_STDINT_H
+#include	<stdint.h>
+#define PtrToInt(p)	((int) (intptr_t) (p))
+#else
+#define PtrToInt(p)	((int) (p))
+#endif
+
 static void	noteBlock (struct block *);
 static void	checkBlockRef (struct block *);
 #ifdef DEBUG
@@ -594,7 +601,7 @@ MemReference (void *object)
 
     if (!object)
 	return;
-    if (((int) object) & 3)
+    if (PtrToInt(object) & 3)
 	return;
     if (!setReference (object))
     {
@@ -609,7 +616,7 @@ MemReferenceNoRecurse (void *object)
 {
     if (!object)
 	return 1;
-    if (((int) object) & 3)
+    if (PtrToInt (object) & 3)
 	return 1;
     return setReference (object);
 }

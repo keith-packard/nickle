@@ -1,5 +1,13 @@
 2004-04-01  Keith Packard  <keithp@keithp.com>
 
+	* debian/changelog:
+	Update to 2.29-1
+	* integer.c: (NewInteger):
+	* mem.c: (MemReference), (MemReferenceNoRecurse):
+	More pointer casting magic for gcc on ia64
+
+2004-04-01  Keith Packard  <keithp@keithp.com>
+
 	* gcd.c: (NaturalRslInplace), (NaturalBdivmodInplace):
 	Ouch.  NaturalRslInplace was not checking argument
 	for zero

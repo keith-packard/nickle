@@ -104,7 +104,7 @@ AddInst (ObjPtr obj)
 }
 #define SetPush(_o)  (ObjCode((_o), ObjLast(_o))->base.push = True);
 
-ObjPtr	_CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat);
+ObjPtr	_CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat, Bool createIfNecessary);
 ObjPtr	_CompileBinary (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr stat);
 ObjPtr	_CompileUnary (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr stat);
 ObjPtr	_CompileAssign (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr stat);
@@ -226,7 +226,8 @@ CompileError (ObjPtr obj, ExprPtr stat, char *s, ...)
 }
 
 ObjPtr
-_CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
+_CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat,
+		Bool createIfNecessary)
 {
     ENTER ();
     InstPtr inst;
@@ -238,7 +239,7 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	BuildInst(obj, OpNameRef, inst, stat);
 	inst->var.name = FindSymbol (obj, stat, scope, expr->atom.atom, 
 				     &inst->var.staticLink, type_undef,
-				     True);
+				     createIfNecessary);
 	if (inst->var.name->symbol.class == class_scope)
 	    CompileError (obj, stat, "Invalid use of scope \"%A\"",
 			  expr->atom.atom);
@@ -250,7 +251,7 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	if ((s = CompileScope (expr->tree.left, scope)))
 	{
 	    obj = _CompileLvalue (obj, expr->tree.right,
-				  s->scope.scope, stat);
+				  s->scope.scope, stat, False);
 	}
 	else
 	{
@@ -309,7 +310,7 @@ _CompileAssign (ObjPtr obj, ExprPtr expr, ScopePtr scope, OpCode opCode, ExprPtr
     
     obj = _CompileExpr (obj, expr->tree.right, scope, stat);
     SetPush (obj);
-    obj = _CompileLvalue (obj, expr->tree.left, scope, stat);
+    obj = _CompileLvalue (obj, expr->tree.left, scope, stat, opCode == OpAssign);
     BuildInst (obj, opCode, inst, stat);
     RETURN (obj);
 }
@@ -606,7 +607,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	obj = _CompileFunc (obj, expr->code.code, scope, stat);
 	break;
     case STAR:	    obj = _CompileUnary (obj, expr, scope, OpStar, stat); break;
-    case AMPER:	    obj = _CompileLvalue (obj, expr->tree.left, scope, stat); break;
+    case AMPER:	    obj = _CompileLvalue (obj, expr->tree.left, scope, stat, False); break;
     case UMINUS:    obj = _CompileUnary (obj, expr, scope, OpUminus, stat); break;
     case LNOT:	    obj = _CompileUnary (obj, expr, scope, OpLnot, stat); break;
     case BANG:	    obj = _CompileUnary (obj, expr, scope, OpBang, stat); break;
@@ -614,24 +615,24 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     case INC:	    
 	if (expr->tree.left)
 	{
-	    obj = _CompileLvalue (obj, expr->tree.left, scope, stat);
+	    obj = _CompileLvalue (obj, expr->tree.left, scope, stat, False);
 	    BuildInst (obj, OpPreInc, inst, stat);
 	}
 	else
 	{
-	    obj = _CompileLvalue (obj, expr->tree.right, scope, stat);
+	    obj = _CompileLvalue (obj, expr->tree.right, scope, stat, False);
 	    BuildInst (obj, OpPostInc, inst, stat);
 	}
 	break;
     case DEC:
 	if (expr->tree.left)
 	{
-	    obj = _CompileLvalue (obj, expr->tree.left, scope, stat);
+	    obj = _CompileLvalue (obj, expr->tree.left, scope, stat, False);
 	    BuildInst (obj, OpPreDec, inst, stat);
 	}
 	else
 	{
-	    obj = _CompileLvalue (obj, expr->tree.right, scope, stat);
+	    obj = _CompileLvalue (obj, expr->tree.right, scope, stat, False);
 	    BuildInst (obj, OpPostDec, inst, stat);
 	}
 	break;
@@ -1133,7 +1134,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
 	    InstPtr inst;
 	    
 	    *initObj = _CompileLvalue (*initObj, NewExprAtom (decl->name),
-				       scope, decls);
+				       scope, decls, False);
 	    BuildInst (*initObj, OpAssign, inst, decls);
 	}
     }

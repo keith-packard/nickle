@@ -41,7 +41,7 @@ BuildFrame (Value thread, Value func, Bool varargs, int nformal,
     for (fe = 0; fe < nformal; fe++)
     {
 	type = BoxTypesValue (code->func.dynamics, fe);
-	if (!AssignTypeCompatiblep (type, Stack(fe)))
+	if (!TypeCompatibleAssign (type, Stack(fe), False))
 	{
 	    RaiseError ("Incompatible type for argument %d function %t = %v",
 			fe+1,
@@ -230,7 +230,7 @@ ThreadAssign (Value ref, Value v)
 	RaiseError ("Attempted assignment beyond box bounds %v",
 		    v);
     }
-    else if (!AssignTypeCompatiblep (RefType (ref), v))
+    else if (!TypeCompatibleAssign (RefType (ref), v, False))
     {
 	RaiseError ("Incompatible types in assignment %t = (%T) %v", 
 		    RefType (ref), v->value.tag, v);
@@ -283,8 +283,7 @@ ThreadInitArray (Value thread, Value a, int ninit)
 	i = 0;
 	while (j--)
 	{
-	    if (!AssignTypeCompatiblep (a->array.type,
-					Stack(j)))
+	    if (!TypeCompatibleAssign (a->array.type, Stack(j), False))
 	    {
 		RaiseError ("Incompatible type for array initializer %d %T = (%T) %v",
 			i, a->array.type, Stack(j)->value.tag, Stack(j));
@@ -494,6 +493,10 @@ ThreadStep (Value thread)
 	    value = BoxValue(fp->frame, inst->var.name->local.element);
 	    break;
 	default:
+	    RaiseError ("Invalid symbol class %C for lvalue \"%A\"",
+			inst->var.name->symbol.class,
+			inst->var.name->symbol.name);
+	    value = Zero;
 	    break;
 	}
 	break;
@@ -514,6 +517,10 @@ ThreadStep (Value thread)
 	    value = NewRef (fp->frame, inst->var.name->local.element);
 	    break;
 	default:
+	    RaiseError ("Invalid symbol class %C for lvalue \"%A\"",
+			inst->var.name->symbol.class,
+			inst->var.name->symbol.name);
+	    value = Zero;
 	    break;
 	}
 	break;

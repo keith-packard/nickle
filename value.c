@@ -103,37 +103,6 @@ Evenp (Value av)
     return False;
 }
 
-/*
- * Check an assignment for type compatibility; Lvalues can assert
- * maximal domain for their values
- */
-
-Bool
-AssignTypeCompatiblep (TypesPtr dest, Value v)
-{
-    Type    base = BaseType (dest);
-    if (base != type_undef && base != v->value.tag)
-    {
-	if (!Numericp (base))
-	{
-	    switch (base) {
-	    case type_string:
-	    case type_array:
-	    case type_struct:
-		break;
-	    default:
-		if (Zerop (v))
-		    return True;
-		break;
-	    }
-	    return False;
-	}
-	if (base < v->value.tag)
-	    return False;
-    }
-    return True;
-}
-
 int
 IntPart (Value av, char *error)
 {

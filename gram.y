@@ -402,7 +402,17 @@ statement	: IF ignorenl OP expr CP statement
 		    { $$ = NewExprTree (RAISE, NewExprAtom ($2), $4); }
 		| decl ignorenl opt_initnames SEMI
 		    { $$ = NewExprDecl ($3, $1.class, $1.type, $1.publish); }
-		| publish TYPEDEF ignorenl opt_type names SEMI
+		| publish TYPEDEF ignorenl names SEMI
+		    { 
+			DeclListPtr dl;
+			
+			$$ = NewExprDecl ($4, class_typedef, 0, $1);
+			for (dl = $4; dl; dl = dl->next)
+			    CurrentTypespace = NewTypespace (CurrentTypespace,
+							     dl->name,
+							     False);
+		    }
+		| publish TYPEDEF ignorenl type enames SEMI
 		    { 
 			DeclListPtr dl;
 			

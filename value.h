@@ -23,8 +23,17 @@
 #include	"mem.h"
 
 typedef enum _Bool { False = 0, True = 1 }  	Bool;
-
 typedef unsigned long	Atom;
+typedef struct _valueType   ValueType;
+typedef struct _box	*BoxPtr;
+typedef union _code	*CodePtr;
+typedef struct _frame	*FramePtr;
+typedef struct _thread	*ThreadPtr;
+typedef struct _continuation	*ContinuationPtr;
+typedef union _value	*Value;
+typedef struct _obj	*ObjPtr;
+typedef union _inst	*InstPtr;
+
 
 extern Atom AtomId (char *name);
 extern char *AtomName (Atom id);
@@ -258,12 +267,14 @@ Types	*TypeCombineUnary (Types *down, int tag);
 Types	*TypeCombineStruct (Types *type, int tag, Atom atom);
 Types	*TypeCombineReturn (Types *type);
 Types	*TypeCombineFunction (Types *type);
+Bool	TypeCompatibleAssign (Types *dest, Value v, Bool shallow);
 Bool	TypeEqual (Types *a, Types *b);
 Bool	TypeCompatible (Types *a, Types *b, Bool contains);
 Bool	TypePoly (Types *t);
 Bool	TypeNumeric (Types *t);
 Bool	TypeIntegral (Types *t);
 Bool	TypeString (Types *t);
+int	TypeCountDimensions (ExprPtr dims);
 
 /*
  * storage classes
@@ -281,10 +292,6 @@ typedef enum _class {
 typedef enum _publish {
     publish_public, publish_private, publish_extend
 } Publish;
-
-typedef struct _valueType   ValueType;
-
-typedef struct _box	*BoxPtr;
 
 typedef struct _baseValue {
     ValueType	*type;
@@ -400,14 +407,6 @@ typedef struct _struct {
     StructType	*type;
     BoxPtr	values;
 } Struct;
-
-typedef union _code	*CodePtr;
-typedef struct _frame	*FramePtr;
-typedef struct _thread	*ThreadPtr;
-typedef struct _continuation	*ContinuationPtr;
-typedef union _value	*Value;
-typedef struct _obj	*ObjPtr;
-typedef union _inst	*InstPtr;
 
 typedef struct _func {
     BaseValue	base;
@@ -671,7 +670,6 @@ Bool	Integralp (Type);
 Bool	Zerop (Value);
 Bool	Negativep (Value);
 Bool	Evenp (Value);
-Bool	AssignTypeCompatiblep (TypesPtr dest, Value v);
 
 int	ArrayInit (void);
 int	AtomInit (void);

@@ -286,7 +286,7 @@ TypeString (Types *t)
     return False;
 }
 
-static int
+int
 TypeCountDimensions (ExprPtr dims)
 {
     int	ndim = 0;
@@ -618,6 +618,93 @@ TypeCombineFunction (Types *type)
 	return type;
 
     return 0;
+}
+
+/*
+ * Check an assignment for type compatibility; Lvalues can assert
+ * maximal domain for their values
+ */
+
+Bool
+TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
+{
+    int	adim, bdim;
+    int	n;
+    
+    if (TypePoly (a))
+	return True;
+    
+    switch (a->base.tag) {
+    case types_prim:
+	if (a->prim.prim == b->value.tag)
+	    return True;
+	if (Numericp (a->prim.prim) && Numericp (b->value.tag))
+	{
+	    if (a->prim.prim >= b->value.tag)
+		return True;
+	}
+	break;
+    case types_name:
+	return TypeCompatibleAssign (a->name.type, b, False);
+    case types_ref:
+	if (b->value.tag == type_ref)
+	{
+	    /* avoid looping through data structures */
+	    if (shallow)
+		return True;
+	    return TypeCompatibleAssign (a->ref.ref, RefValue (b), True);
+	}
+	if (b->value.tag == type_int && b->ints.value == 0)
+	    return True;
+	break;
+    case types_func:
+	if (b->value.tag == type_func)
+	{
+	    if (TypeCompatible (a->func.ret,
+				b->func.code->base.type, True))
+	    {
+		ArgType *aarg = a->func.args, *barg = b->func.code->base.args;
+    
+		while (aarg || barg)
+		{
+		    if (!barg || !aarg)
+			return False;
+		    if (barg->varargs != aarg->varargs)
+			return False;
+		    if (!TypeCompatible (barg->type, aarg->type, True))
+			return False;
+		    aarg = aarg->next;
+		    barg = barg->next;
+		}
+		return True;
+	    }
+	}
+	break;
+    case types_array:
+	adim = TypeCountDimensions (a->array.dimensions);
+	bdim = b->array.ndim;
+	if (adim == 0 || adim == bdim)
+	    return TypeCompatible (a->array.type, b->array.type, True);
+	break;
+    case types_struct:
+	for (n = 0; n < a->structs.structs->nelements; n++)
+	{
+	    StructElement   *ae;
+	    Types	    *bt;
+
+	    ae = &StructTypeElements(a->structs.structs)[n];
+	    bt = StructTypes (b->structs.type, ae->name);
+	    if (!bt)
+		break;
+	    if (!TypeCompatible (ae->type, bt, True))
+		break;
+	}
+	if (n == a->structs.structs->nelements)
+	    return True;
+	break;
+    default:	
+    }
+    return False;
 }
 
 Types *

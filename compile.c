@@ -219,6 +219,20 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
 	    CompileError (obj, stat, "No namespace \"%A\" in namespace", name);
 	return s;
     }
+    if (class == class_typedef)
+    {
+	s = NamespaceLookupSymbol (namespace, name);
+	if (s)
+	{
+	    if (s->symbol.class == class_typedef &&
+		s->symbol.type == 0)
+	    {
+		*new = False;
+		s->symbol.type = type;
+		return s;
+	    }
+	}
+    }
 
     switch (class) {
     case class_global:
@@ -385,6 +399,9 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	    CompileError (obj, stat, "Incompatible type %t in unary operation",
 			  expr->tree.left->base.type);
 	}
+	break;
+    default:
+	CompileError (obj, stat, "Invalide lvalue");
 	break;
     }
     RETURN (obj);

@@ -1,5 +1,10 @@
 2004-04-16  Bart Massey  <bart@cs.pdx.edu>
 
+	* string.5c: (parse_csv):
+	Last field wasn't being chomped and dequoted.
+
+2004-04-16  Bart Massey  <bart@cs.pdx.edu>
+
 	* string.5c: (parse_csv, _dequote):
 	Fixed unclosed string detection case in parse_csv.
 	Fixed unclosed string detection in _dequote.

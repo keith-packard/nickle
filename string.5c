@@ -108,6 +108,13 @@ extend namespace String {
 	quote_context q = default_quotes;
 	q.qq = "\"";
 	string curs = "";
+	void consume() {
+	    string t = chomp(curs);
+	    if (t != "" && t[0] == '"')
+		t = _dequote(t, q);
+	    ss[dim(ss)] = t;
+	    curs = "";
+	}
 	qstate t = qstate.normal;
 	int cur = 0;
 	while (cur < length(s)) {
@@ -116,11 +123,7 @@ extend namespace String {
 	    switch(t) {
 	    case qstate.normal:
 		if (c == ',') {
-		    string t = chomp(curs);
-		    if (t != "" && t[0] == '"')
-			t = _dequote(t, q);
-		    ss[dim(ss)] = t;
-		    curs = "";
+		    consume();
 		    cur++;
 		    continue;
 		}
@@ -149,7 +152,7 @@ extend namespace String {
 	if (t == qstate.openq)
 	    raise invalid_argument("parse_csv: unexpected " +
 				   "end of csv line", 0, s);
-	ss[dim(ss)] = curs;
+	consume();
 	return ss;
     }
 

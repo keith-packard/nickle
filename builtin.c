@@ -201,7 +201,7 @@ static struct fbuiltin_0 funcs_0[] = {
 static struct fbuiltin_1 funcs_1[] = {
     { do_putchar,	    "putchar",		    "i",    "i"	    },
     { do_sleep,		    "sleep",		    "i",    "i"	    },
-    { do_exit,		    "exit",		    "i",    "i"	    },
+    { do_exit,		    "exit",		    "v",    "i"	    },
     { do_dim,		    "dim",		    "i",    "A*p"   },
     { do_dims,		    "dims",		    "A*i",  "Ap"    },
     { do_reference,	    "reference",	    "*p",   "p"	    },
@@ -1563,30 +1563,13 @@ Value
 do_sign (Value av)
 {
     ENTER ();
-    Sign    s;
 
-    switch (av->value.tag) {
-    case type_int:
-	s = av->ints.value >= 0 ? Positive : Negative;
-	break;
-    case type_integer:
-	s = av->integer.sign;
-	break;
-    case type_rational:
-	s = av->rational.sign;
-	break;
-    case type_float:
-	s = av->floats.mant->sign;
-	break;
-    default:
-	/* not reached */
-	s = Positive;
-	break;
-    }
-    if (s == Positive)
-	av = One;
+    if (Zerop (av))
+	av = Zero;
+    else if (Negativep (av))
+	av = NewInt(-1);
     else
-	av = NewInt (-1);
+	av = One;
     RETURN (av);
 }
 

@@ -1,0 +1,35 @@
+/*
+ * SVG XML graphics output
+ *  ala http://www.w3schools.com/svg/svg_intro.asp
+ * Bart Massey 2004/06
+ */
+
+import File;
+
+namespace SVG {
+    public void start(file f, int width, int height) {
+	fprintf(f,
+		"<?xml version=\"1.0\" standalone=\"no\"?>\n" +
+		"<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n" +
+		" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n" +
+		"<svg xml:space=\"preserve\" " +
+		"width=\"%d\" height=\"%d\" x=\"0\" y=\"0\">\n",
+		width, height);
+    }
+
+    public void spot(file f, string color, int x, int y, int r) {
+	fprintf(f, "<circle cx=\"%d\" cy=\"%d\" r=\"%d\" " +
+		"stroke=\"black\" fill=\"%s\" stroke-width=\"2\"/>\n",
+		x, y, r, color);
+    }
+
+    public void segment(file f, string color, int x1, int y1, int x2, int y2) {
+	fprintf(f, "<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" " +
+		"stroke=\"%s\" stroke-width=\"2\"/>\n",
+		x1, y1, x2, y2, color);
+    }
+
+    public void stop(file f) {
+	fprintf(f, "</svg>\n");
+    }
+}

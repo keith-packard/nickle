@@ -12,7 +12,7 @@ BUILD_DATE = $(shell sh $(top_builddir)/date-sh)
 NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c \
 	arc4.5c prng.5c command.5c abort.5c \
         printf.5c history.5c ctype.5c string.5c socket.5c \
-	file.5c parse-args.5c
+	file.5c parse-args.5c svg.5c
 
 DEBIAN = debian/nickle.install debian/changelog debian/compat \
 	 debian/control debian/copyright debian/rules

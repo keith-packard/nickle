@@ -1,0 +1,51 @@
+/*
+ * All-Pairs Shortest Path Computation
+ * using Floyd-Warshall O(n**3) method
+ *  CLR 2nd ed p. 632
+ * Bart Massey 2004/06
+ */
+namespace APSP {
+    public typedef real distance;
+
+    public typedef struct {
+	distance dist;
+	int first_hop;
+    } shortest_path;
+
+    public shortest_path[*,*]
+    compute_paths(distance[*,*] adjacencies) {
+	int[*] ns = dims(adjacencies);
+	assert(dim(ns) == 2 && ns[0] == ns[1],
+	       "ill-conditioned adjacencies");
+	int n = ns[0];
+	/* set things up */
+	shortest_path[n,n] path =
+	  {{{dist = -1, first_hop = -1}, ...},...};
+	for (int i = 0; i < n; i++) {
+	    for (int j = 0; j < n; j++) {
+		path[i,j].dist = adjacencies[i,j];
+		if (i != j && adjacencies[i,j] >= 0)
+		    path[i,j].first_hop = j;
+	    }
+	}
+	/* do the computation */
+	for (int k = 0; k < n; k++) {
+	    for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+		    if (i == j)
+			continue;
+		    real dik = path[i,k].dist;
+		    real dkj = path[k,j].dist;
+		    if (dik <= 0 || dkj <= 0)
+			continue;
+		    real dij = path[i,j].dist;
+		    if (dij <= 0 || dik + dkj < dij) {
+			path[i,j].dist = dik + dkj;
+			path[i,j].first_hop = path[i,k].first_hop;
+		    }
+		}
+	    }
+	}
+	return path;
+    }
+}

@@ -1,0 +1,57 @@
+autoimport APSP;
+autoimport PRNG;
+autoload SVG;
+
+dev_srandom(32);
+
+typedef struct {
+    int x, y;
+} point;
+
+int side = 500;
+int blot = 10;
+
+SVG::start(stdout, side, side);
+
+point[10] locns = { [i] = (point){x = randint(side), y = randint(side)} };
+for (int i = 0; i < dim(locns); i++)
+     SVG::spot(stdout, "red", locns[i].x, locns[i].y, blot);
+
+real dist(point p1, point p2) {
+    return sqrt((p2.x - p1.x) ** 2 +
+		(p2.y - p1.y) ** 2);
+}
+
+distance[dim(locns), dim(locns)] adj = {
+    [i, j] {
+	if (randint(2) == 1)
+	    return dist(locns[i], locns[j]);
+	return -1;
+    }
+};
+for (int i = 0; i < dim(locns); i++) {
+     for (int j = 0; j < i; j++) {
+	 adj[j,i] = adj[i,j];
+	 if (adj[i,j] > 0)
+	     SVG::segment(stdout, "red",
+			  locns[i].x, locns[i].y,
+			  locns[j].x, locns[j].y);
+     }
+}
+
+shortest_path[*,*] path = compute_paths(adj);
+int i = randint(dim(locns));
+SVG::spot(stdout, "green", locns[i].x, locns[i].y, blot);
+for (int j = 0; j < dim(locns); j++) {
+    if (path[i,j].first_hop == -1)
+	continue;
+    SVG::spot(stdout, "blue", locns[j].x, locns[j].y, blot);
+    for (int k = i; k != j; k = path[k,j].first_hop) {
+	int m = path[k,j].first_hop;
+	SVG::segment(stdout, "blue",
+		 locns[k].x, locns[k].y,
+		 locns[m].x, locns[m].y);
+    }
+}
+		 
+SVG::stop(stdout);

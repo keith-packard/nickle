@@ -1,0 +1,14 @@
+int style_b = 1;
+int style_em = 2;
+int style_i = 4;
+int style_s = 8;
+int style_tt = 16;
+
+int[*] colornames = {'r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'};
+
+typedef struct {
+    int styles;
+    int underline; /* "root underline" is 0 */
+    int color; /* "root color" is -1 */
+    int size; /* "root size" is -1 */
+} state;

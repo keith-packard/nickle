@@ -386,7 +386,7 @@ typedef struct _typeFunc {
 } TypeFunc;
 
 typedef enum _dimStorage {
-    DimStorageNone, DimStorageGlobal, DimStorageLocal
+    DimStorageNone, DimStorageGlobal, DimStorageStatic, DimStorageAuto
 } DimStorage;
 
 typedef struct _typeArray {

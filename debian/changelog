@@ -1,3 +1,9 @@
+nickle (2.36-1) unstable; urgency=low
+  * distinguish between array types of static variables and
+    initializers within static scope -- dimension storage is different
+
+ -- Keith Packard <keithp@keithp.com>  Wed, 26 May 2004 01:50:58 -0700
+
 nickle (2.35-1) unstable; urgency=low
   * new string parsing functions added
   * fix substr to allow zero-length at end of string

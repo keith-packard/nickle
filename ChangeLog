@@ -1,4 +1,16 @@
 2004-05-26  Keith Packard  <keithp@keithp.com>
+version 2.36
+
+	* compile.c: (CompileDimensionStorage), (CompileArrayDimValue):
+	* type.c: (TypeArrayMark):
+	* value.h:
+	Distinguish between array types of static variables and
+	initializers within static scope -- dimension storage is different.
+	
+	* debian/changelog:
+	update to version 2.36
+
+2004-05-26  Keith Packard  <keithp@keithp.com>
 version 2.35
 
 	* examples/menace2.5c:

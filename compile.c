@@ -302,7 +302,7 @@ CompileDimensionStorage (ObjPtr obj, Class class, TypePtr type, CodePtr code)
 	type->array.u.global = NewBox (True, False, 1, typeArrayInt);
 	break;
     case class_static:
-	type->array.storage = DimStorageLocal;
+	type->array.storage = DimStorageStatic;
 	type->array.u.frame.element = AddBoxType (&code->func.statics,
 						  typeArrayInt);
 	type->array.u.frame.staticScope = True;
@@ -310,7 +310,7 @@ CompileDimensionStorage (ObjPtr obj, Class class, TypePtr type, CodePtr code)
 	break;
     case class_arg:
     case class_auto:
-	type->array.storage = DimStorageLocal;
+	type->array.storage = DimStorageAuto;
 	type->array.u.frame.element = AddBoxType (&CodeBody (code)->dynamics,
 						  typeArrayInt);
 	type->array.u.frame.staticScope = code->func.inStaticInit;
@@ -3842,14 +3842,19 @@ CompileArrayDimValue (ObjPtr obj, TypePtr type, Bool lvalue, ExprPtr stat, CodeP
 	BuildInst (obj, OpGlobal, inst, stat);
 	inst->box.box = type->array.u.global;
 	break;
-    case DimStorageLocal:
+    case DimStorageStatic:
+    case DimStorageAuto:
 	d = 0;
 	for (c = code; c && c != type->array.u.frame.code; c = c->base.previous)
 	    d++;
-	/*
-	 * non-global array dimensions are always local
-	 */
-	BuildInst (obj, OpLocal, inst, stat);
+	if (type->array.storage == DimStorageStatic) 
+	{
+	    BuildInst (obj, OpStatic, inst, stat);
+	}
+	else
+	{
+	    BuildInst (obj, OpLocal, inst, stat);
+	}
 	inst->frame.staticLink = d;
 	inst->frame.element = type->array.u.frame.element;
 	break;

@@ -69,7 +69,8 @@ TypeArrayMark (void *object)
     case DimStorageGlobal:
 	MemReference (ta->u.global);
 	break;
-    case DimStorageLocal:
+    case DimStorageStatic:
+    case DimStorageAuto:
 	MemReference (ta->u.frame.code);
 	break;
     }

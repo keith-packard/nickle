@@ -5,3 +5,5 @@ load "@nicklelib@/scanf.5c"
 load "@nicklelib@/mutex.5c"
 load "@nicklelib@/arc4.5c"
 load "@nicklelib@/prng.5c"
+load "@nicklelib@/abort.5c"
+import Abort;

@@ -1,3 +1,19 @@
+2004-08-10  Keith Packard  <keithp@keithp.com>
+version 2.43
+
+	* Makefile.am:
+	* avl.c:
+	* avl.h:
+	Remove avl tree code
+	
+	* mem.c: (MemHunkMore), (MemAllocateHuge), (tossFree), (busy),
+	(checkBlockRef), (checkRef), (MemReference),
+	(MemReferenceNoRecurse), (MemCollect):
+	* mem.h:
+	* memp.h:
+	Rewrite garbage collector to place reference bits right in
+	each object by stealing the low bit of the type pointer.
+
 2004-08-04  Keith Packard  <keithp@keithp.com>
 
 	* debian/changelog:

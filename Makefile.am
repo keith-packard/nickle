@@ -23,12 +23,12 @@ EXTRA_DIST = README.name autogen.sh \
 bin_PROGRAMS = nickle
 
 nickle_SOURCES = \
-	alarm.c array.c atom.c avl.c box.c compile.c debug.c \
+	alarm.c array.c atom.c box.c compile.c debug.c \
 	divide.c edit.c error.c execute.c expr.c file.c float.c \
 	frame.c func.c gcd.c hash.c int.c integer.c io.c main.c \
 	mem.c natural.c pretty.c profile.c rational.c ref.c \
 	refer.c sched.c scope.c stack.c string.c struct.c \
-	symbol.c sync.c type.c union.c util.c value.c avl.h \
+	symbol.c sync.c type.c union.c util.c value.c \
 	mem.h memp.h nickle.h opcode.h ref.h stack.h value.h \
 	builtin-command.c builtin-debug.c builtin-environ.c \
 	builtin-file.c builtin-math.c builtin-namespaces.h \

@@ -18,11 +18,9 @@
 # define GOODBLOCKSIZE	(0x2000)
 # define BLOCKSIZE	(GOODBLOCKSIZE < MINBLOCKSIZE ? \
 			 MINBLOCKSIZE : GOODBLOCKSIZE)
+# define DATASIZE	(BLOCKSIZE - HEADSIZE)
+# define NUMHUNK(i)	((i) >= NUMSIZES ? 1 : (DATASIZE / HUNKSIZE(i)))
+
+# define HUNKS(b)	((unsigned char *) (b) + HEADSIZE)
 
 # define GARBAGETIME	1000
-
-# define BITSPERCH		(8)
-# define NUMINBLOCK(size) 	(((BLOCKSIZE - HEADSIZE) * \
-				  BITSPERCH) / (1 + BITSPERCH * (size)))
-# define BITMAPSIZE(size)	((NUMINBLOCK(size) + (BITSPERCH-1)) / BITSPERCH)
-

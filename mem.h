@@ -43,9 +43,14 @@ struct bfree {
 	struct bfree	*next;
 };
 
-/* make sure we can store doubles in blocks */
+typedef unsigned long PtrInt;
 
-#include "avl.h"
+struct block {
+    struct block    *next;
+    int		    sizeIndex;
+};
+
+/* make sure we can store doubles in blocks */
 
 union block_round {
     struct block    b;
@@ -57,8 +62,12 @@ union block_round {
 # define HUNKSIZE(i)	(MINHUNK << (i))
 # define MAXHUNK	HUNKSIZE(NUMSIZES-1)
 
+#if HAVE_C_INLINE
+#define USE_C_INLINE 1
+#endif
+
 extern void	MemInitialize (void);
-#ifndef HAVE_C_INLINE
+#ifndef USE_C_INLINE
 extern void	*MemAllocate (DataType *type, int size);
 extern void	*MemAllocateRef (DataType *type, int size);
 #endif
@@ -96,13 +105,13 @@ extern struct bfree *freeList[NUMSIZES];
 #define RETURN(r)	    return (STACK_RETURN (MemStack, __stackPointer, (r)))
 #define NOREFRETURN(r)	    return (EXIT(), (r))
 
-#if defined(HAVE_C_INLINE) || defined(MEM_NEED_ALLOCATE)
+#if defined(USE_C_INLINE) || defined(MEM_NEED_ALLOCATE)
 
 /*
  * Allocator entry point
  */
 
-#ifdef HAVE_C_INLINE
+#ifdef USE_C_INLINE
 static inline struct bfree *
 #else
 static struct bfree *
@@ -142,7 +151,7 @@ _MemAllocateInt (DataType *type, int size)
     return new;
 }
 
-#ifdef HAVE_C_INLINE
+#ifdef USE_C_INLINE
 static inline void *
 #else
 void *
@@ -157,7 +166,7 @@ MemAllocateRef (DataType *type, int size)
     return (void *) new;
 }
 
-#ifdef HAVE_C_INLINE
+#ifdef USE_C_INLINE
 static inline void *
 #else
 void *

@@ -170,6 +170,14 @@ extend namespace File {
 	return vfscanf (f, format, args);
     }
 
+    public int sscanf (string s, string format, *poly args...)
+    {
+        file sf = string_read(s);
+        int n = vfscanf (sf, format, args);
+        close(sf);
+        return n;
+    }
+
     public string fgets (file f)
     {
 	string	s;

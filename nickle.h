@@ -132,6 +132,7 @@ typedef struct _funcDecl {
     Publish	publish;
     Class	class;
     DeclList	*decl;
+    TypesPtr	type;
 } FuncDecl;
 
 typedef struct _Fulltype {

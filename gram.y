@@ -431,32 +431,22 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			SymbolPtr   symbol = decl->symbol;
 			Class	    class = $1.class;
 			Publish	    publish = $1.publish;
-			TypesPtr    type, ret;
-			ArgType	    *argType;
+			TypesPtr    type = $1.type;
+			TypesPtr    ret = type->func.ret;
+			ArgType	    *argType = type->func.args;
 
 			if (symbol)
 			{
-			    type = symbol->symbol.type;
-			    ret = type->func.ret;
-			    argType = type->func.args;
-			    if (!$2)
-				symbol->symbol.forward = True;
-			    else
+			    if ($2)
+			    {
 				symbol->symbol.forward = False;
-			}
-			else
-			{
-			    type = typesPoly;
-			    ret = typesPoly;
-			    argType = 0;
-			}
-
-			if ($2 && symbol)
-			{
-			    decl->init = NewExprCode (NewFuncCode (ret,
-								   argType,
-								   $2),
-						      NewExprAtom (symbol->symbol.name, symbol, False));
+				decl->init = NewExprCode (NewFuncCode (ret,
+								       argType,
+								       $2),
+							  NewExprAtom (symbol->symbol.name, symbol, False));
+			    }
+			    else
+				symbol->symbol.forward = True;
 			}
 			$$ = NewExprDecl (decl, class, type, publish);
 		    }
@@ -695,8 +685,6 @@ func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start opt_argdefines
 					    $4);
 				symbol = 0;
 			    }
-			    else
-				symbol->symbol.type = type;
 			}
 			else
 			{
@@ -710,6 +698,7 @@ func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start opt_argdefines
 			$$.publish = $1.publish;
 			$$.class = $1.class;
 			$$.decl = decl;
+			$$.type = type;
 		    }
 		;
 opt_init	: ASSIGN simpleexpr

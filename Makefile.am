@@ -19,8 +19,8 @@ TEST = test/gcdtest.5c test/inttest.5c test/rattest.5c
 DEBIAN = debian/changelog  debian/control debian/copyright \
 	debian/docs debian/files debian/rules
 
-EXTRA_DIST = README.name autoconfigure.sh $(NICKLEFILES) \
-	gram.h $(EXAMPLES) $(TEST) $(DEBIAN)
+EXTRA_DIST = README.name autogen.sh update-version.sh $(NICKLEFILES) \
+	gram.h $(EXAMPLES) $(TEST) $(DEBIAN) version.m4
 
 bin_PROGRAMS = nickle
 
@@ -70,7 +70,3 @@ USES_GRAM_H = \
 	type.o
 
 $(USES_GRAM_H): gram.h
-
-version.m4: update-version.sh \
-  $(nickle_SOURCES) $(NICKLEFILES) $(NICKLEBUILTINSOURCES)
-	sh update-version.sh

@@ -1,3 +1,21 @@
+2004-02-15  Keith Packard  <keithp@keithp.com>
+
+	* Makefile.am:
+	* test/Makefile.am:
+	* builtin/Makefile.am:
+	Fix EXTRA_DIST.  Remove automatic version number updates.  That
+	should be done by CVS.  Make separate build dir work.
+	
+	* debian/changelog:
+	* debian/control:
+	* debian/copyright:
+	Take over debian package creation.
+
+	* file.c: (FilePutDoubleDigitBase), (FilePutUIntBase),
+	* nickle.h:
+	(FileVPrintf):
+	Add 'D' format to print out 64-bit values (for tick counts)
+
 2004-01-18  Keith Packard  <keithp@keithp.com>
 
 	* box.c: (NewBox):

@@ -1243,7 +1243,7 @@ FilePuts (Value file, char *s)
 }
 
 void
-FilePutUIntBase (Value file, unsigned int a, int base)
+FilePutDoubleDigitBase (Value file, double_digit a, int base)
 {
     int	    digit;
     char    space[64], *s;
@@ -1266,6 +1266,12 @@ FilePutUIntBase (Value file, unsigned int a, int base)
 	}
     }
     FilePuts (file, s);
+}
+
+void
+FilePutUIntBase (Value file, unsigned int a, int base)
+{
+    FilePutDoubleDigitBase (file, (double_digit) a, base);
 }
 
 void
@@ -1743,6 +1749,9 @@ FileVPrintf (Value file, char *fmt, va_list args)
 		break;
 	    case 'x':
 		FilePutUIntBase (file, va_arg (args, unsigned int), 16);
+		break;
+	    case 'D':
+		FilePutDoubleDigitBase (file, va_arg (args, double_digit), 10);
 		break;
 	    case 'v':
 	    case 'g':

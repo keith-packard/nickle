@@ -1,9 +1,9 @@
 Source: nickle
 Section: interpreters
 Priority: optional
-Maintainer: Erin Chapman <ireland_peddlar@hotmail.com>
+Maintainer: Keith Packard <keithp@keithp.com>
 Build-Depends: debhelper (>> 3.0.0)
-Standards-Version: 3.5.2
+Standards-Version: 3.6.1.0
 
 Package: nickle
 Architecture: any

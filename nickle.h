@@ -189,8 +189,8 @@ typedef struct _exprBase {
     int		    line;
     NamespacePtr    namespace;
     Type	    *type;
-    unsigned long   ticks;
-    unsigned long   sub_ticks;
+    double_digit    ticks;
+    double_digit    sub_ticks;
 } ExprBase;
 
 typedef struct _exprTree {
@@ -672,8 +672,8 @@ void	ProcessInterrupt (void);
 void	*AllocateTemp (int size);
 
 typedef struct _ProfileData {
-    int	    sub;
-    int	    self;
+    double_digit    sub;
+    double_digit    self;
 } ProfileData;
 
 void	PrettyPrint (Value f, Publish publish, SymbolPtr name);

@@ -41,9 +41,7 @@ man_MANS = nickle.1
 
 AM_YFLAGS = -d
 
-CDEBUGFLAGS = -O -g
-
-AM_CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
+AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
 	-Wnested-externs
 

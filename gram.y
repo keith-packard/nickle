@@ -256,7 +256,7 @@ command		: not_command expr reset NL
 			FramePtr	f;
 
 			e = BuildCall("Command", "display_base",
-				      2, NewExprTree (DOLLAR, $2, 0), $4);
+				      2, NewExprTree (EXPR, $2, 0), $4);
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, 0));
 			ThreadsRun (t, 0);

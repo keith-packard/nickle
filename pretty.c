@@ -334,6 +334,7 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     case STRING_CONST:
     case POLY_CONST:
     case THREAD_CONST:
+    case VOIDVAL:
 	FilePrintf (f, "%v", e->constant.constant);
 	break;
     case CHAR_CONST:

@@ -683,6 +683,12 @@ Default (TypesPtr t)
     }
 }
 
+static Value
+UnitEqual (Value av, Value bv, int expandOk)
+{
+    return One;
+}
+
 static Bool
 UnitPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
@@ -692,7 +698,18 @@ UnitPrint (Value f, Value av, char format, int base, int width, int prec, unsign
 
 ValueType UnitType = {
     { 0, 0 },	    /* data */
-    { 0 },	    /* binary */
+    { 
+	0,	    /* Plus */
+	0,	    /* Minus */
+	0,	    /* Times */
+	0,	    /* Divide */
+	0,	    /* Div */
+	0,	    /* Mod */
+	0,	    /* Less */
+	UnitEqual,  /* Equal */
+	0,	    /* Land */
+	0,	    /* Lor */
+    },	    /* binary */
     { 0 },	    /* unary */
     0, 0,
     UnitPrint,	    /* print */

@@ -1,0 +1,24 @@
+/*
+ * Takes degrees lat/long pairs,
+ * returns miles + compass degrees
+ * Bart Massey 2000
+ * From Javascript by Jeff Waldock 1997
+ * http://jeff.sci.shu.ac.uk/jw/javascript/js2.html
+ */
+
+import math;
+
+function great_circle (start_lat, start_lon, end_lat, end_lon) {
+	rad = pi / 180;
+	/* earth_radius=6371.2 km ; */
+	earth_radius = 3958.9; /* miles */
+	a = (90 - start_lat) * rad;
+	b = (90 - end_lat) * rad;
+	phi = (end_lon - start_lon) * rad;
+	cosr = cos(a) * cos(b) + sin(a) * sin(b) * cos(phi);
+	r = acos(cosr);
+	rdist = earth_radius * r;
+	sinth = sin(phi) * sin(b) / sin(r);
+	th = asin(sinth) / rad;
+	return [2]{rdist, th};
+}

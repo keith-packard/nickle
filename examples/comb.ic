@@ -1,0 +1,27 @@
+/*
+ * Basic combinatorics
+ * Bart Massey 1995..2001
+ * Provides a nice namespaces demo also.
+ * Use "import comb" or "comb.name" to access.
+ */
+
+scope comb {
+
+  function public perm(n, r) {
+    return n! / r!;
+  }
+
+  function public choose(n, r) {
+    return n! / r! * (n - r)!;
+  }
+
+  function public binom(n, k) {
+    auto sum, i;
+
+    sum = 1;
+    for (i = 1; i <= k; i++)
+	  sum += choose(n, i);
+    return sum;
+  }
+
+}

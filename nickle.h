@@ -579,8 +579,8 @@ void	    ThreadFinish (Value thread, Bool error);
 void	    ThreadSetState (Value thread, ThreadState state);
 void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);
-void	    TraceFunction (FramePtr frame, CodePtr code, ExprPtr name);
-void	    TraceFrame (FramePtr frame, ObjPtr obj, InstPtr pc);
+void	    TraceFunction (Value file, FramePtr frame, CodePtr code, ExprPtr name);
+void	    TraceFrame (Value file, FramePtr frame, ObjPtr obj, InstPtr pc, int depth);
 void	    ThreadStackDump (Value thread);
 
 typedef struct _jump {

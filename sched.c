@@ -348,38 +348,45 @@ do_Thread_kill (int n, Value *p)
 }
 
 void
-TraceFunction (FramePtr frame, CodePtr code, ExprPtr name)
+TraceFunction (Value file, FramePtr frame, CodePtr code, ExprPtr name)
 {
     int		    fe;
     
+    FilePuts (file, "    ");
     if (name)
-	PrettyExpr (FileStdout, name, -1, 0, False, 0);
+	PrettyExpr (file, name, -1, 0, False, 0);
     else
-	FilePuts (FileStdout, "<anonymous>");
-    FilePuts (FileStdout, " (");
+	FilePuts (file, "<anonymous>");
+    FilePuts (file, " (");
     for (fe = 0; fe < code->base.argc; fe++)
     {
 	if (fe)
-	    FilePuts (FileStdout, ", ");
-	FilePrintf (FileStdout, "%v", BoxValue (frame->frame, fe));
+	    FilePuts (file, ", ");
+	FilePrintf (file, "%v", BoxValue (frame->frame, fe));
     }
-    FilePuts (FileStdout, ")\n");
+    FilePuts (file, ")\n");
+}
+
+static void
+TraceStatement (Value file, ExprPtr stat)
+{
+    FilePrintf (file, "%A:%d: ", stat->base.file, stat->base.line);
+    PrettyStat (file, stat, False);
 }
 
 void
-TraceFrame (FramePtr frame, ObjPtr obj, InstPtr pc)
+TraceFrame (Value file, FramePtr frame, ObjPtr obj, InstPtr pc, int depth)
 {
     ENTER ();
     int		max;
     CodePtr	code;
 
-    PrettyStat (FileStdout, ObjStatement (obj, pc), False);
-    for (max = 20; frame && max--; frame = frame->previous)
+    TraceStatement (file, ObjStatement (obj, pc));
+    for (max = depth; frame && max--; frame = frame->previous)
     {
 	code = frame->function->func.code;
-	TraceFunction (frame, code, code->base.name);
-	PrettyStat (FileStdout, ObjStatement (frame->saveObj,
-					      frame->savePc), False);
+	TraceFunction (file, frame, code, code->base.name);
+	TraceStatement (file, ObjStatement (frame->saveObj, frame->savePc));
     }
     EXIT ();
 }
@@ -389,7 +396,7 @@ static void
 TraceIndent (int indent)
 {
     while (indent--)
-	FilePuts (FileStdout, "    ");
+	FilePuts (file, "    ");
 }
 #endif
 
@@ -401,11 +408,18 @@ do_Thread_trace (int n, Value *p)
     FramePtr	frame;
     InstPtr	pc;
     ObjPtr	obj;
+    int		depth = 20;
     
     if (n == 0)
 	v = lookupVar (0, "cont");
     else
-	v = *p;
+	v = p[0];
+    if (n > 1)
+    {
+	depth = IntPart (p[1], "Invalid trace depth");
+	if (aborting)
+	    RETURN (Void);
+    }
     switch (ValueTag(v)) {
     case rep_thread:
     case rep_continuation:
@@ -424,7 +438,7 @@ do_Thread_trace (int n, Value *p)
 				    1, v);
 	RETURN (Void);
     }
-    TraceFrame (frame, obj, pc);
+    TraceFrame (FileStdout, frame, obj, pc, depth);
     RETURN(Void);
 }
 
@@ -1049,21 +1063,23 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
     if (!continuation)
     {
 	int	i;
-	ObjPtr	obj = thread->thread.continuation.obj;
 	InstPtr	pc = thread->thread.continuation.pc;
-	ExprPtr	stat = ObjStatement (obj, pc);
 	
-	if (stat->base.file)
-	    PrintError ("Unhandled exception \"%A\" at %A:%d\n", 
-			except->symbol.name, stat->base.file, stat->base.line);
-	else
-	    PrintError ("Unhandled exception \"%A\"\n", 
-			except->symbol.name);
+	PrintError ("Unhandled exception %A (", except->symbol.name);
 	if (args)
 	{
 	    for (i = 0; i < args->array.ents; i++)
-		PrintError ("\t%v\n", BoxValueGet (args->array.values, i));
+	    {
+		PrintError ("%v", BoxValueGet (args->array.values, i));
+		if (i < args->array.ents - 1)
+		    PrintError (", ");
+	    }
 	}
+	PrintError (")\n");
+	TraceFrame (FileStderr, thread->thread.continuation.frame,
+		    thread->thread.continuation.obj,
+		    pc,
+		    20);
 	continuation = EmptyContinuation();
 	STACK_PUSH (continuation->stack, 
 		    NewContinuation (&thread->thread.continuation, pc));

@@ -1,8 +1,12 @@
+nickle (2.28-1) unstable; urgency=low
+
+  * Add ilog function (Bart Massey)
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 26 Feb 2004 21:15:05 -0800
+ 
 nickle (2.27-1) unstable; urgency=low
 
   * Original debian packaging exporting version 2.27.  
 
  -- Keith Packard <keithp@keithp.com>  Sun, 15 Feb 2004 13:56:38 -0800
-
-
 

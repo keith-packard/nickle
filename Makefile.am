@@ -52,8 +52,6 @@ AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
 	-Wnested-externs -fno-strict-aliasing $(DEFINES)
 
-all: version.m4
-
 USES_GRAM_H = \
 	compile.o \
 	error.o \
@@ -71,14 +69,16 @@ builtin.o: version.h
 version.h: $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
 	sh $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
 
-debuild debuild-signed: distdir
-	cp -a $(PACKAGE)-$(VERSION) $(PACKAGE)-$(VERSION).orig
-	rm -rf $(PACKAGE)-$(VERSION).orig/debian
-	(cd $(PACKAGE)-$(VERSION)/debian && debuild)
+debuild debuild-signed: debuild-dirs
+	(cd $(distdir)/debian && debuild)
 
-debuild-unsigned: distdir
-	cp -a $(PACKAGE)-$(VERSION) $(PACKAGE)-$(VERSION).orig
-	rm -rf $(PACKAGE)-$(VERSION).orig/debian
-	(cd $(PACKAGE)-$(VERSION)/debian && debuild -us -uc)
+debuild-unsigned: debuild-dirs
+	(cd $(distdir)/debian && debuild -us -uc)
 
-.PHONY: debuild debuild-signed debuild-unsigned
+debuild-dirs: distdir
+	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
+	rm -rf $(distdir).orig
+	cp -a $(distdir) $(distdir).orig
+	rm -rf $(distdir).orig/debian
+
+.PHONY: debuild debuild-signed debuild-unsigned debuild-dirs

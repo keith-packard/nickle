@@ -1,5 +1,12 @@
 2004-02-26  Keith Packard  <keithp@keithp.com>
 
+	* Makefile.am:
+	Fix debuild stuff to always recreate tar files and share setup
+	* debian/changelog:
+	Update to 2.28
+
+2004-02-26  Keith Packard  <keithp@keithp.com>
+
 	* builtin/.cvsignore:
 	Work harder at getting rid of builtin directory
 

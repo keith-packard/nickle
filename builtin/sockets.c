@@ -18,8 +18,8 @@
 #include	<netdb.h>
 #include	<string.h>
 #include	"builtin.h"
+#include	<errno.h>
 
-extern int errno;
 #define perror(s) FilePrintf(FileStderr, s ": %s\n", strerror(errno))
 #define herror(s) FilePrintf(FileStderr, s ": %s\n", hstrerror(h_errno))
 
@@ -95,7 +95,7 @@ do_Sockets_create (Value type)
 	RETURN (Zero);
     s = socket (PF_INET, itype, 0);
     if (s == -1)
-	RETURN (0);
+	RETURN (Zero);
     RETURN (FileCreate (s));
 }
 
@@ -151,15 +151,29 @@ do_Sockets_connect (Value s, Value host, Value port)
     struct sockaddr_in addr;
 
     if (!address_lookup (host, port, &addr))
-	RETURN (0);
+	RETURN (Zero);
 
-    if (connect (s->file.fd, (struct sockaddr *) &addr, sizeof addr) == -1)
+    if (!running->thread.partial)
     {
-	perror ("Sockets::connect");
-	RETURN (0); /* FIXME: more here? */
+	if (connect (s->file.fd, (struct sockaddr *) &addr, sizeof addr) == -1)
+	{
+	    if (errno == EWOULDBLOCK || errno == EINPROGRESS)
+	    {
+		FileSetBlocked (s, FileOutputBlocked);
+		running->thread.partial = 1;
+	    }
+	    else
+		RETURN (Zero); /* FIXME: more here? */
+	}
     }
-
-    RETURN (Zero);
+    if (s->file.flags & FileOutputBlocked)
+    {
+	ThreadSleep (running, s, PriorityIo);
+	RETURN (Zero);
+    }
+    
+    complete = True;
+    RETURN (One);
 }
 
 /* void do_Sockets_bind (File::file s, String host, String port); */
@@ -170,15 +184,12 @@ do_Sockets_bind (Value s, Value host, Value port)
     struct sockaddr_in addr;
 
     if (!address_lookup (host, port, &addr))
-	RETURN (0);
+	RETURN (Zero);
 
     if (bind (s->file.fd, (struct sockaddr *) &addr, sizeof addr) == -1)
-    {
-	perror ("Sockets::bind");
-	RETURN (0); /* FIXME: more here? */
-    }
+	RETURN (Zero); /* FIXME: more here? */
 
-    RETURN (Zero);
+    RETURN (One);
 }
 
 /* void do_Sockets_listen (File::file s, int backlog); */
@@ -194,11 +205,10 @@ do_Sockets_listen (Value s, Value backlog)
 
     if (listen (s->file.fd, ibacklog) == -1)
     {
-	perror ("Sockets::listen");
-	RETURN (0); /* FIXME: more here? */
+	RETURN (Zero); /* FIXME: more here? */
     }
 
-    RETURN (Zero);
+    RETURN (One);
 }
 
 /* File::file do_Sockets_accept (File::file s); */
@@ -210,8 +220,16 @@ do_Sockets_accept (Value s)
 
     f = accept (s->file.fd, 0, 0);
     if (f == -1)
-	RETURN (0); /* FIXME: more here? */
+    {
+	if (errno == EWOULDBLOCK)
+	{
+	    FileSetBlocked (s, FileInputBlocked);
+	    ThreadSleep (running, s, PriorityIo);
+	}
+        RETURN (Zero); /* FIXME: more here? */
+    }
 
+    complete = True;
     RETURN (FileCreate (f));
 }
 
@@ -228,9 +246,8 @@ do_Sockets_shutdown (Value s, Value how)
 
     if (shutdown (s->file.fd, ihow) == -1)
     {
-	perror ("Sockets::shutdown");
-	RETURN (0); /* FIXME: more here? */
+	RETURN (Zero); /* FIXME: more here? */
     }
 
-    RETURN (Zero);
+    RETURN (One);
 }

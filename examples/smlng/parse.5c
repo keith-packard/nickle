@@ -2,6 +2,8 @@
  * Parse simple sgml-style grammar
  */
 
+load "context.5c"
+
 public namespace Lexc {
     public global int Eof = 0;
     public global int Printable = 1;
@@ -56,8 +58,9 @@ public namespace Lex {
 
     public global int Eof = 0;
     public global int Text = 1;
-    public global int Start = 2;
-    public global int End = 3;
+    public global int Space = 2;
+    public global int Start = 3;
+    public global int End = 4;
 
     public typedef struct {
 	int	id;
@@ -71,6 +74,7 @@ public namespace Lex {
     global int	StateStartTag = 2;
     global int	StateEndTag = 3;
     global int	StateString = 4;
+    global int	StateSpace = 5;
 
     public token function get (file in)
     {
@@ -87,10 +91,13 @@ public namespace Lex {
 		case Lexc::Eof:
 		    return (token) { id = Eof, value = "" };
 		case Lexc::Printable:
-		case Lexc::White:
 		case Lexc::Slash:
 		    state = StateString;
 		    t = (token) { id = Text, value = String::new (c.c) };
+		    continue;
+		case Lexc::White:
+		    state = StateSpace;
+		    t = (token) { id = Space, value = String::new (c.c) };
 		    continue;
 		case Lexc::Left:
 		    state = StateSeenLeft;
@@ -122,9 +129,21 @@ public namespace Lex {
 	    case StateString:
 		switch (c.id) {
 		case Lexc::Printable:
+		    t.value += String::new (c.c);
+		    continue;
+		case Lexc::White:
+		case Lexc::Left:
+		    Lexc::unget (c.c, in);
+		case Lexc::Eof:
+		    return t;
+		}
+		break;
+	    case StateSpace:
+		switch (c.id) {
 		case Lexc::White:
 		    t.value += String::new (c.c);
 		    continue;
+		case Lexc::Printable:
 		case Lexc::Left:
 		    Lexc::unget (c.c, in);
 		case Lexc::Eof:
@@ -141,28 +160,34 @@ public namespace Parse {
 
     public exception Syntax (string token);
 
-    public typedef attrib;
-
-    public typedef struct {
-	string	tag;
-	*attrib	prev;
-    } attrib;
-
     public typedef element;
     
     public typedef struct {
 	*element    next;
 	string	    data;
-	*attrib	    attr;
+	*context    ctxt;
     } element;
 
-    public exception Syntax (string token);
-    
+    public typedef c_list;
+    public typedef struct {
+	string   active_tag;
+	*context ctxt;
+	*c_list  prev;
+    } c_list;
+
+    function clist_show(*c_list c) {
+	while (c != 0 && c->ctxt != 0) {
+	    context_dump(*c->ctxt);
+	    printf("\n");
+	    c = c->prev;
+	}
+    }
+
     public *element function get (file in)
     {
 	*element    first = 0;
 	* *element   p = &first;
-	*attrib	    a = 0;
+	*c_list     c = reference ( (c_list) { ctxt=&root_context, prev=0});
 
 	for (;;)
 	{
@@ -170,25 +195,39 @@ public namespace Parse {
 
 	    switch (t.id) {
 	    case Lex::Eof:
-		if (a)
-		    raise Syntax (t.value);
+		if (c->ctxt != root_context)
+		    raise Syntax ("At Eof but not back to root context");
 		return first;
 	    case Lex::Text:
 		*p = reference ((element) { 
 		    next = 0, 
 		    data = t.value,
-		    attr = a });
+		    ctxt = c->ctxt });
 		p = &(*p)->next;
 		break;
+	    case Lex::Space:
+		*p = reference ((element) { 
+		    next = 0, 
+		    data = t.value,
+		    ctxt = c->ctxt });
+		p = &(*p)->next;
+		break;		
 	    case Lex::Start:
-		a = reference ((attrib) {
-		    prev = a,
-		    tag = t.value });
+		context new_context;
+		new_context = *c->ctxt;
+		context_set(&new_context, t.value);
+		c = reference ((c_list) {
+		    ctxt = &new_context,
+		    prev = c,
+		    active_tag = t.value });
+		clist_show(c);
 		break;
 	    case Lex::End:
-		if (!a || t.value != a->tag)
-		    raise Syntax (t.value);
-		a = a->prev;
+		if (c->ctxt == root_context)
+		    raise Syntax ("Closing tag </"+t.value+"> encountered with no remaining open tags");
+		if (t.value != c->active_tag)
+		    raise Syntax ("Illegal closing tag </"+t.value+"> (expected </"+c->active_tag+">)");
+		c = c->prev;
 		break;
 	    }
 	}
@@ -196,18 +235,9 @@ public namespace Parse {
 
     public void function dump (*element e)
     {
-	void function dump_tag (*attrib a)
-	{
-	    if (a) 
-	    {
-		dump_tag (a->prev);
-		printf ("<%s> ", a->tag);
-	    }
-	}
-	
 	if (e)
 	{
-	    dump_tag (e->attr);
+	    context_dump (*e->ctxt);
 	    printf ("%v\n", e->data);
 	    dump (e->next);
 	}

@@ -1,0 +1,80 @@
+int style_b = 1;
+int style_em = 2;
+int style_i = 4;
+int style_s = 8;
+int style_tt = 16;
+
+int[*] colornames = {'r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'};
+
+typedef struct {
+    int styles;
+    int underline; /* "root underline" is 0 */
+    int color; /* "root color" is -1 */
+    int size; /* "root size" is -1 */
+} context;
+
+context root_context = (context) {
+    styles=0, underline=0, color=-1, size=-1
+};
+
+public exception UnknownColor (int name);
+
+int function color_index_for_name(int n) {
+    int i;
+    for (i=0; i<dim(colornames); i++)
+	if (colornames[i] == n)
+	    return i;
+    raise UnknownColor (n);
+}
+
+function context_set (*context c, string value)
+{
+    switch (value) {
+    case "B":
+	c->styles |= style_b;
+	break;
+    case "EM":
+	if (! c->styles & style_s) {
+	    c->styles ^= style_em;
+	}
+	break;
+    case "I":
+	c->styles |= style_i;
+	break;
+    case "PL":
+	c->styles &= ~(style_s | style_em | style_i | style_b | style_tt);
+	c->underline = 0;
+	break;
+    case "S":
+	c->styles |= style_s;
+	c->styles &= ~style_em;
+	break;
+    case "TT":
+	c->styles |= style_tt;
+	break;
+    case "U":
+	if (c->underline < 3) {
+	    c->underline++;
+	}
+	break;
+    default:
+	if (value[0] >= '0' && value[0] <= 9) {
+	    c->size = string_to_integer(value);
+	} else {
+	    c->color = color_index_for_name(value[0]);
+	}
+    }
+}
+
+function context_dump (context c)
+{
+    printf("%s %s %s %s %s %d %s %s",
+	   (c.styles & style_b) ? "B" : "-",
+	   (c.styles & style_em) ? "EM" : "--",
+	   (c.styles & style_i) ? "I" : "-",
+	   (c.styles & style_s) ? "S" : "-",
+	   (c.styles & style_tt) ? "TT" : "--",
+	   c.underline,
+	   (c.color >= 0) ? String::new (colornames[c.color]) : "-",
+	   (c.size >= 0) ? String::new (c.size) : "-");
+}

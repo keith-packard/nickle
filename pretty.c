@@ -243,7 +243,7 @@ PrettyChar (Value f, int c)
     else if (c == '\'')
 	FilePuts (f, "\\'");
     else
-	FileOutput (f, c);
+	FileOutchar (f, c);
     FileOutput (f, '\'');
 }
 

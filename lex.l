@@ -402,24 +402,37 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 ":"		{ yylval.ints = COLON; return COLON; }
 " "		;
 "\t"		;
-\'\\[0-7]+\'	{   ENTER ();
-		    yytext[yyleng-1] = '\0';
-		    yylval.value = atov (yytext+2,8);
-		    EXIT ();
-		    REFERENCE (yylval.value);
-		    return CHAR_CONST;
-		}
-\'\\?.\'	{   ENTER ();
-		    int	i;
-		    
-		    if (yytext[1] == '\\')
-			i = lexEscape (yytext[2]);
-		    else
-			i = yytext[1];
-		    yylval.value = NewInt (i);
-		    EXIT ();
-		    REFERENCE (yylval.value);
-		    return CHAR_CONST;
+\'([^\n\']|\\\')*\'	{
+			ENTER ();
+			char	 *s;
+			int	c;
+    			yytext[yyleng - 1] = '\0';
+			s = yytext + 1;
+			s = StringNextChar (s, &c);
+			if (c == '\\')
+			{
+			    if (!(s = StringNextChar (s, &c)))
+				c = 0;
+			    else if ('0' <= c && c <= '7')
+			    {
+				int	ch;
+				char    *ps = s;
+				c = c - '0';
+				while ((s = StringNextChar (s, &ch)) &&
+				       '0' <= ch && ch <= '7')
+				{
+				    c = (c << 3) | (ch - '0');
+				    ps = s;
+				}
+				s = ps;
+			    }
+			    else
+				c = lexEscape (c);
+			}
+			yylval.value = NewInt (c);
+			EXIT ();
+			REFERENCE (yylval.value);
+			return CHAR_CONST;
 		}
 \"([^\n\"]|\\\")*\"	{
 			ENTER ();

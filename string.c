@@ -53,7 +53,7 @@ StringLess (Value av, Value bv, int expandOk)
 
 
 static Bool
-StringPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+StringPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     char    *string = StringChars (&av->string);
     int	    print_width;
@@ -61,13 +61,13 @@ StringPrint (Value f, Value av, char format, int base, int width, int prec, unsi
     print_width = FileStringWidth (string, format);
     while (width > print_width)
     {
-	FileOutput (f, fill);
+	FileOutchar (f, fill);
 	width--;
     }
     FilePutString (f, string, format);
     while (-width > print_width)
     {
-	FileOutput (f, fill);
+	FileOutchar (f, fill);
 	width++;
     }
     return True;
@@ -101,7 +101,7 @@ StringNextChar (char *src, unsigned *dst)
 		result = 0;
 		break;
 	    }
-	    result = (result << 6) | (*src++ & 0x3f);
+	    result = (result << 6) | (c & 0x3f);
 	}
     }
     *dst = result;

@@ -35,11 +35,6 @@ extend namespace File {
 	    f(((c >> bits) & 0x3F) | 0x80);
     }
     
-    public void putc (int c, file f)
-    {
-	to_utf8 (c, void func (int c) { File::putb (c, f); });
-    }
-    
     public void vfprintf (file f, string format, poly[*] args)
     {
 	/*

@@ -701,7 +701,7 @@ typedef Value	(*Coerce) (Value);
 #define DEFAULT_OUTPUT_PRECISION    -1
 #define INFINITE_OUTPUT_PRECISION   -2
 
-typedef	Bool	(*Output) (Value, Value, char format, int base, int width, int prec, unsigned char fill);
+typedef	Bool	(*Output) (Value, Value, char format, int base, int width, int prec, int fill);
 
 typedef ValueRep   *(*TypeCheck) (BinaryOp, Value, Value, int);
 
@@ -831,6 +831,9 @@ Value	FileGetError (int err);
 int	FileInput (Value);
 int	FileOutput (Value, char);
 void	FileUnput (Value, unsigned char);
+int	FileInchar (Value);
+int	FileOutchar (Value, int);
+void	FileUnchar (Value, int);
 Value   FileCreate (int fd, int flags);
 int	FileFlush (Value, Bool block);
 int	FileClose (Value);
@@ -886,7 +889,7 @@ Value	KaryReduction (Value av, Value bv);
 #endif
 Value	Lxor(Value, Value), Land (Value, Value);
 Value	Lor (Value, Value), Lnot (Value);
-Bool	Print (Value, Value, char format, int base, int width, int prec, unsigned char fill);
+Bool	Print (Value, Value, char format, int base, int width, int prec, int fill);
 void	RaiseError (char *s, ...);
 void	PrintError (char *s, ...);
 Value	CopyMutable (Value v);

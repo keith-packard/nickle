@@ -270,7 +270,7 @@ FileFree (void *object)
 }
 
 static Bool
-FilePrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+FilePrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     FilePuts (f, "file");
     return True;
@@ -1330,7 +1330,7 @@ FileVPrintf (Value file, char *fmt, va_list args)
 		FilePutUnaryOp (file, va_arg (args, UnaryOp));
 		break;
 	    case 'c':
-		(void) FileOutput (file, va_arg (args, int));
+		(void) FileOutchar (file, va_arg (args, int));
 		break;
 	    default:
 		(void) FileOutput (file, *fmt);
@@ -1461,4 +1461,99 @@ FileSetBuffer (Value file, int mode)
 	file->file.flags |= FileUnBuf;
 	break;
     }
+}
+
+/*
+ * Output one character in UTF-8 format
+ */
+
+int
+FileOutchar (Value file, int c)
+{
+    char d;
+    int	bits;
+    
+         if (c <       0x80) { d = c;                         bits= -6; }
+    else if (c <      0x800) { d= ((c >>  6) & 0x1F) | 0xC0;  bits=  0; }
+    else if (c <    0x10000) { d= ((c >> 12) & 0x0F) | 0xE0;  bits=  6; }
+    else if (c <   0x200000) { d= ((c >> 18) & 0x07) | 0xF0;  bits= 12; }
+    else if (c <  0x4000000) { d= ((c >> 24) & 0x03) | 0xF8;  bits= 18; }
+    else if (c < 0x80000000) { d= ((c >> 30) & 0x01) | 0xFC;  bits= 24; }
+    else return FileError;
+
+    if (FileOutput (file, d) < 0)
+	return FileError;
+    
+    for ( ; bits >= 0; bits-= 6)
+	if (FileOutput (file, ((c >> bits) & 0x3F) | 0x80) < 0)
+	    return FileError;
+
+    return 0;
+}
+
+int
+FileInchar (Value file)
+{
+    char    buf[6];
+    int	    n = 0;
+    int	    result;
+    int	    mask;
+    int	    extra;
+
+    result = FileInput (file);
+    if (result < 0)
+	return result;
+    
+    buf[n++] = result;
+    if ((result & 0x80) != 0)
+    {
+	if ((result & 0xc0) != 0xc0)
+	    return FileError;
+	
+	mask = 0x20;
+	extra = 1;
+	while ((result & mask) != 0)
+	{
+	    extra++;
+	    mask >>= 1;
+	}
+	result &= (mask - 1);
+	while (extra-- > 0)
+	{
+	    int c = FileInput (file);
+	    if (c < 0)
+	    {
+		while (--n >= 0)
+		    FileUnput (file, buf[n]);
+		return c;
+	    }
+	    buf[n++] = c;
+	    if ((c & 0xc0) != 0x80)
+		return FileError;
+	    result = (result << 6) | (c & 0x3f);
+	}
+    }
+    return result;
+}
+
+void
+FileUnchar (Value file, int c)
+{
+    char d;
+    int	bits;
+    
+         if (c <       0x80) { d = c;                         bits= -6; }
+    else if (c <      0x800) { d= ((c >>  6) & 0x1F) | 0xC0;  bits=  0; }
+    else if (c <    0x10000) { d= ((c >> 12) & 0x0F) | 0xE0;  bits=  6; }
+    else if (c <   0x200000) { d= ((c >> 18) & 0x07) | 0xF0;  bits= 12; }
+    else if (c <  0x4000000) { d= ((c >> 24) & 0x03) | 0xF8;  bits= 18; }
+    else if (c < 0x80000000) { d= ((c >> 30) & 0x01) | 0xFC;  bits= 24; }
+    else return;
+
+    for ( ; bits >= 0; bits-= 6)
+    {
+	FileUnput (file, (c & 0x3F) | 0x80);
+	c >>= 6;
+    }
+    FileUnput (file, d);
 }

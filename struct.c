@@ -51,7 +51,7 @@ StructMemType (StructType *st, Atom name)
 }
 
 static Bool
-StructPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+StructPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     Struct	    *s = &av->structs;
     StructType	    *st = s->type;

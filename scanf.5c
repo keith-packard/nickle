@@ -2,53 +2,6 @@
  * Scanf code.  Extend File namespace with reading code
  */
 extend namespace File {
-    
-    /*
-     * Include existing public File members
-     */
-    
-    public exception invalid_utf8 (file f, int c);
-    
-    public int getc (file f)
-    {
-	int result = File::getb (f);
-
-	if (result == -1)
-	    return -1;
-	if ((result & 0x80) != 0)
-	{
-	    if ((result & 0xc0) != 0xc0)
-		raise invalid_utf8 (f, result);
-	    int mask = 0x20;
-	    int extra = 1;
-	    while ((result & mask) != 0)
-	    {
-		extra++;
-		mask >>= 1;
-	    }
-	    result &= (mask - 1);
-	    while (extra-- > 0)
-	    {
-		int c = File::getb (f);
-		if (c == -1 || (c & 0xc0) != 0x80)
-		    raise invalid_utf8 (f, c);
-		result = (result << 6) | (c & 0x3f);
-	    }
-	}
-	return result;
-    }
-
-    public void ungetc (int c, file f)
-    {
-	int[7]	bytes;
-	int	j = 7;
-
-	void push(int c) {  }
-	to_utf8(c, void func (int c) { bytes[--j] = c; });
-	while (j < 7)
-	    File::ungetb (bytes[j++], f);
-    }
-    
     /*
      * vfscanf
      */

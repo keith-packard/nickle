@@ -581,7 +581,7 @@ StackObject *ValuePrintStack;
 int	    ValuePrintLevel;
 
 Bool
-Print (Value f, Value v, char format, int base, int width, int prec, unsigned char fill)
+Print (Value f, Value v, char format, int base, int width, int prec, int fill)
 {
     int	    i;
     Bool    ret;
@@ -692,7 +692,7 @@ UnitEqual (Value av, Value bv, int expandOk)
 }
 
 static Bool
-UnitPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+UnitPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     FilePuts (f, "<>");
     return True;
@@ -735,7 +735,7 @@ BoolEqual (Value av, Value bv, int expandOk)
 }
 
 static Bool
-BoolPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+BoolPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     FilePuts (f, av == TrueVal ? "true" : "false");
     return True;

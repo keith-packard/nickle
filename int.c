@@ -290,7 +290,7 @@ IntCeil (Value av, int expandOk)
 }
 
 static Bool
-IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+IntPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     int	    a = av->ints.value;
     int	    digit;
@@ -362,7 +362,7 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
     w += fraction_width;
     while (width > w)
     {
-	FileOutput (f, fill);
+	FileOutchar (f, fill);
 	width--;
     }
     FilePuts (f, s);
@@ -378,7 +378,7 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
     }
     while (-width > w)
     {
-	FileOutput (f, fill);
+	FileOutchar (f, fill);
 	width++;
     }
     return True;

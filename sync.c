@@ -54,7 +54,7 @@ do_Semaphore_signal (Value s)
 }
 
 static Bool
-SemaphorePrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+SemaphorePrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     FilePrintf (f, "semaphore %d (%d)", av->semaphore.id, av->semaphore.count);
     return True;

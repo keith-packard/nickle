@@ -39,7 +39,7 @@ ArrayEqual (Value av, Value bv, int expandOk)
 }
 
 static Bool
-ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     ENTER ();
     Array   *a = &av->array;

@@ -724,7 +724,7 @@ FloatExp (Value exp2, Value *ratio, int ibase, unsigned prec)
 }
 
 static Bool
-FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsigned char fill)
+FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int fill)
 {
     ENTER ();
     Float	*a = &fv->floats;
@@ -921,7 +921,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
     print_width = int_width + frac_width + exp_width;
     while (width > print_width)
     {
-	FileOutput (f, fill);
+	FileOutchar (f, fill);
 	width--;
     }
     
@@ -938,7 +938,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
     }
     while (-width > print_width)
     {
-	FileOutput (f, fill);
+	FileOutchar (f, fill);
 	width++;
     }
     free (int_buffer);

@@ -724,7 +724,7 @@ CheckDecimalLength (int prec, Natural *nden, int ibase, int *initial, int *repea
 }
 
 static Bool
-RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int prec, unsigned char fill)
+RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int prec, int fill)
 {
     ENTER ();
     Rational	*r = &rv->rational;
@@ -999,7 +999,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 	print_width = print_width + 1;
     while (width > print_width)
     {
-	FileOutput (f, fill);
+	FileOutchar (f, fill);
 	width--;
     }
     if (r->sign == Negative)
@@ -1026,7 +1026,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     }
     while (-width > print_width)
     {
-	FileOutput (f, fill);
+	FileOutchar (f, fill);
 	width++;
     }
     EXIT ();
@@ -1034,7 +1034,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 }
 
 static Bool
-RationalPrint (Value f, Value rv, char format, int base, int width, int prec, unsigned char fill)
+RationalPrint (Value f, Value rv, char format, int base, int width, int prec, int fill)
 {
     Rational	*r = &rv->rational;
     char	*num, *num_base, *den, *den_base;
@@ -1070,7 +1070,7 @@ RationalPrint (Value f, Value rv, char format, int base, int width, int prec, un
 	    print_width++;
 	while (width > print_width)
 	{
-	    FileOutput (f, fill);
+	    FileOutchar (f, fill);
 	    width--;
 	}
 	FileOutput (f, '(');
@@ -1084,7 +1084,7 @@ RationalPrint (Value f, Value rv, char format, int base, int width, int prec, un
 	free (den_base);
 	while (-width > print_width)
 	{
-	    FileOutput (f, fill);
+	    FileOutchar (f, fill);
 	    width++;
 	}
 	break;

@@ -38,7 +38,7 @@ UnionValue (Value uv, Atom name)
 }
 
 static Bool
-UnionPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+UnionPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     Union	    *u = &av->unions;
 

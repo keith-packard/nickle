@@ -319,7 +319,7 @@ IntegerReduce (Value av)
 }
 
 static Bool
-IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, unsigned char fill)
+IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, int fill)
 {
     ENTER ();
     Integer *i = &iv->integer;
@@ -357,7 +357,7 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, uns
 	print_width += fraction_width;
 	while (width > print_width)
 	{
-	    FileOutput (f, fill);
+	    FileOutchar (f, fill);
 	    width--;
 	}
 	if (i->sign == Negative)
@@ -375,7 +375,7 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, uns
 	}
 	while (-width > print_width)
 	{
-	    FileOutput (f, fill);
+	    FileOutchar (f, fill);
 	    width++;
 	}
     }

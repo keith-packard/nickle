@@ -42,6 +42,7 @@ import_File_namespace()
         { do_File_error, "error", "b", "f" },
         { do_File_flush, "flush", "v", "f" },
         { do_File_getb, "getb", "i", "f" },
+	{ do_File_getc, "getc", "i", "f" },
         { do_File_string_read, "string_read", "f", "s" },
         { do_File_string_string, "string_string", "s", "f" },
 	{ do_File_isatty, "isatty", "b", "f" },
@@ -51,8 +52,10 @@ import_File_namespace()
     static const struct fbuiltin_2 funcs_2[] = {
         { do_File_open, "open", "f", "ss" },
         { do_File_putb, "putb", "i", "if" },
+	{ do_File_putc, "putc", "i", "if" },
         { do_File_setbuf, "setbuffer", "i", "fi" },
         { do_File_ungetb, "ungetb", "i", "if" },
+	{ do_File_ungetc, "ungetc", "i", "if" },
         { 0 }
     };
 
@@ -284,6 +287,32 @@ do_File_getb (Value f)
     RETURN (Void);
 }
 
+Value 
+do_File_getc (Value f)
+{
+    ENTER ();
+    int	    c;
+    
+    if (!aborting)
+    {
+	c = FileInchar (f);
+	switch (c) {
+	case FileBlocked:
+	    ThreadSleep (running, f, PriorityIo);
+	    RETURN (Void);
+	case FileError:
+	    RaiseStandardException (exception_io_error,
+				    strerror (f->file.input_errno),
+				    2, FileGetError (f->file.input_errno), f);
+	    RETURN (Void);
+	default:
+	    complete = True;
+	    RETURN (NewInt (c));
+	}
+    }
+    RETURN (Void);
+}
+
 Value
 do_File_end (Value f)
 {
@@ -337,6 +366,30 @@ do_File_putb (Value v, Value f)
 }
 
 Value 
+do_File_putc (Value v, Value f)
+{
+    ENTER ();
+    
+    if (f->file.flags & FileOutputBlocked)
+	ThreadSleep (running, f, PriorityIo);
+    else
+    {
+	if (!aborting)
+	{
+	    if (FileOutchar (f, IntPart (v, "putc non integer")) == FileError)
+	    {
+		RaiseStandardException (exception_io_error,
+					strerror (f->file.output_errno),
+					2, FileGetError (f->file.output_errno), f);
+	    }
+	    else
+		complete = True;
+	}
+    }
+    RETURN (v);
+}
+
+Value 
 do_File_ungetb (Value v, Value f)
 {
     ENTER ();
@@ -349,6 +402,24 @@ do_File_ungetb (Value v, Value f)
 	{
 	    complete = True;
 	    FileUnput (f, IntPart (v, "ungetb: non integer"));
+	}
+    }
+    RETURN (v);
+}
+
+Value 
+do_File_ungetc (Value v, Value f)
+{
+    ENTER ();
+    
+    if (f->file.flags & FileOutputBlocked)
+	ThreadSleep (running, f, PriorityIo);
+    else
+    {
+	if (!aborting)
+	{
+	    complete = True;
+	    FileUnchar (f, IntPart (v, "ungetc: non integer"));
 	}
     }
     RETURN (v);

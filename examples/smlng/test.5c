@@ -1,0 +1,4 @@
+load "parse.5c"
+
+*Parse::element e = Parse::get(stdin);
+Parse::dump(e);

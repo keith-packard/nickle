@@ -595,6 +595,7 @@ Value	do_putchar (Value);
 Value	do_sleep (Value);
 Value	do_dim (Value);
 Value	do_dims (Value);
+Value	do_reference (Value);
 Value	do_string_to_real (Value);
 Value	do_abs (Value);
 Value	do_floor (Value);

@@ -89,6 +89,16 @@ NewExprTree(int tag, Expr *left, Expr *right)
 
     e = ALLOCATE (&ExprTreeType, sizeof (ExprTree));
     ExprBaseInit (e, tag);
+    if (left)
+    {
+	if (left->base.file == e->base.file && left->base.line < e->base.line)
+	    e->base.line = left->base.line;
+    }
+    else if (right)
+    {
+	if (right->base.file == e->base.file && right->base.line < e->base.line)
+	    e->base.line = right->base.line;
+    }
     e->tree.left = left;
     e->tree.right = right;
     RETURN ((Expr *) e);

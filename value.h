@@ -257,7 +257,11 @@ typedef struct _argList {
     Bool    varargs;
 } ArgList;
 
-extern Types	*typesPoly;
+extern Types	    *typesPoly;
+extern Types	    *typesGroup;
+extern Types	    *typesField;
+extern Types	    *typesRefPoly;
+extern Types	    *typesPrim[type_continuation - type_int + 1];
 
 Types	*NewTypesPrim (Type prim);
 Types	*NewTypesName (Atom name, Types *type);

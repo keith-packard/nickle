@@ -1380,8 +1380,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
 	expr->base.type = expr->tree.left->base.type;
 	if (expr->tree.right)
+	{
 	    obj = _CompileExpr (obj, expr->tree.right, namespace, stat);
 	    expr->base.type = expr->tree.right->base.type;
+	}
 	break;
     case FORK:
 	BuildInst (obj, OpFork, inst, stat);

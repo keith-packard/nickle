@@ -6,8 +6,6 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 
 extern Bool complete;
@@ -102,7 +100,7 @@ ValueType   MutexType = {
 	0,
 	0,
 	0,
-	0,
+	ValueEqual,
 	0,
 	0,
     },
@@ -212,7 +210,7 @@ ValueType   SemaphoreType = {
 	0,
 	0,
 	0,
-	0,
+	ValueEqual,
 	0,
 	0,
     },

@@ -12,9 +12,7 @@
  * operationalns on rationals
  */
 
-#include	<config.h>
-
-#include	"value.h"
+#include	"nickle.h"
 
 int
 RationalInit (void)
@@ -129,7 +127,9 @@ RationalDivide (Value av, Value bv, int expandOk)
 
     if (NaturalZero (b->num))
     {
-	RaiseError ("Rational divide by zero %v / %v", av, bv);
+	RaiseStandardException (exception_divide_by_zero,
+				"rational divide by zero",
+				2, av, bv);
 	RETURN (Zero);
     }
     sign = Positive;
@@ -172,7 +172,9 @@ RationalMod (Value av, Value bv, int expandOk)
 
     if (NaturalZero (b->num))
     {
-	RaiseError ("Rational modulus by zero, %v %% %v", av, bv);
+	RaiseStandardException (exception_divide_by_zero,
+				"rational modulus by zero",
+				2, av, bv);
 	RETURN (Zero);
     }
     div = NaturalTimes (b->num, a->den);

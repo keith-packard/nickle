@@ -10,9 +10,7 @@
  * operators accepting values
  */
 
-#include	<config.h>
-
-#include	"value.h"
+#include	"nickle.h"
 
 extern ValueType    IntType, IntegerType, RationalType, FloatType;
 extern ValueType    StringType, ArrayType, FileType;
@@ -109,7 +107,8 @@ IntPart (Value av, char *error)
     av = Truncate (av);
     if (av->value.tag != type_int)
     {
-	RaiseError ("%s %v", error, av);
+	RaiseStandardException (exception_invalid_argument, error, 
+				2, NewInt (0), av);
 	return 0;
     }
     return av->ints.value;
@@ -136,6 +135,10 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	    bv = (*av->value.type->promote) (bv, av);
 	type = av->value.type;
     }
+    else if (av->value.tag == type_union)
+	type = av->value.type;
+    else if (bv->value.tag == type_union)
+	type = bv->value.type;
     if (!type || !type->binary[operator])
     {
 	if (operator != EqualOp)
@@ -533,10 +536,25 @@ Copy (Value v)
 	    v = nv;
 	}
 	break;
+    case type_union:
+	if (!v->unions.value->constant)
+	{
+	    nv = NewUnion (v->unions.type, False);
+	    nv->unions.tag = v->unions.tag;
+	    BoxValueSet (nv->unions.value, 0, Copy (BoxValueGet (v->unions.value, 0)));
+	    v = nv;
+	}
+	break;
     default:
 	break;
     }
     RETURN (v);
+}
+
+Value
+ValueEqual (Value a, Value b, int expandOk)
+{
+    return a == b ? One : Zero;
 }
 
 Value

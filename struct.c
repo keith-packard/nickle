@@ -6,9 +6,7 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
-#include	"value.h"
+#include	"nickle.h"
 
 Value
 StructRef (Value sv, Atom name)
@@ -90,6 +88,24 @@ StructMark (void *object)
     MemReference (s->values);
 }
 
+static Value
+StructEqual (Value a, Value b, int expandOk)
+{
+    int		    i;
+    StructType	    *at = a->structs.type;
+    StructElement   *ae = StructTypeElements(at);
+    
+    if (at->nelements != b->structs.type->nelements)
+	return Zero;
+    for (i = 0; i < at->nelements; i++)
+    {
+	if (Zerop (Equal (BoxValue (a->structs.values, i),
+			  StructValue (b, ae[i].name))))
+	    return Zero;
+    }
+    return One;
+}
+
 ValueType    structType = { 
     { StructMark, 0 },	    /* base */
     {			    /* binary */
@@ -100,7 +116,7 @@ ValueType    structType = {
 	0,
 	0,
 	0,
-	0,
+	StructEqual,
 	0,
 	0,
     },

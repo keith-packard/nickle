@@ -12,8 +12,6 @@
  * save previous printed values
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 
 # define HISTORY_INCREMENT	100

@@ -6,8 +6,6 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 #include	"ref.h"
 
@@ -498,7 +496,7 @@ ValueType    ThreadType = {
 	0,
 	0,
 	0,
-	0,
+	ValueEqual,
 	0,
 	0,
     },
@@ -534,7 +532,7 @@ NewThread (FramePtr frame, ObjPtr code)
     ret->thread.id = ++ThreadId;
     ret->thread.partial = 0;
     complete = True;
-    if (code->errors)
+    if (code->state & OBJ_STATE_ERROR)
 	ret->thread.state = ThreadFinished;
     _ThreadInsert (ret);
     RETURN (ret);
@@ -581,7 +579,7 @@ ValueType    ContinuationType = {
 	0,
 	0,
 	0,
-	0,
+	ValueEqual,
 	0,
 	0,
     },
@@ -801,6 +799,7 @@ Value
 do_long_jump (InstPtr *next, Value continuation, Value ret)
 {
     ENTER ();
+    TwixtPtr	leave, enter;
 
     if (!running)
 	RETURN (Zero);
@@ -822,9 +821,14 @@ do_long_jump (InstPtr *next, Value continuation, Value ret)
     /*
      * Check for intervening twixts
      */
-    if (running->thread.twixts != continuation->continuation.twixts)
-	running->thread.jump = JumpBuild (running->thread.twixts,
-					  continuation->continuation.twixts,
+    leave = running->thread.twixts;
+    if (continuation)
+	enter = continuation->continuation.twixts;
+    else
+	enter = 0;
+    if (leave != enter)
+	running->thread.jump = JumpBuild (leave,
+					  enter,
 					  continuation, ret,
 					  next);
     else
@@ -845,7 +849,7 @@ MarkCatch (void *object)
 DataType    CatchType = { MarkCatch, 0 };
 
 CatchPtr
-NewCatch (CatchPtr previous, Value continuation, SymbolPtr exception)
+NewCatch (CatchPtr previous, Value continuation, SymbolPtr except)
 {
     ENTER();
     CatchPtr	catch;
@@ -853,7 +857,7 @@ NewCatch (CatchPtr previous, Value continuation, SymbolPtr exception)
     catch = ALLOCATE (&CatchType, sizeof (Catch));
     catch->previous = previous;
     catch->continuation = continuation;
-    catch->exception = exception;
+    catch->exception = except;
     RETURN (catch);
 }
 
@@ -936,4 +940,99 @@ TwixtNext (TwixtPtr twixt, TwixtPtr last)
     while (last->previous != twixt)
 	last = last->previous;
     return last;
+}
+
+void
+RaiseException (Value thread, SymbolPtr except, BoxPtr args, InstPtr *next)
+{
+    ENTER ();
+    Bool	caught = False;
+    CatchPtr	catch;
+    
+    for (catch = thread->thread.catches; catch; catch = catch->previous)
+	if (catch->exception == except)
+	{
+	    do_long_jump (next, catch->continuation, Zero);
+	    if (args)
+		ContinuationArgs (thread, args);
+	    caught = True;
+	    break;
+	}
+    if (!caught)
+    {
+	int	i;
+	
+	PrintError ("Unhandled exception \"%A\"", except->symbol.name);
+	if (args)
+	{
+	    for (i = 0; i < args->nvalues; i++)
+		PrintError ("\t%v", BoxValueGet (args, i));
+	}
+	aborting = True;
+	exception = True;
+	abortError = True;
+    }
+    EXIT ();
+}
+
+SymbolPtr	    standardExceptions[_num_standard_exceptions];
+StandardException   standardException;
+BoxPtr		    standardExceptionArgs;
+ReferencePtr	    standardExceptionArgsRef;
+
+void
+RegisterStandardException (StandardException	se,
+			   SymbolPtr		sym)
+{
+    ENTER ();
+    standardExceptions[se] = sym;
+    MemAddRoot (sym);
+    if (!standardExceptionArgsRef)
+    {
+	standardExceptionArgsRef = NewReference ((void **) &standardExceptionArgs);
+	MemAddRoot (standardExceptionArgsRef);
+    }
+    EXIT ();
+}
+
+void
+RaiseStandardException (StandardException   se,
+			char		    *string,
+			int		    argc,
+			...)
+{
+    ENTER ();
+    BoxPtr	args;
+    int		i;
+    va_list	va;
+    
+    va_start (va, argc);
+    args = NewBox (True, argc + 1);
+    BoxValueSet (args, 0, NewStrString (string));
+    if (argc)
+    {
+	for (i = 0; i < argc; i++)
+	    BoxValueSet (args, i+1, va_arg (va, Value));
+    }
+    standardException = se;
+    standardExceptionArgs = args;
+    abortException = True;
+    exception = True;
+    EXIT ();
+}
+
+void
+JumpStandardException (Value thread, InstPtr *next)
+{
+    ENTER ();
+    SymbolPtr		except = standardExceptions[standardException];
+    
+    aborting = False;
+    abortException = False;
+    exception = False;
+    if (except)
+	RaiseException (thread, except, standardExceptionArgs, next);
+    standardException = exception_none;
+    standardExceptionArgs = 0;
+    EXIT ();
 }

@@ -12,8 +12,6 @@
  * pretty print a function
  */
 
-#include	<config.h>
-
 #include	<stdio.h>
 #include	"nickle.h"
 #include	"gram.h"
@@ -365,6 +363,9 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePuts (f, " : ");
 	printExpr (f, e->tree.right->tree.right, selfPrec, level, nest);
 	break;
+    case DOLLAR:
+	printExpr (f, e->tree.left, selfPrec, level, nest);
+	break;
     }
     if (selfPrec < parentPrec)
 	FilePuts (f, ")");
@@ -486,6 +487,39 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	if (nest)
 	    printStatement (f, e->tree.right->tree.right, level+1, level, nest);
 	break;
+    case SWITCH:
+    case UNION:
+	printindent (f, level);
+	if (e->base.tag == SWITCH)
+	    FilePuts (f, "switch (");
+	else
+	    FilePuts (f, "union switch (");
+	printExpr (f, e->tree.left, -1, level, nest);
+	FilePuts (f, ")");
+	if (nest)
+	{
+	    ExprPtr block = e->tree.right;
+
+	    FilePuts (f, " {\n");	    
+	    while (block)
+	    {
+		printindent (f, level);
+		if (block->tree.left->tree.left)
+		{
+		    FilePuts (f, "case ");
+		    printExpr (f, block->tree.left->tree.left, -1, level, nest);
+		}
+		else
+		    FilePuts (f, "default");
+		FilePuts (f, ":\n");
+		printBlock (f, block->tree.left->tree.right, level+1, nest);
+		block = block->tree.right;
+	    }
+	    printindent (f, level);
+	    FilePuts (f, "}");
+	}
+        FilePuts (f, "\n");
+	break;
     case SEMI:
 	printindent (f, level);
 	FilePuts (f, ";\n");
@@ -580,15 +614,40 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	    printParameters (f, e->tree.right, nest);
 	FilePuts (f, ");\n");
 	break;
+    case DOLLAR:
+	printindent (f, level);
+	printExpr (f, e->tree.left, -1, level, nest);
+	FilePuts (f, "\n");
+	break;
     }
+}
+
+static void
+PrintArgs (Value f, ArgType *args)
+{
+    FilePuts (f, "(");
+    for (; args; args = args->next)
+    {
+	if (!TypePoly (args->type) || !args->name)
+	{
+	    fprintTypes (f, args->type);
+	    if (args->name)
+		FilePuts (f, " ");
+	}
+	if (args->name)
+	    FilePuts (f, AtomName (args->name));
+	if (args->varargs)
+	    FilePuts (f, " ...");
+	if (args->next)
+	    FilePuts (f, ", ");
+    }
+    FilePuts (f, ")");
 }
 
 void
 PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
 	   int level, Bool nest)
 {
-    ArgType	*args;
-    
     if (name)
     {
 	printpublish (f, publish);
@@ -607,25 +666,7 @@ PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
     }
     else
 	FilePuts (f, "func ");
-    FilePuts (f, "(");
-    for (args = code->base.args; args; args = args->next)
-    {
-	if (!TypePoly (args->type) || !args->name)
-	{
-	    fprintTypes (f, args->type);
-	    if (args->name)
-		FilePuts (f, " ");
-	}
-	if (args->name)
-	    FilePuts (f, AtomName (args->name));
-	if (args->varargs)
-	    FilePuts (f, " ...");
-	if (args->next || code->base.argc == -1)
-	    FilePuts (f, ", ");
-    }
-    if (code->base.builtin && code->base.argc == -1)
-	FilePuts (f, "...");
-    FilePuts (f, ")");
+    PrintArgs (f, code->base.args);
     if (code->base.builtin)
     {
 	FilePuts (f, " <builtin>");
@@ -705,10 +746,9 @@ doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 	printclass (f, name->symbol.class);
 	FilePuts (f, " ");
 	FilePuts (f, AtomName (name->symbol.name));
-	FilePuts (f, " {\n");
-	PrintNamespace (f, name->namespace.namespace, level + 1);
-	printindent (f, level);
-	FilePuts (f, "}\n");
+	FilePuts (f, " ");
+	PrintArgs (f, name->symbol.type->func.args);
+	FilePuts (f, ";\n");
 	break;
     default:
 	printpublish (f, name->symbol.publish);

@@ -6,8 +6,6 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 
 static void MarkFuncCode (void *object)
@@ -115,7 +113,7 @@ ValueType   FuncType = {
 	0,
 	0,
 	0,
-	0,
+	ValueEqual,
 	0,
 	0,
     },

@@ -12,8 +12,6 @@
  *	initialize builtin functions
  */
 
-#include	<config.h>
-
 #include	<ctype.h>
 #include	<strings.h>
 #include	<time.h>
@@ -159,13 +157,13 @@ struct nbuiltin {
 };
 
 struct ebuiltin {
-    char	    *name;
-    SymbolPtr	    **exception;
-    NamespacePtr    *namespace;
+    char		*name;
+    StandardException	exception;
+    char		*args;
+    NamespacePtr	*namespace;
 };
 
-
-struct fbuiltin_v funcs_v[] = {
+static struct fbuiltin_v funcs_v[] = {
     { do_printf,	    "printf",		    type_integer,   "s.p"   },
     { do_fprintf,	    "fprintf",		    type_integer,   "fs.p", &FileNamespace},
     { do_imprecise,	    "imprecise",	    type_float,	    "n.i"   },
@@ -176,7 +174,8 @@ struct fbuiltin_v funcs_v[] = {
     { do_string_to_integer, "string_to_integer",    type_integer,   "s.i"   },
     { 0,		    0 },
 };
-struct fbuiltin_0 funcs_0[] = {
+
+static struct fbuiltin_0 funcs_0[] = {
     { do_Thread_cont,	    "cont",		    type_integer,   "",	    &ThreadNamespace },
     { do_Thread_current,    "current",		    type_integer,   "",	    &ThreadNamespace },
     { do_Mutex_new,	    "new",		    type_mutex,	    "",	    &MutexNamespace },
@@ -190,7 +189,8 @@ struct fbuiltin_0 funcs_0[] = {
     { do_Debug_collect,	    "collect",		    type_integer,   "",	    &DebugNamespace },
     { 0,		    0 },
 };
-struct fbuiltin_1 funcs_1[] = {
+
+static struct fbuiltin_1 funcs_1[] = {
     { do_putchar,	    "putchar",		    type_integer,   "n"	    },
     { do_sleep,		    "sleep",		    type_integer,   "n"	    },
     { do_dim,		    "dim",		    type_integer,   "a"	    },
@@ -242,7 +242,7 @@ struct fbuiltin_1 funcs_1[] = {
     { 0,		    0 },
 };
 
-struct fbuiltin_2 funcs_2[] = {
+static struct fbuiltin_2 funcs_2[] = {
     { do_Thread_set_priority,"set_priority",	    type_integer,   "tn",   &ThreadNamespace },
     { do_File_open,	    "open",		    type_file,	    "ss",   &FileNamespace },
     { do_gcd,		    "gcd",		    type_integer,   "nn"    },
@@ -257,21 +257,22 @@ struct fbuiltin_2 funcs_2[] = {
     { 0,		    0 },
 };
 
-struct fbuiltin_3 funcs_3[] = {
+static struct fbuiltin_3 funcs_3[] = {
     { do_String_substr,	    "substr",		    type_string,    "snn",  &StringNamespace },
     { 0,		    0 },
 };
-struct fbuiltin_7 funcs_7[] = {
+
+static struct fbuiltin_7 funcs_7[] = {
     { do_File_print,	    "print",		    type_integer,   "fpsnnns",&FileNamespace },
     { 0,		    0 },
 };
 
-struct fbuiltin_2j funcs_2j[] = {
+static struct fbuiltin_2j funcs_2j[] = {
     { do_long_jump,	    "long_jump",	    type_undef,	    "cp"    },
     { 0,		0 },
 };
 
-struct rbuiltin rvars[] = {
+static struct rbuiltin rvars[] = {
     { "3."
 	"14159265358979323846264338327950288419716939937510"
 	"58209749445923078164062862089986280348253421170679"
@@ -375,7 +376,7 @@ struct rbuiltin rvars[] = {
     { 0,			    0, 0 },
 };
 
-struct sbuiltin svars[] = {
+static struct sbuiltin svars[] = {
     { "> ",	"prompt" },
     { "+ ",	"prompt2" },
     { "- ",	"prompt3" },
@@ -389,14 +390,14 @@ struct sbuiltin svars[] = {
     { 0,    0 },
 };
 
-struct ibuiltin ivars[] = {
+static struct ibuiltin ivars[] = {
     { "stdin",	0 },
     { "stdout",	1 },
     { "stderr",	2 },
     { 0,	0 },
 };
 
-struct nbuiltin nvars[] = {
+static struct nbuiltin nvars[] = {
     { "Debugger",   &DebugNamespace },
     { "File",	    &FileNamespace },
     { "History",    &HistoryNamespace },
@@ -407,6 +408,16 @@ struct nbuiltin nvars[] = {
     { "Strings",    &StringNamespace },
     { "Thread",	    &ThreadNamespace },
     { 0,	    0 },
+};
+
+static struct ebuiltin excepts[] = {
+    {"uninitialized_value",	exception_uninitialized_value,	"s" },
+    {"invalid_argument",	exception_invalid_argument,	"sip" },
+    {"readonly_box",		exception_readonly_box,		"sp" },
+    {"invalid_array_bounds",	exception_invalid_array_bounds,	"spp" },
+    {"divide_by_zero",		exception_divide_by_zero,	"snn" },
+    {"invalid_struct_member",	exception_invalid_struct_member,"sps" },
+    {0,				0 },
 };
 
 static SymbolPtr
@@ -440,6 +451,23 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 	namespace = GlobalNamespace;
     sym = NewSymbolNamespace (AtomId (name), publish_public);
     sym->namespace.namespace = NewNamespace (namespace);
+    RETURN (NamespaceAddSymbol (namespace, sym));
+}
+
+static SymbolPtr
+BuiltinException (NamespacePtr  *namespacep,
+		  char		*name,
+		  Types		*type)
+{
+    ENTER ();
+    NamespacePtr	namespace;
+    SymbolPtr		sym;
+
+    if (namespacep)
+	namespace = *namespacep;
+    else
+	namespace = GlobalNamespace;
+    sym = NewSymbolException (AtomId (name), type, publish_public);
     RETURN (NamespaceAddSymbol (namespace, sym));
 }
 
@@ -529,6 +557,25 @@ BuiltinAddJumpingFunction (NamespacePtr *namespacep, char *name, Type ret,
     EXIT ();
 }
 
+static void
+BuiltinAddException (NamespacePtr	*namespacep, 
+		     StandardException	exception,
+		     char		*name,
+		     char		*format)
+{
+    ENTER ();
+    SymbolPtr	sym;
+    ArgType	*args;
+    Types	*type;
+    int		argc;
+
+    args = BuiltinArgTypes (format, &argc);
+    type = NewTypesFunc (typesPoly, args);
+    sym = BuiltinException (namespacep, name, NewTypesFunc (typesPoly, args));
+    RegisterStandardException (exception, sym);
+    EXIT ();
+}
+		     
 void
 BuiltinInit (void)
 {
@@ -544,6 +591,7 @@ BuiltinInit (void)
     struct sbuiltin	*s;
     struct ibuiltin	*i;
     struct nbuiltin	*n;
+    struct ebuiltin	*e;
     BuiltinFunc		f;
     SymbolPtr		sym;
 
@@ -605,6 +653,8 @@ BuiltinInit (void)
 	sym = BuiltinSymbol (i->namespace, i->name, NewTypesPrim (type_file));
 	BoxValueSet (sym->global.value, 0, f);
     }
+    for (e = excepts; e->name; e++)
+	BuiltinAddException (e->namespace, e->exception, e->name, e->args);
     EXIT ();
 }
 
@@ -636,7 +686,11 @@ dofformat (Value f, char *fmt, int n, Value *p)
 	    case '*':
 		if (pn >= n)
 		{
-		    RaiseError ("too few arguments to printf");
+		    RaiseStandardException (exception_invalid_argument,
+					    "Too few arguments to print",
+					    2,
+					    NewInt (pn),
+					    NewInt (n));
 		    return -1;
 		}
 		width = IntPart (p[pn], "Illegal format width");
@@ -676,7 +730,11 @@ dofformat (Value f, char *fmt, int n, Value *p)
 		    case '*':
 			if (pn >= n)
 			{
-			    RaiseError ("too few arguments to printf");
+			    RaiseStandardException (exception_invalid_argument,
+						    "Too few arguments to print",
+						    2,
+						    NewInt (pn),
+						    NewInt (n));
 			    return -1;
 			}
 			prec = IntPart (p[pn], "Illegal format precision");
@@ -714,7 +772,11 @@ dofformat (Value f, char *fmt, int n, Value *p)
 			return (e - fmt) | (pn << 16);
 		    pn++;
 		} else {
-		    RaiseError ("too few arguments to printf");
+		    RaiseStandardException (exception_invalid_argument,
+					    "Too few arguments to print",
+					    2,
+					    NewInt (pn),
+					    NewInt (n));
 		    return -1;
 		}
 		break;
@@ -724,7 +786,11 @@ dofformat (Value f, char *fmt, int n, Value *p)
 	    FileOutput (f, c);
     }
     if (pn != n)
-	RaiseError ("too many arguments to printf");
+	RaiseStandardException (exception_invalid_argument,
+				"Too many arguments to print",
+				2,
+				NewInt (pn),
+				NewInt (n));
     return -1;
 }
 
@@ -762,10 +828,6 @@ do_printf (int n, Value *p)
 {
     char	*fmt;
     
-    if (n == 0 || p[0]->value.tag != type_string) {
-	RaiseError ("first parameter to printf should be string");
-	return Zero;
-    }
     fmt = StringChars (&p[0]->string);
     p++;
     n--;
@@ -779,17 +841,9 @@ do_fprintf (int n, Value *p)
     Value	f;
     char	*fmt;
     
-    if (n == 0 || p[0]->value.tag != type_file) {
-	RaiseError ("first parameter to fprintf should be file");
-	return Zero;
-    }
     f = p[0];
     p++;
     n--;
-    if (n == 0 || p[0]->value.tag != type_string) {
-	RaiseError ("second parameter to fprintf should be string");
-	return Zero;
-    }
     fmt = StringChars(&p[0]->string);
     p++;
     n--;
@@ -803,16 +857,6 @@ do_File_print (Value file, Value value, Value format,
 {
     int	    ibase, iwidth, iprec;
     
-    if (file->value.tag != type_file)
-    {
-	RaiseError ("first parameter to print should be file");
-	return Zero;
-    }
-    if (format->value.tag != type_string)
-    {
-	RaiseError ("third parameter to print should be format string");
-	return Zero;
-    }
     ibase = IntPart (base, "Illegal base");
     if (exception)
 	return Zero;
@@ -822,11 +866,6 @@ do_File_print (Value file, Value value, Value format,
     iprec = IntPart (prec, "Illegal precision");
     if (exception)
 	return Zero;
-    if (fill->value.tag != type_string)
-    {
-	RaiseError ("seventh parameter to print should be fill string");
-	return Zero;
-    }
     if (file->file.flags & FileOutputBlocked)
 	ThreadSleep (running, file, PriorityIo);
     else
@@ -842,15 +881,7 @@ do_File_open (Value name, Value mode)
     char	*n, *m;
     Value	ret;
 
-    if (name->value.tag != type_string) {
-	RaiseError ("first parameter to fopen should be file name");
-	RETURN (Zero);
-    }
     n = StringChars (&name->string);
-    if (mode->value.tag != type_string) {
-	RaiseError ("second parameter to fopen should be mode");
-	RETURN (Zero);
-    }
     m = StringChars (&mode->string);
     if (exception)
 	RETURN (Zero);
@@ -864,10 +895,6 @@ do_File_open (Value name, Value mode)
 Value 
 do_File_flush (Value f)
 {
-    if (f->value.tag != type_file) {
-	RaiseError ("parameter to fflush should be file");
-	return Zero;
-    }
     if (FileFlush (f) == FileBlocked)
 	ThreadSleep (running, f, PriorityIo);
     return One;
@@ -876,10 +903,6 @@ do_File_flush (Value f)
 Value 
 do_File_close (Value f)
 {
-    if (f->value.tag != type_file) {
-	RaiseError ("parameter to fclose should be file");
-	return Zero;
-    }
     if (aborting)
 	return Zero;
     if (FileFlush (f) == FileBlocked)
@@ -898,10 +921,6 @@ do_File_getc (Value f)
     ENTER ();
     int	    c;
     
-    if (f->value.tag != type_file) {
-	RaiseError ("parameter to getc should be file");
-	RETURN (Zero);
-    }
     if (!aborting)
     {
 	c = FileInput (f);
@@ -923,10 +942,6 @@ Value
 do_File_end (Value f)
 {
     ENTER ();
-    if (f->value.tag != type_file) {
-	RaiseError ("parameter to getc should be file");
-	RETURN (Zero);
-    }
     if (f->file.flags & FileEnd)
 	RETURN (One);
     else
@@ -937,10 +952,6 @@ Value
 do_File_error (Value f)
 {
     ENTER ();
-    if (f->value.tag != type_file) {
-	RaiseError ("parameter to getc should be file");
-	RETURN (Zero);
-    }
     if (f->file.flags & (FileInputError|FileOutputError))
 	RETURN (One);
     else
@@ -951,10 +962,6 @@ Value
 do_File_clear_error (Value f)
 {
     ENTER ();
-    if (f->value.tag != type_file) {
-	RaiseError ("parameter to getc should be file");
-	RETURN (Zero);
-    }
     f->file.flags &= ~(FileInputError|FileOutputError|FileEnd);
     RETURN (One);
 }
@@ -971,10 +978,6 @@ do_File_putc (Value v, Value f)
 {
     ENTER ();
     
-    if (f->value.tag != type_file) {
-	RaiseError ("parameter to putc should be file");
-	RETURN (Zero);
-    }
     if (f->file.flags & FileOutputBlocked)
 	ThreadSleep (running, f, PriorityIo);
     else
@@ -993,10 +996,6 @@ do_File_ungetc (Value v, Value f)
 {
     ENTER ();
     
-    if (f->value.tag != type_file) {
-	RaiseError ("parameter to putc should be file");
-	RETURN (Zero);
-    }
     if (f->file.flags & FileOutputBlocked)
 	ThreadSleep (running, f, PriorityIo);
     else
@@ -1023,10 +1022,6 @@ do_File_setbuf (Value f, Value v)
     ENTER ();
     int	i;
 
-    if (f->value.tag != type_file) {
-	RaiseError ("parameter to setbuffer should be file");
-	RETURN (Zero);
-    }
     i = IntPart (v, "setbuffer non integer");
     if (!aborting)
 	FileSetBuffer (f, i);
@@ -1060,11 +1055,6 @@ do_Math_assignpow (Value a, Value b)
     ENTER ();
     Value   ret;
     
-    if (a->value.tag != type_ref)
-    {
-	RaiseError ("assignpow: first argument must be ref");
-	RETURN (Zero);
-    }
     ret = Pow (RefValue (a), b);
     RefValueSet (a, ret);
     RETURN (ret);
@@ -1126,67 +1116,63 @@ do_string_to_integer (int n, Value *p)
 	base = p[1];
 	break;
     default:
-	RaiseError ("string_to_integer: wrong number of arguments %d", n);
+	RaiseStandardException (exception_invalid_argument,
+				"string_to_integer: wrong number of arguments",
+				2,
+				NewInt (2),
+				NewInt (n));
 	RETURN(Zero);
     }
     
-    if (str->value.tag != type_string)
-    {
-	RaiseError ("string_to_integer: first argument must be string %v", str);
-	RETURN(Zero);
+    s = StringChars (&str->string);
+    while (isspace (*s)) s++;
+    switch (*s) {
+    case '-':
+	negative = 1;
+	s++;
+	break;
+    case '+':
+	s++;
+	break;
     }
-    else
+    ibase = IntPart (base, "string_to_integer: invalid base");
+    if (!exception)
     {
-	s = StringChars (&str->string);
-	while (isspace (*s)) s++;
-	switch (*s) {
-	case '-':
-	    negative = 1;
-	    s++;
+	if (ibase == 0)
+	{
+	    if (!strncmp (s, "0x", 2) ||
+		!strncmp (s, "0X", 2)) ibase = 16;
+	    else if (!strncmp (s, "0t", 2) ||
+		     !strncmp (s, "0T", 2)) ibase = 10;
+	    else if (!strncmp (s, "0b", 2) ||
+		     !strncmp (s, "0B", 2)) ibase = 2;
+	    else if (!strncmp (s, "0o", 2) ||
+		     !strncmp (s, "0O", 2) ||
+		     *s == '0') ibase = 8;
+	    else ibase = 10;
+	}
+	switch (ibase) {
+	case 2:
+	    if (!strncmp (s, "0b", 2) ||
+		!strncmp (s, "0B", 2)) s += 2;
 	    break;
-	case '+':
-	    s++;
+	case 8:
+	    if (!strncmp (s, "0o", 2) ||
+		!strncmp (s, "0O", 2)) s += 2;
+	case 10:
+	    if (!strncmp (s, "0t", 2) ||
+		!strncmp (s, "0T", 2)) s += 2;
+	    break;
+	case 16:
+	    if (!strncmp (s, "0x", 2) ||
+		!strncmp (s, "0X", 2)) s += 2;
 	    break;
 	}
-	ibase = IntPart (base, "strtol: invalid base");
+	ret = atov (s, ibase);
 	if (!exception)
 	{
-	    if (ibase == 0)
-	    {
-		if (!strncmp (s, "0x", 2) ||
-		    !strncmp (s, "0X", 2)) ibase = 16;
-		else if (!strncmp (s, "0t", 2) ||
-			 !strncmp (s, "0T", 2)) ibase = 10;
-		else if (!strncmp (s, "0b", 2) ||
-			 !strncmp (s, "0B", 2)) ibase = 2;
-		else if (!strncmp (s, "0o", 2) ||
-			 !strncmp (s, "0O", 2) ||
-			 *s == '0') ibase = 8;
-		else ibase = 10;
-	    }
-	    switch (ibase) {
-	    case 2:
-		if (!strncmp (s, "0b", 2) ||
-		    !strncmp (s, "0B", 2)) s += 2;
-		break;
-	    case 8:
-		if (!strncmp (s, "0o", 2) ||
-		    !strncmp (s, "0O", 2)) s += 2;
-	    case 10:
-		if (!strncmp (s, "0t", 2) ||
-		    !strncmp (s, "0T", 2)) s += 2;
-		break;
-	    case 16:
-		if (!strncmp (s, "0x", 2) ||
-		    !strncmp (s, "0X", 2)) s += 2;
-		break;
-	    }
-	    ret = atov (s, ibase);
-	    if (!exception)
-	    {
-		if (negative)
-		    ret = Negate (ret);
-	    }
+	    if (negative)
+		ret = Negate (ret);
 	}
     }
     RETURN (ret);
@@ -1196,11 +1182,6 @@ Value
 do_string_to_real (Value str)
 {
     ENTER ();
-    if (str->value.tag != type_string)
-    {
-	RaiseError ("atof: argument must be string %v", str);
-	RETURN (Zero);
-    }
     RETURN (aetov (StringChars (&str->string)));
 }
 
@@ -1212,11 +1193,6 @@ do_imprecise (int n, Value *p)
     Value   v;
     int	    prec;
 
-    if (n == 0)
-    {
-	RaiseError ("imprecise: takes at least one argument");
-	RETURN(Zero);
-    }
     v = p[0];
     if (n > 1)
 	prec = IntPart (p[1], "imprecise: invalid precision");
@@ -1259,9 +1235,14 @@ do_Primitive_random (Value bits)
     Value ret = Zero;
 
     if (n > 31)
-	RaiseError ("random: modulus 2^%v exceeds 2^31", bits);
+	RaiseStandardException (exception_invalid_argument,
+				"random: modulus exceeds 2^31",
+				2, 
+				NewInt (0), bits);
     else if (n <= 0)
-	RaiseError ("random: bad modulus 2^%v", bits);
+	RaiseStandardException (exception_invalid_argument,
+				"random: bad modulus",
+				1, NewInt (0), bits);
     else
 	ret = NewInt (random () & ((1 << n) - 1));
     RETURN (ret);
@@ -1282,11 +1263,6 @@ do_String_length (Value av)
 {
     ENTER();
     Value ret;
-    if (av->value.tag != type_string)
-    {
-	RaiseError ("index: target must be string %v", av);
-	RETURN (Zero);
-    }
     ret = NewInt(strlen(StringChars(&av->string)));
     RETURN (ret);
 }
@@ -1326,17 +1302,7 @@ do_String_index (Value av, Value bv)
     ENTER();
     char *a, *b, *p;
     Value ret;
-    if (av->value.tag != type_string)
-    {
-	RaiseError ("index: target must be string %v", av);
-	RETURN (Zero);
-    }
     a = StringChars(&av->string);
-    if (bv->value.tag != type_string)
-    {
-	RaiseError ("index: pattern must be string %v", bv);
-	RETURN (Zero);
-    }
     b = StringChars(&bv->string);
     p = strstr(a, b);
     if (!p)
@@ -1352,23 +1318,10 @@ do_String_substr (Value av, Value bv, Value cv)
     char *a, *rchars;
     int b, c, al;
     Value ret;
-    if (av->value.tag != type_string)
-    {
-	RaiseError ("substr: target must be string %v", av);
-	RETURN (Zero);
-    }
     a = StringChars(&av->string);
     al = strlen(a);
     b = IntPart(bv, "substr: index not integer");
-    if (b < 0 || b >= al) {
-	RaiseError ("substr: index out of bounds", av);
-	RETURN (Zero);
-    }
     c = IntPart(cv, "substr: count not integer");
-    if (c < 0 || b + c > al) {
-	RaiseError ("substr: count out of range", av);
-	RETURN (Zero);
-    }
     ret = NewString(c);
     rchars = StringChars(&ret->string);
     strncpy(rchars, a + b, c);
@@ -1381,14 +1334,11 @@ do_dim(Value av)
 {
     ENTER();
     Value ret;
-    if (av->value.tag != type_array)
-    {
-	RaiseError ("dim: argument not array %v", av);
-	RETURN (Zero);
-    }
     if (av->array.ndim != 1)
     {
-	RaiseError ("dim: argument must be one-dimensional array %v", av);
+	RaiseStandardException (exception_invalid_argument,
+				"dim: argument must be one-dimensional array",
+				2, NewInt (0), av);
 	RETURN (Zero);
     }
     ret = NewInt(av->array.dim[0]);
@@ -1401,11 +1351,7 @@ do_dims(Value av)
     ENTER();
     Value ret;
     int i;
-    if (av->value.tag != type_array)
-    {
-	RaiseError ("dim: argument not array %v", av);
-	RETURN (Zero);
-    }
+
     ret = NewArray(True, type_int, 1, &av->array.ndim);
     for (i = 0; i < av->array.ndim; i++) {
       Value d = NewInt(av->array.dim[i]);
@@ -1420,11 +1366,6 @@ do_precision (Value av)
     ENTER ();
     unsigned	prec;
 
-    if (!Numericp (av->value.tag))
-    {
-	RaiseError ("precision: argument non-numeric %v", av);
-	RETURN (Zero);
-    }
     if (av->value.tag == type_float)
 	prec = av->floats.prec;
     else
@@ -1452,7 +1393,7 @@ do_sign (Value av)
 	s = av->floats.mant->sign;
 	break;
     default:
-	RaiseError ("sign: argument non-numeric %v", av);
+	/* not reached */
 	s = Positive;
 	break;
     }
@@ -1471,7 +1412,9 @@ do_exponent (Value av)
 
     if (av->value.tag != type_float)
     {
-	RaiseError ("exponenet: argument must be imprecise %v", av);
+	RaiseStandardException (exception_invalid_argument,
+				"exponent: argument must be imprecise",
+				2, NewInt (0), av);
 	RETURN (Zero);
     }
     ret = NewInteger (av->floats.exp->sign, av->floats.exp->mag);
@@ -1487,7 +1430,9 @@ do_mantissa (Value av)
 
     if (av->value.tag != type_float)
     {
-	RaiseError ("mantissa: argument must be imprecise %v", av);
+	RaiseStandardException (exception_invalid_argument,
+				"mantissa: argument must be imprecise",
+				2, NewInt (0), av);
 	RETURN (Zero);
     }
     ret = NewInteger (av->floats.mant->sign, av->floats.mant->mag);
@@ -1508,8 +1453,11 @@ do_numerator (Value av)
 	av = NewInteger (av->rational.sign, av->rational.num);
 	break;
     default:
-	RaiseError ("numerator: argument must be precise %v", av);
+	RaiseStandardException (exception_invalid_argument,
+				"numerator: argument must be precise",
+				2, NewInt (0), av);
 	av = Zero;
+	break;
     }
     RETURN (av);
 }
@@ -1527,8 +1475,11 @@ do_denominator (Value av)
 	av = NewInteger (Positive, av->rational.den);
 	break;
     default:
-	RaiseError ("numerator: argument must be precise %v", av);
+	RaiseStandardException (exception_invalid_argument,
+				"denominator: argument must be precise",
+				2, NewInt (0), av);
 	av = Zero;
+	break;
     }
     RETURN (av);
 }

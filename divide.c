@@ -12,9 +12,7 @@
  * perform natural number division
  */
 
-#include	<config.h>
-
-#include	"value.h"
+#include	"nickle.h"
 
 #undef CHECK
 #undef DEBUG

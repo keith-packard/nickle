@@ -6,10 +6,8 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	<math.h>
-#include	"value.h"
+#include	"nickle.h"
 
 Fpart	*zero_fpart, *one_fpart;
 
@@ -397,7 +395,9 @@ FloatDivide (Value av, Value bv, int expandOk)
 
     if (FpartZero (b->mant))
     {
-	RaiseError ("real divide by zero %v / %v", av, bv);
+	RaiseStandardException (exception_divide_by_zero,
+				"real divide by zero",
+				2, av, bv);
 	RETURN (Zero);
     }
     DebugF ("Dividend ", a);

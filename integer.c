@@ -12,9 +12,7 @@
  * operations on integers
  */
 
-#include	<config.h>
-
-#include	"value.h"
+#include	"nickle.h"
 
 int
 IntegerToInt (Integer *i)
@@ -112,7 +110,9 @@ IntegerDivide (Value av, Value bv, int expandOk)
     
     if (NaturalZero (b->mag))
     {
-	RaiseError ("integer divide by zero %v / %v", av, bv);
+	RaiseStandardException (exception_divide_by_zero,
+				"integer divide by zero",
+				2, av, bv);
 	RETURN (Zero);
     }
     sign = Positive;
@@ -134,7 +134,9 @@ IntegerDiv (Value av, Value bv, int expandOk)
     
     if  (NaturalZero (b->mag))
     {
-	RaiseError ("integer div by zero %v %% %v", av,  bv);
+	RaiseStandardException (exception_divide_by_zero,
+				"integer div by zero",
+				2, av, bv);
 	RETURN (Zero);
     }
     quo = NaturalDivide (a->mag, b->mag, &rem);
@@ -155,7 +157,9 @@ IntegerMod (Value av, Value bv, int expandOk)
     
     if  (NaturalZero (b->mag))
     {
-	RaiseError ("integer modulus by zero %v %% %v", av,  bv);
+	RaiseStandardException (exception_divide_by_zero,
+				"integer modulus by zero",
+				2, av, bv);
 	RETURN (Zero);
     }
     quo = NaturalDivide (a->mag, b->mag, &rem);

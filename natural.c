@@ -12,11 +12,9 @@
  * arithmetic for natural numbers
  */
 
-#include	<config.h>
-
 #include	<math.h>
 #include	<stdio.h>
-#include	"value.h"
+#include	"nickle.h"
 
 # define length(n)	((n)->length)
 # define data(n)	NaturalDigits(n)

@@ -12,8 +12,6 @@
  * invoke the users editor (default /bin/ed) 
  */
 
-#include	<config.h>
-
 #include	<stdio.h>
 #include	<string.h>
 #include	<stdlib.h>
@@ -71,7 +69,7 @@ EditFile (Value file_name)
     {
 	switch (file_name->value.tag) {
 	default:
-	    RaiseError (0, "edit: non-string filename");
+	    PrintError ("edit: non-string filename %v", file_name);
 	    break;
 	case type_string:
 	    edit (StringChars (&file_name->string));

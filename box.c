@@ -6,9 +6,7 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
-#include	"value.h"
+#include	"nickle.h"
 
 static void
 BoxMark (void *object)
@@ -65,7 +63,8 @@ BoxValue (BoxPtr box, int e)
     ENTER ();
     if (!BoxElements(box)[e].value)
     {
-	RaiseError ("Uninitialized box element");
+	RaiseStandardException (exception_uninitialized_value,
+				"Uninitialized value", 0);
 	RETURN (Zero);
     }
     RETURN (BoxElements(box)[e].value);

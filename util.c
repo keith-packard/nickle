@@ -12,8 +12,6 @@
  *	general purpose utilities
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 
 #ifdef notdef

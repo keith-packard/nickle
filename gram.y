@@ -7,8 +7,6 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 #include	<stdio.h>
 
@@ -42,6 +40,7 @@ void yyerror (char *fmt, ...);
 %type  <eval>	history
 %type  <eval>	block func_body statements statement catches catch
 %type  <eval>	case_block cases case
+%type  <eval>	union_case_block union_cases union_case
 %type  <dval>	enames names opt_initnames initnames
 %type  <aval>	typename name
 %type  <eval>	opt_init
@@ -49,6 +48,7 @@ void yyerror (char *fmt, ...);
 %type  <tsval>	opt_type type
 %type  <eval>   opt_stars stars
 %type  <tval>	basetype
+%type  <tval>	struct_or_union
 %type  <mval>	struct_members union_members
 %type  <cval>	class
 %type  <pval>	publish publish_extend
@@ -74,7 +74,7 @@ void yyerror (char *fmt, ...);
 %token		UNDEFINE LOAD HISTORY PRINT EDIT QUIT
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
-%token <tval>	FILET MUTEX SEMAPHORE CONTINUATION
+%token <tval>	FILET MUTEX SEMAPHORE CONTINUATION THREAD
 %token		FUNCTION FUNC EXCEPTION RAISE
 %token		TYPEDEF IMPORT NAMESPACE NEW
 %token <pval>	PUBLIC EXTEND
@@ -100,7 +100,7 @@ void yyerror (char *fmt, ...);
 %left		PLUS MINUS
 %left		TIMES DIVIDE DIV MOD
 %right		POW
-%right		UMINUS BANG FACT LNOT INC DEC STAR AMPER THREAD
+%right		UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
 %left		OS CS DOT ARROW REFARRAY CALL OP CP
 
 %%
@@ -149,7 +149,8 @@ command		: QUIT NL
 						    BuildName ("format"),
 						    BuildCall ("History",
 							       "insert",
-							       1, $1)),
+							       1, 
+							       NewExprTree (DOLLAR, $1, 0))),
 					 BuildCall (0, "putchar",
 						    1,
 						    NewExprConst (NewInt ('\n'))));
@@ -362,6 +363,8 @@ statement	: IF ignorenl OP expr CP statement
 		    }
 		| SWITCH ignorenl OP expr CP case_block
 		    { $$ = NewExprTree (SWITCH, $4, $6); }
+		| UNION SWITCH ignorenl OP expr CP union_case_block
+		    { $$ = NewExprTree (UNION, $5, $7); }
 		| BREAK ignorenl SEMI
 		    { $$ = NewExprTree(BREAK, (Expr *) 0, (Expr *) 0); }
 		| CONTINUE ignorenl SEMI
@@ -479,6 +482,19 @@ case		: CASE expr COLON statements
 		| DEFAULT COLON statements
 		    { $$ = NewExprTree (CASE, 0, $3); }
 		;
+union_case_block: block_start union_cases block_end
+		    { $$ = $2; }
+		;
+union_cases	: union_case union_cases
+		    { $$ = NewExprTree (CASE, $1, $2); }    
+		|
+		    { $$ = 0; }
+		;
+union_case	: CASE NAME COLON statements
+		    { $$ = NewExprTree (CASE, NewExprAtom ($2), $4); }
+		| DEFAULT COLON statements
+		    { $$ = NewExprTree (CASE, 0, $3); }
+		;
 /*
 * Identifiers
 */
@@ -560,7 +576,7 @@ type		: basetype
 		    { $$ = NewTypesFunc ($1, $3); }
 		| type OS opt_stars CS
 		    { $$ = NewTypesArray ($1, $3); }
-		| STRUCT OC struct_members CC
+		| struct_or_union OC struct_members CC
 		    {
 			DeclListPtr	dl;
 			StructType	*st;
@@ -586,27 +602,10 @@ type		: basetype
 				nelements++;
 			    }
 			}
-			$$ = NewTypesStruct (st);
-		    }
-		| UNION OC union_members CC
-		    {
-			Types		*ut;
-			TypesPtr	*ue;
-			MemListPtr	ml;
-			int		nelements;
-
-			nelements = 0;
-			for (ml = $3; ml; ml = ml->next)
-			    nelements++;
-			ut = NewTypesUnion (nelements);
-			ue = TypesUnionElements (ut);
-			nelements = 0;
-			for (ml = $3; ml; ml = ml->next)
-			{
-			    ue[nelements] = ml->type;
-			    nelements++;
-			}
-			$$ = ut;
+			if ($1 == type_struct)
+			    $$ = NewTypesStruct (st);
+			else
+			    $$ = NewTypesUnion (st);
 		    }
 		| OP type CP
 		    { $$ = $2; }
@@ -622,6 +621,7 @@ basetype    	: POLY
 		| MUTEX
 		| SEMAPHORE
 		| CONTINUATION
+		| THREAD
 		;
 opt_stars	: stars
 		|
@@ -632,19 +632,16 @@ stars		: stars COMMA TIMES
 		| TIMES
 		    { $$ = NewExprTree (COMMA, 0, 0); }
 		;
+struct_or_union	: STRUCT
+		    { $$ = type_struct; }
+		| UNION
+		    { $$ = type_union; }
+		;
 /*
 * Structure member declarations
 */
 struct_members	: opt_type names SEMI struct_members
 		    { $$ = NewMemList ($2, $1, $4); }
-		|
-		    { $$ = 0; }
-		;
-/*
- * union member declaraions
- */
-union_members	: opt_type SEMI union_members
-		    { $$ = NewMemList (0, $1, $3); }
 		|
 		    { $$ = 0; }
 		;
@@ -743,7 +740,7 @@ lambdaexpr	: opt_type FUNC OP opt_argdefines CP block
 * Fundemental expression production
 */
 simpleexpr	: primary
-		| MOD CONST						%prec THREAD
+		| MOD CONST						%prec THREADID
 		    {   Value	t;
 			t = do_Thread_id_to_thread ($2);
 			if (Zerop (t))
@@ -847,7 +844,7 @@ assignop	: PLUS ASSIGN
 		    { $$ = ASSIGN; }
 		;
 initexpr	: primary
-		| MOD CONST						%prec THREAD
+		| MOD CONST						%prec THREADID
 		    {   Value	t;
 			t = do_Thread_id_to_thread ($2);
 			if (Zerop (t))
@@ -1146,11 +1143,11 @@ void
 yyerror (char *fmt, ...)
 {
     va_list	args;
-    extern char	*yyfile;
+    extern Atom	yyfile;
     extern int	yylineno;
 
-    if (yyfiledeep)
-	fprintf (stderr, "\"%s\": line %d, ", yyfile, yylineno);
+    if (yyfile)
+	PrintError ("%A:%d: %z", yyfile, yylineno);
     va_start (args, fmt);
     vPrintError (fmt, args);
     va_end (args);

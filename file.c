@@ -6,8 +6,6 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	<unistd.h>
 #include	<fcntl.h>
 #include	<signal.h>
@@ -72,8 +70,25 @@ FileFree (void *object)
     }
 }
 
+static Bool
+FilePrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+{
+    FilePuts (f, "file");
+    return True;
+}
+
 ValueType FileType = {
     { FileMark, FileFree },
+    {
+	0, 0, 0, 0, 0, 0,
+	0, ValueEqual, 0, 0,
+    },
+    {
+	0,
+    },
+    0,
+    0,
+    FilePrint,
 };
 
 Value

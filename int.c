@@ -6,9 +6,7 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
-#include	"value.h"
+#include	"nickle.h"
 
 # define sign(i)	((i) < 0 ? Negative : Positive)
 
@@ -119,7 +117,9 @@ IntDivide (Value av, Value bv, int expandOk)
 
     if (b == 0)
     {
-	RaiseError ("int division by zero %v/%v", av, bv);
+	RaiseStandardException (exception_divide_by_zero,
+				"int divide by zero",
+				2, av, bv);
 	RETURN (Zero);
     }
     if (expandOk && a % b != 0)
@@ -139,7 +139,9 @@ IntDiv (Value av, Value bv, int expandOk)
 
     if (b == 0)
     {
-	RaiseError ("int div by zero %v/%v", av, bv);
+	RaiseStandardException (exception_divide_by_zero,
+				"int div by zero",
+				2, av, bv);
 	RETURN (Zero);
     }
     switch (catagorize_signs (sign(a), sign(b))) {
@@ -181,7 +183,9 @@ IntMod (Value av, Value bv, int expandOk)
 
     if (b == 0)
     {
-	RaiseError ("int modulus by zero %v %% %v", av, bv);
+	RaiseStandardException (exception_divide_by_zero,
+				"int modulus by zero",
+				2, av, bv);
 	RETURN (Zero);
     }
     switch (catagorize_signs (sign(a), sign(b))) {

@@ -6,8 +6,6 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 #include	"gram.h"
 
@@ -21,8 +19,6 @@ fprintType (Value f, Type tag)
 	FilePuts (f, "poly");
 	break;
     case type_int:
-	FilePuts (f, "int");
-	break;
     case type_integer:
 	FilePuts (f, "integer");
 	break;
@@ -189,17 +185,12 @@ fprintTypes (Value f, Types *t)
 	    fprintDimensions (f, t->array.dimensions);
 	    FilePuts (f, "]");
 	    break;
-	case types_union:
-	    FilePuts (f, "union { ");
-	    for (i = 0; i < t->unions.nelements; i++)
-	    {
-		fprintTypes (f, TypesUnionElements(t)[i]);
-		FilePuts (f, "; ");
-	    }
-	    FilePuts (f, "}");
-	    break;
 	case types_struct:
-	    FilePuts (f, "struct { ");
+	case types_union:
+	    if (t->base.tag == types_union)
+		FilePuts (f, "union { ");
+	    else
+		FilePuts (f, "struct { ");
 	    st = t->structs.structs;
 	    se = StructTypeElements (st);
 	    for (i = 0; i < st->nelements; i++)
@@ -280,6 +271,7 @@ vPrintError (char *s, va_list args)
     Value	v;
     Class	storage;
     Publish	publish;
+    Bool	newline = True;
 
     for (;*s;) {
 	switch (*s) {
@@ -330,6 +322,9 @@ vPrintError (char *s, va_list args)
 	    case 'c':
 		FileOutput (FileStderr, va_arg (args, int));
 		break;
+	    case 'z':
+		newline = False;
+		break;
 	    default:
 		FileOutput (FileStderr, *s);
 		break;
@@ -341,7 +336,8 @@ vPrintError (char *s, va_list args)
 	}
 	++s;
     }
-    FileOutput (FileStderr, '\n');
+    if (newline)
+	FileOutput (FileStderr, '\n');
 }
 
 void
@@ -366,14 +362,3 @@ RaiseError (char *s, ...)
     exception = True;
     abortError = True;
 }
-
-/*
-void
-RaiseException (ThreadPtr   thread,
-		SymbolPtr   exception,
-		char	    *string,
-		Value	    value)
-{
-    
-}
-*/

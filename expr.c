@@ -12,10 +12,10 @@
  *	handle expression trees
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 #include	"gram.h"
+extern Atom	yyfile;
+extern int	yylineno;
 
 static void
 ExprTreeMark (void *object)
@@ -73,6 +73,14 @@ DataType    ExprAtomType = { ExprAtomMark, 0 };
 DataType    ExprCodeType = { ExprCodeMark, 0 };
 DataType    ExprDeclType = { ExprDeclMark, 0 };
 
+static void
+ExprBaseInit (Expr *e, int tag)
+{
+    e->base.tag = tag;
+    e->base.file = yyfile;
+    e->base.line = yylineno;
+}
+
 Expr *
 NewExprTree(int tag, Expr *left, Expr *right)
 {
@@ -80,7 +88,7 @@ NewExprTree(int tag, Expr *left, Expr *right)
     Expr    *e;
 
     e = ALLOCATE (&ExprTreeType, sizeof (ExprTree));
-    e->base.tag = tag;
+    ExprBaseInit (e, tag);
     e->tree.left = left;
     e->tree.right = right;
     RETURN ((Expr *) e);
@@ -93,7 +101,7 @@ NewExprConst (Value val)
     Expr    *e;
 
     e = ALLOCATE (&ExprConstType, sizeof (ExprConst));
-    e->base.tag = CONST;
+    ExprBaseInit (e, CONST);
     e->constant.constant = val;
     RETURN (e);
 }
@@ -105,7 +113,7 @@ NewExprAtom (Atom atom)
     Expr    *e;
 
     e = ALLOCATE (&ExprAtomType, sizeof (ExprAtom));
-    e->base.tag = NAME;
+    ExprBaseInit (e, NAME);
     e->atom.atom = atom;
     RETURN (e);
 }
@@ -117,7 +125,7 @@ NewExprCode (CodePtr code, Atom name)
     Expr    *e;
 
     e = ALLOCATE (&ExprCodeType, sizeof (ExprCode));
-    e->base.tag = FUNCTION;
+    ExprBaseInit (e, FUNCTION);
     e->code.code = code;
     code->base.name = name;
     RETURN (e);
@@ -130,7 +138,7 @@ NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish)
     Expr    *e;
 
     e = ALLOCATE (&ExprDeclType, sizeof (ExprDecl));
-    e->base.tag = VAR;
+    ExprBaseInit (e, VAR);
     e->decl.decl = decl;
     e->decl.class = class;
     e->decl.type = type;

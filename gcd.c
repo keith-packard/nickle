@@ -12,9 +12,7 @@
  * compute gcd of two natural numbers
  */
 
-#include	<config.h>
-
-#include	"value.h"
+#include	"nickle.h"
 
 static void
 gcd_right_shift (Natural *v, int shift)

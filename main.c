@@ -12,8 +12,6 @@
  *	main routine for nick
  */
 
-#include	<config.h>
-
 #include	<setjmp.h>
 #include	<signal.h>
 #include	<stdio.h>
@@ -92,9 +90,9 @@ main (int argc, char **argv)
     (void) signal (SIGTSTP, stop);
     (void) signal (SIGTTIN, stop);
     (void) signal (SIGTTOU, stop);
-    interactive = stdin_interactive = isatty(0);
+    stdin_interactive = isatty(0);
     init ();
-    yyinput = FileStdin;
+    lexstdin ();
     try_nicklelib();
     if (argc > 1)
     {

@@ -6,8 +6,6 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 
 #define Stack(i) ((Value) STACK_ELT(thread->thread.stack, i))
@@ -43,10 +41,9 @@ BuildFrame (Value thread, Value func, Bool varargs, int nformal,
 	type = BoxTypesValue (code->func.dynamics, fe);
 	if (!TypeCompatibleAssign (type, Stack(fe), False))
 	{
-	    RaiseError ("Incompatible type for argument %d function %t = %v",
-			fe+1,
-			type,
-			Stack(fe));
+	    RaiseStandardException (exception_invalid_argument, 
+				    "Incompatible argument",
+				    2, NewInt (fe), Stack(fe));
 	    RETURN (0);
 	}
 	if (!Stack(fe))
@@ -86,8 +83,9 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
     {
 	if (argc < code->base.argc)
 	{
-	    RaiseError ("function requiring at least %d arguments was called with %d",
-			code->base.argc, argc);
+	    RaiseStandardException (exception_invalid_argument, 
+				    "Too few arguments",
+				    2, NewInt (argc), Stack(code->base.argc));
 	    RETURN (value);
 	}
     }
@@ -95,8 +93,9 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
     {
 	if (argc != code->base.argc)
 	{
-	    RaiseError ("function requiring %d arguments was called with %d",
-			code->base.argc, argc);
+	    RaiseStandardException (exception_invalid_argument, 
+				    "Wrong number of arguments",
+				    2, NewInt (argc), Stack(code->base.argc));
 	    RETURN (value);
 	}
     }
@@ -222,18 +221,21 @@ ThreadAssign (Value ref, Value v)
     ENTER ();
     if (RefConstant(ref))
     {
-	RaiseError ("Attempted assignment to constant box (%t) %v", 
-		    RefType (ref), v);
+	RaiseStandardException (exception_readonly_box,
+				"Attempted assignment to constant box",
+				2, v);
     }
     else if (ref->ref.element >= ref->ref.box->nvalues)
     {
-	RaiseError ("Attempted assignment beyond box bounds %v",
-		    v);
+	RaiseStandardException (exception_invalid_array_bounds,
+				"Attempted assignment beyond box bounds",
+				2, NewInt(ref->ref.element), v);
     }
     else if (!TypeCompatibleAssign (RefType (ref), v, False))
     {
-	RaiseError ("Incompatible types in assignment %t = (%T) %v", 
-		    RefType (ref), v->value.tag, v);
+	RaiseStandardException (exception_invalid_argument,
+				"Incompatible types in assignment",
+				2, NewInt(ref->ref.element), v);
     }
     else
     {
@@ -274,8 +276,9 @@ ThreadInitArray (Value thread, Value a, int ninit)
 
     if (ninit > a->array.ents)
     {
-	RaiseError ("too many array initializers %d > %d",
-		ninit, a->array.ents);
+	RaiseStandardException (exception_invalid_argument,
+				"too many array initializers",
+				2, NewInt (ninit), NewInt (a->array.ents));
     }
     else
     {
@@ -285,8 +288,9 @@ ThreadInitArray (Value thread, Value a, int ninit)
 	{
 	    if (!TypeCompatibleAssign (a->array.type, Stack(j), False))
 	    {
-		RaiseError ("Incompatible type for array initializer %d %T = (%T) %v",
-			i, a->array.type, Stack(j)->value.tag, Stack(j));
+		RaiseStandardException (exception_invalid_argument,
+				"Incompatible types in array initialization",
+				2, NewInt(i), Stack(j));
 	    }
 	    i++;
 	}
@@ -322,8 +326,9 @@ ThreadArrayIndex (Value thread, int ndim)
 	    break;
 	if (part < 0 || a->array.dim[dim] <= part)
 	{
-	    RaiseError ("array index %d out of bounds (%d)", part,
-		    a->array.dim[dim]);
+	    RaiseStandardException (exception_invalid_array_bounds,
+				    "array index out of bounds",
+				    2, a, dim);
 	    break;
 	}
 	i = i * a->array.dim[dim] + part;
@@ -352,12 +357,10 @@ ThreadCatch (Value thread, SymbolPtr exception, int offset)
     EXIT ();
 }
 
-static Bool
+static void
 ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
 {
     ENTER ();
-    CatchPtr	catch;
-    Bool	ret = False;
     BoxPtr	args = 0;
 
 #ifdef DEBUG_JUMP
@@ -372,17 +375,8 @@ ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
 	for (i = 0; i < argc; i++)
 	    BoxValueSet (args, i, STACK_POP (thread->thread.stack));
     }
-    for (catch = thread->thread.catches; catch; catch = catch->previous)
-	if (catch->exception == exception)
-	{
-	    do_long_jump (next, catch->continuation, Zero);
-	    if (args)
-		ContinuationArgs (thread, args);
-	    ret = True;
-	    break;
-	}
+    (void) RaiseException (thread, exception, args, next);
     EXIT ();
-    return ret;
 }
 
 static void
@@ -403,6 +397,30 @@ ThreadTwixt (Value thread, int enterOffset, int leaveOffset)
     EXIT ();
 }
 
+static void
+ThreadBoxCheck (BoxPtr box, int i, Types *type)
+{
+    if (BoxValueGet (box, i) == 0)
+    {
+	Types   *ctype = TypesCanon (type);
+	StructType  *st = ctype->structs.structs;
+	
+	switch (ctype->base.tag) {
+	case types_union:
+	    BoxValueSet (box, i, NewUnion (st, False));
+	    break;
+	case types_struct:
+	    BoxValueSet (box, i, NewStruct (st, False));
+	    box = BoxValueGet (box, i)->structs.values;
+	    for (i = 0; i < st->nelements; i++)
+		ThreadBoxCheck (box, i, StructTypeElements(st)[i].type);
+	    break;
+	default:
+	    break;
+	}
+    }
+}
+
 static inline ThreadState
 ThreadStep (Value thread)
 {
@@ -412,6 +430,7 @@ ThreadStep (Value thread)
     int		i;
     int		stack = 0;
     Value	value, v, w;
+    BoxPtr	box;
     
     inst = thread->thread.pc;
     value = thread->thread.v;
@@ -454,9 +473,24 @@ ThreadStep (Value thread)
 	    stack++;
 	}
 	break;
+    case OpTagCase:
+	if (value->value.tag != type_union)
+	{
+	    RaiseStandardException (exception_invalid_argument,
+				    "union switch expression not union",
+				    2,
+				    Zero, value);
+	    break;
+	}
+	if (value->unions.tag == inst->tagcase.tag)
+	    next = inst + inst->tagcase.offset;
+	break;
     case OpDefault:
         next = inst + inst->branch.offset;
 	stack++;
+	break;
+    case OpTagDefault:
+        next = inst + inst->branch.offset;
 	break;
     case OpEnd:
 	aborting = True;
@@ -477,52 +511,42 @@ ThreadStep (Value thread)
 	thread->thread.frame = thread->thread.frame->previous;
 	break;
     case OpName:
-	switch (inst->var.name->symbol.class) {
-	case class_global:
-	    value = BoxValue (inst->var.name->global.value, 0);
-	    break;
-	case class_static:
-	    for (i = 0, fp = thread->thread.frame; i < inst->var.staticLink; i++)
-		fp = fp->staticLink;
-	    value = BoxValue(fp->statics, inst->var.name->local.element);
-	    break;
-	case class_auto:
-	case class_arg:
-	    for (i = 0, fp = thread->thread.frame; i < inst->var.staticLink; i++)
-		fp = fp->staticLink;
-	    value = BoxValue(fp->frame, inst->var.name->local.element);
-	    break;
-	default:
-	    RaiseError ("Invalid symbol class %C for lvalue \"%A\"",
-			inst->var.name->symbol.class,
-			inst->var.name->symbol.name);
-	    value = Zero;
-	    break;
-	}
-	break;
     case OpNameRef:
+    case OpNameRefStore:
 	switch (inst->var.name->symbol.class) {
 	case class_global:
-	    value = NewRef (inst->var.name->global.value, 0);
+	    box = inst->var.name->global.value;
+	    i = 0;
 	    break;
 	case class_static:
 	    for (i = 0, fp = thread->thread.frame; i < inst->var.staticLink; i++)
 		fp = fp->staticLink;
-	    value = NewRef(fp->statics, inst->var.name->local.element);
+	    box = fp->statics;
+	    i = inst->var.name->local.element;
 	    break;
 	case class_auto:
 	case class_arg:
 	    for (i = 0, fp = thread->thread.frame; i < inst->var.staticLink; i++)
 		fp = fp->staticLink;
-	    value = NewRef (fp->frame, inst->var.name->local.element);
+	    box = fp->frame;
+	    i = inst->var.name->local.element;
 	    break;
 	default:
 	    RaiseError ("Invalid symbol class %C for lvalue \"%A\"",
 			inst->var.name->symbol.class,
 			inst->var.name->symbol.name);
-	    value = Zero;
+	    box = 0;
+	    i = 0;
 	    break;
 	}
+	if (!box)
+	    break;
+	if (inst->base.opCode != OpNameRefStore)
+	    ThreadBoxCheck (box, i, inst->var.name->symbol.type);
+	if (inst->base.opCode == OpName)
+	    value = BoxValue (box, i);
+	else
+	    value = NewRef (box, i);
 	break;
     case OpConst:
 	value = inst->constant.constant;
@@ -542,7 +566,10 @@ ThreadStep (Value thread)
 	v = StructRef (value, inst->atom.atom);
 	if (!v)
 	{
-	    RaiseError ("No member %A in %v", inst->atom.atom, value);
+	    RaiseStandardException (exception_invalid_struct_member,
+				    "Invalid struct member",
+				    2, value, 
+				    NewStrString (AtomName (inst->atom.atom)));
 	    break;
 	}
 	w = Stack(stack); stack++;
@@ -550,6 +577,7 @@ ThreadStep (Value thread)
 	break;
     case OpArray:
     case OpArrayRef:
+    case OpArrayRefStore:
 	switch (value->value.tag) {
 	    char    *s;
 	case type_string:
@@ -587,6 +615,8 @@ ThreadStep (Value thread)
 	    i = ThreadArrayIndex (thread, stack);
 	    if (!exception)
 	    {
+		if (inst->base.opCode != OpArrayRefStore)
+		    ThreadBoxCheck (value->array.values, i, value->array.type);
 		if (inst->base.opCode == OpArray)
 		    value = BoxValue (value->array.values, i);
 		else
@@ -614,8 +644,10 @@ ThreadStep (Value thread)
 	break;
     case OpArrow:
     case OpArrowRef:
+    case OpArrowRefStore:
 	if (value->value.tag != type_ref ||
-	    RefValue (value)->value.tag != type_struct)
+	    (RefValue (value)->value.tag != type_struct &&
+	     RefValue (value)->value.tag != type_union))
 	{
 	    RaiseError ("%v not a structure reference", value);
 	    break;
@@ -623,21 +655,50 @@ ThreadStep (Value thread)
 	value = RefValue (value);
     case OpDot:
     case OpDotRef:
-	if (value->value.tag != type_struct)
-	{
+    case OpDotRefStore:
+	switch (value->value.tag) {
+	default:
 	    RaiseError ("%v not a structure", value);
 	    break;
-	}
-	if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
-	    v = StructValue (value, inst->atom.atom);
-	else
-	    v = StructRef (value, inst->atom.atom);
-	if (!v)
-	{
-	    RaiseError ("No member %A in %v", inst->atom.atom, value);
+	case type_struct:
+	    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
+		v = StructValue (value, inst->atom.atom);
+	    else
+		v = StructRef (value, inst->atom.atom);
+	    if (!v)
+	    {
+		RaiseStandardException (exception_invalid_struct_member,
+					"no such struct member",
+					2, value, 
+					NewStrString (AtomName (inst->atom.atom)));
+		break;
+	    }
+	    value = v;
+	    break;
+	case type_union:
+	    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
+		v = UnionValue (value, inst->atom.atom);
+	    else
+	    {
+		v = UnionRef (value, inst->atom.atom);
+	    }
+	    if (!v)
+	    {
+		if (StructTypes (value->unions.type, inst->atom.atom))
+		    RaiseStandardException (exception_invalid_struct_member,
+					    "requested union tag not current",
+					    2, value,
+					    NewStrString (AtomName (inst->atom.atom)));
+		else
+		    RaiseStandardException (exception_invalid_struct_member,
+					    "no such union tag",
+					    2, value, 
+					    NewStrString (AtomName (inst->atom.atom)));
+		break;
+	    }
+	    value = v;
 	    break;
 	}
-	value = v;
 	break;
     case OpObj:
 	value = NewFunc (inst->code.code, thread->thread.frame);
@@ -811,10 +872,7 @@ ThreadStep (Value thread)
 	thread->thread.catches = thread->thread.catches->previous;
 	break;
     case OpRaise:
-	if (!ThreadRaise (thread, inst->raise.argc, inst->raise.exception, 
-			  &next))
-	    RaiseError ("Unhandled exception \"%A\"",
-			inst->raise.exception->symbol.name);
+	ThreadRaise (thread, inst->raise.argc, inst->raise.exception, &next);
 	break;
     case OpTwixt:
 	ThreadTwixt (thread, inst->twixt.enter, inst->twixt.leave);
@@ -870,8 +928,8 @@ ThreadStep (Value thread)
 	}
 	if (abortException)
 	{
-	    abortException = False;
-	    RaiseError ("Floating point exception");
+	    JumpStandardException (thread, &next);
+	    thread->thread.pc = next;
 	}
 	if (abortError)
 	{

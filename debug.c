@@ -6,8 +6,6 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 
 static void
@@ -113,11 +111,6 @@ do_Debug_dump (Value f)
     ENTER ();
     CodePtr code;
     
-    if (f->value.tag != type_func)
-    {
-	RaiseError ("dump: parameter should be function %v", f);
-	RETURN (Zero);
-    }
     code = f->func.code;
     if (code->base.builtin)
     {

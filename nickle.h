@@ -6,6 +6,7 @@
  * for licensing information.
  */
 
+#include	"config.h"
 #include	"value.h"
 #include	"opcode.h"
 
@@ -186,6 +187,8 @@ TwixtPtr    TwixtNext (TwixtPtr twixt, TwixtPtr last);
 typedef struct _exprBase {
     DataType	    *data;
     int		    tag;
+    Atom	    file;
+    int		    line;
     NamespacePtr    namespace;
     Types	    *type;
 } ExprBase;
@@ -355,6 +358,12 @@ typedef struct _instTwixt {
     int		leave;
 } InstTwixt;
 
+typedef struct _instTagCase {
+    InstBase	inst;
+    int		offset;
+    Atom	tag;
+} InstTagCase;
+
 typedef union _inst {
     InstBase	base;
     InstVar	var;
@@ -368,13 +377,18 @@ typedef union _inst {
     InstCatch	catch;
     InstRaise	raise;
     InstTwixt	twixt;
+    InstTagCase	tagcase;
 } Inst;
+
+#define OBJ_STATE_ERROR	    1
+#define OBJ_STATE_LOOP	    2
+#define OBJ_STATE_SWITCH    4
 
 typedef struct _obj {
     DataType	*data;
     int		size;
     int		used;
-    int		errors;
+    int		state;
 } Obj;
 
 #define ObjCode(obj,i)	(((InstPtr) (obj + 1)) + (i))
@@ -511,6 +525,34 @@ void	intr(int);
 void	stop (int), die (int), segv (int);
 
 extern Value    yyinput;
+
+/* Standard exceptions */
+typedef enum _standardException {
+    exception_none,
+    exception_uninitialized_value,  /* string */
+    exception_invalid_argument,	    /* string integer poly */
+    exception_readonly_box,	    /* string poly */
+    exception_invalid_array_bounds, /* string poly poly */
+    exception_divide_by_zero,	    /* string number number */
+    exception_invalid_struct_member,/* string poly string */
+    _num_standard_exceptions,
+} StandardException;
+
+void
+RaiseException (Value thread, SymbolPtr exception, BoxPtr args, InstPtr *next);
+
+void
+RegisterStandardException (StandardException	se,
+			   SymbolPtr		sym);
+
+void
+RaiseStandardException (StandardException   se,
+			char		    *string,
+			int		    argc,
+			...);
+
+void
+JumpStandardException (Value thread, InstPtr *next);
 
 /* vararg builtins */
 Value	do_printf (int, Value *);

@@ -7,15 +7,13 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
 #include	"nickle.h"
 #include	"gram.h"
 #include	<strings.h>
 #include	<errno.h>
 
 int	    at_bol = True;
-int	    yylineno;
+int	    yylineno = 0;
 int	    at_eof = False;
     
 #undef YY_INPUT
@@ -23,34 +21,37 @@ int	    at_eof = False;
 
 #define	    FILE_END_CHAR	-2
     
-#define YY_INPUT(buf,result,max_size) \
-{ \
-    int c; \
-    result = 0; \
-    at_eof = False; \
-    if (at_bol) yyprompt (); \
-    while (result < max_size) { \
-	c = FileInput (yyinput); \
-	at_bol = False; \
-	if (c < 0) { \
-	    c = popinput (); \
-	    if (c == -2) { \
-		at_eof = True; \
-		buf[result++] = '\n'; \
-		break; \
-	    } \
-	    if (c < 0) \
-		break; \
-	} \
-	buf[result++] = c; \
-	if (c == '\n') \
-	{ \
-	    at_bol = True; \
-	    yylineno++; \
-	    break; \
-	} \
-    } \
+static int yy_input (char *buf, int max_size)
+{
+    int	    c;
+    int	    result = 0;
+    
+    at_eof = False;
+    if (at_bol) { yylineno++; yyprompt (); }
+    while (result < max_size) {
+	c = FileInput (yyinput);
+	at_bol = False;
+	if (c < 0) {
+	    c = popinput ();
+	    if (c == -2) {
+		at_eof = True;
+		buf[result++] = '\n';
+		break;
+	    }
+	    if (c < 0)
+		break;
+	}
+	buf[result++] = c;
+	if (c == '\n')
+	{
+	    at_bol = True;
+	    break;
+	}
+    }
+    return result;
 }
+
+#define YY_INPUT(buf,result,max_size) ((result) = yy_input (buf, max_size))
     
 #ifndef FLEX_SCANNER
 #undef		input
@@ -80,9 +81,9 @@ Value	*yyinpt = yyinstack + YYINDEEP;
 Value	yyinput;
 int		linenos[YYINDEEP];
 int		*linenopt = linenos + YYINDEEP;
-char		*yyfile = "";
-char		*fnames[YYINDEEP];
-char		**fnamept = fnames + YYINDEEP;
+Atom		yyfile = 0;
+Atom		fnames[YYINDEEP];
+Atom		*fnamept = fnames + YYINDEEP;
 int		yyfiledeep = 0;
 
 %}
@@ -124,6 +125,7 @@ file		{ yylval.tval = type_file; return FILET; }
 mutex		{ yylval.tval = type_mutex; return MUTEX; }
 semaphore	{ yylval.tval = type_semaphore; return SEMAPHORE; }
 continuation	{ yylval.tval = type_continuation; return CONTINUATION; }
+thread		{ yylval.tval = type_thread; return THREAD; }
 struct		{ yylval.ival = STRUCT; return STRUCT; }
 union		{ yylval.ival = UNION; return UNION; }
 
@@ -434,15 +436,19 @@ lexfile(char *s)
     }
     ++yyfiledeep;
     yyinput = f;
-    yyfile = s;
+    yyfile = AtomId (s);
     return True;
 }
 
 void
 lexstdin(void)
 {
-    --yyfiledeep;
-    (void) FileClose (yyinput);
+    if (yyfiledeep)
+    {
+	--yyfiledeep;
+	(void) FileClose (yyinput);
+    }
+    yyfile = 0;
     yyinput = FileStdin;
     interactive = stdin_interactive;
 }
@@ -467,8 +473,9 @@ pushinput (char *s, Bool complain)
     *--linenopt = yylineno;
     *--fnamept = yyfile;
     yyinput = f;
-    yylineno = 1;
-    yyfile = s;
+    yylineno = 0;
+    at_bol = True;
+    yyfile = AtomId (s);
     interactive = 0;
     return True;
 }

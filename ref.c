@@ -6,9 +6,7 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
-#include	"value.h"
+#include	"nickle.h"
 
 static Value
 RefPlus (Value av, Value bv, int expandOk)

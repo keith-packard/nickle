@@ -19,12 +19,6 @@
 #include	"ref.h"
 #include	"gram.h"
 
-#ifdef O_NONBLOCK
-#define NOBLOCK	O_NONBLOCK
-#else
-#define NOBLOCK O_NDELAY
-#endif
-
 #ifdef O_ASYNC
 #define ASYNC O_ASYNC
 #else
@@ -595,7 +589,7 @@ FileSetFd (int fd)
     
     fcntl (fd, F_SETOWN, getpid());
     flags = fcntl (fd, F_GETFL);
-    flags |= ASYNC|NOBLOCK;
+    flags |= ASYNC;
     (void) fcntl (fd, F_SETFL, flags);
 #ifdef USE_STREAMS_ASYNC
     (void) ioctl(fd, I_SETSIG, S_INPUT | S_OUTPUT | S_ERROR | S_HANGUP);
@@ -608,7 +602,7 @@ FileResetFd (int fd)
     int	flags;
 
     flags = fcntl (fd, F_GETFL);
-    flags &= ~(ASYNC|NOBLOCK);
+    flags &= ~ASYNC;
     (void) fcntl (fd, F_SETFL, flags);
 #ifdef  USE_STREAMS_ASYNC
     (void) ioctl(fd, I_SETSIG, 0);
@@ -941,6 +935,44 @@ FileStringString (Value file)
 
 #define DontBlockIO	(runnable && running)
 
+static Bool
+FileIsReadable (int fd)
+{
+    fd_set	    bits;
+    int		    n;
+    struct timeval  tv;
+
+    if (fd < 3 && !ownTty[fd])
+	return False;
+    do
+    {
+	FD_ZERO (&bits);
+	FD_SET (fd, &bits);
+	tv.tv_usec = 0;
+	tv.tv_sec = 0;
+	n = select (fd + 1, &bits, 0, 0, &tv);
+    } while (n < 0 && errno == EINTR);
+    return n > 0;
+}
+
+static Bool
+FileIsWritable (int fd)
+{
+    fd_set	    bits;
+    int		    n;
+    struct timeval  tv;
+
+    do
+    {
+	FD_ZERO (&bits);
+	FD_SET (fd, &bits);
+	tv.tv_usec = 0;
+	tv.tv_sec = 0;
+	n = select (fd + 1, 0, &bits, 0, &tv);
+    } while (n < 0 && errno == EINTR);
+    return n > 0;
+}
+
 int
 FileInput (Value file)
 {
@@ -993,12 +1025,7 @@ FileInput (Value file)
 	    else
 	    {
 		buf = FileBuffer (ic);
-		if (file->file.fd < 3 && !ownTty[file->file.fd])
-		{
-		    n = -1;
-		    err = EWOULDBLOCK;
-		}
-		else
+		if (FileIsReadable (file->file.fd))
 		{
 		    n = ic->size;
 		    if (file->file.flags & FileUnBuf)
@@ -1006,6 +1033,11 @@ FileInput (Value file)
 		    n = read (file->file.fd, buf, n);
 		    err = errno;
 		    file->file.flags &= ~FileEnd;
+		}
+		else
+		{
+		    n = -1;
+		    err = EWOULDBLOCK;
 		}
 		if (n <= 0)
 		{
@@ -1076,8 +1108,16 @@ FileFlushChain (Value file, FileChainPtr ic, Bool block)
 
     while (ic->ptr < ic->used)
     {
-	n = write (file->file.fd, &FileBuffer(ic)[ic->ptr], ic->used - ic->ptr);
-	err = errno;
+	if (FileIsWritable (file->file.fd))
+	{
+	    n = write (file->file.fd, &FileBuffer(ic)[ic->ptr], ic->used - ic->ptr);
+	    err = errno;
+	}
+	else
+	{
+	    n = -1;
+	    err = EWOULDBLOCK;
+	}
 	if (n > 0)
 	    ic->ptr += n;
 	else

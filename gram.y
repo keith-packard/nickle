@@ -444,7 +444,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			    argType = 0;
 			}
 
-			if ($2)
+			if ($2 && symbol)
 			{
 			    decl->init = NewExprCode (NewFuncCode (ret,
 								   argType,
@@ -1518,6 +1518,21 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name)
 	    s = NewSymbolException (name, type);
 	    break;
 	case class_typedef:
+	    /*
+	     * Special case for typedefs --
+	     * allow forward declaration of untyped
+	     * typedef names, then hook the
+	     * new type to the old name
+	     */
+	    if (type)
+	    {
+		s = NamespaceFindName (CurrentNamespace, name, False);
+		if (s && s->symbol.class == class_typedef && !s->symbol.type)
+		{
+		    s->symbol.type = type;
+		    RETURN (s);
+		}
+	    }
 	    s = NewSymbolType (name, type);
 	    break;
 	case class_namespace:

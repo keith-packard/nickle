@@ -1,3 +1,10 @@
+2004-12-09  Keith Packard  <keithp@keithp.com>
+
+	reviewed by: Martin Hoch <hoch.martin@web.de>
+
+	* main.c:
+	Add #include <sys/time.h> as required for Mac OS X.
+
 2004-12-01  Keith Packard  <keithp@keithp.com>
 version 2.44
 

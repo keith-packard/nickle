@@ -87,7 +87,7 @@ Bool		NamespaceRemoveName (NamespacePtr namespace, Atom atom);
 void		NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish);
 void		NamespaceInit (void);
 
-extern NamespacePtr GlobalNamespace, CurrentNamespace, DebugNamespace, LexNamespace;
+extern NamespacePtr GlobalNamespace, TopNamespace, CurrentNamespace, DebugNamespace, LexNamespace;
 extern FramePtr	    CurrentFrame;
 
 typedef struct _command {
@@ -594,7 +594,8 @@ Bool	LexResetInteractive (void);
 void	LexInit (void);
 
 int	yywrap (void);
-void	yyerror (char *fmt, ...);
+void	yyerror (char *msg);
+void	ParseError (char *fmt, ...);
 int	yylex (void);
 Bool	LexFile (char *, Bool);
 void	LexString (char *);

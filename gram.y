@@ -14,7 +14,8 @@ int ignorenl;
 NamespacePtr	LexNamespace;
 int funcDepth;
 
-void yyerror (char *fmt, ...);
+void ParseError (char *fmt, ...);
+void yyerror (char *msg);
 
 static Bool
 ParseCanonType (TypesPtr type);
@@ -146,7 +147,12 @@ ignorenl	:
 		;
 
 attendnl	:
-		    { ignorenl = 0; LexNamespace = 0; funcDepth = 0; }
+		    { 
+			ignorenl = 0; 
+			LexNamespace = 0; 
+			CurrentNamespace = TopNamespace; 
+			funcDepth = 0; 
+		    }
 		;
 opt_nl		: NL
 		|
@@ -229,7 +235,7 @@ command		: expr attendnl NL
 
 			c = CommandFind (CurrentCommands, $1);
 			if (!c)
-			    yyerror ("Undefined command \"%s\"", AtomName ($1));
+			    ParseError ("Undefined command \"%s\"", AtomName ($1));
 			else
 			{
 			    e = NewExprTree (OP, 
@@ -253,7 +259,7 @@ command		: expr attendnl NL
 
 			c = CommandFind (CurrentCommands, $1);
 			if (!c)
-			    yyerror ("Undefined command \"%s\"", AtomName ($1));
+			    ParseError ("Undefined command \"%s\"", AtomName ($1));
 			else
 			{
 			    e = NewExprTree (OP, 
@@ -322,12 +328,12 @@ namespace	: namespace NAMESPACENAME COLONCOLON
 			    symbol = e->atom.symbol;
 			if (!symbol)
 			{
-			    yyerror ("non-existant namespace \"%A\"", $2);
+			    ParseError ("non-existant namespace \"%A\"", $2);
 			    YYERROR;
 			}
 			else if (symbol->symbol.class != class_namespace)
 			{
-			    yyerror ("%A is not a namespace", $2);
+			    ParseError ("%A is not a namespace", $2);
 			    YYERROR;
 			}
 			LexNamespace = symbol->namespace.namespace;
@@ -345,12 +351,12 @@ namespace	: namespace NAMESPACENAME COLONCOLON
 			    symbol = e->atom.symbol;
 			if (!symbol)
 			{
-			    yyerror ("non-existant namespace \"%A\"", $1);
+			    ParseError ("non-existant namespace \"%A\"", $1);
 			    YYERROR;
 			}
 			else if (symbol->symbol.class != class_namespace)
 			{
-			    yyerror ("%A is not a namespace", $1);
+			    ParseError ("%A is not a namespace", $1);
 			    YYERROR;
 			}
 			LexNamespace = symbol->namespace.namespace;
@@ -494,12 +500,12 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			    symbol = NamespaceFindName (CurrentNamespace, $4, True);
 			    if (!symbol)
 			    {
-				yyerror ("non-existant namespace %A", $4);
+				ParseError ("non-existant namespace %A", $4);
 				YYERROR;
 			    }
 			    else if (symbol->symbol.class != class_namespace)
 			    {
-				yyerror ("%A is not a namespace", $4);
+				ParseError ("%A is not a namespace", $4);
 				YYERROR;
 			    }
 			    else
@@ -544,12 +550,12 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			symbol = e->atom.symbol;
 			if (!symbol)
 			{
-			    yyerror ("non-existant namespace %A", e->atom.atom);
+			    ParseError ("non-existant namespace %A", e->atom.atom);
 			    YYERROR;
 			}
 			else if (symbol->symbol.class != class_namespace)
 			{
-			    yyerror ("%A is not a namespace", e->atom.atom);
+			    ParseError ("%A is not a namespace", e->atom.atom);
 			    YYERROR;
 			}
 			NamespaceImport (CurrentNamespace, 
@@ -912,7 +918,7 @@ simpleexpr	: primary
 			t = do_Thread_id_to_thread ($2);
 			if (Zerop (t))
 			{
-			    yyerror ("No thread %v", $2);
+			    ParseError ("No thread %v", $2);
 			    YYERROR;
 			}
 			else
@@ -1384,7 +1390,7 @@ ParseCanonType (TypesPtr type)
     
     if (!type)
     {
-	yyerror ("Type missing inside compiler");
+	ParseError ("Type missing inside compiler");
 	return False;
     }
     switch (type->base.tag) {
@@ -1400,18 +1406,18 @@ ParseCanonType (TypesPtr type)
 	    symbol = e->atom.symbol;
 	    if (!symbol)
 	    {
-		yyerror ("No typedef \"%A\" in namespace",
+		ParseError ("No typedef \"%A\" in namespace",
 			 e->atom.atom);
 		ret = False;
 	    }
 	    else if (symbol->symbol.class != class_typedef)
 	    {
-		yyerror ("Symbol \"%A\" not a typedef", e->atom.atom);
+		ParseError ("Symbol \"%A\" not a typedef", e->atom.atom);
 		ret = False;
 	    }
 	    else if (!symbol->symbol.type)
 	    {
-		yyerror ("Typedef \"%A\" not defined yet", e->atom.atom);
+		ParseError ("Typedef \"%A\" not defined yet", e->atom.atom);
 		ret = False;
 	    }
 	    else
@@ -1499,15 +1505,24 @@ yywrap (void)
     return 1;
 }
 
+extern	char *yytext;
+
 void
-yyerror (char *fmt, ...)
+ParseError (char *fmt, ...)
 {
     va_list	args;
 
     if (LexFileName ())
-	FilePrintf (FileStderr, "%A:%d: ", LexFileName (), LexFileLine ());
+	FilePrintf (FileStderr, "%A:%d: ",
+		    LexFileName (), LexFileLine ());
     va_start (args, fmt);
     FileVPrintf (FileStderr, fmt, args);
     FilePrintf (FileStderr, "\n");
     va_end (args);
+}
+
+void
+yyerror (char *msg)
+{
+    ParseError ("%s before %S", msg, yytext);
 }

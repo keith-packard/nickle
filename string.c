@@ -51,85 +51,20 @@ StringLess (Value av, Value bv, int expandOk)
     return Zero;
 }
 
-static int
-printWidth (char *s)
-{
-    int	    width = 2;
-    char    c;
-    while ((c = *s++))
-    {
-	if (c < ' ' || '~' < c)
-	    switch (c) {
-	    case '\n':
-	    case '\r':
-	    case '\t':
-	    case '\b':
-	    case '\f':
-		width += 2;
-		break;
-	    default:
-		width += 4;
-		break;
-	    }
-	else if (c == '"')
-	    width += 2;
-	else
-	    width++;
-    }
-    return width;
-}
 
 static Bool
 StringPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     char    *string = StringChars (&av->string);
-    char    c;
     int	    print_width;
     
-    if (format == 's')
-	print_width = strlen (string);
-    else
-	print_width = printWidth (string);
+    print_width = FileStringWidth (string, format);
     while (width > print_width)
     {
 	FileOutput (f, fill);
 	width--;
     }
-    if (format == 's')
-	FilePuts (f, string);
-    else
-    {
-	FileOutput (f, '"');
-	while ((c = *string++)) {
-	    if (c < ' ' || '~' < c)
-		switch (c) {
-		case '\n':
-		    FilePuts (f, "\\n");
-		    break;
-		case '\r':
-		    FilePuts (f, "\\r");
-		    break;
-		case '\b':
-		    FilePuts (f, "\\b");
-		    break;
-		case '\t':
-		    FilePuts (f, "\\t");
-		    break;
-		case '\f':
-		    FilePuts (f, "\\f");
-		    break;
-		default:
-		    FileOutput (f, '\\');
-		    Print (f, NewInt (c), 'o', 8, 3, 0, '0');
-		    break;
-		}
-	    else if (c == '"')
-		FilePuts (f, "\\\"");
-	    else
-		FileOutput (f, c);
-	}
-	FileOutput (f, '"');
-    }
+    FilePutString (f, string, format);
     while (-width > print_width)
     {
 	FileOutput (f, fill);

@@ -57,7 +57,8 @@ NewNamelist (NamelistPtr next, SymbolPtr symbol, Publish publish)
     RETURN (namelist);
 }
 
-NamespacePtr	GlobalNamespace, CurrentNamespace;
+NamespacePtr	GlobalNamespace, TopNamespace, CurrentNamespace;
+ReferencePtr	TopNamespaceReference;
 ReferencePtr	CurrentNamespaceReference;
 CommandPtr	CurrentCommands;
 ReferencePtr	CurrentCommandsReference;
@@ -69,12 +70,19 @@ NamespaceInit (void)
 
     GlobalNamespace = NewNamespace (0);
     MemAddRoot (GlobalNamespace);
+    
+    TopNamespace = GlobalNamespace;
+    TopNamespaceReference = NewReference ((void **) &TopNamespace);
+    MemAddRoot (TopNamespaceReference);
+    
     CurrentNamespace = GlobalNamespace;
     CurrentNamespaceReference = NewReference ((void **) &CurrentNamespace);
     MemAddRoot (CurrentNamespaceReference);
+    
     CurrentCommands = 0;
     CurrentCommandsReference = NewReference ((void **) &CurrentCommands);
     MemAddRoot (CurrentCommandsReference);
+
     EXIT ();
 }
 

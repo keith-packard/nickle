@@ -99,7 +99,7 @@ DebugSetFrame (Value continuation, int offset)
     if (frame && namespace)
     {
 	ret = True;
-	CurrentNamespace = NewNamespace (namespace);
+	TopNamespace = CurrentNamespace = NewNamespace (namespace);
 	CurrentFrame = frame;
 	NamespaceImport (CurrentNamespace, DebugNamespace, publish_public);
 	DebugAddVar (CurrentNamespace, "cont", continuation, typesPrim[type_continuation]);
@@ -123,7 +123,7 @@ Value
 do_Debug_done (void)
 {
     ENTER ();
-    CurrentNamespace = GlobalNamespace;
+    TopNamespace = CurrentNamespace = GlobalNamespace;
     CurrentFrame = 0;
     DebugDeleteCommands ();
     RETURN (Zero);

@@ -653,6 +653,8 @@ void	FilePuts (Value, char *);
 void	FilePutUIntBase (Value file, unsigned int a, int base);
 void	FilePutIntBase (Value file, int a, int base);
 void	FilePutInt (Value, int);
+int	FileStringWidth (char *string, char format);
+void	FilePutString (Value f, char *string, char format);
 void	FilePutType (Value f, Type tag, Bool minimal);
 void	FilePutClass (Value f, Class storage, Bool minimal);
 void	FilePutPublish (Value f, Publish publish, Bool minimal);

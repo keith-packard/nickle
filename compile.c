@@ -129,15 +129,17 @@ void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
  * Set storage information for new symbols
  */
 static void
-CompileStorage (SymbolPtr symbol, CodePtr code)
+CompileStorage (ObjPtr obj, ExprPtr stat, SymbolPtr symbol, CodePtr code)
 {
     ENTER ();
     
+    if (!symbol)
+	obj->state |= OBJ_STATE_ERROR;
     /*
      * For symbols hanging from a frame (statics, locals and args),
      * locate the frame and set their element value
      */
-    if (ClassFrame(symbol->symbol.class))
+    else if (ClassFrame(symbol->symbol.class))
     {
 	switch (symbol->symbol.class) {
 	case class_static:
@@ -206,6 +208,12 @@ CompileCheckSymbol (ObjPtr obj, ExprPtr stat, ExprPtr name, CodePtr code,
 	}
 
 	c = s->local.code;
+	if (!c)
+	{
+	    CompileError (obj, stat, "Class %C invalid at global scope",
+			  s->symbol.class);
+	    break;
+	}
 	/*
 	 * Ensure the dynamic scope will exist
 	 */
@@ -1943,14 +1951,9 @@ CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
 
     for (args = code->base.args; args; args = args->next)
     {
-	if (!args->symbol)
-	{
-	    obj->state |= OBJ_STATE_ERROR;
-	    break;
-	}
+	CompileStorage (obj, stat, args->symbol, code);
 	if (!args->varargs)
 	    code->base.argc++;
-	CompileStorage (args->symbol, code);
     }
     code->func.body.obj = CompileFuncCode (code, stat, previous);
     obj->state |= code->func.body.obj->state & OBJ_STATE_ERROR;
@@ -2029,13 +2032,8 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	RETURN (obj);
     }
     for (decl = decls->decl.decl; decl; decl = decl->next) {
+        CompileStorage (obj, decls, decl->symbol, code);
 	s = decl->symbol;
-	if (!s)
-	{
-	    obj->state |= OBJ_STATE_ERROR;
-	    break;
-	}
-	CompileStorage (s, code);
 	/*
 	 * Compile initializers in two steps
 	 * compile the expression before placing the
@@ -2068,7 +2066,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	    InstPtr inst;
 	    ExprPtr lvalue;
 	    
-	    lvalue = NewExprAtom (s->symbol.name, s);
+	    lvalue = NewExprAtom (decl->name, decl->symbol);
 	    *initObj = CompileLvalue (*initObj, lvalue,
 				       decls, code, False, True);
 	    if (!TypeCombineBinary (lvalue->base.type,

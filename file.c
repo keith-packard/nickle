@@ -590,6 +590,80 @@ void	FilePutInt (Value file, int a)
     FilePutIntBase (file, a, 10);
 }
 
+int
+FileStringWidth (char *string, char format)
+{
+    if (format == 's')
+	return strlen (string);
+    else
+    {
+	int	    width = 2;
+	char    c;
+	while ((c = *string++))
+	{
+	    if (c < ' ' || '~' < c)
+		switch (c) {
+		case '\n':
+		case '\r':
+		case '\t':
+		case '\b':
+		case '\f':
+		    width += 2;
+		    break;
+		default:
+		    width += 4;
+		    break;
+		}
+	    else if (c == '"')
+		width += 2;
+	    else
+		width++;
+	}
+	return width;
+    }
+}
+
+void
+FilePutString (Value f, char *string, char format)
+{
+    if (format == 's')
+	FilePuts (f, string);
+    else
+    {
+	int c;
+	FileOutput (f, '"');
+	while ((c = *string++ & 0xff)) {
+	    if (c < ' ' || '~' < c)
+		switch (c) {
+		case '\n':
+		    FilePuts (f, "\\n");
+		    break;
+		case '\r':
+		    FilePuts (f, "\\r");
+		    break;
+		case '\b':
+		    FilePuts (f, "\\b");
+		    break;
+		case '\t':
+		    FilePuts (f, "\\t");
+		    break;
+		case '\f':
+		    FilePuts (f, "\\f");
+		    break;
+		default:
+		    FileOutput (f, '\\');
+		    Print (f, NewInt (c), 'o', 8, 3, 0, '0');
+		    break;
+		}
+	    else if (c == '"')
+		FilePuts (f, "\\\"");
+	    else
+		FileOutput (f, c);
+	}
+	FileOutput (f, '"');
+    }
+}
+
 void
 FilePutType (Value f, Type tag, Bool minimal)
 {
@@ -909,6 +983,9 @@ FileVPrintf (Value file, char *fmt, va_list args)
 		break;
 	    case 's':
 		(void) FilePuts (file, va_arg (args, char *));
+		break;
+	    case 'S':
+		FilePutString (file, va_arg (args, char *), 'v');
 		break;
 	    case 'A':
 		(void) FilePuts (file, AtomName (va_arg (args, Atom)));

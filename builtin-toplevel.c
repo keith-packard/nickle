@@ -223,7 +223,16 @@ do_imprecise (int n, Value *p)
 
     v = p[0];
     if (n > 1)
+    {
 	prec = IntPart (p[1], "imprecise: invalid precision");
+	if (prec <= 0)
+	{
+	    RaiseStandardException (exception_invalid_argument,
+				    "imprecise: precision must be positive",
+				    2, NewInt(0), p[1]);
+	    RETURN(v);
+	}
+    }
     else
     {
 	if (ValueIsFloat(v))

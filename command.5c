@@ -141,15 +141,19 @@ extend namespace Command {
 	    for (int j = dim(name) - 1; j >= 0; j--)
 	    {
 		import_if_needed(name[j]);
-		string f = make_filename(name[j]);
-		if (!lex_library (f)) 
+		string[*] subname = (string[j+1]) { [k] = name[k] };
+		if (!valid_name (subname))
 		{
-		    File::fprintf (stderr,
-				   "Cannot load %s " +
-				   "file \"%s\", giving up.\n",
-				   autotype,
-				   f);
-		    return;
+		    string f = make_filename(name[j]);
+		    if (!lex_library (f)) 
+		    {
+			File::fprintf (stderr,
+				       "Cannot load %s " +
+				       "file \"%s\", giving up.\n",
+				       autotype,
+				       f);
+			return;
+		    }
 		}
 	    }
 	}

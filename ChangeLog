@@ -1,3 +1,8 @@
+2004-04-15  Bart Massey  <bart@cs.pdx.edu>
+
+	* lex.l:
+	Allow identifiers to start with "_".
+
 2004-04-14  Bart Massey  <bart@cs.pdx.edu>
 
 	reviewed by: Keith Packard <keithp@keithp.com>

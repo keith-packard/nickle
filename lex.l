@@ -543,7 +543,7 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 		yylval.value = aetov (yytext, 10);
 		return TEN_FLOAT;
 		}
-[a-zA-Z][0-9a-zA-Z_]* {
+[a-zA-Z_][0-9a-zA-Z_]* {
 	        CommandPtr	c;
 		SymbolPtr	symbol;
 		yylval.atom = AtomId (yytext);

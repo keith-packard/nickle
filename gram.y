@@ -1338,17 +1338,21 @@ simpleexpr	: simpleexpr assignop simpleexpr    		%prec ASSIGN
 		    }
 		| OP OS dims CS CP namespace_start opt_arrayinit namespace_end
 		    { 
-			$7->base.type = NewTypeArray (typePoly, $3, False);
-			ParseCanonType ($7->base.type, False);
+			TypePtr	t = NewTypeArray (typePoly, $3, False);
+			ParseCanonType (t, False);
 			$$ = NewExprTree (NEW, $7, 0); 
-			$$->base.type = $7->base.type;
+			if ($7)
+			    $7->base.type = t;
+			$$->base.type = t;
 		    }
 		| OP OS type CS CP namespace_start opt_hashinit namespace_end
 		    {
-			$7->base.type = NewTypeHash (typePoly, $3);
-			ParseCanonType ($7->base.type, False);
+			TypePtr t = NewTypeHash (typePoly, $3);
+			ParseCanonType (t, False);
 			$$ = NewExprTree (NEW, $7, 0);
-			$$->base.type = $7->base.type;
+			if ($7)
+			    $7->base.type = t;
+			$$->base.type = t;
 		    }
 		| type DOT NAME						%prec UNIONCAST
 		    {
@@ -1409,9 +1413,9 @@ integer		: TEN_NUM
  */
 opt_arrayinit	: arrayinit
 		| OC CC
-		    { $$ = NewExprTree (ARRAY, 0, 0); }
+		    { $$ = 0; }
 		|
-		    { $$ = NewExprTree (ARRAY, 0, 0); }
+		    { $$ = 0; }
 		;
 arrayinit    	: OC arrayelts opt_comma opt_dotdotdot CC
 		    { 
@@ -1471,9 +1475,9 @@ arrayelt	: simpleexpr
  */
 opt_hashinit	: hashinit
 		| OC CC
-		    { $$ = NewExprTree (HASH, 0, 0); }
+		    { $$ = 0; }
 		|
-		    { $$ = NewExprTree (HASH, 0, 0); }
+		    { $$ = 0; }
 		;
 hashinit	: OC hashelts opt_comma CC
 		    {

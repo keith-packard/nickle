@@ -2,6 +2,12 @@
 version 2.39
 
 	* gram.y:
+	Fix fix for crash with empty array/hash initializers
+	(really do need 'null' node in expr tree)
+
+2004-06-03  Keith Packard  <keithp@keithp.com>
+
+	* gram.y:
 	Fix crash with empty array/hash initializers
 
 2004-06-02  Keith Packard  <keithp@keithp.com>

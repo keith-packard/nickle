@@ -1,22 +1,38 @@
-TODO
+TO DO
 
 + Allow poll() as a substitute for select().
 + Allow nick to be built without all the async IO and
   gettimeofday() and the like.
 + Build a small test suite.
++ Build regression tests for everything on the DONE list.
 + Finish the manual.
 + Fix output formatting length problems.
++ Tagless GC.
++ Null-safe strings.
+
+TO THINK ABOUT
+
 + Allow multiple instances of ARC4 or PRNG to run simultaneously
   (i.e. encapsulated generators)?
 + Too few array initializers is an error?
-+ Tagless GC.
-+ Null-safe strings.
 + Array dimension types or something like them?
++ "Better" namespace seperator?
++ Move ellipses to other side of function formal?
++ Add a full scope operator?
++ Add true partial initializers?
 
-NOT TODO
+NOT TO DO
 
-+ Comments should not be allowed in interactive mode?
 + "public namespace" has a somewhat non-intuitive meaning.  Fix?
+  Too hard, don't know what to do.
++ Add array zeroing builtin?
+  Use pattern initializer instead: much better.
++ * should be right unary operator?
+  Should be, but won't :-).
++ Comments should not be allowed in interactive mode?
+  Need to for intuition.
++ Make sure all comments are closed before the reader prints a prompt?
+  Principle of least surprise: want to be able to paste code in.
 
 DONE
 
@@ -26,7 +42,7 @@ DONE
 + Replace nick-in-C code (e.g. gcd.c) with nick library code.
 + "read" file should be "load" file.
 + Make sure all blocks and comments are closed when the
-  reader leaves a file, and before it prints a prompt.
+  reader leaves a file.
 + Finish exception handling.
 + typedef syntax.
 + : namespace separator.
@@ -42,3 +58,10 @@ DONE
 + Add file/line numbers to compile errors.
 + Add a PRNG.
 + Rename Strings to String.
++ Pattern-based initializers.
++ Array decl * syntax.
++ Add <uninit> support
++ Remove mutex builtins.
++ Allow namespaces to be extended.
++ void type (as unit type).
++ GNU readline support.

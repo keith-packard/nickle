@@ -393,6 +393,20 @@ void	    ThreadFinish (Value thread);
 void	    ThreadSetState (Value thread, ThreadState state);
 void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);
+void	    TraceFunction (FramePtr frame, CodePtr code, Atom name);
+void	    TraceFrame (FramePtr frame, InstPtr pc);
+#ifdef DEBUG_JUMP
+void	    TraceContinuation (char	    *where,
+			       FramePtr	    frame,
+			       StackObject  *stack,
+			       CatchPtr	    catches,
+			       TwixtPtr	    twixts,
+			       InstPtr	    pc,
+			       int	    indent);
+void	    ContinuationTrace (char	*where, Value continuation);
+#endif
+void	    ContinuationJump (Value thread, Value continuation, InstPtr *next);
+void	    ContinuationArgs (Value thread, BoxPtr args);
 
 typedef struct _jump {
     DataType	    *data;
@@ -402,6 +416,7 @@ typedef struct _jump {
     TwixtPtr	    parent;
     Value	    continuation;
     Value	    ret;
+    BoxPtr	    args;
 } Jump;
 
 Value	    JumpContinuation (JumpPtr jump, InstPtr *next);
@@ -574,6 +589,7 @@ Value	do_Math_assignpow (Value, Value);
 Value	do_File_putc (Value, Value);
 Value	do_File_setbuf (Value, Value);
 Value	do_String_index (Value, Value);
+Value	do_set_jump (Value, Value);
 
 /* three argument builtins */
 Value	do_String_substr (Value, Value, Value);
@@ -582,5 +598,4 @@ Value	do_String_substr (Value, Value, Value);
 Value	do_File_print (Value, Value, Value, Value, Value, Value, Value);
 
 /* two argument non-local builtins */
-Value	do_set_jump (InstPtr *, Value, Value);
 Value	do_long_jump (InstPtr *, Value, Value);

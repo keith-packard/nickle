@@ -248,6 +248,7 @@ struct fbuiltin_2 funcs_2[] = {
     { do_File_putc,	    "putc",		    type_integer,   "nf",   &FileNamespace },
     { do_File_setbuf,	    "setbuffer",	    type_integer,   "fn",   &FileNamespace },
     { do_String_index,      "index",		    type_integer,   "ss",   &StringNamespace },
+    { do_set_jump,	    "set_jump",		    type_undef,	    "*cp"   },
     { 0,		    0 },
 };
 
@@ -261,7 +262,6 @@ struct fbuiltin_7 funcs_7[] = {
 };
 
 struct fbuiltin_2j funcs_2j[] = {
-    { do_set_jump,	    "set_jump",		    type_undef,	    "*cp"   },
     { do_long_jump,	    "long_jump",	    type_undef,	    "cp"    },
     { 0,		0 },
 };

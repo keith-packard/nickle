@@ -345,7 +345,7 @@ do_Thread_kill (int n, Value *p)
     RETURN (NewInt (ret));
 }
 
-static void
+void
 TraceFunction (FramePtr frame, CodePtr code, Atom name)
 {
     int		    fe;
@@ -361,12 +361,84 @@ TraceFunction (FramePtr frame, CodePtr code, Atom name)
     FilePuts (FileStdout, ")\n");
 }
 
-Value
-do_Thread_trace (int n, Value *p)
+void
+TraceFrame (FramePtr frame, InstPtr pc)
 {
     ENTER ();
     int		max;
     CodePtr	code;
+
+    PrintStat (FileStdout, pc->base.stat, False);
+    for (max = 20; frame && max--; frame = frame->previous)
+    {
+	code = frame->function->func.code;
+	TraceFunction (frame, code, code->base.name);
+	PrintStat (FileStdout, frame->savePc->base.stat, False);
+    }
+    EXIT ();
+}
+
+#ifdef DEBUG_JUMPS
+static void
+TraceIndent (int indent)
+{
+    while (indent--)
+	FilePuts (FileStdout, "    ");
+}
+
+void
+TraceContinuation (char	    *where,
+		   FramePtr frame,
+		   StackObject *stack,
+		   CatchPtr catches,
+		   TwixtPtr twixts,
+		   InstPtr  pc,
+		   int	    indent)
+{
+    int	    s;
+    
+    TraceIndent (indent);
+    FilePuts (FileStdout, "*** ");
+    FilePuts (FileStdout, where);
+    FilePuts (FileStdout, " ***\n");
+    TraceIndent (indent);
+    FilePuts (FileStdout, "stack:     ");
+    for (s = 0; STACK_TOP(stack) + (s) < STACK_MAX(stack); s++)
+    {
+	if (s)
+	    FilePuts (FileStdout, ", ");
+	print (FileStdout, STACK_ELT(stack, s));
+    }
+    FilePuts (FileStdout, "\n");
+    TraceIndent (indent);
+    FilePuts (FileStdout, "catches:   ");
+    for (s = 0; catches; catches = catches->previous, s++)
+    {
+	if (s)
+	    FilePuts (FileStdout, ", ");
+	FilePuts (FileStdout, AtomName (catches->exception->symbol.name));
+    }
+    FilePuts (FileStdout, "\n");
+    TraceIndent (indent);
+    FilePuts (FileStdout, "statement: ");
+    PrintStat (FileStdout, pc->base.stat, False);
+    for (s = 0; twixts; twixts = twixts->previous, s++)
+    {
+	TraceContinuation ("twixt",
+			   twixts->frame,
+			   twixts->stack,
+			   twixts->catches,
+			   0,
+			   twixts->enter,
+			   indent+1);
+    }
+}
+#endif
+
+Value
+do_Thread_trace (int n, Value *p)
+{
+    ENTER ();
     Value	v;
     FramePtr	frame;
     InstPtr	pc;
@@ -391,13 +463,7 @@ do_Thread_trace (int n, Value *p)
 	    RaiseError ("trace: %v neither continuation nor thread", v);
 	RETURN (Zero);
     }
-    PrintStat (FileStdout, pc->base.stat, False);
-    for (max = 20; frame && max--; frame = frame->previous)
-    {
-	code = frame->function->func.code;
-	TraceFunction (frame, code, code->base.name);
-	PrintStat (FileStdout, frame->savePc->base.stat, False);
-    }
+    TraceFrame (frame, pc);
     RETURN(One);
 }
 
@@ -558,6 +624,8 @@ MarkJump (void *object)
     MemReference (jump->leave);
     MemReference (jump->parent);
     MemReference (jump->continuation);
+    MemReference (jump->ret);
+    MemReference (jump->args);
 }
 
 DataType    JumpType = { MarkJump, 0 };
@@ -576,7 +644,49 @@ NewJump (TwixtPtr leave, TwixtPtr enter,
     jump->parent = parent;
     jump->continuation = continuation;
     jump->ret = ret;
+    jump->args = 0;
     RETURN (jump);
+}
+
+#ifdef DEBUG_JUMP
+void
+ContinuationTrace (char	*where, Value continuation)
+{
+    TraceContinuation (where,
+		       continuation->continuation.frame,
+		       continuation->continuation.stack,
+		       continuation->continuation.catches,
+		       continuation->continuation.twixts,
+		       continuation->continuation.pc,
+		       1);
+}
+#endif
+
+void
+ContinuationJump (Value thread, Value continuation, InstPtr *next)
+{
+#ifdef DEBUG_JUMP
+    ContinuationTrace ("ContinuationJump", continuation);
+#endif
+    running->thread.frame = continuation->continuation.frame;
+    running->thread.stack = StackCopy (continuation->continuation.stack);
+    running->thread.catches = continuation->continuation.catches;
+    running->thread.twixts = continuation->continuation.twixts;
+    running->thread.jump = 0;
+    *next = continuation->continuation.pc;
+}
+
+void
+ContinuationArgs (Value thread, BoxPtr args)
+{
+    if (thread->thread.jump)
+	thread->thread.jump->args = args;
+    else
+    {
+	int	    i = args->nvalues;
+	while (--i >= 0)
+	    STACK_PUSH (thread->thread.stack, BoxValue (args, i));
+    }
 }
 
 /*
@@ -604,18 +714,9 @@ JumpContinuation (JumpPtr jump, InstPtr *next)
     }
     else
     {
-	Value	continuation = jump->continuation;
-	
-	running->thread.frame = continuation->continuation.frame;
-	running->thread.stack = StackCopy (continuation->continuation.stack);
-	running->thread.catches = continuation->continuation.catches;
-	running->thread.twixts = continuation->continuation.twixts;
-	running->thread.jump = 0;
-	/*
-	 * Adjust stack for set jump return
-	 */
-	STACK_DROP (running->thread.stack, 2);
-	*next = continuation->continuation.pc;
+	ContinuationJump (running, jump->continuation, next);
+	if (jump->args)
+	    ContinuationArgs (running, jump->args);
     }
     RETURN (jump->ret);
 }
@@ -667,21 +768,31 @@ JumpBuild (TwixtPtr leave, TwixtPtr enter,
  * created here should be adjusted to account for this difference
  */
 Value
-do_set_jump (InstPtr *next, Value continuation_ref, Value ret)
+do_set_jump (Value continuation_ref, Value ret)
 {
     ENTER ();
-    Value   continuation;
+    Value	continuation;
+    StackObject	*stack;
     
     if (continuation_ref->value.tag != type_ref)
     {
 	RaiseError ("setjump: not a reference %v", continuation_ref);
 	RETURN (Zero);
     }
-    continuation = NewContinuation (running->thread.frame, *next,
-				    StackCopy (running->thread.stack),
+    stack = StackCopy (running->thread.stack);
+    /*
+     * Adjust stack for set jump return
+     */
+    STACK_DROP (stack, 2);
+    continuation = NewContinuation (running->thread.frame, 
+				    running->thread.pc + 1,
+				    stack,
 				    running->thread.catches,
 				    running->thread.twixts);
     RefValue (continuation_ref) = continuation;
+#ifdef DEBUG_JUMP
+    ContinuationTrace ("do_set_jump", continuation);
+#endif
     RETURN (ret);
 }
 
@@ -697,6 +808,16 @@ do_long_jump (InstPtr *next, Value continuation, Value ret)
 	RaiseError ("longjump: not a continuation %v", continuation);
 	RETURN (Zero);
     }
+#ifdef DEBUG_JUMP
+    TraceContinuation ("do_long_jump from",
+		       running->thread.frame,
+		       running->thread.stack,
+		       running->thread.catches,
+		       running->thread.twixts,
+		       running->thread.pc,
+		       1);
+    ContinuationTrace ("do_long_jump to", continuation);
+#endif      
     /*
      * Check for intervening twixts
      */
@@ -706,18 +827,7 @@ do_long_jump (InstPtr *next, Value continuation, Value ret)
 					  continuation, ret,
 					  next);
     else
-    {
-	running->thread.frame = continuation->continuation.frame;
-	running->thread.stack = StackCopy (continuation->continuation.stack);
-	running->thread.catches = continuation->continuation.catches;
-	running->thread.twixts = continuation->continuation.twixts;
-	running->thread.jump = 0;
-	/*
-	 * Adjust stack for set jump return
-	 */
-	STACK_DROP (running->thread.stack, 2);
-	*next = continuation->continuation.pc;
-    }
+	ContinuationJump (running, continuation, next);
     RETURN (ret);
 }
 
@@ -790,6 +900,15 @@ NewTwixt (TwixtPtr	previous,
 void
 TwixtJump (Value thread, TwixtPtr twixt, Bool enter, InstPtr *next)
 {
+#ifdef DEBUG_JUMP
+    TraceContinuation ("TwixtJump",
+		       twixt->frame,
+		       twixt->stack,
+		       twixt->catches,
+		       twixt->previous,
+		       enter ? twixt->enter : twixt->leave,
+		       1);
+#endif
     thread->thread.frame = twixt->frame;
     thread->thread.stack = StackCopy (twixt->stack);
     thread->thread.catches = twixt->catches;

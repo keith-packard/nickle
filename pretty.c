@@ -519,6 +519,55 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	FilePuts (f, AtomName (e->tree.left->decl.decl->name));
 	FilePuts (f, ";\n");
 	break;
+    case TWIXT:
+	printindent (f, level);
+	FilePuts (f, "twixt (");
+	printExpr (f, e->tree.left->tree.left, -1, level, nest);
+	FilePuts (f, "; ");
+	printExpr (f, e->tree.left->tree.right, -1, level, nest);
+	FilePuts (f, ")\n");
+	if (nest)
+	{
+	    printStatement (f, e->tree.right->tree.left, level+1, level, nest);
+	    if (e->tree.right->tree.right)
+	    {
+		printindent (f, level);
+		FilePuts (f, "else\n");
+		printStatement (f, e->tree.right->tree.right, level+1, level, nest);
+	    }
+	}
+	break;
+    case CATCH:
+	printindent (f, level);
+	FilePuts (f, "try");
+	if (nest)
+	{
+	    FilePuts (f, "\n");
+	    printStatement (f, e->tree.left, level+1, level, nest);
+	}
+	else
+	    FilePuts (f, " ");
+	while ((e = e->tree.right))
+	{
+	    FilePuts (f, "catch ");
+	    FilePuts (f, AtomName (e->tree.left->code.code->base.name));
+	    FilePuts (f, " ");
+	    PrintCode (f, e->tree.left->code.code,
+		       0, class_undef,
+		       publish_private, level, nest);
+	    if (!nest)
+		FilePuts (f, "\n");
+	}
+	break;
+    case RAISE:
+	printindent (f, level);
+	FilePuts (f, "raise ");
+	FilePuts (f, AtomName (e->tree.left->atom.atom));
+	FilePuts (f, " (");
+	if (e->tree.right)
+	    printParameters (f, e->tree.right, nest);
+	FilePuts (f, ");\n");
+	break;
     }
 }
 

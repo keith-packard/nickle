@@ -309,25 +309,43 @@ ThreadCatch (Value thread, SymbolPtr exception, int offset)
 
     continuation = NewContinuation (thread->thread.frame, 
 				    thread->thread.pc + 1, 
-				    thread->thread.stack,
+				    StackCopy(thread->thread.stack),
 				    thread->thread.catches,
 				    thread->thread.twixts);
+#ifdef DEBUG_JUMP
+    ContinuationTrace ("ThreadCatch", continuation);
+#endif
     catch = NewCatch (thread->thread.catches, continuation, exception);
     thread->thread.catches = catch;
     EXIT ();
 }
 
 static Bool
-ThreadRaise (Value thread, SymbolPtr exception, InstPtr *next)
+ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
 {
     ENTER ();
     CatchPtr	catch;
-    Bool	ret = False;;
+    Bool	ret = False;
+    BoxPtr	args = 0;
 
+#ifdef DEBUG_JUMP
+    FilePuts (FileStdout, "    Raise: ");
+    FilePuts (FileStdout, AtomName (exception->symbol.name));
+    FilePuts (FileStdout, "\n");
+#endif
+    if (argc)
+    {
+	int i;
+	args = NewBox (True, argc);
+	for (i = 0; i < argc; i++)
+	    BoxValue (args, i) = STACK_POP (thread->thread.stack);
+    }
     for (catch = thread->thread.catches; catch; catch = catch->previous)
 	if (catch->exception == exception)
 	{
 	    do_long_jump (next, catch->continuation, Zero);
+	    if (args)
+		ContinuationArgs (thread, args);
 	    ret = True;
 	    break;
 	}
@@ -697,7 +715,8 @@ ThreadStep (Value thread)
 	thread->thread.catches = thread->thread.catches->previous;
 	break;
     case OpRaise:
-	if (!ThreadRaise (thread, inst->raise.exception, &next))
+	if (!ThreadRaise (thread, inst->raise.argc, inst->raise.exception, 
+			  &next))
 	    RaiseError ("Unhandled exception \"%A\"",
 			inst->raise.exception->symbol.name);
 	break;

@@ -167,7 +167,13 @@ do_Sockets_connect (Value s, Value host, Value port)
 		running->thread.partial = 1;
 	    }
 	    else
+	    {
+		RaiseStandardException (exception_io_error,
+					strerror (errno),
+					2, FileGetError (errno),
+					s);
 		RETURN (Void); /* FIXME: more here? */
+	    }
 	}
     }
     if (s->file.flags & FileOutputBlocked)
@@ -190,6 +196,12 @@ do_Sockets_bind (Value s, Value host, Value port)
     if (!address_lookup (host, port, &addr))
 	RETURN (Void);
 
+#ifdef SO_REUSEADDR
+    {
+	int one = 1;
+	setsockopt (s->file.fd, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof (int));
+    }
+#endif
     if (bind (s->file.fd, (struct sockaddr *) &addr, sizeof addr) == -1)
 	RETURN (Void); /* FIXME: more here? */
 
@@ -225,18 +237,26 @@ do_Sockets_accept (Value s)
     f = accept (s->file.fd, 0, 0);
     if (f == -1)
     {
-	if (errno == EWOULDBLOCK)
-	{
+        if (errno == EWOULDBLOCK || errno == EAGAIN)
+        {
 	    FileSetBlocked (s, FileInputBlocked);
-	    ThreadSleep (running, s, PriorityIo);
+	    running->thread.partial = 1;
 	}
-	RaiseStandardException (exception_io_error,
-				strerror (errno),
-				2, FileGetError (errno),
-				s);
-        RETURN (Void); /* FIXME: more here? */
+	else
+	{
+	    RaiseStandardException (exception_io_error,
+				    strerror (errno),
+				    2, FileGetError (errno),
+				    s);
+	    RETURN (Void);
+	}
     }
-
+    if (s->file.flags & FileInputBlocked)
+    {
+    	ThreadSleep (running, s, PriorityIo);
+	RETURN (Void);
+    }
+	
     complete = True;
     RETURN (FileCreate (f, FileReadable|FileWritable));
 }

@@ -2067,7 +2067,7 @@ CompileIsBranch (InstPtr inst)
 static Bool
 CompileOpIsReturn (OpCode op)
 {
-    return (op == OpReturn || op == OpReturnVoid);
+    return (op == OpReturn || op == OpReturnVoid || op == OpTailCall);
 }
 
 ObjPtr

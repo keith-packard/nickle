@@ -107,40 +107,15 @@ LexResetInteractive (void)
     return False;
 }
 
-Bool
-lexfile(char *s)
-{
-    Value	f;
-    
-    f = FileFopen (s, "r");
-    if (f == 0) 
-    {
-	FilePrintf (FileStderr, "cannot open file \"%s\"\n", s);
-	return False;
-    }
-    lexInput = NewLexInput (0, f, AtomId (s));
-    return True;
-}
-
 void
-lexstdin(void)
+LexStdin (void)
 {
-    while (lexInput)
-    {
-	if (lexInput->file == FileStdin)
-	    break;
-	FileClose (lexInput->file);
-	lexInput = lexInput->next;
-    }
-    if (!lexInput)
-    {
-	lexInput = NewLexInput (0, FileStdin, 0);
-	lexInput->interactive = stdin_interactive;
-    }
+    lexInput = NewLexInput (lexInput, FileStdin, 0);
+    lexInput->interactive = stdin_interactive;
 }
 	
 Bool
-pushinput (char *s, Bool complain)
+LexFile (char *s, Bool complain)
 {
     Value	f;
 
@@ -155,15 +130,15 @@ pushinput (char *s, Bool complain)
 }
 
 void
-pushstring (char *s)
+LexString (char *s)
 {
     Value   f;
 
     f = FileStringRead (s, strlen (s));
-    lexInput = NewLexInput (lexInput, f, AtomId ("<string>"));
+    lexInput = NewLexInput (lexInput, f, 0);
 }
 
-int
+static int
 popinput (void)
 {
     int	    c;
@@ -187,8 +162,8 @@ popinput (void)
     }
 }
 
-void
-yyprompt (void)
+static void
+prompt (void)
 {
     ENTER ();
     Value	v;
@@ -216,7 +191,7 @@ static int yy_input (char *buf, int max_size)
     int	    result = 0;
     
     lexInput->at_eof = False;
-    if (lexInput->at_bol) { lexInput->lineno++; yyprompt (); }
+    if (lexInput->at_bol) { lexInput->lineno++; prompt (); }
     while (result < max_size) {
 	c = FileInput (lexInput->file);
 	lexInput->at_bol = False;

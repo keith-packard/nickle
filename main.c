@@ -41,7 +41,7 @@ try_nicklerc (void)
 
     home = getenv ("NICKLERC");
     if (home) {
-	pushinput (nicklerc, True);
+	LexFile (nicklerc, True);
 	return;
     }
     home = getenv ("HOME");
@@ -53,7 +53,7 @@ try_nicklerc (void)
     }
     strcpy (nicklerc, home);
     strcat (nicklerc, "/.nicklerc");
-    pushinput (nicklerc, False);
+    LexFile (nicklerc, False);
 }
 
 #ifndef NICKLELIB
@@ -68,7 +68,7 @@ try_nicklelib (void)
     lib = getenv ("NICKLELIB");
     if (!lib)
 	lib = NICKLELIB;
-    pushinput (lib, True);
+    LexFile (lib, True);
 }
 
 RETSIGTYPE	intr(int), ferr(int);
@@ -78,6 +78,8 @@ RETSIGTYPE	stop (int), die (int), segv (int);
 int
 main (int argc, char **argv)
 {
+    Bool    tryrc = True;
+    
     (void) catchSignal (SIGHUP, die);
     (void) catchSignal (SIGINT, intr);
     (void) catchSignal (SIGQUIT, die);
@@ -91,7 +93,9 @@ main (int argc, char **argv)
     (void) catchSignal (SIGTTOU, stop);
     stdin_interactive = isatty(0);
     init ();
-    try_nicklelib();
+    /*
+     * Get the main input stream set up
+     */
     if (argc > 1)
     {
 	if (!strcmp (argv[1], "-e"))
@@ -106,14 +110,17 @@ main (int argc, char **argv)
 		s = Plus (s, NewStrString (argv[i]));
 		if (i != argc-1)
 		    s = Plus (s, NewStrString (" "));
+		else
+		    s = Plus (s, NewStrString ("\n"));
 	    }
-	    pushstring (StringChars (&s->string));
+	    LexString (StringChars (&s->string));
 	    EXIT ();
 	}
 	else
 	{
+	    tryrc = False;
 	    setArgv (argc - 1, argv + 1);
-	    if (!lexfile (argv[1]))
+	    if (!LexFile (argv[1], True))
 	    {
 		IoFini ();
 		return 1;
@@ -122,9 +129,17 @@ main (int argc, char **argv)
     }
     else
     {
-	try_nicklerc();
-	lexstdin ();
+	LexStdin ();
     }
+    /*
+     * Push initialization files
+     */
+    if (tryrc)
+	try_nicklerc();
+    try_nicklelib();
+    /*
+     * Run the parser
+     */
     (void) yyparse ();
     IoFini ();
     return 0;

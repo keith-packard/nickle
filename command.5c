@@ -27,7 +27,7 @@ namespace Syntax {
 
     void function do_load (string file_name)
     {
-	Command::push_input (file_name);
+	Command::lex_file (file_name);
     }
     
     Command::new ("load", do_load);

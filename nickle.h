@@ -537,17 +537,14 @@ void	LexInit (void);
 int	yywrap (void);
 void	yyerror (char *fmt, ...);
 int	yylex (void);
-Bool	pushinput (char *, Bool);
-void	pushstring (char *);
-void	yyprompt (void);
+Bool	LexFile (char *, Bool);
+void	LexString (char *);
+void	LexStdin (void);
 Value	atov (char *, int), aetov (char *);
 extern int  ignorenl;
 void	skipcomment (void);
 void	skipline (void);
 int	lexEscape (int);
-int	popinput (void);
-Bool	lexfile (char *);
-void	lexstdin (void);
 
 void	callformat (Value f, char *fmt, int n, Value *p);
 int	dofformat (Value, char *, int, Value *);
@@ -678,8 +675,8 @@ Value	do_Primitive_random (Value);
 Value	do_Primitive_srandom (Value);
 Value	do_Debug_dump (Value);
 Value	do_Command_delete (Value);
-Value	do_Command_push_input (Value);
-Value	do_Command_push_string (Value);
+Value	do_Command_lex_file (Value);
+Value	do_Command_lex_string (Value);
 Value	do_Command_edit (Value);
 
 /* two argument builtins */

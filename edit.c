@@ -66,7 +66,7 @@ EditFunction (SymbolPtr name)
 	PrettyPrint (tmp, name);
 	(void) FileClose (tmp);
 	edit (nickleName);
-	pushinput (nickleName, True);
+	LexFile (nickleName, True);
     }
     (void) unlink (nickleName);
 }

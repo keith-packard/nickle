@@ -241,13 +241,13 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_String_length,	    "length",		    "i",    "s",    &StringNamespace },
     { do_String_new,	    "new",		    "s",    "p",    &StringNamespace },
 #ifdef BSD_RANDOM
-    { do_BSD_random,  "random",		    "i",    "i",    &BSDRandomNamespace },
-    { do_BSD_srandom, "srandom",		    "i",    "i",    &BSDRandomNamespace },
+    { do_BSD_random,	    "random",		    "i",    "i",    &BSDRandomNamespace },
+    { do_BSD_srandom,	    "srandom",		    "i",    "i",    &BSDRandomNamespace },
 #endif
     { do_Debug_dump,	    "dump",		    "i",    "p",    &DebugNamespace },
     { do_Command_delete,    "delete",		    "i",    "s",    &CommandNamespace },
-    { do_Command_push_input,"push_input",	    "i",    "s",    &CommandNamespace },
-    { do_Command_push_string,"push_string",	    "i",    "s",    &CommandNamespace },
+    { do_Command_lex_file,  "lex_file",		    "i",    "s",    &CommandNamespace },
+    { do_Command_lex_string,"lex_string",	    "i",    "s",    &CommandNamespace },
     { do_Command_edit,	    "edit",		    "i",    "A*s",  &CommandNamespace },
     { 0,		    0 },
 };
@@ -1864,20 +1864,20 @@ do_Command_delete (Value name)
 }
 
 Value
-do_Command_push_input (Value name)
+do_Command_lex_file (Value name)
 {
     ENTER ();
 
-    pushinput (StringChars (&name->string), True);
+    LexFile (StringChars (&name->string), True);
     RETURN (One);
 }
 
 Value
-do_Command_push_string (Value name)
+do_Command_lex_string (Value name)
 {
     ENTER ();
 
-    pushstring (StringChars (&name->string));
+    LexString (StringChars (&name->string));
     RETURN (One);
 }
 

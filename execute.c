@@ -1328,7 +1328,7 @@ ThreadsRun (Value thread, Value lex)
 		    if (signalFinished)
 		    {
 			signalFinished = False;
-			ThreadFinish (thread);
+			ThreadFinish (thread, False);
 		    }
 		    if (signalException)
 		    {
@@ -1339,7 +1339,7 @@ ThreadsRun (Value thread, Value lex)
 		    if (signalError)
 		    {
 			signalError = False;
-			ThreadFinish (thread);
+			ThreadFinish (thread, True);
 		    }
 		    if (signalProfile)
 			signalProfile = False;

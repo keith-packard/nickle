@@ -110,11 +110,14 @@ ThreadsWakeup (Value sleep, WakeKind kind)
     }
 }
 
+Bool	lastThreadError;
+
 void
-ThreadFinish (Value thread)
+ThreadFinish (Value thread, Bool error)
 {
     ThreadSetState (thread, ThreadFinished);
     ThreadsWakeup (thread, WakeAll);
+    lastThreadError = error;
 }
 
 void
@@ -315,7 +318,7 @@ KillThread (Value thread)
 	ret = 0;
     else
 	ret = 1;
-    ThreadFinish (thread);
+    ThreadFinish (thread, False);
     return ret;
 }
 

@@ -86,7 +86,7 @@ main (int argc, char **argv)
     (void) yyparse ();
     IoFini ();
     FileFini ();
-    return 0;
+    return lastThreadError;
 }
 
 void

@@ -566,6 +566,8 @@ typedef enum _wakeKind {
     WakeAll, WakeOne
 } WakeKind;
 
+extern Bool lastThreadError;
+
 Value	    NewThread (FramePtr frame, ObjPtr code);
 void	    ThreadSleep (Value thread, Value sleep, int priority);
 void	    ThreadStepped (Value thread);
@@ -573,7 +575,7 @@ void	    ThreadsWakeup (Value sleep, WakeKind wake);
 void	    ThreadsRun (Value thread, Value lex);
 void	    ThreadsInterrupt (void);
 void	    ThreadsContinue (void);
-void	    ThreadFinish (Value thread);
+void	    ThreadFinish (Value thread, Bool error);
 void	    ThreadSetState (Value thread, ThreadState state);
 void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);

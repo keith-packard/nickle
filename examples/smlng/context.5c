@@ -68,7 +68,7 @@ function context_set (*context c, string value)
 
 function context_dump (context c)
 {
-    printf("%s %s %s %s %s %d %s %s",
+    printf("%s %s %s %s %s %d %s %s ",
 	   (c.styles & style_b) ? "B" : "-",
 	   (c.styles & style_em) ? "EM" : "--",
 	   (c.styles & style_i) ? "I" : "-",

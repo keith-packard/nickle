@@ -196,7 +196,7 @@ public namespace Parse {
 
 	    switch (t.id) {
 	    case Lex::Eof:
-		if (c->ctxt != root_context)
+		if (c->ctxt != &root_context)
 		    raise Syntax ("At Eof but not back to root context");
 		return first;
 	    case Lex::Text:
@@ -214,13 +214,11 @@ public namespace Parse {
 		p = &(*p)->next;
 		break;		
 	    case Lex::Start:
-		poly function copy (x) { return x; }
 		c = reference ((c_list) {
 		    ctxt = reference (*c->ctxt),
 		    prev = c,
 		    active_tag = t.value });
 		context_set (c->ctxt, t.value);
-		clist_show(c);
 		break;
 	    case Lex::End:
 		if (c->ctxt == root_context)

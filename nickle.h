@@ -705,6 +705,9 @@ RaiseStandardException (StandardException   se,
 			int		    argc,
 			...);
 
+SymbolPtr
+CheckStandardException (void);
+
 Value
 JumpStandardException (Value thread, InstPtr *next);
 

@@ -1031,6 +1031,17 @@ RegisterStandardException (StandardException	se,
     EXIT ();
 }
 
+SymbolPtr
+CheckStandardException (void)
+{
+    SymbolPtr		except = standardExceptions[standardException];
+    
+    signalException = False;
+    standardException = exception_none;
+    standardExceptionArgs = 0;
+    return except;
+}
+
 void
 RaiseStandardException (StandardException   se,
 			char		    *string,

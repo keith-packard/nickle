@@ -18,7 +18,7 @@ DEBIAN = debian/nickle.install debian/changelog debian/compat \
 	 debian/control debian/copyright debian/rules
 	 
 EXTRA_DIST = README.name autogen.sh \
-	$(NICKLEFILES) $(DEBIAN) ChangeLog
+	$(NICKLEFILES) $(DEBIAN) ChangeLog nickle.1.in nickle.spec.in
 
 bin_PROGRAMS = nickle
 
@@ -77,11 +77,20 @@ debuild-dirs: distdir
 	cp -a $(distdir) $(distdir).orig
 	rm -rf $(distdir).orig/debian
 
+nickle.1: nickle.1.in ChangeLog config.h
+	sed -e 's,@''VERSION@,$(VERSION),' \
+	    -e 's,@''BUILD_DATE@,$(BUILD_DATE),' \
+	    -e 's,@''pkgdatadir@,$(pkgdatadir),' $(top_srcdir)/nickle.1.in > $@
+	    
+nickle.spec: nickle.spec.in ChangeLog config.h
+	sed -e 's,@''VERSION@,$(VERSION),' \
+	    -e 's,@''pkgdatadir@,$(pkgdatadir),' $(top_srcdir)/nickle.spec.in > $@
+	    
 #
 # This assumes you've got Mike Harris's rpmbuild-nonroot stuff installed
 # using the defaults
 #
-rpm: dist-gzip
+rpm: dist-gzip nickle.spec
 	mkdir -p $(HOME)/rpmbuild/$(PACKAGE)-$(VERSION)
 	cp $(PACKAGE)-$(VERSION).tar.gz $(HOME)/rpmbuild/$(PACKAGE)-$(VERSION)
 	rpm -ba nickle.spec

@@ -1,4 +1,4 @@
-.TH NICKLE 1 "2 Apr 2001"
+.TH NICKLE 1 "@BUILD_DATE@"
 .\" $Header$
 .SH NAME
 nickle \- a desk calculator language
@@ -1312,11 +1312,11 @@ A colon-separated path whose elements are directories
 containing Nickle code.  The library command and the -l flag,
 described above, search this path for a filename matching the
 given file.  The default library path in the
-absence of this variable is @datadir@/nickle.
+absence of this variable is @pkgdatadir@.
 .IP NICKLESTART
 The filename of the file that should be loaded as a bootstrap
 on Nickle startup.  The default in the absence of this variable
-is to load @datadir@/nickle/builtin.5c.
+is to load @pkgdatadir@/builtin.5c.
 .\"
 .SH EXAMPLES
 .PP
@@ -1397,7 +1397,7 @@ and Bart Massey <bart_massey@iname.com>.
 .PP
 Nickle is
 .br
-Copyright © 1988-2004 Keith Packard and Bart Massey.  All
+Copyright \(cr 1988-2004 Keith Packard and Bart Massey.  All
 Rights Reserved. 
 .PP
 Permission is hereby granted, free of charge, to any person

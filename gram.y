@@ -842,8 +842,19 @@ opt_arrayinit	: arrayinit
 		|
 		    { $$ = 0; }
 		;
-arrayinit    	: OC arrayelts CC
-		    { $$ = NewExprTree (ARRAY, $2, 0); }
+arrayinit    	: OC arrayelts opt_dots CC
+		    { 
+			ExprPtr	i = $2;
+			if ($3)
+			{
+			    while (i->tree.right)
+				i = i->tree.right;
+			    i->tree.right = NewExprTree (COMMA, 
+							 NewExprTree (DOTS, 0, 0),
+							 0);
+			}
+			$$ = NewExprTree (ARRAY, $2, 0); 
+		    }
 		;
 arrayelts	: arrayelt COMMA arrayelts
 		    { $$ = NewExprTree (COMMA, $1, $3); }

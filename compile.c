@@ -865,13 +865,16 @@ CompileCountInitDimensions (ExprPtr expr)
 	expr = expr->tree.left;
 	while (expr)
 	{
-	    ndim = CompileCountInitDimensions (expr->tree.left) + 1;
-	    if (ndim < 0)
-		return ndim;
-	    if (ndimMax && ndim != ndimMax)
-		return -1;
-	    if (ndim > ndimMax)
-		ndimMax = ndim;
+	    if (expr->tree.left->base.tag != DOTS)
+	    {
+		ndim = CompileCountInitDimensions (expr->tree.left) + 1;
+		if (ndim < 0)
+		    return ndim;
+		if (ndimMax && ndim != ndimMax)
+		    return -1;
+		if (ndim > ndimMax)
+		    ndimMax = ndim;
+	    }
 	    expr = expr->tree.right;
 	}
     }
@@ -913,7 +916,7 @@ CompileBuildArray (ObjPtr obj, ExprPtr expr, TypesPtr type, int ndim,
     RETURN (obj);
 }
 
-static void
+static Bool
 CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 {
     int	    dim;
@@ -925,6 +928,8 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 	while (expr)
 	{
 	    dim++;
+	    if (expr->tree.left->base.tag == DOTS)
+		return False;
 	    if (ndims != 1)
 		CompileSizeDimensions (expr->tree.left, dims + 1, ndims - 1);
 	    expr = expr->tree.right;
@@ -933,11 +938,14 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
     else
     {
 	dim = 1;
+	    if (expr->tree.left->base.tag == DOTS)
+		return False;
 	if (ndims != 1)
 	    CompileSizeDimensions (expr, dims + 1, ndims - 1);
     }
     if (dim > *dims)
 	*dims = dim;
+    return True;
 }
 
 static ObjPtr
@@ -951,7 +959,11 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
     int	    n;
     
     dims = AllocateTemp (ndim * sizeof (int));
-    CompileSizeDimensions (inits, dims, ndim);
+    if (!CompileSizeDimensions (inits, dims, ndim))
+    {
+	CompileError (obj, stat, "Implicit dimensioned array with variable initializers");
+	RETURN (obj);
+    }
     sub = 0;
     for (n = 0; n < ndim; n++)
     {
@@ -977,9 +989,17 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type,
 	expr = expr->tree.left;
 	while (expr)
 	{
-	    obj = CompileArrayInits (obj, expr->tree.left, type, namespace, ninits, stat);
+	    if (expr->tree.left->base.tag == DOTS)
+	    {
+		nsub = -nsub;
+		break;
+	    }
+	    else
+	    {
+		obj = CompileArrayInits (obj, expr->tree.left, type, namespace, ninits, stat);
+		nsub++;
+	    }
 	    expr = expr->tree.right;
-	    nsub++;
 	}
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = NewInt (nsub);

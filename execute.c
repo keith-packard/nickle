@@ -279,9 +279,16 @@ ThreadInitArrayPart (Value thread, Value a, int base, int dim, int s)
     ENTER();
     int	    ninit;
     int	    n;
+    int	    ns;
     int	    size;
+    Bool    replicate = False;
 
     ninit = IntPart (Stack (s), "Invalid array initialization");
+    if (ninit < 0)
+    {
+	replicate = True;
+	ninit = -ninit;
+    }
     ++s;
     if (aborting)
     {
@@ -298,7 +305,11 @@ ThreadInitArrayPart (Value thread, Value a, int base, int dim, int s)
     }
     if (dim == a->array.ndim - 1)
     {
-	for (n = ninit-1; n >= 0; n--)
+	if (replicate)
+	    n = a->array.dim[dim] - 1;
+	else
+	    n = ninit - 1;
+	for (; n >= 0; n--)
 	{
 	    if (!TypeCompatibleAssign (a->array.type, Stack(s), False))
 	    {
@@ -307,7 +318,8 @@ ThreadInitArrayPart (Value thread, Value a, int base, int dim, int s)
 				2, NewInt(n), Stack(s));
 	    }
 	    BoxValueSet (a->array.values, base + n, Copy (Stack(s)));
-	    s++;
+	    if (n < ninit)
+		s++;
 	}
     }
     else
@@ -315,11 +327,17 @@ ThreadInitArrayPart (Value thread, Value a, int base, int dim, int s)
 	size = 1;
 	for (n = dim + 1; n < a->array.ndim; n++)
 	    size = size * a->array.dim[n];
-	base += size * (ninit-1);
-	for (n = ninit-1; n >= 0; n--)
+	if (replicate)
+	    n = a->array.dim[dim] - 1;
+	else
+	    n = ninit - 1;
+	base += size * (n);
+	for (; n >= 0; n--)
 	{
-	    s = ThreadInitArrayPart (thread, a, base, dim+1, s);
+	    ns = ThreadInitArrayPart (thread, a, base, dim+1, s);
 	    base -= size;
+	    if (n < ninit)
+		s = ns;
 	}
     }
     EXIT ();

@@ -34,6 +34,7 @@ NewNamespace (NamespacePtr previous)
     namespace->symbols = 0;
     namespace->code = 0;
     namespace->publish = publish_public;
+    namespace->debugger = False;
     RETURN (namespace);
 }
 

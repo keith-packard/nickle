@@ -110,9 +110,9 @@ void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 static Class
 DefaultClass (NamespacePtr namespace)
 {
-    while (namespace && !namespace->code)
+    while (namespace && !namespace->code && !namespace->debugger)
 	namespace = namespace->previous;
-    if (namespace)
+    if (namespace && !namespace->debugger)
 	return class_auto;
     return class_global;
 }
@@ -1340,8 +1340,15 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace)
 	 * the outermost enclosing function.
 	 */
 	for (code_namespace = namespace; code_namespace; code_namespace = code_namespace->previous)
+	{
+	    if (code_namespace->debugger)
+	    {
+		code_namespace = 0;
+		break;
+	    }
 	    if (code_namespace->code)
 		compile_namespace = code_namespace;
+	}
 	break;
     case class_static:
 	/*
@@ -1349,8 +1356,15 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace)
 	 * the nearest enclosing function
 	 */
 	for (code_namespace = namespace; code_namespace; code_namespace = code_namespace->previous)
-	    if (code_namespace->code)
+	{
+	    if (code_namespace->debugger)
+	    {
+		code_namespace = 0;
 		break;
+	    }
+	    if (code_namespace->code || code_namespace->debugger)
+		break;
+	}
 	compile_namespace = code_namespace;
 	break;
     case class_auto:
@@ -1360,8 +1374,15 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace)
 	 * exists somewhere to hang them from
 	 */
 	for (code_namespace = namespace; code_namespace; code_namespace = code_namespace->previous)
+	{
+	    if (code_namespace->debugger)
+	    {
+		code_namespace = 0;
+		break;
+	    }
 	    if (code_namespace->code)
 		break;
+	}
 	break;
     default:
 	code_namespace = 0;

@@ -293,7 +293,7 @@ struct rbuiltin rvars[] = {
 	"25338243003558764024749647326391419927260426992279"
 	"67823547816360093417216412199245863150302861829745"
 	"55706749838505494588586926995690927210797509302955",
-	4096, "pi"
+	256, "pi"
     },
     { "2."
 	"71828182845904523536028747135266249775724709369995"
@@ -355,7 +355,7 @@ struct rbuiltin rvars[] = {
 	"51326383544000186323991490705479778056697853358048"
 	"96690629511943247309958765523681285904138324116072"
 	"26029983305335",
-	4096, "e" 
+	256, "e" 
     },
     { 0,			    0, 0 },
 };
@@ -423,9 +423,9 @@ BuiltinNamespace (NamespacePtr  *namespacep,
     else
 	namespace = GlobalNamespace;
     RETURN (NamespaceAddSymbol (namespace,
-			    NewSymbolNamespace (AtomId (name), 
-					    NewNamespace (0),
-					    publish_public)));
+				NewSymbolNamespace (AtomId (name), 
+						    NewNamespace (0),
+						    publish_public)));
 }
 
 static ArgType *

@@ -69,6 +69,7 @@ typedef struct _namespace {
     NamespaceChainPtr   symbols;
     CodePtr		code;
     Publish		publish;
+    Bool		debugger;
 } Namespace;
 
 extern NamespacePtr NewNamespace (NamespacePtr previous);

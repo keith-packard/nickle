@@ -53,6 +53,7 @@ DebugSetFrame (Value thread, int offset)
     {
 	ret = True;
 	CurrentNamespace = NewNamespace (namespace);
+	CurrentNamespace->debugger = True;
 	CurrentFrame = frame;
 	NamespaceImport (CurrentNamespace, DebugNamespace, publish_public);
 	DebugAddVar (CurrentNamespace, "thread", thread);

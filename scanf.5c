@@ -11,7 +11,7 @@ extend namespace File {
     
     public int getc (file f)
     {
-	int result = File::getc (f);
+	int result = File::getb (f);
 
 	if (result == -1)
 	    return -1;

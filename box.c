@@ -38,10 +38,7 @@ NewBox (Bool constant, int nvalues)
     box->constant = constant;
     box->nvalues = nvalues;
     for (i = 0; i < nvalues; i++)
-    {
 	BoxType(box, i) = typesPoly;
-	BoxValue(box, i) = Zero;
-    }	
     RETURN (box);
 }
 
@@ -58,9 +55,20 @@ NewTypedBox (Bool constant, BoxTypesPtr bt)
     {
 	t = BoxTypesValue (bt, i);
 	BoxType (box, i) = t;
-	BoxValue (box, i) = Default (t);
     }
     RETURN (box);
+}
+
+Value
+BoxValue (BoxPtr box, int e)
+{
+    ENTER ();
+    if (!BoxElements(box)[e].value)
+    {
+	RaiseError ("Uninitialized box element");
+	RETURN (Zero);
+    }
+    RETURN (BoxElements(box)[e].value);
 }
 
 static void MarkBoxTypes (void *object)

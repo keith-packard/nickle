@@ -302,6 +302,7 @@ Bool
 TypeCompatible (Types *a, Types *b, Bool contains)
 {
     int	    n;
+    int	    adim, bdim;
     
     if (a == b)
 	return True;
@@ -342,8 +343,9 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	}
 	break;
     case types_array:
-	if (TypeCountDimensions (a->array.dimensions) ==
-	    TypeCountDimensions (b->array.dimensions))
+	adim = TypeCountDimensions (a->array.dimensions);
+	bdim = TypeCountDimensions (b->array.dimensions);
+	if (adim == 0 || bdim == 0 || adim == bdim)
 	    return TypeCompatible (a->array.type, b->array.type, contains);
 	break;
     case types_struct:

@@ -508,7 +508,7 @@ BuiltinAddFunction (NamespacePtr *namespacep, char *name, Type ret,
     args = BuiltinArgTypes (format, &argc);
     sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim (ret), args));
     func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, False), 0);
-    BoxValue (sym->global.value, 0) = func;
+    BoxValueSet (sym->global.value, 0, func);
     EXIT ();
 }
 
@@ -525,7 +525,7 @@ BuiltinAddJumpingFunction (NamespacePtr *namespacep, char *name, Type ret,
     args = BuiltinArgTypes (format, &argc);
     sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim(ret), args));
     func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, True), 0);
-    BoxValue (sym->global.value, 0) = func;
+    BoxValueSet (sym->global.value, 0, func);
     EXIT ();
 }
 
@@ -587,12 +587,12 @@ BuiltinInit (void)
 					       NewTypesPrim (type_float), 
 					       publish_private));
 	sym->global.value->constant = True;
-	BoxValue (sym->global.value, 0) = NewValueFloat (aetov (r->value),
-							 r->prec);
+	BoxValueSet (sym->global.value, 0,
+		     NewValueFloat (aetov (r->value),r->prec));
     }
     for (s = svars; s->name; s++) {
 	sym = BuiltinSymbol (s->namespace, s->name, NewTypesPrim (type_string));
-	BoxValue (sym->global.value, 0) = NewStrString (s->value);
+	BoxValueSet (sym->global.value, 0, NewStrString (s->value));
     }
     for (i = ivars; i->name; i++) {
 	Value   f;
@@ -603,7 +603,7 @@ BuiltinInit (void)
 	default: f = FileStderr;  break;
 	}
 	sym = BuiltinSymbol (i->namespace, i->name, NewTypesPrim (type_file));
-	BoxValue (sym->global.value, 0) = f;
+	BoxValueSet (sym->global.value, 0, f);
     }
     EXIT ();
 }
@@ -1066,7 +1066,7 @@ do_Math_assignpow (Value a, Value b)
 	RETURN (Zero);
     }
     ret = Pow (RefValue (a), b);
-    RefValue (a) = ret;
+    RefValueSet (a, ret);
     RETURN (ret);
 }
 
@@ -1409,7 +1409,7 @@ do_dims(Value av)
     ret = NewArray(True, type_int, 1, &av->array.ndim);
     for (i = 0; i < av->array.ndim; i++) {
       Value d = NewInt(av->array.dim[i]);
-      BoxValue(ret->array.values, i) = d;
+      BoxValueSet(ret->array.values, i, d);
     }
     RETURN (ret);
 }

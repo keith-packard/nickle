@@ -377,7 +377,9 @@ typedef struct _ref {
     int		element;
 } Ref;
 
+#define RefValueSet(r,v) BoxValueSet((r)->ref.box, (r)->ref.element, (v))
 #define RefValue(r)	BoxValue((r)->ref.box, (r)->ref.element)
+#define RefValueGet(r)	BoxValueGet((r)->ref.box, (r)->ref.element)
 #define RefType(r)	BoxType((r)->ref.box, (r)->ref.element)
 #define RefConstant(r)    BoxConstant((r)->ref.box)
 
@@ -528,11 +530,13 @@ typedef struct _box {
 } Box;
 
 #define BoxElements(box)	((BoxElement *) ((box) + 1))
-#define BoxValue(box,e)		(BoxElements(box)[e].value)
+#define BoxValueSet(box,e,v)	((BoxElements(box)[e].value) = (v))
+#define BoxValueGet(box,e)	((BoxElements(box)[e].value))
 #define BoxConstant(box)	((box)->constant)
 #define BoxType(box,e)		(BoxElements(box)[e].type)
 
 extern BoxPtr	NewBox (Bool constant, int nvalues);
+extern Value	BoxValue (BoxPtr box, int e);
 
 typedef struct _boxTypes {
     DataType	*data;

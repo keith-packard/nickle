@@ -396,6 +396,7 @@ public namespace Math {
 	    ai = a^i;
 	    aj = a^j;
 	    iter = prec + 8;
+	    v = 0;
 	    while (iter--)
 	    {
 		term = ai/i! - aj/j!;
@@ -452,6 +453,7 @@ public namespace Math {
 	    aj = a^2;
 	    a4 = a^4;
 	    iter = prec + 8;
+	    v = 0;
 	    while (iter--)
 	    {
 		term = ai/i! - aj/j!;

@@ -18,7 +18,7 @@ DebugAddVar (NamespacePtr namespace, char *name, Value v)
 
     s = NamespaceAddSymbol (namespace, NewSymbolGlobal (AtomId(name), 0, 
 							publish_private));
-    BoxValue (s->global.value, 0) = v;
+    BoxValueSet (s->global.value, 0, v);
     EXIT ();
 }
 

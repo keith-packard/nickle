@@ -67,7 +67,7 @@ StructPrint (Value f, Value av, char format, int base, int width, int prec, unsi
     {
 	FilePuts (f, AtomName (se[i].name));
 	FilePuts (f, " = ");
-	if (!Print (f, BoxValue (s->values, i), format, base, width, prec, fill))
+	if (!Print (f, BoxValueGet (s->values, i), format, base, width, prec, fill))
 	    return False;
 	if (i < st->nelements - 1)
 	{
@@ -129,10 +129,7 @@ NewStruct (StructType *type, Bool constant)
     ret->structs.values = NewBox (constant, type->nelements);
     se = StructTypeElements (type);    
     for (i = 0; i < type->nelements; i++)
-    {
 	BoxType (ret->structs.values, i) = se[i].type;
-	BoxValue (ret->structs.values, i) = Default (se[i].type);
-    }
     RETURN (ret);
 }
 

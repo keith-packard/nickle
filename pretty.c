@@ -20,7 +20,6 @@
 
 void printParameters (Value f, Expr *e, Bool nest);
 void printAinit (Value f, Expr *e, int level, Bool nest);
-void printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
 void printStatement (Value f, Expr *e, int level, int blevel, Bool nest);
 void printTypes (Value f, Types *t);
     
@@ -669,12 +668,14 @@ PrintNamespace (Value f, NamespacePtr namespace, int level)
 void
 doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 {
+    Value  v;
     printindent (f, level);
     switch (name->symbol.class) {
     case class_global:
-	if (BoxValue (name->global.value, 0)->value.tag == type_func)
+	v = BoxValueGet (name->global.value, 0);
+	if (v && v->value.tag == type_func)
 	{
-	    PrintCode (f, BoxValue (name->global.value, 0)->func.code,
+	    PrintCode (f, v->func.code,
 		       name->symbol.name,
 		       class_undef,
 		       name->symbol.publish,
@@ -685,7 +686,7 @@ doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 	    FilePuts (f, "(");
 	    fprintTypes (f, name->symbol.type);
 	    FilePuts (f, ") ");
-	    print (f, BoxValue (name->global.value, 0));
+	    print (f, v);
 	}
 	FilePuts (f, "\n");
 	break;

@@ -476,6 +476,7 @@ void	PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
 void	PrintStat (Value F, Expr *e, Bool nest);
 void	EditFunction (SymbolPtr name);
 void	EditFile (Value file_name);
+void	printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
 
 void	print (Value f, Value value);
 Value	lookupVar (char *);

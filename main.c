@@ -31,7 +31,7 @@ setArgv (int argc, char **argv)
 
     args = NewArray (True, NewTypesPrim (type_string), 1, &argc);
     for (i = 0; i < argc; i++)
-	BoxValue (args->array.values, i) = NewStrString (argv[i]);
+	BoxValueSet (args->array.values, i, NewStrString (argv[i]));
     setVar ("argv", args);
     EXIT ();
 }

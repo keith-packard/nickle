@@ -11,7 +11,7 @@ public namespace File {
     /*
      * vfscanf
      */
-    public integer function vfscanf (file f, string format, (*poly)[0] args)
+    public integer function vfscanf (file f, string format, (*poly)[*] args)
     {
 	integer function iswhite (integer c)
 	{
@@ -134,7 +134,7 @@ public integer function scanf (string format, *poly args...)
     return File::vfscanf (stdin, format, args);
 }
 
-public integer function vscanf (string format, (*poly)[0] args)
+public integer function vscanf (string format, (*poly)[*] args)
 {
     return File::vfscanf (stdin, format, args);
 }    

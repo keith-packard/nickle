@@ -140,7 +140,7 @@ static Bool
 RefPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
     FileOutput (f, '&');
-    return Print (f, RefValue (av), format, base, width ? width - 1 : 0, prec, fill);
+    return Print (f, RefValueGet (av), format, base, width ? width - 1 : 0, prec, fill);
 }
 
     

@@ -47,6 +47,7 @@ void yyerror (char *fmt, ...);
 %type  <eval>	opt_init
 %type  <ftval>	decl opt_decl
 %type  <tsval>	opt_type type
+%type  <eval>   opt_stars stars
 %type  <tval>	basetype
 %type  <mval>	members
 %type  <cval>	class
@@ -62,7 +63,7 @@ void yyerror (char *fmt, ...);
 %type  <eval>	initexpr
 %type  <ival>	assignop
 %type  <vval>	opt_const
-%type  <eval>	inits arrayinits arrayinit structinits structinit
+%type  <eval>	opt_inits inits arrayinits arrayinit structinits structinit
 
 %token		ASSIGNPLUS ASSIGNMINUS ASSIGNTIMES ASSIGNDIVIDE ASSIGNDIV ASSIGNMOD
 %token		ASSIGNSHIFTL ASSIGNSHIFTR
@@ -547,7 +548,7 @@ type		: basetype
 		    { $$ = NewTypesRef ($2); }
 		| type OP opt_argdecls CP	%prec CALL
 		    { $$ = NewTypesFunc ($1, $3); }
-		| type OS opt_exprs CS
+		| type OS opt_stars CS
 		    { $$ = NewTypesArray ($1, $3); }
 		| STRUCT OC members CC
 		    {
@@ -592,7 +593,15 @@ basetype    	: POLY
 		| SEMAPHORE
 		| CONTINUATION
 		;
-
+opt_stars	: stars
+		|
+		    { $$ = 0; }
+		;
+stars		: stars COMMA TIMES
+		    { $$ = NewExprTree (COMMA, 0, $1); }
+		| TIMES
+		    { $$ = NewExprTree (COMMA, 0, 0); }
+		;
 /*
 * Structure member declarations
 */
@@ -884,6 +893,16 @@ primary		: NAME
 			$$ = NewExprTree (NEW, $2, 0); 
 			$$->base.type = $1; 
 		    }
+		| OS exprs CS opt_inits
+		    { 
+			$$ = NewExprTree (NEW, $4, 0); 
+			$$->base.type = NewTypesArray (typesPoly, $2); 
+		    }
+		| OS stars CS inits
+		    { 
+			$$ = NewExprTree (NEW, $4, 0); 
+			$$->base.type = NewTypesArray (typesPoly, $2); 
+		    }
 		| DOLLAR opt_const
 		    { $$ = NewExprConst(History (0, $2)); }
 		| DOT
@@ -912,6 +931,10 @@ opt_const	: CONST
 /*
  * Initializers
  */
+opt_inits	: inits
+		|
+		    { $$ = 0; };
+		;
 inits		: OC arrayinits CC
 		    { $$ = NewExprTree (ARRAY, $2, 0); }
 		| OC structinits CC
@@ -1029,7 +1052,7 @@ setVar (char *name, Value v)
 	s = NamespaceAddSymbol (CurrentNamespace, NewSymbolGlobal (n, 0,
 							  publish_private));
     if (s->symbol.class == class_global)
-	BoxValue (s->global.value, 0) = v;
+	BoxValueSet (s->global.value, 0, v);
     EXIT ();
 }
 

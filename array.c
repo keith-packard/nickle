@@ -65,7 +65,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
     }
     for (i = 0; i < a->ents; )
     {
-	if (!Print (f, BoxValue (a->values, i), format, base, width, prec, fill))
+	if (!Print (f, BoxValueGet (a->values, i), format, base, width, prec, fill))
 	{
 	    ret = False;
 	    break;
@@ -95,7 +95,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, unsig
 		    FileOutput (f, '{');
 	}
     }
-    if (pretty)
+    if (pretty && a->ndim)
 	FilePuts (f, "}");
     EXIT ();
     return True;
@@ -129,7 +129,6 @@ NewArray (Bool constant, TypesPtr type, int ndim, int *dims)
 {
     ENTER ();
     Value   ret;
-    Value   def;
     int	    ents;
     int	    dim;
     BoxElement	*elements;
@@ -151,12 +150,8 @@ NewArray (Bool constant, TypesPtr type, int ndim, int *dims)
     ret->array.dim = (int *) (&ret->array + 1);
     ret->array.values = NewBox (constant, ents);
     elements = BoxElements (ret->array.values);
-    def = Default (type);
     for (i = 0; i < ents; i++)
-    {
 	elements[i].type = type;
-	elements[i].value = def;
-    }
     for (dim = 0; dim < ndim; dim++)
 	ret->array.dim[dim] = dims[dim];
     RETURN (ret);

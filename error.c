@@ -137,6 +137,21 @@ fprintArgTypes (Value f, ArgType *at)
     }
 }
 
+static void
+fprintDimensions (Value f, ExprPtr dims)
+{
+    while (dims)
+    {
+	if (dims->tree.left)
+	    printExpr (f, dims->tree.left, -1, 0, False);
+	else
+	    FilePuts (f, "*");
+	if (dims->tree.right)
+	    FilePuts (f, ", ");
+	dims = dims->tree.right;
+    }
+}
+
 void
 fprintTypes (Value f, Types *t)
 {
@@ -171,7 +186,7 @@ fprintTypes (Value f, Types *t)
 	case types_array:
 	    fprintTypes (f, t->array.type);
 	    FilePuts (f, "[");
-	    /* FIXME dimensions */
+	    fprintDimensions (f, t->array.dimensions);
 	    FilePuts (f, "]");
 	    break;
 	case types_struct:

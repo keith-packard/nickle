@@ -94,7 +94,6 @@ NewSymbolGlobal (Atom name, Types *type, Publish publish)
     s->symbol.publish = publish;
     s->global.value = NewBox (False, 1);
     BoxType (s->global.value, 0) = type;
-    BoxValue (s->global.value, 0) = Default (type);
     RETURN (s);
 }
 

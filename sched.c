@@ -790,7 +790,7 @@ do_set_jump (Value continuation_ref, Value ret)
 				    stack,
 				    running->thread.catches,
 				    running->thread.twixts);
-    RefValue (continuation_ref) = continuation;
+    RefValueSet (continuation_ref, continuation);
 #ifdef DEBUG_JUMP
     ContinuationTrace ("do_set_jump", continuation);
 #endif

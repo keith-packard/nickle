@@ -1028,7 +1028,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 		obj = CompileArrayInits (obj, expr->tree.left, 
 					 namespace, &i, stat);
 	    }
-	    if (t->array.dimensions)
+	    if (t->array.dimensions && t->array.dimensions->tree.left)
 	    {
 		obj = CompileBuildArray (obj, expr, t->array.dimensions,
 					 namespace, stat);

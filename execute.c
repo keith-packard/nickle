@@ -51,7 +51,7 @@ BuildFrame (Value thread, Value func, Bool varargs, int nformal,
 	}
 	if (!Stack(fe))
 	    abort ();
-	BoxValue (frame->frame, fe) = Copy (Stack(fe));
+	BoxValueSet (frame->frame, fe, Copy (Stack(fe)));
     }
     if (varargs)
     {
@@ -59,12 +59,12 @@ BuildFrame (Value thread, Value func, Bool varargs, int nformal,
 	Value	array;
 	
 	array = NewArray (True, typesPoly, 1, &extra);
-	BoxValue (frame->frame, fe) = array;
+	BoxValueSet (frame->frame, fe, array);
 	for (; fe < nargs; fe++)
 	{
 	    if (!Stack(fe))
 		abort ();
-	    BoxValue (array->array.values, fe-nformal) = Stack(fe);
+	    BoxValueSet (array->array.values, fe-nformal, Stack(fe));
 	}
     }
     frame->function = func;
@@ -243,7 +243,7 @@ ThreadAssign (Value ref, Value v)
 	if (!exception)
 	{
 	    complete = True;
-	    RefValue (ref) = v;
+	    RefValueSet (ref, v);
 	}
     }
     EXIT ();
@@ -297,7 +297,7 @@ ThreadInitArray (Value thread, Value a, int ninit)
 	    i = 0;
 	    while (j--)
 	    {
-		BoxValue (a->array.values, i) = Copy (Stack(j));
+		BoxValueSet (a->array.values, i, Copy (Stack(j)));
 		i++;
 	    }
 	}
@@ -371,7 +371,7 @@ ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
 	int i;
 	args = NewBox (True, argc);
 	for (i = 0; i < argc; i++)
-	    BoxValue (args, i) = STACK_POP (thread->thread.stack);
+	    BoxValueSet (args, i, STACK_POP (thread->thread.stack));
     }
     for (catch = thread->thread.catches; catch; catch = catch->previous)
 	if (catch->exception == exception)

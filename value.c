@@ -510,13 +510,18 @@ Print (Value f, Value v, char format, int base, int width, int prec, unsigned ch
     int	    i;
     Bool    ret;
     
+    if (!v)
+    {
+	FilePuts (f, "<uninit>");
+	return True;
+    }
     if (!v->value.type->print)
 	return True;
     for (i = 0; i < ValuePrintLevel; i++)
     {
 	if (STACK_ELT(ValuePrintStack, i) == v)
 	{
-	    FilePuts (f, "(recursive)");
+	    FilePuts (f, "<recursive>");
 	    return True;
 	}
     }
@@ -538,13 +543,15 @@ Copy (Value v)
     Value   nv;
     int	    i;
     
+    if (!v)
+	RETURN (v);
     switch (v->value.tag) {
     case type_array:
 	if (!v->array.values->constant)
 	{
 	    nv = NewArray (False, v->array.type, v->array.ndim, v->array.dim);
 	    for (i = 0; i < v->array.ents; i++)
-		BoxValue (nv->array.values, i) = Copy (BoxValue (v->array.values, i));
+		BoxValueSet (nv->array.values, i, Copy (BoxValueGet (v->array.values, i)));
 	    v = nv;
 	}
 	break;
@@ -553,7 +560,7 @@ Copy (Value v)
 	{
 	    nv = NewStruct (v->structs.type, False);
 	    for (i = 0; i < v->structs.type->nelements; i++)
-		BoxValue (nv->structs.values, i) = Copy (BoxValue (v->structs.values, i));
+		BoxValueSet (nv->structs.values, i, Copy (BoxValueGet (v->structs.values, i)));
 	    v = nv;
 	}
 	break;

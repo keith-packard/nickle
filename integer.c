@@ -144,9 +144,9 @@ IntegerDiv (Value av, Value bv, int expandOk)
     }
     quo = NaturalDivide (IMag(a), IMag(b), &rem);
     sign = Positive;
-    if (ISign(a) == Positive != ISign(b) == Positive)
+    if ((ISign(a) == Positive) != (ISign(b) == Positive))
 	sign = Negative;
-    if (ISign(b) == Negative && !NaturalZero (rem))
+    if (sign == Negative && !NaturalZero (rem))
 	quo = NaturalPlus (quo, one_natural);
     RETURN (NewInteger (sign, quo));
 }

@@ -152,6 +152,14 @@ add (Natural *a, Natural *b, int offset)
     }
     if (carry)
 	*at = *at + carry;
+    if (at == NaturalDigits(a) + a->length - 1)
+    {
+	while (a->length && *at == 0)
+	{
+	    at--;
+	    a->length--;
+	}
+    }
 }
 
 static __inline void
@@ -430,12 +438,14 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 	Natural	*check;
 
 	check = NaturalPlus (NaturalTimes (quo, b), rem);
-	if (!NaturalEqual (check, a))
+	if (!NaturalEqual (check, a) ||
+	    !NaturalLess (rem, b))
 	{
-	    prs ("a:   ", a);
-	    prs ("b:   ", b);
-	    prs ("quo: ", quo);
-	    prs ("rem: ", rem);
+	    prs ("a:     ", a);
+	    prs ("b:     ", b);
+	    prs ("quo:   ", quo);
+	    prs ("rem:   ", rem);
+	    prs ("check: ", check);
 	    printf ("divide failed\n");
 	}
     }

@@ -1013,8 +1013,7 @@ ThreadStep (Value thread)
 	if (inst->base.push)
 	    STACK_PUSH (thread->thread.stack, value);
 	thread->thread.pc = next;
-	if (thread == running && thread->thread.priority > PriorityMin)
-	    ThreadStepped (thread);
+	ThreadStepped (thread);
     }
     else
     {

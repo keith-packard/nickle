@@ -82,16 +82,11 @@ ThreadStepped (Value thread)
 {
     Value   t;
     
-    if (thread == running &&
-	thread->thread.priority > PriorityMin)
+    if ((t = thread->thread.next) &&
+        thread->thread.priority <= t->thread.priority)
     {
-	thread->thread.priority--;
-	if ((t = thread->thread.next) &&
-	    thread->thread.priority < t->thread.priority)
-	{
-	    _ThreadRemove (thread);
-	    _ThreadInsert (thread);
-	}
+        _ThreadRemove (thread);
+        _ThreadInsert (thread);
     }
 }
 

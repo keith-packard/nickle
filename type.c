@@ -20,8 +20,7 @@ Types		*typesGroup;
 Types		*typesField;
 Types		*typesRefPoly;
 Types		*typesNil;
-Types		*typesUnit;
-Types		*typesPrim[type_continuation - type_int + 1];
+Types		*typesPrim[type_void - type_int + 1];
 
 static void
 TypesNameMark (void *object)
@@ -83,20 +82,15 @@ DataType    TypesArrayType = { TypesArrayMark, 0 };
 DataType    TypesStructType = { TypesStructMark, 0 };
 DataType    TypesUnitType = { 0, 0 };
 
-Types *
+static Types *
 NewTypesPrim (Type prim)
 {
     ENTER ();
     Types   *t;
 
-    if (type_int <= prim && prim <= type_continuation && typesPrim[prim])
-	t = typesPrim[prim];
-    else
-    {
-	t = ALLOCATE (&TypesPrimType, sizeof (TypesPrim));
-	t->base.tag = types_prim;
-	t->prim.prim = prim;
-    }
+    t = ALLOCATE (&TypesPrimType, sizeof (TypesPrim));
+    t->base.tag = types_prim;
+    t->prim.prim = prim;
     RETURN (t);
 }
 
@@ -191,17 +185,6 @@ NewTypesUnion (StructType *structs)
     RETURN (t);
 }
 
-Types *
-NewTypesUnit (void)
-{
-    ENTER ();
-    Types *t;
-
-    t = ALLOCATE (&TypesUnitType, sizeof (TypesBase));
-    t->base.tag = types_unit;
-    RETURN (t);
-}
-
 Type
 BaseType (Types *t)
 {
@@ -222,8 +205,6 @@ BaseType (Types *t)
 	    return type_struct;
 	case types_union:
 	    return type_union;
-	case types_unit:
-	    return type_undef;
 	}
     }
     return type_undef;
@@ -274,8 +255,6 @@ TypeEqual (Types *a, Types *b)
 	return True;
     case types_struct:
 	return True;
-    case types_unit:
-	return True;
     default:
     }
     return False;
@@ -285,7 +264,7 @@ TypeEqual (Types *a, Types *b)
 Bool
 TypePoly (Types *t)
 {
-    if (!t || (t->base.tag == types_prim && t->prim.prim == type_undef))
+    if (t->base.tag == types_prim && t->prim.prim == type_undef)
 	return True;
     return False;
 }
@@ -442,8 +421,6 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	}
 	if (n != a->structs.structs->nelements)
 	    break;
-	return True;
-    case types_unit:
 	return True;
     default:
     }
@@ -1148,10 +1125,6 @@ TypeCompatibleAssign (TypesPtr a, Value b)
 		return True;
 	}
 	break;
-    case types_unit:
-	if (b->value.tag == type_undef)
-	    return True;
-	break;
     default:	
     }
     return False;
@@ -1172,7 +1145,7 @@ TypesInit (void)
     Type	t;
     StructType	*st;
 
-    for (t = type_int; t <= type_continuation; t++)
+    for (t = type_int; t <= type_void; t++)
     {
 	typesPrim[t] = NewTypesPrim (t);
 	MemAddRoot (typesPrim[t]);
@@ -1181,8 +1154,6 @@ TypesInit (void)
     MemAddRoot (typesPoly);
     typesRefPoly = NewTypesRef (typesPoly);
     MemAddRoot (typesRefPoly);
-    typesUnit = NewTypesUnit ();
-    MemAddRoot (typesUnit);
     
     st = NewStructType (3);
     StructTypeElements(st)[0].type = typesPrim[type_integer];

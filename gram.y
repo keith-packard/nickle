@@ -43,7 +43,7 @@ void yyerror (char *fmt, ...);
 %type  <aval>	typename name ename
 %type  <eval>	opt_init
 %type  <ftval>	decl func_decl
-%type  <tsval>	opt_type type type_or_void func_type
+%type  <tsval>	opt_type type
 %type  <eval>   opt_stars stars
 %type  <tval>	basetype
 %type  <tval>	struct_or_union
@@ -70,15 +70,15 @@ void yyerror (char *fmt, ...);
 %token		NL SEMI MOD OC CC DOLLAR DOTS
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
-%token <tval>	FILET MUTEX SEMAPHORE CONTINUATION THREAD
-%token		VOID FUNCTION FUNC EXCEPTION RAISE
+%token <tval>	FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID
+%token		FUNCTION FUNC EXCEPTION RAISE
 %token		TYPEDEF IMPORT NAMESPACE NEW
 %token <pval>	PUBLIC EXTEND
 %token		IF ELSE WHILE DO FOR SWITCH
 %token		BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		TRY CATCH TWIXT
 %token <aval>	NAME TYPENAME COMMAND NAMECOMMAND
-%token <vval>	CONST CCONST
+%token <vval>	CONST CCONST VOIDVAL
 
 %nonassoc 	POUND
 %right		COMMA
@@ -459,20 +459,7 @@ opt_init	: ASSIGN simpleexpr
 /*
 * Full declaration including storage, type and publication
 */
-func_decl	: PUBLIC class type_or_void
-		    { $$.publish = $1; $$.class = $2; $$.type = $3; }
-		| class type_or_void
-		    { $$.publish = publish_private; $$.class = $1; $$.type = $2; }
-		| PUBLIC type_or_void
-		    { $$.publish = $1; $$.class = class_undef; $$.type = $2; }
-		| type_or_void
-		    { $$.publish = publish_private; $$.class = class_undef; $$.type = $1; }
-		| PUBLIC class
-		    { $$.publish = $1; $$.class = $2; $$.type = typesPoly; }
-		| class
-		    { $$.publish = publish_private; $$.class = $1; $$.type = typesPoly; }
-		| PUBLIC
-		    { $$.publish = $1; $$.class = class_undef; $$.type = typesPoly; }
+func_decl	: decl
 		|
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = typesPoly; }
 		;
@@ -498,24 +485,17 @@ opt_type	: type
 		|
 		    { $$ = typesPoly; }
 		;
-type_or_void	: type
-		| VOID
-		    { $$ = typesUnit; }
-		;
-func_type	: type
-		| VOID
-		    { $$ = typesUnit; }
-		|
-		    { $$ = typesPoly; }
-		;
 type		: basetype
-		    { $$ = NewTypesPrim ($1); }
+		    {
+			if ($1 == type_undef) 
+			    $$ = typesPoly;
+			else
+			    $$ = typesPrim[$1]; 
+		    }
 		| TIMES type			%prec STAR
 		    { $$ = NewTypesRef ($2); }
 		| type OP opt_argdecls CP	%prec CALL
 		    { $$ = NewTypesFunc ($1, $3); }
-		| VOID OP opt_argdecls CP	%prec CALL
-		    { $$ = NewTypesFunc (typesUnit, $3); }
 		| type OS opt_stars CS
 		    { $$ = NewTypesArray ($1, $3); }
 		| struct_or_union OC struct_members CC
@@ -564,6 +544,7 @@ basetype    	: POLY
 		| SEMAPHORE
 		| CONTINUATION
 		| THREAD
+		| VOID
 		;
 opt_stars	: stars
 		|
@@ -678,7 +659,7 @@ exprs		: exprs COMMA lambdaexpr
 * This expression level includes lambdas which can't be in simpleexpr
 * because of grammar ambiguities
 */
-lambdaexpr	: func_type FUNC OP opt_argdefines CP block
+lambdaexpr	: opt_type FUNC OP opt_argdefines CP block
 		    { $$ = NewExprCode (NewFuncCode ($1, $4, $6), 0); }
 		| simpleexpr
 		;
@@ -782,6 +763,8 @@ primary		: NAME
 		    { $$ = NewExprConst(CONST, $1); }
 		| CCONST
 		    { $$ = NewExprConst(CCONST, $1); }
+		| VOIDVAL
+		    { $$ = NewExprConst(CONST, $1); }
 		| OP type CP init
 		    { 
 			$$ = NewExprTree (NEW, $4, 0); 
@@ -1033,7 +1016,7 @@ BuildFullname (ExprPtr colonnames, Atom name)
     len = 1;
     for (e = colonnames; e; e = e->tree.left)
 	len++;
-    array = NewArray (False, NewTypesPrim (type_string), 1, &len);
+    array = NewArray (False, typesPrim[type_string], 1, &len);
     len--;
     BoxValueSet (array->array.values, len, AtomString (name));
     e = colonnames;

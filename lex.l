@@ -12,6 +12,10 @@
 #include	"ref.h"
 #include	<strings.h>
 #include	<errno.h>
+#ifdef HAVE_READLINE
+#include	<readline/readline.h>
+#include	<readline/history.h>
+#endif
     
 typedef struct _lexInput {
     DataType		data;
@@ -138,7 +142,7 @@ LexString (char *s)
 }
 
 static int
-popinput (void)
+LexGetChar (void)
 {
     int	    c;
 
@@ -156,29 +160,75 @@ popinput (void)
 	    if (!lexInput->next)
 		return FileEOF;
 	    lexInput = lexInput->next;
-	    return FILE_END_CHAR;
+	    lexInput->at_eof = True;
+	    return '\n';
 	}
     }
 }
 
-static void
+#ifdef HAVE_READLINE
+static int
+ReadlineGetChar (FILE *f)
+{
+    return LexGetChar ();
+}
+#endif
+
+static Value
 prompt (void)
 {
-    ENTER ();
     Value	v;
     
-    if (LexInteractive())
+    if (ignorenl)
+	v = lookupVar ("prompt2");
+    else if (CurrentFrame)
+	v = lookupVar ("prompt3");
+    else
+	v = lookupVar ("prompt");
+    return v;
+}
+
+static int
+LexGetInteractiveChar (void)
+{
+#ifdef HAVE_READLINE
+    static char	*line, *line_base;
+    int	    c;
+
+    if (!line)
     {
-	if (ignorenl)
-	    v = lookupVar ("prompt2");
-	else if (CurrentFrame)
-	    v = lookupVar ("prompt3");
+	char    *p;
+	Value	v;
+
+	v = prompt ();
+	if (v && v->value.tag == type_string)
+	    p = StringChars (&v->string);
 	else
-	    v = lookupVar ("prompt");
+	    p = "??? ";
+	rl_getc_function = ReadlineGetChar;
+	line_base = readline (p);
+	line = line_base;
+	if (!line)
+	    return FileEOF;
+	add_history (line_base);
+    }
+    c = (*line++) & 0xff;
+    if (!c)
+    {
+	c = '\n';
+	free (line_base);
+	line = 0;
+    }
+    return c;
+#else
+    if (lexInput->at_bol)
+    {
+	Value	v = prompt ();
 	dofformat (FileStdout, "%s", 1, &v);
 	FileFlush (FileStdout);
     }
-    EXIT ();
+    return LexGetChar ();
+#endif
 }
 
 #undef YY_INPUT
@@ -190,20 +240,15 @@ static int yy_input (char *buf, int max_size)
     int	    result = 0;
     
     lexInput->at_eof = False;
-    if (lexInput->at_bol) { lexInput->lineno++; prompt (); }
+    if (lexInput->at_bol) { lexInput->lineno++; }
     while (result < max_size) {
-	c = FileInput (lexInput->file);
+	if (lexInput->interactive)
+	    c = LexGetInteractiveChar ();
+	else
+	    c = LexGetChar ();
 	lexInput->at_bol = False;
-	if (c < 0) {
-	    c = popinput ();
-	    if (c == -2) {
-		lexInput->at_eof = True;
-		buf[result++] = '\n';
-		break;
-	    }
-	    if (c < 0)
-		break;
-	}
+	if (c < 0) 
+	    break;
 	buf[result++] = c;
 	if (c == '\n')
 	{
@@ -272,7 +317,7 @@ continuation	{ yylval.tval = type_continuation; return CONTINUATION; }
 thread		{ yylval.tval = type_thread; return THREAD; }
 struct		{ yylval.ival = STRUCT; return STRUCT; }
 union		{ yylval.ival = UNION; return UNION; }
-void		{ yylval.ival = VOID; return VOID; }
+void		{ yylval.tval = type_void; return VOID; }
 
 typedef		{ yylval.ival = TYPEDEF; return TYPEDEF; }
 func		{ yylval.ival = FUNC; return FUNC; }
@@ -289,6 +334,7 @@ extend		{ yylval.pval = publish_extend; return EXTEND; }
 "..."		{ yylval.ival = DOTS; return DOTS; }
 "."		{ yylval.ival = DOT; return DOT; }
 "->"		{ yylval.ival = ARROW; return ARROW; }
+"<>"		{ yylval.vval = Void; return VOIDVAL; }
 "*["		{ yylval.ival = REFARRAY; return REFARRAY; }
 \n		{ 
 		    if (!ignorenl) { yylval.ival = NL; return NL; } 
@@ -312,6 +358,7 @@ extend		{ yylval.pval = publish_extend; return EXTEND; }
 "&="		{ yylval.ival = ASSIGNLAND; return ASSIGNLAND; }
 "|="		{ yylval.ival = ASSIGNLOR; return ASSIGNLOR; }
 "="		{ yylval.ival = ASSIGN; return ASSIGN; }
+
 "+"		{ yylval.ival = PLUS; return PLUS; }
 "-"		{ yylval.ival = MINUS; return MINUS; }
 "*"		{ yylval.ival = TIMES; return TIMES; }

@@ -647,6 +647,7 @@ Value	do_is_file (Value);
 Value	do_is_thread (Value);
 Value	do_is_semaphore (Value);
 Value	do_is_continuation (Value);
+Value	do_is_void (Value);
 Value	do_is_array (Value);
 Value	do_is_ref (Value);
 Value	do_is_struct (Value);

@@ -179,12 +179,13 @@ typedef enum _type {
 	type_thread = 6,
 	type_semaphore = 7,
 	type_continuation = 8,
+	type_void = 9,
     
- 	type_array = 9,
-	type_ref = 10,
-	type_struct = 11,
-	type_union = 12,
-	type_func = 13
+ 	type_array = 10,
+	type_ref = 11,
+	type_struct = 12,
+	type_union = 13,
+	type_func = 14
 } Type;
 
 /*
@@ -202,7 +203,7 @@ ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name, ArgType *next);
 
 typedef enum _typesTag {
     types_prim, types_name, types_ref, types_func, types_array, 
-    types_struct, types_union, types_unit,
+    types_struct, types_union,
 } TypesTag;
     
 typedef struct _typesBase {
@@ -264,22 +265,18 @@ typedef struct _argList {
 } ArgList;
 
 extern Types	    *typesPoly;
-extern Types	    *typesUnit;
 extern Types	    *typesGroup;
 extern Types	    *typesField;
 extern Types	    *typesRefPoly;
 extern Types	    *typesNil;
-extern Types	    *typesPolyUnit;
-extern Types	    *typesPrim[type_continuation - type_int + 1];
+extern Types	    *typesPrim[type_void - type_int + 1];
 
-Types	*NewTypesPrim (Type prim);
 Types	*NewTypesName (Atom name, Types *type);
 Types	*NewTypesRef (Types *ref);
 Types	*NewTypesFunc (Types *ret, ArgType *args);
 Types	*NewTypesArray (Types *type, ExprPtr dimensions);
 Types	*NewTypesStruct (StructTypePtr structs);
 Types	*NewTypesUnion (StructTypePtr structs);
-Types	*NewTypesUnit (void);
 Types	*TypesCanon (Types *type);
 Type	BaseType (Types *type);
 int	TypesInit (void);
@@ -591,7 +588,6 @@ extern int	AddBoxTypes (BoxTypesPtr *btp, TypesPtr t);
 
 extern BoxPtr	NewTypedBox (Bool constant, Bool array, BoxTypesPtr types);
 			     
-Value	NewVoid (void);
 Value	NewInt (int value);
 Value	NewInteger (Sign sign, Natural *mag);
 Value	NewIntInteger (int value);

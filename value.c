@@ -15,7 +15,7 @@
 extern ValueType    IntType, IntegerType, RationalType, FloatType;
 extern ValueType    StringType, ArrayType, FileType;
 extern ValueType    RefType, structType, FuncType, ThreadType;
-extern ValueType    SemaphoreType, ContinuationType;
+extern ValueType    SemaphoreType, ContinuationType, UnitType;
 
 Value	Void;
 
@@ -26,7 +26,7 @@ volatile Bool	signaling;
 ValueType   *valueTypes[] = {
     &IntType, &IntegerType, &RationalType, &FloatType,
     &StringType, &FileType,
-    &ThreadType, &SemaphoreType, &ContinuationType,
+    &ThreadType, &SemaphoreType, &ContinuationType, &UnitType,
     &ArrayType, &RefType, &structType, &FuncType,
 };
 
@@ -650,28 +650,28 @@ Default (TypesPtr t)
 }
 
 static Bool
-VoidPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+UnitPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
-    FilePuts (f, "<void>");
+    FilePuts (f, "<>");
     return True;
 }
 
-ValueType VoidType = {
+ValueType UnitType = {
     { 0, 0 },	    /* data */
     { 0 },	    /* binary */
     { 0 },	    /* unary */
     0, 0,
-    VoidPrint,	    /* print */
+    UnitPrint,	    /* print */
 };
 
-Value
+static Value
 NewVoid (void)
 {
     ENTER ();
     Value   ret;
 
-    ret = ALLOCATE (&VoidType.data, sizeof (BaseValue));
-    ret->value.tag = type_undef;
+    ret = ALLOCATE (&UnitType.data, sizeof (BaseValue));
+    ret->value.tag = type_void;
     RETURN (ret);
 }
 

@@ -224,6 +224,7 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_is_thread,	    "is_thread",    	    "i",    "p"	    },
     { do_is_semaphore,	    "is_semaphore",    	    "i",    "p"	    },
     { do_is_continuation,   "is_continuation",	    "i",    "p"	    },
+    { do_is_void,	    "is_void",		    "i",    "p"	    },
     { do_is_array,	    "is_array",		    "i",    "p"	    },
     { do_is_ref,	    "is_ref",		    "i",    "p"	    },
     { do_is_struct,	    "is_struct",	    "i",    "p"	    },
@@ -543,18 +544,18 @@ BuiltinType (char *format, Types **type)
 	}
     }
     switch (*format++) {
-    case 'p': t = NewTypesPrim (type_undef); break;
+    case 'p': t = typesPoly; break;
     case 'n': t = typesGroup; break;
     case 'N': t = typesField; break;
-    case 'R': t = NewTypesPrim (type_float); break;
-    case 'r': t = NewTypesPrim (type_rational); break;
-    case 'i': t = NewTypesPrim (type_integer); break;
-    case 's': t = NewTypesPrim (type_string); break;
-    case 'f': t = NewTypesPrim (type_file); break;
-    case 't': t = NewTypesPrim (type_thread); break;
-    case 'S': t = NewTypesPrim (type_semaphore); break;
-    case 'c': t = NewTypesPrim (type_continuation); break;
-    case 'u': t = typesUnit; break;
+    case 'R': t = typesPrim[type_float]; break;
+    case 'r': t = typesPrim[type_rational]; break;
+    case 'i': t = typesPrim[type_integer]; break;
+    case 's': t = typesPrim[type_string]; break;
+    case 'f': t = typesPrim[type_file]; break;
+    case 't': t = typesPrim[type_thread]; break;
+    case 'S': t = typesPrim[type_semaphore]; break;
+    case 'c': t = typesPrim[type_continuation]; break;
+    case 'v': t = typesPrim[type_void]; break;
     default: 
 	t = 0;
 	write (2, "Invalid builtin argument type\n", 30);
@@ -712,14 +713,14 @@ BuiltinInit (void)
     for (r = rvars; r->name; r++) {
 	sym = NamespaceAddSymbol (GlobalNamespace, 
 			      NewSymbolGlobal (AtomId (r->name), 
-					       NewTypesPrim (type_float), 
+					       typesPrim[type_float], 
 					       publish_private));
 	sym->global.value->constant = True;
 	BoxValueSet (sym->global.value, 0,
 		     NewValueFloat (aetov (r->value),r->prec));
     }
     for (s = svars; s->name; s++) {
-	sym = BuiltinSymbol (s->namespace, s->name, NewTypesPrim (type_string));
+	sym = BuiltinSymbol (s->namespace, s->name, typesPrim[type_string]);
 	BoxValueSet (sym->global.value, 0, NewStrString (s->value));
     }
     for (i = ivars; i->name; i++) {
@@ -730,7 +731,7 @@ BuiltinInit (void)
         case 1: f = FileStdout; break;
 	default: f = FileStderr;  break;
 	}
-	sym = BuiltinSymbol (i->namespace, i->name, NewTypesPrim (type_file));
+	sym = BuiltinSymbol (i->namespace, i->name, typesPrim[type_file]);
 	BoxValueSet (sym->global.value, 0, f);
     }
     
@@ -1817,6 +1818,21 @@ do_is_continuation (Value av)
 }
 
 Value
+do_is_void (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_void:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
 do_is_array (Value av)
 {
     ENTER ();
@@ -1867,21 +1883,6 @@ do_is_func (Value av)
     ENTER ();
     switch (av->value.tag) {
     case type_func:
-	av = One;
-	break;
-    default:
-	av = Zero;
-	break;
-    }
-    RETURN (av);
-}
-
-Value
-do_is_void (Value av)
-{
-    ENTER ();
-    switch (av->value.tag) {
-    case type_undef:
 	av = One;
 	break;
     default:

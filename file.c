@@ -622,6 +622,9 @@ FilePutType (Value f, Type tag, Bool minimal)
     case type_continuation:
 	FilePuts (f, "continuation");
 	break;
+    case type_void:
+	FilePuts (f, "void");
+	break;
 	
     case type_array:
 	FilePuts (f, "array");
@@ -779,9 +782,6 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	}
 	FilePuts (f, "}");
 	break;
-    case types_unit:
-	FilePuts (f, "void");
-	break;
     }
     if (spaceit)
 	FilePuts (f, " ");
@@ -873,7 +873,7 @@ FileVPrintf (Value file, char *fmt, va_list args)
 	    case 'g':
 		v = va_arg (args, Value);
 		if (!v)
-		    (void) FilePuts (file, "(null)");
+		    (void) FilePuts (file, "<uninit>");
 		else
 		    Print (file, v, *fmt, 0, 0, DEFAULT_OUTPUT_PRECISION, ' ');
 		break;

@@ -181,8 +181,6 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 	    CompileCanonType (obj, namespace, se->type, stat, complete);
 	}
 	break;
-    case types_unit:
-	break;
     }
 }
 
@@ -834,7 +832,7 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr, NamespacePtr namespace,
     while (expr)
     {
 	obj = _CompileExpr (obj, expr->tree.left, namespace, True, stat);
-	if (!TypeCompatible (NewTypesPrim (type_integer),
+	if (!TypeCompatible (typesPrim[type_integer],
 			     expr->tree.left->base.type,
 			     True))
 	{
@@ -1305,8 +1303,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	{
 	    expr->base.type = typesNil;
 	}
-	else if (expr->constant.constant->value.tag <= type_continuation)
-	    expr->base.type = NewTypesPrim (expr->constant.constant->value.tag);
+	else if (expr->constant.constant->value.tag <= type_void)
+	    expr->base.type = typesPrim[expr->constant.constant->value.tag];
 	else
 	    expr->base.type = typesPoly;    /* FIXME composite const types */
 	break;
@@ -1401,7 +1399,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNPLUS,
-						 NewTypesPrim (type_int));
+						 typesPrim[type_int]);
 	    BuildInst (obj, OpPreInc, inst, stat);
 	}
 	else
@@ -1409,7 +1407,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    obj = CompileLvalue (obj, expr->tree.right, namespace, stat, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNPLUS,
-						 NewTypesPrim (type_int));
+						 typesPrim[type_int]);
 	    BuildInst (obj, OpPostInc, inst, stat);
 	}
 	if (!expr->base.type)
@@ -1427,7 +1425,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNMINUS,
-						 NewTypesPrim (type_int));
+						 typesPrim[type_int]);
 	    BuildInst (obj, OpPreDec, inst, stat);
 	}
 	else
@@ -1435,7 +1433,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    obj = CompileLvalue (obj, expr->tree.right, namespace, stat, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNMINUS,
-						 NewTypesPrim (type_int));
+						 typesPrim[type_int]);
 	    BuildInst (obj, OpPostDec, inst, stat);
 	}
 	if (!expr->base.type)
@@ -1618,7 +1616,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
     case FORK:
 	BuildInst (obj, OpFork, inst, stat);
 	inst->obj.obj = CompileExpr (expr->tree.right, namespace);
-	expr->base.type = NewTypesPrim (type_thread);
+	expr->base.type = typesPrim[type_thread];
 	break;
     case THREAD:
 	obj = CompileCall (obj, NewExprTree (OP, 
@@ -1627,7 +1625,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 							   expr->tree.left,
 							   (Expr *) 0)),
 			    namespace, stat);
-	expr->base.type = NewTypesPrim (type_thread);
+	expr->base.type = typesPrim[type_thread];
 	break;
     case DOLLAR:
 	/* reposition statement reference so top-level errors are nicer*/
@@ -1970,7 +1968,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	else
 	{
 	    inst->base.opCode = OpReturnVoid;
-	    expr->base.type = typesUnit;
+	    expr->base.type = typesPrim[type_void];
 	}
 	if (!TypeCombineBinary (code_namespace->code->base.type, ASSIGN, expr->base.type))
 	{

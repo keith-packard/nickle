@@ -30,6 +30,7 @@ ScopePtr    ThreadScope;
 ScopePtr    MutexScope;
 ScopePtr    SemaphoreScope;
 ScopePtr    MathScope;
+ScopePtr    StringScope;
 
 struct fbuiltin_v {
     Value	(*bf_func) (int, Value *);
@@ -174,6 +175,8 @@ struct fbuiltin_1 funcs_1[] = {
     { ceilD,		"ceil" },
     { cosD,		"cos", &MathScope },
     { coshD,		"cosh", &MathScope },
+    { dim,		"dim" },
+    { dims,		"dims" },
     { doHistoryInsert,	"HistoryInsert" },
     { dofclose,		"fclose" },
     { dofflush,		"fflush" },
@@ -184,6 +187,7 @@ struct fbuiltin_1 funcs_1[] = {
     { floorD,		"floor" },
     { j0D,		"j0", &MathScope },
     { j1D,		"j1", &MathScope },
+    { lengthS,          "length", &StringScope },
     { log10D,		"log10", &MathScope },
     { logD,		"log", &MathScope },
     { sinD,		"sin", &MathScope },
@@ -206,9 +210,13 @@ struct fbuiltin_2 funcs_2[] = {
     { doputc,		"putc" },
     { dosetbuf,		"setbuffer" },
     { hypotD,		"hypot", &MathScope },
+    { indexS,           "index", &StringScope },
     { jnD,		"jn", &MathScope },
     { ynD,		"yn", &MathScope },
     { 0,		0 },
+};
+struct fbuiltin_3 funcs_3[] = {
+    { substrS,          "substr", &StringScope },
 };
 struct fbuiltin_7 funcs_7[] = {
     { doprint,		"Print" },
@@ -255,6 +263,7 @@ struct nbuiltin nvars[] = {
     { "math",	    &MathScope },
     { "mutex",	    &MutexScope },
     { "semaphore",  &SemaphoreScope },
+    { "strings",    &StringScope },
     { 0,	    0 },
 };
 
@@ -326,6 +335,7 @@ BuiltinInit (void)
     struct fbuiltin_0	*f_0;
     struct fbuiltin_1	*f_1;
     struct fbuiltin_2	*f_2;
+    struct fbuiltin_3	*f_3;
     struct fbuiltin_7	*f_7;
     struct fbuiltin_2j	*f_2j;
     struct dbuiltin	*d;
@@ -354,6 +364,10 @@ BuiltinInit (void)
     for (f_2 = funcs_2; f_2->bf_name; f_2++) {
 	f.builtin2 = f_2->bf_func;
 	BuiltinAddFunction (f_2->bf_scope, f_2->bf_name, 2, f);
+    }
+    for (f_3 = funcs_3; f_3->bf_name; f_3++) {
+	f.builtin3 = f_3->bf_func;
+	BuiltinAddFunction (f_3->bf_scope, f_3->bf_name, 3, f);
     }
     for (f_7 = funcs_7; f_7->bf_name; f_7++) {
 	f.builtin7 = f_7->bf_func;
@@ -1068,7 +1082,7 @@ Value
 _random (Value bits)
 {
     ENTER();
-    int n = IntPart (bits, "non-integer");
+    int n = IntPart (bits, "random: modulus non-integer");
     Value ret = Zero;
 
     if (n > 31)
@@ -1089,4 +1103,110 @@ _srandom (Value seed)
     srandom ((unsigned int) n);
     RETURN (Zero);
 }
-    
+
+Value
+lengthS (Value av)
+{
+    ENTER();
+    Value ret;
+    if (av->value.tag != type_string)
+    {
+	RaiseError ("index: target must be string %v", av);
+	RETURN (Zero);
+    }
+    ret = NewInt(strlen(StringChars(&av->string)));
+    RETURN (ret);
+}
+
+Value
+indexS (Value av, Value bv)
+{
+    ENTER();
+    char *a, *b, *p;
+    Value ret;
+    if (av->value.tag != type_string)
+    {
+	RaiseError ("index: target must be string %v", av);
+	RETURN (Zero);
+    }
+    a = StringChars(&av->string);
+    if (bv->value.tag != type_string)
+    {
+	RaiseError ("index: pattern must be string %v", bv);
+	RETURN (Zero);
+    }
+    b = StringChars(&bv->string);
+    p = strstr(a, b);
+    if (!p)
+	RETURN (NewInt(-1));
+    ret = NewInt(p - a);
+    RETURN (ret);
+}
+
+Value
+substrS (Value av, Value bv, Value cv)
+{
+    ENTER();
+    char *a, *rchars;
+    int b, c, al;
+    Value ret;
+    if (av->value.tag != type_string)
+    {
+	RaiseError ("substr: target must be string %v", av);
+	RETURN (Zero);
+    }
+    a = StringChars(&av->string);
+    al = strlen(a);
+    b = IntPart(bv, "substr: index not integer");
+    if (b < 0 || b >= al) {
+	RaiseError ("substr: index out of bounds", av);
+	RETURN (Zero);
+    }
+    c = IntPart(cv, "substr: count not integer");
+    if (c < 0 || b + c > al) {
+	RaiseError ("substr: count out of range", av);
+	RETURN (Zero);
+    }
+    ret = NewString(c);
+    rchars = StringChars(&ret->string);
+    strncpy(rchars, a + b, c);
+    rchars[c] = '\0';
+    RETURN (ret);
+}
+
+Value
+dim(Value av) {
+    ENTER();
+    Value ret;
+    if (av->value.tag != type_array)
+    {
+	RaiseError ("dim: argument not array %v", av);
+	RETURN (Zero);
+    }
+    if (av->array.ndim != 1)
+    {
+	RaiseError ("dim: argument must be one-dimensional array %v", av);
+	RETURN (Zero);
+    }
+    ret = NewInt(av->array.dim[0]);
+    RETURN (ret);
+}
+
+Value
+dims(Value av) {
+    ENTER();
+    Value ret;
+    int i;
+    if (av->value.tag != type_array)
+    {
+	RaiseError ("dim: argument not array %v", av);
+	RETURN (Zero);
+    }
+    ret = NewArray(True, type_int, 1, &av->array.ndim);
+    for (i = 0; i < av->array.ndim; i++) {
+      Value d = NewInt(av->array.dim[i]);
+      BoxValue(ret->array.values, i) = d;
+    }
+    RETURN (ret);
+}
+

@@ -1,1 +1,9 @@
 1.99.0: First semi-public test release
+
+bart 2001/02/17	
+  + implemented dim(array), dims(array)
+  + implemented strings package
+	length(string)
+	index(string,string)
+        substr(string,int,int)
+  + various cleanups and fixes	

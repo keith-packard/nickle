@@ -22,10 +22,11 @@ mkinstalldirs
 nickle
 nickle.1
 nickle.spec
+nickle_*
 stamp-h
 stamp-h1
 stamp-h.in
-version.h
+version-sh
 build-stamp
 configure-stamp
 *.tar.gz

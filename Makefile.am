@@ -46,3 +46,7 @@ CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
 
 $(nickle_OBJECTS): avl.h gram.h memp.h opcode.h stack.h \
 	config.h mem.h nickle.h ref.h value.h
+
+gram.c gram.h: gram.y
+
+lex.c: lex.l

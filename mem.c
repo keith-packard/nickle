@@ -90,11 +90,15 @@ int	totalObjectsUsed;
 int	useMap[NUMSIZES+1];
 
 
+#ifdef HAVE_C_INLINE
 static inline void *
+#else
+static void *
+#endif
 newHunk (int sizeIndex)
 {
-    register char	*new;
-    char		*limit;
+    unsigned char	*new;
+    unsigned char	*limit;
     struct block	*b;
     int			bsize;
     int			dsize;
@@ -113,12 +117,12 @@ newHunk (int sizeIndex)
 	 * fill in per-block data fields
 	 */
 	b->sizeIndex = sizeIndex;
-	b->bitmap = ((char *) b) + HEADSIZE;
+	b->bitmap = ((unsigned char *) b) + HEADSIZE;
 	b->bitmapsize = BITMAPSIZE(bsize);
-	b->data = (char *)
+	b->data = (unsigned char *)
 	    ((((PtrInt) (b->bitmap + b->bitmapsize)) + (MINHUNK-1))
 	     & (~(MINHUNK-1)));
-	dsize = (((char *) b) + BLOCKSIZE) - b->data;
+	dsize = (((unsigned char *) b) + BLOCKSIZE) - b->data;
 	b->datasize = (dsize / bsize) * bsize;
 	/*
 	 * put this block into the address converter
@@ -137,7 +141,7 @@ newHunk (int sizeIndex)
 	freeList[sizeIndex] = (struct bfree *) b->data;
     }
 gotsome:
-    new = (char *) freeList[sizeIndex];
+    new = (unsigned char *) freeList[sizeIndex];
     freeList[sizeIndex] = freeList[sizeIndex]->next;
 #ifdef DEBUG
     memset (new, '\0', sizeMap[sizeIndex]);
@@ -148,7 +152,11 @@ gotsome:
 /*
  * take care of giant requests
  */
+#ifdef HAVE_C_INLINE
 static inline void *
+#else
+static void *
+#endif
 newHuge (int size)
 {
     struct block	*huge;
@@ -171,7 +179,11 @@ newHuge (int size)
     return huge->data;
 }
 
+#ifdef HAVE_C_INLINE
 static inline void *
+#else
+static void *
+#endif
 newObject (int size)
 {
     int	sizeIndex;
@@ -206,7 +218,11 @@ allocBlock (void)
     return malloc ((unsigned) BLOCKSIZE);
 }
 
+#ifdef HAVE_C_INLINE
 static inline void
+#else
+static void
+#endif
 disposeBlock (struct block *b)
 {
     free ((char *) b);
@@ -422,13 +438,13 @@ tossFree (void)
 static void
 checkBlockRef (struct block *b)
 {
-    int			    sizeIndex;
-    int			    size;
-    register char	    *byte;
-    register int	    bit;
-    register char	    *object, *max;
-    register struct bfree   *thisLast;
-    DataType		    *type;
+    int		    sizeIndex;
+    int		    size;
+    unsigned char   *byte;
+    int		    bit;
+    unsigned char   *object, *max;
+    struct bfree    *thisLast;
+    DataType	    *type;
 
     if (!b->ref) {
 #ifdef DEBUG
@@ -450,7 +466,7 @@ checkBlockRef (struct block *b)
 	    totalBytesFree += b->datasize;
 	    totalObjectsFree += b->datasize / sizeMap[b->sizeIndex];
 	}
-	b->bitmap = (char *) hughFree;
+	b->bitmap = (unsigned char *) hughFree;
 	hughFree = b;
 	
     } else if (b->bitmap) {

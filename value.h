@@ -20,6 +20,7 @@
 #include	<stdlib.h>
 #include	<memory.h>
 #include	<string.h>
+#include	<signal.h>
 #include	"mem.h"
 #include	"opcode.h"
 
@@ -203,7 +204,7 @@ ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name, ArgType *next);
 
 typedef enum _typesTag {
     types_prim, types_name, types_ref, types_func, types_array, 
-    types_struct, types_union,
+    types_struct, types_union
 } TypesTag;
     
 typedef struct _typesBase {
@@ -304,7 +305,7 @@ int	TypeCountDimensions (ExprPtr dims);
 
 typedef enum _class {
     class_global, class_static, class_arg, class_auto, 
-    class_typedef, class_namespace, class_exception, class_undef,
+    class_typedef, class_namespace, class_exception, class_undef
 } Class;
 
 #define ClassLocal(c)	((c) == class_arg || (c) == class_auto)
@@ -453,7 +454,7 @@ typedef enum _ThreadState {
     ThreadRunning = 0,
     ThreadSuspended = 1,
     ThreadInterrupted = 2,
-    ThreadFinished = 4,
+    ThreadFinished = 4
 } ThreadState;
 
 typedef struct _thread {

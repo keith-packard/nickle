@@ -274,12 +274,12 @@ IntCeil (Value av, int expandOk)
 static Bool
 IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
 {
-    int		    a = av->ints.value;
-    int		    digit;
-    int		    w;
-    unsigned char   space[64], *s;
-    unsigned char   letter;
-    int		    neg;
+    int	    a = av->ints.value;
+    int	    digit;
+    int	    w;
+    char    space[64], *s;
+    char    letter;
+    int	    neg;
 
     if ('A' <= format && format <= 'Z')
 	letter = 'A';

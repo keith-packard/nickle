@@ -189,7 +189,7 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 		temp = (temp << normal) | (dividend3 >> (LBASE2 - normal));
 	    }
 	    if ((digit) (temp >> LBASE2) == divisorc)
-		d = 0xffffffff;
+		d = (digit) 0xffffffffL;
 	    else
 		d = temp / divisorc;
 #ifdef DEBUG	    

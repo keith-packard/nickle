@@ -256,6 +256,7 @@ TypeEqual (Types *a, Types *b)
     case types_struct:
 	return True;
     default:
+	break;
     }
     return False;
 }
@@ -423,6 +424,7 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	    break;
 	return True;
     default:
+	break;
     }
     return False;
 	
@@ -1143,7 +1145,8 @@ TypeCompatibleAssign (TypesPtr a, Value b)
 		return True;
 	}
 	break;
-    default:	
+    default:
+	break;
     }
     return False;
 }

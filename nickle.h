@@ -577,7 +577,7 @@ typedef enum _standardException {
     exception_invalid_struct_member,/* string poly string */
     exception_invalid_binop_types,  /* string poly poly */
     exception_invalid_unop_type,    /* string poly */
-    _num_standard_exceptions,
+    _num_standard_exceptions
 } StandardException;
 
 void

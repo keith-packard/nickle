@@ -460,7 +460,11 @@ ThreadBoxCheck (BoxPtr box, int i, Types *type)
     }
 }
 
+#ifdef HAVE_C_INLINE
 static inline ThreadState
+#else
+static ThreadState
+#endif
 ThreadStep (Value thread)
 {
     ENTER ();

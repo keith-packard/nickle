@@ -109,7 +109,7 @@ typedef enum _OpCode {
     OpGt,
     OpLe,
     OpGe,
-    OpEnd,
+    OpEnd
 } OpCode;
 
 #endif /* _CODE_H_ */

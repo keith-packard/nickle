@@ -17,7 +17,7 @@ namespace History {
     int	    count = 0;
     * *list  tail = &head;
     
-    public void function insert (poly v)
+    public void insert (poly v)
     {
 	if (is_void (v))
 	    return;
@@ -27,13 +27,13 @@ namespace History {
 	++count;
     }
 
-    *list function elt (*list l, int id)
+    *list elt (*list l, int id)
     {
 	if (id <= 0) return l;
 	return elt (l->next, id-1);
     }
 
-    public poly function fetch (int id)
+    public poly fetch (int id)
     {
 	if (id <= 0)
 	    return elt (head, count+id-1)->value;
@@ -41,7 +41,7 @@ namespace History {
 	    return elt (head, id-1)->value;
     }
 
-    public void function show (string format, int args...)
+    public void show (string format, int args...)
     {
 	int from = 10, to = count;
 	*list	f, t;

@@ -8,13 +8,13 @@ namespace PRNG {
 
   global int setkey = 0;
 
-  public void function srandom(int s) {
+  public void srandom(int s) {
     ARC4::nsetkey(10, s);
     setkey = 1;
   }
 
   /* returns an n-*bit* random number in 0..(2**n)-1 */
-  public int function randbits(int n) {
+  public int randbits(int n) {
     int q = n >> 3;
     int r = n & 7;
     if (!setkey)
@@ -28,7 +28,7 @@ namespace PRNG {
   }
 
   /* returns a random integer in the range 0..n-1 */
-  public int function randint(int n) {
+  public int randint(int n) {
     return randbits(32 + bit_width (n)) % n;
   }
 

@@ -9,7 +9,7 @@
      * quit	    - exit with code 0
      * quit N	    - exit with code N
      */
-    void function do_quit (int args...)
+    void do_quit (int args...)
     {
 	int	code = 0;
 	
@@ -26,7 +26,7 @@
      * history N    - show N recent history
      * history N,M  - show history from N to M
      */
-    void function do_history (int args...)
+    void do_history (int args...)
     {
 	switch (dim (args)) {
 	case 0:
@@ -47,7 +47,7 @@
      *
      * print name	- pretty print name
      */
-    void function do_pretty_print (string[] names)
+    void do_pretty_print (string[] names)
     {
 	Command::pretty_print (stdout, names);
     }
@@ -63,7 +63,7 @@
      *
      * load "filename"	- read commands from "filename"
      */
-    void function do_load (string f)
+    void do_load (string f)
     {
 	if (!Command::lex_file (f))
 	    File::fprintf (stderr, "Cannot load file \"%s\"\n", f);
@@ -86,7 +86,7 @@
      * char c1 c2 c3	    - Print characters for given integers
      */
 
-    void function do_char (int c ...)
+    void do_char (int c ...)
     {
 	for (int i = 0; i < dim (c); i++)
 	    printf ("%3d 0x%02x: %v\n", 
@@ -101,7 +101,7 @@
  */
 
 extend namespace Command {
-    public void function display (poly v) {
+    public void display (poly v) {
 	if (is_void (v))
 	    return;
 	History::insert (v);
@@ -109,7 +109,7 @@ extend namespace Command {
 	putchar ('\n');
     }
 
-    public void function display_base (poly v, int base) {
+    public void display_base (poly v, int base) {
 	History::insert (v);
 	File::print (stdout, v, "g", base, 0, -1, " ");
 	putchar ('\n');

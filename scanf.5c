@@ -11,9 +11,9 @@ extend namespace File {
     /*
      * vfscanf
      */
-    public int function vfscanf (file f, string format, (*poly)[*] args)
+    public int vfscanf (file f, string format, (*poly)[*] args)
     {
-	int function iswhite (int c)
+	int iswhite (int c)
 	{
 	    switch (c) {
 	    case ' ':
@@ -34,7 +34,7 @@ extend namespace File {
 	    File::ungetc (c, f);
 	}
 
-	int function isnumber (int c)
+	int isnumber (int c)
 	{
 	    if ('0' <= c && c <= '9')
 		return 1;
@@ -50,7 +50,7 @@ extend namespace File {
 	}
 
 	/* return next number in input */
-	real function number ()
+	real number ()
 	{
 	    int	    c;
 	    string  s;
@@ -63,7 +63,7 @@ extend namespace File {
 	    return string_to_real (s);
 	}
 
-	string function word ()
+	string word ()
 	{
 	    int	    c;
 	    string  s;
@@ -124,12 +124,12 @@ extend namespace File {
 	return argc;
     }
 
-    public int function fscanf (file f, string format, *poly args...)
+    public int fscanf (file f, string format, *poly args...)
     {
 	return vfscanf (f, format, args);
     }
 
-    public string function fgets (file f)
+    public string fgets (file f)
     {
 	string	s;
 	int	c;
@@ -149,17 +149,17 @@ extend namespace File {
     }
 }
 
-public int function scanf (string format, *poly args...)
+public int scanf (string format, *poly args...)
 {
     return File::vfscanf (stdin, format, args);
 }
 
-public int function vscanf (string format, (*poly)[*] args)
+public int vscanf (string format, (*poly)[*] args)
 {
     return File::vfscanf (stdin, format, args);
 }    
 
-public string function gets ()
+public string gets ()
 {
     return File::fgets (stdin);
 }

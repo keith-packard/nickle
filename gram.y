@@ -74,7 +74,7 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 
 %type  <argType>    opt_argdecls argdecls
 %type  <argDecl>    argdecl
-%type  <argType>    opt_argdefines argdefines
+%type  <argType>    opt_argdefines argdefines args
 %type  <argDecl>    argdefine
 %type  <bool>	    opt_dots
 
@@ -565,7 +565,7 @@ catches		:   catch catches
 		|   
 		    { $$ = 0; }
 		;
-catch		: CATCH fullname namespace_start opt_argdefines block namespace_end
+catch		: CATCH fullname namespace_start args block namespace_end
 		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $5), $2); }
 		;
 func_body    	: { ++funcDepth; } block { --funcDepth; $$ = $2; }
@@ -942,6 +942,9 @@ argdecl		: type NAME
 /*
 * Arguments in function definitions
 */
+args		: OP opt_argdefines CP
+		    { $$ = $2; }
+		;
 opt_argdefines	: argdefines
 		    {
 			ArgType	*args;
@@ -1035,7 +1038,7 @@ exprs		: lambdaexpr COMMA exprs
 * This expression level includes lambdas which can't be in simpleexpr
 * because of grammar ambiguities
 */
-lambdaexpr	: opt_type FUNC namespace_start opt_argdefines block namespace_end
+lambdaexpr	: opt_type FUNC namespace_start args block namespace_end
 		    { $$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); }
 		| simpleexpr
 		;

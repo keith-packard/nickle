@@ -18,7 +18,7 @@ extend namespace File {
     public exception too_many_arguments (string format, poly[*] args);
     public exception too_few_arguments (string format, poly[*] args);
     
-    public void function vfprintf (file f, string format, poly[*] args)
+    public void vfprintf (file f, string format, poly[*] args)
     {
 	/*
 	 * A private namespace to walk the format string 
@@ -30,7 +30,7 @@ extend namespace File {
 	    /*
 	     * Return whether the end of the string has been reached
 	     */
-	    public int function done () { 
+	    public int done () { 
 		return i >= len; 
 	    }
 
@@ -38,7 +38,7 @@ extend namespace File {
 	     * Return current character, raising an exception if
 	     * the end of the string has been reached
 	     */
-	    public int function c() { 
+	    public int c() { 
 		if (done())
 		    raise invalid_argument ("invalid format", 1, format);
 		return format[i]; 
@@ -47,14 +47,14 @@ extend namespace File {
 	    /*
 	     * Step to next character
 	     */
-	    public void function step () {
+	    public void step () {
 		++i; 
 	    }
 	    
 	    /*
 	     * Return true and step if current character matches 'm'
 	     */
-	    public int function match(int m) {
+	    public int match(int m) {
 		if (c() == m) 
 		{
 		    step();
@@ -66,7 +66,7 @@ extend namespace File {
 	    /*
 	     * Return a number from the format string
 	     */
-	    public int function number () {
+	    public int number () {
 		int	n = 0;
 		while ('0' <= c() && c() <= '9')
 		{
@@ -80,13 +80,13 @@ extend namespace File {
 	namespace arg {
 	    int	n = 0;
 	    
-	    public poly function next () {
+	    public poly next () {
 		if (n == dim(args))
 		    raise too_few_arguments (format, args);
 		return args[n++];
 	    }
 
-	    public void function done () {
+	    public void done () {
 		if (n != dim(args))
 		    raise too_many_arguments (format, args);
 	    }
@@ -147,24 +147,24 @@ extend namespace File {
 	arg::done ();
     }
 
-    public void function fprintf (file f, string format, poly args...)
+    public void fprintf (file f, string format, poly args...)
     {
 	vfprintf (f, format, args);
     }
 
-    public void function printf (string format, poly args...)
+    public void printf (string format, poly args...)
     {
 	vfprintf (stdout, format, args);
     }
     
-    public string function vsprintf (string format, poly[*] args)
+    public string vsprintf (string format, poly[*] args)
     {
 	file	f = File::string_write ();
 	vfprintf (f, format, args);
 	return File::string_string (f);
     }
 
-    public string function sprintf (string format, poly args...)
+    public string sprintf (string format, poly args...)
     {
 	return vsprintf (format, args);
     }

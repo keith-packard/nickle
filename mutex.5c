@@ -31,7 +31,7 @@ namespace Mutex {
     public exception deadlock (mutex m, thread self);
     public exception notowned (mutex m, thread self, mutex_owner owner);
 
-    public int function acquire (mutex m)
+    public int acquire (mutex m)
     {
 	if (m->owner == mutex_owner.owner (Thread::current()))
 	    raise deadlock (m, Thread::current ());
@@ -40,7 +40,7 @@ namespace Mutex {
 	return 1;
     }
 
-    public int function try_acquire (mutex m)
+    public int try_acquire (mutex m)
     {
 	int ret = 0;
 	
@@ -52,7 +52,7 @@ namespace Mutex {
 	return ret;
     }
 
-    public int function release (mutex m)
+    public int release (mutex m)
     {
 	if (m->owner != mutex_owner.owner (Thread::current()))
 	    raise notowned (m, Thread::current (), m->owner);
@@ -61,12 +61,12 @@ namespace Mutex {
 	return 1;
     }
 
-    public mutex_owner function owner (mutex m)
+    public mutex_owner owner (mutex m)
     {
 	return m->owner;
     }
     
-    public mutex function new ()
+    public mutex new ()
     {
 	return reference ((mutex_struct) { 
 	    sem = Semaphore::new (1),

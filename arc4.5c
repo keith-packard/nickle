@@ -17,7 +17,7 @@ namespace ARC4 {
    * Second argument is integer key: largest useful key is
    * 8 * 62 bits.
    */
-  public void function nsetkey(int nn, int k) {
+  public void nsetkey(int nn, int k) {
     int i, j, n, ii;
     int[] key = [64];
 
@@ -44,7 +44,7 @@ namespace ARC4 {
   }
 
   /* Get the next byte from the stream */
-  public int function streambyte() {
+  public int streambyte() {
     p1 = (p1 + 1) & 0xff;
     p2 = (p2 + state[p1]) & 0xff;
     int tmp = state[p1];

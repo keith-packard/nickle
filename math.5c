@@ -7,11 +7,11 @@ extend namespace Math {
     (2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274,
      256);
 
-    public real function sqrt (real v)
+    public real sqrt (real v)
     {
 	if (v < 0)
 	    raise invalid_argument ("sqrt of negative number", 0, v);
-	real function real_sqrt(real v)
+	real real_sqrt(real v)
 	{
 	    real	err;
 	    real	prev, cur;
@@ -50,9 +50,9 @@ extend namespace Math {
 	return real_sqrt (v);
     }
 
-    public real function cbrt (real v)
+    public real cbrt (real v)
     {
-	real function real_cbrt(real v)
+	real real_cbrt(real v)
 	{
 	    real	err;
 	    real	prev, cur;
@@ -93,7 +93,7 @@ extend namespace Math {
 	return real_cbrt (v);
     }
 
-    public real function exp (real v)
+    public real exp (real v)
     {
 	if (v < 0)
 	    return 1/exp(-v);
@@ -150,7 +150,7 @@ extend namespace Math {
 	return imprecise (e, prec);
     }
 
-    public real function log (real a)
+    public real log (real a)
     {
 	/*
 	 * Copyright (c) 1985 Regents of the University of California.
@@ -219,7 +219,7 @@ extend namespace Math {
 	 * shown.
 	 */
 
-	real function log__L (real z)
+	real log__L (real z)
 	{
 	    global real L1 = imprecise (6.6666666666667340202E-1, 64);
 	    global real L2 = imprecise (3.9999999999416702146E-1, 64);
@@ -283,7 +283,7 @@ extend namespace Math {
 	 * shown.
 	 */
 
-	real function bsd_log (real x)
+	real bsd_log (real x)
 	{
 	    global real ln2hi = imprecise (6.9314718036912381649E-1, 64);
 	    global real ln2lo = imprecise (1.9082149292705877000E-10, 64);
@@ -389,7 +389,7 @@ extend namespace Math {
      *
      * log10(e) = log(e) / log(10) = 1/log(10)
      */
-    public real function log10 (real a)
+    public real log10 (real a)
     {
 	static real	loge = 0;
 
@@ -404,7 +404,7 @@ extend namespace Math {
      *
      * log2(e) = log(e) / log(2) = 1/log(2)
      */
-    public real function log2 (real a)
+    public real log2 (real a)
     {
 	static real	loge = 0;
 
@@ -420,14 +420,14 @@ extend namespace Math {
      *  PI = 24*atan (1/8) + 8*atan (1/57) + 4*atan (1/239);
      */
     
-    real function calculate_pi (int prec)
+    real calculate_pi (int prec)
     {
 	/*
 	 * Estimate the number of digits available for
 	 * the specified value (v) after a certain number of
 	 * loops (p)
 	 */
-	real function avail_prec (real v, int p)
+	real avail_prec (real v, int p)
 	{
 	    real	ret;
 
@@ -440,7 +440,7 @@ extend namespace Math {
 	 * Compute the number of loops needed to get
 	 * the desired precision
 	 */
-	int function loops (real v, int prec)
+	int loops (real v, int prec)
 	{
 	    int p, low, high;
 
@@ -466,7 +466,7 @@ extend namespace Math {
 	 *
 	 * atan(x) = x - x**3/3 + x**5/5 - ...
 	 */
-	real function atan (rational den, int digits)
+	real atan (rational den, int digits)
 	{
 	    int	    p, q;
 	    int	    l;
@@ -512,7 +512,7 @@ extend namespace Math {
 	return imprecise (value, prec);
     }
     
-    public real function pi_value (int prec)
+    public real pi_value (int prec)
     {
 	static real local_pi = pi;
     
@@ -521,7 +521,7 @@ extend namespace Math {
 	return imprecise (local_pi, prec);
     }
     
-    real function limit_angle_to_pi (real aa)
+    real limit_angle_to_pi (real aa)
     {
 	real	my_pi;
 
@@ -532,12 +532,12 @@ extend namespace Math {
 	return aa % (2 * my_pi);
     }
     
-    public real function sin (real a)
+    public real sin (real a)
     {
 	/*
 	 * sin(x) = x - x**3/3! + x**5/5! ... 
 	 */
-	real function raw_sin (real a)
+	real raw_sin (real a)
 	{
 	    real    err;
 	    real    v, term;
@@ -571,12 +571,12 @@ extend namespace Math {
 	}
 
 	/* sin(5x) = 16 * sin**5(x) - 20 * sin**3(x) + 5 * sin(x) */
-	real function do_5x (real a)
+	real do_5x (real a)
 	{
 	    return 16 * a**5 - 20 * a**3 + 5 * a;
 	}
 	
-	real function big_sin (real a)
+	real big_sin (real a)
 	{
 	    if (a > 0.01)
 		return do_5x (big_sin (a/5));
@@ -590,13 +590,13 @@ extend namespace Math {
 	return big_sin (a);
     }
 
-    public real function cos (real a)
+    public real cos (real a)
     {
 	/*
 	 * cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ... 
 	 */
 
-	real function raw_cos (real a)
+	real raw_cos (real a)
 	{
 	    real    v, term;
 	    real    ai, aj, a4;
@@ -628,12 +628,12 @@ extend namespace Math {
 	}
 
 	/* cos(4x) = 8 * (cos**4(x) - cos**2(x)) + 1 */
-	real function do_4x (real c)
+	real do_4x (real c)
 	{
 	    return 8 * (c**4 - c**2) + 1;
 	}
 	 
-	real function big_cos (real a)
+	real big_cos (real a)
 	{
 	    if (a > .01)
 		return do_4x (big_cos (a/4));
@@ -646,12 +646,12 @@ extend namespace Math {
 	return big_cos (limit_angle_to_pi (a));
     }
     
-    real function cos_to_sin (real v)
+    real cos_to_sin (real v)
     {
 	return sqrt (1 - v**2);
     }
     
-    public void function sin_cos (real a, *real sinp, *real cosp)
+    public void sin_cos (real a, *real sinp, *real cosp)
     {
 	real	c, s;
 
@@ -664,7 +664,7 @@ extend namespace Math {
 	    *sinp = s;
     }
     
-    public real function tan (real a)
+    public real tan (real a)
     {
 	real	c, s;
 
@@ -673,12 +673,12 @@ extend namespace Math {
 	return s/c;
     }
     
-    public real function atan (real v)
+    public real atan (real v)
     {
 	/* 
 	 * atan(x) = x - x**3/3 + x**5/5 - ...
 	 */
-	real function raw_atan (real v)
+	real raw_atan (real v)
 	{
 	    real    a, term;
 	    real    vi, vj, v4;
@@ -749,7 +749,7 @@ extend namespace Math {
      *  asin(q) = atan(q/sqrt(1-q**2))
      */
     
-    public real function asin (real v)
+    public real asin (real v)
     {
 	v = imprecise (v);
 	if (abs (v) > 1)
@@ -767,7 +767,7 @@ extend namespace Math {
      *		= atan (sqrt(1-v**2) / sqrt (1-(1-v**2)))
      *		= atan (sqrt(1-v**2) / v)
      */
-    public real function acos (real v)
+    public real acos (real v)
     {
 	v = imprecise(v);
 	if (abs (v) > 1)
@@ -784,7 +784,7 @@ extend namespace Math {
     /*
      * atan (x/y)
      */
-    public real function atan2 (real x, real y)
+    public real atan2 (real x, real y)
     {
 	x = imprecise (x);
 	y = imprecise (y);
@@ -817,7 +817,7 @@ extend namespace Math {
     /*
      * These two are used for the '**' and '**=' operators
      */
-    public real function pow (real a, real b)
+    public real pow (real a, real b)
     {
 	real    result;
 	if (is_int (b))
@@ -847,7 +847,7 @@ extend namespace Math {
 	return result;
     }
 
-    public real function assign_pow (*real a, real b)
+    public real assign_pow (*real a, real b)
     {
 	return *a = pow (*a, b);
     }

@@ -1,7 +1,7 @@
 namespace Abort {
     public exception aborting(string);
 
-    public void function abort(string reason) {
+    public void abort(string reason) {
 	raise aborting(reason);
     }
 }

@@ -1,5 +1,5 @@
 %define name nickle
-%define version current
+%define version VERSION
 %define release 1
 %define prefix /usr/local
 

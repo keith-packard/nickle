@@ -14,6 +14,7 @@ typedef union _symbol	    *SymbolPtr;
 typedef struct _func	    *FuncPtr;
 typedef struct _namespace   *NamespacePtr;
 typedef struct _typespace   *TypespacePtr;
+typedef struct _command	    *CommandPtr;
 
 typedef struct _symbolBase {
     DataType	*data;
@@ -103,6 +104,20 @@ extern TypespacePtr TypespaceFind (TypespacePtr typespace, Atom name);
 extern TypespacePtr TypespaceRemove (TypespacePtr typespace, Atom name);
 
 extern TypespacePtr CurrentTypespace;
+
+typedef struct _command {
+    DataType		*data;
+    CommandPtr		previous;
+    Atom		name;
+    Value		func;
+    Bool		names;
+} Command;
+
+CommandPtr  NewCommand (CommandPtr previous, Atom name, Value func, Bool names);
+CommandPtr  CommandFind (CommandPtr command, Atom name);
+CommandPtr  CommandRemove (CommandPtr command, Atom name);
+
+extern CommandPtr   CurrentCommands;
 
 typedef struct _DeclList    *DeclListPtr;
 typedef struct _DeclList {
@@ -467,7 +482,8 @@ void	SymbolInit (void);
 
 void	BuiltinInit (void);
 
-Bool	DebugSetFrame (Value thread, int offset);
+Bool	DebugSetFrame (Value continuation, int offset);
+void	DebugStart (Value continuation);
 
 Value	History (Value, Value);
 void	HistoryDisplay (Value, Value *, Value *);
@@ -507,12 +523,15 @@ void	EditFile (Value file_name);
 Value	lookupVar (char *);
 void	setVar (char *, Value);
 void	GetNamespace (NamespacePtr *, FramePtr *);
+Bool	NamespaceLocate (Value names, NamespacePtr  *s, SymbolPtr *sym);
 ExprPtr	BuildName (char *);
 ExprPtr	BuildCall (char *, char *, int, ...);
+ExprPtr	BuildFullname (ExprPtr colonnames, Atom name);
 
 Atom	LexFileName (void);
 int	LexFileLine (void);
 Bool	LexInteractive (void);
+Bool	LexResetInteractive (void);
 void	LexInit (void);
 
 int	yywrap (void);
@@ -589,6 +608,7 @@ Value	do_Thread_trace (int, Value *);
 Value	do_History_show (int, Value *);
 Value	do_string_to_integer (int, Value *);
 Value	do_Semaphore_new (int, Value *);
+Value	do_Command_undefine (int, Value *);
 
 /* zero argument builtins */
 Value	do_Thread_cont (void);
@@ -606,6 +626,7 @@ Value	do_Debug_collect (void);
 /* one argument builtins */
 Value	do_putchar (Value);
 Value	do_sleep (Value);
+Value	do_exit (Value);
 Value	do_dim (Value);
 Value	do_dims (Value);
 Value	do_reference (Value);
@@ -655,6 +676,9 @@ Value	do_String_new (Value);
 Value	do_Primitive_random (Value);
 Value	do_Primitive_srandom (Value);
 Value	do_Debug_dump (Value);
+Value	do_Command_delete (Value);
+Value	do_Command_push_input (Value);
+Value	do_Command_edit (Value);
 
 /* two argument builtins */
 Value	do_Thread_set_priority (Value, Value);
@@ -668,6 +692,10 @@ Value	do_File_ungetc (Value, Value);
 Value	do_File_setbuf (Value, Value);
 Value	do_String_index (Value, Value);
 Value	do_set_jump (Value, Value);
+Value	do_Command_new (Value, Value);
+Value	do_Command_new_names (Value, Value);
+Value	do_Command_pretty_print (Value, Value);
+Value	do_Command_display (Value, Value);
 
 /* three argument builtins */
 Value	do_String_substr (Value, Value, Value);

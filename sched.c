@@ -143,8 +143,6 @@ ThreadsInterrupt (void)
 	next = thread->thread.next;
 	ThreadSetState (thread, ThreadInterrupted);
     }
-    if (t)
-	DebugSetFrame (t, 0);
 }
 
 static int
@@ -959,8 +957,14 @@ RaiseException (Value thread, SymbolPtr except, BoxPtr args, InstPtr *next)
     if (!caught)
     {
 	int	i;
+	ExprPtr	stat = thread->thread.pc->base.stat;
 	
-	PrintError ("Unhandled exception \"%A\"\n", except->symbol.name);
+	if (stat->base.file)
+	    PrintError ("Unhandled exception \"%A\" at %A:%d\n", 
+			except->symbol.name, stat->base.file, stat->base.line);
+	else
+	    PrintError ("Unhandled exception \"%A\"\n", 
+			except->symbol.name);
 	if (args)
 	{
 	    for (i = 0; i < args->nvalues; i++)

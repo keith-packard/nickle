@@ -28,6 +28,7 @@ NamespacePtr    BSDRandomNamespace;
 NamespacePtr    SemaphoreNamespace;
 NamespacePtr    StringNamespace;
 NamespacePtr    ThreadNamespace;
+NamespacePtr	CommandNamespace;
 
 struct fbuiltin_v {
     Value	    (*func) (int, Value *);
@@ -175,6 +176,7 @@ static struct fbuiltin_v funcs_v[] = {
     { do_History_show,	    "show",		    "i",    "s.i",  &HistoryNamespace },
     { do_string_to_integer, "string_to_integer",    "i",    "s.i"   },
     { do_Semaphore_new,	    "new",		    "S",    ".i",   &SemaphoreNamespace },
+    { do_Command_undefine,  "undefine",		    "i",    ".A*s", &CommandNamespace },
     { 0,		    0 },
 };
 
@@ -195,6 +197,7 @@ static struct fbuiltin_0 funcs_0[] = {
 static struct fbuiltin_1 funcs_1[] = {
     { do_putchar,	    "putchar",		    "i",    "i"	    },
     { do_sleep,		    "sleep",		    "i",    "i"	    },
+    { do_exit,		    "exit",		    "i",    "i"	    },
     { do_dim,		    "dim",		    "i",    "A*p"   },
     { do_dims,		    "dims",		    "A*i",  "Ap"    },
     { do_reference,	    "reference",	    "*p",   "p"	    },
@@ -226,7 +229,7 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_Semaphore_signal,  "signal",		    "i",    "S",    &SemaphoreNamespace },
     { do_Semaphore_wait,    "wait",		    "i",    "S",    &SemaphoreNamespace },
     { do_Semaphore_test,    "test",		    "i",    "S",    &SemaphoreNamespace },
-    { do_History_insert,    "insert",		    "p",    "p",    &HistoryNamespace },
+    { do_History_insert,    "insert",		    "p",    "u",    &HistoryNamespace },
     { do_File_close,	    "close",		    "i",    "f",    &FileNamespace },
     { do_File_flush,	    "flush",		    "i",    "f",    &FileNamespace },
     { do_File_getc,	    "getc",		    "i",    "f",    &FileNamespace },
@@ -242,6 +245,9 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_BSD_srandom, "srandom",		    "i",    "i",    &BSDRandomNamespace },
 #endif
     { do_Debug_dump,	    "dump",		    "i",    "p",    &DebugNamespace },
+    { do_Command_delete,    "delete",		    "i",    "s",    &CommandNamespace },
+    { do_Command_push_input,"push_input",	    "i",    "s",    &CommandNamespace },
+    { do_Command_edit,	    "edit",		    "i",    "A*s",  &CommandNamespace },
     { 0,		    0 },
 };
 
@@ -257,6 +263,10 @@ static struct fbuiltin_2 funcs_2[] = {
     { do_File_setbuf,	    "setbuffer",	    "i",    "fi",   &FileNamespace },
     { do_String_index,      "index",		    "i",    "ss",   &StringNamespace },
     { do_set_jump,	    "set_jump",		    "p",    "*cp"   },
+    { do_Command_new,	    "new",		    "i",    "sp",   &CommandNamespace },
+    { do_Command_new_names, "new_names",    	    "i",    "sp",   &CommandNamespace },
+    { do_Command_pretty_print,"pretty_print",	    "i",    "fA*s", &CommandNamespace },
+    { do_Command_display,   "display",		    "i",    "su",   &CommandNamespace },
     { 0,		    0 },
 };
 
@@ -412,6 +422,7 @@ static struct nbuiltin nvars[] = {
     { "Semaphore",  &SemaphoreNamespace },
     { "Strings",    &StringNamespace },
     { "Thread",	    &ThreadNamespace },
+    { "Command",    &CommandNamespace },
     { 0,	    0 },
 };
 
@@ -514,6 +525,7 @@ BuiltinType (char *format, Types **type)
     case 't': t = NewTypesPrim (type_thread); break;
     case 'S': t = NewTypesPrim (type_semaphore); break;
     case 'c': t = NewTypesPrim (type_continuation); break;
+    case 'u': t = typesPolyUnit; break;
     default: 
 	t = 0;
 	write (2, "Invalid builtin argument type\n", 30);
@@ -1418,6 +1430,19 @@ do_String_substr (Value av, Value bv, Value cv)
 }
 
 Value
+do_exit (Value av)
+{
+    ENTER ();
+    int	    code;
+
+    code = IntPart (av, "Illegal exit code");
+    if (aborting)
+	RETURN (Zero);
+    exit (code);
+    RETURN (Zero);
+}
+
+Value
 do_dim(Value av) 
 {
     ENTER();
@@ -1774,5 +1799,133 @@ do_Debug_collect (void)
 {
     ENTER ();
     MemCollect ();
+    RETURN (One);
+}
+
+static Value
+do_Command_new_common (Value name, Value func, Bool names)
+{
+    ENTER();
+    char	*cmd;
+    int		c;
+    
+    if (func->value.tag != type_func)
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"argument must be func",
+				2, NewInt (1), func);
+	RETURN (Zero);
+    }
+    cmd = StringChars (&name->string);
+    while ((c = *cmd++))
+    {
+	if (isupper (c) || islower (c))
+	    continue;
+	if (cmd != StringChars (&name->string) + 1)
+	{
+	    if (isdigit (c) || c == '_')
+	     continue;
+	}
+	RaiseStandardException (exception_invalid_argument,
+				"argument must be valid name",
+				2, NewInt (0), name);
+	RETURN (Zero);
+    }
+    CurrentCommands = NewCommand (CurrentCommands, 
+				  AtomId (StringChars (&name->string)),
+				  func, names);
+    RETURN (One);
+}
+
+Value
+do_Command_new (Value name, Value func)
+{
+    return do_Command_new_common (name, func, False);
+}
+
+Value
+do_Command_new_names (Value name, Value func)
+{
+    return do_Command_new_common (name, func, True);
+}
+
+Value
+do_Command_delete (Value name)
+{
+    ENTER();
+    Atom    id;
+
+    id = AtomId (StringChars (&name->string));
+    if (!CommandFind (CurrentCommands, id))
+	RETURN (Zero);
+    CurrentCommands = CommandRemove (CurrentCommands, id);
+    RETURN (One);
+}
+
+Value
+do_Command_push_input (Value name)
+{
+    ENTER ();
+
+    pushinput (StringChars (&name->string), True);
+    RETURN (One);
+}
+
+Value
+do_Command_pretty_print (Value f, Value names)
+{
+    ENTER();
+    NamespacePtr    s;
+    SymbolPtr	    sym;
+
+    if (NamespaceLocate (names, &s, &sym) && sym)
+	PrettyPrint (f, sym); 
+    RETURN (One);
+}
+
+Value
+do_Command_display (Value format, Value v)
+{
+    ENTER ();
+    if (v != Void)
+    {
+	Value	a[2];
+	a[0] = format;
+	a[1] = v;
+	do_printf (2, a);
+	FileOutput (FileStdout, '\n');
+    }
+    RETURN (Zero);
+}
+
+Value
+do_Command_undefine (int argc, Value *args)
+{
+    ENTER ();
+    NamespacePtr    s;
+    SymbolPtr	    sym;
+    int		    i;
+    
+    for (i = 0; i < argc; i++)
+    {
+	if (NamespaceLocate (args[i], &s, &sym) && sym)
+	{
+	    CurrentTypespace = TypespaceRemove (CurrentTypespace,
+						sym->symbol.name);
+	    NamespaceRemoveSymbol (GlobalNamespace, sym);
+	}
+    }
+    RETURN (One);
+}
+
+Value
+do_Command_edit (Value names)
+{
+    ENTER();
+    NamespacePtr    s;
+    SymbolPtr	    sym;
+
+    if (NamespaceLocate (names, &s, &sym) && sym)
+	EditFunction (sym); 
     RETURN (One);
 }

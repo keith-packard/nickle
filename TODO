@@ -9,12 +9,12 @@ TODO
 + Allow multiple instances of ARC4 or PRNG to run simultaneously
   (i.e. encapsulated generators)?
 + Too few array initializers is an error?
++ tagless GC
 
 NOT TODO
 
 + Comments should not be allowed in interactive mode?
 + "public namespace" has a somewhat non-intuitive meaning.  Fix?
-+ tagless GC
 
 DONE
 

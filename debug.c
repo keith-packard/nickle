@@ -14,10 +14,60 @@ DebugAddVar (NamespacePtr namespace, char *name, Value v)
     ENTER ();
     SymbolPtr  s;
 
-    s = NamespaceAddSymbol (namespace, NewSymbolGlobal (AtomId(name), 0, 
+    s = NamespaceAddSymbol (namespace, NewSymbolGlobal (AtomId(name), typesPoly, 
 							publish_private));
     BoxValueSet (s->global.value, 0, v);
     EXIT ();
+}
+
+static void
+DebugAddCommand (char *function, Bool names)
+{
+    SymbolPtr	sym;
+    Atom	id;
+
+    id = AtomId (function);
+    sym = NamespaceLookupSymbol (DebugNamespace, id);
+    if (sym && sym->symbol.class == class_global)
+    {
+	CurrentCommands = NewCommand (CurrentCommands, id, 
+				      BoxValue (sym->global.value, 0), 
+				      names);
+    }
+}
+		 
+static void
+DebugDeleteCommand (char *function)
+{
+    CurrentCommands = CommandRemove (CurrentCommands, AtomId (function));
+}
+
+static struct {
+    char    *function;
+    Bool    names;
+} debugCommands[] = {
+    {  "trace",	False, },
+    { "up",	False, },
+    { "down",	False, },
+    { "done",	False, },
+};
+
+#define NUM_DEBUG_COMMANDS  (sizeof (debugCommands) / sizeof (debugCommands[0]))
+
+static void
+DebugAddCommands (void)
+{
+    int	i;
+    for (i = 0; i < NUM_DEBUG_COMMANDS; i++)
+	DebugAddCommand (debugCommands[i].function, debugCommands[i].names);
+}
+
+static void
+DebugDeleteCommands (void)
+{
+    int	i;
+    for (i = 0; i < NUM_DEBUG_COMMANDS; i++)
+	DebugDeleteCommand (debugCommands[i].function);
 }
 
 Bool
@@ -37,7 +87,7 @@ DebugSetFrame (Value continuation, int offset)
 	stat = frame->savePc->base.stat;
 	frame = frame->previous;
     }
-    while (frame && frame->previous && n--)
+    while (frame && n--)
     {
 	stat = frame->savePc->base.stat;
 	frame = frame->previous;
@@ -61,12 +111,23 @@ DebugSetFrame (Value continuation, int offset)
     return ret;
 }
 
+void
+DebugStart (Value continuation)
+{
+    if (LexResetInteractive ())
+    {
+	if (DebugSetFrame (continuation, 0))
+	    DebugAddCommands ();
+    }
+}
+
 Value
 do_Debug_done (void)
 {
     ENTER ();
     CurrentNamespace = GlobalNamespace;
     CurrentFrame = 0;
+    DebugDeleteCommands ();
     RETURN (Zero);
 }
 
@@ -83,6 +144,7 @@ do_Debug_up (void)
     {
 	if (DebugSetFrame (continuation, frame->ints.value + 1))
 	    RETURN (One);
+	FilePrintf (FileStderr, "Already at top\n");
     }
     RETURN (Zero);
 }
@@ -96,10 +158,11 @@ do_Debug_down (void)
     
     continuation = lookupVar ("cont");
     frame = lookupVar ("frame");
-    if (continuation->value.tag == type_continuation && frame->value.tag == type_int &&
-	frame->ints.value > 0)
+    if (continuation->value.tag == type_continuation && frame->value.tag == type_int)
     {
-	if (DebugSetFrame (continuation, frame->ints.value - 1))
+	if (frame->ints.value <= 0)
+	    FilePrintf (FileStderr, "Already at bottom\n");
+	else if (DebugSetFrame (continuation, frame->ints.value - 1))
 	    RETURN (One);
     }
     RETURN (Zero);

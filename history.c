@@ -52,20 +52,23 @@ void
 HistoryInsert (Value v)
 {
     ENTER ();
-    if (hist->size == hist->index) 
+    if (v != Void)
     {
-	DataType    **arrayBase;
-	Value	    *array;
-
-	hist->size += HISTORY_INCREMENT;
-	arrayBase = ALLOCATE (0, sizeof (DataType *) + hist->size * sizeof (Value));
-	array = (Value *) (arrayBase + 1);
-	if (hist->array)
-	    memcpy (array, hist->array, hist->index * sizeof (Value));
-	hist->arrayBase = arrayBase;
-	hist->array = array;
+	if (hist->size == hist->index) 
+	{
+	    DataType    **arrayBase;
+	    Value	    *array;
+    
+	    hist->size += HISTORY_INCREMENT;
+	    arrayBase = ALLOCATE (0, sizeof (DataType *) + hist->size * sizeof (Value));
+	    array = (Value *) (arrayBase + 1);
+	    if (hist->array)
+		memcpy (array, hist->array, hist->index * sizeof (Value));
+	    hist->arrayBase = arrayBase;
+	    hist->array = array;
+	}
+	hist->array[hist->index++] = v;
     }
-    hist->array[hist->index++] = v;
     EXIT ();
 }
 

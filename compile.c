@@ -180,6 +180,8 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 	    CompileCanonType (obj, namespace, se->type, stat, complete);
 	}
 	break;
+    case types_unit:
+	break;
     }
 }
 
@@ -683,6 +685,7 @@ CompileCall (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     if (!CompileTypecheckArgs (obj, expr->tree.left->base.type,
 			       expr->tree.right, argc, stat))
     {
+	expr->base.type = typesPoly;
 	RETURN (obj);
     }
     expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
@@ -1614,6 +1617,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
     InstPtr	inst;
     SymbolPtr	sym;
     Bool	new;
+    NamespacePtr    code_namespace;
     
     switch (expr->base.tag) {
     case IF:
@@ -1886,14 +1890,34 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	inst->branch.offset = 0;    /* filled in by PatchLoop */
 	break;
     case RETURNTOK:
+        code_namespace = namespace;
+	while (code_namespace && !code_namespace->code)
+	    code_namespace = code_namespace->previous;
+	if (!code_namespace)
+	{
+	    CompileError (obj, expr, "return not in function");
+	    break;
+	}
 	if (expr->tree.right)
 	    obj = _CompileExpr (obj, expr->tree.right, namespace, expr);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, middle_inst);
 	if (expr->tree.right)
+	{
 	    inst->base.opCode = OpReturn;
+	    expr->base.type = expr->tree.right->base.type;
+	}
 	else
+	{
 	    inst->base.opCode = OpReturnVoid;
+	    expr->base.type = typesUnit;
+	}
+	if (!TypeCombineBinary (code_namespace->code->base.type, ASSIGN, expr->base.type))
+	{
+	    CompileError (obj, expr, "Incompatible types '%T', '%T' in return",
+			  code_namespace->code->base.type, expr->base.type);
+	    break;
+	}
 	inst->base.stat = expr;
 	break;
     case EXPR:

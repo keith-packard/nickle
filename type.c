@@ -20,12 +20,9 @@ Types		*typesGroup;
 Types		*typesField;
 Types		*typesRefPoly;
 Types		*typesNil;
+Types		*typesUnit;
+Types		*typesPolyUnit;
 Types		*typesPrim[type_continuation - type_int + 1];
-
-static void
-TypesPrimMark (void *object)
-{
-}
 
 static void
 TypesNameMark (void *object)
@@ -78,13 +75,14 @@ TypesStructMark (void *object)
     MemReference (ts->structs);
 }
 
-DataType    TypesPrimType = { TypesPrimMark, 0 };
+DataType    TypesPrimType = { 0, 0 };
 DataType    TypesNameType = { TypesNameMark, 0 };
 DataType    TypesRefType = { TypesRefMark, 0 };
 DataType    ArgTypeType = { ArgTypeMark, 0 };
 DataType    TypesFuncType = { TypesFuncMark, 0 };
 DataType    TypesArrayType = { TypesArrayMark, 0 };
 DataType    TypesStructType = { TypesStructMark, 0 };
+DataType    TypesUnitType = { 0, 0 };
 
 Types *
 NewTypesPrim (Type prim)
@@ -194,6 +192,17 @@ NewTypesUnion (StructType *structs)
     RETURN (t);
 }
 
+Types *
+NewTypesUnit (void)
+{
+    ENTER ();
+    Types *t;
+
+    t = ALLOCATE (&TypesUnitType, sizeof (TypesBase));
+    t->base.tag = types_unit;
+    RETURN (t);
+}
+
 Type
 BaseType (Types *t)
 {
@@ -214,6 +223,8 @@ BaseType (Types *t)
 	    return type_struct;
 	case types_union:
 	    return type_union;
+	case types_unit:
+	    return type_undef;
 	}
     }
     return type_undef;
@@ -263,6 +274,8 @@ TypeEqual (Types *a, Types *b)
     case types_array:
 	return True;
     case types_struct:
+	return True;
+    case types_unit:
 	return True;
     default:
     }
@@ -338,8 +351,7 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	return True;
     if (!a || !b)
 	return False;
-    if (TypePoly (a) || TypePoly (b))
-	return True;
+
     if (a->base.tag == types_name)
         return TypeCompatible (a->name.type, b, contains);
     if (b->base.tag == types_name)
@@ -363,6 +375,12 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 		return True;
     }
     
+    if ((a->base.tag == types_unit) != (b->base.tag == types_unit))
+	return False;
+
+    if (TypePoly (a) || TypePoly (b))
+	return True;
+
     if (a->base.tag != b->base.tag)
 	return False;
     switch (a->base.tag) {
@@ -428,6 +446,8 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	}
 	if (n != a->structs.structs->nelements)
 	    break;
+	return True;
+    case types_unit:
 	return True;
     default:
     }
@@ -735,6 +755,7 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	    }
 	}
     }
+
     if (right->base.tag == types_union)
     {
         StructType  *st = right->structs.structs;
@@ -1027,15 +1048,9 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
     int	adim, bdim;
     int	n;
     
-    if (!b)
+    if (!a || !b)
 	return True;
 
-    if (b->value.tag == type_undef)
-	return False;
-
-    if (TypePoly (a))
-	return True;
-    
     if (a->base.tag == types_union)
     {
 	StructType  *st = a->structs.structs;
@@ -1045,6 +1060,9 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 		return True;
     }
 
+    if (TypePoly (a) && b->value.tag != type_undef)
+	return True;
+    
     switch (a->base.tag) {
     case types_prim:
 	if (a->prim.prim == b->value.tag)
@@ -1121,6 +1139,10 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 		return True;
 	}
 	break;
+    case types_unit:
+	if (b->value.tag == type_undef)
+	    return True;
+	break;
     default:	
     }
     return False;
@@ -1150,6 +1172,8 @@ TypesInit (void)
     MemAddRoot (typesPoly);
     typesRefPoly = NewTypesRef (typesPoly);
     MemAddRoot (typesRefPoly);
+    typesUnit = NewTypesUnit ();
+    MemAddRoot (typesUnit);
     
     st = NewStructType (3);
     StructTypeElements(st)[0].type = typesPrim[type_integer];
@@ -1168,6 +1192,12 @@ TypesInit (void)
     StructTypeElements(st)[0].type = typesPrim[type_int];
     StructTypeElements(st)[1].type = typesRefPoly;
     typesNil = NewTypesUnion (st);
+    MemAddRoot (typesField);
+    
+    st = NewStructType (2);
+    StructTypeElements(st)[0].type = typesPoly;
+    StructTypeElements(st)[1].type = typesUnit;
+    typesPolyUnit = NewTypesUnion (st);
     MemAddRoot (typesField);
     
     TypeCheckStack = StackCreate ();

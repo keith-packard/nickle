@@ -190,7 +190,7 @@ ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name, ArgType *next);
 
 typedef enum _typesTag {
     types_prim, types_name, types_ref, types_func, types_array, 
-    types_struct, types_union,
+    types_struct, types_union, types_unit,
 } TypesTag;
     
 typedef struct _typesBase {
@@ -252,10 +252,12 @@ typedef struct _argList {
 } ArgList;
 
 extern Types	    *typesPoly;
+extern Types	    *typesUnit;
 extern Types	    *typesGroup;
 extern Types	    *typesField;
 extern Types	    *typesRefPoly;
 extern Types	    *typesNil;
+extern Types	    *typesPolyUnit;
 extern Types	    *typesPrim[type_continuation - type_int + 1];
 
 Types	*NewTypesPrim (Type prim);
@@ -265,6 +267,7 @@ Types	*NewTypesFunc (Types *ret, ArgType *args);
 Types	*NewTypesArray (Types *type, ExprPtr dimensions);
 Types	*NewTypesStruct (StructTypePtr structs);
 Types	*NewTypesUnion (StructTypePtr structs);
+Types	*NewTypesUnit (void);
 Types	*TypesCanon (Types *type);
 Type	BaseType (Types *type);
 int	TypesInit (void);

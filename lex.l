@@ -94,6 +94,20 @@ LexInteractive (void)
 }
 
 Bool
+LexResetInteractive (void)
+{
+    while (lexInput->next && !lexInput->interactive)
+    {
+	FileClose (lexInput->file);
+	lexInput = lexInput->next;
+    }
+    if (lexInput->interactive)
+	return True;
+    FileClose (lexInput->file);
+    return False;
+}
+
+Bool
 lexfile(char *s)
 {
     Value	f;
@@ -113,11 +127,16 @@ lexstdin(void)
 {
     while (lexInput)
     {
+	if (lexInput->file == FileStdin)
+	    break;
 	FileClose (lexInput->file);
 	lexInput = lexInput->next;
     }
-    lexInput = NewLexInput (0, FileStdin, 0);
-    lexInput->interactive = stdin_interactive;
+    if (!lexInput)
+    {
+	lexInput = NewLexInput (0, FileStdin, 0);
+	lexInput->interactive = stdin_interactive;
+    }
 }
 	
 Bool
@@ -244,13 +263,6 @@ auto		{ yylval.cval = class_auto; return AUTO; }
 global		{ yylval.cval = class_global; return GLOBAL; }
 static		{ yylval.cval = class_static; return STATIC; }
 function	{ yylval.tval = type_func; return FUNCTION; }
-undefine	{ return UNDEFINE; }
-quit		return QUIT;
-exit		return QUIT;
-edit		return EDIT;
-history		return HISTORY;
-print		return PRINT;
-load		return LOAD;
 while		{ yylval.ival = WHILE; return WHILE; }
 for		{ yylval.ival = FOR; return FOR; }
 do		{ yylval.ival = DO; return DO; }
@@ -399,8 +411,15 @@ extend		{ yylval.pval = publish_extend; return EXTEND; }
 		return CONST;
 		}
 [a-zA-Z][0-9a-zA-Z_]* {
+	        CommandPtr	c;
 		yylval.aval = AtomId (yytext);
-		if (TypespaceFind (CurrentTypespace, yylval.aval))
+		if ((c = CommandFind (CurrentCommands, yylval.aval)))
+		{
+		    if (c->names)
+			return NAMECOMMAND;
+		    return COMMAND;
+		}
+		else if (TypespaceFind (CurrentTypespace, yylval.aval))
 		    return TYPENAME;
 		else
 		    return NAME;

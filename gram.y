@@ -35,8 +35,7 @@ void yyerror (char *fmt, ...);
     Bool	    bval;
 }
 
-%type  <nsval>	colonnames
-%type  <eval>	history
+%type  <eval>	opt_fullnames fullnames fullname colonnames
 %type  <eval>	block func_body statements statement catches catch
 %type  <eval>	case_block cases case
 %type  <eval>	union_case_block union_cases union_case
@@ -69,7 +68,6 @@ void yyerror (char *fmt, ...);
 %token		VAR EXPR ARRAY STRUCT UNION
 
 %token		NL SEMI MOD OC CC DOLLAR DOTS
-%token		UNDEFINE LOAD HISTORY PRINT EDIT QUIT
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
 %token <tval>	FILET MUTEX SEMAPHORE CONTINUATION THREAD
@@ -79,7 +77,7 @@ void yyerror (char *fmt, ...);
 %token		IF ELSE WHILE DO FOR SWITCH
 %token		BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		TRY CATCH TWIXT
-%token <aval>	NAME TYPENAME
+%token <aval>	NAME TYPENAME COMMAND NAMECOMMAND
 %token <vval>	CONST CCONST
 
 %nonassoc 	POUND
@@ -132,12 +130,13 @@ attendnl	:
 opt_nl		: NL
 		|
 		;
+opt_semi	: SEMI
+		|
+		;
 /*
  * Interpreter command level
  */
-command		: QUIT NL
-		    { YYACCEPT; }
-		| expr NL
+command		: expr NL
 		    {
 			ENTER ();
 			ExprPtr	e;
@@ -145,17 +144,11 @@ command		: QUIT NL
 			NamespacePtr	s;
 			FramePtr	f;
 			
-			e = NewExprTree (COMMA,
-					 BuildCall (0, "printf",
-						    2,
-						    BuildName ("format"),
-						    BuildCall ("History",
-							       "insert",
-							       1, 
-							       NewExprTree (DOLLAR, $1, 0))),
-					 BuildCall (0, "putchar",
-						    1,
-						    NewExprConst (CCONST, NewInt ('\n'))));
+			e = BuildCall ("Command", "display",
+				       2,
+				       BuildName ("format"),
+				       BuildCall ("History", "insert",
+						  1, NewExprTree (DOLLAR, $1, 0)));
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, s));
 			ThreadsRun (t, 0);
@@ -191,6 +184,7 @@ command		: QUIT NL
 		    }
 		| statement attendnl opt_nl
 		    { 
+			ENTER ();
 			NamespacePtr    s;
 			FramePtr    f;
 			Value	    t;
@@ -198,136 +192,73 @@ command		: QUIT NL
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileStat ($1, s));
 			ThreadsRun (t, 0);
-		    }
-		| UNDEFINE enames NL
-		    {
-			ENTER ();
-			DeclListPtr	dl;
-			SymbolPtr	s;
-			int		depth;
-
-			for (dl = $2; dl; dl = dl->next) {
-			    s = NamespaceFindSymbol (GlobalNamespace,
-						     dl->name,
-						     &depth);
-			    if (!s)
-			    {
-				RaiseError ("Undefined symbol %A", dl->name);
-			    }
-			    else if (depth)
-			    {
-				RaiseError ("Can't undefine at higher scope %A", dl->name);
-			    }
-			    else
-			    {
-				CurrentTypespace = TypespaceRemove (CurrentTypespace,
-								    dl->name);
-				NamespaceRemoveSymbol (GlobalNamespace, s);
-			    }
-			}
 			EXIT ();
 		    }
-		| LOAD const NL
+		| COMMAND opt_exprs opt_semi NL
 		    {
-			ENTER ();
-			Value	filename;
+			ENTER();
+			ExprPtr	e;
+			Value	t;
+			NamespacePtr	s;
+			FramePtr	f;
+			CommandPtr	c;
 
-			filename = $2;
-			switch (filename->value.tag) {
-			default:
-			    yyerror ("non string filename %v", filename);
-			    break;
-			case type_string:
-			    pushinput (StringChars (&filename->string), True);
-			    break;
-			}
-			EXIT ();
-		    }
-		| HISTORY history attendnl NL
-    		    {
-			Value   t;
-			t = NewThread (0, CompileExpr ($2, GlobalNamespace));
-			ThreadsRun (t, 0);
-		    }
-		| PRINT colonnames name NL
-		    { 
-			SymbolPtr	sym;
-			int		depth;
-
-			if ($2)
+			c = CommandFind (CurrentCommands, $1);
+			if (!c)
+			    yyerror ("Undefined command \"%s\"", AtomName ($1));
+			else
 			{
-			    sym = NamespaceFindSymbol ($2, $3, &depth);
-			    if (!sym)
-			    {
-				yyerror ("Undefined symbol \"%s\"", AtomName ($3));
-			    }
-			    else
-				PrettyPrint (FileStdout, sym); 
+			    e = NewExprTree (OP, 
+					     NewExprConst (CONST, c->func),
+					     $2);
+			    GetNamespace (&s, &f);
+			    t = NewThread (f, CompileExpr (e, s));
+			    ThreadsRun (t, 0);
 			}
+			EXIT ();
 		    }
-		| EDIT edit
+		| NAMECOMMAND opt_fullnames opt_semi NL
+		    {
+			ENTER ();
+			ExprPtr e;
+
+			Value	t;
+			NamespacePtr	s;
+			FramePtr	f;
+			CommandPtr	c;
+
+			c = CommandFind (CurrentCommands, $1);
+			if (!c)
+			    yyerror ("Undefined command \"%s\"", AtomName ($1));
+			else
+			{
+			    e = NewExprTree (OP, 
+					     NewExprConst (CONST, c->func),
+					     $2);
+			    GetNamespace (&s, &f);
+			    t = NewThread (f, CompileExpr (e, s));
+			    ThreadsRun (t, 0);
+			}
+			EXIT ();
+		    }
 		| NL
+		;
+opt_fullnames	: fullnames
+		|
+		    { $$ = 0; }
+		;
+fullnames	: fullname COMMA fullnames
+		    { $$ = NewExprTree (COMMA, $1, $3); }
+		| fullname
+		    { $$ = NewExprTree (COMMA, $1, 0); }
+		;
+fullname	: colonnames name
+		    { $$ = BuildFullname ($1, $2); }
 		;
 colonnames	: colonnames name COLONCOLON
-		    {
-			SymbolPtr   sym;
-			int	    depth;
-
-			if ($1)
-			{
-			    sym = NamespaceFindSymbol ($1, $2, &depth);
-			    if (!sym)
-			    {
-				yyerror ("Undefined symbol \"%s\"", AtomName($2));
-				$$ = 0;
-			    }
-			    else if (sym->symbol.class != class_namespace)
-			    {
-				yyerror ("\"%s\" does not reference a namespace", AtomName($2));
-				$$ = 0;
-			    }
-			    else
-				$$ = sym->namespace.namespace;
-			}
-		    }
+		    { $$ = NewExprTree (COLONCOLON, $1, NewExprAtom ($2)); }
 		|
-		    {	
-			NamespacePtr    s;
-			FramePtr    f;
-			GetNamespace (&s, &f);
-			$$ = s;
-		    }
-		;
-history		: 
-		    { 
-			$$ = BuildCall ("History", "show", 1, BuildName ("format")); 
-		    }
-		| simpleexpr
-		    { 
-			$$ = BuildCall ("History", "show", 2, BuildName ("format"), $1); 
-		    }
-		| simpleexpr COMMA simpleexpr
-		    { 
-			$$ = BuildCall ("History", "show", 3, BuildName ("format"), $1, $3);
-		    }
-		;
-edit		: name NL
-		    {
-			SymbolPtr	s;
-			int		depth;
-
-			s = NamespaceFindSymbol (GlobalNamespace, $1, &depth);
-			if (!s)
-			{
-			    yyerror ("Undefined symbol \"%A\"", $1);
-			}
-			else
-			    EditFunction (s);
-		    }
-		| const NL
-		    { ENTER (); EditFile ($1); EXIT (); }
-		| NL
-		    { EditFile ((Value) 0); }
+		    { $$ = 0; }
 		;
 /*
 * Statements
@@ -561,11 +492,11 @@ opt_type	: type
 		;
 type_or_void	: type
 		| VOID
-		    { $$ = 0; }
+		    { $$ = typesUnit; }
 		;
 func_type	: type
 		| VOID
-		    { $$ = 0; }
+		    { $$ = typesUnit; }
 		|
 		    { $$ = typesPoly; }
 		;
@@ -576,7 +507,7 @@ type		: basetype
 		| type OP opt_argdecls CP	%prec CALL
 		    { $$ = NewTypesFunc ($1, $3); }
 		| VOID OP opt_argdecls CP	%prec CALL
-		    { $$ = NewTypesFunc (0, $3); }
+		    { $$ = NewTypesFunc (typesUnit, $3); }
 		| type OS opt_stars CS
 		    { $$ = NewTypesArray ($1, $3); }
 		| struct_or_union OC struct_members CC
@@ -1062,6 +993,37 @@ BuildCall (char *scope, char *name, int nargs, ...)
     printExpr (stdout, e, -1, 0);
     printf ("\n");
 #endif
+    RETURN (e);
+}
+
+static Value
+AtomString (Atom id)
+{
+    ENTER ();
+    RETURN (NewStrString (AtomName (id)));
+}
+
+ExprPtr
+BuildFullname (ExprPtr colonnames, Atom name)
+{
+    ENTER ();
+    int	    len;
+    Value   array;
+    ExprPtr e;
+
+    len = 1;
+    for (e = colonnames; e; e = e->tree.left)
+	len++;
+    array = NewArray (False, NewTypesPrim (type_string), 1, &len);
+    len--;
+    BoxValueSet (array->array.values, len, AtomString (name));
+    e = colonnames;
+    while (--len >= 0)
+    {
+	BoxValueSet (array->array.values, len, AtomString (e->tree.right->atom.atom));
+	e = e->tree.left;
+    }
+    e = NewExprConst (CONST, array);
     RETURN (e);
 }
 

@@ -734,56 +734,52 @@ FilePutTypes (Value f, Types *t, Bool minimal)
     StructElement   *se;
     Bool	    spaceit = minimal;
     
-    if (!t)
-    {
-	FilePuts (f, "void");
-    } 
-    else
-    {
-	switch (t->base.tag) {
-	case types_prim:
-	    if (t->prim.prim != type_undef || !minimal)
-		FilePutType (f, t->prim.prim, False);
-	    else
-		spaceit = False;
-	    break;
-	case types_name:
-	    FilePuts (f, AtomName (t->name.name));
-	    break;
-	case types_ref:
-	    FilePuts (f, "*");
-	    FilePutTypes (f, t->ref.ref, False);
-	    break;
-	case types_func:
-	    FilePutTypes (f, t->func.ret, False);
-	    FilePuts (f, "(");
-	    FilePutArgTypes (f, t->func.args);
-	    FilePuts (f, ")");
-	    break;
-	case types_array:
-	    FilePutTypes (f, t->array.type, False);
-	    FilePuts (f, "[");
-	    FilePutDimensions (f, t->array.dimensions);
-	    FilePuts (f, "]");
-	    break;
-	case types_struct:
-	case types_union:
-	    if (t->base.tag == types_struct)
-		FilePuts (f, "struct { ");
-	    else
-		FilePuts (f, "union { ");
-	    st = t->structs.structs;
-	    se = StructTypeElements (st);
-	    for (i = 0; i < st->nelements; i++)
-	    {
-		FilePutTypes (f, se[i].type, se[i].name != 0);
-		if (se[i].name)
-		    FilePuts (f, AtomName (se[i].name));
-		FilePuts (f, "; ");
-	    }
-	    FilePuts (f, "}");
-	    break;
+    switch (t->base.tag) {
+    case types_prim:
+	if (t->prim.prim != type_undef || !minimal)
+	    FilePutType (f, t->prim.prim, False);
+	else
+	    spaceit = False;
+	break;
+    case types_name:
+	FilePuts (f, AtomName (t->name.name));
+	break;
+    case types_ref:
+	FilePuts (f, "*");
+	FilePutTypes (f, t->ref.ref, False);
+	break;
+    case types_func:
+	FilePutTypes (f, t->func.ret, False);
+	FilePuts (f, "(");
+	FilePutArgTypes (f, t->func.args);
+	FilePuts (f, ")");
+	break;
+    case types_array:
+	FilePutTypes (f, t->array.type, False);
+	FilePuts (f, "[");
+	FilePutDimensions (f, t->array.dimensions);
+	FilePuts (f, "]");
+	break;
+    case types_struct:
+    case types_union:
+	if (t->base.tag == types_struct)
+	    FilePuts (f, "struct { ");
+	else
+	    FilePuts (f, "union { ");
+	st = t->structs.structs;
+	se = StructTypeElements (st);
+	for (i = 0; i < st->nelements; i++)
+	{
+	    FilePutTypes (f, se[i].type, se[i].name != 0);
+	    if (se[i].name)
+		FilePuts (f, AtomName (se[i].name));
+	    FilePuts (f, "; ");
 	}
+	FilePuts (f, "}");
+	break;
+    case types_unit:
+	FilePuts (f, "void");
+	break;
     }
     if (spaceit)
 	FilePuts (f, " ");

@@ -42,20 +42,33 @@ void
 EditFunction (SymbolPtr name)
 {
     Value	tmp;
-    static char	template[] = "/tmp/nXXXXXX.nick";
+    static char	template[] = "/tmp/nXXXXXX";
+    static char	exten[] = ".5c";
     char	tmpName[sizeof (template)];
+    char	nickleName[sizeof (template) + sizeof (exten) + 2];
+    int		fd;
     
     (void) strcpy (tmpName, template);
-    (void) mktemp (tmpName);
-    tmp = FileFopen (tmpName, "w");
+    fd = mkstemp (tmpName);
+    if (fd < 0)
+	return;
+    strcpy (nickleName, tmpName);
+    strcat (nickleName, exten);
+    if (rename (tmpName, nickleName) < 0)
+    {
+	close (fd);
+	unlink (tmpName);
+	return;
+    }
+    tmp = FileCreate (fd);
     if (tmp)
     {
 	PrettyPrint (tmp, name);
 	(void) FileClose (tmp);
-	edit (tmpName);
-	pushinput (tmpName, True);
+	edit (nickleName);
+	pushinput (nickleName, True);
     }
-    (void) unlink (tmpName);
+    (void) unlink (nickleName);
 }
 
 void

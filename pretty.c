@@ -176,6 +176,50 @@ PrettyChar (Value f, int c)
     FileOutput (f, '\'');
 }
 
+static void
+PrettyDecl (Value f, Expr *e, int level, Bool nest)
+{
+    DeclListPtr	decl;
+
+    FilePutPublish (f, e->decl.publish, True);
+    switch (e->decl.class) {
+    case class_global:
+	if (e->decl.type)
+	    FilePutTypes (f, e->decl.type, False);
+	else
+	    FilePuts (f, "global");
+	break;
+    case class_auto:
+	if (e->decl.type)
+	    FilePutTypes (f, e->decl.type, False);
+	else
+	    FilePuts (f, "auto");
+	break;
+    case class_static:
+    case class_typedef:
+	FilePutClass (f, e->decl.class, !TypePoly (e->decl.type));
+	if (!TypePoly (e->decl.type))
+	    FilePutTypes (f, e->decl.type, False);
+	break;
+    case class_undef:
+    default:
+	FilePutTypes (f, e->decl.type, False);
+	break;
+    }
+    for (decl = e->decl.decl; decl; decl = decl->next)
+    {
+	FileOutput (f, ' ');
+	FilePuts (f, AtomName (decl->name));
+	if (decl->init)
+	{
+	    FilePuts (f, " = ");
+	    PrettyExpr (f, decl->init, -1, level, nest);
+	}
+	if (decl->next)
+	    FilePuts (f, ",");
+    }
+}
+
 void
 PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 {
@@ -189,6 +233,9 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     switch (e->base.tag) {
     case NAME:
 	FilePuts (f, AtomName (e->atom.atom));
+	break;
+    case VAR:
+	PrettyDecl (f, e, level, nest);
 	break;
     case OP:
 	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
@@ -362,52 +409,6 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePuts (f, ")");
 }
 
-static void
-PrettyDecl (Value f, Expr *e, int level, Bool nest)
-{
-    DeclListPtr	decl;
-
-    FilePutPublish (f, e->decl.publish, True);
-    switch (e->decl.class) {
-    case class_global:
-	if (e->decl.type)
-	    FilePutTypes (f, e->decl.type, False);
-	else
-	    FilePuts (f, "global");
-	break;
-    case class_auto:
-	if (e->decl.type)
-	    FilePutTypes (f, e->decl.type, False);
-	else
-	    FilePuts (f, "auto");
-	break;
-    case class_static:
-    case class_typedef:
-	FilePutClass (f, e->decl.class, !TypePoly (e->decl.type));
-	if (!TypePoly (e->decl.type))
-	    FilePutTypes (f, e->decl.type, False);
-	break;
-    case class_undef:
-    default:
-	FilePutTypes (f, e->decl.type, False);
-	break;
-    }
-    for (decl = e->decl.decl; decl; decl = decl->next)
-    {
-	FileOutput (f, ' ');
-	FilePuts (f, AtomName (decl->name));
-	if (decl->init)
-	{
-	    FilePuts (f, " = ");
-	    PrettyExpr (f, decl->init, -1, level, nest);
-	}
-	if (decl->next)
-	    FilePuts (f, ", ");
-	else
-	    FilePuts (f, ";\n");
-    }
-}
-
 void
 PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 {
@@ -538,6 +539,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
     case VAR:
 	PrettyIndent (f, level);
 	PrettyDecl (f, e, level, nest);
+        FilePuts (f, ";\n");
 	break;
     case NAMESPACE:
 	PrettyIndent (f, level);
@@ -725,3 +727,4 @@ PrettyPrint (Value f, Symbol *name)
 {
     doPrettyPrint (f, name, 0, True);
 }
+

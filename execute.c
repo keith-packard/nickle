@@ -47,7 +47,6 @@ BuildFrame (Value thread, Value func, Bool varargs, int nformal, int off,
 	for (; fe < nargs; fe++)
 	    BoxValueSet (array->array.values, fe-nformal, Stack(fe+off));
     }
-    frame->function = func;
     frame->savePc = savePc;
     frame->saveCode = thread->thread.code;
     RETURN (frame);
@@ -529,6 +528,14 @@ ThreadStep (Value thread)
 	    RaiseError ("return outside of function");
 	    break;
 	}
+	if (!TypeCompatibleAssign (thread->thread.frame->function->func.code->base.type,
+				   value, False))
+	{
+	    RaiseStandardException (exception_invalid_argument,
+				    "Incompatible type in return",
+				    2, NewInt (0), value);
+	    break;
+	}
 	if (aborting)
 	    break;
 	complete = True;
@@ -999,12 +1006,11 @@ ThreadStep (Value thread)
 	if (signalError)
 	{
 	    signalError = False;
-	    DebugSetFrame (NewContinuation (thread->thread.frame,
-					    inst,
-					    thread->thread.stack,
-					    thread->thread.catches,
-					    thread->thread.twixts),
-			   0);
+	    DebugStart (NewContinuation (thread->thread.frame,
+					 inst,
+					 thread->thread.stack,
+					 thread->thread.catches,
+					 thread->thread.twixts));
 	    ThreadFinish (thread);
 	}
     }

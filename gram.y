@@ -11,9 +11,9 @@
 #include	<stdio.h>
 
 /*
- * This grammar generates 4 reduce/reduce and 4 shift/reduce conflicts:
+ * This grammar generates 1 shift/reduce conflict and 4 reduce/reduce:
  * 
- * reduce/reduce conflicts on:
+ * 2 reduce/reduce conflicts on:
  *
  *	    *int . func 
  *	    **int . func
@@ -22,7 +22,7 @@
  *	The grammar is ordered to make this a type modifier since
  *	the other way is less common.  Use parens when you want this.
  *
- *  reduce/reduce conflicts on:
+ * 2 reduce/reduce conflicts on:
  *
  *	   &int . func
  *	   &&int . func
@@ -31,32 +31,17 @@
  *	The grammar is ordered to make this a type modifier since
  *	the other way is less common.  Use parens when you want this.
  *
- *  shift/reduce conflict on NL:
- *
- *	    opt_nl : .
- *
- *	This says that you can have multiple NLs in a row
- *	and the grammar can't tell which opt_nl is reduced.
- *	No big deal.  (Could be fixed by replacing with opt_nls
- *      everywhere, but would change the semantics? --Bart)
- *
- *  shift/reduce conflict on CATCH:
- *
- *	That's because CATCH blocks are optional and chained.
- *	Shifting binds the CATCH to the nearest enclosing TRY,
- *	just like ELSE
- *
  *  shift/reduce conflict in ASSIGN in initializers
  *
  *	That's because struct initializers look like assignment
  *	expressions while array initializers permit any expression.
  *	Shift yields struct initialization, so the effect is
- *	to make assignment expressions invalid in array initializers
- *	(of course, you can always enclose an assignment in parens)
+ *	to make assignment expressions invalid in array initializers.
+ *	(Of course, you can always enclose an assignment in parens.)
+ *      (I can't see any obvious way to use operator precedence to
+ *      get rid of this: seems like you'd need to duplicate simpleexpr
+ *      with different precedence. --BCM)
  *
- *  shift/reduce conflict on ELSE
- *
- *	Need we say more?
  */
 int ignorenl;
 int notCommand;
@@ -108,7 +93,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    fullname
 %type  <expr>	    opt_rawnames rawname rawnames rawnamespace
 %type  <atom>	    rawatom
-%type  <expr>	    block opt_func_body func_body func_right statements statement catches catch
+%type  <expr>	    block opt_func_body func_body func_right statements statement if_statement try_statement catches catch
 %type  <expr>	    block_or_expr
 %type  <expr>	    case_block cases case
 %type  <expr>	    union_case_block union_cases union_case
@@ -150,7 +135,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 
 %token		    VAR EXPR ARRAY STRUCT UNION ENUM COMP HASH
 
-%token		    NL SEMI MOD OC CC DOLLAR DOTDOTDOT ENDFILE
+%token		    SEMI MOD OC CC DOLLAR DOTDOTDOT ENDFILE
 %token <class>	    GLOBAL AUTO STATIC CONST
 %token <type>	    POLY INTEGER NATURAL RATIONAL REAL STRING
 %token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID BOOL
@@ -158,9 +143,9 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %token		    TYPEDEF IMPORT NEW ANONINIT
 %token <namespace>  NAMESPACE
 %token <publish>    PUBLIC PROTECTED EXTEND
-%token		    IF ELSE WHILE DO FOR SWITCH
+%token		    WHILE DO FOR SWITCH
 %token		    BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
-%token		    TRY CATCH TWIXT
+%token		    TWIXT
 %token <atom>	    NAME TYPENAME NAMESPACENAME COMMAND NAMECOMMAND
 %token <value>	    TEN_NUM OCTAL0_NUM OCTAL_NUM BINARY_NUM HEX_NUM
 %token <value>	    TEN_FLOAT OCTAL0_FLOAT OCTAL_FLOAT BINARY_FLOAT HEX_FLOAT
@@ -194,6 +179,9 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %left		OS CS DOT ARROW STAROS CALL OP CP
 %right		POINTER
 %right		COLONCOLON
+
+%left IF TRY NONL
+%left ELSE CATCH NL
 
 %%
 lines		: lines pcommand
@@ -241,7 +229,7 @@ not_command	:
 		    { notCommand = 1; }
 		;
 opt_nl		: NL
-		|
+		|  %prec NONL
 		;
 opt_semi	: SEMI
 		|
@@ -463,10 +451,13 @@ statements	: statement statements
 		|
 		    { $$ = NewExprTree(OC, 0, 0); }
 		;
-statement	: IF ignorenl namespace_start OP expr CP statement namespace_end attendnl
+if_statement	: IF ignorenl namespace_start OP expr CP statement %prec IF
 		    { $$ = NewExprTree(IF, $5, $7); }
-		| IF ignorenl namespace_start OP expr CP statement ELSE statement namespace_end attendnl
+		| IF ignorenl namespace_start OP expr CP statement ELSE statement
 		    { $$ = NewExprTree(ELSE, $5, NewExprTree(ELSE, $7, $9)); }
+
+statement	: if_statement namespace_end attendnl
+                    { $$ = $1; }
 		| WHILE ignorenl namespace_start OP expr CP statement namespace_end attendnl
 		    { $$ = NewExprTree(WHILE, $5, $7); }
 		| DO ignorenl namespace_start statement WHILE OP expr CP namespace_end attendnl
@@ -635,8 +626,8 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 								   0,
 								   $1));
 		    }
-		| TRY ignorenl statement catches attendnl
-		    { $$ = NewExprTree (CATCH, $4, $3); }
+		| try_statement attendnl
+		    { $$ = $1; }
 		| TWIXT ignorenl namespace_start OP opt_expr SEMI opt_expr CP statement namespace_end attendnl
 		    { $$ = NewExprTree (TWIXT, 
 					NewExprTree (TWIXT, $5, $7),
@@ -648,7 +639,12 @@ for_exprs       : opt_expr SEMI for_exprs
 		| opt_expr
 		    { $$ = NewExprTree(SEMI, $1, 0); }
 		;
-catches		:   catches catch
+
+try_statement:  TRY ignorenl statement catches
+		    { $$ = NewExprTree (CATCH, $4, $3); }
+                ;
+
+catches		:   catches catch %prec TRY
 		    { $$ = NewExprTree (CATCH, $1, $2); }
 		|   
 		    { $$ = 0; }

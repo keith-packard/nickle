@@ -63,7 +63,7 @@ USES_GRAM_H = \
 
 $(USES_GRAM_H): gram.h
 
-builtin.o: ChangeLog
+builtin.o: force
 
 debuild debuild-signed: debuild-dirs
 	(cd $(distdir)/debian && debuild)
@@ -88,7 +88,7 @@ nickle.spec: nickle.spec.in ChangeLog config.h
 	    
 clean-local:
 	rm -f nickle.1 nickle.spec
-	
+
 #
 # This assumes you've got Mike Harris's rpmbuild-nonroot stuff installed
 # using the defaults
@@ -109,5 +109,4 @@ RELEASE_FILES = \
 release: $(RELEASE_FILES)
 	scp $(RELEASE_FILES) nickle.org:/var/www/nickle/release
 
-.PHONY: debuild debuild-signed debuild-unsigned debuild-dirs rpm
-
+.PHONY: debuild debuild-signed debuild-unsigned debuild-dirs rpm force

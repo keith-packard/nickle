@@ -81,6 +81,7 @@ Popcount (Value av)
     Value	ret;
     digit	*d;
     int		n;
+    unsigned	part;
 
     if (!Integralp (ValueTag(av)))
     {
@@ -100,22 +101,23 @@ Popcount (Value av)
 	i = IntegerMag (av);
 	n = i->length;
 	d = NaturalDigits(i);
-	/*
-	 * If the result will certainly fit in an int, use one of those
-	 */
-	if (n < MAX_NICKLE_INT >> LLBASE2)
+	part = 0;
+	ret = Zero;
+	while (n--)
 	{
-	    unsigned t = 0;
-	    while (n--)
-		t += count_bits(*d++);
-	    ret = NewInt(t);
+	    if (part >= MAX_NICKLE_INT - 32)
+	    {
+		ret = Plus (ret, NewInt (part));
+		part = 0;
+		if (aborting)
+		    break;
+	    }
+	    part += count_bits (*d++);
 	}
+	if (ret == Zero)
+	    ret = NewInt (part);
 	else
-	{
-	    ret = Zero;
-	    while (n--)
-		ret = Plus (ret, NewInt (count_bits (*d++)));
-	}
+	    ret = Plus (ret, NewInt (part));
 	break;
     default:
 	RaiseError ("popcount: uncaught non-integer argument %v", av);

@@ -16,8 +16,6 @@
 #include	"gram.h"
 
 Type		*typePoly;
-Type		*typeGroup;
-Type		*typeField;
 Type		*typeRefPoly;
 Type		*typeArrayInt;
 Type		*typePrim[rep_void + 1];
@@ -262,8 +260,6 @@ TypeNameName (Type *t)
 Bool
 TypeNumeric (Type *t)
 {
-    if (t == typeGroup)
-	return True;
     if (t->base.tag != type_prim)
 	return False;
     if (Numericp (t->prim.prim))
@@ -274,8 +270,6 @@ TypeNumeric (Type *t)
 Bool
 TypeIntegral (Type *t)
 {
-    if (t == typeGroup)
-	return True;
     if (t->base.tag != type_prim)
 	return False;
     if (Integralp (t->prim.prim))
@@ -438,6 +432,150 @@ TypeIsOrdered (Type *a, Type *b)
     return TypeIsSupertype (a, b) || TypeIsSupertype (b, a);
 }
 
+#if 0
+
+/*
+ * The above relationship isn't quite right --
+ *
+ *	real(real) x = int func(int a) { return a + 1; };
+ *
+ * fails as int(int) is neither supertype nor subtype of real(real)
+ *
+ * We're trying to figure out what the right answer is, and for everything
+ * aside from structures, it looks pretty easy.  Structs are "hard"...
+ */
+
+/* 
+ * Return True if a is a "co-type" of b
+ */
+
+Bool
+TypeIsCotype (Type *a, Type *b)
+{
+    int		n;
+    Bool	ret;
+    StructType	*a_st;
+    StructType	*b_st;
+    int		a_dim;
+    int		b_dim;
+
+    if (a == b)
+	return True;
+    if (!a || !b)
+	return False;
+
+    /* resolve typedefs */
+    if (a->base.tag == type_name)
+	return TypeIsCotype (TypeNameType (a), b);
+    if (b->base.tag ==  type_name)
+	return TypeIsCotype (a, TypeNameType (b));
+
+    /* check bogus internal union types */
+    if (a->base.tag == type_types)
+    {
+	TypeElt	*elt;
+
+	for (elt = a->types.elt; elt; elt = elt->next)
+	    if (TypeIsCotype (elt->type, b))
+		return True;
+	return False;
+    }
+
+    if (b->base.tag == type_types)
+    {
+	TypeElt	*elt;
+
+	for (elt = b->types.elt; elt; elt = elt->next)
+	    if (TypeIsCotype (a, elt->type))
+		return True;
+	return False;
+    }
+
+    /* poly is a supertype of all types */
+    if (TypePoly (a) || TypePoly (b))
+	return True;
+
+    if (a->base.tag != b->base.tag)
+	return False;
+
+    switch (a->base.tag) {
+    case type_prim:
+	if (a->prim.prim == b->prim.prim)
+	    return True;
+	if (Numericp (a->prim.prim) && Numericp (b->prim.prim))
+	    return True;
+	return False;
+    case type_ref:
+	/*
+	 * Avoid the infinite recursion, but don't unify type yet
+	 */
+	for (n = 0; n < TypeCheckLevel; n++)
+	    if (STACK_ELT(TypeCheckStack, n) == a)
+		return True;
+	STACK_PUSH (TypeCheckStack, a);
+	++TypeCheckLevel;
+	/* XXX is this right? */
+	ret = TypeIsCotype (a->ref.ref, b->ref.ref);
+	STACK_POP (TypeCheckStack);
+	--TypeCheckLevel;
+	return ret;
+    case type_func:
+	if (TypeIsCotype (a->func.ret, b->func.ret))
+	{
+	    ArgType *a_arg = a->func.args;
+	    ArgType *b_arg = b->func.args;
+
+	    while (a_arg || b_arg)
+	    {
+		if (!a_arg || !b_arg)
+		    return False;
+		if (a_arg->varargs != b_arg->varargs)
+		    return False;
+		if (!TypeIsCotype (b_arg->type, a_arg->type))
+		    return False;
+		a_arg = a_arg->next;
+		b_arg = b_arg->next;
+	    }
+	    return True;
+	}
+	return False;
+    case type_array:
+	a_dim = TypeCountDimensions (a->array.dimensions);
+	b_dim = TypeCountDimensions (b->array.dimensions);
+	if (a_dim == 0 || b_dim == 0 || a_dim == b_dim)
+	    return TypeIsCotype (a->array.type, b->array.type);
+	return False;
+    case type_hash:
+	return (TypeIsCotype (a->hash.type, b->hash.type) &&
+		TypeIsCotype (a->hash.keyType, b->hash.keyType));
+    case type_struct:
+    case type_union:
+        a_st = a->structs.structs;
+	b_st = b->structs.structs;
+	for (n = 0; n < a_st->nelements; n++)
+	{
+	    Type	    *b_mem;
+
+	    /* 
+	     * Structs (or unions) are subtypes if they contain all
+	     * of the a type members and those members are subtypes
+	     */
+	    b_mem = StructMemType (b_st, StructTypeAtoms(a_st)[n]);
+	    if (!b_mem)
+		return False;
+	    if (!TypeIsCotype (BoxTypesElements(a_st->types)[n],
+				  b_mem))
+		return False;
+	}
+	return True;
+    case type_name:
+    case type_types:
+	abort ();
+    }
+    return False;
+}
+#endif
+
 /*
  * return the combined type for an operation
  * on a numeric type which is a group
@@ -448,12 +586,12 @@ TypeBinaryGroup (Type *left, Type *right)
     if (TypePoly (left))
     {
 	if (TypePoly (right) || TypeNumeric (right))
-	    return typeGroup;
+	    return typePrim[rep_float];
     }
     else if (TypePoly (right))
     {
 	if (TypeNumeric (left))
-	    return typeGroup;
+	    return typePrim[rep_float];
     }
     else if (TypeNumeric (left) &&  TypeNumeric (right))
     {
@@ -493,12 +631,12 @@ TypeBinaryField (Type *left, Type *right)
     if (TypePoly (left))
     {
 	if (TypePoly (right) || TypeNumeric (right))
-	    return typeField;
+	    return typePrim[rep_float];
     }
     else if (TypePoly (right))
     {
 	if (TypeNumeric (left))
-	    return typeField;
+	    return typePrim[rep_float];
     }
     else if (TypeNumeric (left) && TypeNumeric (right))
     {
@@ -612,7 +750,7 @@ static Type *
 TypeUnaryGroup (Type *type)
 {
     if (TypePoly (type))
-	return typeGroup;
+	return typePrim[rep_float];
     else if (TypeNumeric (type))
 	return type;
     return 0;
@@ -1196,15 +1334,6 @@ TypeInit (void)
     MemAddRoot (typePoly);
     typeRefPoly = NewTypeRef (typePoly, True);
     MemAddRoot (typeRefPoly);
-    
-    typeGroup = NewTypeTypes (NewTypeElt (typePrim[rep_integer],
-					  NewTypeElt (typePrim[rep_rational],
-						      NewTypeElt (typePrim[rep_float], 0))));
-    MemAddRoot (typeGroup);
-    
-    typeField = NewTypeTypes (NewTypeElt (typePrim[rep_rational],
-					  NewTypeElt (typePrim[rep_float], 0)));
-    MemAddRoot (typeField);
     
     typeArrayInt = NewTypeArray (typePrim[rep_integer], 0, False);
     MemAddRoot (typeArrayInt);

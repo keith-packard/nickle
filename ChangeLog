@@ -1,3 +1,24 @@
+2004-06-13  Keith Packard  <keithp@keithp.com>
+
+	* abort.5c:
+	* arc4.5c:
+	* builtin-namespaces.h:
+	Add CVS Header and Copyright
+	
+	* file.5c:
+	Clean up function doc comments
+	
+	* math.5c:
+	Use 0.{3} for 1/3
+
+	* builtin.c: (BuiltinType):
+	* type.c: (TypeNumeric), (TypeIntegral), (TypeIsCotype),
+	* value.h:
+	(TypeBinaryGroup), (TypeBinaryField), (TypeUnaryGroup), (TypeInit):
+	Remove typeGroup/typeField
+	Add (#if 0'd out) TypeIsCotype while we figure out how its supposed
+	to work.
+	
 2004-06-08  Keith Packard  <keithp@keithp.com>
 version 2.40
 

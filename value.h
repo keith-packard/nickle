@@ -471,8 +471,6 @@ typedef struct _argList {
 } ArgList;
 
 extern Type	    *typePoly;
-extern Type	    *typeGroup;
-extern Type	    *typeField;
 extern Type	    *typeRefPoly;
 extern Type	    *typeFileError;
 extern Type	    *typeArrayInt;
@@ -508,6 +506,8 @@ Bool	TypeCompatibleAssign (Type *dest, Value v);
 Bool	TypeIsSupertype (Type *super, Type *sub);
 /* a is a supertype of b or b is a supertype of a */
 Bool	TypeIsOrdered (Type *a, Type *b);
+/* a and b are 'cotypes' */
+Bool	TypeIsCotype (Type *a, Type *b);
 
 #define TypePoly(t)	((t)->base.tag == type_prim && (t)->prim.prim == rep_undef)
 #define TypeBool(t)	((t)->base.tag == type_prim && (t)->prim.prim == rep_bool)

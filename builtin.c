@@ -177,8 +177,8 @@ BuiltinType (char *format, Type **type)
     }
     switch (*format++) {
     case 'p': t = typePoly; break;
-    case 'n': t = typeGroup; break;
-    case 'N': t = typeField; break;
+    case 'n': t = typePrim[rep_float]; break;
+    case 'N': t = typePrim[rep_float]; break;
     case 'E': t = typeFileError; break;
     case 'R': t = typePrim[rep_float]; break;
     case 'r': t = typePrim[rep_rational]; break;

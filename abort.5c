@@ -1,12 +1,17 @@
+/* $Header$ */
+/*
+ * Copyright © 2004 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
 namespace Abort {
     public int trace_depth = 20;
 
     public exception aborting(string);
 
     public void abort(string reason, args ...) 
-	/*
-	 * Print a stack trace and raise aborting (vsprintf (reason, args))
-	 */
+	/* Print a stack trace and raise aborting (vsprintf (reason, args)) */
     {
 	Debug::trace(Thread::current(), trace_depth);
 	string reasonmsg = File::vsprintf(reason, args);
@@ -14,9 +19,7 @@ namespace Abort {
     }
 
     public void assert(bool ok, string failure, args ...) 
-	/*
-	 * If 'ok' is false, abort (failure, args ...);
-	 */
+	/* If 'ok' is false, abort (failure, args ...); */
     {
 	if (!ok)
 	    abort(failure, args ...);
@@ -25,9 +28,7 @@ namespace Abort {
     public bool do_debug = true;
 
     public void debug(string fmt, args ...) 
-	/*
-	 * Print to stderr, controlled by 'do_debug' global
-	 */
+	/* Print to stderr, controlled by 'do_debug' global */
     {
 	if (do_debug)
 	    File::vfprintf(stderr, fmt + "\n", args);

@@ -1,3 +1,10 @@
+/* $Header$ */
+/*
+ * Copyright © 1988-2004 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
 extern void import_Toplevel_namespace(void);
 extern void import_Debug_namespace(void);
 extern void import_File_namespace(void);

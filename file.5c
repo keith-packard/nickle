@@ -14,10 +14,10 @@ extend namespace File {
 	file error;
     } childfd;
 
-    /* this is what happens when you fork() */
     public int mkchild(string path, string[*] argv, childfd fds ...) 
 	/*
-	 * Call filter transforming 'fds' into an array of three files
+	 * Call filter transforming 'fds' into an array of three files.
+	 * This is what happens when you fork()
 	 */
     {
 	file[3] filter_fds = { stdnull, ... };
@@ -34,41 +34,31 @@ extend namespace File {
     public namespace FileGlobals {
 
 	public int getchar ()
-	    /*
-	     * return getc (stdin);
-	     */
+	    /* return getc (stdin); */
 	{
 	    return File::getc (stdin);
 	}
 
 	public void ungetchar (int ch)
-	    /*
-	     * return ungetc (ch, stdin);
-	     */
+	    /* ungetc (ch, stdin); */
 	{
 	    File::ungetc (ch, stdin);
 	}
 
 	public void putchar (int c)
-	    /*
-	     * return putc (c, stdout)
-	     */
+	    /* putc (c, stdout) */
 	{
 	    putc (c, stdout);
 	}
 
 	public int getbyte ()
-	    /*
-	     * return getb (stdin);
-	     */
+	    /* return getb (stdin) */
 	{
 	    return File::getb (stdin);
 	}
 
 	public void putbyte (int b)
-	    /*
-	     * return putb (b, stdout);
-	     */
+	    /* putb (b, stdout) */
 	{
 	    File::putb (b, stdout);
 	}
@@ -97,9 +87,7 @@ extend namespace File {
 	}
 
 	public string gets ()
-	    /*
-	     * return fgets (stdin);
-	     */
+	    /* return fgets (stdin); */
 	{
 	    return fgets (stdin);
 	}

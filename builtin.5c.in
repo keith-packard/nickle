@@ -9,8 +9,6 @@
  * provide the "library" command.
  */
 extend namespace Command {
-    import String;
-
     /* normally /usr/share/nickle */
     public string nicklelibdir = "@nicklelibdir@";
     /* actually controls library loading */
@@ -29,7 +27,7 @@ extend namespace Command {
 	    if (!Environ::check("HOME"))
 		raise bad_glob();
 	    return Environ::get("HOME") + 
-		substr(filename, 1, length(filename) - 1);
+		String::substr(filename, 1, String::length(filename) - 1);
 	}
 	return filename;
     }

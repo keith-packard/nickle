@@ -79,13 +79,11 @@ main (int argc, char **argv)
     stdin_interactive = isatty(0);
     init ();
     setArgv (argc - 1, argv + 1);
-    if (try_nicklestart())
-    {
-	/*
-	 * Run the parser
-	 */
-	(void) yyparse ();
+    if (!try_nicklestart()) {
+	fprintf(stderr, "nickle: NICKLESTART environment var points at bad code\n");
+	exit(1);
     }
+    (void) yyparse ();
     IoFini ();
     return 0;
 }

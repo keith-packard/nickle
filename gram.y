@@ -78,7 +78,7 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %type  <argDecl>    argdefine
 %type  <bool>	    opt_dots
 
-%type  <expr>	    opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
+%type  <expr>	    opt_expr expr opt_exprs exprs simpleexpr primary
 %type  <expr>	    comma_expr
 %type  <expr>	    opt_cast_arg
 %type  <ints>	    assignop
@@ -743,10 +743,6 @@ decl		: publish class type
 /*
 * Type declarations
 */
-opt_type	: type
-		|
-		    { $$ = typesPoly; }
-		;
 type		: basetype
 		    {
 			if ($1 == type_undef) 
@@ -846,6 +842,10 @@ type		: basetype
 		| fulltype
 		    { $$ = NewTypesName ($1, 0); }
 		;
+opt_type	: type
+		|
+		    { $$ = typesPoly; }
+		;
 basetype    	: POLY
 		| INTEGER
 		| RATIONAL
@@ -867,9 +867,9 @@ stars		: stars COMMA TIMES
 		| TIMES
 		    { $$ = NewExprTree (COMMA, 0, 0); }
 		;
-dims		: dims COMMA lambdaexpr
+dims		: dims COMMA simpleexpr
 		    { $$ = NewExprTree (COMMA, $3, $1); }
-		| lambdaexpr
+		| simpleexpr
 		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
 /*
@@ -1017,8 +1017,8 @@ expr		: comma_expr
 			$$ = NewExprDecl (VAR, $2, $1.class, $1.type, $1.publish); 
 		    }
 		;
-comma_expr	: lambdaexpr
-		| comma_expr COMMA lambdaexpr
+comma_expr	: simpleexpr
+		| comma_expr COMMA simpleexpr
 		    { $$ = NewExprTree(COMMA, $1, $3); }
 		;
 /*
@@ -1028,19 +1028,10 @@ opt_exprs	: exprs
 		|
 		    { $$ = 0; }
 		;
-exprs		: lambdaexpr COMMA exprs
+exprs		: simpleexpr COMMA exprs
 		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| lambdaexpr
-		    { $$ = NewExprTree (COMMA, $1, 0); }
-		;
-
-/*
-* This expression level includes lambdas which can't be in simpleexpr
-* because of grammar ambiguities
-*/
-lambdaexpr	: opt_type FUNC namespace_start args block namespace_end
-		    { $$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); }
 		| simpleexpr
+		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
 /*
 * Fundemental expression production
@@ -1228,6 +1219,8 @@ primary		: fullname
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0, False)); }
 		| primary ARROW NAME
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3, 0, False)); }
+		| opt_type FUNC namespace_start args block namespace_end
+		    { $$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); }
 		;
 opt_integer	: integer
 		|
@@ -1272,7 +1265,7 @@ arrayelts	: arrayelts COMMA arrayelt
 		| arrayelt
 		    { $$ = NewExprTree (COMMA, 0, $1); }
 		;
-arrayelt	: lambdaexpr
+arrayelt	: simpleexpr
 		| arrayinit
 		;
 
@@ -1287,7 +1280,7 @@ structelts	: structelts COMMA structelt
 		| structelt
 		    { $$ = NewExprTree (COMMA, 0, $1); }
 		;
-structelt	: NAME ASSIGN lambdaexpr
+structelt	: NAME ASSIGN simpleexpr
 		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0, False), $3); }
 		| NAME ASSIGN structinit
 		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0, False), $3); }

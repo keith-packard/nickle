@@ -362,7 +362,7 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     case CHAR_CONST:
 	PrettyChar (f, IntPart (e->constant.constant, "malformed character constant"));
 	break;
-    case FUNCTION:
+    case FUNC:
 	PrettyCode (f, e->code.code, 0, class_undef, publish_private, level + 1, nest);
 	break;
     case POW:

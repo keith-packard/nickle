@@ -34,10 +34,11 @@ void yyerror (char *fmt, ...);
     MemListPtr	    mval;
     Fulltype	    ftval;
     ArgDecl	    adval;
-    ScopePtr	    sval;
+    NamespacePtr    nsval;
     CodePtr	    fval;
 }
 
+%type  <nsval>	dotnames
 %type  <eval>	history
 %type  <eval>	block statements statement
 %type  <dval>	names typenames opt_initnames initnames
@@ -66,12 +67,12 @@ void yyerror (char *fmt, ...);
 %token		VAR EXPR ARRAY STRUCT
 
 %token		NL SEMI MOD OC CC DOLLAR
-%token		UNDEFINE READ HISTORY PRINT EDIT QUIT
+%token		UNDEFINE LOAD HISTORY PRINT EDIT QUIT
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INT INTEGER NATURAL RATIONAL REAL STRING
 %token <tval>	FILET MUTEX SEMAPHORE CONTINUATION
 %token		FUNCTION FUNC
-%token		TYPEDEF IMPORT SCOPE NEW
+%token		TYPEDEF IMPORT NAMESPACE NEW
 %token		EXCEPTION
 %token <pval>	PUBLIC
 %token		IF ELSE WHILE DO FOR BREAK CONTINUE RETURNTOK FORK TRY CATCH
@@ -133,19 +134,20 @@ command		: QUIT NL
 			ENTER ();
 			ExprPtr	e;
 			Value	t;
-			ScopePtr	s;
+			NamespacePtr	s;
 			FramePtr	f;
 			
 			e = NewExprTree (COMMA,
-					 BuildCall ("printf",
+					 BuildCall (0, "printf",
 						    2,
 						    BuildName ("format"),
-						    BuildCall ("HistoryInsert",
+						    BuildCall ("History",
+							       "insert",
 							       1, $1)),
-					 BuildCall ("putchar",
+					 BuildCall (0, "putchar",
 						    1,
 						    NewExprConst (NewInt ('\n'))));
-			GetScope (&s, &f);
+			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, s));
 			ThreadsRun (t, 0);
 			EXIT ();
@@ -155,13 +157,13 @@ command		: QUIT NL
 			ENTER ();
 			ExprPtr	e;
 			Value	t;
-			ScopePtr	s;
+			NamespacePtr	s;
 			FramePtr	f;
 
-			e = BuildCall ("Print",
+			e = BuildCall ("File", "print",
 				       7,
 				       BuildName ("stdout"),
-				       BuildCall ("HistoryInsert",
+				       BuildCall ("History", "insert",
 						  1, $1),
 				       NewExprConst (NewStrString ("g")),
 				       $3,
@@ -170,21 +172,21 @@ command		: QUIT NL
 				       NewExprConst (NewStrString (" ")));
 			e = NewExprTree (COMMA,
 					 e,
-					 BuildCall ("putchar",
+					 BuildCall (0, "putchar",
 						    1,
 						    NewExprConst (NewInt ('\n'))));
-			GetScope (&s, &f);
+			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, s));
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
 		| statement attendnl opt_nl
 		    { 
-			ScopePtr    s;
+			NamespacePtr    s;
 			FramePtr    f;
 			Value	    t;
 			
-			GetScope (&s, &f);
+			GetNamespace (&s, &f);
 			t = NewThread (f, CompileStat ($1, s));
 			ThreadsRun (t, 0);
 		    }
@@ -196,7 +198,7 @@ command		: QUIT NL
 			int		depth;
 
 			for (dl = $2; dl; dl = dl->next) {
-			    s = ScopeFindSymbol (GlobalScope,
+			    s = NamespaceFindSymbol (GlobalNamespace,
 						  dl->name,
 						  &depth);
 			    if (!s)
@@ -209,12 +211,12 @@ command		: QUIT NL
 			    }
 			    else
 			    {
-				ScopeRemoveSymbol (GlobalScope, s);
+				NamespaceRemoveSymbol (GlobalNamespace, s);
 			    }
 			}
 			EXIT ();
 		    }
-		| READ CONST NL
+		| LOAD CONST NL
 		    {
 			ENTER ();
 			Value	filename;
@@ -233,44 +235,69 @@ command		: QUIT NL
 		| HISTORY history attendnl NL
     		    {
 			Value   t;
-			t = NewThread (0, CompileExpr ($2, GlobalScope));
+			t = NewThread (0, CompileExpr ($2, GlobalNamespace));
 			ThreadsRun (t, 0);
 		    }
-		| PRINT NAME NL
+		| PRINT dotnames NAME NL
 		    { 
 			SymbolPtr	sym;
 			int		depth;
-			ScopePtr	s;
-			FramePtr	f;
 
-			GetScope (&s, &f);
-			sym = ScopeFindSymbol (s, $2, &depth);
-			if (!sym)
+			if ($2)
 			{
-			    yyerror ("Undefined symbol \"%s\"",
-				     AtomName ($2));
+			    sym = NamespaceFindSymbol ($2, $3, &depth);
+			    if (!sym)
+			    {
+				yyerror ("Undefined symbol \"%s\"", AtomName ($3));
+			    }
+			    else
+				PrettyPrint (FileStdout, sym); 
 			}
-			else
-			    PrettyPrint (FileStdout, sym); 
 		    }
 		| EDIT edit
 		| NL
 		;
+dotnames	: dotnames NAME DOT
+		    {
+			SymbolPtr   sym;
+			int	    depth;
+
+			if ($1)
+			{
+			    sym = NamespaceFindSymbol ($1, $2, &depth);
+			    if (!sym)
+			    {
+				yyerror ("Undefined symbol \"%s\"", AtomName($2));
+				$$ = 0;
+			    }
+			    else if (sym->symbol.class != class_namespace)
+			    {
+				yyerror ("\"%s\" does not reference a namespace", AtomName($2));
+				$$ = 0;
+			    }
+			    else
+				$$ = sym->namespace.namespace;
+			}
+		    }
+		|
+		    {	
+			NamespacePtr    s;
+			FramePtr    f;
+			GetNamespace (&s, &f);
+			$$ = s;
+		    }
+		;
 history		: 
 		    { 
-			$$ = BuildCall ("HistoryShow", 1, BuildName ("format")); 
+			$$ = BuildCall ("History", "show", 1, BuildName ("format")); 
 		    }
 		| simpleexpr
 		    { 
-			$$ = BuildCall ("HistoryShow", 2, BuildName ("format"), $1); 
+			$$ = BuildCall ("History", "show", 2, BuildName ("format"), $1); 
 		    }
 		| simpleexpr COMMA simpleexpr
 		    { 
-			$$ = BuildCall ("HistoryShow", 3, BuildName ("format"), $1, $3);
-		    }
-		| ASSIGN expr
-		    { 
-			$$ = BuildCall ("HistorySet", 1, $2); 
+			$$ = BuildCall ("History", "show", 3, BuildName ("format"), $1, $3);
 		    }
 		;
 edit		: NAME NL
@@ -278,7 +305,7 @@ edit		: NAME NL
 			SymbolPtr	s;
 			int		depth;
 
-			s = ScopeFindSymbol (GlobalScope, $1, &depth);
+			s = NamespaceFindSymbol (GlobalNamespace, $1, &depth);
 			if (!s)
 			{
 			    yyerror ("Undefined symbol \"%A\"", $1);
@@ -343,9 +370,9 @@ statement	: IF ignorenl OP expr CP statement
 		    { $$ = NewExprDecl ($3, $1.class, $1.type, $1.publish); }
 		| publish TYPEDEF ignorenl opt_type typenames SEMI
 		    { $$ = NewExprDecl ($5, class_typedef, $4, $1); }
-		| publish SCOPE ignorenl NAME block
+		| publish NAMESPACE ignorenl NAME block
 		    {
-			$$ = NewExprTree (SCOPE,
+			$$ = NewExprTree (NAMESPACE,
 					  NewExprDecl (NewDeclList ($4, 
 								    0, 0),
 						       class_undef,
@@ -585,7 +612,7 @@ lambdaexpr	: opt_type FUNC OP opt_argdefines CP block
 simpleexpr	: primary
 		| MOD CONST						%prec THREAD
 		    {   Value	t;
-			t = ThreadFromId ($2);
+			t = do_Thread_id_to_thread ($2);
 			if (Zerop (t))
 			{
 			    yyerror ("No thread %v", $2);
@@ -681,7 +708,7 @@ assignop	: PLUS ASSIGN
 initexpr	: primary
 		| MOD CONST						%prec THREAD
 		    {   Value	t;
-			t = ThreadFromId ($2);
+			t = do_Thread_id_to_thread ($2);
 			if (Zerop (t))
 			{
 			    yyerror ("No thread %v", $2);
@@ -868,7 +895,7 @@ NewMemList (DeclListPtr names, Types *type, MemListPtr next)
 }
 
 
-extern ScopePtr	CurrentScope;
+extern NamespacePtr	CurrentNamespace;
 FramePtr	CurrentFrame;
 
 Value
@@ -879,7 +906,7 @@ lookupVar (char *name)
     int		depth;
     Value	v;
 
-    s = ScopeFindSymbol (CurrentScope, AtomId (name), &depth);
+    s = NamespaceFindSymbol (CurrentNamespace, AtomId (name), &depth);
     if (s && s->symbol.class == class_global)
 	v = BoxValue (s->global.value, 0);
     else
@@ -896,9 +923,9 @@ setVar (char *name, Value v)
     int		depth;
 
     n = AtomId (name);
-    s = ScopeFindSymbol (CurrentScope, n, &depth);
+    s = NamespaceFindSymbol (CurrentNamespace, n, &depth);
     if (!s)
-	s = ScopeAddSymbol (CurrentScope, NewSymbolGlobal (n, 0,
+	s = NamespaceAddSymbol (CurrentNamespace, NewSymbolGlobal (n, 0,
 							  publish_private));
     if (s->symbol.class == class_global)
 	BoxValue (s->global.value, 0) = v;
@@ -906,9 +933,9 @@ setVar (char *name, Value v)
 }
 
 void
-GetScope (ScopePtr *scope, FramePtr *fp)
+GetNamespace (NamespacePtr *scope, FramePtr *fp)
 {
-    *scope = CurrentScope;
+    *scope = CurrentNamespace;
     *fp = CurrentFrame;
 }
 
@@ -920,11 +947,12 @@ BuildName (char *name)
 }
 
 ExprPtr
-BuildCall (char *name, int nargs, ...)
+BuildCall (char *scope, char *name, int nargs, ...)
 {
     ENTER ();
     va_list alist;
     ExprPtr args;
+    ExprPtr f;
     ExprPtr e;
 
     va_start (alist, nargs);
@@ -934,7 +962,10 @@ BuildCall (char *name, int nargs, ...)
 	args = NewExprTree (COMMA, va_arg (alist, ExprPtr), args);
     }
     va_end (alist);
-    e = NewExprTree (OP, BuildName (name), args);
+    f = BuildName (name);
+    if (scope)
+	f = NewExprTree (DOT, BuildName (scope), f);
+    e = NewExprTree (OP, f, args);
 #ifdef DEBUG
     printExpr (stdout, e, -1, 0);
     printf ("\n");

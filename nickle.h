@@ -9,9 +9,9 @@
 #include	"value.h"
 #include	"opcode.h"
 
-typedef union _symbol	*SymbolPtr;
-typedef struct _func	*FuncPtr;
-typedef struct _scope	*ScopePtr;
+typedef union _symbol	    *SymbolPtr;
+typedef struct _func	    *FuncPtr;
+typedef struct _namespace   *NamespacePtr;
 
 typedef struct _symbolBase {
     DataType	*data;
@@ -36,17 +36,17 @@ typedef struct _symbolLocal {
     int		element;
 } SymbolLocal;
 
-typedef struct _symbolScope {
-    SymbolBase	symbol;
-    ScopePtr	scope;
-} SymbolScope;
+typedef struct _symbolNamespace {
+    SymbolBase	    symbol;
+    NamespacePtr    namespace;
+} SymbolNamespace;
 
 typedef union _symbol {
     SymbolBase	    symbol;
     SymbolType	    type;
     SymbolGlobal    global;
     SymbolLocal	    local;
-    SymbolScope	    scope;
+    SymbolNamespace namespace;
 } Symbol;
 
 extern SymbolPtr    NewSymbolType (Atom name, Types *type, Publish publish);
@@ -54,32 +54,32 @@ extern SymbolPtr    NewSymbolGlobal (Atom name, Types *type, Publish publish);
 extern SymbolPtr    NewSymbolArg (Atom name, Types *type);
 extern SymbolPtr    NewSymbolStatic (Atom name, Types *Type);
 extern SymbolPtr    NewSymbolAuto (Atom name, Types *type);
-extern SymbolPtr    NewSymbolScope (Atom name, ScopePtr scope, Publish publish);
+extern SymbolPtr    NewSymbolNamespace (Atom name, NamespacePtr namespace, Publish publish);
 
-typedef struct _scopeChain {
-    DataType	*data;
-    struct _scopeChain	*next;
-    SymbolPtr	symbol;
-    Publish	publish;
-} ScopeChain, *ScopeChainPtr;
+typedef struct _namespaceChain {
+    DataType		    *data;
+    struct _namespaceChain  *next;
+    SymbolPtr		    symbol;
+    Publish		    publish;
+} NamespaceChain, *NamespaceChainPtr;
 
-typedef struct _scope {
-    DataType	*data;
-    ScopePtr	previous;
-    ScopeChainPtr   symbols;
-    CodePtr	code;
-    Publish	publish;
-} Scope;
+typedef struct _namespace {
+    DataType		*data;
+    NamespacePtr	previous;
+    NamespaceChainPtr   symbols;
+    CodePtr		code;
+    Publish		publish;
+} Namespace;
 
-extern ScopePtr	    NewScope (ScopePtr previous);
-extern SymbolPtr    ScopeLookupSymbol (ScopePtr scope, Atom name);
-extern SymbolPtr    ScopeFindSymbol (ScopePtr scope, Atom name, int *depth);
-extern SymbolPtr    ScopeAddSymbol (ScopePtr scope, SymbolPtr symbol);
-extern Bool	    ScopeRemoveSymbol (ScopePtr scope, SymbolPtr symbol);
-extern SymbolPtr    ScopeImport (ScopePtr scope, ScopePtr import, Publish publish);
-extern ScopePtr	    GlobalScope, CurrentScope, DebugScope;
+extern NamespacePtr NewNamespace (NamespacePtr previous);
+extern SymbolPtr    NamespaceLookupSymbol (NamespacePtr namespace, Atom name);
+extern SymbolPtr    NamespaceFindSymbol (NamespacePtr namespace, Atom name, int *depth);
+extern SymbolPtr    NamespaceAddSymbol (NamespacePtr namespace, SymbolPtr symbol);
+extern Bool	    NamespaceRemoveSymbol (NamespacePtr namespace, SymbolPtr symbol);
+extern SymbolPtr    NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish);
+extern NamespacePtr GlobalNamespace, CurrentNamespace, DebugNamespace;
 extern FramePtr	    CurrentFrame;
-extern void	    ScopeInit (void);
+extern void	    NamespaceInit (void);
 
 typedef struct _DeclList    *DeclListPtr;
 typedef struct _DeclList {
@@ -130,10 +130,10 @@ extern FramePtr	NewFrame (Value		function,
 # define	RET	3
 
 typedef struct _exprBase {
-    DataType	*data;
-    int		tag;
-    ScopePtr	scope;
-    Types	*type;
+    DataType	    *data;
+    int		    tag;
+    NamespacePtr    namespace;
+    Types	    *type;
 } ExprBase;
 
 typedef struct _exprTree {
@@ -330,8 +330,8 @@ typedef struct _obj {
 #define ObjCode(obj,i)	(((InstPtr) (obj + 1)) + (i))
 #define ObjLast(obj)	((obj)->used - 1)
 
-ObjPtr	CompileStat (ExprPtr expr, ScopePtr scope);
-ObjPtr	CompileExpr (ExprPtr expr, ScopePtr scope);
+ObjPtr	CompileStat (ExprPtr expr, NamespacePtr namespace);
+ObjPtr	CompileExpr (ExprPtr expr, NamespacePtr namespace);
 
 Value	    NewThread (FramePtr frame, ObjPtr code);
 void	    ThreadSleep (Value thread, Value sleep, int priority);
@@ -344,8 +344,6 @@ void	    ThreadFinish (Value thread);
 void	    ThreadSetState (Value thread, ThreadState state);
 void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);
-Value	    ThreadFromId (Value);
-Value	    ThreadJoin (Value);
 
 #define Runnable(t)    (((t)->thread.state & ~(ThreadSuspended)) == 0)
 
@@ -353,12 +351,6 @@ extern Value	running;    /* current thread */
 extern Value	stopped;    /* stopped threads */
 extern Bool	complete;   /* must complete current inst */
 extern int	runnable;   /* number of non-broken threads */
-
-Value	    NewMutex (void);
-Value	    MutexAcquire (Value), MutexTryAcquire (Value), MutexRelease (Value);
-
-Value	    NewSemaphore (void);
-Value	    SemaphoreWait (Value), SemaphoreTest (Value), SemaphoreSignal (Value);
 
 void	    ObjDump (ObjPtr obj);
 
@@ -370,12 +362,8 @@ void	SymbolInit (void);
 void	BuiltinInit (void);
 
 Bool	DebugSetFrame (Value thread, int offset);
-Value	DebugDone (void);
-Value	DebugUp (void);
-Value	DebugDown (void);
 
 Value	History (Value, Value);
-void	HistorySet (Value, Value);
 void	HistoryDisplay (Value, Value *, Value *);
 void	HistoryInsert (Value);
 void	HistoryInit (void);
@@ -387,7 +375,6 @@ unsigned long	TimeInMs (void);
 void	TimerInsert (void *closure, TimerFunc func, 
 		     unsigned long delta, unsigned long incr);
 void	TimerInterrupt (void);
-Value	Sleep (Value);
 void	TimerInit (void);
 		     
 void	IoInit (void);
@@ -411,13 +398,13 @@ void	EditFile (Value file_name);
 void	print (Value f, Value value);
 Value	lookupVar (char *);
 void	setVar (char *, Value);
-void	GetScope (ScopePtr *, FramePtr *);
+void	GetNamespace (NamespacePtr *, FramePtr *);
 ExprPtr	BuildName (char *);
-ExprPtr	BuildCall (char *, int, ...);
+ExprPtr	BuildCall (char *, char *, int, ...);
 void	fprintTypes (Value f, Types *t);
 
 int	yywrap (void);
-
+void	yyerror (char *fmt, ...);
 int	yylex (void);
 Bool	pushinput (char *, Bool);
 void	yyprompt (void);
@@ -432,7 +419,6 @@ void	lexstdin (void);
 
 void	callformat (Value f, char *fmt, int n, Value *p);
 int	dofformat (Value, char *, int, Value *);
-Value	doprintf (int, Value *);
 
 extern void	init (void);
 extern int	yyparse (void);
@@ -443,44 +429,89 @@ void	stop (int), die (int), segv (int);
 
 extern Value    yyinput;
 
-Value	Atof (Value);
-Value	Atoi (Value);
-Value	Imprecise (int, Value *);
-Value	Cont (void);
-Value	CurrentThread (void);
-Value	GetPriority (Value);
-Value	Kill (int, Value *);
-Value	SetPriority (Value,Value);
-Value	Strtol (Value, Value);
-Value	ThreadsList (void);
-Value	Trace (int, Value *);
-Value	ceilD(Value);
-Value	floorD(Value);
-Value	dim(Value);
-Value	dims(Value);
-Value	precision(Value);
-Value	exponentD(Value);
-Value	mantissaD(Value);
-Value	doHistoryInsert(Value);
-Value	doHistoryShow(int,Value*);
-Value	dofclose(Value);
-Value	dofflush(Value);
-Value	dofopen(Value,Value);
-Value	dofprintf(int, Value *);
-Value	dosetbuf(Value, Value);
-Value	dogcd(Value,Value);
-Value	dogetc(Value);
-Value	dogetchar(void);
-Value	dotime(void);
-Value	doprint(Value,Value,Value,Value,Value,Value,Value);
-Value	doputc(Value,Value);
-Value	doputchar(Value);
-Value	doscanf(int,Value *);
-Value	absD(Value);
-Value	_random(Value);
-Value	_srandom(Value);
-Value	lengthS (Value av);
-Value	indexS (Value av, Value bv);
-Value	substrS (Value av, Value bv, Value cv);
-Value	SetJump(InstPtr *, Value, Value);
-Value	LongJump(InstPtr *, Value, Value);
+/* vararg builtins */
+Value	do_printf (int, Value *);
+Value	do_scanf (int, Value *);
+Value	do_fprintf (int, Value *);
+Value	do_imprecise (int, Value *);
+Value	do_Thread_kill (int, Value *);
+Value	do_Thread_trace (int, Value *);
+Value	do_Thread_trace (int, Value *);
+Value	do_History_show (int, Value *);
+Value	do_string_to_integer (int, Value *);
+
+/* zero argument builtins */
+Value	do_Thread_cont (void);
+Value	do_Thread_current (void);
+Value	do_Mutex_new (void);
+Value	do_Semaphore_new (void);
+Value	do_Thread_list (void);
+Value	do_getchar (void);
+Value	do_time (void);
+Value	do_Debug_up (void);
+Value	do_Debug_down (void);
+Value	do_Debug_done (void);
+
+/* one argument builtins */
+Value	do_putchar (Value);
+Value	do_sleep (Value);
+Value	do_dim (Value);
+Value	do_dims (Value);
+Value	do_string_to_real (Value);
+Value	do_abs (Value);
+Value	do_floor (Value);
+Value	do_ceil (Value);
+Value	do_exponent (Value);
+Value	do_mantissa (Value);
+Value	do_numerator (Value);
+Value	do_denominator (Value);
+Value	do_precision (Value);
+Value	do_sign (Value);
+Value	do_is_integer (Value);
+Value	do_is_rational (Value);
+Value	do_is_number (Value);
+Value	do_is_string (Value);
+Value	do_is_file (Value);
+Value	do_is_thread (Value);
+Value	do_is_mutex (Value);
+Value	do_is_semaphore (Value);
+Value	do_is_continuation (Value);
+Value	do_is_array (Value);
+Value	do_is_ref (Value);
+Value	do_is_struct (Value);
+Value	do_is_func (Value);
+Value	do_Thread_get_priority (Value);
+Value	do_Thread_id_to_thread (Value);
+Value	do_Thread_join (Value);
+Value	do_Mutex_acquire (Value);
+Value	do_Mutex_release (Value);
+Value	do_Mutex_try_acquire (Value);
+Value	do_Semaphore_signal (Value);
+Value	do_Semaphore_test (Value);
+Value	do_Semaphore_wait (Value);
+Value	do_History_insert (Value);
+Value	do_File_close (Value);
+Value	do_File_flush (Value);
+Value	do_File_getc (Value);
+Value	do_String_length (Value);
+Value	do_Primitive_random (Value);
+Value	do_Primitive_srandom (Value);
+Value	do_Debug_dump (Value);
+
+/* two argument builtins */
+Value	do_Thread_set_priority (Value, Value);
+Value	do_File_open (Value, Value);
+Value	do_gcd (Value, Value);
+Value	do_File_putc (Value, Value);
+Value	do_File_setbuf (Value, Value);
+Value	do_String_index (Value, Value);
+
+/* three argument builtins */
+Value	do_String_substr (Value, Value, Value);
+
+/* seven argument builtins */
+Value	do_File_print (Value, Value, Value, Value, Value, Value, Value);
+
+/* two argument non-local builtins */
+Value	do_set_jump (InstPtr *, Value, Value);
+Value	do_long_jump (InstPtr *, Value, Value);

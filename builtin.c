@@ -20,217 +20,239 @@
 #include	<time.h>
 #include	"nickle.h"
 
-ScopePtr    PrimitiveScope;
-ScopePtr    DebugScope;
-ScopePtr    ThreadScope;
-ScopePtr    MutexScope;
-ScopePtr    SemaphoreScope;
-ScopePtr    MathScope;
-ScopePtr    StringScope;
+NamespacePtr    DebugNamespace;
+NamespacePtr    FileNamespace;
+NamespacePtr    HistoryNamespace;
+NamespacePtr    MathNamespace;
+NamespacePtr    MutexNamespace;
+NamespacePtr    PrimitiveNamespace;
+NamespacePtr    SemaphoreNamespace;
+NamespacePtr    StringNamespace;
+NamespacePtr    ThreadNamespace;
 
 struct fbuiltin_v {
-    Value	(*func) (int, Value *);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (int, Value *);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_0 {
-    Value	(*func) (void);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (void);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_1 {
-    Value	(*func) (Value);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (Value);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_2 {
-    Value	(*func) (Value, Value);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (Value, Value);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_3 {
-    Value	(*func) (Value, Value, Value);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (Value, Value, Value);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_4 {
-    Value	(*func) (Value, Value, Value, Value);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (Value, Value, Value, Value);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_5 {
-    Value	(*func) (Value, Value, Value, Value, Value);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (Value, Value, Value, Value, Value);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_6 {
-    Value	(*func) (Value, Value, Value, Value, Value, Value);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (Value, Value, Value, Value, Value, Value);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_7 {
-    Value	(*func) (Value, Value, Value, Value, Value, Value, Value);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (Value, Value, Value, Value, Value, Value, Value);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_vj {
-    Value	(*func) (InstPtr *, int, Value *);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (InstPtr *, int, Value *);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_0j {
-    Value	(*func) (InstPtr *);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (InstPtr *);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_1j {
-    Value	(*func) (InstPtr *, Value);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (InstPtr *, Value);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct fbuiltin_2j {
-    Value	(*func) (InstPtr *, Value, Value);
-    char	*name;
-    Type	ret;
-    char	*args;
-    ScopePtr	*scope;
+    Value	    (*func) (InstPtr *, Value, Value);
+    char	    *name;
+    Type	    ret;
+    char	    *args;
+    NamespacePtr    *namespace;
 };
 
 struct rbuiltin {
-    char	*br_value;
-    int		br_prec;
-    char	*br_name;
-    ScopePtr	*br_scope;
+    char	    *value;
+    int	    	    prec;
+    char	    *name;
+    NamespacePtr    *namespace;
 };
 
 struct sbuiltin {
-    char	*bs_value;
-    char	*bs_name;
-    ScopePtr	*bs_scope;
+    char	    *value;
+    char	    *name;
+    NamespacePtr    *namespace;
 };
 
 struct ibuiltin {
-    char	*is_name;
-    int		is_file;
-    ScopePtr	*is_scope;
+    char	    *name;
+    int	    	    file;
+    NamespacePtr    *namespace;
 };
 
 struct nbuiltin {
-    char	*bn_name;
-    ScopePtr	*bn_value;
-    ScopePtr	*bn_scope;
+    char	    *name;
+    NamespacePtr    *value;
+    NamespacePtr    *namespace;
 };
 struct fbuiltin_v funcs_v[] = {
-    { doprintf,		"printf",	type_int,   "s." },
-    { doscanf,		"scanf",	type_int,   "s." },
-    { dofprintf,	"fprintf",	type_int,   "fs." },
-    { Imprecise,	"imprecise",	type_float, "n." },
-    { Kill,		"kill",		type_int,   ".", &ThreadScope },
-    { Trace,		"trace",	type_int,   ".", &ThreadScope },
-    { Trace,		"trace",	type_int,   ".", &DebugScope },
-    { doHistoryShow,    "HistoryShow",	type_int,   "s." },
-    { 0,		0 },
+    { do_printf,	    "printf",		    type_integer,   "s."    },
+    { do_scanf,		    "scanf",		    type_integer,   "s."    },
+    { do_fprintf,	    "fprintf",		    type_integer,   "fs.",  &FileNamespace},
+    { do_imprecise,	    "imprecise",	    type_float,	    "n."    },
+    { do_Thread_kill,	    "kill",		    type_integer,   ".",    &ThreadNamespace },
+    { do_Thread_trace,	    "trace",		    type_integer,   ".",    &ThreadNamespace },
+    { do_Thread_trace,	    "trace",		    type_integer,   ".",    &DebugNamespace },
+    { do_History_show,	    "show",		    type_integer,   "s.",   &HistoryNamespace },
+    { do_string_to_integer, "string_to_integer",    type_integer,   "s."    },
+    { 0,		    0 },
 };
 struct fbuiltin_0 funcs_0[] = {
-    { Cont,		"cont",		type_int,   "", &ThreadScope },
-    { CurrentThread,	"current",	type_int,   "", &ThreadScope },
-    { NewMutex,		"new",		type_mutex, "", &MutexScope },
-    { NewSemaphore,	"new",		type_semaphore,	"", &SemaphoreScope },
-    { ThreadsList,	"list",		type_int,   "", &ThreadScope },
-    { dogetchar,	"getchar",	type_int,   "" },
-    { dotime,		"time",		type_int,   "" },
-    { DebugUp,		"up",		type_int,   "", &DebugScope, },
-    { DebugDown,	"down",		type_int,   "", &DebugScope },
-    { DebugDone,	"done",		type_int,   "", &DebugScope },
-    { 0,		0 },
+    { do_Thread_cont,	    "cont",		    type_integer,   "",	    &ThreadNamespace },
+    { do_Thread_current,    "current",		    type_integer,   "",	    &ThreadNamespace },
+    { do_Mutex_new,	    "new",		    type_mutex,	    "",	    &MutexNamespace },
+    { do_Semaphore_new,	    "new",		    type_semaphore, "",	    &SemaphoreNamespace },
+    { do_Thread_list,	    "list",		    type_integer,   "",	    &ThreadNamespace },
+    { do_getchar,	    "getchar",		    type_integer,   ""	    },
+    { do_time,		    "time",		    type_integer,   ""	    },
+    { do_Debug_up,	    "up",		    type_integer,   "",	    &DebugNamespace, },
+    { do_Debug_down,	    "down",		    type_integer,   "",	    &DebugNamespace },
+    { do_Debug_done,	    "done",		    type_integer,   "",	    &DebugNamespace },
+    { 0,		    0 },
 };
 struct fbuiltin_1 funcs_1[] = {
-    { Atof,		"atof",		type_float,	"s" },
-    { Atoi,		"atoi",		type_integer,	"s" },
-    { GetPriority,	"getPriority",	type_int,	"t", &ThreadScope },
-    { MutexAcquire,	"acquire",	type_int,	"m", &MutexScope },
-    { MutexRelease,	"release",	type_int,	"m", &MutexScope },
-    { MutexTryAcquire,	"tryAcquire",	type_int,	"m", &MutexScope },
-    { SemaphoreSignal,	"signal",	type_int,	"S", &SemaphoreScope },
-    { SemaphoreTest,	"test",		type_int,	"S", &SemaphoreScope },
-    { SemaphoreWait,	"wait",		type_int,	"S", &SemaphoreScope },
-    { Sleep,		"sleep",	type_int,	"n" },
-    { ThreadFromId,	"threadFromId", type_thread,	"n", &ThreadScope },
-    { ThreadJoin,	"join",		type_undef,	"t", &ThreadScope },
-    { dim,		"dim",		type_int,	"a" },
-    { dims,		"dims",		type_array,	"a" },
-    { precision,	"precision",	type_integer,	"n" },
-    { doHistoryInsert,	"HistoryInsert",type_undef,	"p" },
-    { dofclose,		"fclose",	type_int,	"f" },
-    { dofflush,		"fflush",	type_int,	"f" },
-    { dogetc,		"getc",		type_int,	"f" },
-    { doputchar,	"putchar",	type_int,	"n" },
-    { absD,		"abs",		type_float,	"n" },
-    { floorD,		"floor",	type_integer,	"n" },
-    { exponentD,	"exponent",	type_integer,	"n" },
-    { mantissaD,	"mantissa",	type_rational,	"n" },
-    { lengthS,          "length",	type_int,	"s", &StringScope },
-    { _random,		"random",	type_int,	"n", &PrimitiveScope },
-    { _srandom,		"srandom",	type_int,	"n", &PrimitiveScope },
-    { 0,		0 },
+    { do_putchar,	    "putchar",		    type_integer,   "n"	    },
+    { do_sleep,		    "sleep",		    type_integer,   "n"	    },
+    { do_dim,		    "dim",		    type_integer,   "a"	    },
+    { do_dims,		    "dims",		    type_array,	    "a"	    },
+    { do_string_to_real,    "string_to_real",	    type_float,	    "s"	    },
+    { do_abs,		    "abs",		    type_float,	    "n"	    },
+    { do_floor,		    "floor",		    type_integer,   "n"	    },
+    { do_ceil,		    "ceil",		    type_integer,   "n"	    },
+    { do_exponent,	    "exponent",		    type_integer,   "n"	    },
+    { do_mantissa,	    "mantissa",		    type_rational,  "n"	    },
+    { do_numerator,	    "numerator",	    type_integer,   "n"	    },
+    { do_denominator,	    "denominator",	    type_integer,   "n"	    },
+    { do_precision,	    "precision",	    type_integer,   "n"	    },
+    { do_sign,		    "sign",		    type_integer,   "n"	    },
+    { do_is_integer,	    "is_integer",	    type_integer,   "p"	    },
+    { do_is_rational,	    "is_rational",	    type_integer,   "p"	    },
+    { do_is_number,	    "is_number",	    type_integer,   "p"	    },
+    { do_is_string,	    "is_string",	    type_integer,   "p"	    },
+    { do_is_file,	    "is_file",		    type_integer,   "p"	    },
+    { do_is_thread,	    "is_thread",    	    type_integer,   "p"	    },
+    { do_is_mutex,	    "is_mutex",		    type_integer,   "p"	    },
+    { do_is_semaphore,	    "is_semaphore",    	    type_integer,   "p"	    },
+    { do_is_continuation,   "is_continuation",	    type_integer,   "p"	    },
+    { do_is_array,	    "is_array",		    type_integer,   "p"	    },
+    { do_is_ref,	    "is_ref",		    type_integer,   "p"	    },
+    { do_is_struct,	    "is_struct",	    type_integer,   "p"	    },
+    { do_is_func,	    "is_func",		    type_integer,   "p"	    },
+    { do_Thread_get_priority,"get_priority",	    type_integer,   "t",    &ThreadNamespace },
+    { do_Thread_id_to_thread,"id_to_thread",	    type_thread,    "n",    &ThreadNamespace },
+    { do_Thread_join,	    "join",		    type_undef,	    "t",    &ThreadNamespace },
+    { do_Mutex_acquire,	    "acquire",		    type_integer,   "m",    &MutexNamespace },
+    { do_Mutex_release,	    "release",		    type_integer,   "m",    &MutexNamespace },
+    { do_Mutex_try_acquire, "try_acquire",	    type_integer,   "m",    &MutexNamespace },
+    { do_Semaphore_signal,  "signal",		    type_integer,   "S",    &SemaphoreNamespace },
+    { do_Semaphore_test,    "test",		    type_integer,   "S",    &SemaphoreNamespace },
+    { do_Semaphore_wait,    "wait",		    type_integer,   "S",    &SemaphoreNamespace },
+    { do_History_insert,    "insert",		    type_undef,	    "p",    &HistoryNamespace },
+    { do_File_close,	    "close",		    type_integer,   "f",    &FileNamespace },
+    { do_File_flush,	    "flush",		    type_integer,   "f",    &FileNamespace },
+    { do_File_getc,	    "getc",		    type_integer,   "f",    &FileNamespace },
+    { do_String_length,	    "length",		    type_integer,   "s",    &StringNamespace },
+    { do_Primitive_random,  "random",		    type_integer,   "n",    &PrimitiveNamespace },
+    { do_Primitive_srandom, "srandom",		    type_integer,   "n",    &PrimitiveNamespace },
+    { do_Debug_dump,	    "dump",		    type_integer,   "p",    &DebugNamespace },
+    { 0,		    0 },
 };
+
 struct fbuiltin_2 funcs_2[] = {
-    { SetPriority,	"setPriority",	type_int,	"tn", &ThreadScope },
-    { Strtol,		"strtol",	type_integer,	"sn" },
-    { dofopen,		"fopen",	type_file,	"ss" },
-    { dogcd,		"gcd",		type_integer,	"nn" },
-    { doputc,		"putc",		type_int,	"nf" },
-    { dosetbuf,		"setbuffer",	type_int,	"fn" },
-    { indexS,           "index",	type_int,	"ss", &StringScope },
-    { 0,		0 },
+    { do_Thread_set_priority,"set_priority",	    type_integer,   "tn",   &ThreadNamespace },
+    { do_File_open,	    "open",		    type_file,	    "ss",   &FileNamespace },
+    { do_gcd,		    "gcd",		    type_integer,   "nn"    },
+    { do_File_putc,	    "putc",		    type_integer,   "nf",   &FileNamespace },
+    { do_File_setbuf,	    "setbuffer",	    type_integer,   "fn",   &FileNamespace },
+    { do_String_index,      "index",		    type_integer,   "ss",   &StringNamespace },
+    { 0,		    0 },
 };
+
 struct fbuiltin_3 funcs_3[] = {
-    { substrS,          "substr",	type_string,	"snn", &StringScope },
+    { do_String_substr,	    "substr",		    type_string,    "snn",  &StringNamespace },
+    { 0,		    0 },
 };
 struct fbuiltin_7 funcs_7[] = {
-    { doprint,		"Print",	type_int,	"fpsnnns" },
-    { 0,		0 },
+    { do_File_print,	    "print",		    type_integer,   "fpsnnns",&FileNamespace },
+    { 0,		    0 },
 };
 
 struct fbuiltin_2j funcs_2j[] = {
-    { SetJump,		"setjump",	type_undef,	"*cp" },
-    { LongJump,		"longjump",	type_undef,	"cp" },
+    { do_set_jump,	    "set_jump",		    type_undef,	    "*cp"   },
+    { do_long_jump,	    "long_jump",	    type_undef,	    "cp"    },
     { 0,		0 },
 };
 
@@ -360,47 +382,49 @@ struct ibuiltin ivars[] = {
 };
 
 struct nbuiltin nvars[] = {
-    { "primitive",  &PrimitiveScope },
-    { "debugger",   &DebugScope },
-    { "thread",	    &ThreadScope },
-    { "math",	    &MathScope },
-    { "mutex",	    &MutexScope },
-    { "semaphore",  &SemaphoreScope },
-    { "strings",    &StringScope },
+    { "Debugger",   &DebugNamespace },
+    { "File",	    &FileNamespace },
+    { "History",    &HistoryNamespace },
+    { "Math",	    &MathNamespace },
+    { "Mutex",	    &MutexNamespace },
+    { "Primitive",  &PrimitiveNamespace },
+    { "Semaphore",  &SemaphoreNamespace },
+    { "Strings",    &StringNamespace },
+    { "Thread",	    &ThreadNamespace },
     { 0,	    0 },
 };
 
 static SymbolPtr
-BuiltinSymbol (ScopePtr *scopep,
-	       char	*name,
-	       Types	*type)
+BuiltinSymbol (NamespacePtr *namespacep,
+	       char	    *name,
+	       Types	    *type)
 {
     ENTER ();
-    ScopePtr	scope;
+    NamespacePtr    namespace;
 
-    if (scopep)
-	scope = *scopep;
+    if (namespacep)
+	namespace = *namespacep;
     else
-	scope = GlobalScope;
-    RETURN (ScopeAddSymbol (scope,
+	namespace = GlobalNamespace;
+    RETURN (NamespaceAddSymbol (namespace,
 			    NewSymbolGlobal (AtomId (name), type,
 					     publish_public)));
 }
 
 static SymbolPtr
-BuiltinScope (ScopePtr	*scopep,
-	      char	*name)
+BuiltinNamespace (NamespacePtr  *namespacep,
+		  char		*name)
 {
     ENTER ();
-    ScopePtr	scope;
+    NamespacePtr	namespace;
 
-    if (scopep)
-	scope = *scopep;
+    if (namespacep)
+	namespace = *namespacep;
     else
-	scope = GlobalScope;
-    RETURN (ScopeAddSymbol (scope,
-			    NewSymbolScope (AtomId (name), 
-					    NewScope (0),
+	namespace = GlobalNamespace;
+    RETURN (NamespaceAddSymbol (namespace,
+			    NewSymbolNamespace (AtomId (name), 
+					    NewNamespace (0),
 					    publish_public)));
 }
 
@@ -453,7 +477,7 @@ BuiltinArgTypes (char *format, int *argcp)
 }
 
 static void
-BuiltinAddFunction (ScopePtr *scopep, char *name, Type ret,
+BuiltinAddFunction (NamespacePtr *namespacep, char *name, Type ret,
 		    char *format, BuiltinFunc f)
 {
     ENTER ();
@@ -463,14 +487,14 @@ BuiltinAddFunction (ScopePtr *scopep, char *name, Type ret,
     ArgType	*args;
 
     args = BuiltinArgTypes (format, &argc);
-    sym = BuiltinSymbol (scopep, name, NewTypesFunc (NewTypesPrim (ret), True, args));
+    sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim (ret), True, args));
     func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, False), 0);
     BoxValue (sym->global.value, 0) = func;
     EXIT ();
 }
 
 static void
-BuiltinAddJumpingFunction (ScopePtr *scopep, char *name, Type ret,
+BuiltinAddJumpingFunction (NamespacePtr *namespacep, char *name, Type ret,
 			   char *format, BuiltinFunc f)
 {
     ENTER ();
@@ -480,7 +504,7 @@ BuiltinAddJumpingFunction (ScopePtr *scopep, char *name, Type ret,
     int		argc;
     
     args = BuiltinArgTypes (format, &argc);
-    sym = BuiltinSymbol (scopep, name, NewTypesFunc (NewTypesPrim(ret), True, args));
+    sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim(ret), True, args));
     func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, True), 0);
     BoxValue (sym->global.value, 0) = func;
     EXIT ();
@@ -504,62 +528,62 @@ BuiltinInit (void)
     BuiltinFunc		f;
     SymbolPtr		sym;
 
-    for (n = nvars; n->bn_name; n++) {
-	sym = BuiltinScope (n->bn_scope, n->bn_name);
-	*n->bn_value = sym->scope.scope;
+    for (n = nvars; n->name; n++) {
+	sym = BuiltinNamespace (n->namespace, n->name);
+	*n->value = sym->namespace.namespace;
     }
     for (f_v = funcs_v; f_v->name; f_v++) {
 	f.builtinN = f_v->func;
 	
-	BuiltinAddFunction (f_v->scope, f_v->name, f_v->ret, f_v->args, f);
+	BuiltinAddFunction (f_v->namespace, f_v->name, f_v->ret, f_v->args, f);
     }
     for (f_0 = funcs_0; f_0->name; f_0++) {
 	f.builtin0 = f_0->func;
-	BuiltinAddFunction (f_0->scope, f_0->name, f_0->ret, f_0->args, f);
+	BuiltinAddFunction (f_0->namespace, f_0->name, f_0->ret, f_0->args, f);
     }
     for (f_1 = funcs_1; f_1->name; f_1++) {
 	f.builtin1 = f_1->func;
-	BuiltinAddFunction (f_1->scope, f_1->name, f_1->ret, f_1->args, f);
+	BuiltinAddFunction (f_1->namespace, f_1->name, f_1->ret, f_1->args, f);
     }
     for (f_2 = funcs_2; f_2->name; f_2++) {
 	f.builtin2 = f_2->func;
-	BuiltinAddFunction (f_2->scope, f_2->name, f_2->ret, f_2->args, f);
+	BuiltinAddFunction (f_2->namespace, f_2->name, f_2->ret, f_2->args, f);
     }
     for (f_3 = funcs_3; f_3->name; f_3++) {
 	f.builtin3 = f_3->func;
-	BuiltinAddFunction (f_3->scope, f_3->name, f_3->ret, f_3->args, f);
+	BuiltinAddFunction (f_3->namespace, f_3->name, f_3->ret, f_3->args, f);
     }
     for (f_7 = funcs_7; f_7->name; f_7++) {
 	f.builtin7 = f_7->func;
-	BuiltinAddFunction (f_7->scope, f_7->name, f_7->ret, f_7->args, f);
+	BuiltinAddFunction (f_7->namespace, f_7->name, f_7->ret, f_7->args, f);
     }
     for (f_2j = funcs_2j; f_2j->name; f_2j++) {
 	f.builtin2J = f_2j->func;
-	BuiltinAddJumpingFunction (f_2j->scope, f_2j->name, f_2j->ret, f_2j->args, f);
+	BuiltinAddJumpingFunction (f_2j->namespace, f_2j->name, f_2j->ret, f_2j->args, f);
     }
     
-    for (r = rvars; r->br_name; r++) {
-	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (r->br_name), 
+    for (r = rvars; r->name; r++) {
+	sym = NamespaceAddSymbol (GlobalNamespace, 
+			      NewSymbolGlobal (AtomId (r->name), 
 					       NewTypesPrim (type_float), 
 					       publish_private));
 	sym->global.value->constant = True;
-	BoxValue (sym->global.value, 0) = NewValueFloat (aetov (r->br_value),
-							 r->br_prec);
+	BoxValue (sym->global.value, 0) = NewValueFloat (aetov (r->value),
+							 r->prec);
     }
-    for (s = svars; s->bs_name; s++) {
-	sym = BuiltinSymbol (s->bs_scope, s->bs_name, NewTypesPrim (type_string));
-	BoxValue (sym->global.value, 0) = NewStrString (s->bs_value);
+    for (s = svars; s->name; s++) {
+	sym = BuiltinSymbol (s->namespace, s->name, NewTypesPrim (type_string));
+	BoxValue (sym->global.value, 0) = NewStrString (s->value);
     }
-    for (i = ivars; i->is_name; i++) {
+    for (i = ivars; i->name; i++) {
 	Value   f;
 	
-	switch (i->is_file) { 
+	switch (i->file) { 
 	case 0: f = FileStdin; break; 
         case 1: f = FileStdout; break;
 	default: f = FileStderr;  break;
 	}
-	sym = BuiltinSymbol (i->is_scope, i->is_name, NewTypesPrim (type_file));
+	sym = BuiltinSymbol (i->namespace, i->name, NewTypesPrim (type_file));
 	BoxValue (sym->global.value, 0) = f;
     }
     EXIT ();
@@ -715,7 +739,7 @@ callformat (Value f, char *fmt, int n, Value *p)
 }
 
 Value 
-doprintf (int n, Value *p)
+do_printf (int n, Value *p)
 {
     char	*fmt;
     
@@ -731,7 +755,7 @@ doprintf (int n, Value *p)
 }
 
 Value 
-dofprintf (int n, Value *p)
+do_fprintf (int n, Value *p)
 {
     Value	f;
     char	*fmt;
@@ -755,8 +779,8 @@ dofprintf (int n, Value *p)
 }
 
 Value
-doprint (Value file, Value value, Value format, 
-	 Value base, Value width, Value prec, Value fill)
+do_File_print (Value file, Value value, Value format, 
+	       Value base, Value width, Value prec, Value fill)
 {
     int	    ibase, iwidth, iprec;
     
@@ -793,7 +817,7 @@ doprint (Value file, Value value, Value format,
 }
 
 Value 
-dofopen (Value name, Value mode)
+do_File_open (Value name, Value mode)
 {
     ENTER ();
     char	*n, *m;
@@ -819,7 +843,7 @@ dofopen (Value name, Value mode)
 }
 
 Value 
-dofflush (Value f)
+do_File_flush (Value f)
 {
     if (f->value.tag != type_file) {
 	RaiseError ("parameter to fflush should be file");
@@ -831,7 +855,7 @@ dofflush (Value f)
 }
 
 Value 
-dofclose (Value f)
+do_File_close (Value f)
 {
     if (f->value.tag != type_file) {
 	RaiseError ("parameter to fclose should be file");
@@ -850,7 +874,7 @@ dofclose (Value f)
 }
 
 Value 
-dogetc (Value f)
+do_File_getc (Value f)
 {
     ENTER ();
     int	    c;
@@ -877,14 +901,14 @@ dogetc (Value f)
 }
 
 Value 
-dogetchar ()
+do_getchar ()
 {
     ENTER ();
-    RETURN (dogetc (FileStdin));
+    RETURN (do_File_getc (FileStdin));
 }
 
 Value 
-doputc (Value v, Value f)
+do_File_putc (Value v, Value f)
 {
     ENTER ();
     
@@ -906,14 +930,14 @@ doputc (Value v, Value f)
 }
 
 Value 
-doputchar (Value v)
+do_putchar (Value v)
 {
     ENTER ();
-    RETURN (doputc (v, FileStdout));
+    RETURN (do_File_putc (v, FileStdout));
 }
 
 Value
-dosetbuf (Value f, Value v)
+do_File_setbuf (Value f, Value v)
 {
     ENTER ();
     int	i;
@@ -929,21 +953,21 @@ dosetbuf (Value f, Value v)
 }
 
 Value 
-dogcd (Value a, Value b)
+do_gcd (Value a, Value b)
 {
     ENTER ();
     RETURN (Gcd (a, b));
 }
 
 Value
-dotime (void)
+do_time (void)
 {
     ENTER ();
     RETURN (NewInt (time (0)));
 }
 
 Value
-doHistoryInsert (Value a)
+do_History_insert (Value a)
 {
     ENTER ();
     HistoryInsert (a);
@@ -952,7 +976,7 @@ doHistoryInsert (Value a)
 }
 
 Value
-doHistoryShow (int n, Value *p)
+do_History_show (int n, Value *p)
 {
     ENTER ();
 
@@ -972,7 +996,7 @@ doHistoryShow (int n, Value *p)
 
 Value 
 /*ARGSUSED*/
-doscanf (int n, Value *p)
+do_scanf (int n, Value *p)
 {
     return Zero;
 }
@@ -981,17 +1005,31 @@ extern Value	atov (char *, int);
 extern Value	aetov (char *);
 
 Value
-Strtol (Value str, Value base)
+do_string_to_integer (int n, Value *p)
 {
     ENTER ();
     char    *s;
     int	    ibase;
     int	    negative = 0;
     Value   ret = Zero;
-
+    Value   str, base;
+    
+    if (n == 1)
+    {
+	str = p[0];
+	base = Zero;
+    }
+    else if (n == 2)
+    {
+	str = p[0];
+	base = p[1];
+    }
+    else
+	RaiseError ("string_to_integer: wrong number of arguments %d", n);
+    
     if (str->value.tag != type_string)
     {
-	RaiseError ("strtol: first argument must be string %v", str);
+	RaiseError ("string_to_integer: first argument must be string %v", str);
     }
     else
     {
@@ -1051,19 +1089,7 @@ Strtol (Value str, Value base)
 }
 
 Value
-Atoi (Value str)
-{
-    ENTER ();
-    if (str->value.tag != type_string)
-    {
-	RaiseError ("atoi: argument must be string %v", str);
-	RETURN (Zero);
-    }
-    RETURN (Strtol (str, Zero));
-}
-
-Value
-Atof (Value str)
+do_string_to_real (Value str)
 {
     ENTER ();
     if (str->value.tag != type_string)
@@ -1076,7 +1102,7 @@ Atof (Value str)
 
 
 Value
-Imprecise (int n, Value *p)
+do_imprecise (int n, Value *p)
 {
     ENTER();
     Value   v;
@@ -1091,13 +1117,17 @@ Imprecise (int n, Value *p)
     if (n > 1)
 	prec = IntPart (p[1], "imprecise: invalid precision");
     else
+    {
+	if (v->value.tag == type_float)
+	    RETURN(v);
 	prec = DEFAULT_FLOAT_PREC;
+    }
 
     RETURN (NewValueFloat (v, prec));
 }
 
 Value 
-absD (Value a)
+do_abs (Value a)
 {
     ENTER ();
     if (Negativep (a))
@@ -1106,19 +1136,19 @@ absD (Value a)
 }
 
 Value 
-floorD (Value a)
+do_floor (Value a)
 {
     return Floor (a);
 }
 
 Value 
-ceilD (Value a)
+do_ceil (Value a)
 {
     return Ceil (a);
 }
 
 Value
-_random (Value bits)
+do_Primitive_random (Value bits)
 {
     ENTER();
     int n = IntPart (bits, "random: modulus non-integer");
@@ -1134,7 +1164,7 @@ _random (Value bits)
 }
 
 Value
-_srandom (Value seed)
+do_Primitive_srandom (Value seed)
 {
     ENTER();
     int n = IntPart (seed, "srandom: non-integer seed");
@@ -1144,7 +1174,7 @@ _srandom (Value seed)
 }
 
 Value
-lengthS (Value av)
+do_String_length (Value av)
 {
     ENTER();
     Value ret;
@@ -1158,7 +1188,7 @@ lengthS (Value av)
 }
 
 Value
-indexS (Value av, Value bv)
+do_String_index (Value av, Value bv)
 {
     ENTER();
     char *a, *b, *p;
@@ -1183,7 +1213,7 @@ indexS (Value av, Value bv)
 }
 
 Value
-substrS (Value av, Value bv, Value cv)
+do_String_substr (Value av, Value bv, Value cv)
 {
     ENTER();
     char *a, *rchars;
@@ -1214,7 +1244,8 @@ substrS (Value av, Value bv, Value cv)
 }
 
 Value
-dim(Value av) {
+do_dim(Value av) 
+{
     ENTER();
     Value ret;
     if (av->value.tag != type_array)
@@ -1232,7 +1263,8 @@ dim(Value av) {
 }
 
 Value
-dims(Value av) {
+do_dims(Value av) 
+{
     ENTER();
     Value ret;
     int i;
@@ -1250,7 +1282,7 @@ dims(Value av) {
 }
 
 Value
-precision (Value av)
+do_precision (Value av)
 {
     ENTER ();
     unsigned	prec;
@@ -1268,7 +1300,38 @@ precision (Value av)
 }
 
 Value
-exponentD (Value av)
+do_sign (Value av)
+{
+    ENTER ();
+    Sign    s;
+
+    switch (av->value.tag) {
+    case type_int:
+	s = av->ints.value >= 0 ? Positive : Negative;
+	break;
+    case type_integer:
+	s = av->integer.sign;
+	break;
+    case type_rational:
+	s = av->rational.sign;
+	break;
+    case type_float:
+	s = av->floats.mant->sign;
+	break;
+    default:
+	RaiseError ("sign: argument non-numeric %v", av);
+	s = Positive;
+	break;
+    }
+    if (s == Positive)
+	av = One;
+    else
+	av = NewInt (-1);
+    RETURN (av);
+}
+
+Value
+do_exponent (Value av)
 {
     ENTER ();
     Value   ret;
@@ -1284,7 +1347,7 @@ exponentD (Value av)
 }
 
 Value
-mantissaD (Value av)
+do_mantissa (Value av)
 {
     ENTER ();
     Value   ret;
@@ -1298,4 +1361,242 @@ mantissaD (Value av)
     ret = Divide (ret, Pow (NewInt (2), 
 			    NewInt (FpartLength (av->floats.mant))));
     RETURN (ret);
+}
+
+Value
+do_numerator (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_int:
+    case type_integer:
+	break;
+    case type_rational:
+	av = NewInteger (av->rational.sign, av->rational.num);
+	break;
+    default:
+	RaiseError ("numerator: argument must be precise %v", av);
+	av = Zero;
+    }
+    RETURN (av);
+}
+
+Value
+do_denominator (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_int:
+    case type_integer:
+	av = One;
+	break;
+    case type_rational:
+	av = NewInteger (Positive, av->rational.den);
+	break;
+    default:
+	RaiseError ("numerator: argument must be precise %v", av);
+	av = Zero;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_integer (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_int:
+    case type_integer:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_rational (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_int:
+    case type_integer:
+    case type_rational:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_number (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_int:
+    case type_integer:
+    case type_rational:
+    case type_float:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_string (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_string:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_file (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_file:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_thread (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_thread:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_mutex (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_mutex:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_semaphore (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_semaphore:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_continuation (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_continuation:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_array (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_array:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_ref (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_ref:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_struct (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_struct:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_func (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_func:
+	av = One;
+	break;
+    default:
+	av = Zero;
+	break;
+    }
+    RETURN (av);
 }

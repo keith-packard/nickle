@@ -16,19 +16,28 @@
 
 int	    at_bol = True;
 int	    yylineno;
+int	    at_eof = False;
     
 #undef YY_INPUT
 
+#define	    FILE_END_CHAR	-2
+    
 #define YY_INPUT(buf,result,max_size) \
 { \
     int c; \
     result = 0; \
+    at_eof = False; \
     if (at_bol) yyprompt (); \
     while (result < max_size) { \
 	c = FileInput (yyinput); \
 	at_bol = False; \
 	if (c < 0) { \
 	    c = popinput (); \
+	    if (c == -2) { \
+		at_eof = True; \
+		buf[result++] = '\n'; \
+		break; \
+	    } \
 	    if (c < 0) \
 		break; \
 	} \
@@ -89,7 +98,7 @@ exit		return QUIT;
 edit		return EDIT;
 history		return HISTORY;
 print		return PRINT;
-read		return READ;
+load		return LOAD;
 while		{ yylval.ival = WHILE; return WHILE; }
 for		{ yylval.ival = FOR; return FOR; }
 do		{ yylval.ival = DO; return DO; }
@@ -107,16 +116,15 @@ integer		{ yylval.tval = type_integer; return INTEGER; }
 rational    	{ yylval.tval = type_rational; return RATIONAL; }
 real		{ yylval.tval = type_float; return REAL; }
 string		{ yylval.tval = type_string; return STRING; }
-File		{ yylval.tval = type_file; return FILET; }
-Mutex		{ yylval.tval = type_mutex; return MUTEX; }
-Semaphore	{ yylval.tval = type_semaphore; return SEMAPHORE; }
-Continuation	{ yylval.tval = type_continuation; return CONTINUATION; }
+file		{ yylval.tval = type_file; return FILET; }
+mutex		{ yylval.tval = type_mutex; return MUTEX; }
+semaphore	{ yylval.tval = type_semaphore; return SEMAPHORE; }
+continuation	{ yylval.tval = type_continuation; return CONTINUATION; }
 
 typedef		{ yylval.ival = TYPEDEF; return TYPEDEF; }
-new		{ yylval.ival = NEW; return NEW; }
 func		{ yylval.ival = FUNC; return FUNC; }
 fork		{ yylval.ival = FORK; return FORK; }
-scope		{ yylval.ival = SCOPE; return SCOPE; }
+namespace    	{ yylval.ival = NAMESPACE; return NAMESPACE; }
 import		{ yylval.ival = IMPORT; return IMPORT; }
 exception	{ yylval.ival = EXCEPTION; return EXCEPTION; }
 public		{ yylval.pval = publish_public; return PUBLIC; }
@@ -126,7 +134,9 @@ public		{ yylval.pval = publish_public; return PUBLIC; }
 "."		{ yylval.ival = DOT; return DOT; }
 "->"		{ yylval.ival = ARROW; return ARROW; }
 "*["		{ yylval.ival = REFARRAY; return REFARRAY; }
-\n		{ if (!ignorenl) { yylval.ival = NL; return NL; } }
+\n		{ 
+		    if (!ignorenl) { yylval.ival = NL; return NL; } 
+		}
 "("		{ yylval.ival = OP; return OP; }
 ")"		{ yylval.ival = CP; return CP; }
 "["		{ yylval.ival = OS; return OS; }
@@ -249,13 +259,24 @@ skipcomment (void)
     int	c;
 
     c = input();
+    if (at_eof)
+    {
+bail:	
+        yyerror ("Missing */ at end of file");
+	at_eof = False;
+        return;
+    }
     for (;;) {
 	while (c != EOF && c != '*')
+	{
 	    c = input();
-	if (c == EOF)
-	    return;
+	    if (c == EOF || at_eof)
+		goto bail;
+	}
 	c = input();
-	if (c == EOF || c == '/')
+	if (c == EOF || at_eof)
+	    goto bail;
+	if (c == '/')
 	    return;
     }
 }
@@ -464,6 +485,7 @@ popinput (void)
 	    yylineno = *linenopt++;
 	    yyfile = *fnamept++;
 	    --yyfiledeep;
+	    return FILE_END_CHAR;
 	}
     }
 }

@@ -29,7 +29,7 @@ Fpart	*zero_fpart, *one_fpart;
     FilePuts (FileStdout, "\n"); \
 }
 
-#define DebugF(s,f) { \
+#define DebugFp(s,f) { \
     int	print_width; \
     FilePuts (FileStdout, s); \
     FilePuts (FileStdout, " "); \
@@ -37,9 +37,14 @@ Fpart	*zero_fpart, *one_fpart;
     FilePuts (FileStdout, NaturalSprint (0, (f)->mag, 10, &print_width)); \
     FilePuts (FileStdout, "\n"); \
 }
+#define DebugF(s,f) { \
+    DebugFp(s,(f)->mant); \
+    DebugFp(" e ", (f)->exp); \
+}
 #else
 #define DebugV(s,v)
 #define DebugN(s,n)
+#define DebugFp(s,f)
 #define DebugF(s,f)
 #endif
 
@@ -178,9 +183,9 @@ FpartLsl (Fpart *a, int shift)
 }
 
 static Bool
-FpartLess (Fpart *a, Fpart *b, Bool negate)
+FpartLess (Fpart *a, Fpart *b)
 {
-    switch (catagorize_signs(a->sign, negate ? SignNegate (b->sign):b->sign)) {
+    switch (catagorize_signs(a->sign, b->sign)) {
     default:
     case BothPositive:
 	return NaturalLess (a->mag, b->mag);
@@ -194,9 +199,9 @@ FpartLess (Fpart *a, Fpart *b, Bool negate)
 }
 
 static Bool
-FpartEqual (Fpart *a, Fpart *b, Bool negate)
+FpartEqual (Fpart *a, Fpart *b)
 {
-    switch (catagorize_signs(a->sign, negate ? SignNegate (b->sign):b->sign)) {
+    switch (catagorize_signs(a->sign, b->sign)) {
     default:
     case BothPositive:
     case BothNegative:
@@ -206,6 +211,12 @@ FpartEqual (Fpart *a, Fpart *b, Bool negate)
     case SecondPositive:
 	return False;
     }
+}
+
+static Bool
+FpartZero (Fpart *a)
+{
+    return NaturalZero (a->mag);
 }
 
 unsigned
@@ -382,16 +393,33 @@ FloatDivide (Value av, Value bv, int expandOk)
     Fpart	*amant = a->mant, *bmant = b->mant;
     Fpart	*exp;
     unsigned	prec;
+    unsigned	iprec, alen;
 
-    amant = FpartLsl (amant, b->prec);
-    exp = FpartAdd (a->exp, 
-		    FpartAdd (NewIntFpart (b->prec), b->exp, False),
-		    True);
-    mant = FpartDivide (amant, bmant);
+    if (FpartZero (b->mant))
+    {
+	RaiseError ("real divide by zero %v / %v", av, bv);
+	RETURN (Zero);
+    }
+    DebugF ("Dividend ", a);
+    DebugF ("Divisor ", b);
     if (a->prec < b->prec)
 	prec = a->prec;
     else
 	prec = b->prec;
+    iprec = prec + FpartLength (bmant) + 1;
+    alen = FpartLength (amant);
+    exp = b->exp;
+    if (alen < iprec)
+    {
+	amant = FpartLsl (amant, iprec - alen);
+	exp = FpartAdd (NewIntFpart (iprec-alen), exp, False);
+    }
+    exp = FpartAdd (a->exp, exp, True);
+    DebugFp ("amant ", amant);
+    DebugFp ("bmant ", bmant);
+    mant = FpartDivide (amant, bmant);
+    DebugFp ("mant ", mant);
+    DebugFp ("exp ", exp);
     RETURN (NewFloat (mant, exp, prec));
 }
 
@@ -399,6 +427,10 @@ static Value
 FloatMod (Value av, Value bv, int expandOk)
 {
     ENTER ();
+    Value   q;
+
+    q = Floor (Divide (av, bv));
+    av = Minus (av, Times (q, bv));
     RETURN (av);
 }
 
@@ -409,10 +441,25 @@ FloatLess (Value av, Value bv, int expandOk)
     Value	ret;
     Float	*a = &av->floats, *b = &bv->floats;
     
-    if (FpartEqual (a->exp, b->exp, False))
+    if (FpartEqual (a->mant, zero_fpart))
+    {
+	if (b->mant->sign == Positive && 
+	    !FpartEqual (b->mant, zero_fpart))
+	    ret = One;
+	else
+	    ret = Zero;
+    }
+    else if (FpartEqual (b->mant, zero_fpart))
+    {
+	if (a->mant->sign == Negative)
+	    ret = One;
+	else
+	    ret = Zero;
+    }
+    else if (FpartEqual (a->exp, b->exp))
     {
 	ret = Zero;
-	if (FpartLess (a->mant, b->mant, False))
+	if (FpartLess (a->mant, b->mant))
 	    ret = One;
     }
     else
@@ -432,10 +479,10 @@ FloatEqual (Value av, Value bv, int expandOk)
     Value	ret;
     Float	*a = &av->floats, *b = &bv->floats;
 
-    if (FpartEqual (a->exp, b->exp, False))
+    if (FpartEqual (a->exp, b->exp))
     {
 	ret = Zero;
-	if (FpartEqual (a->mant, b->mant, False))
+	if (FpartEqual (a->mant, b->mant))
 	    ret = One;
     }
     else
@@ -502,7 +549,7 @@ FloatFloor (Value av, int expandOk)
     int	    d;
 
     if (a->exp->sign == Positive)
-	RETURN (av);
+	RETURN (FloatInteger (av));
     if (NaturalLess (NewNatural (a->prec), a->exp->mag))
 	RETURN (Zero);
     d = NaturalToInt (a->exp->mag);
@@ -531,7 +578,7 @@ FloatCeil (Value av, int expandOk)
     int	    d;
 
     if (a->exp->sign == Positive)
-	RETURN (av);
+	RETURN (FloatInteger (av));
     if (NaturalLess (NewNatural (a->prec), a->exp->mag))
 	RETURN (Zero);
     d = -NaturalToInt (a->exp->mag);
@@ -728,8 +775,8 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
     
     mant_prec = a->prec * log(2) / log(base);
 
-    DebugF ("mant", a->mant);
-    DebugF ("exp ", a->exp);
+    DebugFp ("mant", a->mant);
+    DebugFp ("exp ", a->exp);
     
     length = FpartLength (a->mant);
     expbase = FloatExp (Plus (NewInt (length), 
@@ -816,13 +863,17 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
     int_buffer = malloc (int_width + 1);
     int_string = NaturalSprint (int_buffer + int_width + 1,
 				int_n, base, &int_width);
+    
+    frac_prec = mant_prec - int_width;
+    if (*int_string == '0')
+	frac_prec++;
+    
     if (negative)
     {
 	*--int_string = '-';
 	int_width++;
     }
     
-    frac_prec = mant_prec - int_width;
     frac_width = prec - int_width - exp_width;
     
     if (frac_prec + 1 < frac_width || prec == INFINITE_OUTPUT_PRECISION)
@@ -919,8 +970,8 @@ NewFloat (Fpart *mant, Fpart *exp, unsigned prec)
     unsigned	bits, dist;
     Value	ret;
 
-    DebugF ("New mant", mant);
-    DebugF ("New exp ", exp);
+    DebugFp ("New mant", mant);
+    DebugFp ("New exp ", exp);
     /*
      * Trim to specified precision
      */
@@ -943,8 +994,8 @@ NewFloat (Fpart *mant, Fpart *exp, unsigned prec)
     bits = FpartLength (mant);
     if (bits == 0)
 	exp = mant = zero_fpart;
-    DebugF ("Can mant", mant);
-    DebugF ("Can exp ", exp);
+    DebugFp ("Can mant", mant);
+    DebugFp ("Can exp ", exp);
     ret = ALLOCATE (&FloatType.data, sizeof (Float));
     ret->value.tag = type_float;
     ret->floats.mant = mant;

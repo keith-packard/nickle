@@ -43,8 +43,8 @@ printclass (Value f, Class class)
     case class_typedef:
 	FilePuts (f, "typedef");
 	break;
-    case class_scope:
-	FilePuts (f, "scope");
+    case class_namespace:
+	FilePuts (f, "namespace");
 	break;
     case class_undef:
 	break;
@@ -497,9 +497,9 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	printindent (f, level);
 	printDecl (f, e, level, nest);
 	break;
-    case SCOPE:
+    case NAMESPACE:
 	printindent (f, level);
-	FilePuts (f, "scope ");
+	FilePuts (f, "namespace ");
 	printExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, "\n");
 	printStatement (f, e->tree.right, level + 1, level, nest);
@@ -549,7 +549,7 @@ PrintCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
 	}
 	if (args->name)
 	    FilePuts (f, AtomName (args->name));
-	if (args->next)
+	if (args->next || code->base.argc == -1)
 	    FilePuts (f, ", ");
     }
     if (code->base.builtin && code->base.argc == -1)
@@ -583,11 +583,11 @@ void
 doPrettyPrint (Value f, Symbol *name, int level, Bool nest);
     
 static void
-PrintScope (Value f, ScopePtr scope, int level)
+PrintNamespace (Value f, NamespacePtr namespace, int level)
 {
-    ScopeChainPtr   chain;
+    NamespaceChainPtr   chain;
 
-    for (chain = scope->symbols; chain; chain = chain->next)
+    for (chain = namespace->symbols; chain; chain = chain->next)
     {
 	if (chain->publish == publish_public)
 	    doPrettyPrint (f, chain->symbol, level, False);
@@ -617,13 +617,13 @@ doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 	}
 	FilePuts (f, "\n");
 	break;
-    case class_scope:
+    case class_namespace:
 	printpublish (f, name->symbol.publish);
 	printclass (f, name->symbol.class);
 	FilePuts (f, " ");
 	FilePuts (f, AtomName (name->symbol.name));
 	FilePuts (f, " {\n");
-	PrintScope (f, name->scope.scope, level + 1);
+	PrintNamespace (f, name->namespace.namespace, level + 1);
 	printindent (f, level);
 	FilePuts (f, "}\n");
 	break;

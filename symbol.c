@@ -39,19 +39,19 @@ SymbolLocalMark (void *object)
 }
 
 static void
-SymbolScopeMark (void *object)
+SymbolNamespaceMark (void *object)
 {
-    SymbolScope	    *ss = object;
+    SymbolNamespace *sn = object;
 
-    MemReference (ss->symbol.next);
-    MemReference (ss->symbol.type);
-    MemReference (ss->scope);
+    MemReference (sn->symbol.next);
+    MemReference (sn->symbol.type);
+    MemReference (sn->namespace);
 }
 
 DataType    SymbolTypeType = { SymbolTypeMark, 0 };
 DataType    SymbolGlobalType = { SymbolGlobalMark, 0 };
 DataType    SymbolLocalType = { SymbolLocalMark, 0 };
-DataType    SymbolScopeType = { SymbolScopeMark, 0 };
+DataType    SymbolNamespaceType = { SymbolNamespaceMark, 0 };
 
 SymbolPtr
 NewSymbolType (Atom name, Types *type, Publish publish)
@@ -130,17 +130,17 @@ NewSymbolStatic (Atom name, Types *type)
 }
 
 SymbolPtr
-NewSymbolScope (Atom name, ScopePtr scope, Publish publish)
+NewSymbolNamespace (Atom name, NamespacePtr namespace, Publish publish)
 {
     ENTER ();
     SymbolPtr	s;
 
-    s = ALLOCATE (&SymbolScopeType, sizeof (SymbolScope));
+    s = ALLOCATE (&SymbolNamespaceType, sizeof (SymbolNamespace));
     s->symbol.name = name;
-    s->symbol.class = class_scope;
+    s->symbol.class = class_namespace;
     s->symbol.type = 0;
     s->symbol.publish = publish;
-    s->scope.scope = scope;
+    s->namespace.namespace = namespace;
     RETURN (s);
 }
 

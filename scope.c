@@ -12,123 +12,123 @@
 #include	"ref.h"
 
 static void
-ScopeMark (void *object)
+NamespaceMark (void *object)
 {
-    ScopePtr	scope = object;
+    NamespacePtr    namespace = object;
 
-    MemReference (scope->previous);
-    MemReference (scope->symbols);
-    MemReference (scope->code);
+    MemReference (namespace->previous);
+    MemReference (namespace->symbols);
+    MemReference (namespace->code);
 }
 
-DataType scopeType = { ScopeMark, 0 };
+DataType namespaceType = { NamespaceMark, 0 };
 
-ScopePtr
-NewScope (ScopePtr previous)
+NamespacePtr
+NewNamespace (NamespacePtr previous)
 {
     ENTER ();
-    ScopePtr	scope;
+    NamespacePtr    namespace;
 
-    scope = ALLOCATE (&scopeType, sizeof (Scope));
-    scope->previous = previous;
-    scope->symbols = 0;
-    scope->code = 0;
-    scope->publish = publish_public;
-    RETURN (scope);
+    namespace = ALLOCATE (&namespaceType, sizeof (Namespace));
+    namespace->previous = previous;
+    namespace->symbols = 0;
+    namespace->code = 0;
+    namespace->publish = publish_public;
+    RETURN (namespace);
 }
 
 static void
-ScopeChainMark (void *object)
+NamespaceChainMark (void *object)
 {
-    ScopeChainPtr   chain = object;
+    NamespaceChainPtr   chain = object;
 
     MemReference (chain->next);
     MemReference (chain->symbol);
 }
 
-DataType scopeChainType = { ScopeChainMark, 0 };
+DataType namespaceChainType = { NamespaceChainMark, 0 };
 
-static ScopeChainPtr
-NewScopeChain (ScopeChainPtr next, SymbolPtr symbol, Publish publish)
+static NamespaceChainPtr
+NewNamespaceChain (NamespaceChainPtr next, SymbolPtr symbol, Publish publish)
 {
     ENTER ();
-    ScopeChainPtr   chain;
+    NamespaceChainPtr   chain;
 
-    chain = ALLOCATE (&scopeChainType, sizeof (ScopeChain));
+    chain = ALLOCATE (&namespaceChainType, sizeof (NamespaceChain));
     chain->next = next;
     chain->symbol = symbol;
     chain->publish = publish;
     RETURN (chain);
 }
 
-ScopePtr	GlobalScope, CurrentScope;
-ReferencePtr	CurrentScopeReference;
+NamespacePtr	GlobalNamespace, CurrentNamespace;
+ReferencePtr	CurrentNamespaceReference;
 
 void
-ScopeInit (void)
+NamespaceInit (void)
 {
     ENTER ();
 
-    GlobalScope = NewScope (0);
-    MemAddRoot (GlobalScope);
-    CurrentScope = GlobalScope;
-    CurrentScopeReference = NewReference ((void **) &CurrentScope);
-    MemAddRoot (CurrentScopeReference);
+    GlobalNamespace = NewNamespace (0);
+    MemAddRoot (GlobalNamespace);
+    CurrentNamespace = GlobalNamespace;
+    CurrentNamespaceReference = NewReference ((void **) &CurrentNamespace);
+    MemAddRoot (CurrentNamespaceReference);
     EXIT ();
 }
 
 SymbolPtr
-ScopeLookupSymbol (ScopePtr scope, Atom name)
+NamespaceLookupSymbol (NamespacePtr namespace, Atom name)
 {
-    ScopeChainPtr   chain;
+    NamespaceChainPtr   chain;
     
-    for (chain = scope->symbols; chain; chain = chain->next)
+    for (chain = namespace->symbols; chain; chain = chain->next)
 	if (chain->symbol->symbol.name == name &&
-	    (scope->publish == publish_public ||
+	    (namespace->publish == publish_public ||
 	     chain->publish == publish_public))
 	    return chain->symbol;
     return 0;
 }
 
 SymbolPtr
-ScopeFindSymbol (ScopePtr scope, Atom name, int *depth)
+NamespaceFindSymbol (NamespacePtr namespace, Atom name, int *depth)
 {
     int		    d;
     SymbolPtr	    s;
 
     d = 0;
-    while (scope)
+    while (namespace)
     {
-	s = ScopeLookupSymbol (scope, name);
+	s = NamespaceLookupSymbol (namespace, name);
 	if (s)
 	{
 	    *depth = d;
 	    return s;
 	}
-	if (scope->code)
+	if (namespace->code)
 	    d++;
-	scope = scope->previous;
+	namespace = namespace->previous;
     }
     return 0;
 }
 
 SymbolPtr
-ScopeAddSymbol (ScopePtr scope, SymbolPtr symbol)
+NamespaceAddSymbol (NamespacePtr namespace, SymbolPtr symbol)
 {
     ENTER ();
-    ScopeChainPtr   chain;
+    NamespaceChainPtr   chain;
 
-    chain = NewScopeChain (scope->symbols, symbol, symbol->symbol.publish);
-    scope->symbols = chain;
+    chain = NewNamespaceChain (namespace->symbols, symbol, symbol->symbol.publish);
+    namespace->symbols = chain;
     RETURN (symbol);
 }
 
 Bool
-ScopeRemoveSymbol (ScopePtr scope, SymbolPtr symbol)
+NamespaceRemoveSymbol (NamespacePtr namespace, SymbolPtr symbol)
 {
-    ScopeChainPtr	*prev;
+    NamespaceChainPtr	*prev;
 
-    for (prev = &scope->symbols; *prev; prev = &(*prev)->next)
+    for (prev = &namespace->symbols; *prev; prev = &(*prev)->next)
     {
 	if ((*prev)->symbol == symbol)
 	{
@@ -140,19 +140,19 @@ ScopeRemoveSymbol (ScopePtr scope, SymbolPtr symbol)
 }
 
 SymbolPtr
-ScopeImport (ScopePtr scope, ScopePtr import, Publish publish)
+NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish)
 {
-    ScopeChainPtr   chain;
-    SymbolPtr	    symbol;
+    NamespaceChainPtr   chain;
+    SymbolPtr		symbol;
 
     for (chain = import->symbols; chain; chain = chain->next)
     {
 	if (chain->publish == publish_public)
 	{
 	    symbol = chain->symbol;
-	    if (ScopeLookupSymbol (scope, symbol->symbol.name))
+	    if (NamespaceLookupSymbol (namespace, symbol->symbol.name))
 		return symbol;
-	    scope->symbols = NewScopeChain (scope->symbols, symbol, publish);
+	    namespace->symbols = NewNamespaceChain (namespace->symbols, symbol, publish);
 	}
     }
     return 0;

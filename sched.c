@@ -169,7 +169,7 @@ ThreadContinue (void)
 }
 	    
 Value
-ThreadJoin (Value target)
+do_Thread_join (Value target)
 {
     ENTER ();
     if (target->value.tag != type_thread)
@@ -206,7 +206,7 @@ ThreadListState (Value thread)
 }
 
 Value
-ThreadsList (void)
+do_Thread_list (void)
 {
     Value   t;
 
@@ -233,7 +233,7 @@ ThreadsList (void)
 }
 
 Value
-ThreadFromId (Value id)
+do_Thread_id_to_thread (Value id)
 {
     ENTER ();
     int	i;
@@ -252,7 +252,7 @@ ThreadFromId (Value id)
 }
 
 Value
-CurrentThread (void)
+do_Thread_current (void)
 {
     ENTER ();
     Value   ret;
@@ -264,7 +264,7 @@ CurrentThread (void)
 }
 
 Value
-SetPriority (Value thread, Value priority)
+do_Thread_set_priority (Value thread, Value priority)
 {
     ENTER ();
     int	    i;
@@ -286,7 +286,7 @@ SetPriority (Value thread, Value priority)
 }
 
 Value
-GetPriority (Value thread)
+do_Thread_get_priority (Value thread)
 {
     ENTER ();
     if (thread->value.tag != type_thread)
@@ -298,7 +298,7 @@ GetPriority (Value thread)
 }
 
 Value
-Cont (void)
+do_Thread_cont (void)
 {
     int	    n;
     
@@ -325,7 +325,7 @@ KillThread (Value thread)
 }
 
 Value
-Kill (int n, Value *p)
+do_Thread_kill (int n, Value *p)
 {
     ENTER ();
     Value   thread;
@@ -364,7 +364,7 @@ TraceFunction (Value thread, FramePtr frame, CodePtr code, Atom name)
 }
 
 Value
-Trace (int n, Value *p)
+do_Thread_trace (int n, Value *p)
 {
     ENTER ();
     FramePtr	f;
@@ -541,7 +541,7 @@ NewContinuation (FramePtr frame, InstPtr pc, StackObject *stack)
  * created here should be adjusted to account for this difference
  */
 Value
-SetJump (InstPtr *next, Value continuation_ref, Value ret)
+do_set_jump (InstPtr *next, Value continuation_ref, Value ret)
 {
     ENTER ();
     Value   continuation;
@@ -558,7 +558,7 @@ SetJump (InstPtr *next, Value continuation_ref, Value ret)
 }
 
 Value
-LongJump (InstPtr *next, Value continuation, Value ret)
+do_long_jump (InstPtr *next, Value continuation, Value ret)
 {
     ENTER ();
 

@@ -131,7 +131,7 @@ HistoryDisplay (Value format, Value *from, Value *to)
 	    fv = NewInt (f);
 	    callformat (FileStdout, "$%-4d\t", 1, &fv);
 	    v[1] = hist->array[f - 1];
-	    doprintf (2, v);
+	    do_printf (2, v);
 	    callformat (FileStdout, "\n", 0, 0);
 	    ++f;
 	}

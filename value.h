@@ -256,7 +256,7 @@ Bool	TypeNumeric (Types *t);
 
 typedef enum _class {
     class_global, class_static, class_arg, class_auto, 
-    class_typedef, class_scope, class_undef,
+    class_typedef, class_namespace, class_undef,
 } Class;
 
 #define ClassLocal(c)	((c) == class_arg || (c) == class_auto)

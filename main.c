@@ -96,7 +96,7 @@ init (void)
     TypesInit ();
     ValueInit ();
     IoInit ();
-    ScopeInit ();
+    NamespaceInit ();
     SymbolInit ();
     BuiltinInit ();
     ThreadInit ();

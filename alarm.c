@@ -127,7 +127,7 @@ _sleepDone (void *closure)
 }
 
 Value
-Sleep (Value ms)
+do_sleep (Value ms)
 {
      ENTER ();
     int		    delta;

@@ -13,7 +13,7 @@
 extern Bool complete;
 
 Value
-MutexAcquire (Value m)
+do_Mutex_acquire (Value m)
 {
     ENTER ();
     if (m->value.tag != type_mutex)
@@ -36,7 +36,7 @@ MutexAcquire (Value m)
 }
 
 Value
-MutexTryAcquire (Value m)
+do_Mutex_try_acquire (Value m)
 {
     ENTER ();
     if (m->value.tag != type_mutex)
@@ -59,7 +59,7 @@ MutexTryAcquire (Value m)
 }
 
 Value
-MutexRelease (Value m)
+do_Mutex_release (Value m)
 {
     ENTER ();
     if (m->value.tag != type_mutex)
@@ -118,7 +118,7 @@ ValueType   MutexType = {
 };
 
 Value
-NewMutex (void)
+do_Mutex_new (void)
 {
     ENTER ();
     Value   ret;
@@ -130,7 +130,7 @@ NewMutex (void)
 }
 
 Value
-SemaphoreWait (Value s)
+do_Semaphore_wait (Value s)
 {
     ENTER ();
     if (s->value.tag != type_semaphore)
@@ -150,7 +150,7 @@ SemaphoreWait (Value s)
 }
 
 Value
-SemaphoreTest (Value s)
+do_Semaphore_test (Value s)
 {
     ENTER ();
     if (s->value.tag != type_semaphore)
@@ -170,7 +170,7 @@ SemaphoreTest (Value s)
 }
 
 Value
-SemaphoreSignal (Value s)
+do_Semaphore_signal (Value s)
 {
     ENTER ();
     int	old = 0;
@@ -228,7 +228,7 @@ ValueType   SemaphoreType = {
 };
 
 Value
-NewSemaphore (void)
+do_Semaphore_new (void)
 {
     ENTER ();
     Value   ret;

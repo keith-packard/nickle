@@ -91,8 +91,8 @@ fprintClass (Value f, Class storage)
     case class_typedef:
 	FilePuts (f, "typedef");
 	break;
-    case class_scope:
-	FilePuts (f, "scope");
+    case class_namespace:
+	FilePuts (f, "namespace");
 	break;
     }
 }

@@ -11,13 +11,13 @@
 #include	"nickle.h"
 
 static void
-DebugAddVar (ScopePtr scope, char *name, Value v)
+DebugAddVar (NamespacePtr namespace, char *name, Value v)
 {
     ENTER ();
     SymbolPtr  s;
 
-    s = ScopeAddSymbol (scope, NewSymbolGlobal (AtomId(name), 0, 
-						publish_private));
+    s = NamespaceAddSymbol (namespace, NewSymbolGlobal (AtomId(name), 0, 
+							publish_private));
     BoxValue (s->global.value, 0) = v;
     EXIT ();
 }
@@ -27,7 +27,7 @@ DebugSetFrame (Value thread, int offset)
 {
     ENTER ();
     FramePtr	frame;
-    ScopePtr	scope;
+    NamespacePtr	namespace;
     int		n = offset;
     Bool	ret;
     ExprPtr	stat;
@@ -45,34 +45,34 @@ DebugSetFrame (Value thread, int offset)
 	frame = frame->previous;
     }
     if (stat)
-	scope = stat->base.scope;
+	namespace = stat->base.namespace;
     else
-	scope = GlobalScope;
+	namespace = GlobalNamespace;
     ret = False;
-    if (frame && scope)
+    if (frame && namespace)
     {
 	ret = True;
-	CurrentScope = NewScope (scope);
+	CurrentNamespace = NewNamespace (namespace);
 	CurrentFrame = frame;
-	ScopeImport (CurrentScope, DebugScope, publish_public);
-	DebugAddVar (CurrentScope, "thread", thread);
-	DebugAddVar (CurrentScope, "frame", NewInt (offset));
+	NamespaceImport (CurrentNamespace, DebugNamespace, publish_public);
+	DebugAddVar (CurrentNamespace, "thread", thread);
+	DebugAddVar (CurrentNamespace, "frame", NewInt (offset));
     }
     EXIT ();
     return ret;
 }
 
 Value
-DebugDone (void)
+do_Debug_done (void)
 {
     ENTER ();
-    CurrentScope = GlobalScope;
+    CurrentNamespace = GlobalNamespace;
     CurrentFrame = 0;
     RETURN (Zero);
 }
 
 Value
-DebugUp (void)
+do_Debug_up (void)
 {
     ENTER ();
     Value   frame;
@@ -89,7 +89,7 @@ DebugUp (void)
 }
 
 Value
-DebugDown (void)
+do_Debug_down (void)
 {
     ENTER ();
     Value   frame;
@@ -103,5 +103,33 @@ DebugDown (void)
 	if (DebugSetFrame (thread, frame->ints.value - 1))
 	    RETURN (One);
     }
+    RETURN (Zero);
+}
+
+Value
+do_Debug_dump (Value f)
+{
+    ENTER ();
+    CodePtr code;
+    
+    if (f->value.tag != type_func)
+    {
+	RaiseError ("dump: parameter should be function %v", f);
+	RETURN (Zero);
+    }
+    code = f->func.code;
+    if (code->base.builtin)
+    {
+	FilePuts (FileStdout, "<builtin>\n");
+	RETURN (Zero);
+    }
+    if (code->func.staticInit)
+    {
+	FilePuts (FileStdout, "Static initializers\n");
+	ObjDump (code->func.staticInit);
+	FilePuts (FileStdout, "\n");
+    }
+    FilePuts (FileStdout, "Function body\n");
+    ObjDump (code->func.obj);
     RETURN (Zero);
 }

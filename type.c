@@ -237,6 +237,14 @@ TypeEqual (Types *a, Types *b)
 }
 
 Bool
+TypePoly (Types *t)
+{
+    if (!t || (t->base.tag == types_prim && t->prim.prim == type_undef))
+	return True;
+    return False;
+}
+
+Bool
 TypeNumeric (Types *t)
 {
     if (t->base.tag != types_prim)
@@ -257,9 +265,11 @@ TypeIntegral (Types *t)
 }
 
 Bool
-TypePoly (Types *t)
+TypeString (Types *t)
 {
-    if (!t || (t->base.tag == types_prim && t->prim.prim == type_undef))
+    if (t->base.tag != types_prim)
+	return False;
+    if (t->prim.prim == type_string || t->prim.prim == type_undef)
 	return True;
     return False;
 }
@@ -365,6 +375,8 @@ TypeCombineAssign (Types *left, int tag, Types *right)
 	    return left;
 	break;
     case ASSIGNPLUS:
+	if (TypeString (left) && TypeString (right))
+	    return left;
     case ASSIGNMINUS:
 	if (left->base.tag == types_ref && TypeNumeric (right))
 	    return left;
@@ -412,6 +424,8 @@ TypeCombineBinary (Types *left, int tag, Types *right)
     
     switch (tag) {
     case PLUS:
+	if (TypeString (left) && TypeString (right))
+	    return left;
     case MINUS:
 	if (left->base.tag == types_ref && TypeNumeric (right))
 	    return left;

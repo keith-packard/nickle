@@ -263,6 +263,7 @@ Bool	TypeCompatible (Types *a, Types *b, Bool contains);
 Bool	TypePoly (Types *t);
 Bool	TypeNumeric (Types *t);
 Bool	TypeIntegral (Types *t);
+Bool	TypeString (Types *t);
 
 /*
  * storage classes
@@ -368,6 +369,7 @@ typedef struct _file {
 #define FileOutputError	    0x20
 #define FileClosed	    0x40
 #define FileBlockWrites	    0x80
+#define FileEnd		    0x100
 
 typedef struct _ref {
     BaseValue	base;

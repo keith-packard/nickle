@@ -724,6 +724,14 @@ CompileArray (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, E
     while (sub)
     {
 	obj = _CompileExpr (obj, sub->tree.left, namespace, stat);
+	if (!TypeCompatible (NewTypesPrim (type_integer),
+			     sub->tree.left->base.type,
+			     True))
+	{
+	    CompileError (obj, stat, "Index type %t is not integer",
+			  sub->tree.left->base.type);
+	    break;
+	}
 	SetPush (obj);
 	sub = sub->tree.right;
 	ndim++;
@@ -731,7 +739,8 @@ CompileArray (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, E
     obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
     expr->base.type = TypeCombineUnary (expr->tree.left->base.type, OS);
     if (!expr->base.type)
-	CompileError (obj, stat, "Object left of '[]' is not an array");
+	CompileError (obj, stat, "Type %t is not array or string",
+		      expr->tree.left->base.type);
     BuildInst (obj, opCode, inst, stat);
     inst->ints.value = ndim;
     RETURN (obj);

@@ -232,6 +232,9 @@ struct fbuiltin_1 funcs_1[] = {
     { do_File_close,	    "close",		    type_integer,   "f",    &FileNamespace },
     { do_File_flush,	    "flush",		    type_integer,   "f",    &FileNamespace },
     { do_File_getc,	    "getc",		    type_integer,   "f",    &FileNamespace },
+    { do_File_end,	    "end",		    type_integer,   "f",    &FileNamespace },
+    { do_File_error,	    "error",		    type_integer,   "f",    &FileNamespace },
+    { do_File_clear_error,  "clear_error",	    type_integer,   "f",    &FileNamespace },
     { do_String_length,	    "length",		    type_integer,   "s",    &StringNamespace },
     { do_String_new,	    "new",		    type_string,    "p",    &StringNamespace },
     { do_Primitive_random,  "random",		    type_integer,   "n",    &PrimitiveNamespace },
@@ -914,6 +917,46 @@ do_File_getc (Value f)
 	}
     }
     RETURN (Zero);
+}
+
+Value
+do_File_end (Value f)
+{
+    ENTER ();
+    if (f->value.tag != type_file) {
+	RaiseError ("parameter to getc should be file");
+	RETURN (Zero);
+    }
+    if (f->file.flags & FileEnd)
+	RETURN (One);
+    else
+	RETURN (Zero);
+}
+
+Value
+do_File_error (Value f)
+{
+    ENTER ();
+    if (f->value.tag != type_file) {
+	RaiseError ("parameter to getc should be file");
+	RETURN (Zero);
+    }
+    if (f->file.flags & (FileInputError|FileOutputError))
+	RETURN (One);
+    else
+	RETURN (Zero);
+}
+
+Value
+do_File_clear_error (Value f)
+{
+    ENTER ();
+    if (f->value.tag != type_file) {
+	RaiseError ("parameter to getc should be file");
+	RETURN (Zero);
+    }
+    f->file.flags &= ~(FileInputError|FileOutputError|FileEnd);
+    RETURN (One);
 }
 
 Value 

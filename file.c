@@ -244,11 +244,15 @@ FileInput (Value file)
 			    n = 1;
 			n = read (file->file.fd, buf, n);
 			err = errno;
+			file->file.flags &= ~FileEnd;
 		    }
 		    if (n <= 0)
 		    {
 			if (n == 0)
+			{
+			    file->file.flags |= FileEnd;
 			    c = FileEOF;
+			}
 			else if (err == EWOULDBLOCK)
 			{
 			    FileSetBlocked (file, FileInputBlocked);

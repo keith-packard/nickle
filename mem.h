@@ -60,6 +60,7 @@ union block_round {
 extern void	MemInitialize (void);
 #ifndef HAVE_C_INLINE
 extern void	*MemAllocate (DataType *type, int size);
+extern void	*MemAllocateRef (DataType *type, int size);
 #endif
 extern void	MemFree (void *object, int size);
 extern void	*MemAllocateHuge (DataType *type, int size);
@@ -90,7 +91,7 @@ extern struct bfree *freeList[NUMSIZES];
 
 #define REFERENCE(o)	    STACK_PUSH(MemStack, (o))
 #define ENTER()		    StackPointer    __stackPointer = STACK_TOP(MemStack)
-#define ALLOCATE(type,size) REFERENCE(MemAllocate(type,size))
+#define ALLOCATE(type,size) MemAllocateRef(type,size);
 #define EXIT()		    STACK_RESET(MemStack, __stackPointer)
 #define RETURN(r)	    return (STACK_RETURN (MemStack, __stackPointer, (r)))
 #define NOREFRETURN(r)	    return (EXIT(), (r))
@@ -102,11 +103,11 @@ extern struct bfree *freeList[NUMSIZES];
  */
 
 #ifdef HAVE_C_INLINE
-static inline void *
+static inline struct bfree *
 #else
-void *
+static struct bfree *
 #endif
-MemAllocate (DataType *type, int size)
+_MemAllocateInt (DataType *type, int size)
 {
     int	sizeIndex = 0;
     struct bfree    *new;
@@ -138,11 +139,37 @@ MemAllocate (DataType *type, int size)
     if (!new)
 	new = MemHunkMore (sizeIndex);
     freeList[sizeIndex] = new->next;
-/*    if (sizeIndex >= 6)
-	memset (new, '\0', size); */
+    return new;
+}
+
+#ifdef HAVE_C_INLINE
+static inline void *
+#else
+void *
+#endif
+MemAllocateRef (DataType *type, int size)
+{
+    struct bfree    *new = _MemAllocateInt (type, size);
+
+    new->type = 0;
+    REFERENCE (new);
     new->type = type;
     return (void *) new;
 }
+
+#ifdef HAVE_C_INLINE
+static inline void *
+#else
+void *
+#endif
+MemAllocate (DataType *type, int size)
+{
+    struct bfree    *new = _MemAllocateInt (type, size);
+
+    new->type = type;
+    return (void *) new;
+}
+
 #endif
 
 #endif /* _MEM_H_ */

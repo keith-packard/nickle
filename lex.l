@@ -195,7 +195,7 @@ LexString (char *s, Bool after)
     Value   f;
 
     f = FileStringRead (s, strlen (s));
-    (void) NewLexInput (f, 0, after, False);
+    NewLexInput (f, 0, after, False);
 }
 
 static int

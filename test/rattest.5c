@@ -22,9 +22,9 @@ void function rat_test (int amin, int amax, int bmin, int bmax)
 {
     int	a, b;
 
-    for (a = amin; a <= amax; a++)
-	for (b = bmin; b <= bmax; b++)
+    for (a = amin; a <= amax; a += randint(200))
+	for (b = bmin; b <= bmax; b += randint(200))
 	    rat_random (a, b);
 }
 
-rat_test (2,200,2,200);
+rat_test (2,2000,2,2000);

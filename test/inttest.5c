@@ -4,7 +4,7 @@ exception bad_result (int u, int v);
 
 void function int_check (int u, int v)
 {
-    if (v * (u//v) + u%v != u)
+    if (v * (u//v) + u%v - -v != u + v)
 	raise bad_result (u, v);
 }
 
@@ -21,10 +21,9 @@ void function int_test (int amin, int amax, int bmin, int bmax)
 {
     int	a, b;
 
-    for (a = amin; a <= amax; a++)
-	for (b = bmin; b <= bmax; b++)
+    for (a = amin; a <= amax; a += randint(200))
+	for (b = bmin; b <= bmax; b += randint(200))
 	    int_random (a, b);
 }
 
-#int_test (2,10000,2,10000);
-int_test(2,200,2,200)
+int_test(2,2000,2,2000)

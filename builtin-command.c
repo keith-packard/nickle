@@ -28,7 +28,7 @@ import_Command_namespace()
         { do_Command_edit, "edit", "v", "A*s" },
         { do_Command_lex_file, "lex_file", "b", "s" },
         { do_Command_lex_library, "lex_library", "b", "s" },
-        { do_Command_lex_string, "lex_string", "b", "s" },
+        { do_Command_lex_string, "lex_string", "v", "s" },
 	{ do_Command_display, "display", "v", "p" },
         { 0 }
     };
@@ -142,7 +142,7 @@ do_Command_lex_library (Value name)
 Value
 do_Command_lex_string (Value name)
 {
-    ENTER ();
+    ENTER();
 
     LexString (StringChars (&name->string), False);
     RETURN (Void);

@@ -1,66 +1,129 @@
 /*
  * ctype routines
- * Bart 2002/8
- * XXX: ASCII-only; should be extended into Unicode terror-land.
+ * Bart 2002/7
+ * ASCII-only: Nickle is in the C locale
  */
 
 namespace Ctype {
+
+    /*
+     * As with C ctype.h, things outside the ASCII range
+     * are not handled here.  Unlike C ctype.h, we handle
+     * this case cleanly.
+     */
+    public bool isascii(int ch) {
+	return ch >= 0 && ch <= 127;
+    }
+    
+    /* The characteristic vector of sets of ASCII chars. */
+    public typedef bool[128] charset;
+
+    /* Make a characteristic vector from a characteristic function. */
+    public charset make_charset(bool(int) cfun) {
+	charset result;
+	for (int i = 0; i < 128; i++)
+	    result[i] = cfun(i);
+	return result;
+    }
+
+    /* Test whether a particular char is in a charset. */
+    public bool member(charset v, int ch) {
+	return isascii(ch) && v[ch];
+    }
+
+
+    /*
+     * Now this machinery is used to implement the standard
+     * C ctype.h tests in the obvious fasion.
+     */
+
+
     public bool isupper(int ch) {
-	return ch >= 'A' && ch <= 'Z';
+	static bool cfun(int ch) {
+	    return ch >= 'A' && ch <= 'Z';
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 
     public bool islower(int ch) {
-	return ch >= 'a' && ch <= 'z';
+	static bool cfun(int ch) {
+	    return ch >= 'a' && ch <= 'z';
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 
     public bool isdigit(int ch) {
-	return ch >= '0' && ch <= '9';
+	static bool cfun(int ch) {
+	    return ch >= '0' && ch <= '9';
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 
     public bool isblank(int ch) {
 	return ch == ' ' || ch == '\t';
     }
 
-    public bool isascii(int ch) {
-	return ch >= 0 && ch <= 127;
-    }
-    
     public bool iscntrl(int ch) {
-	return ch >= 0 && ch <= 31;
+	static bool cfun(int ch) {
+	    return ch >= 0 && ch <= 31;
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 
     public bool isgraph(int ch) {
-	return ch > ' ' && ch < 127;
+	static bool cfun(int ch) {
+	    return ch > ' ' && ch < 127;
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 
     public bool isprint(int ch) {
-	return ch >= ' ' && ch < 127;
+	static bool cfun(int ch) {
+	    return ch >= ' ' && ch < 127;
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 	
     public bool isspace(int ch) {
-	global bool[*] checktab = 
-	   (bool[*] func () {
-	       bool[128] ct;
-	       for (int i = 0; i < dim(ct); i++)
-	           ct[i] = false;
+	static bool cfun(int ch) {
 	       int[*] sc = {' ', '\f', '\n', '\r', '\t', '\v'};
 	       for (int i = 0; i < dim(sc); i++)
-	           ct[sc[i]] = true;
-	       return ct;
-	   })();
-	return checktab[ch];
+	           if (ch == sc[i])
+		       return true;
+	       return false;
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 
     public bool isalpha(int ch) {
-	return islower(ch) || isupper(ch);
+	static bool cfun(int ch) {
+	    return islower(ch) || isupper(ch);
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 
     public bool isalnum(int ch) {
-	return isalpha(ch) || isdigit(ch);
+	static bool cfun(int ch) {
+	    return isalpha(ch) || isdigit(ch);
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
     
     public bool ispunct(int ch) {
-	return isgraph(ch) && !isalnum(ch);
+	static bool cfun(int ch) {
+	    return isgraph(ch) && !isalnum(ch);
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 
     public int tolower(int ch) {
@@ -76,10 +139,14 @@ namespace Ctype {
     }
 
     public bool isxdigit(int ch) {
-	if (isdigit(ch))
-	    return true;
-	int chl = tolower(ch);
-	return chl >= 'a' && chl <= 'f';
+	static bool cfun(int ch) {
+	    if (isdigit(ch))
+		return true;
+	    int chl = tolower(ch);
+	    return chl >= 'a' && chl <= 'f';
+	}
+	static charset v = make_charset(cfun);
+	return member(v, ch);
     }
 }
 

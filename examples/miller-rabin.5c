@@ -1,0 +1,87 @@
+/*
+ * Miller-Rabin probabilistic test for composite numbers
+ * as described in Corman/Leiserson/Rivest
+ *
+ * notprime(n,d): returns nonzero for most composite n (accuracy 1/2**d)
+ * primebits(n,d): returns a random n-bit number k where !notprime(k,d)
+ *
+ * Bart Massey 1999/1
+ */
+
+namespace Miller_Rabin {
+
+  import Numbers;
+
+  global int nprimes = 10;
+  global int[] primes = [nprimes] {
+    2, 3, 5, 7, 11,
+    13, 17, 19, 23, 29
+  };
+
+  typedef struct { int pow, wit; } witness_result;
+
+  /*
+   * Modified version of bigpowmod above.
+   * Computes core of Miller-Rabin test,
+   * as suggested by Cormen/Leiserson/Rivest.
+   */
+  witness_result function witnessexp(int b, int e, int m) {
+    if (e == 0)
+      return (witness_result){pow = 0, wit = 1};
+    if (e == 1)
+      return (witness_result){pow = b % m, wit = 0};
+    witness_result tmp = witnessexp(b, e // 2, m);
+    if (tmp.wit)
+      return tmp;
+    int t = (tmp.pow * tmp.pow) % m;
+    if (t == 1 && tmp.pow != 1 && tmp.pow != m - 1) {
+      tmp.wit = tmp.pow;
+      tmp.pow = t;
+      return tmp;
+    }
+    if (e % 2 == 0)
+      tmp.pow = t;
+    else
+      tmp.pow = (t * b) % m;
+    return tmp;
+  }
+
+  /* Rest of Miller-Rabin test */
+  int function witness(int a, int n) {
+    witness_result we = witnessexp(a, n - 1, n);
+    if (we.wit)
+      return 1;
+    if (we.pow != 1)
+      return 1;
+    return 0;
+  }
+
+  /* Try small primes, then Miller-Rabin */
+  public int function notprime(int n, int d) {
+    int i, j;
+    for (i = 0; i < nprimes && primes[i] < n; i++)
+      if (n % primes[i] == 0)
+        return 1;
+    for (j = 0; j < d; j++) {
+      int a = 1 + PRNG::randint(n - 1);
+      if (witness(a, n))
+        return a;
+    }
+    return 0;
+  }
+
+  /* generate an n-bit prime (with probability 1-(2**-d)) number */
+  public int function primebits(int n, int d) {
+    while (1) {
+      int q = PRNG::randbits(n - 1) + 2**(n - 1);
+      while (q < 2**n) {
+        int why = notprime(q, d);
+	if (!why)
+	  return q;
+	q++;
+#	printf("*\n");
+      }
+    }
+  }
+
+}

@@ -1,0 +1,48 @@
+/*
+ * Some number-theoretic algorithms
+ * Bart Massey 1999/1
+ *
+ * bigpowmod(b,e,m): returns (b**e) mod m
+ * [gcd(a,b): accelerated greatest-common-divisor (built-in)]
+ * extgcd(a,b): extended GCD returns struct coeff
+ * zminv(a,n): inverse of a in Z*n
+ */
+
+namespace Numbers {
+
+  public int function bigpowmod(int b, int e, int m) {
+    int tmp, tmp2;
+
+    if (e == 0)
+      return 1;
+    if (e == 1)
+      return b % m;
+    tmp = bigpowmod(b, e // 2, m);
+    tmp2 = (tmp * tmp) % m;
+    if (e % 2 == 0)
+      return tmp2;
+    return (tmp2 * b) % m;
+  }
+
+  public typedef struct { int d, x, y; } coeff;
+
+  /* Extended Euclid's Algorithm */
+  public coeff function extgcd(int a, int b) {
+    if (b == 0)
+      return (coeff) {d = a, x = 1, y = 0};
+    coeff t = extgcd(b, a % b);
+    int x = t.x;
+    t.x = t.y;
+    t.y = x - (a // b) * t.y;
+    return t;
+  }
+
+  /* multiplicative inverse of a mod n */
+  public int function zminv(int a, int n) {
+    coeff e = extgcd(a, n);
+    if (e.x < 0)
+      return n + e.x;
+    return e.x;
+  }
+
+}

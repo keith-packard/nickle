@@ -1,4 +1,12 @@
-public string function roman (int i)
+/*
+ * Convert integer to string of roman numerals
+ * Keith Packard 2001
+ * A classic, plus a good illustration of some
+ * of the structuring, typing, and nesting
+ * capabilities of the language.
+ */
+
+string function roman (int i)
 {
     if (i < 0)
 	return "-" + roman (-i);

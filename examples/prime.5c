@@ -1,115 +1,125 @@
-public int function is_prime (int i)
-{
-    if (i == 1) return 0;
-    if ((i & 1) == 0) return 0;
+/*
+ * factor(): Return an array of factors of a number
+ * Keith Packard 2001
+ * Very inefficient, but demonstrates the use of disjoint unions
+ * and dynamic arrays.
+ */
 
-    int limit = floor (sqrt (i)) + 1;
-    int f;
+namespace Factor {
 
-    for (f = 3; f <= limit; f++)
+    int function is_prime (int i)
     {
-	if ((i % f) == 0)
-	    return 0;
-    }
-    return i;
-}
+	if (i == 1) return 0;
+	if ((i & 1) == 0) return 0;
 
-typedef int_list_struct;
-
-typedef struct {
-    *int_list_struct    next;
-    int			v;
-} int_list_struct;
-
-typedef *int_list_struct int_list;
-
-public int_list function primes (int i)
-{
-    int function prime_wrt (int_list l, int i)
-    {
-	if (!l) return 1;
-	if (i % l->v == 0) return 0;
-	return prime_wrt (l->next, i);
-    }
-    
-    if (i < 3) 
-	return reference ((int_list_struct) { next = 0, v = 2 });
-				 
-    int_list    l = primes (i-1);
-				 
-    if (prime_wrt (l, i))
-	return reference ((int_list_struct) { next = l, v = i });
-    return l;
-}
-
-public int[*] function list_to_array (int_list l)
-{
-    int function list_length (int_list l)
-    {
-	return l ? 1+list_length(l->next) : 0;
-    }
-
-    int[*]  a = (int) [list_length (l)];
-    int	    i = 0;
-    while (l)
-    {
-	a[i] = l->v;
-	l = l->next;
-	i++;
-    }
-    return a;
-}
-
-typedef union {
-    int[*]  array;
-    int	    none;
-} array_or_none;
-
-public array_or_none function factor (int i)
-{
-    array_or_none function array_append (array_or_none a, int v)
-    {
-	union switch (a) {
-	case array:
-	    int[*]  n = (int) [dim(a.array)+1];
-	    int	i;
-
-	    for (i = 0; i < dim(a.array); i++)
-		n[i] = a.array[i];
-	    n[i] = v;
-	    return (array_or_none.array) n;
-	case none:
-	    int[*]	n = (int) [1] { v };
-	    return (array_or_none.array) n;
-	}
-    }
-    
-    if (i < 0) return array_append (factor (-i), -1);
-    
-    array_or_none   result = (array_or_none.none) 0;
-    
-    int function one_factor (int i)
-    {
-	if (i == 1) return 1;
-	if ((i & 1) == 0) return 2;
-    
 	int limit = floor (sqrt (i)) + 1;
 	int f;
-    
-	for (f = 3; f <= limit; f += 2)
+
+	for (f = 3; f <= limit; f++)
 	{
-	    if (!is_prime (f)) continue;
 	    if ((i % f) == 0)
-		return f;
+		return 0;
 	}
 	return i;
     }
 
-    while (i > 1)
+    typedef int_list_struct;
+
+    typedef struct {
+	*int_list_struct    next;
+	int			v;
+    } int_list_struct;
+
+    typedef *int_list_struct int_list;
+
+    int_list function primes (int i)
     {
-	int	factor = one_factor (i);
-	result = array_append (result, factor);
-	i /= factor;
+	int function prime_wrt (int_list l, int i)
+	{
+	    if (!l) return 1;
+	    if (i % l->v == 0) return 0;
+	    return prime_wrt (l->next, i);
+	}
+
+	if (i < 3) 
+	    return reference ((int_list_struct) { next = 0, v = 2 });
+
+	int_list    l = primes (i-1);
+
+	if (prime_wrt (l, i))
+	    return reference ((int_list_struct) { next = l, v = i });
+	return l;
     }
-    return result;
+
+    int[*] function list_to_array (int_list l)
+    {
+	int function list_length (int_list l)
+	{
+	    return l ? 1+list_length(l->next) : 0;
+	}
+
+	int[*]  a = (int) [list_length (l)];
+	int	    i = 0;
+	while (l)
+	{
+	    a[i] = l->v;
+	    l = l->next;
+	    i++;
+	}
+	return a;
+    }
+
+    typedef union {
+	int[*]  array;
+	int	    none;
+    } array_or_none;
+
+    public array_or_none function factor (int i)
+    {
+	array_or_none function array_append (array_or_none a, int v)
+	{
+	    union switch (a) {
+	    case array:
+		int[*]  n = (int) [dim(a.array)+1];
+		int	i;
+
+		for (i = 0; i < dim(a.array); i++)
+		    n[i] = a.array[i];
+		n[i] = v;
+		return (array_or_none.array) n;
+	    case none:
+		int[*]	n = (int) [1] { v };
+		return (array_or_none.array) n;
+	    }
+	}
+
+	if (i < 0) return array_append (factor (-i), -1);
+
+	array_or_none   result = (array_or_none.none) 0;
+
+	int function one_factor (int i)
+	{
+	    if (i == 1) return 1;
+	    if ((i & 1) == 0) return 2;
+
+	    int limit = floor (sqrt (i)) + 1;
+	    int f;
+
+	    for (f = 3; f <= limit; f += 2)
+	    {
+		if (!is_prime (f)) continue;
+		if ((i % f) == 0)
+		    return f;
+	    }
+	    return i;
+	}
+
+	while (i > 1)
+	{
+	    int	factor = one_factor (i);
+	    result = array_append (result, factor);
+	    i /= factor;
+	}
+	return result;
+    }
 }

@@ -1,3 +1,9 @@
+/*
+ * Let a potentially large number of threads wait
+ * for a mutex.
+ * Keith Packard 2001
+ */
+
 import Mutex;
 int die;
 

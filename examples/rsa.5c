@@ -1,0 +1,63 @@
+/*
+ * RSA cryptosystem
+ * Bart Massey 1999/1
+ *
+ * Must first load numbers.5c
+ *
+ * [note that encryption and decryption commute]
+ *
+ * set_private_key(p,q,e)
+ *   call with p and q prime, e small random, less than (p-1) * (q-1),
+ *   relatively prime to this quantity.  The primes can be
+ *   conveniently generated using the supplied Miller-Rabin code:
+ *   see the function primebits().
+ *
+ * set_public_key(n,e)
+ *   set just the public key information for encryption
+ *
+ * encrypt(m)
+ *   return the encryption of m
+ *
+ * decrypt(c)
+ *   return the decryption of c
+ */
+
+namespace RSA {
+
+  import Numbers;
+
+  global int e;   /* encryption exponent */
+  global int n;   /* public key */
+  global int d = 0;   /* decryption exponent (0 for encrypt-only) */
+
+  public int function encrypt(int m) {
+    return bigpowmod(m, e, n);
+  }
+
+  public int function decrypt(int c) {
+    exception decrypt_public_key();
+
+    if (d == 0)
+        raise decrypt_public_key();
+    return bigpowmod(c, d, n);
+  }
+
+  public void function set_private_key(int p, int q, int e0) {
+    int phi = (p - 1) * (q - 1);
+
+    n = p * q;
+    if (e0 % 2 == 0)
+      e0++;
+    while (gcd(e0, phi) > 1)
+      e0 += 2;
+    e = e0;
+    d = zminv(e, phi);
+  }
+
+  public void function set_public_key(int n0, int e0) {
+    n = n0;
+    e = e0;
+    d = 0;
+  }
+
+}

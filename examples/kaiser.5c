@@ -1,3 +1,8 @@
+/*
+ * Kaiser Window digital filter
+ * Keith Packard 2001
+ */
+
 real function i0(real x)
 {
     real    ds, d, s;
@@ -10,8 +15,8 @@ real function i0(real x)
 	d = d + 2;
 	ds = ds * x**2 / d**2;
 	s = s + ds;
-/*	printf ("ds %g s %g dist %g\n", ds, s,
-		ds - 0.2e-8 * s); */
+#	printf ("ds %g s %g dist %g\n", ds, s,
+#		ds - 0.2e-8 * s);
     }
     while (ds - 0.2e-8 * s > 0);
     return s;

@@ -1,0 +1,46 @@
+/*
+ * Official NFL QB rating
+ * Bart Massey 1999
+ * Info from various web sources
+ * 3 ways of computing the result: first uses no
+ * decimal approximations, last only decimal approximations.
+ */
+
+rational function qbrating
+  (int attempts, int completions, int yards,
+   int touchdowns, int interceptions)
+{
+    int v1, v2, v3, v4;
+    
+    v1 = 500 * completions;
+    v2 = 25 * yards;
+    v3 = 2000 * touchdowns;
+    v4 = -2500 * interceptions;
+    return (v1 + v2 + v3 + v4) / (6 * attempts) + 25 / 12;
+}
+
+real function qbr2
+  (int attempts, int completions, int yards,
+   int touchdowns, int interceptions)
+{
+    real v1, v2, v3, v4;
+    
+    v1 = (completions / attempts - 0.3) / 0.2;
+    v2 = (yards / attempts - 3) / 4;
+    v3 = (touchdowns / attempts) / 0.05;
+    v4 = (0.095 - interceptions / attempts) / 0.04;
+    return (v1 + v2 + v3 + v4) * 100 / 6;
+}
+
+real function qbr3
+  (int attempts, int completions, int yards,
+   int touchdowns, int interceptions)
+{
+    real v1, v2, v3, v4;
+    
+    v1 = 83.333 * completions;
+    v2 = 4.167 * yards;
+    v3 = 333.333 * touchdowns;
+    v4 = -416.667 * interceptions;
+    return (v1 + v2 + v3 + v4) / attempts + 2.083;
+}

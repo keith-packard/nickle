@@ -6,26 +6,18 @@
  * http://jeff.sci.shu.ac.uk/jw/javascript/js2.html
  */
 
-real[*] function great_circle (real start_lat, real start_lon, 
-			       real end_lat, real end_lon) 
-{
-    real	radians;
-    real	earth_radius;
-    real	a, b, phi, cosr, rdist, sinth, th;
-    
-    radians = pi / 180;
-    
-    /* earth_radius=6371.2 km ; */
-    earth_radius = 3958.9; /* miles */
-    
-    a = (90 - start_lat) * radians;
-    b = (90 - end_lat) * radians;
-    
-    phi = (end_lon - start_lon) * radians;
-    cosr = cos(a) * cos(b) + sin(a) * sin(b) * cos(phi);
-    r = arccos(cosr);
-    rdist = earth_radius * r;
-    sinth = sin(phi) * sin(b) / sin(r);
-    th = arcsin(sinth) / radians;
-    return [2]{rdist, th};
+real[] function great_circle
+  (real start_lat, real start_lon, real end_lat, real end_lon) {
+	real rad = pi / 180;
+	/* real earth_radius = 6371.2 km ; */
+	real earth_radius = 3958.9; /* miles */
+	real a = (90 - start_lat) * rad;
+	real b = (90 - end_lat) * rad;
+	real phi = (end_lon - start_lon) * rad;
+	real cosr = cos(a) * cos(b) + sin(a) * sin(b) * cos(phi);
+	real r = acos(cosr);
+	real rdist = earth_radius * r;
+	real sinth = sin(phi) * sin(b) / sin(r);
+	real th = asin(sinth) / rad;
+	return [*]{rdist, th};
 }

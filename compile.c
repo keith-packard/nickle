@@ -114,7 +114,7 @@ ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr s
 void	CompilePatchLoop (ObjPtr obj, int start, int continue_offset);
 ObjPtr	_CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace);
 ObjPtr	CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat);
-ObjPtr	CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace);
+ObjPtr	CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace, ExprPtr stat);
 ObjPtr	CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
@@ -1123,10 +1123,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	inst->var.name = s;
 	expr->base.type = s->symbol.type;
 	break;
+    case VAR:
+	obj = CompileDecl (obj, expr, namespace, stat);
+	break;
     case NEW:
 	CompileCanonType (obj, namespace, expr->base.type, stat, True);
 	t = TypesCanon (expr->base.type);
-	switch (t->base.tag) {
+	switch (t ? t->base.tag : types_prim) {
 	case types_struct:
 	    if (expr->tree.left)
 	    {
@@ -1845,6 +1848,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	}
 	CompilePatchLoop (obj, top_inst, -1);
 	break;
+    case VAR:
+	obj = CompileDecl (obj, expr, namespace, expr);
+	break;
     case OC:
 	/*
 	 * Create an anonymous namespace
@@ -1900,9 +1906,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	if (new)
 	    CompileAddSymbol (namespace, sym);
 	obj = CompileAssign (obj, expr->tree.right, namespace, OpAssign, expr);
-	break;
-    case VAR:
-	obj = CompileDecl (obj, expr, namespace);
 	break;
     case NAMESPACE:
 	sym = CompileNewSymbol (obj, expr, namespace, 
@@ -2098,7 +2101,7 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
 }
 
 ObjPtr
-CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace)
+CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
     SymbolPtr	    s;
@@ -2201,6 +2204,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace)
 	    }
 	    *initObj = _CompileExpr (*initObj, decl->init, 
 				     namespace, decls);
+	    decls->base.type = decl->init->base.type;
 	    if (compile_namespace && compile_namespace->code)
 	    {
 		CodePtr	code = compile_namespace->code;

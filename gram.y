@@ -41,7 +41,7 @@ void yyerror (char *fmt, ...);
 %type  <eval>	block func_body statements statement catches catch
 %type  <eval>	case_block cases case
 %type  <eval>	union_case_block union_cases union_case
-%type  <dval>	enames names opt_initnames initnames
+%type  <dval>	enames names initnames
 %type  <aval>	typename name
 %type  <eval>	opt_init
 %type  <ftval>	decl func_decl
@@ -60,6 +60,7 @@ void yyerror (char *fmt, ...);
 %type  <bval>	opt_dots
 
 %type  <eval>	opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
+%type  <eval>	comma_expr
 %type  <ival>	assignop
 %type  <vval>	opt_const const
 %type  <eval>	opt_arrayinit arrayinit arrayelts  arrayelt
@@ -404,8 +405,6 @@ statement	: IF ignorenl OP expr CP statement
 		    }
 		| RAISE NAME OP opt_exprs CP SEMI;
 		    { $$ = NewExprTree (RAISE, NewExprAtom ($2), $4); }
-		| decl ignorenl opt_initnames SEMI
-		    { $$ = NewExprDecl ($3, $1.class, $1.type, $1.publish); }
 		| publish TYPEDEF ignorenl enames SEMI
 		    { 
 			DeclListPtr dl;
@@ -514,10 +513,6 @@ names		: NAME COMMA names
 		;
 typename	: TYPENAME
 		;
-opt_initnames	: initnames
-		|
-		    { $$ = 0; }
-		;
 initnames	: name opt_init COMMA initnames
 		    { $$ = NewDeclList ($1, $2, $4); }
 		| name opt_init
@@ -525,11 +520,6 @@ initnames	: name opt_init COMMA initnames
 		;
 opt_init	: ASSIGN simpleexpr
 		    { $$ = $2; }
-/*
- * This will allow struct { int x; } bar = { x = 10 };
- */
-/*		| ASSIGN inits
-		    { $$ = $2; } */
 		|
 		    { $$ = 0; }
 		;
@@ -718,14 +708,18 @@ opt_dots	: DOTS
 		;
 
 /*
-* Expressions, top level includes comma operator
+* Expressions, top level includes comma operator and declarations
 */
 opt_expr	: expr
 		|
 		    { $$ = 0; }
 		;
-expr		: lambdaexpr
-		| expr COMMA lambdaexpr
+expr		: comma_expr
+		| decl initnames
+		    { $$ = NewExprDecl ($2, $1.class, $1.type, $1.publish); }
+		;
+comma_expr	: lambdaexpr
+		| comma_expr COMMA lambdaexpr
 		    { $$ = NewExprTree(COMMA, $1, $3); }
 		;
 /*

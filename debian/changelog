@@ -1,3 +1,12 @@
+nickle (2.44-1) unstable; urgency=low
+  * Add copyrights and eliminate non-DFSG examples.   Closes: 275277.
+  * Fix seg fault when copying large stacks
+  * Replace natural and string hash function with crc32
+  * Make compatible with automake 1.9
+  * Fix several minor resizable array bugs
+
+ -- Keith Packard <keithp@keithp.com>  Wed,  1 Dec 2004 20:28:17 -0800
+ 
 nickle (2.43-1) unstable; urgency=low
   * rewrite garbage collector to use simpler data structures
 

@@ -1,7 +1,6 @@
 SUBDIRS=smlng turtle
 
 NICKLEFILES=\
-	circle.5c \
 	comb.5c \
 	cribbage.5c \
 	erat.5c \
@@ -17,7 +16,6 @@ NICKLEFILES=\
 	qbrating.5c \
 	randtest.5c \
 	restart.5c \
-	rijndael.5c \
 	roman.5c \
 	rsa-demo.5c \
 	rsa.5c \

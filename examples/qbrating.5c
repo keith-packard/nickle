@@ -1,6 +1,10 @@
 /*
  * Official NFL QB rating
- * Bart Massey 1999
+ *
+ * Copyright © 1999 Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ * 
  * Info from various web sources
  * 3 ways of computing the result: first uses no
  * decimal approximations, last only decimal approximations.

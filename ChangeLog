@@ -1,4 +1,19 @@
 2004-12-01  Keith Packard  <keithp@keithp.com>
+version 2.44
+
+	* Makefile.am:
+	* debian/changelog:
+	* debian/copyright:
+	* debian/lintian.override:
+	* debian/rules:
+	* examples/Makefile.am:
+	* examples/qbrating.5c:
+	Don't ship non-DFSG examples.
+	Update to version 2.44
+	Fix debian bits to ignore extra (necessary) COPYING files
+	Mark debian/copyright with all Copyright data
+
+2004-12-01  Keith Packard  <keithp@keithp.com>
 
 	* stack.c: (StackCopy):
 	Must reference new stack object before allocating chunks

@@ -31,6 +31,9 @@ install: build
 	dh_clean -k
 	dh_installdirs
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+	pwd
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/lintian/overrides
+	install -o 0 -g 0 -p -m644 debian/lintian.override $(CURDIR)/debian/tmp/usr/share/lintian/overrides/nickle
 
 
 # Build architecture-independent files here.

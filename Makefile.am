@@ -15,7 +15,7 @@ NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c \
 	file.5c parse-args.5c svg.5c
 
 DEBIAN = debian/nickle.install debian/changelog debian/compat \
-	 debian/control debian/copyright debian/rules
+	 debian/control debian/copyright debian/rules debian/lintian.override
 	 
 EXTRA_DIST = README.name autogen.sh \
 	$(NICKLEFILES) $(DEBIAN) ChangeLog nickle.1.in nickle.spec.in
@@ -36,7 +36,7 @@ nickle_SOURCES = \
 	builtin-thread.c builtin-toplevel.c builtin.c builtin.h \
 	gram.y lex.l
 
-pkgdata_DATA = $(NICKLEFILES)
+pkgdata_DATA = $(NICKLEFILES) COPYING
 
 man_MANS = nickle.1
 

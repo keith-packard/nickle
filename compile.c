@@ -180,6 +180,9 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	BuildInst(obj, OpNameRef, inst, stat);
 	inst->var.name = FindSymbol (obj, stat, scope, expr->atom.atom, 
 				     &inst->var.staticLink, type_undef, False);
+	if (inst->var.name->symbol.class == class_scope)
+	    CompileError (obj, stat, "Invalid use of scope \"%A\"",
+			  expr->atom.atom);
 	break;
     case DOT:
 	/*
@@ -456,6 +459,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	BuildInst (obj, OpName, inst, stat);
 	inst->var.name = FindSymbol (obj, stat, scope, expr->atom.atom,
 				     &inst->var.staticLink, type_undef, False);
+	if (inst->var.name->symbol.class == class_scope)
+	    CompileError (obj, stat, "Invalid use of scope \"%A\"",
+			  expr->atom.atom);
 	break;
     case ARRAY:
 	if (expr->tree.right)

@@ -83,6 +83,9 @@ nick.tar: $(DIST)
 nick.tar.Z: $(DIST)
 	tar cf - $(DIST) | compress > $@
 
+nick.tar.gz: $(DIST)
+	tar czf $@ $(DIST)
+
 nick.uu: $(DIST)
 	tar cf - $(DIST) | compress | uuencode nick.tar.Z > $@
 	

@@ -15,14 +15,19 @@
 #include	"value.h"
 
 extern ValueType    IntType, IntegerType, RationalType, DoubleType;
-extern ValueType    StringType, FileType;
+extern ValueType    StringType, ArrayType, FileType;
+extern ValueType    RefType, structType, FuncType, ThreadType;
+extern ValueType    MutexType, SemaphoreType, ContinuationType;
 
 volatile Bool	aborting;
 volatile Bool	exception;
 
+/* must be synchronized with Type enum */
 ValueType   *valueTypes[] = {
     &IntType, &IntegerType, &RationalType, &DoubleType,
-    &StringType, &FileType
+    &StringType, &ArrayType, &FileType,
+    &RefType, &structType, &FuncType, &ThreadType,
+    &MutexType, &SemaphoreType, &ContinuationType,
 };
 
 Bool
@@ -495,6 +500,9 @@ Print (Value f, Value v, char format, int base, int width, int prec, unsigned ch
     return ret;
 }
 
+/*
+ * Make a deep copy of 'v' and cooerce to type 't'
+ */
 Value
 Copy (Value v, Type t)
 {
@@ -502,7 +510,7 @@ Copy (Value v, Type t)
     Value   nv;
     int	    i;
     
-    switch (t) {
+    switch (v->value.tag) {
     case type_array:
 	if (!v->array.values->constant)
 	{
@@ -523,12 +531,11 @@ Copy (Value v, Type t)
 	    v = nv;
 	}
 	break;
-    case type_double:
-	v = DoubleType.promote (v);
-	break;
     default:
 	break;
     }
+    if (t > type_undef && valueTypes[t]->promote)
+	v = valueTypes[t]->promote(v);
     RETURN (v);
 }
 

@@ -424,21 +424,33 @@ ArraySetDimensions (Value av, int *dims)
 }
 
 Type *
-BuildArrayType (Type *type, int ndim, ...)
+BuildArrayType (Type *subtype, int ndim, ...)
 {
     ENTER ();
     Expr    *dims = 0;
     int	    i;
     int	    dim;
     va_list ap;
+    Type    *type;
+    Value   dimArray;
 
+    dimArray = NewArray (True, False, typePrim[rep_integer], 1, &ndim);
     va_start (ap, ndim);
     for (i = 0; i < ndim; i++)
     {
 	dim = va_arg (ap, int);
+	ArrayValueSet(&dimArray->array, i, NewInt (dim));
 	dims = NewExprTree (COMMA, NewExprConst (TEN_FLOAT, NewInt (dim)),
 			    dims);
     }
     va_end (ap);
-    RETURN (NewTypeArray (type, dims, False));
+    type = NewTypeArray (subtype, dims, False);
+    /*
+     * Create an array to hold the dimension information and
+     * fill it in
+     */
+    type->array.storage = DimStorageGlobal;
+    type->array.u.global = NewBox (True, False, 1, typeArrayInt);
+    BoxValueSet (type->array.u.global, 0, dimArray);
+    RETURN (type);
 }

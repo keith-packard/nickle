@@ -1,3 +1,8 @@
+2004-12-17  Keith Packard  <keithp@keithp.com>
+
+	* array.c: (BuildArrayType):
+	Create and initialize dimension vector in BuildArrayType.
+
 2004-12-16  Keith Packard  <keithp@keithp.com>
 
 	* float.c: (FloatPrint):

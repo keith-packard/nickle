@@ -13,6 +13,7 @@
  */
 
 #include	"nickle.h"
+#include	<math.h>
 
 int
 RationalInit (void)
@@ -770,6 +771,8 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     Natural	*partial;
     Natural	*rep, *init;
     Natural	*dig;
+    int		exponent = 0;
+    int		exponent_width = 0;
     char	*initial = 0, *in;
     char	*repeat = 0, *re;
     char	*whole;
@@ -794,20 +797,67 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     }
     else if (prec == INFINITE_OUTPUT_PRECISION)
 	prec = -1;
+    dig = NewNatural (base);
+    /*
+     * Check for small numbers for 'e' format
+     */
+    if (NaturalLess (r->num, r->den))
+    {
+	Natural	*quo, *rem;
+	Natural	*mag;
+	int	bits;
+
+	if (format == 'e' || (format == 'g' && prec > 0))
+	{
+	    quo = NaturalDivide (r->den, r->num, &rem);
+	    bits = NaturalWidth (quo);
+	    exponent = (int) ((double) bits / (log ((double) base) / log (2.0)));
+	    if (exponent < 0)
+		exponent = 0;
+	    mag = NaturalIntPow (dig, exponent);
+	    while (NaturalLess (mag, quo))
+	    {
+		mag = NaturalTimes (mag, dig);
+		exponent++;
+	    }
+	    if (format == 'g' && prec > 0)
+		if (prec - exponent < 3)
+		    format = 'e';
+	    if (format == 'e')
+	    {
+		int	    ev;
+		rv = RationalTimes (rv, NewRational (Positive, mag, one_natural), True);
+		r = &rv->rational;
+		exponent_width = 2;
+		ev = exponent;
+		while (ev >= base)
+		{
+		    exponent_width++;
+		    ev /= base;
+		}
+		exponent = -exponent;
+	    }
+	    else
+		exponent = 0;
+	}
+	else
+	    exponent = 0;
+    }
     CheckDecimalLength (prec, r->den, base, &initial_width, &repeat_width);
+    if (initial_width > 0)
+	initial_width = initial_width - exponent;
     if (aborting)
     {
 	EXIT ();
 	return False;
     }
-    dig = NewNatural (base);
     if ((rep_width = repeat_width))
     {
 	/*
 	 * When using %f format, just fill the
 	 * result with digits
 	 */
-	if (!use_braces)
+	if (!use_braces && prec != -1)
 	{
 	    initial_width = -prec;
 	    repeat_width = 0;
@@ -923,7 +973,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 	}
     }
     fraction_width = initial_width + rep_width;
-    print_width = whole_width + 1 + fraction_width;
+    print_width = whole_width + 1 + fraction_width + exponent_width;
     if (r->sign == Negative)
 	print_width = print_width + 1;
     while (width > print_width)
@@ -948,6 +998,10 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 	free (repeat);
 	if (use_braces && repeat_width > 0)
 	    FileOutput (f, '}');
+    }
+    if (exponent)
+    {
+	FilePrintf (f, "e%d", exponent);
     }
     while (-width > print_width)
     {

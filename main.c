@@ -109,7 +109,7 @@ main (int argc, char **argv)
 	    int	    i;
 
 	    ENTER ();
-	    s = NewString (0);
+	    s = NewStrString ("");
 	    for (i = 2; i < argc; i++)
 	    {
 		s = Plus (s, NewStrString (argv[i]));

@@ -499,15 +499,17 @@ extend namespace Math {
 	return sqrt (1 - v**2);
     }
     
-    public function sin_cos (real a, *real sinp, *real cosp)
+    public void function sin_cos (real a, *real sinp, *real cosp)
     {
 	real	c, s;
 
 	a = limit_angle_to_pi (a);
 	c = cos (a);
 	s = sign(a) * abs (cos_to_sin(c));
-	*cosp = c;
-	*sinp = s;
+	if (cosp)
+	    *cosp = c;
+	if (sinp)
+	    *sinp = s;
     }
     
     public real function tan (real a)

@@ -44,21 +44,32 @@ static DataType lexInputType = {
     lexInputMark, 0
 };
 
-static LexInput *
-NewLexInput (LexInput *next, Value file, Atom name)
+static void
+NewLexInput (Value file, Atom name, Bool after)
 {
     ENTER ();
     LexInput	*lex;
 
     lex = MemAllocate (&lexInputType, sizeof (*lex));
-    lex->next = next;
     lex->file = file;
     lex->name = name;
     lex->lineno = 0;
     lex->at_bol = True;
     lex->at_eof = False;
     lex->interactive = False;
-    RETURN (lex);
+    if (after)
+    {
+	LexInput **prev;
+	
+	for (prev = &lexInput; *prev; prev = &(*prev)->next)
+	    ;
+	lex->next = 0;
+	*prev = lex;
+    } else {
+	lex->next = lexInput;
+	lexInput = lex;
+    }
+    EXIT ();
 }
 
 ReferencePtr	LexInputReference;
@@ -113,7 +124,7 @@ LexResetInteractive (void)
 void
 LexStdin (void)
 {
-    lexInput = NewLexInput (lexInput, FileStdin, 0);
+    NewLexInput(FileStdin, 0, True);
     lexInput->interactive = stdin_interactive;
 }
 	
@@ -121,7 +132,6 @@ Bool
 LexFile (char *s, Bool complain, Bool after)
 {
     Value	f;
-    LexInput	*n, **prev;
 
     f = FileFopen (s, "r");
     if (f == 0) {
@@ -129,15 +139,7 @@ LexFile (char *s, Bool complain, Bool after)
 	    (void) FilePrintf (FileStderr, "cannot open file %s\n", s);
 	return False;
     }
-    if (after)
-    {
-	n = NewLexInput (0, f, AtomId (s));
-	for (prev = &lexInput; *prev; prev = &(*prev)->next)
-	    ;
-	*prev = n;
-    }
-    else
-	lexInput = NewLexInput (lexInput, f, AtomId (s));
+    NewLexInput(f, AtomId (s), after);
     return True;
 }
 
@@ -180,12 +182,12 @@ LexLibrary (char *filename, Bool complain, Bool after)
 }
 
 void
-LexString (char *s)
+LexString (char *s, Bool after)
 {
     Value   f;
 
     f = FileStringRead (s, strlen (s));
-    lexInput = NewLexInput (lexInput, f, 0);
+    NewLexInput (f, 0, after);
 }
 
 static int

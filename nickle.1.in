@@ -9,7 +9,7 @@ nickle [-f file] [-l library] [-e expr] [ script ... ]
 \fINickle\fP is a
 desk calculator language
 with powerful programming and scripting capabilities.
-\fINickle\fP supports a variety of datatypes,
+Nickle supports a variety of datatypes,
 especially arbitrary precision
 integers, rationals, and imprecise reals.
 The input language vaguely resembles C.  Some things in C
@@ -121,9 +121,20 @@ uninitialized in the first form.  The descriptor
 desc is not optional: it consists of any combination
 of visibility, storage class or type (in that order).
 See QUALIFIERS immediately below for a description of these qualifiers.
-.PP
 A structured value expression is
 also possible: see VALUES below.
+.IP
+In addition to being able to initialize a definition with
+a Nickle value, C-style array, structure, and union definitions
+are also allowed: For example, the following
+.nf
+  int name[*,*] = {{0,1},{2,3}}
+  int name[2,2] = {{0...}...}
+.fi
+are permitted with the obvious semantics.  This is the context
+in which the dimensions in a type may be expressions: see the
+discussion of array types above.  See the discussion of
+array and structure values for array and structure initializer syntax.
 .\"
 .SH QUALIFIERS
 .PP
@@ -152,7 +163,7 @@ A static object is local to a particular function definition:
 its lifetime is at least the lifetime of that definition.
 A new static object will be created
 each time its enclosing function definition is evaluated.
-.PP
+.IP
 In Nickle, the keyword static has to do only
 with lifetime (like the use of static inside C functions), not with visibility
 (which is handled by separate qualifiers as described
@@ -163,7 +174,7 @@ lifetime is the lifetime of the program.  A global object
 will be created and initialized when its definition is
 first seen.  This is the default lifetime for global
 objects.
-.PP
+.IP
 The distinction between static and global lifetime in
 Nickle is not possible in C, because C functions are
 not first class objects with nested scope.  When deciding
@@ -173,10 +184,8 @@ happen if a definition is re-evaluated.
 .SH OPERATORS
 .PP
 Here are the basic Nickle operators, grouped in order
-of increasing precedence:
+of decreasing precedence:
 .PP
-.IP "(type) E"
-Cast the result of E into this type.
 .IP "array[E,E,...,E]"
 Refers to the E'th element of this array,
 or the E1'th/E2'th/etc
@@ -187,7 +196,7 @@ arrays ala NAWK are possible.
 Structure dereference.
 .IP "struct->tag"
 Structure pointer dereference ala C.
-.PP
+.IP "============="
 .IP "++ --"
 Unary increment/decrement. May be either postfix or prefix.
 .IP "-"
@@ -197,10 +206,14 @@ Logical negation.
 .IP "E !"
 Factorial.  Requires a non-negative integer argument.
 .IP "* E"
-Box dereference.
+Pointer dereference.
 .IP "& E"
-Box construction.
-.PP
+Reference construction.
+.IP "============="
+.IP "(U) E"
+Construct a value of union type with tag U and
+value E.
+.IP "============="
 .IP "**"
 Exponentiation. Both operands may be fractional.
 The left operand must be non-negative unless the right
@@ -208,7 +221,7 @@ operand is integer.  The result type is the
 type of the left operand
 if the right operand is integer, and real
 otherwise.
-.PP
+.IP
 This is the only known type-unsound feature
 of Nickle: an expression like 2 ** -3 will
 statically be of type integer, but dynamically
@@ -217,13 +230,15 @@ cause a runtime type error later on: consider
 .br
   int x = 2 ** -3;
 .br
+.IP "============="
 .IP "* / // %"
 Times, divide, integer divide, and remainder.
-Right operand of last three must be nonzero.
+The right operand of the last three operators must be nonzero.
 The result type of the division operator will
 always be at least rational: the result type
 of the integer division operator will always be
-int.
+int.  This is a notable departure from C, where integer division is
+implied by integer operands.
 Integer division is defined by
 .br
   x // y == floor(x / y)
@@ -233,9 +248,10 @@ by
 .br
   (x // y) * y + (x % y) == x
 .br
+.IP "============="
 .IP "+ -"
 Addition and subtraction.
-.PP
+.IP "============="
 .IP "<< >>"
 Bitwise left and right shift with integer
 operands.  Negative right
@@ -251,13 +267,13 @@ left operands are considered to be in
 an infinite twos-complement representation
 (i.e., sign-extended to infinity), with
 right shift sign-extending its left operand.
-.PP
+.IP "============="
 .IP "<= >= < >"
 Relational operators.
-.PP
+.IP "============="
 .IP "== !="
 Equality operators.
-.PP
+.IP "============="
 Finally, in order of decreasing precedence:
 .IP "&"
 Bitwise AND.  Negative
@@ -293,14 +309,18 @@ The type declaration syntax of Nickle more strongly resembles
 the ``left'' variant of the Java syntax than the C syntax.
 Essentially, a type consists of:
 .IP "poly integer rational real string continuation void"
-.IP "file semaphore thread"
 A base type of the language.  Type void is actually
 only usable in certain contexts, notably function returns.
+It is currently implemented as a ``unit'' type ala ML,
+and thus has slightly different behavior than in C.
 Type poly is the supertype of all other types (i.e., it
 can be used to inhibit static type checking), and is the
 default type in most situations where a type need not appear.
-The types file, semaphore, and thread are strictly the property
-of the File and Thread ADTs: see below.
+.IP "file semaphore thread"
+Also builtin base types, but integral to
+the File and Thread ADTs: see below.
+.LP
+More About Types:
 .PP
 \fINickle\fP supports polymorphic data: As an expresion is evaluated, a
 data type is chosen to fit the result.  Any Nickle object may be
@@ -335,21 +355,27 @@ are unrelated types in Nickle.
 A two or more dimensional array of type T.  The stars ``*'' are not
 optional.  As the previous paragraphs
 make clear, ``T[]'' is not a zero-dimensional array.
+.IP "T[E,E,...,E]"
+In definition contexts, integer values may be given
+for each dimension of an array context.  These are strictly
+for value-creation purposes, and are not part of the type.
+An array type is determined only by the base type and number
+of dimensions of the array.
 .IP "T0() T0(T,T,...,T)"
 A function returning type T0.  A function accepts 0
 or more arguments.
 .IP "T0() T0(T,T,...,T \fB...\fP)"
 A function accepting zero or more required
 arguments, plus an arbitrary number of optional
-arguments.  The second sequence of three dots is
+arguments.  The second sequence of three dots (ellipsis) is
 syntax, not metasyntax: see the description
 of varargs functions for details.
 .IP "*T"
-A reference (``pointer'') to a location of type T.
+A pointer to a location of type T.
 Pointer arithmetic in Nickle operates only
 upon pointers to arrays: the pointer must be
 of the correct type, and may never stray out
-of bounds.  A reference
+of bounds.  A pointer
 may either point to some location or be null (0).  As
 in C, the
 precedence of ``*'' is lower than the precedence of
@@ -366,6 +392,8 @@ names are tags of the given type, exactly one of
 which applies to a given value at a given time.
 .IP "(T)"
 Parentheses for grouping.
+.LP
+Typedef:
 .PP
 As in C, new type names may be created with the typedef
 statement.  The syntax is
@@ -385,7 +413,7 @@ of these types exist.
 .PP
 As noted in
 TYPES above, Nickle has several kinds of ``structured value'':
-arrays, functions, references, structures and disjoint unions.
+arrays, functions, pointers, structures and disjoint unions.
 All of these have some common properties.
 When created, all of the component values are
 uninitialized (unless otherwise specified).  Attempts
@@ -436,16 +464,16 @@ Creates arrays of type T, with each dimension's size given
 by the maximum number of initializers in any subarray
 in that dimension.
 .LP
-References:
+Pointers:
 .IP 0
-The null reference, in contexts where a reference
+The null pointer, in contexts where a pointer
 is required.
 .IP "&V &A[E,E,...,E] &S.N"
-Creates a reference to given the variable, array element,
-or structure member.  The type of the reference will
-be *T, where T is the type of the referent.
-.IP "*R"
-The value referenced by reference R.  This can
+Creates a pointer to the given variable, array element,
+or structure member.  The type of the pointer will
+be *T, where T is the type of the object pointed to.
+.IP "*P"
+The value pointed to by pointer P.  This can
 be viewed or modified as in C.
 .LP
 Functions:
@@ -495,8 +523,12 @@ Evaluates the expression.
 Executes the enclosed statements in order.
 .IP "if (E) S"
 Basic conditional.
-.IP "if (E) S else S"
+.IP "if (E) S"
+Conditional execution.
+.IP "else S"
 Else is allowed, with the usual syntax and semantics.
+In particular, an else binds to the most recent applicable
+if() or twixt().
 .IP "while (E) S"
 C-style while loop.
 .IP "do S while (E);"
@@ -533,6 +565,8 @@ and execute the body of the catch block.  There may be
 multiple catch blocks per try.  Zero catches, while legal,
 is relatively useless.  After completion of a catch block,
 execution continues after the try clause.
+As with else, a catch binds to the most recent applicable try-catch
+block.
 .IP "raise name(name, name, ..., name)"
 Raise the named exception with zero or more arguments.
 .IP ";"
@@ -566,7 +600,7 @@ to do with the visibility of items inside the namespace.
 .IP "extend namespace N { S ... }"
 Reopen the given namespace N, and extend it with
 the names defined as public in the given statements S.
-.PP
+.IP
 Names defined inside the namespace are invisible outside
 the namespace unless they are qualified with the keyword
 public.  Public names may be referred to using a path notation:
@@ -603,10 +637,12 @@ Top-Level Builtins:
 Calls File::fprintf(stdout, fmt, args ...) and
 returns its result.
 .IP "real imprecise(rational value)"
+See the discussion of type real above.
 .IP "real imprecise(rational value, int prec)"
-See above.
+See the discussion of type real above.
 .IP "int string_to_integer(string s)"
-Like C atoi(): s is a signed digit string, and
+Like the C atoi() function.
+The argument s is a signed digit string, and
 the result is the integer it represents.
 If the string s appears to be a hexadecimal,
 octal, binary, or explicit base-10 constant
@@ -672,58 +708,83 @@ or nonnegative.
 Return the number of bits required to represent abs(v)
 internally.
 .IP "int is_int(poly v)"
+Type predicate.
 .IP "int is_rational(poly v)"
-.IP "int is_number(poly v)"
-.IP "int is_string(poly v)"
-.IP "int is_file(poly v)"
-.IP "int is_thread(poly v)"
-.IP "int is_semaphore(poly v)"
-.IP "int is_continuation(poly v)"
-.IP "int is_array(poly v)"
-.IP "int is_ref(poly v)"
-.IP "int is_struct(poly v)"
-.IP "int is_func(poly v)"
-.IP "int is_void(poly v)"
-Type predicates.  is_ref() checks for pointer type.
 Numeric type predicates are inclusive: e.g., is_rational(1)
 returns 1.
+.IP "int is_number(poly v)"
+Type predicate.
+.IP "int is_string(poly v)"
+Type predicate.
+.IP "int is_file(poly v)"
+Type predicate.
+.IP "int is_thread(poly v)"
+Type predicate.
+.IP "int is_semaphore(poly v)"
+Type predicate.
+.IP "int is_continuation(poly v)"
+Type predicate.
+.IP "int is_array(poly v)"
+Type predicate.
+.IP "int is_ref(poly v)"
+Type predicate: checks for pointer type.  This
+is arguably a misfeature, and may change.
+.IP "int is_struct(poly v)"
+Type predicate.
+.IP "int is_func(poly v)"
+Type predicate.
+.IP "int is_void(poly v)"
+Type predicate.
 .IP "int gcd(int p, int q)"
 Return the GCD of p and q.  The result is always positive.
 .IP "int xor(int a, int b)"
 Return a ^ b .  This is mostly a holdover from before
 Nickle had an xor operator.
 .IP "poly setjmp(continuation *c, poly retval)"
-.IP "void longjmp(continuation c, poly retval)"
-These primitives together with the continuation type
+The setjmp() and longjmp() primitives together with the continuation type
 form an ADT useful for nearly arbitrary transfers of
 flow-of-control.  The setjmp() and longjmp() builtins
 are like those of C, except that the restriction
 that longjmp() always jump upwards is removed(!):
 a continuation saved via setjmp() never becomes invalid
 during the program lifetime.
-.PP
+.IP
 The setjmp() builtin saves the current location and
 context into its continuation pointer argument, and
-then returns its second argument.  The longjmp() builtin
+then returns its second argument.
+.IP "void longjmp(continuation c, poly retval)"
+The longjmp() builtin
 never returns to the call site, but instead returns from
 the setjmp() that created the continuation, with
 return value equal to the second argument of longjmp().
 .IP "real pi"
-.IP "real e"
-Imprecise constants giving the value of the
+Imprecise constant giving the value of the
 circumference/diameter ratio of the circle
-and the base of natural logarithms to the
-default precision of 256 bits.  Attempts to
-change these values will result in an exception.
+to the
+default precision of 256 bits.  Attempting to
+change this values will result in an exception.
+.IP "real e"
+Imprecise constant giving the value of the
+base of natural logarithms
+to the
+default precision of 256 bits.  Attempting to
+change this values will result in an exception.
 .IP "string prompt"
-.IP "string prompt2"
-.IP "string prompt3"
-The prompts printed during interactive use when
-at top-level, when waiting for the rest of a statement
+The prompt printed during interactive use when
+at top-level.  Default "> ".
+when waiting for the rest of a statement
 or expression, and when debugging, respectively.
 Default values are "> ", "+ ", and "- ".
+.IP "string prompt2"
+The prompt printed during interactive use when
+waiting for the rest of a statement or expression.
+Default "+ ".
+.IP "string prompt3"
+The prompt printed during interactive use when
+debugging.
+Default "- ".
 .IP "string format"
-The default format for printing values.  Normally "%g".
+The printf() format for printing top-level values.  Default "%g".
 .IP "string version"
 The version number of the Nickle implementation currently
 being executed.
@@ -732,24 +793,79 @@ The build date of the Nickle implementation currently
 being executed, in the form "yyyy/mm/dd", or "?" if
 the build date is unknown for some reason.
 .IP "file stdin"
+Bound to the standard input stream.
 .IP "file stdout"
+Bound to the standard output stream.
 .IP "file stderr"
-Bound to the standard input, output, and
-error streams.
+Bound to the standard error stream.
 .LP
 Builtin Namespaces:
 .\" HERE
 .IP Math
-The math functions
-are implemented with routines from the C library, for their behaviour,
-please consult the appropriate manuals.
-.PP
-abs, acos, asin, atan, atan2, ceil, cos, cosh, exp, fclose, fflush, floor,
-fopen, fprintf, hypot, j0, j1, jn, log, log10, printf, scanf, sin, sinh,
-sqrt, tan, tanh, y0, y1, yn
+The available math functions
+are implemented in a fashion
+intended to be compatible with the C library.
+Please consult the appropriate manuals for further
+details.
+.LP
+Functions:
+.IP "real function sqrt(real v)"
+Returns the square root of v.
+.IP "real function cbrt(real v)"
+Returns the cube root of v.
+.IP "real function exp(real v)"
+Returns e**v.
+.IP "real function log(real a)"
+Returns v such that e**v == a.
+Throws an invalid_argument exception if
+a is non-positive.
+.IP "real function log10(real a)"
+Returns v such that 10**v == a.
+Throws an invalid_argument exception if
+a is non-positive.
+.IP "real function log2(real a)"
+Returns v such that 2**v == a.
+Throws an invalid_argument exception if
+a is non-positive.
+.IP "real function pi_value(int prec)"
+Returns the ratio of the circumference
+of a circle to the diameter, with prec
+bits of precision.
+.IP "real function sin(real a)"
+Returns the ratio of the opposite
+side to the hypotenuse of angle a of
+a right triangle, given in radians.
+.IP "real function cos(real a)"
+Returns the ratio of the adjacent
+side to the hypotenuse of angle a of
+a right triangle, given in radians.
+.IP "void function sin_cos(real a, *real sinp, *real cosp)"
+Returns with sin(a) and cos(a) stored in the locations
+pointed to by sinp and cosp respectively.  If either
+pointer is 0, do not store into that location.  May be slightly
+faster than calling both trig functions independently.
+.IP "real function tan(real a)"
+Returns the ratio of the opposite
+side to the adjacent side of angle a of
+a right triangle, given in radians.
+Note that tan(pi/2) is not currently an error:
+it will return a very large number dependent
+on the precision of its input.
+.IP "real function asin(real v)"
+Returns a such that sin(a) == v.
+.IP "real function acos(real v)"
+Returns a such that cos(a) == v.
+.IP "real function atan(real v)"
+Returns a such that tan(a) == v.
+.IP "real function atan2(real x, y)"
+Returns a such that tan(a) == x / y.
+Deals correctly with y == 0.
+.IP "real function pow(real a, real b)"
+The implementation of the ** operator.
 .PP
 .IP File
-fprintf and printf accept a reasonable sub-set of the stdio
+.\" HERE
+fprintf() and printf() accept a reasonable sub-set of the stdio
 library version:  %d, %e, %c, %g, %f, %s, %o work
 as expected, as does %v to smart-print a value.
 .\"
@@ -758,37 +874,37 @@ as expected, as does %v to smart-print a value.
 Nickle has a set of commands which may be
 given at the top level.
 .IP "quit"
-.IP "quit n"
-Exit Nickle.  By default, exit 0: if an integer argument
-n is given, exit with this value instead.
-.IP "undefine name {,name}"
-Removes these names from the system.  If you have accidentally
-redefined a builtin function, you can "undefine" the new definition and
-recover the old.
-.IP "load \"file\""
-Load a file.
-.IP "library \"file\""
-Load a library.  See the discussion of the
+Exit Nickle.
+.IP "quit E"
+Exit Nickle with integer status code E.
+.IP "undefine NAME {,NAME}"
+Remove these names from the system.
+.IP "load E"
+Load a file given by the string name E.
+.IP "library E"
+Load a library given by the string name E.  See the discussion of the
 NICKLELIB environment variable in ENVIRONMENT
 below.
-.IP "expr1 # expr2"
+.IP "E # E"
 Print expr1 in base expr2 .
-.IP "print name"
-Display a formatted version of the object denoted by name.
+.IP "print NAME"
+Display a formatted version of the object denoted by NAME.
 Comments and original formating are lost.
-If name is a variable, print the type as well as the value.
-.IP "edit function"
-.IP "edit file-name"
-Invoke $EDITOR on the named function, or the named file.  In the second
-form, any expression with a string value is acceptable.
+If NAME is a variable, print the type as well as the value.
+.IP "edit NAME"
+Invoke $EDITOR on the named object, and
+re-incorporate the results of the edit.  This is most
+useful with functions.
 .IP "history"
 Display the 10 most recently printed values.  They can be accessed
 with \fB$\fP\fIn\fP where \fIn\fP is the number displayed to the
 right of the value in this list.
-.IP "history \fIn\fP"
-.IP "history \fIn\fP,\fIm\fP"
-Display the most recent n history values,
-or history values n through m.
+.IP "history \fIE\fP"
+Display the E
+most recent history values.
+.IP "history \fIE\fP,\fIE\fP"
+Display history values from the first integer E through
+the second.
 .\"
 .SH DEBUGGER
 When an unhandled exception reaches top level during
@@ -801,12 +917,13 @@ of debugging commands are available to the user:
 Get a stack backtrace showing the current state,
 as with the GDB where command.
 .IP up
+Move up the stack (i.e., toward the top-level expression) ala GDB.
 .IP down
-Move up or down the stack ala GDB.
+Move down the stack (i.e., toward the current context) ala GDB.
 .IP done
 Leave debugging mode,
 abandoning execution.
-.PP
+.IP
 In addition, the Debug namespace is scoped in in
 debugging mode.  This is primarily of
 use in debugging Nickle itself.
@@ -868,12 +985,36 @@ ten integers.
 .\"
 .SH VERSION
 .PP
-This document describes version 1.99.1 of nickle.  This document
+This document describes version 1.99.1 of nickle, and
 was distributed with version @VERSION@ of nickle.
 .SH BUGS
 .PP
 See the discussion of the type of the exponentiation
 operator ** above.
+.PP
+Due to a difficult-to-remove grammar ambiguity,
+it is not possible to use a bare assignment expression
+in an array initializer: it is confused with a structure
+initializer.  For example:
+.nf
+  > int x = 0;
+  > (int[*]){x = 1}
+  ->     (int[*]) { x = 1 }
+Non array initializer
+.fi
+The workaround is to parenthesize the assignment expression:
+.nf
+  > (int[*]){(x = 1)}
+  [1]{1}
+.fi
+Because this is so rare, so hard to fix, and so easy to work around, this
+bug is unlikely to be fixed anytime soon.
+.PP
+The semantics of division are unfortunately different from
+those of C.  This is arguably because C is broken in this
+area: we cannot currently see any obvious fix.
+C allows automatic implicit coercion of floating to
+integral types, but we consider this a misfeature.
 .PP
 The implementation has not been thoroughly tested.
 .\"

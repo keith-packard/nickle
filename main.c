@@ -72,6 +72,7 @@ int
 main (int argc, char **argv)
 {
     Bool    tryrc = True;
+    Bool    stdin_prog = True;
     
     (void) catchSignal (SIGHUP, die);
     (void) catchSignal (SIGINT, intr);
@@ -89,9 +90,8 @@ main (int argc, char **argv)
     /*
      * Get the main input stream set up
      */
-    if (argc > 1)
-    {
-	if (!strcmp (argv[1], "-e"))
+    while (argc > 1) {
+	if (argc > 2 && !strcmp (argv[1], "-e"))
 	{
 	    Value   s;
 	    int	    i;
@@ -106,21 +106,48 @@ main (int argc, char **argv)
 		else
 		    s = Plus (s, NewStrString ("\n"));
 	    }
-	    LexString (StringChars (&s->string));
+	    LexString (StringChars (&s->string), True);
 	    EXIT ();
+	    stdin_prog = False;
+	    argc -= i;   /* argc == 0 */
+	    argv += i;   /* *argv == 0 */
+	    break;
 	}
-	else
+	if (argc > 2 && !strcmp (argv[1], "-f"))
 	{
-	    tryrc = False;
-	    setArgv (argc - 1, argv + 1);
-	    if (!LexFile (argv[1], True, False))
+	    if (!LexFile (argv[2], True, True))
 	    {
 		IoFini ();
 		return 1;
 	    }
+	    argv += 2;
+	    argc -= 2;
+	    continue;
 	}
+	if (argc > 2 && !strcmp (argv[1], "-l"))
+	{
+	    if (!LexLibrary (argv[2], True, True))
+	    {
+		IoFini ();
+		return 1;
+	    }
+	    argv += 2;
+	    argc -= 2;
+	    continue;
+	}
+	if (argc <= 0)
+	    break;
+	tryrc = False;
+	stdin_prog = False;
+	if (!LexFile (argv[1], True, True))
+	{
+	    IoFini ();
+	    return 1;
+	}
+	break;
     }
-    else
+    setArgv (argc - 1, argv + 1);
+    if (stdin_prog)
     {
 	LexStdin ();
     }

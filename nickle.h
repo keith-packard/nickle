@@ -599,7 +599,7 @@ void	ParseError (char *fmt, ...);
 int	yylex (void);
 Bool	LexFile (char *file, Bool complain, Bool after);
 Bool	LexLibrary (char *file, Bool complain, Bool after);
-void	LexString (char *);
+void	LexString (char *, Bool after);
 void	LexStdin (void);
 Value	atov (char *, int), aetov (char *);
 extern int  ignorenl;

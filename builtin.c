@@ -1998,7 +1998,7 @@ do_Command_lex_string (Value name)
 {
     ENTER ();
 
-    LexString (StringChars (&name->string));
+    LexString (StringChars (&name->string), False);
     RETURN (One);
 }
 

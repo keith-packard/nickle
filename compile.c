@@ -818,31 +818,12 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr, NamespacePtr namespace,
     RETURN (obj);
 }
 
-static ObjPtr
-CompileBuildArray (ObjPtr obj, ExprPtr array, ExprPtr sub, 
-		   NamespacePtr namespace, ExprPtr stat)
-{
-    ENTER ();
-    InstPtr	inst;
-    int		ndim;
-
-    ndim = 0;
-    while (sub)
-    {
-	obj = _CompileExpr (obj, sub->tree.left, namespace, stat);
-	SetPush (obj);
-	sub = sub->tree.right;
-	ndim++;
-    }
-    if (array)
-	array->base.type = NewTypesArray (typesPoly, sub);
-    BuildInst (obj, OpBuildArray, inst, stat);
-    inst->ints.value = ndim;
-    RETURN (obj);
-}
-
+/*
+ * Calculate the number of dimensions in an array by looking at
+ * the initializers
+ */
 static int
-CompileCountDimensions (ExprPtr expr)
+CompileCountInitDimensions (ExprPtr expr)
 {
     int	    ndimMax, ndim;
     
@@ -852,13 +833,51 @@ CompileCountDimensions (ExprPtr expr)
 	expr = expr->tree.left;
 	while (expr)
 	{
-	    ndim = CompileCountDimensions (expr->tree.left) + 1;
+	    ndim = CompileCountInitDimensions (expr->tree.left) + 1;
+	    if (ndim < 0)
+		return ndim;
+	    if (ndimMax && ndim != ndimMax)
+		return -1;
 	    if (ndim > ndimMax)
 		ndimMax = ndim;
 	    expr = expr->tree.right;
 	}
     }
     return ndimMax;
+}
+
+static int
+CompileCountDeclDimensions (ExprPtr expr)
+{
+    int		ndim;
+
+    ndim = 0;
+    while (expr)
+    {
+	expr = expr->tree.right;
+	ndim++;
+    }
+    return ndim;
+}
+
+static ObjPtr
+CompileBuildArray (ObjPtr obj, ExprPtr array, ExprPtr sub, 
+		   int ndim, NamespacePtr namespace, ExprPtr stat)
+{
+    ENTER ();
+    InstPtr	inst;
+
+    while (sub)
+    {
+	obj = _CompileExpr (obj, sub->tree.left, namespace, stat);
+	SetPush (obj);
+	sub = sub->tree.right;
+    }
+    if (array)
+	array->base.type = NewTypesArray (typesPoly, sub);
+    BuildInst (obj, OpBuildArray, inst, stat);
+    inst->ints.value = ndim;
+    RETURN (obj);
 }
 
 static void
@@ -889,24 +908,24 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 }
 
 static ObjPtr
-CompileImplicitArray (ObjPtr obj, ExprPtr array, ExprPtr inits, NamespacePtr namespace, ExprPtr stat)
+CompileImplicitArray (ObjPtr obj, ExprPtr array, ExprPtr inits, int ndim, 
+		      NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
     ExprPtr sub;
-    int	    ndim;
     int	    *dims;
+    int	    n;
     
-    ndim = CompileCountDimensions (inits);
     dims = AllocateTemp (ndim * sizeof (int));
     CompileSizeDimensions (inits, dims, ndim);
     sub = 0;
-    while (ndim--)
+    for (n = 0; n < ndim; n++)
     {
 	sub = NewExprTree (COMMA,
 			   NewExprConst (CONST, NewInt (*dims++)),
 			   sub);
     }
-    obj = CompileBuildArray (obj, array, sub, namespace, stat);
+    obj = CompileBuildArray (obj, array, sub, ndim, namespace, stat);
     RETURN (obj);
 }
 
@@ -916,12 +935,20 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, int *ninits
     ENTER ();
     if (expr->base.tag == ARRAY)
     {
+	int	nsub = 0;
+	InstPtr	inst;
+
 	expr = expr->tree.left;
 	while (expr)
 	{
 	    obj = CompileArrayInits (obj, expr->tree.left, namespace, ninits, stat);
 	    expr = expr->tree.right;
+	    nsub++;
 	}
+	BuildInst (obj, OpConst, inst, stat);
+	inst->constant.constant = NewInt (nsub);
+	SetPush (obj);
+	++(*ninits);
     }
     else
     {
@@ -1111,11 +1138,26 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	    }
 	    break;
 	case types_array:
+	    ndim = CompileCountDeclDimensions (t->array.dimensions);
 	    if (expr->tree.left)
 	    {
+		int ninitdim;
+    
 		if (expr->tree.left->base.tag != ARRAY)
 		{
 		    CompileError (obj, stat, "Non array initializer");
+		    break;
+		}
+		ninitdim = CompileCountInitDimensions (expr->tree.left);
+		if (ninitdim < 0)
+		{
+		    CompileError (obj, stat, "Inconsistent array initializer dimensionality");
+		    break;
+		}
+		if (ninitdim != ndim)
+		{
+		    CompileError (obj, stat, "Array dimension mismatch %d != %d\n",
+				  ndim, ninitdim);
 		    break;
 		}
 		i = 0;
@@ -1124,8 +1166,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	    }
 	    if (t->array.dimensions && t->array.dimensions->tree.left)
 	    {
-		obj = CompileBuildArray (obj, expr, t->array.dimensions,
-					 namespace, stat);
+		obj = CompileBuildArray (obj, expr, t->array.dimensions, 
+					 ndim, namespace, stat);
 	    }
 	    else if (!expr->tree.left)
 	    {
@@ -1133,8 +1175,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	    }
 	    else
 	    {
-		obj = CompileImplicitArray (obj, expr, expr->tree.left,
-					    namespace, stat);
+		obj = CompileImplicitArray (obj, expr, expr->tree.left, 
+					    ndim, namespace, stat);
 	    }
 	    if (expr->tree.left)
 	    {
@@ -2424,6 +2466,9 @@ ObjDump (ObjPtr obj, int indent)
 	    break;
 	case OpBuildArray:
 	    FilePrintf (FileStdout, "%d dims", inst->ints.value);
+	    break;
+	case OpInitArray:
+	    FilePrintf (FileStdout, "%d values", inst->ints.value);
 	    break;
 	case OpDot:
 	case OpDotRef:

@@ -274,43 +274,64 @@ ThreadArray (Value thread, int ndim)
     RETURN (NewArray (False, typesPoly, ndim, dims));
 }
 
+static int
+ThreadInitArrayPart (Value thread, Value a, int base, int dim, int s)
+{
+    ENTER();
+    int	    ninit;
+    int	    n;
+    int	    size;
+
+    ninit = IntPart (Stack (s), "Invalid array initialization");
+    ++s;
+    if (aborting)
+    {
+	EXIT ();
+	return s;
+    }
+    if (ninit > a->array.dim[dim])
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"too many array initializers",
+				2, NewInt (ninit), NewInt (a->array.dim[dim]));
+	EXIT ();
+	return s;
+    }
+    if (dim == a->array.ndim - 1)
+    {
+	for (n = ninit-1; n >= 0; n--)
+	{
+	    if (!TypeCompatibleAssign (a->array.type, Stack(s), False))
+	    {
+		RaiseStandardException (exception_invalid_argument,
+				"Incompatible types in array initialization",
+				2, NewInt(n), Stack(s));
+	    }
+	    BoxValueSet (a->array.values, base + n, Copy (Stack(s)));
+	    s++;
+	}
+    }
+    else
+    {
+	size = 1;
+	for (n = dim + 1; n < a->array.ndim; n++)
+	    size = size * a->array.dim[n];
+	base += size * (ninit-1);
+	for (n = ninit-1; n >= 0; n--)
+	{
+	    s = ThreadInitArrayPart (thread, a, base, dim+1, s);
+	    base -= size;
+	}
+    }
+    EXIT ();
+    return s;
+}
+
 static void
 ThreadInitArray (Value thread, Value a, int ninit)
 {
     ENTER ();
-    int		i, j;
-
-    if (ninit > a->array.ents)
-    {
-	RaiseStandardException (exception_invalid_argument,
-				"too many array initializers",
-				2, NewInt (ninit), NewInt (a->array.ents));
-    }
-    else
-    {
-	j = ninit;
-	i = 0;
-	while (j--)
-	{
-	    if (!TypeCompatibleAssign (a->array.type, Stack(j), False))
-	    {
-		RaiseStandardException (exception_invalid_argument,
-				"Incompatible types in array initialization",
-				2, NewInt(i), Stack(j));
-	    }
-	    i++;
-	}
-	if (!aborting)
-	{
-	    j = ninit;
-	    i = 0;
-	    while (j--)
-	    {
-		BoxValueSet (a->array.values, i, Copy (Stack(j)));
-		i++;
-	    }
-	}
-    }
+    ThreadInitArrayPart (thread, a, 0, 0, 0);
     EXIT ();
 }
 

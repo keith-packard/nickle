@@ -63,32 +63,92 @@ AtomListPtr  NewAtomList (AtomListPtr next, Atom atom);
  * still work correctly.
  */
 
-#if SIZEOF_LONG_LONG == 8
-# define BASE		((double_digit) 65536 * (double_digit) 65536)
-# define LBASE2	32
-# define LLBASE2	5
-# define DIGITBITS	32
+#if HAVE_STDINT_H
+
+# include <stdint.h>
+# if HAVE_UINT64_T
+
+/*
+ * If stdint.h defines a 64 bit datatype, use 32 bit
+ * chunks
+ */
+
+#  define DIGITBITS 32
+typedef uint64_t    double_digit;
+typedef int64_t	    signed_digit;
+typedef uint32_t    digit;
+
+# else
+
+#  define DIGITBITS 16
+typedef uint32_t    double_digit;
+typedef uint16_t    digit;
+typedef int32_t	    signed_digit;
+
+# endif
+
 #else
-# define BASE		((double_digit) 65536)
-# define LBASE2	16
-# define LLBASE2	4
-# define DIGITBITS	16
+
+# if SIZEOF_UNSIGNED_LONG_LONG == 8 || SIZEOF_UNSIGNED_LONG == 8
+#  define DIGITBITS 32
+# else
+#  define DIGITBITS 16
+# endif
+
+# if DIGITBITS == 32
+
+#  if SIZEOF_UNSIGNED_LONG_LONG == 8
+typedef unsigned long long double_digit;
+typedef long long signed_digit;
+#  else
+#   if SIZEOF_UNSIGNED_LONG == 8
+typedef unsigned long double_digit;
+typedef long signed_digit;
+#   endif
+#  endif
+
+#  if SIZEOF_UNSIGNED_LONG == 4
+typedef unsigned long digit;
+#  else
+#   if SIZEOF_UNSIGNED_INT == 4
+typedef unsigned int digit;
+#   endif
+#  endif
+
+# else
+
+#  if SIZEOF_UNSIGNED_LONG == 4
+typedef unsigned long double_digit;
+typedef long signed_digit;
+#  else
+#   if SIZEOF_UNSIGNED_INT == 4
+typedef unsigned int double_digit;
+typedef int signed_digit;
+#   endif
+#  endif
+
+#  if SIZEOF_UNSIGNED_INT == 2
+typedef unsigned int digit;
+#  else
+#   if SIZEOF_UNSIGNED_SHORT == 2
+typedef unsigned short digit;
+#   endif
+#  endif
+
+# endif
+
 #endif
 
 #define MAXDIGIT	((digit) (BASE - 1))
 
-/*
- * Natural numbers form the basis for both the Integers and Rationals,
- * but needn't ever be exposed to the user
- */
-#if DIGITBITS <= 16
-typedef unsigned short	digit;		/* must hold 0 .. BASE - 1 */
-typedef unsigned int	double_digit;	/* must hold 0 .. (BASE - 1) * (BASE - 1) + BASE-2 */
-typedef int		signed_digit;	/* must hold -BASE .. BASE - 1 */
+#if DIGITBITS == 32
+# define BASE		((double_digit) 65536 * (double_digit) 65536)
+# define LBASE2	32
+# define LLBASE2	5
 #else
-typedef unsigned int	    digit;
-typedef unsigned long long  double_digit;
-typedef signed long long    signed_digit;
+# define BASE		((double_digit) 65536)
+# define LBASE2	16
+# define LLBASE2	4
 #endif
 
 #define TwoDigits(n,i)	((double_digit) NaturalDigits(n)[i-1] | \
@@ -96,6 +156,11 @@ typedef signed long long    signed_digit;
 #define ModBase(t)  ((t) & (((double_digit) 1 << LBASE2) - 1))
 #define DivBase(t)  ((t) >> LBASE2)
     
+/*
+ * Natural numbers form the basis for both the Integers and Rationals,
+ * but needn't ever be exposed to the user
+ */
+
 typedef struct _natural {
     DataType	*type;
     int		length;

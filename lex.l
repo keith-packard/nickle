@@ -719,7 +719,7 @@ aetov (char *s)
 	    v = Divide (v, sv);
     }
     if (sign == -1)
-	v = Times (v, NewInt(-1));
+	v = Negate (v);
     RETURN (v);
 }
 

@@ -137,6 +137,7 @@ DigitBmod (digit u, digit v, int s)
 
 static int
 DigitWidth (digit i)
+#if DIGITBITS == 32
 {
     int	    w;
 
@@ -161,6 +162,29 @@ DigitWidth (digit i)
 	w++;
     return w;
 }
+#endif
+#if DIGITBITS == 16
+{
+    int	    w;
+
+    w = 0;
+    if (i & 0xff00)
+	w += 8;
+    else
+	i <<= 8;
+    if (i & 0xf000)
+	w += 4;
+    else
+	i <<= 4;
+    if (i & 0xc000)
+	w += 2;
+    else
+	i <<= 2;
+    if (i & 0x8000)
+	w++;
+    return w;
+}
+#endif
 
 int
 NaturalWidth (Natural *u)

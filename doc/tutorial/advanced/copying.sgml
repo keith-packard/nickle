@@ -1,0 +1,137 @@
+<sect1><title>Copy Semantics and Garbage Collection</title>
+
+<sect2><title>Copy by value</title>
+<para>
+In Nickle, assignment, argument passing, and definitions--in short everything involving the values of variables--are all by-value.
+Nickle avoids the weird C-isms, like being by-value except for arrays and strings.
+Everything is copied.
+Consider the following example:
+<informalexample><screen>
+> int[*] foo = { 1, 2, 3 };
+> int[*] bar = foo;
+> foo[2] = 4;
+> foo
+[3] {1, 2, 4}
+</screen></informalexample>
+</para>
+<para>
+What will <literal>bar[2]</literal> be?
+<informalexample><screen>
+> bar
+[3] {1, 2, 3}
+</screen></informalexample>
+</para>
+<para>
+Since assignment is by-value, bar has its own values--it is unchanged.
+Also consider function arguments:
+<informalexample><screen>
+> string s = "hello, world"; 
+> (void func(string s) { s = "foobar"; printf("%s\n",s); })(s);
+foobar
+</screen></informalexample>
+</para>
+<para>
+Does <literal>s</literal> still have its original value, or "foobar"?
+Since the function was modifying a copy--which was passed by-value--<literal>s</literal> will be unchanged.
+<informalexample><screen>
+> s
+"hello, world"
+</screen></informalexample>
+</para>
+<para>
+What if you want to pass something by reference?
+Nickle has a reference type to accomplish just that.
+(You could also use pointers, but references are The Right Way.
+Anyway, pointers may eventually be removed from the language in preference to references.)
+For example, to reimplement the example above using references:
+<informalexample><screen><![CDATA[
+> string s = "hello, world";
+> (void func(&string s) { s = "foobar"; printf("%s\n",s); })(&s);
+foobar
+> s
+"foobar"
+]]></screen></informalexample>
+</para>
+<para>
+Notice that <literal>s</literal> was changed; it was passed as a reference (&amp;string).
+See the section on Variables for a discussion of references.
+</para>
+</sect2>
+
+<sect2><title>Garbage collection</title>
+<para>
+But if all those strings and arrays are copied entirely every time a function is called or an assignment made, won't there be a lot of unused, unreferenceable memory lying around?
+No. Nickle is fully garbage-collected; when a value no longer has any names, it is freed.
+This is invisible to the user/programmer, who need not worry about allocation, deallocation, or any other aspects of their assignments and argument passing.
+</para>
+<para>
+In short, everything is by-value, and Nickle takes care of allocation and deallocation.
+</para>
+</sect2>
+
+<sect2><title>Type checking and subtyping</title>
+<para>
+Type checking in Nickle is a combination of compile-time and runtime checking.
+At compile-time, Nickle will ensure that all assignments, argument passing, and other copying situations are sane, for instance that no strings are being assigned to integers.
+It will let some errors through if it cannot be sure they are errors.
+For instance, variables of type 'poly' can hold any type; at compile-time, nothing is ruled out, but this does not mean you can't break typing at run-time.
+</para>
+<para>
+At runtime, Nickle makes sure all assignments are actually valid.
+It does so by determining if one type is a subtype of the other, i.e. if the set of all values that can fit in it also fit into the other.
+As a concrete example:
+<informalexample><screen><![CDATA[
+> int i = 1;
+> rational r = i;
+> i = r/3;
+Unhandled exception "invalid_argument" at <stdin>:8
+        (1/3)
+        0
+        "Incompatible types in assignment"
+]]></screen></informalexample>
+</para>
+<para>
+The int can hold the integer value 1 without difficulty, because they are the same type.
+The rational can accept the same value because integers are a subset of rationals.
+However, attempting to assign a rational (1/3) to the integer raises an exception.
+This demonstrates that int is a subtype of rational; conversely, rational is the supertype of int.
+A variable can take on a value from any of its subtypes, but not from its supertypes--and if the two values do not share a sub/supertype relationship, they will not get pass the compile-time
+checker.
+</para>
+<para>
+A similar check occurs with structs.
+If one struct's elements are a subset of another's, it may take that value.
+For example,
+<informalexample><screen><![CDATA[
+> typedef struct { int i; string s; } i_and_s;
+> typedef struct { int i; } just_i;
+> i_and_s is = { i=2, s="hello" };
+> just_i i = is;   
+> just_i ji = { i=2 };
+> is = ji;
+Unhandled exception "invalid_argument" at <stdin>:17
+        {i = 2}
+        0
+        "Incompatible types in assignment"
+]]></screen></informalexample>
+</para>
+<para>
+Since <literal>just_i</literal> is a subtype of <literal>i_and_s</literal> (it has <literal>i</literal> but not <literal>s</literal>), the assignment to <literal>i</literal> from <literal>is</literal> worked.
+However, attempting to assign to <literal>is</literal> from a <literal>just_i</literal> failed, because it did not have an <literal>s</literal> to copy over.
+</para>
+<para>
+Finally, in assignments of one function to another, the following must be the case:
+</para>
+<itemizedlist>
+<listitem><para>
+The arguments of the right-side function must be able to be assigned to those of the left-side function.
+In other words, that on the left must accept a subset of the arguments of that on the right.
+</para></listitem>
+<listitem><para>
+The return type of the left-side function must be able to be assigned to that of the right-side function.
+In other words, its value should be usable anywhere that of the one on the right could be used.
+</para></listitem>
+</itemizedlist>
+</sect2>
+
+</sect1>

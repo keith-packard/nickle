@@ -1,0 +1,99 @@
+<sect1><title>Nickle Namespaces</title>
+<para>
+Namespaces collect related variable and function names and allow control over visibility.
+A number of Nickle builtins are gathered into builtin namespaces that may be used.
+The following builtin namespaces have sections in this tutorial:
+</para>
+<itemizedlist>
+<listitem><para>Math - Useful mathematical functions.</para></listitem>
+<listitem><para>File - File input/output with the 'file' type.</para></listitem>
+<listitem><para>Thread - Concurrent processing.</para></listitem>
+<listitem><para>Semaphore and Mutex - Synchronization of threads.</para></listitem>
+<listitem><para>String - Useful functions for strings.</para></listitem>
+</itemizedlist>
+<para>
+An example namespace might be declared like this:
+<informalexample><screen>
+namespace Example {
+
+	int blah = 1;
+	public int a = 0;
+
+	int function bar(int a) {
+		...
+	}
+	
+	protected int function foo(int a) {
+		...
+	}
+
+}
+</screen></informalexample>
+</para>
+<para>
+The keyword <literal>namespace</literal> is followed by the name of the namespace and a list of statements that declare names in the namespace.
+The publication of those declarations, e.g. <literal>public</literal> or <literal>protected</literal> defines how visible they will be outside the namespace.
+The namespace itself may be preceeded by publication information, <emphasis>but this has no bearing on the names within the namespace</emphasis>; it defines the visibility of the name of the namespace.
+If the example above had been declared
+<informalexample><screen>
+protected namespace Example {
+	...
+}
+</screen></informalexample>
+Then the names within <literal>Example</literal> would have the same visibility as always, but <literal>Example</literal> itself would be protected in whatever namespace it belongs to.
+In this case, it belongs to the top-level namespace, but namespaces can be nested within each other, which makes the visibility of their own names important.
+</para>
+
+<sect2><title>Extend</title>
+<itemizedlist>
+<listitem><para>extend namespace <replaceable>name</replaceable> {
+<replaceable>statement-list</replaceable> }</para></listitem>
+</itemizedlist>
+<para>
+Names may be added to a namespace after it is initially defined with the <literal>extend</literal> command.
+The namespace <literal>name</literal> is reopened and the new <literal>statement-list</literal> is added to the previous ones.
+For example,
+<informalexample><screen>
+extend namespace Example {
+	string[*] greeting = [2]{ "hello", "world" };
+}
+</screen></informalexample>
+</para>
+<para>
+Adds <literal>greeting</literal> to the names already defined in <literal>Example</literal>.
+</para>
+</sect2>
+
+<sect2><title>Peering inside</title>
+<itemizedlist>
+<listitem><para><replaceable>namespace</replaceable>::<replaceable>name</replaceable></para></listitem>
+<listitem><para>import <replaceable>namespace</replaceable></para></listitem>
+</itemizedlist>
+<para>
+The <literal>::</literal> operator refers to a <replaceable>name</replaceable>, which is in <replaceable>namespace</replaceable>, analogously to a structure dereference.
+If <replaceable>name</replaceable> also refers to a namespace, its names too are visible this way.
+Either <literal>protected</literal> or <literal>public</literal> names are visible in this way.
+</para>
+<para>
+An <literal>import</literal> statement brings all the public names in <replaceable>namespace</replaceable> into scope, overshadowing conflicting names.
+Thereafter, those names may be used normally.
+</para>
+<para>
+A variable is declared with one of three visibilities that defines how it is visible outside its namespace:
+</para>
+<itemizedlist>
+<listitem><para>"public" may be seen outside with <literal>::</literal> or imported</para></listitem>
+<listitem><para>"protected" may be seen outside with <literal>::</literal> but not imported</para></listitem>
+<listitem><para>if neither is specified, it may not be seen outside at all</para></listitem>
+</itemizedlist>
+<para>
+Thus, in our example namespace <literal>Example</literal>:
+</para>
+<itemizedlist>
+<listitem><para><literal>blah</literal>, <literal>bar</literal>, and <literal>greeting</literal> have no visibility specified and may only be used inside <literal>Example</literal>.</para></listitem>
+<listitem><para>both <literal>a</literal> (which is public) and <literal>foo</literal> (which is protected) may be seen with <literal>::</literal>.</para></listitem>
+<listitem><para>an <literal>import</literal> will only bring <literal>a</literal> into scope, as it is the only name that is public.</para></listitem>
+</itemizedlist>
+</sect2>
+
+</sect1>

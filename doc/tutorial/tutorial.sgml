@@ -1,0 +1,113 @@
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY tour SYSTEM "tour/tour.sgml">
+
+<!ENTITY invoke SYSTEM "basics/invoke.sgml">
+<!ENTITY command SYSTEM "basics/command.sgml">
+
+<!ENTITY variables SYSTEM "intro/variables.sgml">
+<!ENTITY expressions SYSTEM "intro/expressions.sgml">
+<!ENTITY statements SYSTEM "intro/statements.sgml">
+<!ENTITY functions SYSTEM "intro/functions.sgml">
+
+<!ENTITY io SYSTEM "builtins/io.sgml">
+<!ENTITY math SYSTEM "builtins/math.sgml">
+<!ENTITY strings SYSTEM "builtins/strings.sgml">
+
+<!ENTITY copying SYSTEM "advanced/copying.sgml">
+<!ENTITY namespaces SYSTEM "advanced/namespaces.sgml">
+<!ENTITY exceptions SYSTEM "advanced/exceptions.sgml">
+<!ENTITY concurrency SYSTEM "advanced/concurrency.sgml">
+<!ENTITY continuations SYSTEM "advanced/continuations.sgml">
+]>
+
+<book>
+
+<bookinfo>
+
+<title>Nickle Tutorial</title>
+
+<authorgroup>
+
+<author>
+<firstname>Robert</firstname>
+<surname>Burgess</surname>
+</author>
+
+<author>
+<firstname>Keith</firstname>
+<surname>Packard</surname>
+</author>
+
+</authorgroup>
+
+<abstract>
+<para>
+This is a user tutorial for Nickle, a powerful desktop calculator language with many features of advanced languages and support for arbitrary precision numbers.
+It is written to teach Nickle to someone who is already fairly familiar with programming, using descriptions with examples.
+Topics are covered progressively, beginning with invocation and commands, moving on to learning the language, and finally to more advanced topics.
+</para>
+</abstract>
+
+</bookinfo>
+
+<chapter><title>Nickle Tour</title>
+<abstract>
+<para>
+The following is an example Nickle session, interspersed with comments.
+</para>
+</abstract>
+&tour;
+</chapter>
+
+<chapter><title>Nickle Basics</title>
+<abstract>
+<para>
+Nickle is a powerful desktop calculator language with many features of advanced languages and support for arbitrary precision numbers.
+It can run interactively to fulfill its role as a calculator, evaluate single expressions, and execute Nickle scripts.
+It also has an array of useful top-level commands for interacting with the interpreter.
+</para>
+</abstract>
+&invoke;
+&command;
+</chapter>
+
+<chapter><title>Language introduction</title>
+<abstract>
+<para>
+In this chapter, the features of Nickle such as datatypes, expressions, control statements, and functions will be discussed.
+By the end, most of the basic language features will have been covered.
+</para>
+</abstract>
+&variables;
+&expressions;
+&statements;
+&functions;
+</chapter>
+
+<chapter><title>Builtins</title>
+<abstract>
+<para>
+This chapter will explain various important builtin functions of Nickle, such as those for input and output and math.
+It will also discuss the various operators and builtin functions that manipulate strings.
+</para>
+</abstract>
+&io;
+&math;
+&strings;
+</chapter>
+
+<chapter><title>Advanced topics</title>
+<abstract>
+<para>
+This chapter will discuss more advanced topics; these features make Nickle as powerful as it is.
+The semantics of copying and garbage collection, namespaces, exceptions, threading and mutual exclusion, and continuations will all be covered.
+</para>
+</abstract>
+&copying;
+&namespaces;
+&exceptions;
+&concurrency;
+&continuations;
+</chapter>
+
+</book>

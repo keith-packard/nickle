@@ -1,0 +1,256 @@
+<sect1><title>Control Statements in Nickle</title>
+
+<sect2><title>Simple statements</title>
+<itemizedlist>
+<listitem><para><replaceable>expr</replaceable>;</para></listitem>
+<listitem><para>;</para></listitem>
+<listitem><para>{ <replaceable>statement</replaceable> ... }</para></listitem>
+</itemizedlist>
+<para>
+The simplest statement is merely an expression terminated by a semicolon; the expression is evaluated.
+A semicolon by itself is allowed but does nothing.
+One or more statements may be grouped inside curly braces to form one compound statement; each is executed in order.
+Any statements may compose the statement list, including control statements and other curly-bracketed lists.
+</para>
+</sect2>
+
+<sect2><title>Conditionals</title>
+<itemizedlist>
+<listitem><para>if ( <replaceable>expr</replaceable> )
+<replaceable>statement</replaceable></para></listitem>
+<listitem><para>else <replaceable>statement</replaceable></para></listitem>
+</itemizedlist>
+<para>
+<literal>if</literal> is used to execute a section of code only under some condition: If <replaceable>expr</replaceable> is true, <replaceable>statement</replaceable> is executed; otherwise control skips over it.
+For example:
+<informalexample><screen>
+if ( x == 0 )
+	printf ( "x is zero.\n" );
+</screen></informalexample>
+</para>
+<para>
+In this case, the message will be printed only if <literal>x</literal> is zero.
+</para>
+<para>
+<literal>else</literal> allows for a choice if the condition fails.
+It executes its <replaceable>statement</replaceable> if the most recent <literal>if</literal> or <literal>twixt</literal> (see below) did not.
+For example,
+<informalexample><screen>
+if ( x == 0 )
+	printf ( "x is zero.\n" );
+else
+	printf ( "x is not zero.\n" );
+</screen></informalexample>
+</para>
+<para>
+More than one option may be presented by nesting further 'if's in 'else' statements like this:
+<informalexample><screen>
+if ( x == 0 )
+	printf ( "x is zero.\n" );
+else if ( x < 0 )
+	printf ( "x is negative.\n" );
+else
+	printf ( "x is positive.\n" );
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Twixt</title>
+<itemizedlist>
+<listitem><para>twixt ( <replaceable>expr</replaceable>; <replaceable>expr</replaceable> ) <replaceable>statement</replaceable></para></listitem>
+</itemizedlist>
+<para>
+<literal>twixt</literal>, like <literal>if</literal>, executes <replaceable>statement</replaceable> only if the first <replaceable>expr</replaceable> is true.
+If <replaceable>statement</replaceable> is executed, the second <replaceable>expr</replaceable> is evaluated after it.
+<emphasis>That order is gauranteed</emphasis> - even if <replaceable>statement</replaceable> throws an exception or <literal>long_jmp</literal>s out of the <literal>twixt</literal>, the second <replaceable>expr</replaceable> will be evaluated.
+Thus, <literal>twixt</literal> is useful in locked operations where the statement should only be executed if a lock was successfully acquired and the lock must be released afterward:
+<informalexample><screen>
+twixt ( get_lock ( ); release_lock ( ) )
+	locked_operation ( );
+</screen></informalexample>
+</para>
+<para>
+'Else' statements may bind to 'twixt's as well as 'if's, providing choices
+such as:
+<informalexample><screen>
+twixt ( get_lock ( ); release_lock ( ) )
+	locked_operation ( );
+else
+	printf ( "failed to acquire lock.\n" );
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Switch</title>
+<itemizedlist>
+<listitem><para>switch ( <replaceable>expr</replaceable> ) { case <replaceable>expr</replaceable>: <replaceable>statement-list</replaceable> ... default: <replaceable>statement-list</replaceable> }</para></listitem>
+</itemizedlist>
+<para>
+Control jumps to the first <literal>case</literal> whose <replaceable>expr</replaceable> evaluates to the same value as the <replaceable>expr</replaceable> at the top.
+Unlike in C, these values do not have to be integers, or even constant.
+The optional case <literal>default</literal> matches any value.
+If nothing is matched and there is no <literal>default</literal>, control skips the <literal>switch</literal> entirely.
+This example prints out a number to the screen, replacing it by a letter as though it were a poker card:
+<informalexample><screen>
+switch ( x ) {
+	case 1:
+		printf ( "A\n" );	/* ace */
+		break;
+	case 11:
+		printf ( "J\n" );	/* jack */
+		break;
+	case 12:
+		printf ( "Q\n" );	/* queen */
+		break;
+	case 13:
+		printf ( "K\n" );	/* king */
+		break;
+	default:
+		printf ( "%d\n", x );	/* numeric */
+		break;
+}
+</screen></informalexample>
+</para>
+<para>
+Notice the <literal>break</literal>s in the example.
+Once control jumps to the matching case, it continues normally: Upon exhausting that <replaceable>statement-list</replaceable>, <emphasis>it does not jump out of the <literal>switch</literal></emphasis>; it continues through the subsequent statement lists.
+Here is an example of this 'falling through':
+<informalexample><screen>
+int x = 3;
+
+switch ( sign ( x ) ) {
+	case -1:
+		printf ( "x is negative.\n" );
+	case 1:
+		printf ( "x is positive.\n" );
+	default:
+		printf ( "x is zero.\n" );
+}
+</screen></informalexample>
+</para>
+<para>
+This prints:
+<informalexample><screen>
+x is positive.
+x is zero.
+</screen></informalexample>
+</para>
+<para>
+Falling through may be desirable if several cases are treated similarly; however, it should be used sparingly and probably commented so it is clear you are doing it on purpose.
+This is a difficult error to catch.
+</para>
+</sect2>
+
+<sect2><title>Union switch</title>
+<itemizedlist>
+<listitem><para>union switch ( <replaceable>union</replaceable> ) { case <replaceable>name</replaceable>: <replaceable>statement-list</replaceable> ... default: <replaceable>statement-list</replaceable> }</para></listitem>
+</itemizedlist>
+<para>
+<literal>union switch</literal> is similar to <literal>switch</literal>.
+It matches its <literal>case</literal>s based on what name currently applies to the union's value.
+As always, <literal>default</literal> matches everything.
+The following example chooses the best way to print the union:
+<informalexample><screen>
+union {
+	int a;
+	string b;
+} u;
+
+u.b = "hello";
+
+union switch ( u ) {
+	case a:
+		printf ( "%d\n", u.a );
+		break;
+	case b:
+		printf ( "%s\n", u.b );
+		break;
+}
+</screen></informalexample>
+</para>
+<para>
+In this case, it prints 'hello'.
+</para>
+<para>
+An additional name may follow that of a case; the union's value will be available inside the case by that name.
+The switch above could have been written:
+<informalexample><screen>
+union switch ( u ) {
+	case a num:
+		printf ( "%d\n", num );
+		break;
+	case b str:
+		printf ( "%s\n", str );
+		break;
+}
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Loops</title>
+<itemizedlist>
+<listitem><para>while ( <replaceable>expr</replaceable> ) <replaceable>statement</replaceable></para></listitem>
+<listitem><para>do <replaceable>statement</replaceable> while ( <replaceable>expr</replaceable> )</para></listitem>
+<listitem><para>for ( <replaceable>expr</replaceable>; <replaceable>expr</replaceable>; <replaceable>expr</replaceable> ) <replaceable>statement</replaceable></para></listitem>
+</itemizedlist>
+<para>
+<literal>while</literal> executes <replaceable>statement</replaceable> repeatedly as long as <replaceable>expr</replaceable> is true.
+Control continues outside the loop when <replaceable>expression</replaceable> becomes false.
+For example:
+<informalexample><screen>
+int x = 0;
+while ( x < 10 ) {
+	printf ( "%d\n", x );
+	++x;
+}
+</screen></informalexample>
+</para>
+<para>
+This prints the numbers from zero to nine.
+</para>
+<para>
+<literal>do-while</literal> is like <literal>while</literal>, but tests the condition after each iteration rather than before.
+Thus, it is garaunteed to execute at least once.
+It is often used in input while testing for end-of-file:
+<informalexample><screen>
+file f = File::open ( "test", "r" );
+
+do {
+	printf ( "%s\n", File::fgets ( f ) );
+} while ( ! end ( f ) );
+
+close ( f );
+</screen></informalexample>
+</para>
+<para>
+<literal>for</literal> begins by evaluating the first <replaceable>expr</replaceable>, which often initializes a counter variable; since declarations are expressions in Nickle, they may be used here and the counter will be local to the loop.
+Then it executes <replaceable>statement</replaceable> as long as the second <replaceable>expr</replaceable> is true, like <literal>while</literal>.
+After each iteration, the third <replaceable>expr</replaceable> is evaluated, which usually increments or decrements the counter variable.
+The <literal>while</literal> example above can also be written as the following <literal>for</literal> loop:
+<informalexample><screen>
+for ( int x = 0; x < 10; ++x )
+	printf ( "%d\n", x );
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Flow control</title>
+<itemizedlist>
+<listitem><para>continue</para></listitem>
+<listitem><para>break</para></listitem>
+<listitem><para>return <replaceable>expr</replaceable></para></listitem>
+</itemizedlist>
+<para>
+<literal>continue</literal> restarts the nearest surrounding <literal>do-while</literal>, <literal>while</literal>, or <literal>for</literal> loop by jumping directly to the conditional test.
+The iterative statement of a <literal>for</literal> loop will be evaluated first.
+</para>
+<para>
+<literal>break</literal> leaves the nearest surrounding <literal>do-while</literal>, <literal>while</literal>, <literal>for</literal>, or <literal>switch</literal> statement by jumping to its end.
+The iterative statement of a <literal>for</literal> loop will not be evaluated.
+</para>
+<para>
+<literal>return</literal> returns from the nearest surrounding function with value <replaceable>expr</replaceable>.
+</para>
+</sect2>
+
+</sect1>

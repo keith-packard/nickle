@@ -1,0 +1,134 @@
+<sect1><title>Strings</title>
+<para>
+Unlike in C, strings in Nickle are not arrays of or pointers to individual characters.
+Consistent with its pattern of providing primitive datatypes for types for things that make sense (e.g. <literal>file</literal> instead of integer file handles), Nickle provides the <literal>string</literal> type.
+This has several interesting differences from C-style strings:
+</para>
+<itemizedlist>
+<listitem><para>In Nickle, strings are immutable--individual characters may not be changed.</para></listitem>
+<listitem><para>
+Strings are, as with everything else, assigned and passed by-value.
+See the section on Copy semantics for details.
+</para></listitem>
+</itemizedlist>
+
+<sect2><title>Operators</title>
+<para>
+Two useful operators have been overloaded to allow sane manipulation of strings: '+' and array subscript ('[]').
+</para>
+
+<sect3><title>Subscripting</title>
+<para>
+Although they are not arrays of characters, it is often useful to access a string a character at a time; the array subscript operator has been overloaded to allow this.
+For example:
+<informalexample><screen>
+> string s = "hello, world";
+> s[0]
+104
+> s[1]
+101
+> s[2]
+108
+> s[3]
+108
+> s[4]
+111
+> 
+</screen></informalexample>
+</para>
+<para>
+Those are the integer representations of each character; they are most likely in ASCII, but not necessarily--see the section on Unicode in the I/O section.
+The String namespace provides <literal>new</literal> to recreate a string from these integer character representations, regardless of ASCII or Unicode:
+</para>
+<itemizedlist>
+<listitem><para>string new(int c)</para></listitem>
+<listitem><para>string new(int[*] cv)</para></listitem>
+</itemizedlist>
+<para>
+For instance,
+<informalexample><screen>
+> String::new(s[0])
+"h"
+</screen></informalexample>
+</para>
+</sect3>
+
+<sect3><title>Concatenation</title>
+<para>
+On strings, '+' is the concatenation operator.
+For example,
+<informalexample><screen>
+> string s = "hello", t = "world"; 
+> s = s + ", ";
+> t += "!";
+> s+t
+"hello, world!"
+</screen></informalexample>
+</para>
+</sect3>
+
+</sect2>
+
+<sect2><title>String namespace</title>
+<para>
+In addition, the String namespace provides several useful functions that facilitate using strings, including the following.
+</para>
+
+<sect3><title>Length</title>
+<itemizedlist>
+<listitem><para>int length ( string s )</para></listitem>
+</itemizedlist>
+<para>
+Returns the number of characters in <literal>s</literal>.
+For example,
+<informalexample><screen>
+$ nickle
+> String::length ( "hello, world" ) 
+12
+> 
+</screen></informalexample>
+</para>
+</sect3>
+
+<sect3><title>Index</title>
+<itemizedlist>
+<listitem><para>int index ( string t, string p )</para></listitem>
+<listitem><para>int rindex ( string t, string p )</para></listitem>
+</itemizedlist>
+<para>
+Returns the index of the first occurence of the substring <literal>p</literal> in <literal>t</literal>, or -1 if <literal>p</literal> is not in <literal>t</literal>; <literal>rindex</literal> returns the last occurance instead.
+For example,
+<informalexample><screen>
+$ nickle
+> String::index ( "hello, world", "or" ) 
+8
+> String::index ( "hello, world", "goodbye" )
+-1
+> String::rindex ( "hello, world", "o" )
+8
+</screen></informalexample>
+</para>
+</sect3>
+
+<sect3><title>Substr</title>
+<itemizedlist>
+<listitem><para>string substr ( string s, int i, int l )</para></listitem>
+</itemizedlist>
+<para>
+Returns the substring of <literal>s</literal> which begins at index <literal>i</literal> and is <literal>l</literal> characters long.
+If <literal>l</literal> is negative, returns the substring of that length which preceeds <literal>i</literal> instead.
+For example,
+<informalexample><screen>
+$ nickle
+> String::substr ( "hello, world", 8, 2 ) 
+"or"
+> String::substr ( "hello, world", 8, -4 )
+"o, w"
+>
+</screen></informalexample>
+</para>
+</sect3>
+
+</sect2>
+
+</sect1>

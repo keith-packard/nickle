@@ -1,0 +1,283 @@
+<sect1><title>Nickle Expressions</title>
+<para>
+Expression types are listed in order of increasing precedence.
+</para>
+
+<sect2><title>Variable declarations</title>
+<para>
+Variable declarations are expressions in Nickle; the value of a declaration is the value of the last variable with an initialization expression.
+For example,
+<informalexample><screen>
+> int val;
+> val = (int i=2, j=3);
+> print val
+global int val = 3;
+</screen></informalexample>
+</para>
+<para>
+If no initialization expressions are present, it is an error to use the value of the expression.
+<informalexample><screen><![CDATA[
+> val = (int i,j);
+Unhandled exception "uninitialized_value" at <stdin>:73
+	"Uninitialized value"
+]]></screen></informalexample>
+</para>
+<para>
+Because they are expressions, declarations can be used in contructs such as:
+<informalexample><screen>
+for (int i = 0; i < 10; i++)
+{
+	
+}
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Anonymous function declarations</title>
+<para>
+Functions may be declared anonymously and used immediately, e.g.
+<informalexample><screen>
+> (int func ( int a, int b ) { return a + b; })(2,3)
+5
+</screen></informalexample>
+</para>
+<para>
+Any context available to the function at definition time will be available whenever it is executed.
+See Storage classes in the section on Variables.
+</para>
+</sect2>
+
+<sect2><title>Binary operators</title>
+<variablelist>
+<varlistentry><term>Addition</term>
+<listitem><para><literal>a</literal> + <literal>b</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Subtraction</term>
+<listitem><para><literal>a</literal> - <literal>b</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Multiplication</term>
+<listitem><para><literal>a</literal> * <literal>b</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Division</term><term>Integer division</term>
+<listitem><simplelist>
+<member><literal>a</literal> / <literal>b</literal></member>
+<member><literal>a</literal> // <literal>b</literal></member>
+</simplelist></listitem>
+</varlistentry>
+<varlistentry><term>Remainder</term>
+<listitem><para><literal>a</literal> % <literal>b</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Exponentiation</term>
+<listitem><para><literal>a</literal> ** <literal>b</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Left shift</term><term>Right shift</term>
+<listitem><simplelist>
+<member><literal>a</literal> &lt;&lt; <literal>b</literal></member>
+<member><literal>a</literal> >> <literal>b</literal></member>
+</simplelist></listitem>
+</varlistentry>
+<varlistentry><term>Binary xor</term><term>Binary and</term><term>Binary or</term>
+<listitem><simplelist>
+<member><literal>a</literal> ^ <literal>b</literal></member>
+<member><literal>a</literal> & <literal>b</literal></member>
+<member><literal>a</literal> | <literal>b</literal></member>
+</simplelist></listitem>
+</varlistentry>
+<varlistentry><term>Boolean and</term><term>Boolean or</term>
+<listitem><simplelist>
+<member><literal>a</literal> && <literal>b</literal></member>
+<member><literal>a</literal> || <literal>b</literal></member>
+</simplelist></listitem>
+</varlistentry>
+<varlistentry><term>Equal</term><term>Not equal</term>
+<listitem><simplelist>
+<member><literal>a</literal> == <literal>b</literal></member>
+<member><literal>a</literal> != <literal>b</literal></member>
+</simplelist></listitem>
+</varlistentry>
+<varlistentry><term>Less than</term><term>Less than or equal to</term>
+<listitem><simplelist>
+<member><literal>a</literal> < <literal>b</literal></member>
+<member><literal>a</literal> &lt;= <literal>b</literal></member>
+</simplelist></listitem>
+</varlistentry>
+<varlistentry><term>Greater than</term><term>Greater than or equal to</term>
+<listitem><simplelist>
+<member><literal>a</literal> > <literal>b</literal></member>
+<member><literal>a</literal> >= <literal>b</literal></member>
+</simplelist></listitem>
+</varlistentry>
+<varlistentry><term>Assignment</term>
+<listitem><para><literal>a</literal> = <literal>b</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Assignment with operator</term>
+<listitem><simplelist>
+<member><literal>a</literal> += <literal>b</literal></member>
+<member><literal>a</literal> -= <literal>b</literal></member>
+<member><literal>a</literal> *= <literal>b</literal></member>
+<member><literal>a</literal> /= <literal>b</literal></member>
+<member><literal>a</literal> //= <literal>b</literal></member>
+<member><literal>a</literal> %= <literal>b</literal></member>
+<member><literal>a</literal> **= <literal>b</literal></member>
+<member><literal>a</literal> >>= <literal>b</literal></member>
+<member><literal>a</literal> &lt;&lt;= <literal>b</literal></member>
+<member><literal>a</literal> ^= <literal>b</literal></member>
+<member><literal>a</literal> &= <literal>b</literal></member>
+<member><literal>a</literal> |= <literal>b</literal></member>
+</simplelist></listitem>
+</varlistentry>
+</variablelist>
+</sect2>
+
+<sect2><title>Unary operators</title>
+<variablelist>
+<varlistentry><term>Dereference:</term>
+<listitem><para> * <literal>a</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Reference:</term>
+<listitem><para> &amp; <literal>a</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Negation:</term>
+<listitem><para> - <literal>a</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Bitwise inverse:</term>
+<listitem><para> ~ <literal>a</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Logical not:</term>
+<listitem><para> ! <literal>a</literal></para></listitem>
+</varlistentry>
+<varlistentry><term>Factorial:</term>
+<listitem><para> <literal>a</literal> !</para></listitem>
+</varlistentry>
+<varlistentry><term>Increment:</term>
+<listitem><simplelist>
+<member> ++ <literal>a</literal></member>
+<member> <literal>a</literal> ++</member>
+</simplelist></listitem>
+</varlistentry>
+<varlistentry><term>Decrement:</term>
+<listitem><simplelist>
+<member> -- <literal>a</literal></member>
+<member> <literal>a</literal> --</member>
+</simplelist></listitem>
+</varlistentry>
+</variablelist>
+</sect2>
+
+<sect2><title>Constants</title>
+
+<sect3><title>Integer constants</title>
+<para>
+Integer constants with a leading zero are interpreted in octal, with a leading 0x in hex-decimal and with a leading 0b in binary.
+Here are some examples:
+<informalexample><screen>
+12	/* 12, decimal */
+014	/* 12, octal */
+0xc	/* 12, hex */
+0b1100	/* 12, binary */
+</screen></informalexample>
+</para>
+</sect3>
+
+<sect3><title>Rational constants</title>
+<para>
+Rational constants are the combination of an integer part, a mantissa with an initial and repeating part, and an exponent.
+All of these pieces are optional, but at least one of the parts (other than the exponent) must be present.
+If no fractional part is given, the resulting type of the value is int rather than rational.
+Some examples:
+<informalexample><screen>
+> 12
+12
+> 12.5
+12.5
+> .34
+0.34
+> .{56}
+0.{56}
+> .34e3
+340
+> .{56}e12
+565656565656.{56}
+</screen></informalexample>
+</para>
+</sect3>
+
+<sect3><title>String constants</title>
+<para>
+String constants are surrounded in double quotes, e.g. "hello, world".
+Characters preceded by a backslash stand for themselves, including double-quote (\") and blackslash (\\).
+The following backslashed characters are special:
+</para>
+<itemizedlist>
+<listitem><para>\n is newline</para></listitem>
+<listitem><para>\r is carriage return</para></listitem>
+<listitem><para>\b is backspace</para></listitem>
+<listitem><para>\t is tab</para></listitem>
+<listitem><para>\f is formfeed</para></listitem>
+</itemizedlist>
+</sect3>
+
+</sect2>
+
+<sect2><title>Variables</title>
+<para>
+The name of a variable is replaced by the value of that variable in expressions.
+If the name is of a pointer, preceding it with the <literal>*</literal> dereference operator yields the value of its target.
+</para>
+</sect2>
+
+<sect2><title>Struct and union references</title>
+<para>
+The construct
+<informalexample><screen>
+struct.name
+</screen></informalexample>
+yields the element <replaceable>name</replaceable> of the struct or union <replaceable>struct</replaceable>.
+To retrieve elements from a struct or union pointer, as in C, use
+<informalexample><screen>
+struct->name
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Array references</title>
+<informalexample><screen>
+arr[expr]
+
+arr[expr,expr,...,expr]
+</screen></informalexample>
+<para>
+Elements of an array are indexed with square braces.
+Elements of multidimensional arrays have indices in each dimension as in the second form.
+Pointers to arrays can be indexed by placing the <literal>*</literal> dereference operator between the name of the array and the first square brace:
+<informalexample><screen>
+arr*[expr]
+</screen></informalexample>
+</para>
+<para>
+This is, however, deprecated in favor of using references to arrays, which have no such problems.
+</para>
+</sect2>
+
+<sect2><title>The fork operator</title>
+<para>
+The fork operator evaluates its argument in a child thread.
+See the section on Concurrency.
+</para>
+</sect2>
+
+<sect2><title>Comma operator</title>
+<informalexample><screen>
+expr, expr
+</screen></informalexample>
+<para>
+Evaluates each expression in turn, the resulting value is that of the right hand expression.
+For example,
+<informalexample><screen>
+> 1+2, 5!, 3**4, 27/3
+9
+</screen></informalexample>
+</para>
+</sect2>
+
+</sect1>

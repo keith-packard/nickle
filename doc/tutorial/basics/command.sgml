@@ -1,0 +1,169 @@
+<sect1><title>Commands</title>
+<para>
+The following are commands that the Nickle interpreter understands, not actual language constructs.
+They may be issued only at the top level.
+</para>
+
+<sect2><title>Expressions</title>
+<para>
+If an expression is issued at the top level, such as <literal>3**4</literal> or <literal>100!,</literal>, its value is printed to standard output.
+If the expression ends with a # sign and another expression, its value is printed in whatever base the second expression evaluates to.
+<informalexample><screen>
+$ nickle
+> 10!
+3628800
+> 3**4
+81
+> 3**4 # 3
+10000
+>
+</screen></informalexample>
+</para>
+<para>
+Statements, from expressions terminated by semicolons to complicated control structures, are executed but have no value to print.
+Statements are not commands but actual syntax, so they may be used in scripts.
+If a line is ended before it can be sensible as an expression or statement, Nickle will continue until it is a statement, e.g.
+<informalexample><screen>
+$ nickle
+> int x
++ = 0
++ ;
+>
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Quit</title>
+<para>
+The <literal>quit</literal> command exits Nickle.
+An optional argument specifies the return value.
+<informalexample><screen>
+$ nickle
+> quit
+$
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Print</title>
+<para>
+The <literal>print</literal> command provides information such as visibility, type, and value, about a name.
+It need not be the name of a variable; functions, namespaces, etc. may also be printed.
+<informalexample><screen><![CDATA[
+$ nickle
+> int x = 2;
+> print x
+global int x = 2;
+> print String
+public namespace String {
+    public int length (string) <builtin>
+    public string new (poly) <builtin>
+    public int index (string, string) <builtin>
+    public string substr (string, int, int) <builtin>
+    public int rindex (string target, string pattern);
+    public string dirname (string name);
+}
+> void function hello() { printf("hello, world\n"); }
+> print hello
+void hello ()
+{
+    printf ("hello, world\n");
+}
+> 
+]]></screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Undefine</title>
+<para>
+A defined name can be undefined, e.g.
+<informalexample><screen>
+$ nickle
+> print x
+No symbol "x" in namespace
+> int x = 0;
+> print x
+global int x = 0;
+> undefine x
+> print x
+No symbol "x" in namespace
+>
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Loading files</title>
+<para>
+The <literal>load</literal> and <literal>library</literal> commands evaluate a file at runtime like the <literal>-f</literal> and <literal>-l</literal> flags, respectively.
+</para>
+</sect2>
+
+<sect2><title>Edit</title>
+<para>
+The <literal>edit</literal> command invokes <literal>$EDITOR</literal> on the name given as an argument.
+This is particularly useful to change a function while in interactive mode.
+<informalexample><screen>
+$ nickle
+> void function hello() { printf("hello, world\n"); }
+> edit hello
+49
+3
+    printf ("hello, world\n");
+c
+printf ("goodbye, cruel world\n");
+wq
+53
+> print hello
+void hello ()
+{
+    printf ("goodbye, cruel world\n");
+}
+> 
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>History</title>
+<para>
+The <literal>history</literal> command retrieves the values of the last ten expressions.
+With an argument, it instead retrieves the values of that many preceeding values.
+With two arguments, it retrieves the specified range in history.
+<informalexample><screen>
+$ nickle
+...
+> history
+$176    20
+$177    5
+$178    0
+$179    12
+$180    12
+$181    -2
+$182    2
+$183    2
+$184    0
+$185    10
+$186    32
+> history 3
+$184    0
+$185    10
+$186    32
+> history 180,185
+$180    12
+$181    -2
+$182    2
+$183    2
+$184    0
+$185    10
+</screen></informalexample>
+</para>
+<para>
+These history items may be named and used directly:
+<informalexample><screen>
+> $180 ** 2
+144
+>
+</screen></informalexample>
+</para>
+</sect2>
+
+</sect1>

@@ -1,0 +1,108 @@
+<sect1><title>Nickle Exceptions</title>
+<para>
+Nickle has first-class exceptions for error handling and quick escapes from recursive algorithms.
+A number of exceptions are builtin to Nickle that it throws for various errors, including:
+</para>
+<itemizedlist>
+<listitem><para>exception uninitialized_value(string msg) - Attempt to use an uninitialized value.</para></listitem>
+<listitem><para>exception invalid_argument(string msg,int arg,poly val) - The <literal>arg</literal>th argument to a builtin function had invalid value <literal>val</literal>.</para></listitem>
+<listitem><para>exception readonly_box(string msg,poly val) - Attempt to change the value of a read-only quantity to <literal>val</literal>.</para></listitem>
+<listitem><para>exception invalid_array_bounds(string msg,poly a,poly i) - Attempt to access array <literal>a</literal> at index <literal>i</literal> is out of bounds.</para></listitem>
+<listitem><para>exception divide_by_zero(string msg,real num,real den) - Attempt to divide <literal>num</literal> by <literal>den</literal> when <literal>den</literal> is zero.</para></listitem>
+<listitem><para>exception invalid_struct_member(string msg,poly struct,string name) - Attempt to refer to member <literal>name</literal> of the object <literal>struct</literal>, which does not exist.</para></listitem>
+<listitem><para>exception invalid_binop_values(string msg,poly arg1,poly arg2) - Attempt to evaluate a binary operator with arguments <literal>arg1</literal> and <literal>arg2</literal>, where at least one of these values is invalid.</para></listitem>
+<listitem><para>exception invalid_unop_values(string msg,poly arg) - Attempt to evaluate a unary operator with invalid argument <literal>arg</literal>.</para></listitem>
+</itemizedlist>
+<para>
+The following syntax may be used to declare a new exception:
+</para>
+<itemizedlist>
+<listitem><para>exception <replaceable>name</replaceable> ( <replaceable>type</replaceable> <replaceable>name</replaceable>, ... )</para></listitem>
+</itemizedlist>
+<para>
+For example,
+<informalexample><screen>
+exception my_exception ( string msg, int a, int b, int c );
+</screen></informalexample>
+</para>
+
+<sect2><title>Raise</title>
+<itemizedlist>
+<listitem><para>raise <replaceable>name</replaceable> ( <replaceable>value</replaceable>, ... )</para></listitem>
+</itemizedlist>
+<para>
+Raises the named exception with the given arguments, e.g.
+<informalexample><screen>
+raise my_exception ( "message", 0, 1, 2 );
+</screen></informalexample>
+</para>
+<para>
+Execution is broken and <literal>my_exception</literal> travels up the stack until it is caught by a try-catch block or it reaches the top level, where it prints an error message such as:
+<informalexample><screen>
+Unhandled exception "my_exception"
+	3
+	2
+	1
+	"message"
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Try - catch</title>
+<itemizedlist>
+<listitem><para>try <replaceable>statement</replaceable></para></listitem>
+<listitem><para>catch <replaceable>name</replaceable> ( <replaceable>type</replaceable> <replaceable>name</replaceable>, ... ) { <replaceable>statement-list</replaceable> }</para></listitem>
+</itemizedlist>
+<para>
+<literal>try</literal> executes <replaceable>statement</replaceable>; if it raises an exception whose name matches that of a succeeding <literal>catch</literal> block, the arguments are placed in the names specified and the associated <replaceable>statement-list</replaceable> is executed.
+Control continues after the catch without continuing up the stack; if further propagation is desired, <replaceable>statement-list</replaceable> should re-raise the exception.
+Any number of catch blocks may be associated with a try statement.
+For example:
+<informalexample><screen>
+exception my_exception(string msg,int a,int b,int c);
+
+try raise my_exception("blah",1,2,3);
+catch my_exception(string msg,int a,int b,int c) {
+	printf("%s: exception successfully caught (%d,%d,%d).\n",msg,a,b,c);
+}
+</screen></informalexample>
+</para>
+<para>
+This example tries to execute a function that raises an exception; since that exception matches the catch block, "blah", 1, 2, and 3 (the arguments) are put into <literal>msg</literal>, <literal>a</literal>, <literal>b</literal>, and <literal>c</literal> and the statement list is executed, which in this case merely prints out the arguments received and continues:
+<informalexample><screen>
+blah: exception successfully caught (1,2,3).
+</screen></informalexample>
+</para>
+</sect2>
+
+<sect2><title>Twixt</title>
+<para>
+Nickle does not provide a <literal>finally</literal> clause to a <literal>try-catch</literal>.
+In order to ensure the order of some expressions, it provides <literal>twixt</literal> (See the section on Statements).
+For example,
+<informalexample><screen>
+exception my_exception(string msg, int a, int b, int c);
+
+void foo(string msg, int a, int b, int c) {
+	twixt(printf("entering twixt..."); printf("leaving twixt.\n"))
+		raise my_exception(msg, a, b, c);
+}
+
+try foo("blah", 1, 2, 3);
+catch my_exception(string msg,int a,int b,int c) {
+printf("%s: exception successfully caught (%d,%d,%d).\n",msg,a,b,c);
+}
+</screen></informalexample>
+Will produce the output:
+<informalexample><screen>
+entering twixt...leaving twixt.
+blah: exception successfully caught (1,2,3).
+</screen></informalexample>
+</para>
+<para>
+Notice the order of the printed messages: <literal>twixt</literal> finished up before the exception was handled by the <literal>catch</literal>.
+This is an elegant way to accomplish something that should be done finally, in this case printing the message "leaving twixt" for demonstration.
+</para>
+</sect2>
+
+</sect1>

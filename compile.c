@@ -1028,7 +1028,7 @@ CompileCompositeImplicitInit (Types *type)
     
     switch (type->base.tag) {
     case types_array:
-	if (type->array.dimensions->tree.left)
+	if (type->array.dimensions && type->array.dimensions->tree.left)
 	{
 	    sub = type->array.type;
 	    init = CompileCompositeImplicitInit (sub);

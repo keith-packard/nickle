@@ -761,8 +761,7 @@ func_decl	: func_name namespace_start opt_argdefines CP
 			symbol = NamespaceFindName (CurrentNamespace, $1.decl->name, True);
 			if (symbol && symbol->symbol.forward)
 			{
-			    if (!TypeCompatible (symbol->symbol.type, type, 
-						 True))
+			    if (!TypeIsSupertype (symbol->symbol.type, type))
 			    {
 				ParseError ("%A redefinition with different type",
 					    $1.decl->name);

@@ -907,7 +907,7 @@ CompileTypecheckArgs (ObjPtr	obj,
 		actual_type = TypeCombineArray (arg->tree.left->tree.left->base.type, 1, False);
 	    else
 		actual_type = arg->tree.left->base.type;
-	    if (!TypeCompatible (argt->type, actual_type, True))
+	    if (!TypeIsOrdered (argt->type, actual_type))
 	    {
 		CompileError (obj, stat, "Incompatible types, formal '%T', actual '%T', for argument %d",
 			      argt->type, arg->tree.left->base.type, i);
@@ -977,7 +977,9 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
 	RETURN (obj);
     }
     expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
-    if (tail == TailAlways || 
+    if ((tail == TailAlways &&
+	 !TypePoly (expr->base.type) &&
+	 TypeIsSupertype (code->base.type, expr->base.type)) ||
 	(tail == TailVoid && 
 	 TypeCanon (expr->base.type) == typePrim[rep_void]))
     {
@@ -1111,9 +1113,8 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr,
     {
 	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
-	if (!TypeCompatible (typePrim[rep_integer],
-			     expr->tree.left->base.type,
-			     True))
+	if (!TypeIsOrdered (typePrim[rep_integer],
+			    expr->tree.left->base.type))
 	{
 	    CompileError (obj, stat, "Incompatible type, index '%T', for array index %d",
 			  expr->tree.left->base.type, ndim);
@@ -1839,7 +1840,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	}
 
 	catch_type = NewTypeFunc (typePoly, catch->code.code->base.args);
-	if (!TypeCompatible (exception->symbol.type, catch_type, True))
+	if (!TypeIsOrdered (exception->symbol.type, catch_type))
 	{
 	    CompileError (obj, stat, "Incompatible types, formal '%T', actual '%T', for catch",
 			  exception->symbol.type, catch_type);
@@ -2694,10 +2695,25 @@ _CompileNonLocal (ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
     RETURN (obj);
 }
 
+/*
+ * Check if a return foo () can be turned into a tail call.
+ */
 static Bool
 _CompileCanTailCall (ObjPtr obj, CodePtr code)
 {
-    return !profiling && obj->nonLocal == 0 && (!code || code->base.func == code);
+    /* not in a function ("can't" happen) */
+    if (!code)
+	return False;
+    /* if profiling, disable tail calls to avoid losing information */
+    if (profiling)
+	return False;
+    /* Check for enclosing non-local branch targets */
+    if (obj->nonLocal != 0)
+	return False;
+    /* Check for compiling in a nested exception handler */
+    if (code->base.func != code)
+	return False;
+    return True;
 }
 
 ObjPtr
@@ -3250,8 +3266,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    else
 	    {
 		obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
-		obj = _CompileNonLocal (obj, BranchModReturn, expr, code);
 	    }
+	    if (ObjCode (obj, ObjLast (obj))->base.opCode != OpTailCall)
+		obj = _CompileNonLocal (obj, BranchModReturn, expr, code);
 	    expr->base.type = expr->tree.right->base.type;
 	}
 	else

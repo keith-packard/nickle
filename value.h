@@ -441,8 +441,12 @@ Type	*TypeCombineStruct (Type *type, int tag, Atom atom);
 Type	*TypeCombineReturn (Type *type);
 Type	*TypeCombineFunction (Type *type);
 Type	*TypeCombineArray (Type *array, int ndim, Bool lvalue);
+/* can assign value 'v' to variable of type 'dest' */
 Bool	TypeCompatibleAssign (Type *dest, Value v);
-Bool	TypeCompatible (Type *a, Type *b, Bool contains);
+/* super is a supertype of sub */
+Bool	TypeIsSupertype (Type *super, Type *sub);
+/* a is a supertype of b or b is a supertype of a */
+Bool	TypeIsOrdered (Type *a, Type *b);
 
 #define TypePoly(t)	((t)->base.tag == type_prim && (t)->prim.prim == rep_undef)
 #define TypeBool(t)	((t)->base.tag == type_prim && (t)->prim.prim == rep_bool)

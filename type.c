@@ -261,139 +261,141 @@ TypeCountDimensions (ExprPtr dims)
 StackObject *TypeCheckStack;
 int	    TypeCheckLevel;
 
+/* 
+ * Return True if sup is a super type of sub
+ */
+
 Bool
-TypeCompatible (Type *a, Type *b, Bool contains)
+TypeIsSupertype (Type *super, Type *sub)
 {
     int		n;
-    int		adim, bdim;
     Bool	ret;
-    StructType	*st;
-    
-    if (a == b)
+    StructType	*super_st;
+    StructType	*sub_st;
+    int		super_dim;
+    int		sub_dim;
+
+    if (super == sub)
 	return True;
-    if (!a || !b)
+    if (!super || !sub)
 	return False;
 
-    if (a->base.tag == type_name)
-        return TypeCompatible (TypeNameType(a), b, contains);
-    if (b->base.tag == type_name)
-	return TypeCompatible (a, TypeNameType(b), contains);
-    
-    if (a->base.tag == type_types)
+    /* resolve typedefs */
+    if (super->base.tag == type_name)
+	return TypeIsSupertype (TypeNameType (super), sub);
+    if (sub->base.tag ==  type_name)
+	return TypeIsSupertype (super, TypeNameType (sub));
+
+    /* check bogus internal union types */
+    if (super->base.tag == type_types)
     {
 	TypeElt	*elt;
-	for (elt = a->types.elt; elt; elt = elt->next)
-	    if (TypeCompatible (elt->type, b, contains))
+
+	for (elt = super->types.elt; elt; elt = elt->next)
+	    if (TypeIsSupertype (elt->type, sub))
 		return True;
 	return False;
     }
 
-    if (b->base.tag == type_types)
+    if (sub->base.tag == type_types)
     {
 	TypeElt	*elt;
-	for (elt = b->types.elt; elt; elt = elt->next)
-	    if (TypeCompatible (a, elt->type, contains))
+
+	for (elt = sub->types.elt; elt; elt = elt->next)
+	    if (TypeIsSupertype (super, elt->type))
 		return True;
 	return False;
     }
-    
-    if (TypePoly (a))
+
+    /* poly is a supertype of all types */
+    if (TypePoly (super))
 	return True;
 
-    if (/* !contains && */ TypePoly (b))
-	return True;
-
-    if (a->base.tag != b->base.tag)
+    if (super->base.tag != sub->base.tag)
 	return False;
-    switch (a->base.tag) {
+
+    switch (super->base.tag) {
     case type_prim:
-	if (a->prim.prim == b->prim.prim)
+	if (super->prim.prim == sub->prim.prim)
 	    return True;
-	if (TypeNumeric (a) && TypeNumeric (b))
-	    return True;
-	break;
+	if (Numericp (super->prim.prim) && Numericp (sub->prim.prim))
+	    return super->prim.prim >= sub->prim.prim;
+	return False;
     case type_ref:
 	/*
 	 * Avoid the infinite recursion, but don't unify type yet
 	 */
 	for (n = 0; n < TypeCheckLevel; n++)
-	    if (STACK_ELT(TypeCheckStack, n) == a)
+	    if (STACK_ELT(TypeCheckStack, n) == super)
 		return True;
-	STACK_PUSH (TypeCheckStack, a);
+	STACK_PUSH (TypeCheckStack, super);
 	++TypeCheckLevel;
-	ret = TypeCompatible (a->ref.ref, b->ref.ref, contains);
+	/* XXX is this right? */
+	ret = TypeIsSupertype (super->ref.ref, sub->ref.ref);
 	STACK_POP (TypeCheckStack);
 	--TypeCheckLevel;
 	return ret;
     case type_func:
-	if (TypeCompatible (a->func.ret, b->func.ret, contains))
+	if (TypeIsSupertype (super->func.ret, sub->func.ret))
 	{
-	    ArgType *aarg = a->func.args, *barg = b->func.args;
+	    ArgType *super_arg = super->func.args;
+	    ArgType *sub_arg = sub->func.args;
 
-	    while (aarg || barg)
+	    while (super_arg || sub_arg)
 	    {
-		if (!barg || !aarg)
+		if (!super_arg || !sub_arg)
 		    return False;
-		if (barg->varargs != aarg->varargs)
+		if (super_arg->varargs != sub_arg->varargs)
 		    return False;
-		if (!TypeCompatible (barg->type, aarg->type, contains))
+		if (!TypeIsSupertype (sub_arg->type, super_arg->type))
 		    return False;
-		aarg = aarg->next;
-		barg = barg->next;
+		super_arg = super_arg->next;
+		sub_arg = sub_arg->next;
 	    }
 	    return True;
 	}
-	break;
+	return False;
     case type_array:
-	adim = TypeCountDimensions (a->array.dimensions);
-	bdim = TypeCountDimensions (b->array.dimensions);
-	if (adim == 0 || bdim == 0 || adim == bdim)
-	    return TypeCompatible (a->array.type, b->array.type, contains);
-	break;
+	super_dim = TypeCountDimensions (super->array.dimensions);
+	sub_dim = TypeCountDimensions (sub->array.dimensions);
+	if (super_dim == 0 || sub_dim == 0 || super_dim == sub_dim)
+	    return TypeIsSupertype (super->array.type, sub->array.type);
+	return False;
     case type_struct:
     case type_union:
-	if (!contains && a->structs.structs->nelements != b->structs.structs->nelements)
-	    break;
-	/*
-	 * Is 'b' a subtype of 'a'?
-	 */
-        st = a->structs.structs;
-	for (n = 0; n < st->nelements; n++)
+        super_st = super->structs.structs;
+	sub_st = sub->structs.structs;
+	for (n = 0; n < super_st->nelements; n++)
 	{
-	    Type	    *bt;
+	    Type	    *sub_mem;
 
-	    bt = StructMemType (b->structs.structs, StructTypeAtoms(st)[n]);
-	    if (!bt)
-		break;
-	    if (!TypeCompatible (BoxTypesElements(st->types)[n], bt, contains))
-		break;
-	}
-	if (n != a->structs.structs->nelements)
-	{
-	    /*
-	     * is 'a' a subtype of 'b'?
+	    /* 
+	     * Structs (or unions) are subtypes if they contain all
+	     * of the super type members and those members are subtypes
 	     */
-	    st = b->structs.structs;
-	    for (n = 0; n < st->nelements; n++)
-	    {
-		Type		*at;
-    
-		at = StructMemType (a->structs.structs, StructTypeAtoms(st)[n]);
-		if (!at)
-		    break;
-		if (!TypeCompatible (at, BoxTypesElements(st->types)[n], contains))
-		    break;
-	    }
-	    /* nope, neither are subtypes */
-	    if (n != b->structs.structs->nelements)
+	    sub_mem = StructMemType (sub_st, StructTypeAtoms(super_st)[n]);
+	    if (!sub_mem)
+		return False;
+	    if (!TypeIsSupertype (BoxTypesElements(super_st->types)[n],
+				  sub_mem))
 		return False;
 	}
 	return True;
-    default:
-	break;
+    case type_name:
+    case type_types:
+	abort ();
     }
     return False;
-	
+}
+
+/*
+ * Return True if a is a super or subtype of b
+ */
+
+Bool
+TypeIsOrdered (Type *a, Type *b)
+{
+    return TypeIsSupertype (a, b) || TypeIsSupertype (b, a);
 }
 
 /*
@@ -548,7 +550,7 @@ TypeBinaryRefMinus (Type *aref, Type *bref)
     if (TypePoly (bref))
 	bref = typeRefPoly;
     if (aref->base.tag == type_ref && bref->base.tag == type_ref)
-	if (TypeCompatible (aref->ref.ref, bref->ref.ref, False))
+	if (TypeIsOrdered (aref->ref.ref, bref->ref.ref))
 	    return typePrim[rep_integer];
     return 0;
 }
@@ -740,7 +742,7 @@ TypeCombineBinary (Type *left, int tag, Type *right)
     }
     else switch (tag) {
     case ASSIGN:
-	if (TypeCompatible (left, right, True))
+	if (TypeIsOrdered (left, right))
 	{
 	    if (TypePoly (left))
 		ret = TypeAdd (ret, right);
@@ -801,14 +803,10 @@ TypeCombineBinary (Type *left, int tag, Type *right)
     case COLON:
 	if (TypePoly (left) || TypePoly (right))
 	    ret = TypeAdd (ret, typePoly);
-	else if (TypeCompatible (left, right, False))
-	{
-	    if (TypeNumeric (left) && TypeNumeric (right) &&
-		left->prim.prim < right->prim.prim)
-		ret = TypeAdd (ret, right);
-	    else
-		ret = TypeAdd (ret, left);
-	}
+	else if (TypeIsSupertype (left, right))
+	    ret = TypeAdd (ret, left);
+	else if (TypeIsSupertype (right, left))
+	    ret = TypeAdd (ret, right);
 	break;
     case AND:
     case OR:
@@ -821,7 +819,7 @@ TypeCombineBinary (Type *left, int tag, Type *right)
     case GT:
     case LE:
     case GE:
-	if (TypeCompatible (left, right, False))
+	if (TypeIsOrdered (left, right))
 	    ret = TypeAdd (ret, typePrim[rep_bool]);
 	break;
     }
@@ -1018,14 +1016,13 @@ TypeCompatibleAssign (TypePtr a, Value b)
 	    if (RefValueGet (b))
 		return TypeCompatibleAssign (a->ref.ref, RefValueGet (b));
 	    else
-		return TypeCompatible (a->ref.ref, RefType (b), True);
+		return TypeIsOrdered (a->ref.ref, RefType (b));
 	}
 	break;
     case type_func:
 	if (ValueIsFunc(b))
 	{
-	    if (TypeCompatible (a->func.ret,
-				b->func.code->base.type, True))
+	    if (TypeIsOrdered (a->func.ret, b->func.code->base.type))
 	    {
 		ArgType *aarg = a->func.args, *barg = b->func.code->base.args;
     
@@ -1035,7 +1032,7 @@ TypeCompatibleAssign (TypePtr a, Value b)
 			return False;
 		    if (barg->varargs != aarg->varargs)
 			return False;
-		    if (!TypeCompatible (barg->type, aarg->type, True))
+		    if (!TypeIsOrdered (barg->type, aarg->type))
 			return False;
 		    aarg = aarg->next;
 		    barg = barg->next;
@@ -1068,8 +1065,7 @@ TypeCompatibleAssign (TypePtr a, Value b)
 		    return True;
 		}
 		else
-		    return TypeCompatible (a->array.type, 
-					   ArrayType(&b->array), True);
+		    return TypeIsOrdered (a->array.type, ArrayType(&b->array));
 	    }
 	}
 	break;
@@ -1086,7 +1082,7 @@ TypeCompatibleAssign (TypePtr a, Value b)
 		bt = StructMemType (b->structs.type, StructTypeAtoms(st)[n]);
 		if (!bt)
 		    break;
-		if (!TypeCompatible (BoxTypesElements(st->types)[n], bt, True))
+		if (!TypeIsOrdered (BoxTypesElements(st->types)[n], bt))
 		    break;
 	    }
 	    if (n == st->nelements)

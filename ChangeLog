@@ -1,5 +1,10 @@
 2004-11-15  Keith Packard  <keithp@keithp.com>
 
+	* lex.l:
+	Lost **= somehow.
+
+2004-11-15  Keith Packard  <keithp@keithp.com>
+
 	* compile.c: (CompileImplicitInit):
 	Implicitly initialize resizable arrays to zero-length array.
 

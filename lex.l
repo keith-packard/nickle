@@ -382,6 +382,7 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 "//="		{ yylval.ints = ASSIGNDIV; return ASSIGNDIV; }
 "⫽="		{ yylval.ints = ASSIGNDIV; return ASSIGNDIV; }
 "%="		{ yylval.ints = ASSIGNMOD; return ASSIGNMOD; }
+"**="		{ yylval.ints = ASSIGNPOW; return ASSIGNPOW; }
 "↑="		{ yylval.ints = ASSIGNPOW; return ASSIGNPOW; }
 "<<="		{ yylval.ints = ASSIGNSHIFTL; return ASSIGNSHIFTL; }
 "⪡="		{ yylval.ints = ASSIGNSHIFTL; return ASSIGNSHIFTL; }

@@ -71,55 +71,110 @@
 
     Command::new ("load", do_load);
 
+
     /*
-     * require
-     *
-     * require ModuleName ...	-
-     *    load a library named "module-name.5c" and
-     *    import ModuleName; do for each argument
+     * core behavior for autoload and autoimport
      */
-    void do_require (string[*] args...)
+
+    void do_auto (string[*][*] args, bool do_import)
     {
-	string make_filename(string m) {
+	string autotype = "autoload";
+	if (do_import)
+	    autotype = "autoimport";
+
+	string make_filename(string m)
+	{
 	    string r = "";
-	    for (int i = 0; i < String::length(m); i++) {
+	    bool last_lower = false;
+	    for (int i = 0; i < String::length(m); i++)
+	    {
 		int c = m[i];
-		if (Ctype::isupper(c)) {
+		bool cur_lower = Ctype::islower(c);
+		if (Ctype::isupper(c))
+		{
 		    c = Ctype::tolower(c);
-#		    if (i > 0)
-#			r = r + "-";
+		    if (last_lower)
+			r = r + "-";
 		}
 		r = r + String::new(c);
+		last_lower = cur_lower;
 	    }
 	    return r + ".5c";
 	}
 	
-	bool load_library (string library)
-	{
-	    string f = make_filename(library);
-	    if (!Command::lex_library (f)) 
-	    {
-		File::fprintf (stderr,
-			       "Cannot load required file \"%s\", giving up.\n",
-			       f);
-		return false;
-	    }
-	    Command::lex_string(File::sprintf("import %s;\n", library));
-	    return true;
-	}
-	
 	for (int i = 0; i < dim(args); i++) {
 	    string[*]	name = args[i];
-	    if (!Command::valid_name (name))
+	    if (Command::valid_name (name))
+		continue;
+	    if (!do_import && dim(name) > 1)
 	    {
-		for (int j = 0; j < dim(name); j++)
-		    if (!load_library (name[i]))
-			break;
+		string format_name()
+		{
+		    string result = name[0];
+		    for (int i = 1; i < dim(name); i++)
+		    {
+			result = result + "::";
+			result = result + name[i];
+		    }
+		    return result;
+		}
+		File::fprintf (stderr,
+			       "Cannot %s compound " +
+			       "name %s (without import), " +
+			       "giving up.\n",
+			       autotype,
+			       format_name());
+		return;
+	    }
+	    for (int j = 0; j < dim(name); j++)
+	    {
+		string f = make_filename(name[j]);
+		if (!Command::lex_library (f)) 
+		{
+		    File::fprintf (stderr,
+				   "Cannot load %s " +
+				   "file \"%s\", giving up.\n",
+				   autotype,
+				   f);
+		    return;
+		}
+		if (do_import)
+		{
+		    string imp = File::sprintf("import %s;\n", name[j]);
+		    Command::lex_string(imp);
+		}
 	    }
 	}
     }
 
-    Command::new_names ("require", do_require);
+    /*
+     * autoimport
+     *
+     * autoimport ModuleName ...	-
+     *    load a library named "module-name.5c" and
+     *    import ModuleName; do for each argument
+     */
+
+    void do_autoimport (string[*] args...)
+    {
+	do_auto(args, true);
+    }
+
+    Command::new_names ("autoimport", do_autoimport);
+
+    /*
+     * autoload
+     *
+     * autoload ModuleName ...	-
+     *    load a library named "module-name.5c".
+     */
+
+    void do_autoload (string[*] args...)
+    {
+	do_auto(args, false);
+    }
+
+    Command::new_names ("autoload", do_autoload);
 
     /*
      * library

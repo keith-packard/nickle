@@ -13,6 +13,8 @@
  */
 
 #include	<setjmp.h>
+#define __USE_UNIX98 /* Get sigignore() and sigrelse()
+			prototypes for Linux */
 #include	<signal.h>
 #include	<stdio.h>
 #include	"nickle.h"
@@ -67,6 +69,24 @@ try_nicklelib (void)
 RETSIGTYPE	intr(int), ferr(int);
 RETSIGTYPE	stop (int), die (int), segv (int);
 
+static void
+ignoreSignal(int sig) {
+#ifdef HAVE_SIGIGNORE
+    sigignore (sig);
+#else
+    signal (sig, SIG_IGN);
+#endif
+}
+
+static void
+releaseSignal(int sig) {
+#ifdef HAVE_SIGRELSE
+    sigrelse (sig);
+#else
+    signal (sig, SIG_DFL);
+#endif
+}
+
 /*ARGSUSED*/
 int
 main (int argc, char **argv)
@@ -80,7 +100,7 @@ main (int argc, char **argv)
     (void) catchSignal (SIGILL, die);
     (void) catchSignal (SIGABRT, die);
     (void) catchSignal (SIGSEGV, segv);
-    (void) catchSignal (SIGPIPE, SIG_IGN);
+    (void) ignoreSignal (SIGPIPE);
     (void) catchSignal (SIGTERM, die);
     (void) catchSignal (SIGTSTP, stop);
     (void) catchSignal (SIGTTIN, stop);
@@ -184,7 +204,7 @@ init (void)
 void
 catchSignal (int sig, RETSIGTYPE (*func) (int sig))
 {
-#ifdef HAS_SIGACTION
+#ifdef HAVE_SIGACTION
     struct sigaction sa;
 
     memset (&sa, '\0', sizeof (struct sigaction));
@@ -199,7 +219,7 @@ catchSignal (int sig, RETSIGTYPE (*func) (int sig))
 void
 resetSignal (int sig, RETSIGTYPE (*func) (int sig))
 {
-#ifndef HAS_SIGACTION
+#ifndef HAVE_SIGACTION
     signal (sig, func);
 #endif
 }
@@ -221,7 +241,7 @@ stop (int sig)
     sigfillset (&set);
     sigprocmask (SIG_SETMASK, &set, &oset);
     IoStop ();
-    catchSignal (sig, SIG_DFL);
+    releaseSignal (sig);
     sigfillset (&set);
     sigdelset (&set, sig);
     sigprocmask (SIG_SETMASK, &set, &set);
@@ -242,6 +262,6 @@ RETSIGTYPE
 segv (int sig)
 {
     IoStop ();
-    catchSignal (SIGSEGV, SIG_DFL);
+    releaseSignal (SIGSEGV);
     /* return and reexecute the fatal instruction */
 }

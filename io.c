@@ -19,7 +19,7 @@ Bool		ownTty[3];
 Bool		anyTtyUnowned;
 Bool		ioTimeoutQueued;
 
-#ifdef HAS_SIGACTION
+#ifdef HAVE_SIGACTION
 #define RESTART_SIGNAL(sig,func)
 #else
 #define RESTART_SIGNAL(sig,func) (void) signal (sig,func)

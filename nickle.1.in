@@ -1203,7 +1203,7 @@ the variable is not available.
 Attempts to unset the environment variable with the given
 name, and returns an indication of success.
 .IP "string function set(string name, string value)"
-Attempts to unset the environment variable with the given
+Attempts to set the environment variable with the given
 name to the given value, and returns an indication of success.
 .\"
 .SH COMMANDS

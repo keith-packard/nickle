@@ -700,7 +700,7 @@ dofformat (Value f, char *fmt, int n, Value *p)
 	    case '8':
 	    case '9':
 		width = c - '0';
-		while (isdigit (c = *++fm))
+		while (isdigit ((int)(c = *++fm)))
 		    width = width * 10 + c - '0';
 		width = width * sign;
 	    dot:
@@ -740,7 +740,7 @@ dofformat (Value f, char *fmt, int n, Value *p)
 		    case '8':
 		    case '9':
 			prec = c - '0';
-			while (isdigit (c = *++fm))
+			while (isdigit ((int)(c = *++fm)))
 			    prec = prec * 10 + c - '0';
 			break;
 		    }
@@ -1171,7 +1171,7 @@ do_string_to_integer (int n, Value *p)
     }
     
     s = StringChars (&str->string);
-    while (isspace (*s)) s++;
+    while (isspace ((int)(*s))) s++;
     switch (*s) {
     case '-':
 	negative = 1;
@@ -1810,7 +1810,7 @@ do_Command_new_common (Value name, Value func, Bool names)
 	    continue;
 	if (cmd != StringChars (&name->string) + 1)
 	{
-	    if (isdigit (c) || c == '_')
+	    if (isdigit ((int)c) || c == '_')
 	     continue;
 	}
 	RaiseStandardException (exception_invalid_argument,
@@ -1968,18 +1968,40 @@ do_Environ_check (Value av)
     RETURN (Zero);
 }
 
+extern char **environ;
+
 Value
 do_Environ_unset (Value av)
 {
-    unsetenv (StringChars (&av->string));
-    return One;
+    ENTER ();
+    char *name = StringChars(&av->string);
+    int n = strlen(name);
+    while(*environ) {
+	if (!strncmp(*environ, name, n) && (*environ)[n] == '=') {
+	    char **tail = environ;
+	    while(*(tail+1))
+		tail++;
+	    *environ = *tail;
+	    *tail = 0;
+	    RETURN(One);
+	}
+	environ++;
+    }
+    RETURN (Zero);
 }
 
 Value
 do_Environ_set (Value name, Value value)
 {
     ENTER ();
-    if (setenv (StringChars (&name->string), StringChars (&value->string), 1) < 0)
+    Value binding = NewString(strlen (StringChars(&name->string)) + 1 +
+			      strlen (StringChars(&value->string)));
+    (void) strcpy (StringChars(&binding->string),
+		   StringChars(&name->string));
+    (void) strcat (StringChars(&binding->string), "=");
+    (void) strcat (StringChars(&binding->string),
+		   StringChars(&value->string));
+    if (putenv (StringChars (&binding->string)) < 0)
 	RETURN (Zero);
     RETURN (One);
 }

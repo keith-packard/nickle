@@ -584,8 +584,7 @@ catches		:   catch catches
 		;
 catch		: CATCH fullname namespace_start opt_argdefines block namespace_end
 		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $5), $2); }
-func_body    	: { ++funcDepth; } block { --funcDepth; }
-		    { $$ = $2; }
+func_body    	: { ++funcDepth; } block { --funcDepth; $$ = $2; }
 		| SEMI
 		    { $$ = 0; }
 		;

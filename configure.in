@@ -5,7 +5,7 @@ dnl All Rights Reserved.  See the file COPYING in this directory
 dnl for licensing information.
 
 AC_INIT(nickle.h)
-AM_INIT_AUTOMAKE(nickle,1.99.2)
+AM_INIT_AUTOMAKE(nickle,1.99.3)
 AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs.
@@ -24,26 +24,6 @@ AC_CHECK_PROGS([DATE], date)
 dnl Checks for libraries.
 AC_CHECK_LIB(m, log)
 
-dnl Check for readline and get termcap lib as well
-doit=yes
-AC_ARG_WITH(readline,
-[  --without-readline      do not use the readline library],doit=$with_readline)
-case $doit in
-no)
-	;;
-*)
-AC_CHECK_LIB(ncurses,tparm,TERMLIB=-lncurses,
-AC_CHECK_LIB(termcap,tgetent,TERMLIB=-ltermcap))
-saved_LIBS="$LIBS"
-LIBS="$LIBS $TERMLIB"
-AC_CHECK_LIB(readline,readline,
-   [AC_CHECK_HEADER(readline/readline.h,
-   LIBS="$saved_LIBS -lreadline $TERMLIB";
-   AC_DEFINE(HAVE_LIBREADLINE,1,[support fancy command line editing]))],
-   LIBS="$saved_LIBS")
-   ;;
-  esac
-
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h strings.h time.h sys/time.h unistd.h)
@@ -60,9 +40,12 @@ AC_CHECK_SIZEOF([long long], 0)
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(gettimeofday select)
+AC_CHECK_FUNCS(gettimeofday select sigaction sigrelse sigignore)
 
 AC_FUNC_GETPGRP
+
+dnl The readline test is complicated enough to rate its own file
+AC_LIB_READLINE
 
 if test "x$prefix" = xNONE; then
     prefix="$ac_default_prefix"

@@ -617,8 +617,6 @@ extern int	stdin_interactive;
 void	intr(int);
 void	stop (int), die (int), segv (int);
 
-#define HAS_SIGACTION
-
 void
 catchSignal (int sig, RETSIGTYPE (*func) (int sig));
 

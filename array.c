@@ -360,6 +360,7 @@ ArrayResize (Value av, int dim, int size)
 	    /* empty */
 	    ents = 0;
 	    nstride = 0;
+	    odim = 0;
 	    size = 0;
 	    nchunk = 0;
 	    for (d = 0; d < a->ndim; d++)

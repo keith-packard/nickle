@@ -37,6 +37,17 @@ nickle_SOURCES = alarm.c array.c atom.c avl.c box.c \
 nickle_LDADD = -Lbuiltin -lbuiltin
 nickle_DEPENDENCIES = builtin/libbuiltin.a
 
+# XXX for version numbering only
+
+NICKLEBUILTINSOURCES = builtin/bsdrandom.c builtin/builtin.c \
+	builtin/builtin.h builtin/command.c \
+	builtin/debug.c builtin/environ.c \
+	builtin/file.c builtin/gcd.c \
+	builtin/math.c builtin/namespaces.h \
+	builtin/semaphore.c builtin/sockets.c \
+	builtin/string.c builtin/thread.c \
+	builtin/toplevel.c
+
 pkgdata_DATA = $(NICKLEFILES)
 
 man_MANS = nickle.1
@@ -50,6 +61,15 @@ AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes \
 $(nickle_OBJECTS): avl.h gram.h memp.h opcode.h stack.h \
 	config.h mem.h nickle.h ref.h value.h
 
+all: version.m4
+
 gram.c gram.h: gram.y
 
 lex.c: lex.l
+
+version.m4: update-version.sh \
+  $(nickle_SOURCES) $(NICKLEFILES) $(NICKLEBUILTINSOURCES)
+	sh update-version.sh > version.m4.new && \
+	/bin/mv -f version.m4.new version.m4
+	sh ./autogen.sh
+	./config.status

@@ -2000,6 +2000,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->constant.constant = expr->constant.constant;
 	expr->base.type = typePrim[rep_string];
 	break;
+    case THREAD_CONST:
+	BuildInst (obj, OpConst, inst, stat);
+	inst->constant.constant = expr->constant.constant;
+	expr->base.type = typePrim[rep_thread];
+	break;
     case VOIDVAL:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;

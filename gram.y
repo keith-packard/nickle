@@ -1156,7 +1156,7 @@ simpleexpr	: primary
 		| MOD integer						%prec THREADID
 		    {   Value	t;
 			t = do_Thread_id_to_thread ($2);
-			if (Zerop (t))
+			if (t == Void)
 			{
 			    ParseError ("No thread %v", $2);
 			    YYERROR;

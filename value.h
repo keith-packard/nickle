@@ -913,6 +913,7 @@ Value	Bdivmod (Value av, Value bv);
 Value	KaryReduction (Value av, Value bv);
 #endif
 Value	Lxor(Value, Value), Lnot (Value);
+Value   Popcount(Value);
 Bool	Print (Value, Value, char format, int base, int width, int prec, int fill);
 void	RaiseError (char *s, ...);
 void	PrintError (char *s, ...);

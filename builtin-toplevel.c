@@ -53,6 +53,7 @@ import_Toplevel_namespace()
         { do_is_thread, "is_thread", "b", "p" },
         { do_is_bool, "is_bool", "b", "p" },
         { do_is_void, "is_void", "b", "p" },
+        { do_is_defined, "is_defined", "b", "*p" },
         { do_mantissa, "mantissa", "r", "R" },
         { do_numerator, "numerator", "i", "R" },
         { do_precision, "precision", "i", "R" },
@@ -696,6 +697,23 @@ do_is_void (Value av)
     default:
 	av = FalseVal;
 	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_defined (Value av)
+{
+    ENTER ();
+    if (!av) {
+	RaiseStandardException (exception_invalid_argument,
+				"do_is_defined: invalid reference",
+				2, NewInt (0), av);
+	av = Void;
+    } else if (!RefValueGet(av)) {
+	av = FalseVal;
+    } else {
+	av = TrueVal;
     }
     RETURN (av);
 }

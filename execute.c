@@ -581,6 +581,23 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 }
 
 
+#ifdef DEBUG_JUMP
+void
+ThreadCatches (Value thread)
+{
+    CatchPtr	catch;
+
+    FilePrintf (FileStdout, "(");
+    for (catch = thread->thread.continuation.catches; 
+	 catch;
+	 catch = catch->continuation.catches)
+    {
+	FilePrintf (FileStdout, "%A ", catch->exception->symbol.name);
+    }
+    FilePrintf (FileStdout, ")\n");
+}
+#endif
+
 static Value
 ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *next)
 {
@@ -591,7 +608,8 @@ ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *
     int		base = argc - 2;
 
 #ifdef DEBUG_JUMP
-    FilePrintf (FileStdout, "    Raise: %A\n", exception->symbol.name);
+    FilePrintf (FileStdout, "    Raise: %A ", exception->symbol.name);
+    ThreadCatches (thread);
 #endif
     /*
      * Build and array to hold the arguments, this will end up
@@ -608,6 +626,20 @@ ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *
     }
     RETURN (args);
 }
+
+static void
+ThreadEndCatch (Value thread, int catches)
+{
+#ifdef DEBUG_JUMP
+    FilePrintf (FileStdout, "    EndCatch: %d ", catches);
+#endif
+    while (catches--)
+        thread->thread.continuation.catches = thread->thread.continuation.catches->continuation.catches;
+#ifdef DEBUG_JUMP
+    ThreadCatches (thread);
+#endif
+}
+
 
 static Value
 ThreadExceptionCall (Value thread, InstPtr *next, int *stack)
@@ -684,8 +716,22 @@ ThreadUnwind (Value thread, int twixt, int catch)
 {
     while (twixt--)
 	thread->thread.continuation.twixts = thread->thread.continuation.twixts->continuation.twixts;
+#ifdef DEBUG_JUMP
+    FilePrintf (FileStdout, "     Before unwind: ");
+    ThreadCatches (thread);
+#endif
     while (catch--)
+    {
+#ifdef DEBUG_JUMP
+	FilePrintf (FileStdout, "    Unwind: %A\n",
+			thread->thread.continuation.catches->exception->symbol.name);
+#endif
 	thread->thread.continuation.catches = thread->thread.continuation.catches->continuation.catches;
+    }
+#ifdef DEBUG_JUMP
+    FilePrintf (FileStdout, "     After unwind: ");
+    ThreadCatches (thread);
+#endif
 }
 
 #define ThreadBoxCheck(box,i) (BoxValueGet(box,i) == 0 ? ThreadBoxSetDefault(box,i,0) : 0)
@@ -887,6 +933,10 @@ ThreadStackDump (Value thread)
     }
 }
 
+#ifdef DEBUG_INST
+int dump_inst = 0;
+#endif
+
 void
 ThreadsRun (Value thread, Value lex)
 {
@@ -958,8 +1008,11 @@ ThreadsRun (Value thread, Value lex)
 		next = inst + 1;
 		complete = False;
 #ifdef DEBUG_INST
-		InstDump (inst, 1, 0, 0, 0);
-		FileFlush (FileStdout, True);
+		if (dump_inst)
+		{
+		    InstDump (inst, 1, 0, 0, 0);
+		    FileFlush (FileStdout, True);
+		}
 #endif
 		switch (inst->base.opCode) {
 		case OpNoop:
@@ -1300,6 +1353,11 @@ ThreadsRun (Value thread, Value lex)
 		case OpCatch:
 		    if (aborting)
 			break;
+#ifdef DEBUG_JUMP
+		    FilePrintf (FileStdout, "    Catch: %A ",
+				inst->catch.exception->symbol.name);
+		    ThreadCatches (thread);
+#endif
 		    thread->thread.continuation.catches = NewCatch (thread,
 								    inst->catch.exception);
 		    complete = True;
@@ -1308,7 +1366,7 @@ ThreadsRun (Value thread, Value lex)
 		case OpEndCatch:
 		    if (aborting)
 			break;
-		    thread->thread.continuation.catches = thread->thread.continuation.catches->continuation.catches;
+		    ThreadEndCatch (thread, inst->ints.value);
 		    complete = True;
 		    break;
 		case OpRaise:

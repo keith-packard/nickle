@@ -1,3 +1,20 @@
+2004-07-07  Keith Packard  <keithp@keithp.com>
+
+	* compile.c: (CompileCountCatches), (CompileCatch), (InstDump):
+	* execute.c: (ThreadCatches), (ThreadRaise), (ThreadEndCatch),
+	(ThreadUnwind), (ThreadsRun):
+	* sched.c: (FarJumpContinuation), (ContinuationTrace):
+	* value.h:
+	Parallel catch blocks are peers, not nested.  This affects
+	how FarJump execution inside them happens; in particular,
+	all of the peer catches are unwound before the handler is
+	invoked so all jumps from inside use the same NonLocal
+	data structure.  Also added yet more debugging to
+	continuation execution.
+
+	* gram.y:
+	Allow 'enum switch'
+
 2004-06-19  Keith Packard  <keithp@keithp.com>
 
 	* execute.c: (ThreadCall):

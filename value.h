@@ -793,7 +793,7 @@ void	ContinuationInit (ContinuationPtr continuation);
 
 #ifdef DEBUG_JUMP
 void	    ContinuationTrace (char *where, Continuation *continuation, int indent);
-void	    ContinuationTrace (char	*where, Value continuation);
+void	    ThreadCatches (Value thread);
 #endif
 
 /*

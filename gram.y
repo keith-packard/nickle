@@ -478,7 +478,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 		      $$ = NewExprTree(FOR, expr, $7); }
 		| SWITCH ignorenl namespace_start OP expr CP case_block namespace_end attendnl
 		    { $$ = NewExprTree (SWITCH, $5, $7); }
-		| UNION SWITCH ignorenl namespace_start OP expr CP union_case_block namespace_end attendnl
+		| union_or_enum SWITCH ignorenl namespace_start OP expr CP union_case_block namespace_end attendnl
 		    { $$ = NewExprTree (UNION, $6, $8); }
 		| BREAK SEMI
 		    { $$ = NewExprTree(BREAK, (Expr *) 0, (Expr *) 0); }
@@ -673,6 +673,9 @@ block_or_expr	: block
 					  NewExprTree (RETURNTOK, 0, $3),
 					  NewExprTree (OC, 0, 0));
 		    }
+		;
+union_or_enum	: UNION
+		| ENUM
 		;
 see_comment	:
 		    { seeComment = 1; }

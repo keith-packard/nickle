@@ -2054,6 +2054,19 @@ CompileStructUnionInit (ObjPtr obj, ExprPtr expr, Type *type,
     RETURN (obj);
 }
 
+static int
+CompileCountCatches (ExprPtr catches)
+{
+    int	c = 0;
+
+    while (catches)
+    {
+	c++;
+	catches = catches->tree.left;
+    }
+    return c;
+}
+
 static ObjPtr
 CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body, 
 	      ExprPtr stat, CodePtr code, int nest)
@@ -2149,15 +2162,18 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	inst->catch.offset = obj->used - catch_inst;
 	inst->catch.exception = exception;
     
-	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTry, 0);
+	if (!catches->tree.left)
+	    obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTry, 0);
 	
 	obj = CompileCatch (obj, catches->tree.left, body, stat, code, nest+1);
 	
-	obj->nonLocal = obj->nonLocal->prev;
+	if (!catches->tree.left)
+	    obj->nonLocal = obj->nonLocal->prev;
 
 	if (!nest)
 	{
 	    BuildInst (obj, OpEndCatch, inst, stat);
+	    inst->ints.value = CompileCountCatches (catches);
 	    /*
 	     * Patch Catch branches inside
 	     */
@@ -4322,6 +4338,7 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	ObjDump (inst->obj.obj, indent+1);
 	break;
     case OpEndCatch:
+	FilePrintf (FileStdout, " %d catches", inst->ints.value);
 	break;
     case OpRaise:
 	FilePrintf (FileStdout, "%A", inst->raise.exception->symbol.name);

@@ -574,11 +574,19 @@ FarJumpContinuation (ContinuationPtr continuation, FarJumpPtr farJump)
     /*
      * Unwind catches
      */
+#ifdef DEBUG_JUMP
+    FilePrintf (FileStdout, "FarJump catches before: ");
+    ThreadCatches (running);
+#endif
     catches = farJump->catch;
     catch = ret->continuation.catches;
     while (catches--)
 	catch = catch->continuation.catches;
     ret->continuation.catches = catch;
+#ifdef DEBUG_JUMP
+    FilePrintf (FileStdout, "FarJump catches after: ");
+    ThreadCatches (running);
+#endif
 
     /*
      * Unwind frames
@@ -686,8 +694,9 @@ EmptyContinuation (void)
 }
 
 #ifdef DEBUG_JUMP
+int dump_jump = 0;
 
-static void
+void
 ContinuationTrace (char *where, Continuation *continuation, int indent)
 {
     int	    s;
@@ -697,6 +706,8 @@ ContinuationTrace (char *where, Continuation *continuation, int indent)
     ObjPtr	obj = continuation->obj;
     InstPtr	pc = continuation->pc;
     
+    if (!dump_jump)
+	return;
     TraceIndent (indent);
     FilePuts (FileStdout, "*** ");
     FilePuts (FileStdout, where);

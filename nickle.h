@@ -362,11 +362,16 @@ typedef struct _instBase {
     short	flags;
 } InstBase;
 
-typedef struct _instVar {
+typedef struct _instBox {
     InstBase	inst;
-    SymbolPtr	name;
-    int		staticLink;
-} InstVar;
+    BoxPtr	box;
+} InstBox;
+
+typedef struct _instFrame {
+    InstBase	inst;
+    short	staticLink;
+    short	element;
+} InstFrame;
 
 typedef struct _instConst {
     InstBase	inst;
@@ -498,7 +503,8 @@ typedef struct _instFarJump {
 
 typedef union _inst {
     InstBase	base;
-    InstVar	var;
+    InstBox	box;
+    InstFrame	frame;
     InstConst	constant;
     InstAtom	atom;
     InstInt	ints;

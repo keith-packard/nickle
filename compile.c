@@ -28,17 +28,13 @@ ObjMark (void *object)
 	case OpGlobal:
 	case OpGlobalRef:
 	case OpGlobalRefStore:
-	case OpStatic:
-	case OpStaticRef:
-	case OpStaticRefStore:
-	case OpLocal:
-	case OpLocalRef:
-	case OpLocalRefStore:
-	    MemReference (inst->var.name);
+	case OpTagGlobal:
+	    MemReference (inst->box.box);
 	    break;
 	case OpBuildStruct:
 	    MemReference (inst->structs.structs);
 	    break;
+	case OpBuildArrayInd:
 	case OpBuildArray:
 	    MemReference (inst->array.type);
 	    break;
@@ -237,6 +233,10 @@ ObjPtr	CompileFuncCode (CodePtr	code,
 			 NonLocalPtr	nonLocal);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 static Bool CompileIsReachable (ObjPtr obj, int i);
+static ObjPtr
+CompileArrayDimValue (ObjPtr obj, TypePtr type, Bool lvalue, ExprPtr stat, CodePtr code);
+static ObjPtr
+CompileType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code);
 
 /*
  * Set storage information for new symbols
@@ -271,6 +271,43 @@ CompileStorage (ObjPtr obj, ExprPtr stat, SymbolPtr symbol, CodePtr code)
 	default:
 	    break;
 	}
+    }
+    EXIT ();
+}
+
+/*
+ * Set storage information for array dimensions
+ */
+static void
+CompileDimensionStorage (ObjPtr obj, Class class, TypePtr type, CodePtr code)
+{
+    ENTER ();
+    if (class == class_typedef)
+	class = code ? class_auto : class_global;
+
+    switch (class) {
+    case class_global:
+    case class_const:
+	type->array.storage = DimStorageGlobal;
+	type->array.u.global = NewBox (True, False, 1, typeArrayInt);
+	break;
+    case class_static:
+	type->array.storage = DimStorageLocal;
+	type->array.u.frame.element = AddBoxType (&code->func.statics,
+						  typeArrayInt);
+	type->array.u.frame.staticScope = True;
+	type->array.u.frame.code = code;
+	break;
+    case class_arg:
+    case class_auto:
+	type->array.storage = DimStorageLocal;
+	type->array.u.frame.element = AddBoxType (&CodeBody (code)->dynamics,
+						  typeArrayInt);
+	type->array.u.frame.staticScope = code->func.inStaticInit;
+	type->array.u.frame.code = code;
+	break;
+    default:
+	break;
     }
     EXIT ();
 }
@@ -437,7 +474,7 @@ isName:
 	    expr->base.type = typePoly;
 	    break;
 	}
-	opCode = OpNoop;
+	inst = 0;
 	switch (s->symbol.class) {
 	case class_const:
 	    if (!initialize) {
@@ -448,14 +485,19 @@ isName:
 	    }
 	    /* fall through ... */
 	case class_global:
-	    opCode = OpGlobalRef;
+	    BuildInst (obj, OpGlobalRef, inst, stat);
+	    inst->box.box = s->global.value;
 	    break;
 	case class_static:
-	    opCode = OpStaticRef;
+	    BuildInst (obj, OpStaticRef, inst, stat);
+	    inst->frame.staticLink = depth;
+	    inst->frame.element = s->local.element;
 	    break;
 	case class_arg:
 	case class_auto:
-	    opCode = OpLocalRef;
+	    BuildInst (obj, OpLocalRef, inst, stat);
+	    inst->frame.staticLink = depth;
+	    inst->frame.element = s->local.element;
 	    break;
 	default:
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
@@ -463,7 +505,7 @@ isName:
 	    expr->base.type = typePoly;
 	    break;
 	}
-	if (opCode == OpNoop)
+	if (!inst)
 	    break;
 	expr->base.type = s->symbol.type;
 	t = CompileRefType (expr->base.type);
@@ -471,14 +513,11 @@ isName:
 	    CompileError (obj, stat, "Object right of '&' is not of ref type");
 	if (t && !amper)
 	{
-	    opCode--;
+	    inst->base.opCode--;
 	    expr->base.type = t;
 	}
 	else if (assign)
-	    opCode++;
-        BuildInst(obj, opCode, inst, stat);
-	inst->var.name = s;
-	inst->var.staticLink = depth;
+	    inst->base.opCode++;
 	break;
     case AMPER:
 	obj = CompileLvalue (obj, expr->tree.left, stat, code,
@@ -1258,13 +1297,21 @@ CompileBuildArray (ObjPtr obj, ExprPtr expr, TypePtr type,
     ENTER ();
     InstPtr	inst;
 
-    while (dim)
+    if (dim)
     {
-	obj = _CompileExpr (obj, dim->tree.left, True, stat, code);
-	SetPush (obj);
-	dim = dim->tree.right;
+	while (dim)
+	{
+	    obj = _CompileExpr (obj, dim->tree.left, True, stat, code);
+	    SetPush (obj);
+	    dim = dim->tree.right;
+	}
+	BuildInst (obj, OpBuildArray, inst, stat);
     }
-    BuildInst (obj, OpBuildArray, inst, stat);
+    else
+    {
+	CompileArrayDimValue (obj, type, False, stat, code);
+	BuildInst (obj, OpBuildArrayInd, inst, stat);
+    }
     inst->array.ndim = ndim;
     inst->array.type = type->array.type;
     RETURN (obj);
@@ -1577,7 +1624,7 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 	}
     }
     if (type->array.dimensions && type->array.dimensions->tree.left)
-	dimensions = type->array.dimensions;
+	dimensions = 0;
     else
     {
 	dimensions = CompileImplicitArray (obj, stat, expr, ndim);
@@ -2070,7 +2117,6 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     InstPtr inst;
     SymbolPtr	s;
     Type	*t;
-    OpCode	opCode;
     int		staticLink;
     Bool	bool_const;
     
@@ -2085,27 +2131,34 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	switch (s->symbol.class) {
 	case class_const:
 	case class_global:
-	    opCode = OpGlobal;
+	    BuildInst (obj, OpGlobal, inst, stat);
+	    inst->box.box = s->global.value;
+	    assert (s->global.value);
+#if 0
+	    inst->var.name = s;
+	    inst->var.staticLink = 0;
+#endif
 	    break;
 	case class_static:
-	    opCode = OpStatic;
+	    BuildInst (obj, OpStatic, inst, stat);
+	    inst->frame.staticLink = staticLink;
+	    inst->frame.element = s->local.element;
 	    break;
 	case class_arg:
 	case class_auto:
-	    opCode = OpLocal;
+	    BuildInst (obj, OpLocal, inst, stat);
+	    inst->frame.staticLink = staticLink;
+	    inst->frame.element = s->local.element;
 	    break;
 	default:
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  s->symbol.class, expr->atom.atom);
 	    expr->base.type = typePoly;
-	    opCode = OpNoop;
+	    inst = 0;
 	    break;
 	}
-	if (opCode == OpNoop)
+	if (!inst)
 	    break;
-	BuildInst (obj, opCode, inst, stat);
-	inst->var.name = s;
-	inst->var.staticLink = staticLink;
 	expr->base.type = s->symbol.type;
 	t = CompileRefType (expr->base.type);
 	if (t)
@@ -2119,6 +2172,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	obj = CompileDecl (obj, expr, evaluate, stat, code);
 	break;
     case NEW:
+	if (expr->base.type)
+	    obj = CompileType (obj, 0, expr->base.type, stat, code);
 	obj = CompileInit (obj, expr->tree.left, expr->base.type, stat, code);
 	break;
     case UNION:
@@ -3381,8 +3436,17 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 
 			name->symbol.type = mt;
 			CompileStorage (obj, expr, name, code);
-			BuildInst (obj, OpTagStore, assign, expr);
-			assign->var.name = name;
+			if (ClassFrame (name->symbol.class))
+			{
+			    BuildInst (obj, OpTagLocal, assign, expr);
+			    assign->frame.staticLink = 0;
+			    assign->frame.element = name->local.element;
+			}
+			else
+			{
+			    BuildInst (obj, OpTagGlobal, assign, expr);
+			    assign->box.box = name->global.value;
+			}
 		    }
 		}
 		icase++;
@@ -3421,6 +3485,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	obj = CompileDecl (obj, expr, False, expr, code);
 	break;
     case TYPEDEF:
+	if (expr->tree.left->decl.type)
+	    obj = CompileType (obj, expr->tree.left, expr->tree.left->decl.type, 
+			       expr, code);
 	break;
     case OC:
 	while (expr->tree.left)
@@ -3583,6 +3650,7 @@ CompileFuncCode (CodePtr	code,
     }
 #ifdef DEBUG
     ObjDump (obj, 0);
+    FileFlush (FileStdout, True);
 #endif
     RETURN (obj);
 }
@@ -3613,9 +3681,10 @@ CompileFunc (ObjPtr	    obj,
     {
 	SetPush (obj);
 	BuildInst (staticInit, OpStaticDone, inst, stat);
-	BuildInst (staticInit, OpEnd, inst, stat);
+/*	BuildInst (staticInit, OpEnd, inst, stat); */
 #ifdef DEBUG
 	ObjDump (staticInit, 1);
+	FileFlush (FileStdout, True);
 #endif
 	code->func.staticInit.obj = staticInit;
 	BuildInst (obj, OpStaticInit, inst, stat);
@@ -3626,14 +3695,180 @@ CompileFunc (ObjPtr	    obj,
 }
 
 /*
+ * Get the class, defaulting as appropriate
+ */
+static Class
+CompileDeclClass (ExprPtr decls, CodePtr code)
+{
+    Class	    class;
+    
+    class = decls ? decls->decl.class : class_undef;
+    if (class == class_undef)
+	class = code ? class_auto : class_global;
+    return class;
+}
+
+/*
+ * Find the code object to compile the declaration in
+ */
+static CodePtr
+CompileDeclCodeCompile (Class class, CodePtr code)
+{
+    CodePtr code_compile = 0;
+    
+    switch (class) {
+    case class_global:
+    case class_const:
+	/*
+	 * Globals are compiled in the static initializer for
+	 * the outermost enclosing function.
+	 */
+	code_compile = code;
+	while (code_compile && code_compile->base.previous)
+	    code_compile = code_compile->base.previous;
+	break;
+    case class_static:
+	/*
+	 * Statics are compiled in the static initializer for
+	 * the nearest enclosing function
+	 */
+	code_compile = code;
+	break;
+    case class_auto:
+    case class_arg:
+	/*
+	 * Autos are compiled where they lie; just make sure a function
+	 * exists somewhere to hang them from
+	 */
+	break;
+    default:
+	break;
+    }
+    return code_compile;
+}
+
+static ObjPtr *
+CompileDeclInitObjStart (ObjPtr *obj, CodePtr code, CodePtr code_compile)
+{
+    ObjPtr  *initObj = obj;
+    if (code_compile)
+    {
+	if (!code_compile->func.staticInit.obj)
+	    code_compile->func.staticInit.obj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
+	initObj = &code_compile->func.staticInit.obj;
+	code_compile->func.inStaticInit = True;
+	if (code != code_compile)
+	    code->func.inGlobalInit = True;
+    }
+    return initObj;
+}
+
+static void
+CompileDeclInitObjFinish (ObjPtr *obj, ObjPtr *initObj, CodePtr code, CodePtr code_compile)
+{
+    if (code_compile)
+    {
+	code_compile->func.inStaticInit = False;
+	code->func.inGlobalInit = False;
+    }
+}
+
+/*
  * Compile a type.  This consists only of compiling array dimension expressions
  * so those values can be used later
  */
 
 static ObjPtr
+CompileArrayDimValue (ObjPtr obj, TypePtr type, Bool lvalue, ExprPtr stat, CodePtr code)
+{
+    ENTER ();
+    InstPtr inst;
+    int	    d;
+    CodePtr c;
+    
+    switch (type->array.storage) {
+    case DimStorageNone:
+	assert (0);
+	break;
+    case DimStorageGlobal:
+	BuildInst (obj, OpGlobal, inst, stat);
+	inst->box.box = type->array.u.global;
+	break;
+    case DimStorageLocal:
+	d = 0;
+	for (c = code; c && c != type->array.u.frame.code; c = c->base.previous)
+	    d++;
+	if (type->array.u.frame.staticScope)
+	{
+	    BuildInst (obj, OpStatic, inst, stat);
+	}
+	else
+	{
+	    BuildInst (obj, OpLocal, inst, stat);
+	}
+	inst->frame.staticLink = d;
+	inst->frame.element = type->array.u.frame.element;
+	break;
+    }
+    if (lvalue)
+	inst->base.opCode += 2;
+    RETURN (obj);
+}
+
+static ObjPtr
 CompileArrayType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code)
 {
-    return obj;
+    ENTER ();
+    type->array.dims = CompileCountDeclDimensions (type->array.dimensions);
+    if (type->array.dims && type->array.dimensions->tree.left)
+    {
+	Class   class = CompileDeclClass (decls, code);	
+	CodePtr code_compile = CompileDeclCodeCompile (class, code);
+	ExprPtr	dim = type->array.dimensions;
+	InstPtr	inst;
+	ObjPtr	*initObj;
+	
+	CompileDimensionStorage (obj, class, type, code);
+
+	initObj = CompileDeclInitObjStart (&obj, code, code_compile);
+	/*
+	 * Prepare the lvalue for assignment
+	 */
+	*initObj = CompileArrayDimValue (*initObj, type, True, stat, code);
+	/*
+	 * Allocate an array for the dimension information
+	 */
+	SetPush (*initObj);
+	BuildInst (*initObj, OpConst, inst, stat);
+	inst->constant.constant = NewInt (type->array.dims);
+	SetPush (*initObj);
+	BuildInst (*initObj, OpBuildArray, inst, stat);
+	inst->array.ndim = 1;
+	inst->array.type = typePrim[rep_integer];
+	/*
+	 * Initialize the dimension array
+	 */
+	BuildInst (*initObj, OpInitArray, inst, stat);
+	inst->ainit.mode = AInitModeStart;
+	inst->ainit.dim = 1;
+	while (dim)
+	{
+	    *initObj = _CompileExpr (*initObj, dim->tree.left, True, stat, code);
+	    BuildInst (*initObj, OpInitArray, inst, stat);
+	    inst->ainit.dim = 0;
+	    inst->ainit.mode = AInitModeElement;
+	    dim = dim->tree.right;
+	}
+	BuildInst (*initObj, OpInitArray, inst, stat);
+	inst->ainit.dim = 1;
+	inst->ainit.mode = AInitModeElement;
+	/*
+	 * Assign it
+	 */
+	BuildInst (*initObj, OpAssign, inst, stat);
+	inst->assign.initialize = True;
+    }
+    RETURN (obj);
 }
 
 static ObjPtr
@@ -3652,6 +3887,7 @@ CompileType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code
 	break;
     case type_ref:
 	obj = CompileType (obj, decls, type->ref.ref, stat, code);
+	break;
     case type_func:
 	obj = CompileType (obj, decls, type->func.ret, stat, code);
 	for (at = type->func.args; at; at = at->next)
@@ -3659,6 +3895,7 @@ CompileType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code
 	break;
     case type_array:
 	obj = CompileArrayType (obj, decls, type, stat, code);
+	obj = CompileType (obj, decls, type->array.type, stat, code);
 	break;
     case type_hash:
 	obj = CompileType (obj, decls, type->hash.type, stat, code);
@@ -3692,56 +3929,19 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
     ENTER ();
     SymbolPtr	    s = 0;
     DeclListPtr	    decl;
-    Class	    class;
-    Publish	    publish;
-    CodePtr	    code_compile = 0;
+    TypePtr	    type = decls->decl.type;
+    Class	    class = CompileDeclClass (decls, code);
+    CodePtr	    code_compile = CompileDeclCodeCompile (class, code);
     ObjPtr	    *initObj;
-    OpCode	    opCode;
     
-    class = decls->decl.class;
-    if (class == class_undef)
-	class = code ? class_auto : class_global;
-    publish = decls->decl.publish;
-    switch (class) {
-    case class_global:
-    case class_const:
-	/*
-	 * Globals are compiled in the static initializer for
-	 * the outermost enclosing function.
-	 */
-	code_compile = code;
-	while (code_compile && code_compile->base.previous)
-	    code_compile = code_compile->base.previous;
-	opCode = OpGlobal;
-	break;
-    case class_static:
-	/*
-	 * Statics are compiled in the static initializer for
-	 * the nearest enclosing function
-	 */
-	code_compile = code;
-	opCode = OpStatic;
-	break;
-    case class_auto:
-    case class_arg:
-	/*
-	 * Autos are compiled where they lie; just make sure a function
-	 * exists somewhere to hang them from
-	 */
-	opCode = OpLocal;
-	break;
-    default:
-	opCode = OpNoop;
-	break;
-    }
     if (ClassFrame (class) && !code)
     {
 	CompileError (obj, decls, "Invalid storage class %C", class);
 	decls->base.type = typePoly;
 	RETURN (obj);
     }
-    if (decls->base.type)
-	obj = CompileType (obj, decls, decls->base.type, stat, code);
+    if (type)
+	obj = CompileType (obj, decls, type, stat, code);
     for (decl = decls->decl.decl; decl; decl = decl->next) {
 	ExprPtr	init;
 
@@ -3762,16 +3962,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	    /*
 	     * Compile the initializer value
 	     */
-	    initObj = &obj;
-	    if (code_compile)
-	    {
-		if (!code_compile->func.staticInit.obj)
-		    code_compile->func.staticInit.obj = NewObj (OBJ_INCR, OBJ_STAT_INCR);
-		initObj = &code_compile->func.staticInit.obj;
-		code_compile->func.inStaticInit = True;
-		if (code != code_compile)
-		    code->func.inGlobalInit = True;
-	    }
+	    initObj = CompileDeclInitObjStart (&obj, code, code_compile);
 	    /*
 	     * Assign it
 	     */
@@ -3781,11 +3972,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 				      CompileRefType (s->symbol.type) != 0);
 	    SetPush (*initObj);
 	    *initObj = CompileInit (*initObj, init, s->symbol.type, stat, code);
-	    if (code_compile)
-	    {
-		code_compile->func.inStaticInit = False;
-		code->func.inGlobalInit = False;
-	    }
+	    CompileDeclInitObjFinish (&obj, initObj, code, code_compile);
 	    
 	    BuildInst (*initObj, OpAssign, inst, stat);
 	    inst->assign.initialize = True;
@@ -3796,8 +3983,26 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	if (s)
 	{
 	    InstPtr	inst;
-	    BuildInst (obj, opCode, inst, stat);
-	    inst->var.name = s;
+	    switch (class) {
+	    case class_global:
+	    case class_const:
+		BuildInst (obj, OpGlobal, inst, stat);
+		inst->box.box = s->global.value;
+		break;
+	    case class_static:
+		BuildInst (obj, OpStatic, inst, stat);
+		inst->frame.staticLink = 0;
+		inst->frame.element = s->local.element;
+		break;
+	    case class_auto:
+	    case class_arg:
+		BuildInst (obj, OpLocal, inst, stat);
+		inst->frame.staticLink = 0;
+		inst->frame.element = s->local.element;
+		break;
+	    default:
+		break;
+	    }
 	    decls->base.type = s->symbol.type;
 	}
 	else
@@ -3818,6 +4023,7 @@ CompileStat (ExprPtr expr, CodePtr code)
     BuildInst (obj, OpEnd, inst, expr);
 #ifdef DEBUG
     ObjDump (obj, 0);
+    FileFlush (FileStdout, True);
 #endif
     RETURN (obj);
 }
@@ -3836,6 +4042,7 @@ CompileExpr (ExprPtr expr, CodePtr code)
     BuildInst (obj, OpEnd, inst, stat);
 #ifdef DEBUG
     ObjDump (obj, 0);
+    FileFlush (FileStdout, True);
 #endif
     RETURN (obj);
 }
@@ -3850,7 +4057,8 @@ const char *const OpNames[] = {
     "BranchTrue",
     "Case",
     "TagCase",
-    "TagStore",
+    "TagGlobal",
+    "TagLocal",
     "Default",
     "Return",
     "ReturnVoid",
@@ -3879,6 +4087,7 @@ const char *const OpNames[] = {
     "Fetch",
     "Const",
     "BuildArray",
+    "BuildArrayInd",
     "InitArray",
     "BuildHash",
     "InitHash",
@@ -3987,6 +4196,9 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
     int	    j;
     Bool    realBranch = False;
     
+#ifdef DEBUG
+    FilePrintf (FileStdout, "%x: ", (int) inst);
+#endif
     ObjIndent (indent);
     FilePrintf (FileStdout, "%s%s %c ",
 		OpNames[inst->base.opCode],
@@ -4066,34 +4278,15 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	FilePrintf (FileStdout, "twixt %d catch %d",
 		    inst->unwind.twixt, inst->unwind.catch);
 	break;
-    case OpGlobal:
-    case OpGlobalRef:
-    case OpGlobalRefStore:
     case OpStatic:
     case OpStaticRef:
     case OpStaticRefStore:
     case OpLocal:
     case OpLocalRef:
     case OpLocalRefStore:
-    case OpTagStore:
-	if (inst->var.name)
-	{
-	    SymbolPtr	s = inst->var.name;
-	    FilePrintf (FileStdout, "%C %A", s->symbol.class, s->symbol.name);
-	    switch (s->symbol.class) {
-	    case class_arg:
-	    case class_static:
-	    case class_auto:
-		FilePrintf (FileStdout, " (link %d elt %d)",
-			    inst->var.staticLink,
-			    s->local.element);
-		break;
-	    default:
-		break;
-	    }
-	}
-	else
-	    FilePrintf (FileStdout, "Broken name");
+    case OpTagLocal:
+	FilePrintf (FileStdout, " (link %d elt %d)",
+		    inst->frame.staticLink, inst->frame.element);
 	break;
     case OpConst:
 	FilePrintf (FileStdout, "%v", inst->constant.constant);

@@ -374,10 +374,24 @@ typedef struct _typeFunc {
     ArgType	*args;
 } TypeFunc;
 
+typedef enum _dimStorage {
+    DimStorageNone, DimStorageGlobal, DimStorageLocal
+} DimStorage;
+
 typedef struct _typeArray {
     TypeBase	base;
     TypePtr	type;
     ExprPtr	dimensions;
+    int		dims;
+    DimStorage	storage;
+    union {
+	BoxPtr	global;
+	struct {
+	    int	    element;
+	    Bool    staticScope;
+	    CodePtr code;
+	} frame;
+    } u;
 } TypeArray;
 
 typedef struct _typeHash {
@@ -430,6 +444,7 @@ extern Type	    *typeGroup;
 extern Type	    *typeField;
 extern Type	    *typeRefPoly;
 extern Type	    *typeFileError;
+extern Type	    *typeArrayInt;
 extern Type	    *typePrim[rep_void + 1];
 
 Type	*NewTypeName (ExprPtr expr, SymbolPtr name);

@@ -19,6 +19,7 @@ Type		*typePoly;
 Type		*typeGroup;
 Type		*typeField;
 Type		*typeRefPoly;
+Type		*typeArrayInt;
 Type		*typePrim[rep_void + 1];
 
 static void
@@ -62,6 +63,16 @@ TypeArrayMark (void *object)
 
     MemReference (ta->type);
     MemReference (ta->dimensions);
+    switch (ta->storage) {
+    case DimStorageNone:
+	break;
+    case DimStorageGlobal:
+	MemReference (ta->u.global);
+	break;
+    case DimStorageLocal:
+	MemReference (ta->u.frame.code);
+	break;
+    }
 }
 
 static void
@@ -177,6 +188,7 @@ NewTypeArray (Type *type, Expr *dimensions)
     t->base.tag = type_array;
     t->array.type = type;
     t->array.dimensions = dimensions;
+    t->array.storage = DimStorageNone;
     RETURN (t);
 }
 
@@ -1191,6 +1203,9 @@ TypeInit (void)
 					  NewTypeElt (typePrim[rep_float], 0)));
     MemAddRoot (typeField);
     
+    typeArrayInt = NewTypeArray (typePrim[rep_integer], 0);
+    MemAddRoot (typeArrayInt);
+
     TypeCheckStack = StackCreate ();
     MemAddRoot (TypeCheckStack);
     TypeCheckLevel = 0;

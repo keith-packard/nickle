@@ -328,6 +328,25 @@ ThreadArray (Value thread, Bool resizable, int ndim, Type *type)
     RETURN (NewArray (False, resizable, type, ndim, dims));
 }
 
+static Value
+ThreadArrayInd (Value thread, Bool resizable, Value dim, Type *type)
+{
+    ENTER ();
+    Array   *a = &dim->array;
+    int	    i;
+    int	    ndim = ArrayDims(a)[0];
+    int	    *dims;
+
+    dims = AllocateTemp (ndim * sizeof (int));
+    for (i = 0; i < ndim; i++)
+    {
+	dims[i] = IntPart (BoxValueGet(a->values, i), "Invalid array dimension");
+	if (aborting)
+	    RETURN (0);
+    }
+    RETURN (NewArray (False, resizable, type, ndim, dims));
+}
+
 static int
 ThreadArrayIndex (Value array, Value thread, int ndim, 
 		  Value last, int off, Bool except, Bool resize)
@@ -665,7 +684,7 @@ ThreadUnwind (Value thread, int twixt, int catch)
 	thread->thread.continuation.catches = thread->thread.continuation.catches->continuation.catches;
 }
 
-#define ThreadBoxCheck(box,i,type) (BoxValueGet(box,i) == 0 ? ThreadBoxSetDefault(box,i,type,0) : 0)
+#define ThreadBoxCheck(box,i) (BoxValueGet(box,i) == 0 ? ThreadBoxSetDefault(box,i,0) : 0)
 
 typedef struct _TypeChain {
     struct _TypeChain	*prev;
@@ -673,11 +692,11 @@ typedef struct _TypeChain {
 } TypeChain;
 
 static void
-ThreadBoxSetDefault (BoxPtr box, int i, Type *type, TypeChain *chain)
+ThreadBoxSetDefault (BoxPtr box, int i, TypeChain *chain)
 {
     if (BoxValueGet (box, i) == 0)
     {
-	Type	    *ctype = TypeCanon (type);
+	Type	    *ctype = TypeCanon (BoxType (box, i));
 	StructType  *st = ctype->structs.structs;
 	TypeChain   link, *c;
 
@@ -701,8 +720,7 @@ ThreadBoxSetDefault (BoxPtr box, int i, Type *type, TypeChain *chain)
 	    for (i = 0; i < st->nelements; i++)
 	    {
 		if (BoxValueGet (box, i) == 0)
-		    ThreadBoxSetDefault (box, i, BoxTypesElements(st->types)[i],
-					&link);
+		    ThreadBoxSetDefault (box, i, &link);
 	    }
 	    break;
 	default:
@@ -760,7 +778,7 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
 	if (!aborting)
 	{
 	    if (typeCheck)
-		ThreadBoxCheck (v->array.values, i, ArrayType(&v->array));
+		ThreadBoxCheck (v->array.values, i);
 	    if (fetch)
 		value = BoxValue (v->array.values, i);
 	    else
@@ -1001,20 +1019,13 @@ ThreadsRun (Value thread, Value lex)
 			value = v;
 		    }
 		    break;
-		case OpTagStore:
-		    box = 0;
-		    if (inst->var.name->symbol.class == class_global)
-		    {
-			box = inst->var.name->global.value;
-			i = 0;
-		    }
-		    else
-		    {
-			box = thread->thread.continuation.frame->frame;
-			i = inst->var.name->local.element;
-		    }
-		    if (!box)
-			break;
+		case OpTagGlobal:
+		    box = inst->box.box;
+		    ThreadAssign (NewRef (inst->box.box, 0), value, True);
+		    break;
+		case OpTagLocal:
+		    box = thread->thread.continuation.frame->frame;
+		    i = inst->frame.element;
 		    ThreadAssign (NewRef (box, i), value, True);
 		    break;
 		case OpReturnVoid:
@@ -1044,25 +1055,24 @@ ThreadsRun (Value thread, Value lex)
 		    thread->thread.continuation.frame = thread->thread.continuation.frame->previous;
 		    break;
 		case OpGlobal:
+		    ThreadBoxCheck (inst->box.box, 0);
+		    value = BoxValue (inst->box.box, 0);
+		    break;
 		case OpGlobalRef:
+		    ThreadBoxCheck (inst->box.box, 0);
+		    /* fall through... */
 		case OpGlobalRefStore:
-		    box = inst->var.name->global.value;
-		    if (inst->base.opCode != OpGlobalRefStore)
-			ThreadBoxCheck (box, 0, inst->var.name->symbol.type);
-		    if (inst->base.opCode == OpGlobal)
-			value = BoxValue (box, 0);
-		    else
-			value = NewRef (box, 0);
+		    value = NewRef (inst->box.box, 0);
 		    break;
 		case OpStatic:
 		case OpStaticRef:
 		case OpStaticRefStore:
-		    for (i = 0, fp = thread->thread.continuation.frame; i < inst->var.staticLink; i++)
+		    for (i = 0, fp = thread->thread.continuation.frame; i < inst->frame.staticLink; i++)
 			fp = fp->staticLink;
 		    box = fp->statics;
-		    i = inst->var.name->local.element;
+		    i = inst->frame.element;
 		    if (inst->base.opCode != OpStaticRefStore)
-			ThreadBoxCheck (box, i, inst->var.name->symbol.type);
+			ThreadBoxCheck (box, i);
 		    if (inst->base.opCode == OpStatic)
 			value = BoxValue (box, i);
 		    else
@@ -1071,12 +1081,12 @@ ThreadsRun (Value thread, Value lex)
 		case OpLocal:
 		case OpLocalRef:
 		case OpLocalRefStore:
-		    for (i = 0, fp = thread->thread.continuation.frame; i < inst->var.staticLink; i++)
+		    for (i = 0, fp = thread->thread.continuation.frame; i < inst->frame.staticLink; i++)
 			fp = fp->staticLink;
 		    box = fp->frame;
-		    i = inst->var.name->local.element;
+		    i = inst->frame.element;
 		    if (inst->base.opCode != OpLocalRefStore)
-			ThreadBoxCheck (box, i, inst->var.name->symbol.type);
+			ThreadBoxCheck (box, i);
 		    if (inst->base.opCode == OpLocal)
 			value = BoxValue (box, i);
 		    else
@@ -1092,6 +1102,10 @@ ThreadsRun (Value thread, Value lex)
 		    stack = inst->array.ndim;
 		    /* XXX resizable? */
 		    value = ThreadArray (thread, True, stack, inst->array.type);
+		    break;
+		case OpBuildArrayInd:
+		    /* XXX resizable? */
+		    value = ThreadArrayInd (thread, True, value, inst->array.type);
 		    break;
 		case OpInitArray:
 		    stack = 0;

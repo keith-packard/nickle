@@ -661,7 +661,12 @@ func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start OP opt_argdefines CP
 opt_init	: ASSIGN simpleexpr
 		    { $$ = $2; }
 		| ASSIGN init
-		    { $$ = $2; }
+		    { 
+			if (!$2)
+			    $$ = NewExprTree (NEW, 0, 0);
+			else
+			    $$ = $2;
+		    }
 		|
 		    { $$ = 0; }
 		;
@@ -892,8 +897,9 @@ expr		: comma_expr
 				    decl->init->base.tag == ARRAY)
 				{
 				    decl->init = NewExprTree (NEW, decl->init, 0);
-				    decl->init->base.type = $1.type;
 				}
+				if (!decl->init->base.type)
+				    decl->init->base.type = $1.type;
 			    }
 			}
 

@@ -121,6 +121,8 @@ NewTypesRef (Types *ref)
     ENTER ();
     Types   *t;
 
+    if (!ref)
+	RETURN (0);
     t = ALLOCATE (&TypesRefType, sizeof (TypesRef));
     t->base.tag = types_ref;
     t->ref.ref = ref;
@@ -333,6 +335,8 @@ TypeCompatible (Types *a, Types *b, Bool contains)
     
     if (a == b)
 	return True;
+    if (!a || !b)
+	return False;
     if (TypePoly (a) || TypePoly (b))
 	return True;
     if (a->base.tag == types_name)
@@ -704,9 +708,12 @@ TypeCombineBinary (Types *left, int tag, Types *right)
     int	    sret = NUM_TYPE_STACK;
     int	    n;
 
-    /* Avoid error cascade */
+    if (left == right)
+	RETURN(left);
+    
     if (!left || !right)
-	RETURN(typesPoly);
+	RETURN(0);
+    
     if (left->base.tag == types_name)
 	RETURN (TypeCombineBinary (left->name.type, tag, right));
     if (right->base.tag == types_name)
@@ -970,7 +977,7 @@ TypeCombineReturn (Types *type)
 	return typesPoly;
 	
     if (type->base.tag == types_name)
-	return TypeCombineFunction (type->name.type);
+	return TypeCombineReturn (type->name.type);
 
     if (type->base.tag == types_func)
 	return type->func.ret;
@@ -1004,12 +1011,15 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
     int	adim, bdim;
     int	n;
     
-    if (TypePoly (a))
-	return True;
-    
     if (!b)
 	return True;
 
+    if (b->value.tag == type_undef)
+	return False;
+
+    if (TypePoly (a))
+	return True;
+    
     switch (a->base.tag) {
     case types_prim:
 	if (a->prim.prim == b->value.tag)

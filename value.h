@@ -570,6 +570,7 @@ extern int	AddBoxTypes (BoxTypesPtr *btp, TypesPtr t);
 
 extern BoxPtr	NewTypedBox (Bool constant, BoxTypesPtr types);
 			     
+Value	NewVoid (void);
 Value	NewInt (int value);
 Value	NewInteger (Sign sign, Natural *mag);
 Value	NewIntInteger (int value);
@@ -611,7 +612,7 @@ Value	NumericDiv (Value av, Value bv, int expandOk);
 
 # define	OK_TRUNC	1
 
-extern Value	Zero, One, Blank, Empty, Elementless;
+extern Value	Zero, One, Blank, Empty, Elementless, Void;
 
 # define True(v)	(!Zerop(v))
 # define False(v)	(Zerop(v))

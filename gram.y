@@ -44,8 +44,8 @@ void yyerror (char *fmt, ...);
 %type  <dval>	enames names opt_initnames initnames
 %type  <aval>	typename name
 %type  <eval>	opt_init
-%type  <ftval>	decl opt_decl
-%type  <tsval>	opt_type type
+%type  <ftval>	decl func_decl
+%type  <tsval>	opt_type type type_or_void func_type
 %type  <eval>   opt_stars stars
 %type  <tval>	basetype
 %type  <tval>	struct_or_union
@@ -72,7 +72,7 @@ void yyerror (char *fmt, ...);
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
 %token <tval>	FILET MUTEX SEMAPHORE CONTINUATION THREAD
-%token		FUNCTION FUNC EXCEPTION RAISE
+%token		VOID FUNCTION FUNC EXCEPTION RAISE
 %token		TYPEDEF IMPORT NAMESPACE NEW
 %token <pval>	PUBLIC EXTEND
 %token		IF ELSE WHILE DO FOR SWITCH
@@ -378,7 +378,7 @@ statement	: IF ignorenl OP expr CP statement
 		| block
 		| SEMI ignorenl
 		    { $$ = NewExprTree(SEMI, (Expr *) 0, (Expr *) 0); }
-		| opt_decl FUNCTION ignorenl NAME OP opt_argdefines CP func_body
+		| func_decl FUNCTION ignorenl NAME OP opt_argdefines CP func_body
 		    { 
 			ExprPtr	decl;
 
@@ -537,13 +537,13 @@ opt_init	: ASSIGN simpleexpr
 /*
 * Full declaration including storage, type and publication
 */
-opt_decl	: PUBLIC class type
+func_decl	: PUBLIC class type_or_void
 		    { $$.publish = $1; $$.class = $2; $$.type = $3; }
-		| class type
+		| class type_or_void
 		    { $$.publish = publish_private; $$.class = $1; $$.type = $2; }
-		| PUBLIC type
+		| PUBLIC type_or_void
 		    { $$.publish = $1; $$.class = class_undef; $$.type = $2; }
-		| type
+		| type_or_void
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = $1; }
 		| PUBLIC class
 		    { $$.publish = $1; $$.class = $2; $$.type = typesPoly; }
@@ -570,12 +570,24 @@ opt_type	: type
 		|
 		    { $$ = typesPoly; }
 		;
+type_or_void	: type
+		| VOID
+		    { $$ = 0; }
+		;
+func_type	: type
+		| VOID
+		    { $$ = 0; }
+		|
+		    { $$ = typesPoly; }
+		;
 type		: basetype
 		    { $$ = NewTypesPrim ($1); }
 		| TIMES type			%prec STAR
 		    { $$ = NewTypesRef ($2); }
 		| type OP opt_argdecls CP	%prec CALL
 		    { $$ = NewTypesFunc ($1, $3); }
+		| VOID OP opt_argdecls CP	%prec CALL
+		    { $$ = NewTypesFunc (0, $3); }
 		| type OS opt_stars CS
 		    { $$ = NewTypesArray ($1, $3); }
 		| struct_or_union OC struct_members CC
@@ -734,7 +746,7 @@ exprs		: exprs COMMA lambdaexpr
 * This expression level includes lambdas which can't be in simpleexpr
 * because of grammar ambiguities
 */
-lambdaexpr	: opt_type FUNC OP opt_argdefines CP block
+lambdaexpr	: func_type FUNC OP opt_argdefines CP block
 		    { $$ = NewExprCode (NewFuncCode ($1, $4, $6), 0); }
 		| simpleexpr
 		;

@@ -30,26 +30,13 @@ BuildFrame (Value thread, Value func, Bool varargs, int nformal, int off,
     CodePtr	    code = func->func.code;
     int		    fe;
     FramePtr	    frame;
-    Types	    *type;
     
     frame = NewFrame (func, thread->thread.frame, 
 		      func->func.staticLink, 
 		      code->func.dynamics,
 		      func->func.statics);
     for (fe = 0; fe < nformal; fe++)
-    {
-	type = BoxTypesValue (code->func.dynamics, fe);
-	if (!TypeCompatibleAssign (type, Stack(fe+off), False))
-	{
-	    RaiseStandardException (exception_invalid_argument, 
-				    "Incompatible argument",
-				    2, NewInt (fe), Stack(fe+off));
-	    RETURN (0);
-	}
-	if (!Stack(fe+off))
-	    abort ();
 	BoxValueSet (frame->frame, fe, Copy (Stack(fe+off)));
-    }
     if (varargs)
     {
 	int	extra = nargs - nformal;
@@ -58,11 +45,7 @@ BuildFrame (Value thread, Value func, Bool varargs, int nformal, int off,
 	array = NewArray (True, typesPoly, 1, &extra);
 	BoxValueSet (frame->frame, fe, array);
 	for (; fe < nargs; fe++)
-	{
-	    if (!Stack(fe+off))
-		abort ();
 	    BoxValueSet (array->array.values, fe-nformal, Stack(fe+off));
-	}
     }
     frame->function = func;
     frame->savePc = savePc;
@@ -77,7 +60,9 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
     Value	value = thread->thread.v;
     CodePtr	code = value->func.code;
     FramePtr	frame;
+    ArgType	*argt;
     int		argc = *stack;
+    int		fe;
     int		off = 0;
     
     if (argc == -1)
@@ -87,26 +72,36 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
 	*stack = argc+1;
     }
 	
-    if (code->base.varargs)
+    argt = code->base.args;
+    fe = 0;
+    while (fe < argc || (argt && !argt->varargs))
     {
-	if (argc < code->base.argc)
+	if (!argt)
+	{
+	    RaiseStandardException (exception_invalid_argument, 
+				    "Too many parameters",
+				    2, NewInt (argc), NewInt(code->base.argc));
+	    RETURN (value);
+	}
+	if (fe == argc)
 	{
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Too few arguments",
 				    2, NewInt (argc), NewInt(code->base.argc));
 	    RETURN (value);
 	}
-    }
-    else
-    {
-	if (argc != code->base.argc)
+	if (!TypeCompatibleAssign (argt->type, Stack(fe+off), False))
 	{
 	    RaiseStandardException (exception_invalid_argument, 
-				    "Wrong number of arguments",
-				    2, NewInt (argc), NewInt(code->base.argc));
+				    "Incompatible argument",
+				    2, NewInt (fe), Stack(fe+off));
 	    RETURN (value);
 	}
+	fe++;
+	if (!argt->varargs)
+	    argt = argt->next;
     }
+
     if (code->base.builtin)
     {
 	Value	*values;
@@ -504,6 +499,9 @@ ThreadStep (Value thread)
     case OpEnd:
 	SetSignalFinished ();
 	break;
+    case OpReturnVoid:
+	value = Void;
+	/* fall through */
     case OpReturn:
 	if (!thread->thread.frame)
 	{

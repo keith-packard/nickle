@@ -610,7 +610,7 @@ FilePutTypes (Value f, Types *t, Bool minimal)
     
     if (!t)
     {
-	FilePuts (f, "<null type>");
+	FilePuts (f, "void");
     } 
     else
     {

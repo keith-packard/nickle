@@ -28,6 +28,7 @@ typedef enum _OpCode {
     OpBreak, 
     OpContinue,
     OpReturn,
+    OpReturnVoid,
     OpFunction,
     OpFork,
     OpCatch,

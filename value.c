@@ -17,6 +17,8 @@ extern ValueType    StringType, ArrayType, FileType;
 extern ValueType    RefType, structType, FuncType, ThreadType;
 extern ValueType    SemaphoreType, ContinuationType;
 
+Value	Void;
+
 volatile Bool	aborting;
 volatile Bool	signaling;
 
@@ -578,6 +580,32 @@ Default (TypesPtr t)
     }
 }
 
+static Bool
+VoidPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+{
+    FilePuts (f, "<void>");
+    return True;
+}
+
+ValueType VoidType = {
+    { 0, 0 },	    /* data */
+    { 0 },	    /* binary */
+    { 0 },	    /* unary */
+    0, 0,
+    VoidPrint,	    /* print */
+};
+
+Value
+NewVoid (void)
+{
+    ENTER ();
+    Value   ret;
+
+    ret = ALLOCATE (&VoidType.data, sizeof (BaseValue));
+    ret->value.tag = type_undef;
+    RETURN (ret);
+}
+
 int
 ValueInit (void)
 {
@@ -601,7 +629,8 @@ ValueInit (void)
 	return 0;
     ValuePrintStack = StackCreate ();
     MemAddRoot (ValuePrintStack);
+    Void = NewVoid ();
+    MemAddRoot (Void);
     ValuePrintLevel = 0;
     return 1;
 }
-

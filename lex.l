@@ -127,6 +127,7 @@ continuation	{ yylval.tval = type_continuation; return CONTINUATION; }
 thread		{ yylval.tval = type_thread; return THREAD; }
 struct		{ yylval.ival = STRUCT; return STRUCT; }
 union		{ yylval.ival = UNION; return UNION; }
+void		{ yylval.ival = VOID; return VOID; }
 
 typedef		{ yylval.ival = TYPEDEF; return TYPEDEF; }
 func		{ yylval.ival = FUNC; return FUNC; }

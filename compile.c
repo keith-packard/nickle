@@ -124,7 +124,10 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
     int		n;
     
     if (!type)
+    {
+	CompileError (obj, stat, "Type missing inside compiler");
 	return;
+    }
     switch (type->base.tag) {
     case types_prim:
 	break;
@@ -155,7 +158,8 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
     	CompileCanonType (obj, namespace, type->ref.ref, stat, complete);
 	break;
     case types_func:
-	CompileCanonType (obj, namespace, type->func.ret, stat, complete);
+	if (type->func.ret)
+	    CompileCanonType (obj, namespace, type->func.ret, stat, complete);
 	for (arg = type->func.args; arg; arg = arg->next)
 	    CompileCanonType (obj, namespace, arg->type, stat, complete);
 	break;
@@ -278,7 +282,8 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
 	}
 	*new = s != 0;
     }
-    CompileCanonType (obj, namespace, type, stat, class != class_typedef);
+    if (class != class_namespace)
+	CompileCanonType (obj, namespace, type, stat, class != class_typedef);
     RETURN (s);
 }
 
@@ -403,8 +408,11 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Object left of '.' is not a struct or union containing \"%A\"",
 			  expr->tree.right->atom.atom);
+	    expr->base.type = typesPoly;
+	}
 	if (assign)
 	{
 	    BuildInst (obj, OpDotRefStore, inst, stat);
@@ -421,8 +429,11 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Object left of '.' is not a struct or union containing \"%A\"",
 			  expr->tree.right->atom.atom);
+	    expr->base.type = typesPoly;
+	}
 	if (assign)
 	{
 	    BuildInst (obj, OpArrowRefStore, inst, stat);
@@ -441,8 +452,11 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 					    ndim,
 					    True);
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Incompatible type '%T' in array operation",
 			  expr->tree.left->base.type, ndim);
+	    expr->base.type = typesPoly;
+	}
 	if (assign)
 	{
 	    BuildInst (obj, OpArrayRefStore, inst, stat);
@@ -460,6 +474,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	{
 	    CompileError (obj, stat, "Incompatible type '%T' in unary operation",
 			  expr->tree.left->base.type);
+	    expr->base.type = typesPoly;
 	}
 	break;
     default:
@@ -491,6 +506,7 @@ CompileBinary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, 
 	CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
+	expr->base.type = typesPoly;
     }
     BuildInst (obj, opCode, inst, stat);
     RETURN (obj);
@@ -517,6 +533,7 @@ CompileUnary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, E
     {
 	CompileError (obj, stat, "Incompatible type '%T' in unary operation",
 		      down->base.type);
+	expr->base.type = typesPoly;
     }
     BuildInst (obj, opCode, inst, stat);
     RETURN (obj);
@@ -543,6 +560,7 @@ CompileAssign (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, 
 	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
+	expr->base.type = typesPoly;
     }
     BuildInst (obj, opCode, inst, stat);
     RETURN (obj);
@@ -1051,7 +1069,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	s = CompileFindSymbol (obj, stat, namespace, expr->atom.atom,
 				&inst->var.staticLink, False);
 	if (!s)
+	{
+	    expr->base.type = typesPoly;
 	    break;
+	}
 	if (!ClassStorage (s->symbol.class))
 	{
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
@@ -1131,7 +1152,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	SetPush (obj);
 	CompileCanonType (obj, namespace, expr->base.type, stat, True);
 	t = TypesCanon (expr->base.type);
-	if (t->base.tag == types_union)
+	if (t && t->base.tag == types_union)
 	{
 	    StructType	*st = t->structs.structs;
 	    
@@ -1159,7 +1180,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	}
 	else
 	{
-	    CompileError (obj, stat, "Type '%T' is not a union", expr->tree.left->base.type);
+	    CompileError (obj, stat, "Type '%T' is not a union", expr->base.type);
+	    expr->base.type = typesPoly;
 	    break;
 	}
 	break;
@@ -1176,8 +1198,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					    ndim,
 					    False);
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Type '%T' is not a %d dimensional array or string",
 			  expr->tree.left->base.type, ndim);
+	    expr->base.type = typesPoly;
+	}
 	BuildInst (obj, OpArray, inst, stat);
 	inst->ints.value = ndim;
 	break;
@@ -1201,9 +1226,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Type '%T' is not a struct containing \"%A\"",
 			  expr->tree.left->base.type,
 			  expr->tree.left->atom.atom);
+	    expr->base.type = typesPoly;
+	}
 	BuildInst (obj, OpDot, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
@@ -1213,9 +1241,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Type '%T' is not a struct or union ref containing \"%A\"",
 			  expr->tree.left->base.type,
 			  expr->tree.right->atom.atom);
+	    expr->base.type = typesPoly;
+	}
 	BuildInst (obj, OpArrow, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
@@ -1228,6 +1259,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     case AMPER:	    
 	obj = CompileLvalue (obj, expr->tree.left, namespace, stat, False, False);
 	expr->base.type = NewTypesRef (expr->tree.left->base.type);
+	if (!expr->base.type)
+	{
+	    CompileError (obj, stat, "Type '%T' cannot be an l-value",
+			  expr->tree.left->base.type);
+	    expr->base.type = typesPoly;
+	}
 	break;
     case UMINUS:    obj = CompileUnary (obj, expr, namespace, OpUminus, stat); break;
     case LNOT:	    obj = CompileUnary (obj, expr, namespace, OpLnot, stat); break;
@@ -1251,9 +1288,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	    BuildInst (obj, OpPostInc, inst, stat);
 	}
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Incompatible type '%T' in ++",
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
+	    expr->base.type = typesPoly;
+	}
 	break;
     case DEC:
 	if (expr->tree.left)
@@ -1273,9 +1313,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	    BuildInst (obj, OpPostDec, inst, stat);
 	}
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Incompatible type '%T' in --",
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
+	    expr->base.type = typesPoly;
+	}
 	break;
     case PLUS:	    obj = CompileBinary (obj, expr, namespace, OpPlus, stat); break;
     case MINUS:	    obj = CompileBinary (obj, expr, namespace, OpMinus, stat); break;
@@ -1293,6 +1336,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					     expr->base.tag,
 					     expr->tree.left->base.type);
+	if (!expr->base.type)
+	{
+	    CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
+			  expr->tree.left->base.type,
+			  expr->tree.right->base.type);
+	    expr->base.type = typesPoly;
+	}
 	BuildInst (obj, OpCall, inst, stat);
 	inst->ints.value = 2;
 	BuildInst (obj, OpNoop, inst, stat);
@@ -1322,9 +1372,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     COLON,
 					     expr->tree.right->tree.right->base.type);
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in ?:",
 			  expr->tree.right->tree.left->base.type,
 			  expr->tree.right->tree.right->base.type);
+	    expr->base.type = typesPoly;
+	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
     case LXOR:	    obj = CompileBinary (obj, expr, namespace, OpLxor, stat); break;
@@ -1348,9 +1401,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     COLON,
 					     expr->tree.right->base.type);
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in &&",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
+	    expr->base.type = typesPoly;
+	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
     case OR:
@@ -1371,9 +1427,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     COLON,
 					     expr->tree.right->base.type);
 	if (!expr->base.type)
+	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in ||",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
+	    expr->base.type = typesPoly;
+	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
     case ASSIGN:	obj = CompileAssign (obj, expr, namespace, OpAssign, stat); break;
@@ -1398,6 +1457,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in assignment",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
+	    expr->base.type = typesPoly;
 	}
 	BuildInst (obj, OpCall, inst, stat);
 	inst->ints.value = 2;
@@ -1438,7 +1498,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	expr->base.type = NewTypesPrim (type_thread);
 	break;
     case DOLLAR:
+	/* reposition statement reference so top-level errors are nicer*/
 	obj = _CompileExpr (obj, expr->tree.left, namespace, expr);
+	expr->base.type = expr->tree.left->base.type;
 	break;
     }
     RETURN (obj);
@@ -1750,7 +1812,10 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	    obj = _CompileExpr (obj, expr->tree.right, namespace, expr);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, middle_inst);
-	inst->base.opCode = OpReturn;
+	if (expr->tree.right)
+	    inst->base.opCode = OpReturn;
+	else
+	    inst->base.opCode = OpReturnVoid;
 	inst->base.stat = expr;
 	break;
     case EXPR:
@@ -1873,6 +1938,12 @@ CompileIsBranch (InstPtr inst)
     }
 }
 
+static Bool
+CompileOpIsReturn (OpCode op)
+{
+    return (op == OpReturn || op == OpReturnVoid);
+}
+
 ObjPtr
 CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat)
 {
@@ -1885,7 +1956,7 @@ CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat)
     obj = NewObj (OBJ_INCR);
     obj = _CompileStat (obj, code->func.code, namespace);
     needReturn = False;
-    if (!obj->used || ObjCode (obj, ObjLast(obj))->base.opCode != OpReturn)
+    if (!obj->used || !CompileOpIsReturn (ObjCode (obj, ObjLast(obj))->base.opCode))
 	needReturn = True;
     else
     {
@@ -1901,7 +1972,7 @@ CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat)
 	}
     }
     if (needReturn)
-	BuildInst (obj, OpReturn, inst, stat);
+	BuildInst (obj, OpReturnVoid, inst, stat);
 #ifdef DEBUG
     ObjDump (obj);
 #endif
@@ -2149,6 +2220,7 @@ char *OpNames[] = {
     "Break",
     "Continue",
     "Return",
+    "ReturnVoid",
     "Function",
     "Fork",
     "Catch",
@@ -2164,6 +2236,7 @@ char *OpNames[] = {
      */
     "Name",
     "NameRef",
+    "NameRefStore",
     "Const",
     "BuildArray",
     "InitArray",
@@ -2173,11 +2246,14 @@ char *OpNames[] = {
     "InitUnion",
     "Array",
     "ArrayRef",
+    "ArrayRefStore",
     "Call",
     "Dot",
     "DotRef",
+    "DotRefStore",
     "Arrow",
     "ArrowRef",
+    "ArrowRefStore",
     "Obj",
     "StaticInit",
     "StaticDone",
@@ -2306,6 +2382,7 @@ ObjDump (ObjPtr obj, int indent)
 		FilePrintf (FileStdout, "Broken branch %d", inst->branch.offset);
 	    break;
 	case OpReturn:
+	case OpReturnVoid:
 	    break;
 	case OpFork:
 	    FilePrintf (FileStdout, "\n");

@@ -668,8 +668,8 @@ NewContinuation (ContinuationPtr continuation, InstPtr pc)
     Value   ret;
 
     ret = ALLOCATE (&ContinuationRep.data, sizeof (Continuation));
-    ret->continuation.pc = pc;
     ContinuationSet (&ret->continuation, continuation);
+    ret->continuation.pc = pc;
     RETURN (ret);
 }
 
@@ -732,12 +732,13 @@ InstPtr
 ContinuationSet (ContinuationPtr dst, ContinuationPtr src)
 {
     ENTER ();
+    dst->value = src->value;
+    dst->pc = 0;
     dst->obj = src->obj;
     dst->frame = src->frame;
-    dst->value = src->value;
+    dst->stack = 0;
     dst->catches = src->catches;
     dst->twixts = src->twixts;
-    dst->stack = 0;
     /* last, to make sure remaining entries are initialized before any GC */
     dst->stack = StackCopy (src->stack);
     RETURN (src->pc);
@@ -1017,13 +1018,13 @@ NewTwixt (ContinuationPtr	continuation,
     TwixtPtr	twixt;
 
     twixt = ALLOCATE (&TwixtType, sizeof (Twixt));
-    twixt->continuation.pc = enter;
     twixt->leave = leave;
     if (continuation->twixts)
 	twixt->depth = continuation->twixts->depth + 1;
     else
 	twixt->depth = 1;
     ContinuationSet (&twixt->continuation, continuation);
+    twixt->continuation.pc = enter;
     RETURN (twixt);
 }
 

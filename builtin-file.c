@@ -206,8 +206,8 @@ do_File_pipe (Value file, Value argv, Value mode)
     Value   ret;
     int	    err;
 
-    args = AllocateTemp ((argv->array.dim[0] + 1) * sizeof (char *));
-    for (argc = 0; argc < argv->array.dim[0]; argc++)
+    args = AllocateTemp ((ArrayDims(&argv->array)[0] + 1) * sizeof (char *));
+    for (argc = 0; argc < ArrayDims(&argv->array)[0]; argc++)
     {
 	arg = BoxValue (argv->array.values, argc);
 	args[argc] = StringChars (&arg->string);

@@ -35,37 +35,7 @@ Natural *max_int_natural;
 static Natural *max_tenpow_natural;
 static int	tenpow_digits;
 #endif
-
-int
-NaturalInit (void)
-{
-    ENTER ();
-#ifndef LBASE10
-    int		max_tenpow, i;
-#endif
-
-    zero_natural = NewNatural (0);
-    MemAddRoot (zero_natural);
-    one_natural = NewNatural (1);
-    MemAddRoot (one_natural);
-    two_natural = NewNatural (2);
-    MemAddRoot (two_natural);
-    max_int_natural = NewNatural (MAXINT);
-    MemAddRoot (max_int_natural);
-#ifndef LBASE10
-    tenpow_digits = (int) floor (log10 ((double) MAXINT));
-    max_tenpow = 1;
-    for (i = 0; i < tenpow_digits; i++)
-	max_tenpow *= 10;
-#ifdef DEBUG
-    printf ("max_tenpow: %d\n", max_tenpow);
-#endif
-    max_tenpow_natural = NewNatural (max_tenpow);
-    MemAddRoot (max_tenpow_natural);
-#endif	
-    EXIT ();
-    return 1;
-}
+DataCachePtr	naturalCache;
 
 int
 NaturalToInt (Natural *n)
@@ -1019,37 +989,80 @@ DataType NaturalType = { 0, 0, "NaturalType" };
 Natural *
 AllocNatural (int size)
 {
-    ENTER();
     Natural *result;
 
     result = ALLOCATE (&NaturalType, sizeof (Natural) + size * sizeof (digit));
     result->length = size;
-    RETURN (result);
+    return result;
 }
 
-Natural *
-NewNatural (unsigned value)
+static Natural *
+NewDoubleDigitNaturalReal (double_digit dd)
 {
-    ENTER ();
-    Natural	    *result;
+    Natural	*result;
     int		    len;
     double_digit    temp;
     digit	    *d;
 
     len = 0;
-    temp = value;
+    temp = dd;
     while (temp) {
 	len++;
 	temp = DivBase (temp);
     }
     result = AllocNatural (len);
-    temp = value;
+    temp = dd;
     d = data(result);
     while (temp) {
 	*d++ = ModBase (temp);
 	temp = DivBase (temp);
     }
-    RETURN(result);
+    return result;
+}
+
+#define NATURAL_CACHE_SIZE  8191
+
+Natural *
+NewDoubleDigitNatural (double_digit dd)
+{
+
+    switch (dd) {
+    case 0:
+	return zero_natural;
+    case 1:
+	return one_natural;
+    case 2:
+	return two_natural;
+    case MAX_NICKLE_INT:
+	return max_int_natural;
+    default:
+	{
+	    digit	    l = ModBase(dd), u = DivBase(dd);
+	    unsigned 	    c = l % NATURAL_CACHE_SIZE;
+	    Natural	    **re = (Natural **) DataCacheValues(naturalCache) + c;
+	    Natural	    *ret = *re;
+	    digit	    *d;
+
+	    if (ret)
+	    {
+		d = data(ret);
+		if (l == d[0] && u == (ret->length == 1 ? 0 : d[1]))
+		{
+		    REFERENCE (ret);
+		    return ret;
+		}
+	    }
+	    ret = NewDoubleDigitNaturalReal (dd);
+	    *re = ret;
+	    return ret;
+	}
+    }
+}
+
+Natural *
+NewNatural (unsigned value)
+{
+    return NewDoubleDigitNatural ((double_digit) value);
 }
 
 Natural *
@@ -1385,3 +1398,36 @@ NaturalGreaterEqualOffset (Natural *a, Natural *b, int offset)
     }
     return True;
 }
+
+int
+NaturalInit (void)
+{
+    ENTER ();
+#ifndef LBASE10
+    int		max_tenpow, i;
+#endif
+
+    naturalCache = NewDataCache (NATURAL_CACHE_SIZE);
+    zero_natural = NewDoubleDigitNaturalReal (0);
+    MemAddRoot (zero_natural);
+    one_natural = NewDoubleDigitNaturalReal (1);
+    MemAddRoot (one_natural);
+    two_natural = NewDoubleDigitNaturalReal (2);
+    MemAddRoot (two_natural);
+    max_int_natural = NewDoubleDigitNaturalReal (MAX_NICKLE_INT);
+    MemAddRoot (max_int_natural);
+#ifndef LBASE10
+    tenpow_digits = (int) floor (log10 ((double) MAX_NICKLE_INT));
+    max_tenpow = 1;
+    for (i = 0; i < tenpow_digits; i++)
+	max_tenpow *= 10;
+#ifdef DEBUG
+    printf ("max_tenpow: %d\n", max_tenpow);
+#endif
+    max_tenpow_natural = NewNatural (max_tenpow);
+    MemAddRoot (max_tenpow_natural);
+#endif	
+    EXIT ();
+    return 1;
+}
+

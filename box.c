@@ -12,35 +12,35 @@ static void
 BoxMark (void *object)
 {
     BoxPtr	box = object;
-    BoxElement	*elements;
+    Value	*elements;
     int		i;
 
     elements = BoxElements(box);
+    if (box->homogeneous)
+	MemReference (box->u.type);
+    else
+	MemReference (box->u.types);
     for (i = 0; i < box->nvalues; i++)
-    {
-	MemReference (elements[i].value);
-	MemReference (elements[i].type);
-    }
+	MemReference (elements[i]);
 }
 
 DataType BoxType = { BoxMark, 0, "BoxType" };
 
 BoxPtr
-NewBox (Bool constant, Bool array, int nvalues)
+NewBox (Bool constant, Bool array, int nvalues, TypePtr type)
 {
     ENTER ();
     BoxPtr  box;
     int	    i;
 
-    box = ALLOCATE (&BoxType, sizeof (Box) + nvalues * sizeof (BoxElement));
+    box = ALLOCATE (&BoxType, sizeof (Box) + nvalues * sizeof (Value));
     box->constant = constant;
     box->array = array;
+    box->homogeneous = True;
+    box->u.type = type;
     box->nvalues = nvalues;
     for (i = 0; i < nvalues; i++)
-    {
-	BoxType(box, i) = typePoly;
 	BoxValueSet(box, i, 0);
-    }
     RETURN (box);
 }
 
@@ -51,15 +51,14 @@ NewTypedBox (Bool array, BoxTypesPtr bt)
     BoxPtr  box;
     int	    i;
 
-    box = ALLOCATE (&BoxType, sizeof (Box) + bt->count * sizeof (BoxElement));
+    box = ALLOCATE (&BoxType, sizeof (Box) + bt->count * sizeof (Value));
     box->constant = False;
     box->array = array;
+    box->homogeneous = False;
+    box->u.types = bt;
     box->nvalues = bt->count;
     for (i = 0; i < bt->count; i++)
-    {
-	BoxType (box, i) = BoxTypesValue (bt, i);
 	BoxValueSet (box, i, 0);
-    }
     RETURN (box);
 }
 

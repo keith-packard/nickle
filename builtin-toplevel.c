@@ -294,7 +294,7 @@ do_dim(Value av)
 				2, NewInt (0), av);
 	RETURN (Void);
     }
-    ret = NewInt(av->array.dim[0]);
+    ret = NewInt(ArrayDims(&av->array)[0]);
     RETURN (ret);
 }
 
@@ -307,7 +307,7 @@ do_dims(Value av)
 
     ret = NewArray(True, typePrim[rep_int], 1, &av->array.ndim);
     for (i = 0; i < av->array.ndim; i++) {
-      Value d = NewInt(av->array.dim[i]);
+      Value d = NewInt(ArrayDims(&av->array)[i]);
       BoxValueSet(ret->array.values, i, d);
     }
     RETURN (ret);
@@ -319,7 +319,7 @@ do_reference (Value av)
     ENTER ();
     Value   ret;
 
-    ret = NewRef (NewBox (False, False, 1), 0);
+    ret = NewRef (NewBox (False, False, 1, typePoly), 0);
     RefValueSet (ret, Copy (av));
     RETURN (ret);
 }
@@ -437,10 +437,10 @@ do_bit_width (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case rep_int:
-	av = NewInt (IntWidth (av->ints.value));
+	av = NewInt (IntWidth (ValueInt(av)));
 	break;
     case rep_integer:
-	av = NewInt (NaturalWidth (av->integer.mag));
+	av = NewInt (NaturalWidth (IntegerMag(av)));
 	break;
     default:
 	RaiseStandardException (exception_invalid_argument,

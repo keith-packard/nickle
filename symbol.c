@@ -93,8 +93,7 @@ NewSymbolConst (Atom name, Type *type)
     s->symbol.class = class_const;
     s->symbol.type = type;
     s->symbol.forward = False;
-    s->global.value = NewBox (True, False, 1);
-    BoxType (s->global.value, 0) = type;
+    s->global.value = NewBox (True, False, 1, type);
     RETURN (s);
 }
 
@@ -110,8 +109,7 @@ NewSymbolGlobal (Atom name, Type *type)
     s->symbol.class = class_global;
     s->symbol.type = type;
     s->symbol.forward = False;
-    s->global.value = NewBox (False, False, 1);
-    BoxType (s->global.value, 0) = type;
+    s->global.value = NewBox (False, False, 1, type);
     RETURN (s);
 }
 

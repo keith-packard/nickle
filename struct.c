@@ -14,11 +14,10 @@ StructMemRef (Value sv, Atom name)
     ENTER ();
     Struct	    *s = &sv->structs;
     StructType	    *st = s->type;
-    StructElement   *se = StructTypeElements(st);
     int		    i;
 
     for (i = 0; i < st->nelements; i++)
-	if (se[i].name == name)
+	if (StructTypeAtoms(st)[i] == name)
 	    RETURN (NewRef (s->values, i));
     RETURN (0);
 }
@@ -29,11 +28,10 @@ StructMemValue (Value sv, Atom name)
     ENTER ();
     Struct	    *s = &sv->structs;
     StructType	    *st = s->type;
-    StructElement   *se = StructTypeElements(st);
     int		    i;
 
     for (i = 0; i < st->nelements; i++)
-	if (se[i].name == name)
+	if (StructTypeAtoms(st)[i] == name)
 	    RETURN (BoxValue (s->values, i));
     RETURN (0);
 }
@@ -42,11 +40,10 @@ Type *
 StructMemType (StructType *st, Atom name)
 {
     int		    i;
-    StructElement   *se = StructTypeElements(st);
 
     for (i = 0; i < st->nelements; i++)
-	if (se[i].name == name)
-	    return (se[i].type);
+	if (StructTypeAtoms(st)[i] == name)
+	    return (BoxTypesElements(st->types)[i]);
     return (0);
 }
 
@@ -55,14 +52,13 @@ StructPrint (Value f, Value av, char format, int base, int width, int prec, int 
 {
     Struct	    *s = &av->structs;
     StructType	    *st = s->type;
-    StructElement   *se = StructTypeElements(st);
     int		    i;
 
     if (format == 'v')
 	FileOutput (f, '{');
     for (i = 0; i < st->nelements; i++)
     {
-	FilePuts (f, AtomName (se[i].name));
+	FilePuts (f, AtomName (StructTypeAtoms(st)[i]));
 	FilePuts (f, " = ");
 	if (!Print (f, BoxValueGet (s->values, i), format, base, width, prec, fill))
 	    return False;
@@ -92,14 +88,13 @@ StructEqual (Value a, Value b, int expandOk)
 {
     int		    i;
     StructType	    *at = a->structs.type;
-    StructElement   *ae = StructTypeElements(at);
     
     if (at->nelements != b->structs.type->nelements)
 	return FalseVal;
     for (i = 0; i < at->nelements; i++)
     {
 	if (False (Equal (BoxValue (a->structs.values, i),
-			  StructMemValue (b, ae[i].name))))
+			  StructMemValue (b, StructTypeAtoms(at)[i]))))
 	    return FalseVal;
     }
     return TrueVal;
@@ -136,16 +131,11 @@ NewStruct (StructType *type, Bool constant)
 {
     ENTER ();
     Value	    ret;
-    int		    i;
-    StructElement   *se;
 
     ret = ALLOCATE (&StructRep.data, sizeof (Struct));
     ret->structs.type = type;
     ret->structs.values = 0;
-    ret->structs.values = NewBox (constant, False, type->nelements);
-    se = StructTypeElements (type);    
-    for (i = 0; i < type->nelements; i++)
-	BoxType (ret->structs.values, i) = se[i].type;
+    ret->structs.values = NewTypedBox (False, type->types);
     RETURN (ret);
 }
 
@@ -153,12 +143,8 @@ static void
 StructTypeMark (void *object)
 {
     StructType	    *st = object;
-    StructElement   *se;
-    int		    i;
 
-    se = StructTypeElements (st);
-    for (i = 0; i < st->nelements; i++)
-	MemReference (se[i].type);
+    MemReference (st->types);
 }
 
 DataType StructTypeType = { StructTypeMark, 0, "StructTypeType" };
@@ -169,17 +155,15 @@ NewStructType (int nelements)
     ENTER ();
     StructType	    *st;
     int		    i;
-    StructElement   *se;
+    Atom	    *atoms;
 
     st = ALLOCATE (&StructTypeType, sizeof (StructType) + 
-		   nelements * sizeof (StructElement));
+		   nelements * sizeof (Atom));
     st->nelements = nelements;
-    se = StructTypeElements (st);
+    st->types = NewBoxTypes (nelements);
+    atoms = StructTypeAtoms(st);
     for (i = 0; i < nelements; i++)
-    {
-	se[i].type = typePoly;
-	se[i].name = 0;
-    }
+	atoms[i] = 0;
     RETURN (st);
 }
 

@@ -848,7 +848,6 @@ subtype		: basetype
 		    {
 			AtomListPtr	al;
 			StructType	*st;
-			StructElement	*se;
 			MemListPtr	ml;
 			int		nelements;
 
@@ -859,14 +858,13 @@ subtype		: basetype
 				nelements++;
 			}
 			st = NewStructType (nelements);
-			se = StructTypeElements (st);
 			nelements = 0;
 			for (ml = $3; ml; ml = ml->next)
 			{
 			    for (al = ml->atoms; al; al = al->next)
 			    {
-				se[nelements].type = ml->type;
-				se[nelements].name = al->atom;
+				AddBoxType (&st->types, ml->type);
+				StructTypeAtoms(st)[nelements] = al->atom;
 				nelements++;
 			    }
 			}
@@ -876,7 +874,6 @@ subtype		: basetype
 		    {
 			AtomListPtr	al;
 			StructType	*st;
-			StructElement	*se;
 			MemListPtr	ml;
 			int		nelements;
 
@@ -887,14 +884,13 @@ subtype		: basetype
 				nelements++;
 			}
 			st = NewStructType (nelements);
-			se = StructTypeElements (st);
 			nelements = 0;
 			for (ml = $3; ml; ml = ml->next)
 			{
 			    for (al = ml->atoms; al; al = al->next)
 			    {
-				se[nelements].type = ml->type;
-				se[nelements].name = al->atom;
+				AddBoxType (&st->types, ml->type);
+				StructTypeAtoms(st)[nelements] = al->atom;
 				nelements++;
 			    }
 			}
@@ -904,7 +900,6 @@ subtype		: basetype
 		    {
 			AtomListPtr	al;
 			StructType	*st;
-			StructElement	*se;
 			int		nelements;
 
 			nelements = 0;
@@ -912,12 +907,11 @@ subtype		: basetype
 			    nelements++;
 			
 			st = NewStructType (nelements);
-			se = StructTypeElements (st);
 			nelements = 0;
 			for (al = $3; al; al = al->next)
 			{
-			    se[nelements].type = typePrim[rep_void];
-			    se[nelements].name = al->atom;
+			    AddBoxType (&st->types, typePrim[rep_void]);
+			    StructTypeAtoms(st)[nelements] = al->atom;
 			    nelements++;
 			}
 			$$ = NewTypeUnion (st, True);
@@ -1755,10 +1749,9 @@ ParseCanonType (TypePtr type, Bool forwardAllowed)
     case type_struct:
 	for (n = 0; n < type->structs.structs->nelements; n++)
 	{
-	    StructElement   *se;
+	    StructType   *st = type->structs.structs;
 
-	    se = &StructTypeElements(type->structs.structs)[n];
-	    t = ParseCanonType (se->type, forwardAllowed);
+	    t = ParseCanonType (BoxTypesElements(st->types)[n], forwardAllowed);
 	    if (t < ret)
 		ret = t;
 	}
@@ -1767,10 +1760,9 @@ ParseCanonType (TypePtr type, Bool forwardAllowed)
 	anyResolved = False;
 	for (n = 0; n < type->structs.structs->nelements; n++)
 	{
-	    StructElement   *se;
+	    StructType   *st = type->structs.structs;
 
-	    se = &StructTypeElements(type->structs.structs)[n];
-	    t = ParseCanonType (se->type, True);
+	    t = ParseCanonType (BoxTypesElements(st->types)[n], True);
 	    if (t < ret)
 		ret = t;
 	    if (t == CanonTypeDefined)

@@ -1581,7 +1581,8 @@ CompileImplicitInit (Type *type)
     Type	    *sub;
     int		    dim;
     StructTypePtr   structs;
-    StructElement   *se;
+    TypePtr	    *types;
+    Atom	    *atoms;
     int		    i;
     
     type = TypeCanon (type);
@@ -1610,20 +1611,21 @@ CompileImplicitInit (Type *type)
 	break;
     case type_struct:
 	structs = type->structs.structs;
-	se = StructTypeElements (structs);
+	types = BoxTypesElements (structs->types);
+	atoms = StructTypeAtoms (structs);
 	init = 0;
 	for (i = 0; i < structs->nelements; i++)
 	{
 	    ExprPtr	member;
 	    
-	    sub = TypeCanon (se[i].type);
+	    sub = TypeCanon (types[i]);
 
 	    member = CompileImplicitInit (sub);
 	    if (member)
 	    {
 		init = NewExprTree (COMMA,
 				    NewExprTree (ASSIGN, 
-						 NewExprAtom (se[i].name, 0, False), 
+						 NewExprAtom (atoms[i], 0, False), 
 						 member),
 				    init);
 	    }
@@ -1662,7 +1664,8 @@ CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
     ExprPtr	    init;
     Type	    *mem_type;
     int		    i;
-    StructElement   *se = StructTypeElements (structs);
+    TypePtr	    *types = BoxTypesElements (structs->types);
+    Atom	    *atoms = StructTypeAtoms (structs);
     
     BuildInst (obj, OpBuildStruct, inst, stat);
     inst->structs.structs = structs;
@@ -1698,9 +1701,9 @@ CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
      */
     for (i = 0; i < structs->nelements; i++)
     {
-	TypePtr	type = TypeCanon (se[i].type);
+	TypePtr	type = TypeCanon (types[i]);
 
-	if (!inits || !CompileStructInitElementIncluded (inits, se[i].name))
+	if (!inits || !CompileStructInitElementIncluded (inits, atoms[i]))
 	{
 	    ExprPtr init = CompileImplicitInit (type);
 
@@ -1709,7 +1712,7 @@ CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
 		SetPush (obj);
 		obj = CompileInit (obj, init, type, stat, code);
 		BuildInst (obj, OpInitStruct, inst, stat);
-		inst->atom.atom = se[i].name;
+		inst->atom.atom = atoms[i];
 	    }
 	}
     }
@@ -2928,7 +2931,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	{
 	    Bool	    missing = False;
 	    int		    i;
-	    StructElement   *se = StructTypeElements(st);
+	    Atom	    *atoms = StructTypeAtoms(st);
 	    
 	    /*
 	     * See if every member of the union has a case
@@ -2943,7 +2946,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		    if (pair)
 		    {
 			Atom	tag = pair->tree.left->atom.atom;
-			if (tag == se[i].name)
+			if (tag == atoms[i])
 			    break;
 		    }
 		    c = c->tree.right;

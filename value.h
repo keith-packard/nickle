@@ -174,6 +174,7 @@ typedef struct _natural {
 #define NaturalDigits(n)    ((digit *) ((n) + 1))
 
 Natural	*NewNatural (unsigned value);
+Natural *NewDoubleDigitNatural (double_digit dd);
 Natural	*AllocNatural (int size);
 Bool	NaturalEqual (Natural *, Natural *);
 Bool	NaturalLess (Natural *, Natural *);
@@ -280,22 +281,39 @@ extern ValueRep    StringRep, ArrayRep, FileRep;
 extern ValueRep    RefRep, StructRep, UnionRep, FuncRep, ThreadRep;
 extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 
-#define ValueIsInt(v) ((v)->value.type == &IntRep)
-#define ValueIsInteger(v) ((v)->value.type == &IntegerRep)
-#define ValueIsRational(v) ((v)->value.type == &RationalRep)
-#define ValueIsFloat(v) ((v)->value.type == &FloatRep)
-#define ValueIsString(v) ((v)->value.type == &StringRep)
-#define ValueIsArray(v) ((v)->value.type == &ArrayRep)
-#define ValueIsFile(v) ((v)->value.type == &FileRep)
-#define ValueIsRef(v) ((v)->value.type == &RefRep)
-#define ValueIsStruct(v) ((v)->value.type == &StructRep)
-#define ValueIsUnion(v) ((v)->value.type == &UnionRep)
-#define ValueIsFunc(v) ((v)->value.type == &FuncRep)
-#define ValueIsThread(v) ((v)->value.type == &ThreadRep)
-#define ValueIsSemaphore(v) ((v)->value.type == &SemaphoreRep)
-#define ValueIsContinuation(v) ((v)->value.type == &ContinuationRep)
-#define ValueIsUnit(v) ((v)->value.type == &UnitRep)
-#define ValueIsBool(v) ((v)->value.type == &BoolRep)
+#define NewInt(i)	((Value) (((i) << 1) | 1))
+#define IntSign(i)	((i) < 0 ? Negative : Positive)
+
+#define NICKLE_INT_BITS	    ((sizeof (int) * 8) - 1)
+#define NICKLE_INT_CARRY    (1 << (NICKLE_INT_BITS - 1))
+
+#define MAX_NICKLE_INT	    ((int) ((unsigned) NICKLE_INT_CARRY - 1))
+#define MIN_NICKLE_INT	    (-MAX_NICKLE_INT - 1)
+
+#define One NewInt(1)
+#define Zero NewInt(0)
+
+#define ValueIsPtr(v)	((((int) (v)) & 1) == 0)
+#define ValueIsInt(v)	((((int) (v)) & 1) != 0)
+#define ValueInt(v)	(((int) (v)) >> 1)
+#define ValueUInt(v)	(((unsigned int) (v)) >> 1)
+
+#define ValueRep(v) (ValueIsInt(v) ? &IntRep : (v)->value.type)
+#define ValueIsInteger(v) (ValueRep(v) == &IntegerRep)
+#define ValueIsRational(v) (ValueRep(v) == &RationalRep)
+#define ValueIsFloat(v) (ValueRep(v) == &FloatRep)
+#define ValueIsString(v) (ValueRep(v) == &StringRep)
+#define ValueIsArray(v) (ValueRep(v) == &ArrayRep)
+#define ValueIsFile(v) (ValueRep(v) == &FileRep)
+#define ValueIsRef(v) (ValueRep(v) == &RefRep)
+#define ValueIsStruct(v) (ValueRep(v) == &StructRep)
+#define ValueIsUnion(v) (ValueRep(v) == &UnionRep)
+#define ValueIsFunc(v) (ValueRep(v) == &FuncRep)
+#define ValueIsThread(v) (ValueRep(v) == &ThreadRep)
+#define ValueIsSemaphore(v) (ValueRep(v) == &SemaphoreRep)
+#define ValueIsContinuation(v) (ValueRep(v) == &ContinuationRep)
+#define ValueIsUnit(v) (ValueRep(v) == &UnitRep)
+#define ValueIsBool(v) (ValueRep(v) == &BoolRep)
 
 /*
  * Aggregate types
@@ -446,22 +464,19 @@ typedef enum _publish {
     publish_private, publish_protected, publish_public, publish_extend
 } Publish;
 
-#define ValueTag(v) ((v)->value.type->tag)
+#define ValueTag(v) (ValueRep(v)->tag)
 
 typedef struct _baseValue {
     ValueRep	*type;
 } BaseValue;
 
-typedef struct _int {
-    BaseValue	base;
-    int		value;
-} Int;
-
 typedef struct _integer {
     BaseValue	base;
-    Sign	sign;
-    Natural	*mag;
+    Natural	*magn;
 } Integer;
+
+#define IntegerMag(i)	((Natural *) ((long) ((i)->integer.magn) & ~1))
+#define IntegerSign(i)	((Sign) ((long) ((i)->integer.magn) & 1))
 
 typedef struct _rational {
     BaseValue	base;
@@ -491,12 +506,13 @@ typedef struct _string {
 
 typedef struct _array {
     BaseValue	base;
-    Type	*type;
     int		ndim;
     int		ents;
-    int		*dim;
     BoxPtr	values;
 } Array;
+
+#define ArrayDims(a)	    ((int *) ((a) + 1))
+#define ArrayType(a)	    ((a)->values->u.type)
 
 typedef struct _io_chain {
     DataType		*data;
@@ -540,6 +556,18 @@ typedef struct _file {
 #define FileString	    0x0800
 #define FilePipe	    0x1000
 
+typedef struct _boxTypes {
+    DataType	*data;
+    int		count;
+    int		size;
+} BoxTypes, *BoxTypesPtr;
+
+#define BoxTypesElements(bt)	((TypePtr *) ((bt) + 1))
+#define BoxTypesValue(bt,e)	(BoxTypesElements(bt)[e])
+
+extern BoxTypesPtr  NewBoxTypes (int size);
+extern int	    AddBoxType (BoxTypesPtr *btp, TypePtr t);
+
 typedef struct _ref {
     BaseValue	base;
     BoxPtr	box;
@@ -552,17 +580,13 @@ typedef struct _ref {
 #define RefType(r)	    BoxType((r)->ref.box, (r)->ref.element)
 #define RefConstant(r)	    BoxConstant((r)->ref.box, (r)->ref.element)
 
-typedef struct _structElement {
-    TypePtr	type;
-    Atom	name;
-} StructElement;
-
 typedef struct _structType {
     DataType	*data;
     int		nelements;
+    BoxTypesPtr	types;
 } StructType;
 
-#define StructTypeElements(st)	((StructElement *) (st + 1))
+#define StructTypeAtoms(st)	((Atom *) (st + 1))
 
 typedef struct _struct {
     BaseValue	base;
@@ -674,7 +698,6 @@ void	    ContinuationTrace (char	*where, Value continuation);
 
 typedef union _value {
     BaseValue	value;
-    Int		ints;
     Integer	integer;
     Rational	rational;
     Float	floats;
@@ -716,53 +739,40 @@ struct _valueType {
     TypeCheck	typecheck;
 };
 
-typedef struct _boxElement {
-    Value	value;
-    Type	*type;
-} BoxElement;
-
 typedef struct _box {
-    DataType	*data;
-    Bool	constant;
-    Bool	array;
-    int		nvalues;
+    DataType	    *data;
+    unsigned long   constant : 1;
+    unsigned long   array : 1;
+    unsigned long   homogeneous : 1;
+    unsigned long   nvalues : 29;
+    union {
+	BoxTypesPtr	    types;
+	TypePtr		    type;
+    } u;
 } Box;
 
-#define BoxElements(box)	((BoxElement *) ((box) + 1))
-#define BoxValueSet(box,e,v)	((BoxElements(box)[e].value) = (v))
-#define BoxValueGet(box,e)	((BoxElements(box)[e].value))
+#define BoxElements(box)	((Value *) ((box) + 1))
+#define BoxValueSet(box,e,v)	((BoxElements(box)[e]) = (v))
+#define BoxValueGet(box,e)	((BoxElements(box)[e]))
 #define BoxConstant(box,e)	((box)->constant)
-#define BoxType(box,e)		(BoxElements(box)[e].type)
+#define BoxType(box,e)		((box)->homogeneous ? (box)->u.type : \
+				 BoxTypesValue((box)->u.types, e))
 				 
-extern BoxPtr	NewBox (Bool constant, Bool array, int nvalues);
-
-typedef struct _boxTypes {
-    DataType	*data;
-    int		count;
-    int		size;
-} BoxTypes, *BoxTypesPtr;
-
-#define BoxTypesElements(bt)	((TypePtr *) ((bt) + 1))
-#define BoxTypesValue(bt,e)	(BoxTypesElements(bt)[e])
-
-extern BoxTypesPtr NewBoxTypes (int size);
-
-extern int	AddBoxType (BoxTypesPtr *btp, TypePtr t);
-
-extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr type);
+extern BoxPtr	NewBox (Bool constant, Bool array, int nvalues, TypePtr type);
+extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr types);
 			     
 typedef struct {
     DataType	*data;
     int		size;
-} ValueCache, *ValueCachePtr;
+} DataCache, *DataCachePtr;
 
-ValueCachePtr	NewValueCache (int size);
+DataCachePtr	NewDataCache (int size);
 
-#define ValueCacheValues(vc)	((Value *) ((vc) + 1))
+#define DataCacheValues(vc)	((void *) ((vc) + 1))
 
-Value	NewInt (int value);
 Value	NewInteger (Sign sign, Natural *mag);
 Value	NewIntInteger (int value);
+Value	NewSignedDigitInteger (signed_digit d);
 Value	NewRational (Sign sign, Natural *num, Natural *den);
 Value	NewIntRational (int value);
 Value	NewIntegerRational (Integer *);
@@ -779,7 +789,7 @@ unsigned    FpartLength (Fpart *a);
 #define DEFAULT_FLOAT_PREC	256
 #define REF_CACHE_SIZE		1031
 
-extern ValueCachePtr	refCache;
+extern DataCachePtr	refCache;
 
 Value	NewString (int);
 Value	NewStrString (char *);
@@ -793,15 +803,19 @@ int	StringCharSize (unsigned c);
 unsigned    StringGet (char *src, int i);
 
 #ifdef HAVE_C_INLINE
+
 static inline Value
 NewRef (BoxPtr box, int element)
 {
     int	    c = ((unsigned) (&BoxElements(box)[element])) % REF_CACHE_SIZE;
-    Value   *re = &ValueCacheValues(refCache)[c];
+    Value   *re = (Value *) (DataCacheValues(refCache)) + c;
     Value   ret = *re;
 
     if (ret && ret->ref.box == box && ret->ref.element == element)
+    {
+	REFERENCE (ret);
 	return ret;
+    }
     return NewRefReal (box, element, re);
 }
 #else
@@ -822,7 +836,7 @@ Value	NumericDiv (Value av, Value bv, int expandOk);
 
 # define	OK_TRUNC	1
 
-extern Value	Zero, One, Blank, Empty, Elementless, Void, TrueVal, FalseVal;
+extern Value	Blank, Empty, Elementless, Void, TrueVal, FalseVal;
 
 # define True(v)	((v) == TrueVal)
 # define False(v)	((v) != TrueVal)
@@ -869,10 +883,19 @@ extern Value    FileStdin, FileStdout, FileStderr;
 typedef Value	(*BinaryFunc) (Value, Value);
 typedef Value	(*UnaryFunc) (Value);
 
-Value	Plus (Value, Value), Minus (Value, Value);
-Value	Times (Value, Value), Divide (Value, Value), Div (Value, Value);
-Value	Mod (Value, Value);
-Value	Equal (Value, Value), Less (Value, Value);
+#define Plus(av,bv) BinaryOperate (av, bv, PlusOp)
+#define Minus(av,bv) BinaryOperate (av, bv, MinusOp)
+#define Times(av,bv) BinaryOperate (av, bv, TimesOp)
+#define Divide(av,bv) BinaryOperate (av, bv, DivideOp)
+#define Div(av,bv) BinaryOperate (av, bv, DivOp)
+#define Mod(av,bv) BinaryOperate (av, bv, ModOp)
+#define Less(av,bv) BinaryOperate (av, bv, LessOp)
+#define Equal(av,bv) BinaryOperate (av, bv, EqualOp)
+#define Land(av,bv) BinaryOperate (av, bv, LandOp)
+#define Lor(av,bv) BinaryOperate (av, bv, LorOp)
+
+int logbase2(int a);
+
 Value	Greater (Value, Value), LessEqual (Value, Value);
 Value	GreaterEqual (Value, Value), NotEqual (Value, Value);
 Value	Not (Value);
@@ -887,8 +910,7 @@ Value	Gcd (Value, Value);
 Value	Bdivmod (Value av, Value bv);
 Value	KaryReduction (Value av, Value bv);
 #endif
-Value	Lxor(Value, Value), Land (Value, Value);
-Value	Lor (Value, Value), Lnot (Value);
+Value	Lxor(Value, Value), Lnot (Value);
 Bool	Print (Value, Value, char format, int base, int width, int prec, int fill);
 void	RaiseError (char *s, ...);
 void	PrintError (char *s, ...);
@@ -904,7 +926,6 @@ Copy (Value v)
 #else
 Value	Copy (Value);
 #endif
-Value	Dereference (Value);
 Value	ValueEqual (Value a, Value b, int expandOk);
 
 /*
@@ -980,19 +1001,13 @@ int	AtomInit (void);
 int	FileInit (void);
 int	IntInit (void);
 int	NaturalInit (void);
+int	IntegerInit (void);
 int	RationalInit (void);
 int	FpartInit (void);
 int	StringInit (void);
 int	StructInit (void);
 int	RefInit (void);
 int	ValueInit (void);
-
-#ifndef MAXINT
-# define MAXINT	((int) (((unsigned) (~0)) >> 1))
-#endif
-#ifndef MININT
-# define MININT (-MAXINT - 1)
-#endif
 
 # define oneNp(n)	((n)->length == 1 && NaturalDigits(n)[0] == 1)
 # define zeroNp(n)	((n)->length == 0)

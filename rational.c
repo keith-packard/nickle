@@ -273,7 +273,7 @@ RationalPromote (Value av, Value bv)
 
     switch (ValueTag(av)) {
     case rep_int:
-	av = NewIntRational (av->ints.value);
+	av = NewIntRational (ValueInt(av));
 	break;
     case rep_integer:
 	av = NewIntegerRational (&av->integer);
@@ -1172,5 +1172,6 @@ Value
 NewIntegerRational (Integer *i)
 {
     ENTER ();
-    RETURN (NewRational (i->sign, i->mag, one_natural));
+    RETURN (NewRational (IntegerSign((Value) i), IntegerMag((Value) i),
+			 one_natural));
 }

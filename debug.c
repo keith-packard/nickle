@@ -152,7 +152,7 @@ do_Debug_up (void)
     frame = lookupVar (0, "frame");
     if (ValueIsContinuation(continuation) && ValueIsInt(frame))
     {
-	if (DebugSetFrame (continuation, frame->ints.value + 1))
+	if (DebugSetFrame (continuation, ValueInt(frame) + 1))
 	    RETURN (TrueVal);
 	FilePrintf (FileStderr, "Already at top\n");
     }
@@ -170,9 +170,9 @@ do_Debug_down (void)
     frame = lookupVar (0, "frame");
     if (ValueIsContinuation(continuation) && ValueIsInt(frame))
     {
-	if (frame->ints.value <= 0)
+	if (ValueInt(frame) <= 0)
 	    FilePrintf (FileStderr, "Already at bottom\n");
-	else if (DebugSetFrame (continuation, frame->ints.value - 1))
+	else if (DebugSetFrame (continuation, ValueInt(frame) - 1))
 	    RETURN (TrueVal);
     }
     RETURN (FalseVal);

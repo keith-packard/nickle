@@ -14,11 +14,10 @@ UnionRef (Value uv, Atom name)
     ENTER ();
     Union	    *u = &uv->unions;
     StructType	    *st = u->type;
-    StructElement   *se = StructTypeElements(st);
     int		    i;
 
     for (i = 0; i < st->nelements; i++)
-	if (se[i].name == name)
+	if (StructTypeAtoms(st)[i] == name)
 	{
 	    u->tag = name;
 	    RETURN (NewRef (u->value, 0));
@@ -121,7 +120,6 @@ NewUnion (StructType *type, Bool constant)
     ret->unions.type = type;
     ret->unions.tag = 0;
     ret->unions.value = 0;
-    ret->unions.value = NewBox (constant, False, 1);
-    BoxType (ret->unions.value, 0) = 0;
+    ret->unions.value = NewBox (constant, False, 1, 0);
     RETURN (ret);
 }

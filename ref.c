@@ -182,7 +182,7 @@ ValueRep RefRep = {
     RefTypeCheck,
 };
     
-ValueCachePtr	refCache;
+DataCachePtr	refCache;
 
 Value
 NewRefReal (BoxPtr box, int element, Value *re)
@@ -196,15 +196,19 @@ NewRefReal (BoxPtr box, int element, Value *re)
 }
 
 #ifndef HAVE_C_INLINE
+
 Value
 NewRef (BoxPtr box, int element)
 {
     int	    c = ((unsigned) (&BoxElements(box)[element])) % REF_CACHE_SIZE;
-    Value   *re = &ValueCacheValues(refCache)[c];
+    Value   *re = (Value *) &DataCacheValues(refCache)[c];
     Value   ret = *re;
 
     if (ret && ret->ref.box == box && ret->ref.element == element)
+    {
+	REFERENCE(ret);
 	return ret;
+    }
     return NewRefReal (box, element, re);
 }
 #endif
@@ -213,7 +217,7 @@ int
 RefInit (void)
 {
     ENTER ();
-    refCache = NewValueCache(REF_CACHE_SIZE);
+    refCache = NewDataCache(REF_CACHE_SIZE);
     EXIT ();
     return 1;
 }

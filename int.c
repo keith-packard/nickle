@@ -8,94 +8,30 @@
 
 #include	"nickle.h"
 
-# define sign(i)	((i) < 0 ? Negative : Positive)
-
-#define INT_CACHE_SIZE	8209
-
-static ValueCachePtr	intCache;
-
-static Value	NewIntReal (int value);
-    
-Value /* INLINE */
-NewInt (int i)
-{
-    ENTER ();
-    unsigned	c = ((unsigned) i) % INT_CACHE_SIZE;
-    Value	*ve = &ValueCacheValues(intCache)[c];
-    Value	v = *ve;
-    
-    if (!v || v->ints.value != i)
-    {
-	v = NewIntReal (i);
-	*ve = v;
-    }
-    RETURN (v);
-}
-
-Value	One, Zero;
-
 static Value
 IntPlus (Value av, Value bv, int expandOk)
 {
-    ENTER ();
-    Value	ret;
-    int		a = av->ints.value, b = bv->ints.value;
-
-    switch (catagorize_signs (sign(a), sign(b))) {
-    case BothPositive:
-	if (expandOk && a + b < 0)
-	    ret = Plus (NewIntInteger (a), NewIntInteger (b));
-	else
-	    ret = NewInt (a + b);
-	break;
-    case FirstPositive:
-    case SecondPositive:
-    default:
-	ret = NewInt (a + b);
-	break;
-    case BothNegative:
-	if (expandOk && a + b >= 0)
-	    ret = Plus (NewIntInteger (a), NewIntInteger (b));
-	else
-	    ret = NewInt (a + b);
-	break;
-    }
-    RETURN (ret);
+    int	    r = ValueUInt(av) + ValueUInt(bv);
+    
+    if (expandOk && (r & NICKLE_INT_CARRY))
+	return Plus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
+    return NewInt(r);
 }
 
 static Value
 IntMinus (Value av, Value bv, int expandOk)
 {
-    ENTER ();
-    Value	ret;
-    int		a = av->ints.value, b = bv->ints.value;
-
-    switch (catagorize_signs (sign(a), sign(b))) {
-    case FirstPositive:
-	if (expandOk && a - b < 0)
-	    ret = Minus (NewIntInteger (a), NewIntInteger (b));
-	else
-	    ret = NewInt (a - b);
-	break;
-    case BothPositive:
-    case BothNegative:
-    default:
-	ret = NewInt (a - b);
-	break;
-    case SecondPositive:
-	if (expandOk && a - b >= 0)
-	    ret = Minus (NewIntInteger (a), NewIntInteger (b));
-	else
-	    ret = NewInt (a - b);
-	break;
-    }
-    RETURN (ret);
+    int	    r = ValueUInt(av) - ValueUInt(bv);
+    
+    if (expandOk && (r & NICKLE_INT_CARRY))
+	return Minus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
+    return NewInt(r);
 }
 
-static int
+int
 logbase2(int a)
 {
-    int	log = 0;
+    int log = 0;
 
     if (a < 0)
 	a = -a;
@@ -115,26 +51,26 @@ logbase2(int a)
 	log += 1;
     return log;
 }
+		
+#define HALF_BITS   (NICKLE_INT_BITS>>1)
+#define HALF_MAX    (1 << (NICKLE_INT_BITS>>1))
 
 static Value
 IntTimes (Value av, Value bv, int expandOk)
 {
-    ENTER ();
-    int		a = av->ints.value, b = bv->ints.value;
-    Value	ret;
+    int		    a = ValueInt(av), b = ValueInt(bv);
+    signed_digit    rd = (signed_digit) a * (signed_digit) b;
 
-    if (expandOk && logbase2(a) + logbase2(b) >= logbase2 (MAXINT))
-	ret = Times (NewIntInteger (a), NewIntInteger (b));
-    else
-	ret = NewInt (a * b);
-    RETURN (ret);
+    if (rd > (signed_digit) MAX_NICKLE_INT || rd < (signed_digit) MIN_NICKLE_INT)
+	return NewSignedDigitInteger (rd);
+    return NewInt ((int) rd);
 }
 
 static Value
 IntDivide (Value av, Value bv, int expandOk)
 {
     ENTER ();
-    int		a = av->ints.value, b = bv->ints.value;
+    int		a = ValueInt(av), b = ValueInt(bv);
     Value	ret;
 
     if (b == 0)
@@ -155,7 +91,7 @@ static Value
 IntDiv (Value av, Value bv, int expandOk)
 {
     ENTER ();
-    int		a = av->ints.value, b = bv->ints.value;
+    int		a = ValueInt(av), b = ValueInt(bv);
     int		d;
     Value	ret;
 
@@ -166,7 +102,7 @@ IntDiv (Value av, Value bv, int expandOk)
 				2, av, bv);
 	RETURN (Void);
     }
-    switch (catagorize_signs (sign(a), sign(b))) {
+    switch (catagorize_signs (IntSign(a), IntSign(b))) {
     case BothPositive:
 	d = a / b;
 	break;
@@ -192,7 +128,7 @@ IntDiv (Value av, Value bv, int expandOk)
 /*
  * dividend * quotient + remainder = divisor
  *
- * sign(quotient) = sign (dividend) * sign (divisor)
+ * IntSign(quotient) = IntSign (dividend) * IntSign (divisor)
  * 0 <= remainder < abs (dividend)
  */
  
@@ -200,7 +136,7 @@ static Value
 IntMod (Value av, Value bv, int expandOk)
 {
     ENTER ();
-    int		a = av->ints.value, b = bv->ints.value;
+    int		a = ValueInt(av), b = ValueInt(bv);
     int		r;
 
     if (b == 0)
@@ -210,7 +146,7 @@ IntMod (Value av, Value bv, int expandOk)
 				2, av, bv);
 	RETURN (Void);
     }
-    switch (catagorize_signs (sign(a), sign(b))) {
+    switch (catagorize_signs (IntSign(a), IntSign(b))) {
     case BothPositive:
 	r = a % b;
 	break;
@@ -235,7 +171,7 @@ IntMod (Value av, Value bv, int expandOk)
 static Value
 IntEqual (Value av, Value bv, int expandOk)
 {
-    int		a = av->ints.value, b = bv->ints.value;
+    int		a = ValueInt(av), b = ValueInt(bv);
     if (a == b)
 	return TrueVal;
     return FalseVal;
@@ -244,7 +180,7 @@ IntEqual (Value av, Value bv, int expandOk)
 static Value
 IntLess (Value av, Value bv, int expandOk)
 {
-    int		a = av->ints.value, b = bv->ints.value;
+    int		a = ValueInt(av), b = ValueInt(bv);
     if (a < b)
 	return TrueVal;
     return FalseVal;
@@ -254,7 +190,7 @@ static Value
 IntLand (Value av, Value bv, int expandOk)
 {
     ENTER ();
-    int		a = av->ints.value, b = bv->ints.value;
+    int		a = ValueInt(av), b = ValueInt(bv);
     RETURN (NewInt (a & b));
 }
 
@@ -262,7 +198,7 @@ static Value
 IntLor (Value av, Value bv, int expandOk)
 {
     ENTER ();
-    int		a = av->ints.value, b = bv->ints.value;
+    int		a = ValueInt(av), b = ValueInt(bv);
     RETURN (NewInt (a | b));
 }
 
@@ -270,7 +206,7 @@ static Value
 IntNegate (Value av, int expandOk)
 {
     ENTER ();
-    int	    a = av->ints.value;
+    int	    a = ValueInt(av);
 
     if (-(-a) != a)
 	RETURN (Negate (NewIntInteger (a)));
@@ -292,7 +228,7 @@ IntCeil (Value av, int expandOk)
 static Bool
 IntPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
-    int	    a = av->ints.value;
+    int	    a = ValueInt(av);
     int	    digit;
     int	    w;
     int	    fraction_width;
@@ -407,26 +343,9 @@ ValueRep IntRep = {
     0, 0,
     IntPrint
 };
-    
-static Value
-NewIntReal (int value)
-{
-    ENTER ();
-    Value	ret;
-    ret = ALLOCATE (&IntRep.data, sizeof (Int));
-    ret->ints.value = value;
-    RETURN (ret);
-}
 
 int
 IntInit (void)
 {
-    ENTER ();
-    intCache = NewValueCache(INT_CACHE_SIZE);
-    Zero = NewInt (0);
-    MemAddRoot (Zero);
-    One = NewInt (1);
-    MemAddRoot (One);
-    EXIT ();
     return 1;
 }

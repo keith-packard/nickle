@@ -54,6 +54,7 @@ extern void	MemInitialize (void);
 #ifndef HAVE_C_INLINE
 extern void	*MemAllocate (DataType *type, int size);
 #endif
+extern void	MemFree (void *object, int size);
 extern void	*MemAllocateHuge (DataType *type, int size);
 extern void	*MemHunkMore (int sizeIndex);
 extern void	MemReference (void *object);

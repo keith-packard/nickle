@@ -29,7 +29,7 @@ ArrayEqual (Value av, Value bv, int expandOk)
     if (a->ndim != b->ndim)
 	return FalseVal;
     for (i = 0; i < a->ndim; i++)
-	if (a->dim[i] != b->dim[i])
+	if (ArrayDims(a)[i] != ArrayDims(b)[i])
 	    return FalseVal;
     for (i = 0; i < a->ents; i++)
 	if (False (Equal ( BoxValue (a->values, i), 
@@ -53,7 +53,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 	FilePuts (f, "[");
 	for (i = a->ndim - 1; i >= 0; i--)
 	{
-	    FilePutInt (f, a->dim[i]);
+	    FilePutInt (f, ArrayDims(a)[i]);
 	    if (i)
 		FilePuts (f, ",");
 	}
@@ -77,10 +77,10 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 	    {
 		j = i;
 		k = 0;
-		while (k < a->ndim - 1 && j % a->dim[k] == 0)
+		while (k < a->ndim - 1 && j % ArrayDims(a)[k] == 0)
 		{
 		    ndone++;
-		    j = j / a->dim[k];
+		    j = j / ArrayDims(a)[k];
 		    k++;
 		}
 		for (k = 0; k < ndone; k++)
@@ -105,7 +105,6 @@ ArrayMark (void *object)
 {
     Array   *array = object;
 
-    MemReference (array->type);
     MemReference (array->values);
 }
 
@@ -139,8 +138,6 @@ NewArray (Bool constant, TypePtr type, int ndim, int *dims)
     Value   ret;
     int	    ents;
     int	    dim;
-    BoxElement	*elements;
-    int		i;
 
     if (ndim)
     {
@@ -151,16 +148,11 @@ NewArray (Bool constant, TypePtr type, int ndim, int *dims)
     else
 	ents = 0;
     ret = ALLOCATE (&ArrayRep.data, sizeof (Array) + ndim * sizeof (int));
-    ret->array.type = type;
     ret->array.ndim = ndim;
     ret->array.ents = ents;
-    ret->array.dim = (int *) (&ret->array + 1);
     ret->array.values = 0;
-    ret->array.values = NewBox (constant, True, ents);
-    elements = BoxElements (ret->array.values);
-    for (i = 0; i < ents; i++)
-	elements[i].type = type;
+    ret->array.values = NewBox (constant, True, ents, type);
     for (dim = 0; dim < ndim; dim++)
-	ret->array.dim[dim] = dims[dim];
+	ArrayDims(&ret->array)[dim] = dims[dim];
     RETURN (ret);
 }

@@ -263,9 +263,10 @@ int	    TypeCheckLevel;
 Bool
 TypeCompatible (Type *a, Type *b, Bool contains)
 {
-    int	    n;
-    int	    adim, bdim;
-    Bool    ret;
+    int		n;
+    int		adim, bdim;
+    Bool	ret;
+    StructType	*st;
     
     if (a == b)
 	return True;
@@ -355,16 +356,15 @@ TypeCompatible (Type *a, Type *b, Bool contains)
 	/*
 	 * Is 'b' a subtype of 'a'?
 	 */
-	for (n = 0; n < a->structs.structs->nelements; n++)
+        st = a->structs.structs;
+	for (n = 0; n < st->nelements; n++)
 	{
-	    StructElement   *ae;
 	    Type	    *bt;
 
-	    ae = &StructTypeElements(a->structs.structs)[n];
-	    bt = StructMemType (b->structs.structs, ae->name);
+	    bt = StructMemType (b->structs.structs, StructTypeAtoms(st)[n]);
 	    if (!bt)
 		break;
-	    if (!TypeCompatible (ae->type, bt, contains))
+	    if (!TypeCompatible (BoxTypesElements(st->types)[n], bt, contains))
 		break;
 	}
 	if (n != a->structs.structs->nelements)
@@ -372,16 +372,15 @@ TypeCompatible (Type *a, Type *b, Bool contains)
 	    /*
 	     * is 'a' a subtype of 'b'?
 	     */
-	    for (n = 0; n < b->structs.structs->nelements; n++)
+	    st = b->structs.structs;
+	    for (n = 0; n < st->nelements; n++)
 	    {
-		StructElement   *be;
 		Type		*at;
     
-		be = &StructTypeElements(b->structs.structs)[n];
-		at = StructMemType (a->structs.structs, be->name);
+		at = StructMemType (a->structs.structs, StructTypeAtoms(st)[n]);
 		if (!at)
 		    break;
-		if (!TypeCompatible (at, be->type, contains))
+		if (!TypeCompatible (at, BoxTypesElements(st->types)[n], contains))
 		    break;
 	    }
 	    /* nope, neither are subtypes */
@@ -1053,7 +1052,7 @@ TypeCompatibleAssign (TypePtr a, Value b)
 	    {
 		if (TypePoly (a->array.type))
 		    return True;
-		if (TypePoly (b->array.type))
+		if (TypePoly (ArrayType(&b->array)))
 		{
 		    int	i;
 		    BoxPtr  box = b->array.values;
@@ -1068,7 +1067,8 @@ TypeCompatibleAssign (TypePtr a, Value b)
 		    return True;
 		}
 		else
-		    return TypeCompatible (a->array.type, b->array.type, True);
+		    return TypeCompatible (a->array.type, 
+					   ArrayType(&b->array), True);
 	    }
 	}
 	break;
@@ -1077,19 +1077,18 @@ TypeCompatibleAssign (TypePtr a, Value b)
 	if ((ValueIsStruct(b) && a->base.tag == type_struct) ||
 	    (ValueIsUnion(b) && a->base.tag == type_union))
 	{
-	    for (n = 0; n < a->structs.structs->nelements; n++)
+	    StructType	*st = a->structs.structs;
+	    for (n = 0; n < st->nelements; n++)
 	    {
-		StructElement   *ae;
 		Type		*bt;
     
-		ae = &StructTypeElements(a->structs.structs)[n];
-		bt = StructMemType (b->structs.type, ae->name);
+		bt = StructMemType (b->structs.type, StructTypeAtoms(st)[n]);
 		if (!bt)
 		    break;
-		if (!TypeCompatible (ae->type, bt, True))
+		if (!TypeCompatible (BoxTypesElements(st->types)[n], bt, True))
 		    break;
 	    }
-	    if (n == a->structs.structs->nelements)
+	    if (n == st->nelements)
 		return True;
 	}
 	break;

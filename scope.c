@@ -231,7 +231,8 @@ NamespaceLocate (Value		names,
     SymbolPtr	    symbol;
     Bool	    search = True;
     
-    if (!ValueIsArray(names) || names->array.ndim != 1 || names->array.dim[0] == 0)
+    if (!ValueIsArray(names) || names->array.ndim != 1 || 
+	ArrayDims(&names->array)[0] == 0)
     {
 	RaiseStandardException (exception_invalid_argument,
 				"not non-empty array of strings",
@@ -240,7 +241,7 @@ NamespaceLocate (Value		names,
 	return False;
     }
     GetNamespace (&namespace, &f);
-    for (i = 0; i < names->array.dim[0]; i++)
+    for (i = 0; i < ArrayDims(&names->array)[0]; i++)
     {
 	string = BoxValue (names->array.values, i);
 	if (aborting)
@@ -265,7 +266,7 @@ NamespaceLocate (Value		names,
 	    return False;
 	}
 	symbol = namelist->symbol;
-	if (i != names->array.dim[0] - 1)
+	if (i != ArrayDims(&names->array)[0] - 1)
 	{
 	    if (symbol->symbol.class != class_namespace)
 	    {

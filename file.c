@@ -197,15 +197,15 @@ FileInitErrors (void)
 {
     ENTER ();
     StructType	    *st;
-    StructElement   *se;
+    Atom	    *atoms;
     int		    i;
 
     st = NewStructType (NUM_FILE_ERRORS);
-    se = StructTypeElements (st);
+    atoms = StructTypeAtoms (st);
     for (i = 0; i < NUM_FILE_ERRORS; i++)
     {
-	se[i].type = typePrim[rep_void];
-	se[i].name = AtomId (fileErrorMap[i].name);
+	AddBoxType (&st->types, typePrim[rep_void]);
+	atoms[i] = AtomId (fileErrorMap[i].name);
     }
     typeFileError = NewTypeUnion (st, True);
     MemAddRoot (typeFileError);
@@ -231,7 +231,6 @@ FileGetError (int err)
     Value	    ret;
     int		    i;
     StructType	    *st;
-    StructElement   *se;
 
     for (i = 0; i < NUM_FILE_ERRORS; i++)
 	if (fileErrorMap[i].value == err)
@@ -239,9 +238,8 @@ FileGetError (int err)
     if (i == NUM_FILE_ERRORS)
 	i = 0;	    /* XXX weird error */
     st = typeFileError->structs.structs;
-    se = StructTypeElements (st);
     ret = NewUnion (st, True);
-    ret->unions.tag = se[i].name;
+    ret->unions.tag = StructTypeAtoms(st)[i];
     BoxValueSet (ret->unions.value,0,Void);
     RETURN (ret);
 }
@@ -1122,7 +1120,6 @@ FilePutType (Value f, Type *t, Bool minimal)
 {
     int		    i;
     StructType	    *st;
-    StructElement   *se;
     Bool	    spaceit = minimal;
     TypeElt	    *elt;
     
@@ -1161,12 +1158,11 @@ FilePutType (Value f, Type *t, Bool minimal)
 	{
 	    FilePuts (f, "enum { ");
 	    st = t->structs.structs;
-	    se = StructTypeElements (st);
 	    for (i = 0; i < st->nelements; i++)
 	    {
 		if (i)
 		    FilePuts (f, ", ");
-		FilePuts (f, AtomName (se[i].name));
+		FilePuts (f, AtomName (StructTypeAtoms(st)[i]));
 	    }
 	    FilePuts (f, " }");
 	}
@@ -1177,11 +1173,10 @@ FilePutType (Value f, Type *t, Bool minimal)
 	    else
 		FilePuts (f, "union { ");
 	    st = t->structs.structs;
-	    se = StructTypeElements (st);
 	    for (i = 0; i < st->nelements; i++)
 	    {
-		FilePutType (f, se[i].type, True);
-		FilePuts (f, AtomName (se[i].name));
+		FilePutType (f, BoxTypesElements(st->types)[i], True);
+		FilePuts (f, AtomName (StructTypeAtoms (st)[i]));
 		FilePuts (f, "; ");
 	    }
 	    FilePuts (f, "}");

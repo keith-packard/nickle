@@ -14,13 +14,16 @@
 
 #include	"nickle.h"
 
+#define IMag(i)	((Natural *) ((long) ((i)->magn) & ~1))
+#define ISign(i)	((Sign) ((long) ((i)->magn) & 1))
+
 int
 IntegerToInt (Integer *i)
 {
     int	result;
 
-    result = NaturalToInt (i->mag);
-    if (i->sign == Negative)
+    result = NaturalToInt (IMag(i));
+    if (ISign(i) == Negative)
 	result = -result;
     return result;
 }
@@ -32,25 +35,25 @@ IntegerPlus (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Value	ret;
 
-    switch (catagorize_signs(a->sign, b->sign)) {
+    switch (catagorize_signs(ISign(a), ISign(b))) {
     case BothPositive:
     default:
-	ret = NewInteger (Positive, NaturalPlus (a->mag, b->mag));
+	ret = NewInteger (Positive, NaturalPlus (IMag(a), IMag(b)));
 	break;
     case FirstPositive:
-	if (NaturalLess (a->mag, b->mag))
-	    ret = NewInteger (Negative, NaturalMinus (b->mag, a->mag));
+	if (NaturalLess (IMag(a), IMag(b)))
+	    ret = NewInteger (Negative, NaturalMinus (IMag(b), IMag(a)));
 	else
-	    ret = NewInteger (Positive, NaturalMinus (a->mag, b->mag));
+	    ret = NewInteger (Positive, NaturalMinus (IMag(a), IMag(b)));
 	break;
     case SecondPositive:
-	if (NaturalLess (a->mag, b->mag))
-	    ret = NewInteger (Positive, NaturalMinus (b->mag, a->mag));
+	if (NaturalLess (IMag(a), IMag(b)))
+	    ret = NewInteger (Positive, NaturalMinus (IMag(b), IMag(a)));
 	else
-	    ret = NewInteger (Negative, NaturalMinus (a->mag, b->mag));
+	    ret = NewInteger (Negative, NaturalMinus (IMag(a), IMag(b)));
 	break;
     case BothNegative:
-	ret = NewInteger (Negative, NaturalPlus (a->mag, b->mag));
+	ret = NewInteger (Negative, NaturalPlus (IMag(a), IMag(b)));
 	break;
     }
     RETURN (ret);
@@ -63,25 +66,25 @@ IntegerMinus (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Value	ret;
 
-    switch (catagorize_signs(a->sign, b->sign)) {
+    switch (catagorize_signs(ISign(a), ISign(b))) {
     case BothPositive:
     default:
-	if (NaturalLess (a->mag, b->mag))
-	    ret = NewInteger (Negative, NaturalMinus (b->mag, a->mag));
+	if (NaturalLess (IMag(a), IMag(b)))
+	    ret = NewInteger (Negative, NaturalMinus (IMag(b), IMag(a)));
 	else
-	    ret = NewInteger (Positive, NaturalMinus (a->mag, b->mag));
+	    ret = NewInteger (Positive, NaturalMinus (IMag(a), IMag(b)));
 	break;
     case FirstPositive:
-	ret = NewInteger (Positive, NaturalPlus (a->mag, b->mag));
+	ret = NewInteger (Positive, NaturalPlus (IMag(a), IMag(b)));
 	break;
     case SecondPositive:
-	ret = NewInteger (Negative, NaturalPlus (a->mag, b->mag));
+	ret = NewInteger (Negative, NaturalPlus (IMag(a), IMag(b)));
 	break;
     case BothNegative:
-	if (NaturalLess (a->mag, b->mag))
-	    ret = NewInteger (Positive, NaturalMinus (b->mag, a->mag));
+	if (NaturalLess (IMag(a), IMag(b)))
+	    ret = NewInteger (Positive, NaturalMinus (IMag(b), IMag(a)));
 	else
-	    ret = NewInteger (Negative, NaturalMinus (a->mag, b->mag));
+	    ret = NewInteger (Negative, NaturalMinus (IMag(a), IMag(b)));
 	break;
     }
     RETURN (ret);
@@ -95,9 +98,9 @@ IntegerTimes (Value av, Value bv, int expandOk)
     Sign	sign;
     
     sign = Positive;
-    if (a->sign != b->sign)
+    if (ISign(a) != ISign(b))
 	sign = Negative;
-    RETURN (NewInteger (sign, NaturalTimes (a->mag, b->mag)));
+    RETURN (NewInteger (sign, NaturalTimes (IMag(a), IMag(b))));
 }
 
 static Value
@@ -108,7 +111,7 @@ IntegerDivide (Value av, Value bv, int expandOk)
     Natural	*rem;
     Sign	sign;
     
-    if (NaturalZero (b->mag))
+    if (NaturalZero (IMag(b)))
     {
 	RaiseStandardException (exception_divide_by_zero,
 				"integer divide by zero",
@@ -116,12 +119,12 @@ IntegerDivide (Value av, Value bv, int expandOk)
 	RETURN (Void);
     }
     sign = Positive;
-    if (a->sign != b->sign)
+    if (ISign(a) != ISign(b))
 	sign = Negative;
     if (expandOk)
-	RETURN (NewRational (sign, a->mag, b->mag));
+	RETURN (NewRational (sign, IMag(a), IMag(b)));
     else
-	RETURN (NewInteger (sign, NaturalDivide (a->mag, b->mag, &rem)));
+	RETURN (NewInteger (sign, NaturalDivide (IMag(a), IMag(b), &rem)));
 }
 
 static Value
@@ -132,18 +135,18 @@ IntegerDiv (Value av, Value bv, int expandOk)
     Sign	sign;
     Natural	*quo, *rem;
     
-    if  (NaturalZero (b->mag))
+    if  (NaturalZero (IMag(b)))
     {
 	RaiseStandardException (exception_divide_by_zero,
 				"integer div by zero",
 				2, av, bv);
 	RETURN (Void);
     }
-    quo = NaturalDivide (a->mag, b->mag, &rem);
+    quo = NaturalDivide (IMag(a), IMag(b), &rem);
     sign = Positive;
-    if (a->sign == Positive != b->sign == Positive)
+    if (ISign(a) == Positive != ISign(b) == Positive)
 	sign = Negative;
-    if (b->sign == Negative && !NaturalZero (rem))
+    if (ISign(b) == Negative && !NaturalZero (rem))
 	quo = NaturalPlus (quo, one_natural);
     RETURN (NewInteger (sign, quo));
 }
@@ -155,16 +158,16 @@ IntegerMod (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Natural	*quo, *rem;
     
-    if  (NaturalZero (b->mag))
+    if  (NaturalZero (IMag(b)))
     {
 	RaiseStandardException (exception_divide_by_zero,
 				"integer modulus by zero",
 				2, av, bv);
 	RETURN (Void);
     }
-    quo = NaturalDivide (a->mag, b->mag, &rem);
-    if (a->sign == Negative && !NaturalZero (rem))
-	rem = NaturalMinus (b->mag, rem);
+    quo = NaturalDivide (IMag(a), IMag(b), &rem);
+    if (ISign(a) == Negative && !NaturalZero (rem))
+	rem = NaturalMinus (IMag(b), rem);
     RETURN (NewInteger (Positive, rem));
 }
 
@@ -175,9 +178,9 @@ IntegerLess (Value av, Value bv, int expandOk)
     Value	ret;
 
     ret = FalseVal;
-    switch (catagorize_signs (a->sign, b->sign)) {
+    switch (catagorize_signs (ISign(a), ISign(b))) {
     case BothPositive:
-	if (NaturalLess (a->mag, b->mag))
+	if (NaturalLess (IMag(a), IMag(b)))
 	    ret = TrueVal;
 	break;
     case FirstPositive:
@@ -186,7 +189,7 @@ IntegerLess (Value av, Value bv, int expandOk)
 	ret = TrueVal;
 	break;
     case BothNegative:
-	if (NaturalLess (b->mag, a->mag))
+	if (NaturalLess (IMag(b), IMag(a)))
 	    ret = TrueVal;
 	break;
     }
@@ -198,7 +201,7 @@ IntegerEqual (Value av, Value bv, int expandOk)
 {
     Integer	*a = &av->integer, *b = &bv->integer;
 
-    if (a->sign == b->sign && NaturalEqual (a->mag, b->mag))
+    if (ISign(a) == ISign(b) && NaturalEqual (IMag(a), IMag(b)))
 	return TrueVal;
     return FalseVal;
 }
@@ -215,23 +218,23 @@ IntegerLand (Value av, Value bv, int expandOk)
     ENTER ();
     Value	ret;
     Integer	*a = &av->integer, *b = &bv->integer;
-    Natural	*am = a->mag, *bm = b->mag, *m;
+    Natural	*am = IMag(a), *bm = IMag(b), *m;
 
     DebugN("a", am);
-    if (a->sign == Negative)
+    if (ISign(a) == Negative)
     {
 	am = NaturalNegate (am, NaturalLength (bm));
 	DebugN ("-a", am);
     }
     DebugN("b", bm);
-    if (b->sign == Negative)
+    if (ISign(b) == Negative)
     {
 	bm = NaturalNegate (bm, NaturalLength (am));
 	DebugN("-b", bm);
     }
     m = NaturalLand (am, bm);
     DebugN("m", m);
-    if (a->sign == Negative && b->sign == Negative)
+    if (ISign(a) == Negative && ISign(b) == Negative)
     {
 	m = NaturalNegate (m, 0);
 	DebugN("-m", m);
@@ -249,23 +252,23 @@ IntegerLor (Value av, Value bv, int expandOk)
     ENTER ();
     Value	ret;
     Integer	*a = &av->integer, *b = &bv->integer;
-    Natural	*am = a->mag, *bm = b->mag, *m;
+    Natural	*am = IMag(a), *bm = IMag(b), *m;
 
     DebugN("a", am);
-    if (a->sign == Negative)
+    if (ISign(a) == Negative)
     {
 	am = NaturalNegate (am, NaturalLength (bm));
 	DebugN ("-a", am);
     }
     DebugN("b", bm);
-    if (b->sign == Negative)
+    if (ISign(b) == Negative)
     {
 	bm = NaturalNegate (bm, NaturalLength (am));
 	DebugN("-b", bm);
     }
     m = NaturalLor (am, bm);
     DebugN("m", m);
-    if (a->sign == Negative || b->sign == Negative)
+    if (ISign(a) == Negative || ISign(b) == Negative)
     {
 	m = NaturalNegate (m, 0);
 	DebugN("-m", m);
@@ -279,10 +282,9 @@ IntegerLor (Value av, Value bv, int expandOk)
 static Value
 IntegerNegate (Value av, int expandOk)
 {
-    ENTER ();
     Integer *a = &av->integer;
 
-    RETURN (NewInteger (SignNegate (a->sign), a->mag));
+    return NewInteger (SignNegate (ISign(a)), IMag(a));
 }
 
 static Value
@@ -300,22 +302,19 @@ IntegerCeil (Value av, int expandOk)
 static Value
 IntegerPromote (Value av, Value bv)
 {
-    ENTER ();
-    
     if (ValueIsInt(av))
-	av = NewIntInteger (av->ints.value);
-    RETURN (av);
+	av = NewIntInteger (ValueInt(av));
+    return av;
 }
 
 static Value
 IntegerReduce (Value av)
 {
-    ENTER ();
     Integer *a = &av->integer;
     
-    if (NaturalLess (a->mag, max_int_natural))
+    if (NaturalLess (IMag(a), max_int_natural))
 	av = NewInt (IntegerToInt (a));
-    RETURN (av);
+    return av;
 }
 
 static Bool
@@ -329,10 +328,10 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, int
     
     if (base == 0)
 	base = 10;
-    result = NaturalSprint (0, i->mag, base, &print_width);
+    result = NaturalSprint (0, IMag(i), base, &print_width);
     if (result)
     {
-	if (i->sign == Negative)
+	if (ISign(i) == Negative)
 	    print_width++;
 	fraction_width = 0;
 	if (prec >= 0)
@@ -360,7 +359,7 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, int
 	    FileOutchar (f, fill);
 	    width--;
 	}
-	if (i->sign == Negative)
+	if (ISign(i) == Negative)
 	    FileOutput (f, '-');
 	FilePuts (f, result);
 	if (fraction_width)
@@ -387,7 +386,7 @@ static void
 IntegerMark (void *object)
 {
     Integer *integer = object;
-    MemReference (integer->mag);
+    MemReference (IMag(integer));
 }
 
 ValueRep    IntegerRep = { 
@@ -415,15 +414,25 @@ ValueRep    IntegerRep = {
     IntegerPrint
 };
 
+#define INTEGER_CACHE_SIZE  8191
+
+DataCachePtr	integerCache;
+
 Value
 NewInteger (Sign sign, Natural *mag)
 {
     ENTER ();
-    Value ret;
+    unsigned	c = ((unsigned) mag ^ (unsigned) sign) % INTEGER_CACHE_SIZE;
+    Value	*re = (Value *) DataCacheValues(integerCache) + c;
+    Value	ret = *re;
 
+    if (ret && IntegerSign(ret) == sign && NaturalEqual (mag, IntegerMag(ret)))
+    {
+	RETURN (ret);
+    }
     ret = ALLOCATE (&IntegerRep.data, sizeof (Integer));
-    ret->integer.sign = sign;
-    ret->integer.mag = mag;
+    ret->integer.magn = (Natural *) (((long) mag) | (long) sign);
+    *re = ret;
     RETURN (ret);
 }
 
@@ -442,4 +451,31 @@ NewIntInteger (int i)
     else
 	mag = i;
     RETURN (NewInteger (sign, NewNatural (mag)));
+}
+
+Value
+NewSignedDigitInteger (signed_digit d)
+{
+    ENTER ();
+    Sign	    sign = Positive;
+    double_digit    dd;
+
+    if (d < 0)
+    {
+	sign = Negative;
+	dd = -d;
+    }
+    else
+	dd = d;
+    RETURN (NewInteger (sign, NewDoubleDigitNatural (dd)));
+}
+
+int
+IntegerInit (void)
+{
+    ENTER ();
+
+    integerCache = NewDataCache (INTEGER_CACHE_SIZE);
+    EXIT ();
+    return 1;
 }

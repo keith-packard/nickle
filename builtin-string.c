@@ -66,7 +66,7 @@ do_String_new (Value av)
 
     if (ValueIsArray(av) && av->array.ndim == 1)
     {
-	len = av->array.dim[0];
+	len = ArrayDims(&av->array)[0];
 	size = 0;
 	for (i = 0; i < len; i++)
 	    size += StringCharSize (IntPart (BoxValue (av->array.values, i),

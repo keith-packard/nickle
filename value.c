@@ -53,9 +53,9 @@ Zerop (Value av)
 {
     switch (ValueTag(av)) {
     case rep_int:
-	return av->ints.value == 0;
+	return ValueInt(av) == 0;
     case rep_integer:
-	return av->integer.mag->length == 0;
+	return IntegerMag(av)->length == 0;
     case rep_rational:
 	return av->rational.num->length == 0;
     case rep_float:
@@ -70,9 +70,9 @@ Negativep (Value av)
 {
     switch (ValueTag(av)) {
     case rep_int:
-	return av->ints.value < 0;
+	return ValueInt(av) < 0;
     case rep_integer:
-	return av->integer.sign == Negative;
+	return IntegerSign(av) == Negative;
     case rep_rational:
 	return av->rational.sign == Negative;
     case rep_float:
@@ -87,9 +87,9 @@ Evenp (Value av)
 {
     switch (ValueTag(av)) {
     case rep_int:
-	return (av->ints.value & 1) == 0;
+	return (ValueInt(av) & 1) == 0;
     case rep_integer:
-	return NaturalEven (av->integer.mag);
+	return NaturalEven (IntegerMag(av));
     default:;
     }
     return False;
@@ -104,59 +104,67 @@ IntPart (Value av, char *error)
 				2, NewInt (0), av);
 	return 0;
     }
-    return av->ints.value;
+    return ValueInt(av);
 }
 
 Value
 BinaryOperate (Value av, Value bv, BinaryOp operator)
 {
-    ENTER ();
-    Value	ret;
-    ValueRep	*type = 0;
-
-    if (av->value.type->typecheck)
-	type = (*av->value.type->typecheck) (operator, av, bv, 1);
-    else if (bv->value.type->typecheck)
-	type = (*bv->value.type->typecheck) (operator, av, bv, 1);
-    else if (av->value.type == bv->value.type)
-	type = av->value.type;
-    else if (Numericp (ValueTag(av)) && Numericp (ValueTag(bv)))
+    if (ValueIsInt(av) && ValueIsInt(bv))
+	return IntBinaryOperate (av, bv, operator);
+    else
     {
-	if (ValueTag(av) < ValueTag(bv))
-	    av = (*bv->value.type->promote) (av, bv);
-	else
-	    bv = (*av->value.type->promote) (bv, av);
-	type = av->value.type;
+	ENTER ();
+	Value	ret;
+	ValueRep	*arep = ValueRep(av), *brep = ValueRep(bv);
+	ValueRep	*rep = 0;
+    
+	if (arep->typecheck)
+	    rep = (*arep->typecheck) (operator, av, bv, 1);
+	else if (brep->typecheck)
+	    rep = (*brep->typecheck) (operator, av, bv, 1);
+	else if (arep == brep)
+	    rep = arep;
+	else if (Numericp (ValueTag(av)) && Numericp (ValueTag(bv)))
+	{
+	    if (ValueTag(av) < ValueTag(bv))
+		av = (*brep->promote) (av, bv);
+	    else
+		bv = (*arep->promote) (bv, av);
+	    rep = ValueRep(av);
+	}
+	else if (ValueIsUnion(av))
+	    rep = arep;
+	else if (ValueIsUnion(bv))
+	    rep = brep;
+	if (!rep || !rep->binary[operator])
+	{
+	    if (operator == EqualOp)
+		RETURN (FalseVal);
+	    RaiseStandardException (exception_invalid_binop_values,
+				    "invalid operands",
+				    2,
+				    av, bv);
+	    RETURN (Void);
+	}
+	if (aborting)
+	    RETURN (Void);
+	ret = (*rep->binary[operator]) (av, bv, 1);
+	rep = ValueRep(ret);
+	if (rep->reduce)
+	    ret = (*rep->reduce) (ret);
+	RETURN (ret);
     }
-    else if (ValueIsUnion(av))
-	type = av->value.type;
-    else if (ValueIsUnion(bv))
-	type = bv->value.type;
-    if (!type || !type->binary[operator])
-    {
-	if (operator == EqualOp)
-	    RETURN (FalseVal);
-	RaiseStandardException (exception_invalid_binop_values,
-				"invalid operands",
-				2,
-				av, bv);
-	RETURN (Void);
-    }
-    if (aborting)
-	RETURN (Void);
-    ret = (*type->binary[operator]) (av, bv, 1);
-    if (ret->value.type->reduce)
-	ret = (*ret->value.type->reduce) (ret);
-    RETURN (ret);
 }
 
 Value
 UnaryOperate (Value v, UnaryOp operator)
 {
     ENTER ();
-    Value   ret;
+    Value	ret;
+    ValueRep	*rep = ValueRep(v);
     
-    if (!v->value.type->unary[operator])
+    if (!rep->unary[operator])
     {
 	RaiseStandardException (exception_invalid_unop_value,
 				"invalid operand",
@@ -165,55 +173,20 @@ UnaryOperate (Value v, UnaryOp operator)
     }
     if (aborting)
 	RETURN (Void);
-    ret = (*v->value.type->unary[operator])(v, 1);
-    if (ret->value.type->reduce)
-	ret = (*ret->value.type->reduce) (ret);
+    ret = (*rep->unary[operator])(v, 1);
+    rep = ValueRep(ret);
+    if (rep->reduce)
+	ret = (*rep->reduce) (ret);
     RETURN (ret);
 }
 
 Value
 Reduce (Value v)
 {
-    ENTER ();
-    if (v->value.type->reduce)
-	v = (*v->value.type->reduce) (v);
-    RETURN (v);
-}
-
-Value
-Plus (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, PlusOp);
-}
-
-Value
-Minus (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, MinusOp);
-}
-
-Value
-Times (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, TimesOp);
-}
-
-Value
-Divide (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, DivideOp);
-}
-
-Value
-Div (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, DivOp);
-}
-
-Value
-Mod (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, ModOp);
+    ValueRep	*rep = ValueRep(v);
+    if (rep->reduce)
+	v = (*rep->reduce) (v);
+    return v;
 }
 
 Value
@@ -221,30 +194,6 @@ NumericDiv (Value av, Value bv, int expandOk)
 {
     ENTER ();
     RETURN (Floor (Divide (av, bv)));
-}
-
-Value
-Less (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, LessOp);
-}
-
-Value
-Equal (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, EqualOp);
-}
-
-Value
-Land (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, LandOp);
-}
-
-Value
-Lor (Value av, Value bv)
-{
-    return BinaryOperate (av, bv, LorOp);
 }
 
 Value
@@ -404,7 +353,7 @@ Pow (Value av, Value bv)
 	    int		i;
 	    int		flip = 0;
 
-	    i = bv->ints.value;
+	    i = ValueInt(bv);
 	    if (i < 0)
 	    {
 		i = -i;
@@ -433,8 +382,8 @@ Pow (Value av, Value bv)
 	    Natural *rem;
 	    int	    flip = 0;
 
-	    i = bv->integer.mag;
-	    if (bv->integer.sign == Negative)
+	    i = IntegerMag(bv);
+	    if (IntegerSign(bv) == Negative)
 		flip = 1;
 	    two = NewNatural (2);
 	    p = av;
@@ -479,8 +428,8 @@ ShiftL (Value av, Value bv)
 	if (Negativep (av))
 	    sign = Negative;
 	av = Reduce (NewInteger (sign,
-				 NaturalLsl (IntegerRep.promote (av,0)->integer.mag,
-					     bv->ints.value)));
+				 NaturalLsl (IntegerMag(IntegerRep.promote (av,0)),
+					     ValueInt(bv))));
     }
     else
     {
@@ -511,8 +460,8 @@ ShiftR (Value av, Value bv)
 	    sign = Negative;
 	}
 	av = Reduce (NewInteger (sign,
-				 NaturalRsl (IntegerRep.promote (av,0)->integer.mag,
-					     bv->ints.value)));
+				 NaturalRsl (IntegerMag(IntegerRep.promote (av,0)),
+					     ValueInt(bv))));
     }
     else
     {
@@ -535,8 +484,8 @@ Gcd (Value av, Value bv)
 	RETURN (Void);
     }
     RETURN (Reduce (NewInteger (Positive, 
-				NaturalGcd (IntegerRep.promote (av, 0)->integer.mag,
-					    IntegerRep.promote (bv, 0)->integer.mag))));
+				NaturalGcd (IntegerMag(IntegerRep.promote (av, 0)),
+					    IntegerMag(IntegerRep.promote (bv, 0))))));
 }
 
 #ifdef GCD_DEBUG
@@ -583,15 +532,16 @@ int	    ValuePrintLevel;
 Bool
 Print (Value f, Value v, char format, int base, int width, int prec, int fill)
 {
-    int	    i;
-    Bool    ret;
+    int		i;
+    Bool	ret;
+    ValueRep	*rep = ValueRep(v);
     
     if (!v)
     {
 	FilePuts (f, "<uninit>");
 	return True;
     }
-    if (!v->value.type->print)
+    if (!rep->print)
 	return True;
     for (i = 0; i < ValuePrintLevel; i++)
     {
@@ -603,7 +553,7 @@ Print (Value f, Value v, char format, int base, int width, int prec, int fill)
     }
     STACK_PUSH (ValuePrintStack, v);
     ++ValuePrintLevel;
-    ret = (*v->value.type->print) (f, v, format, base, width, prec, fill);
+    ret = (*rep->print) (f, v, format, base, width, prec, fill);
     STACK_POP (ValuePrintStack);
     --ValuePrintLevel;
     return ret;
@@ -625,7 +575,8 @@ CopyMutable (Value v)
     case rep_array:
 	if (v->array.values->constant)
 	    RETURN (v);
-	nv = NewArray (False, v->array.type, v->array.ndim, v->array.dim);
+	nv = NewArray (False, ArrayType(&v->array),
+		       v->array.ndim, ArrayDims(&v->array));
 	box = v->array.values;
 	nbox = nv->array.values;
 	n = v->array.ents;
@@ -671,19 +622,20 @@ ValueEqual (Value a, Value b, int expandOk)
     return a == b ? TrueVal : FalseVal;
 }
 
+#ifndef HAVE_C_INLINE
 Value
 Dereference (Value v)
 {
-    ENTER ();
     if (!ValueIsRef(v))
     {
 	RaiseStandardException (exception_invalid_unop_value,
 				"Not a reference",
 				1, v);
-	RETURN (Void);
+	return Void;
     }
-    RETURN (RefValue (v));
+    return REFERENCE (RefValue (v));
 }
+#endif
 
 static Value
 UnitEqual (Value av, Value bv, int expandOk)
@@ -776,27 +728,27 @@ NewBool (void)
  * erase it at GC time
  */
 static void
-ValueCacheMark (void *object)
+DataCacheMark (void *object)
 {
-    ValueCache	*vc = object;
+    DataCache	*dc = object;
 
-    memset (ValueCacheValues (vc), '\0', sizeof (Value) * vc->size);
+    memset (DataCacheValues (dc), '\0', sizeof (void *) * dc->size);
 }
 
-static DataType ValueCacheType = { ValueCacheMark, 0, "ValueCacheType" };
+static DataType DataCacheType = { DataCacheMark, 0, "DataCacheType" };
 
-ValueCachePtr 
-NewValueCache (int size)
+DataCachePtr 
+NewDataCache (int size)
 {
     ENTER ();
-    ValueCachePtr   vc;
-    vc = (ValueCachePtr) MemAllocate (&ValueCacheType, 
-				      sizeof (ValueCache) +
-				      size * sizeof (Value));
-    vc->size = size;
-    MemAddRoot (vc);
-    memset (ValueCacheValues(vc), '\0', size * sizeof (Value));
-    RETURN (vc);
+    DataCachePtr   dc;
+    dc = (DataCachePtr) MemAllocate (&DataCacheType, 
+				      sizeof (DataCache) +
+				      size * sizeof (void *));
+    dc->size = size;
+    MemAddRoot (dc);
+    memset (DataCacheValues(dc), '\0', size * sizeof (Value));
+    RETURN (dc);
 }
 
 int
@@ -811,6 +763,8 @@ ValueInit (void)
     if (!IntInit ())
 	return 0;
     if (!NaturalInit ())
+	return 0;
+    if (!IntegerInit ())
 	return 0;
     if (!RationalInit ())
 	return 0;

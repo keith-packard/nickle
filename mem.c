@@ -161,11 +161,9 @@ MemAllocateHuge (DataType *type, int size)
     huge->bitmap = 0;
     huge->data = (void *) (huge + 1);
     noteBlock (huge);
-    memset (huge->data, '\0', size);
     *((DataType **) huge->data) = type;
     return huge->data;
 }
-
 
 #ifdef MEM_TRACE
 DataType	*allDataTypes;
@@ -371,6 +369,61 @@ MemCheckPointer (void *base, void *address, int size)
     abort ();
 }
 
+void
+MemFree (void *object, int size)
+{
+    int	sizeIndex = 0;
+
+#if NUMSIZES > 16
+    bad NUMSIZES
+#endif
+    if (size)
+    {
+	if (size > HUNKSIZE(7))
+	    sizeIndex += 8;
+	if (size > HUNKSIZE(sizeIndex+3))
+	    sizeIndex += 4;
+	if (size > HUNKSIZE(sizeIndex+1))
+	    sizeIndex += 2;
+	if (size > HUNKSIZE(sizeIndex))
+	    sizeIndex += 1;
+    }
+    else
+    {
+	struct block    *b;
+	int		dist;
+
+	for (b = root; b;) {
+	    if ((dist = ((PtrInt) object) - ((PtrInt) b->data)) < 0)
+		b = b->left;
+	    else if (dist >= b->datasize)
+		b = b->right;
+	    else
+	    {
+		if (b->bitmap)
+		    sizeIndex = b->sizeIndex;
+		else
+		    sizeIndex = NUMSIZES;
+		break;
+	    }
+	}
+    }
+
+    if (sizeIndex >= NUMSIZES)
+    {
+	struct block    *b = (struct block *) object - 1;
+	unNoteBlock (b);
+	free (b);
+    }
+    else
+    {
+	struct bfree    *old = object;
+
+	old->next = freeList[sizeIndex];
+	freeList[sizeIndex] = old;
+    }
+}
+
 /*
  * clearRef: zero's the reference bit for all objects
  */
@@ -536,6 +589,8 @@ MemReference (void *object)
 
     if (!object)
 	return;
+    if (((int) object) & 3)
+	return;
     if (!setReference (object))
     {
 	type = TYPE(object);
@@ -548,6 +603,8 @@ int
 MemReferenceNoRecurse (void *object)
 {
     if (!object)
+	return 1;
+    if (((int) object) & 3)
 	return 1;
     return setReference (object);
 }

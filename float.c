@@ -80,10 +80,10 @@ NewValueFpart (Value v)
     Fpart   *ret;
     switch (ValueTag(v)) {
     case rep_int:
-	ret = NewIntFpart (v->ints.value);
+	ret = NewIntFpart (ValueInt(v));
 	break;
     case rep_integer:
-	ret = NewFpart (v->integer.sign, v->integer.mag);
+	ret = NewFpart (IntegerSign(v), IntegerMag(v));
 	break;
     default:
 	ret = zero_fpart;
@@ -664,9 +664,9 @@ FloatExp (Value exp2, Value *ratio, int ibase, unsigned prec)
      * Compute expbase, this is a bit tricky as log is only
      * available in floats
      */
-    dscale = log(2) / log(ibase) * MAXINT;
+    dscale = log(2) / log(ibase) * MAX_NICKLE_INT;
     scale = Divide (NewInt ((int) dscale),
-		    NewInt (MAXINT));
+		    NewInt (MAX_NICKLE_INT));
     /*
      * min = floor (((exp2 - 1) * scale) + 1);
      */
@@ -829,10 +829,10 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	    prec = mant_prec;
 	    if (ValueIsInt(expbase))
 	    {
-		if (expbase->ints.value < 0)
-		    prec -= expbase->ints.value;
-		else if (expbase->ints.value > prec)
-		    prec = expbase->ints.value;
+		if (ValueInt(expbase) < 0)
+		    prec -= ValueInt(expbase);
+		else if (ValueInt(expbase) > prec)
+		    prec = ValueInt(expbase);
 	    }
 	}
     }
@@ -850,9 +850,9 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     frac_part = Minus (m, int_part);
 	
     if (ValueIsInteger(int_part))
-	int_n = int_part->integer.mag;
+	int_n = IntegerMag(int_part);
     else
-	int_n = NewNatural (int_part->ints.value);
+	int_n = NewNatural (ValueInt(int_part));
 
     int_width = NaturalEstimateLength (int_n, base);
     if (negative)
@@ -901,9 +901,9 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	frac_part = Floor (Times (frac_part, Pow (NewInt (base), 
 						  NewInt (frac_width - 1))));
 	if (ValueIsInteger(frac_part))
-	    frac_n = frac_part->integer.mag;
+	    frac_n = IntegerMag(frac_part);
 	else
-	    frac_n = NewNatural (frac_part->ints.value);
+	    frac_n = NewNatural (ValueInt(frac_part));
 	
 	frac_buffer = malloc (frac_width + 1);
 	frac_string = NaturalSprint (frac_buffer + frac_width + 1,
@@ -1036,7 +1036,7 @@ NewIntegerFloat (Integer *i, unsigned prec)
     ENTER ();
     Fpart   *mant;
 
-    mant = NewFpart (i->sign, i->mag);
+    mant = NewFpart (IntegerSign((Value) i), IntegerMag((Value) i));
     RETURN (NewFloat (mant, zero_fpart, prec));
 }
 
@@ -1068,7 +1068,7 @@ NewValueFloat (Value av, unsigned prec)
 
     switch (ValueTag(av)) {
     case rep_int:
-	av = NewIntFloat (av->ints.value, prec);
+	av = NewIntFloat (ValueInt(av), prec);
 	break;
     case rep_integer:
 	av = NewIntegerFloat (&av->integer, prec);

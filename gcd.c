@@ -892,9 +892,9 @@ NaturalGcd (Natural *u0, Natural *v0)
     int		fix;
 
     if (NaturalZero (u0))
-	RETURN (Zero);
+	RETURN (zero_natural);
     if (NaturalZero (v0))
-	RETURN (Zero);
+	RETURN (zero_natural);
     u_zeros = NaturalZeroBits (u0);
     v_zeros = NaturalZeroBits (v0);
     normal = u_zeros;

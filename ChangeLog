@@ -1,5 +1,17 @@
 2004-02-26  Keith Packard  <keithp@keithp.com>
 
+	* builtin/Makefile.am:
+	* builtin/bsdrandom.c:
+	* builtin/namespaces.h:
+	* builtin/semaphore.c:
+	* builtin/sockets.c:
+	* builtin/string.c:
+	* builtin/thread.c:
+	* builtin/toplevel.c:
+	Get rid of builtin directory contents
+
+2004-02-26  Keith Packard  <keithp@keithp.com>
+
 	* Makefile.am:
 	* builtin.c:
 	version.h has moved

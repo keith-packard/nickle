@@ -1,8 +1,6 @@
 #!/bin/sh
 FILE=$1
-CURHEADER="`sed -e '/CURHEADER/!d' -e 's=^.*\$\(.*\)\$$=\1=' <$FILE`"
-OLDHEADER="`sed -e '/OLDHEADER/!d' -e 's=^.*<\(.*\)>$=\1=' <$FILE`"
-CURVERSION="`sed -e '/CURVERSION/!d' -e 's=^[^0-9]*\(.*\)$=\1=' <$FILE`"
+VERSION="`sed -e '/^version [0-9.][0-9.]*$/!d' \"$FILE\" | sed -e '1!d' -e 's/^.* //'`"
 
-( echo '/* This file is maintained automatically by update-version.sh */'
-  echo "#define BUILD_VERSION \"$CURVERSION\"" ) > version.h
+( echo "/* This file is created automatically using $FILE by make-version.sh */"
+  echo "#define BUILD_VERSION \"$VERSION\"" ) > version.h

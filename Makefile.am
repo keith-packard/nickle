@@ -20,7 +20,7 @@ DEBIAN = debian/nickle.install debian/changelog debian/compat \
 	 debian/control debian/copyright debian/rules
 	 
 EXTRA_DIST = README.name autogen.sh update-version.sh make-version.sh \
-	$(NICKLEFILES) gram.h $(EXAMPLES) $(TEST) $(DEBIAN) version.m4 \
+	$(NICKLEFILES) gram.h $(EXAMPLES) $(TEST) $(DEBIAN) ChangeLog \
 	nickle.spec.in
 
 bin_PROGRAMS = nickle
@@ -67,8 +67,8 @@ $(USES_GRAM_H): gram.h
 
 builtin.o: version.h
 
-version.h: $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
-	sh $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
+version.h: $(top_srcdir)/make-version.sh $(top_srcdir)/ChangeLog
+	sh $(top_srcdir)/make-version.sh $(top_srcdir)/ChangeLog
 
 debuild debuild-signed: debuild-dirs
 	(cd $(distdir)/debian && debuild)

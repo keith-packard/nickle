@@ -130,6 +130,10 @@ import_Toplevel_namespace()
 	    " bool is_uninit (*poly r)\n"
 	    "\n"
 	    " Return whether 'r' references uninitialized storage.\n" },
+        { do_make_uninit, "make_uninit", "v", "*p", "\n"
+	    " void make_uninit (*poly r)\n"
+	    "\n"
+	    " Makes 'r' reference uninitialized storage.\n" },
         { do_mantissa, "mantissa", "r", "R", "\n"
 	    " rational mantissa (real r)\n"
 	    "\n"
@@ -831,6 +835,20 @@ do_is_uninit (Value av)
 	av = TrueVal;
     }
     RETURN (av);
+}
+
+Value
+do_make_uninit (Value av)
+{
+    ENTER ();
+    if (!av) {
+	RaiseStandardException (exception_invalid_argument,
+				"do_make_uninit: invalid reference",
+				2, NewInt (0), av);
+    } else {
+	RefValueSet(av, 0);
+    }
+    RETURN (Void);
 }
 
 Value

@@ -1968,7 +1968,7 @@ do_Command_pretty_print (Value f, Value names)
     NamespacePtr    s;
     NamePtr	    name;
 
-    if (NamespaceLocate (names, &s, &name) && name && NameSymbol (name))
+    if (NamespaceLocate (names, &s, &name) && name && name->symbol)
 	PrettyPrint (f, name); 
     RETURN (One);
 }
@@ -2009,7 +2009,7 @@ do_Command_edit (Value names)
     NamespacePtr    s;
     NamePtr	    name;
 
-    if (NamespaceLocate (names, &s, &name) && name && NameSymbol (name))
+    if (NamespaceLocate (names, &s, &name) && name && name->symbol)
 	EditFunction (name); 
     RETURN (One);
 }

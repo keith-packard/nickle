@@ -713,7 +713,7 @@ PrintNames (Value f, NamePtr name, int level)
     if (!name)
 	return;
     PrintNames (f, name->next, level);
-    if (NameSymbol (name) && name->publish == publish_public)
+    if (name->symbol && name->publish == publish_public)
 	doPrettyPrint (f, name, level, False);
 }
 
@@ -727,7 +727,7 @@ void
 doPrettyPrint (Value f, NamePtr name, int level, Bool nest)
 {
     Value  v;
-    SymbolPtr	sym = NameSymbol (name);
+    SymbolPtr	sym = name->symbol;
 
     if (!sym)
 	return;

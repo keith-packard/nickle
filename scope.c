@@ -88,7 +88,7 @@ NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search)
 	for (name = namespace->names; name; name = name->next)
 	    if (name->atom == atom &&
 		(namespace->publish == publish_public ||
-		 (NameSymbol (name) && name->publish == publish_public)))
+		 (name->symbol && name->publish == publish_public)))
 		return name;
 	namespace = namespace->previous;
     } while (search && namespace);
@@ -138,7 +138,7 @@ NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish)
 	if (old->publish == publish_public)
 	{
 	    new = NamespaceNewName (namespace, old->atom);
-	    new->symbol = NameSymbol (old);
+	    new->symbol = old->symbol;
 	    new->publish = publish;
 	}
     }
@@ -231,7 +231,7 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, NamePtr *namep)
 	name = NamespaceFindName (s, AtomId (StringChars (&string->string)),
 				  search);
 	search = False;
-	if (!name || ! (sym = NameSymbol (name)))
+	if (!name || ! (sym = name->symbol))
 	{
 	    FilePrintf (FileStdout, "No symbol \"%s\" in scope\n",
 			StringChars (&string->string));

@@ -172,7 +172,7 @@ CompileCheckSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
     int		d;
     CodePtr	c;
 
-    s = NameSymbol (name);
+    s = name->symbol;
     if (!s)
     {
         CompileError (obj, stat, "No symbol \"%A\" in namespace", 

@@ -33,7 +33,7 @@ DebugAddCommand (char *function, Bool names)
     name = NamespaceFindName (CurrentNamespace, AtomId (function), True);
     if (!name)
 	return;
-    sym = NameSymbol (name);
+    sym = name->symbol;
     if (sym && sym->symbol.class == class_global)
     {
 	CurrentCommands = NewCommand (CurrentCommands, name->atom, 

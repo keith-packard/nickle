@@ -462,9 +462,9 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 		    name = NamespaceFindName (LexNamespace, yylval.atom, False);
 	        else
 		    name = NamespaceFindName (CurrentNamespace, yylval.atom, True);
-		if (name && NameSymbol (name))
+		if (name && name->symbol)
 		{
-		    switch (NameSymbol (name)->symbol.class) {
+		    switch (name->symbol->symbol.class) {
 		    case class_namespace:
 			return NAMESPACENAME;
 		    case class_typedef:

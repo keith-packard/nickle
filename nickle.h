@@ -81,7 +81,6 @@ typedef struct _namespace {
 } Namespace;
 
 NamePtr		NewName (NamePtr next, Atom atom);
-#define NameSymbol(n)	((n)->symbol)
 NamespacePtr	NewNamespace (NamespacePtr previous);
 NamePtr		NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search);
 NamePtr		NamespaceNewName (NamespacePtr namespace, Atom atom);

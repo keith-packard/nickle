@@ -1,5 +1,5 @@
 %define name nickle
-%define version 1.99.1
+%define version 1.99.2
 %define release 1
 %define prefix /usr
 

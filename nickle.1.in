@@ -1322,7 +1322,7 @@ ten integers.
 .\"
 .SH VERSION
 .PP
-This document describes version 1.99.1 of nickle, and
+This document describes version 1.99.2 of nickle, and
 was distributed with version @VERSION@ of nickle.
 .SH BUGS
 .PP

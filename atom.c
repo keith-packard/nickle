@@ -51,6 +51,7 @@ AtomInit (void)
 {
     ENTER ();
     atomTable = ALLOCATE (&AtomTableType, sizeof (AtomTable));
+    memset (atomTable->hash, '\0', sizeof (atomTable->hash));
     MemAddRoot (atomTable);
     EXIT ();
     return 1;

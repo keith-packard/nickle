@@ -8,7 +8,7 @@
 
 #ifndef _STACK_H_
 #define _STACK_H_
-#define STACK_ENTS_PER_CHUNK	125
+#define STACK_ENTS_PER_CHUNK	126
 
 typedef void		*StackElement;
 typedef StackElement	*StackPointer;
@@ -16,12 +16,12 @@ typedef StackElement	*StackPointer;
 typedef struct _StackChunk {
     DataType		*type;
     struct _StackChunk	*previous;
-    StackPointer	stackPointer;
     StackElement	elements[STACK_ENTS_PER_CHUNK];
 } StackChunk;
 
 typedef struct _Stack {
     DataType		*type;
+    StackPointer	stackPointer;
     StackChunk		*current;
     StackChunk		*save;
     StackElement	temp;
@@ -33,13 +33,14 @@ extern StackElement StackPush (StackObject *stack, StackElement object);
 extern StackElement StackPop (StackObject *stack);
 extern void	    StackDrop (StackObject *stack, int i);
 extern void	    StackReset (StackObject *stack, StackPointer stackPointer);
-extern int	    StackCheck (StackObject *stack, StackElement object);
 extern StackElement StackReturn (StackObject *stack, StackPointer stackPointer, StackElement object);
 extern StackElement StackElt (StackObject *stack, int i);
 
-#define STACK_MAX(s)	((s)->current->elements + STACK_ENTS_PER_CHUNK)
-#define STACK_MIN(s)	((s)->current->elements)
-#define STACK_TOP(s)	((s)->current->stackPointer)
+#define CHUNK_MAX(c)	((c)->elements + STACK_ENTS_PER_CHUNK)
+#define CHUNK_MIN(c)	((c)->elements)
+#define STACK_MAX(s)	(CHUNK_MAX((s)->current))
+#define STACK_MIN(s)	(CHUNK_MIN((s)->current))
+#define STACK_TOP(s)	((s)->stackPointer)
 
 #define STACK_POP(s)	    ((STACK_TOP(s) == STACK_MAX(s)) ? \
 			     StackPop (s) : *STACK_TOP(s)++)
@@ -47,8 +48,10 @@ extern StackElement StackElt (StackObject *stack, int i);
 #define STACK_DROP(s,i)	    ((STACK_TOP(s) + (i) <= STACK_MAX(s)) ? \
 			     ((STACK_TOP(s) += (i)), 0) : (StackDrop(s, i), 0))
 
-#define STACK_RESET(s,sp)   ((!(STACK_TOP(s) <= (sp) && (sp) <= STACK_MAX(s))) ? \
-			     (StackReset ((s), (sp)), 0) : ((STACK_TOP(s) = (sp)), 0))
+#define STACK_RESET(s,sp)   (STACK_TOP(s) == (sp) ? 0 : \
+			     ((STACK_TOP(s) <= (sp) && (sp) <= STACK_MAX(s)) ? \
+			      ((STACK_TOP(s) = (sp)), 0) : \
+			      (StackReset ((s), (sp)), 0)))
 
 #define STACK_ELT(s,i)	((STACK_TOP(s) + (i) < STACK_MAX(s)) ? \
 			 STACK_TOP(s)[i] : StackElt(s,i))

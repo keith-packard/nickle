@@ -97,7 +97,6 @@ Evenp (Value av)
 int
 IntPart (Value av, char *error)
 {
-    av = Truncate (av);
     if (!ValueIsInt(av))
     {
 	RaiseStandardException (exception_invalid_argument, error, 
@@ -611,52 +610,76 @@ Print (Value f, Value v, char format, int base, int width, int prec, unsigned ch
  * Make a deep copy of 'v'
  */
 Value
-Copy (Value v)
+CopyMutable (Value v)
 {
     ENTER ();
     Value   nv;
     int	    i;
+    BoxPtr  box, nbox;
+    int	    n;
     
-    if (!v)
-	RETURN (v);
     switch (ValueTag(v)) {
     case type_array:
-	if (!v->array.values->constant)
-	{
-	    nv = NewArray (False, v->array.type, v->array.ndim, v->array.dim);
-	    for (i = 0; i < v->array.ents; i++)
-		BoxValueSet (nv->array.values, i, Copy (BoxValueGet (v->array.values, i)));
-	    v = nv;
-	}
+	if (v->array.values->constant)
+	    RETURN (v);
+	nv = NewArray (False, v->array.type, v->array.ndim, v->array.dim);
+	box = v->array.values;
+	nbox = nv->array.values;
+	n = v->array.ents;
 	break;
     case type_struct:
-	if (!v->structs.values->constant)
-	{
-	    nv = NewStruct (v->structs.type, False);
-	    for (i = 0; i < v->structs.type->nelements; i++)
-		BoxValueSet (nv->structs.values, i, Copy (BoxValueGet (v->structs.values, i)));
-	    v = nv;
-	}
+	if (v->structs.values->constant)
+	    RETURN (v);
+	nv = NewStruct (v->structs.type, False);
+	box = v->structs.values;
+	nbox = nv->structs.values;
+	n = v->structs.type->nelements;
 	break;
     case type_union:
-	if (!v->unions.value->constant)
-	{
-	    nv = NewUnion (v->unions.type, False);
-	    nv->unions.tag = v->unions.tag;
-	    BoxValueSet (nv->unions.value, 0, Copy (BoxValueGet (v->unions.value, 0)));
-	    v = nv;
-	}
+	if (v->unions.value->constant)
+	    RETURN (v);
+	nv = NewUnion (v->unions.type, False);
+	nv->unions.tag = v->unions.tag;
+	box = v->unions.value;
+	nbox = nv->unions.value;
+	n = 1;
 	break;
     default:
-	break;
+	RETURN (v);
     }
-    RETURN (v);
+    for (i = 0; i < n; i++)
+	BoxValueSet (nbox, i, Copy (BoxValueGet (box, i)));
+    RETURN (nv);
 }
+
+#ifndef HAVE_C_INLINE
+Value
+Copy (Value v)
+{
+    if (Mutablep (ValueTag(v)))
+	return CopyMutable (v);
+    return v;
+}
+#endif
 
 Value
 ValueEqual (Value a, Value b, int expandOk)
 {
     return a == b ? One : Zero;
+}
+
+Value
+Dereference (Value v)
+{
+    ENTER ();
+    if (!ValueIsRef(v))
+    {
+	RaiseStandardException (exception_invalid_unop_value,
+				"Not a reference",
+				1, v);
+	RETURN (Zero);
+    }
+    RETURN (RefValue (v));
 }
 
 Value
@@ -717,6 +740,36 @@ NewVoid (void)
     RETURN (ret);
 }
 
+/*
+ * This is a bit odd, but it's just a cache so
+ * erase it at GC time
+ */
+static void
+ValueCacheMark (void *object)
+{
+    ValueCache	*vc = object;
+
+    memset (ValueCacheValues (vc), '\0', sizeof (Value) * vc->size);
+}
+
+static DataType ValueCacheType = { ValueCacheMark, 0 };
+
+ValueCachePtr 
+NewValueCache (int size)
+{
+    ENTER ();
+    ValueCachePtr   vc;
+    vc = (ValueCachePtr) MemAllocate (&ValueCacheType, 
+				      sizeof (ValueCache) +
+				      size * sizeof (Value));
+    vc->size = size;
+    MemAddRoot (vc);
+    memset (ValueCacheValues(vc), '\0', size * sizeof (Value));
+    RETURN (vc);
+}
+
+
+
 int
 ValueInit (void)
 {
@@ -733,6 +786,8 @@ ValueInit (void)
     if (!RationalInit ())
 	return 0;
     if (!FpartInit ())
+	return 0;
+    if (!RefInit ())
 	return 0;
     if (!StringInit ())
 	return 0;

@@ -516,7 +516,7 @@ NewThread (FramePtr frame, ObjPtr code)
 
     ret = ALLOCATE (&ThreadType.data, sizeof (Thread));
     ret->thread.v = Zero;
-    ret->thread.stack = StackCreate ();
+    ret->thread.stack = 0;
     ret->thread.pc = ObjCode (code, 0);
     ret->thread.code = code;
     ret->thread.frame = frame;
@@ -525,6 +525,8 @@ NewThread (FramePtr frame, ObjPtr code)
     ret->thread.sleep = 0;
     ret->thread.id = ++ThreadId;
     ret->thread.partial = 0;
+    ret->thread.stack = StackCreate ();
+    
     complete = True;
     if (code->error)
 	ret->thread.state = ThreadFinished;

@@ -10,9 +10,23 @@
 
 # define sign(i)	((i) < 0 ? Negative : Positive)
 
-#define MIN_SMALL   -100
-#define MAX_SMALL   100
-BoxPtr	SmallInts;
+#define INT_CACHE_SIZE	8209
+
+static ValueCachePtr	intCache;
+
+static Value	NewIntReal (int value);
+    
+Value /* INLINE */
+NewInt (int i)
+{
+    unsigned	c = ((unsigned) i) % INT_CACHE_SIZE;
+    Value	*ve = &ValueCacheValues(intCache)[c];
+    Value	v = *ve;
+    
+    if (v && v->ints.value == i)
+	return v;
+    return *ve = NewIntReal (i);
+}
 
 Value	One, Zero;
 
@@ -389,27 +403,13 @@ ValueType IntType = {
     IntPrint
 };
     
-Value
-NewInt (int value)
+static Value
+NewIntReal (int value)
 {
     ENTER ();
     Value	ret;
-
-    if (MIN_SMALL <= value && value <= MAX_SMALL)
-    {
-	ret = BoxValueGet (SmallInts, value - MIN_SMALL);
-	if (!ret)
-	{
-	    ret = ALLOCATE (&IntType.data, sizeof (Int));
-	    ret->ints.value = value;
-	    BoxValueSet (SmallInts, value - MIN_SMALL, ret);
-	}
-    }
-    else
-    {
-	ret = ALLOCATE (&IntType.data, sizeof (Int));
-	ret->ints.value = value;
-    }
+    ret = ALLOCATE (&IntType.data, sizeof (Int));
+    ret->ints.value = value;
     RETURN (ret);
 }
 
@@ -417,8 +417,7 @@ int
 IntInit (void)
 {
     ENTER ();
-    SmallInts = NewBox (True, False, MAX_SMALL - MIN_SMALL + 2);
-    MemAddRoot (SmallInts);
+    intCache = NewValueCache(INT_CACHE_SIZE);
     Zero = NewInt (0);
     MemAddRoot (Zero);
     One = NewInt (1);

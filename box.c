@@ -37,7 +37,10 @@ NewBox (Bool constant, Bool array, int nvalues)
     box->array = array;
     box->nvalues = nvalues;
     for (i = 0; i < nvalues; i++)
+    {
 	BoxType(box, i) = typesPoly;
+	BoxValueSet(box, i, 0);
+    }
     RETURN (box);
 }
 
@@ -48,12 +51,19 @@ NewTypedBox (Bool array, BoxTypesPtr bt)
     BoxPtr  box;
     int	    i;
 
-    box = NewBox (False, array, bt->count);
+    box = ALLOCATE (&BoxType, sizeof (Box) + bt->count * sizeof (BoxElement));
+    box->constant = False;
+    box->array = array;
+    box->nvalues = bt->count;
     for (i = 0; i < bt->count; i++)
+    {
 	BoxType (box, i) = BoxTypesValue (bt, i);
+	BoxValueSet (box, i, 0);
+    }
     RETURN (box);
 }
 
+#ifndef HAVE_C_INLINE
 Value
 BoxValue (BoxPtr box, int e)
 {
@@ -65,6 +75,7 @@ BoxValue (BoxPtr box, int e)
     }
     return (BoxElements(box)[e].value);
 }
+#endif
 
 static void MarkBoxTypes (void *object)
 {

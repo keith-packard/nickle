@@ -20,8 +20,6 @@ Bool	complete;
 Bool	signalFinished;	    /* current thread is finished */
 Bool	signalSuspend;	    /* current thread is suspending */
 
-static ThreadState ThreadStep (Value thread);
-
 #define Arg(n)  Stack((argc - 1) - (n) + off)
 
 static FramePtr
@@ -237,11 +235,17 @@ ThreadStaticInit (Value thread, InstPtr *next)
     EXIT ();
 }
 
-static void
+static INLINE void
 ThreadAssign (Value ref, Value v, Bool initialize)
 {
     ENTER ();
-    if (RefConstant(ref) && !initialize)
+    if (!ValueIsRef (ref))
+    {
+	RaiseStandardException (exception_invalid_binop_values,
+				"Attempted store through non reference",
+				2, ref, v);
+    }
+    else if (RefConstant(ref) && !initialize)
     {
 	RaiseStandardException (exception_readonly_box,
 				"Attempted assignment to constant box",
@@ -372,29 +376,37 @@ ThreadInitArray (Value thread, Value a, int ninit)
 static int
 ThreadArrayIndex (Value thread, int ndim)
 {
-    ENTER ();
     int	    i;
     int	    dim;
     int	    part;
     Value   a;
+    Value   d;
     
     a = thread->thread.v;
-    i = 0;
-    for (dim = 0; dim < ndim; dim++)
+    d = Stack(0);
+    if (!ValueIsInt(d) || 
+	(i = d->ints.value) < 0 || 
+	a->array.dim[0] <= i)
     {
-	part = IntPart (Stack(dim), "Invalid array index");
-	if (aborting)
-	    break;
-	if (part < 0 || a->array.dim[dim] <= part)
+	RaiseStandardException (exception_invalid_array_bounds,
+				"Array index out of bounds",
+				2, a, Stack(0));
+	return 0;
+    }
+    for (dim = 1; dim < ndim; dim++)
+    {
+	d = Stack(dim);
+	if (!ValueIsInt(d) || 
+	    (part = d->ints.value) < 0 || 
+	    a->array.dim[dim] <= part)
 	{
 	    RaiseStandardException (exception_invalid_array_bounds,
 				    "Array index out of bounds",
 				    2, a, Stack(dim));
-	    break;
+	    return 0;
 	}
 	i = i * a->array.dim[dim] + part;
     }
-    EXIT ();
     return i;
 }
 
@@ -481,8 +493,10 @@ ThreadUnwind (Value thread, int twixts, int catches, InstPtr *next)
     EXIT ();
 }
 
+#define ThreadBoxCheck(box,i,type) (BoxValueGet(box,i) == 0 ? ThreadBoxSetDefault(box,i,type) : 0)
+
 static void
-ThreadBoxCheck (BoxPtr box, int i, Types *type)
+ThreadBoxSetDefault (BoxPtr box, int i, Types *type)
 {
     if (BoxValueGet (box, i) == 0)
     {
@@ -503,620 +517,6 @@ ThreadBoxCheck (BoxPtr box, int i, Types *type)
 	    break;
 	}
     }
-}
-
-#ifdef HAVE_C_INLINE
-static inline ThreadState
-#else
-static ThreadState
-#endif
-ThreadStep (Value thread)
-{
-    ENTER ();
-    InstPtr	inst, next;
-    FramePtr	fp;
-    int		i;
-    int		stack = 0;
-    Value	value, v, w;
-    BoxPtr	box;
-    
-    inst = thread->thread.pc;
-    value = thread->thread.v;
-    next = inst + 1;
-    complete = False;
-/*    InstDump (inst, 1, 0, 0, 0);*/
-    switch (inst->base.opCode) {
-    case OpNoop:
-	break;
-    case OpIf:
-    case OpWhile:
-    case OpFor:
-    case OpQuest:
-    case OpAnd:
-	if (!True (value))
-	    next = inst + inst->branch.offset;
-	break;
-    case OpElse:
-    case OpEndWhile:
-    case OpEndFor:
-    case OpBreak:
-    case OpContinue:
-    case OpColon:
-	if (!inst->branch.offset)
-	{
-	    RaiseError ("break/continue outside of loop/switch/twixt");
-	    break;
-	}
-	next = inst + inst->branch.offset;
-	break;
-    case OpDo:
-    case OpOr:
-	if (True (value))
-	    next = inst + inst->branch.offset;
-	break;
-    case OpCase:
-	value = Equal (Stack(stack), value);
-	if (True (value))
-	{
-	    next = inst + inst->branch.offset;
-	    stack++;
-	}
-	break;
-    case OpTagCase:
-	if (!ValueIsUnion(value))
-	{
-	    RaiseStandardException (exception_invalid_argument,
-				    "union switch expression not union",
-				    2,
-				    Zero, value);
-	    break;
-	}
-	if (value->unions.tag == inst->tagcase.tag)
-	    next = inst + inst->tagcase.offset;
-	break;
-    case OpDefault:
-        next = inst + inst->branch.offset;
-	stack++;
-	break;
-    case OpTagDefault:
-        next = inst + inst->branch.offset;
-	break;
-    case OpEnd:
-	SetSignalFinished ();
-	break;
-    case OpReturnVoid:
-	value = Void;
-	/* fall through */
-    case OpReturn:
-	if (!thread->thread.frame)
-	{
-	    RaiseError ("return outside of function");
-	    break;
-	}
-	if (!TypeCompatibleAssign (thread->thread.frame->function->func.code->base.type,
-				   value))
-	{
-	    RaiseStandardException (exception_invalid_argument,
-				    "Incompatible type in return",
-				    2, NewInt (0), value);
-	    break;
-	}
-	if (aborting)
-	    break;
-	complete = True;
-	next = thread->thread.frame->savePc;
-	thread->thread.code = thread->thread.frame->saveCode;
-	thread->thread.frame = thread->thread.frame->previous;
-	break;
-    case OpName:
-    case OpNameRef:
-    case OpNameRefStore:
-	switch (inst->var.name->symbol.class) {
-	case class_global:
-	case class_const:
-	    box = inst->var.name->global.value;
-	    i = 0;
-	    break;
-	case class_static:
-	    for (i = 0, fp = thread->thread.frame; i < inst->var.staticLink; i++)
-		fp = fp->staticLink;
-	    box = fp->statics;
-	    i = inst->var.name->local.element;
-	    break;
-	case class_auto:
-	case class_arg:
-	    for (i = 0, fp = thread->thread.frame; i < inst->var.staticLink; i++)
-		fp = fp->staticLink;
-	    box = fp->frame;
-	    i = inst->var.name->local.element;
-	    break;
-	default:
-	    RaiseError ("Invalid symbol class %C for lvalue \"%A\"",
-			inst->var.name->symbol.class,
-			inst->var.name->symbol.name);
-	    box = 0;
-	    i = 0;
-	    break;
-	}
-	if (!box)
-	    break;
-	if (inst->base.opCode != OpNameRefStore)
-	    ThreadBoxCheck (box, i, inst->var.name->symbol.type);
-	if (inst->base.opCode == OpName)
-	    value = BoxValue (box, i);
-	else
-	    value = NewRef (box, i);
-	break;
-    case OpConst:
-	value = inst->constant.constant;
-	break;
-    case OpBuildArray:
-	stack = inst->array.ndim;
-	value = ThreadArray (thread, stack, inst->array.type);
-	break;
-    case OpInitArray:
-	stack = inst->ints.value;
-	ThreadInitArray (thread, value, stack);
-	break;
-    case OpBuildStruct:
-        value = NewStruct (inst->structs.structs, False);
-        break;
-    case OpInitStruct:
-	w = Stack(stack); stack++;
-	v = StructRef (w, inst->atom.atom);
-	if (!v)
-	{
-	    RaiseStandardException (exception_invalid_struct_member,
-				    "Invalid struct member",
-				    2, v, 
-				    NewStrString (AtomName (inst->atom.atom)));
-	    break;
-	}
-	ThreadAssign (v, value, True);
-	value = w;
-	break;
-    case OpBuildUnion:
-	value = NewUnion (inst->structs.structs, False);
-	break;
-    case OpInitUnion:
-	v = UnionRef (value, inst->atom.atom);
-	if (!v)
-	{
-	    RaiseStandardException (exception_invalid_struct_member,
-				    "Invalid union member",
-				    2, value, 
-				    NewStrString (AtomName (inst->atom.atom)));
-	    break;
-	}
-	w = Stack(stack); stack++;
-	ThreadAssign (v, w, True);
-	break;
-    case OpArray:
-    case OpArrayRef:
-    case OpArrayRefStore:
-	switch (ValueTag(value)) {
-	    char    *s;
-	case type_string:
-	    if (inst->base.opCode != OpArray)
-	    {
-		RaiseStandardException (exception_invalid_unop_value,
-					"Strings aren't addressable",
-					1, value);
-		break;
-	    }
-	    if (inst->ints.value != 1)
-	    {
-		RaiseStandardException (exception_invalid_binop_values,
-					"Strings have only 1 dimension",
-					2, NewInt (inst->ints.value), value);
-		break;
-	    }
-	    stack = 0;
-	    v = Stack(stack); stack++;
-	    i = IntPart (v, "Invalid string index");
-	    if (aborting)
-		break;
-	    s = StringChars (&value->string);
-	    if (i < 0 || strlen (s) < i)
-	    {
-		RaiseStandardException (exception_invalid_binop_values,
-					"String index out of bounds",
-					2, v, value);
-		break;
-	    }
-	    value = NewInt (s[i]);
-	    break;
-	case type_array:
-	    if (inst->ints.value != value->array.ndim)
-	    {
-		RaiseStandardException (exception_invalid_binop_values,
-					"Mismatching dimensionality",
-					2, NewInt (inst->ints.value), value);
-		break;
-	    }
-	    stack = inst->ints.value;
-	    i = ThreadArrayIndex (thread, stack);
-	    if (!aborting)
-	    {
-		if (inst->base.opCode != OpArrayRefStore)
-		    ThreadBoxCheck (value->array.values, i, value->array.type);
-		if (inst->base.opCode == OpArray)
-		    value = BoxValue (value->array.values, i);
-		else
-		    value = NewRef (value->array.values, i);
-	    }
-	    break;
-	default:
-	    RaiseStandardException (exception_invalid_unop_value,
-				    "Not an array",
-				    1, value);
-	    break;
-	}
-	break;
-    case OpCall:
-    case OpTailCall:
-	if (!ValueIsFunc(value))
-	{
-	    RaiseStandardException (exception_invalid_unop_value,
-				    "Not a function",
-				    1, value);
-	    break;
-	}
-        stack = inst->ints.value;
-	value = ThreadCall (thread, inst->base.opCode == OpTailCall,
-			    &next, &stack);
-	break;
-    case OpArrow:
-    case OpArrowRef:
-    case OpArrowRefStore:
-	if (!ValueIsRef(value) ||
-	    (!ValueIsStruct(RefValue (value)) && !ValueIsUnion(RefValue (value))))
-	{
-	    RaiseStandardException (exception_invalid_unop_value,
-				    "Not a struct/union reference",
-				    1, value);
-	    break;
-	}
-	value = RefValue (value);
-    case OpDot:
-    case OpDotRef:
-    case OpDotRefStore:
-	switch (ValueTag(value)) {
-	default:
-	    RaiseStandardException (exception_invalid_unop_value,
-				    "Not a struct/union",
-				    1, value);
-	    break;
-	case type_struct:
-	    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
-		v = StructValue (value, inst->atom.atom);
-	    else
-		v = StructRef (value, inst->atom.atom);
-	    if (!v)
-	    {
-		RaiseStandardException (exception_invalid_struct_member,
-					"no such struct member",
-					2, value, 
-					NewStrString (AtomName (inst->atom.atom)));
-		break;
-	    }
-	    value = v;
-	    break;
-	case type_union:
-	    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
-		v = UnionValue (value, inst->atom.atom);
-	    else
-	    {
-		v = UnionRef (value, inst->atom.atom);
-	    }
-	    if (!v)
-	    {
-		if (StructTypes (value->unions.type, inst->atom.atom))
-		    RaiseStandardException (exception_invalid_struct_member,
-					    "requested union tag not current",
-					    2, value,
-					    NewStrString (AtomName (inst->atom.atom)));
-		else
-		    RaiseStandardException (exception_invalid_struct_member,
-					    "no such union tag",
-					    2, value, 
-					    NewStrString (AtomName (inst->atom.atom)));
-		break;
-	    }
-	    value = v;
-	    break;
-	}
-	break;
-    case OpObj:
-	value = NewFunc (inst->code.code, thread->thread.frame);
-	break;
-    case OpStaticInit:
-	/* Always follows OpObj so the function is sitting in value */
-	ThreadStaticInit (thread, &next);
-	break;
-    case OpStaticDone:
-	if (!thread->thread.frame)
-	{
-	    RaiseError ("StaticInitDone outside of function");
-	    break;
-	}
-	if (aborting)
-	    break;
-	complete = True;
-	next = thread->thread.frame->savePc;
-	thread->thread.code = thread->thread.frame->saveCode;
-	thread->thread.frame = thread->thread.frame->previous;
-	/* Fetch the Obj from the stack */
-	value = Stack (stack); stack++;
-	break;
-    case OpStar:
-	if (!ValueIsRef(value))
-	{
-	    RaiseStandardException (exception_invalid_unop_value,
-				    "Not a reference",
-				    1, value);
-	    break;
-	}
-	value = RefValue (value);
-	break;
-    case OpUminus:
-	value = Negate (value);
-	break;
-    case OpLnot:
-	value = Lnot (value);
-	break;
-    case OpBang:
-	value = Not (value);
-	break;
-    case OpFact:
-	value = Factorial (value);
-	break;
-    case OpPreInc:
-    case OpPostInc:
-    case OpPreDec:
-    case OpPostDec:
-	if (!ValueIsRef(value))
-	{
-	    RaiseStandardException (exception_invalid_unop_value,
-				    "Not an lvalue",
-				    1, value);
-	    break;
-	}
-	v = RefValue (value);
-	if (inst->base.opCode == OpPreInc || inst->base.opCode == OpPostInc)
-	    w = Plus (v, One);
-	else
-	    w = Minus (v, One);
-	ThreadAssign (value, w, False);
-	value = v;
-	if (inst->base.opCode == OpPreInc || inst->base.opCode == OpPreDec)
-	    value = w;
-	break;
-    case OpPlus: 
-	value = Plus (Stack(stack), value); stack++;
-	break;
-    case OpMinus: 
-	value = Minus (Stack(stack), value); stack++;
-	break;
-    case OpTimes: 
-	value = Times (Stack(stack), value); stack++;
-	break;
-    case OpDivide: 
-	value = Divide (Stack(stack), value); stack++;
-	break;
-    case OpDiv: 
-	value = Div (Stack(stack), value); stack++;
-	break;
-    case OpMod: 
-	value = Mod (Stack(stack), value); stack++;
-	break;
-    case OpPow: 
-	value = Pow (Stack(stack), value); stack++;
-	break;
-    case OpShiftL:
-	value = ShiftL (Stack(stack), value); stack++;
-	break;
-    case OpShiftR:
-	value = ShiftR (Stack(stack), value); stack++;
-	break;
-    case OpLxor: 
-	value = Lxor (Stack(stack), value); stack++;
-	break;
-    case OpLand: 
-	value = Land (Stack(stack), value); stack++;
-	break;
-    case OpLor: 
-	value = Lor (Stack(stack), value); stack++;
-	break;
-    case OpFunction:
-    case OpAssign:
-    case OpAssignPlus: 
-    case OpAssignMinus:
-    case OpAssignTimes:
-    case OpAssignDivide:
-    case OpAssignDiv:
-    case OpAssignMod:
-    case OpAssignPow:
-    case OpAssignShiftL:
-    case OpAssignShiftR:
-    case OpAssignLxor:
-    case OpAssignLand:
-    case OpAssignLor:
-	if (!ValueIsRef(value))
-	    break;
-	v = Stack(stack); stack++;
-	switch (inst->base.opCode) {
-	case OpFunction:
-	case OpAssign:
-	    break;
-	case OpAssignPlus: 
-	    v = Plus (RefValue (value), v); break;
-	case OpAssignMinus:
-	    v = Minus (RefValue (value), v); break;
-	case OpAssignTimes:
-	    v = Times (RefValue (value), v); break;
-	case OpAssignDivide:
-	    v = Divide (RefValue (value), v); break;
-	case OpAssignDiv:
-	    v = Div (RefValue (value), v); break;
-	case OpAssignMod:
-	    v = Mod (RefValue (value), v); break;
-	case OpAssignShiftL:
-	    v = ShiftL (RefValue (value), v); break;
-	case OpAssignShiftR:
-	    v = ShiftR (RefValue (value), v); break;
-	case OpAssignPow:
-	    v = Pow (RefValue (value), v); break;
-	case OpAssignLxor:
-	    v = Lxor (RefValue (value), v); break;
-	case OpAssignLand:
-	    v = Land (RefValue (value), v); break;
-	case OpAssignLor:
-	    v = Lor (RefValue (value), v); break;
-	default:
-	    break;
-	}
-	ThreadAssign (value, v, False);
-	value = v;
-	break;
-    case OpInitialize:
-	if (!ValueIsRef(value))
-	    break;
-	v = Stack(stack); stack++;
-	ThreadAssign (value, v, True);
-	value = v;
-	break;
-    case OpEq:
-	value = Equal (Stack(stack), value); stack++; break;
-    case OpNe:
-	value = NotEqual (Stack(stack), value); stack++; break;
-    case OpLt:
-	value = Less (Stack(stack), value); stack++; break;
-    case OpGt:
-	value = Greater (Stack(stack), value); stack++; break;
-    case OpLe:
-	value = LessEqual (Stack(stack), value); stack++; break;
-    case OpGe:
-	value = GreaterEqual (Stack(stack), value); stack++; break;
-    case OpFork:
-	value = NewThread (thread->thread.frame, inst->obj.obj); break;
-    case OpCatch:
-	if (aborting)
-	    break;
-	ThreadCatch (thread, inst->catch.exception, inst->catch.offset);
-	complete = True;
-	next = inst + inst->catch.offset;
-	break;
-    case OpException:
-	next = inst + inst->branch.offset;
-	break;
-    case OpEndCatch:
-	if (aborting)
-	    break;
-	thread->thread.catches = thread->thread.catches->previous;
-	complete = True;
-	break;
-    case OpRaise:
-	if (aborting)
-	    break;
-	ThreadRaise (thread, inst->raise.argc, inst->raise.exception, &next);
-	if (!aborting)
-	    complete = True;
-	break;
-    case OpTwixt:
-	if (aborting)
-	    break;
-	ThreadTwixt (thread, inst->twixt.enter, inst->twixt.leave);
-	complete = True;
-	break;
-    case OpTwixtDone:
-	if (aborting)
-	    break;
-	thread->thread.twixts = thread->thread.twixts->previous;
-	complete = True;
-	break;
-    case OpEnterDone:
-	if (!True (value))
-	{
-	    next = inst + inst->branch.offset;
-	    thread->thread.jump = 0;
-	}
-	else
-	{
-	    if (aborting)
-		break;
-	    if (thread->thread.jump)
-	    {
-		value = JumpContinuation (thread->thread.jump, &next);
-		complete = True;
-	    }
-	}
-	break;
-    case OpLeaveDone:
-	if (thread->thread.jump)
-	{
-	    if (aborting)
-		break;
-	    value = JumpContinuation (thread->thread.jump, &next);
-	    complete = True;
-	}
-	else
-	    next = inst + inst->branch.offset;
-	break;
-    case OpUnwind:
-	if (aborting)
-	    break;
-	ThreadUnwind (thread, inst->unwind.twixt, inst->unwind.catch, &next);
-	complete = True;
-	break;
-    }
-    if (!aborting || complete)
-    {
-	/* this instruction has been completely executed */
-	thread->thread.partial = 0;
-	thread->thread.v = value;
-	if (stack)
-	    STACK_DROP (thread->thread.stack, stack);
-	if (inst->base.push)
-	    STACK_PUSH (thread->thread.stack, value);
-	thread->thread.pc = next;
-	if (thread->thread.next)
-	    ThreadStepped (thread);
-    }
-    else
-    {
-	/*
-	 * Check for pending execution signals
-	 */
-	if (signalSuspend)
-	{
-	    signalSuspend = False;
-	    ThreadSetState (thread, ThreadSuspended);
-	}
-	if (signalFinished)
-	{
-	    signalFinished = False;
-	    ThreadFinish (thread);
-	}
-	if (signalException)
-	{
-	    signalException = False;
-	    JumpStandardException (thread, &next);
-	    thread->thread.pc = next;
-	}
-	if (signalError)
-	{
-	    signalError = False;
-	    DebugStart (NewContinuation (thread->thread.frame,
-					 inst,
-					 thread->thread.stack,
-					 thread->thread.catches,
-					 thread->thread.twixts));
-	    ThreadFinish (thread);
-	}
-    }
-    EXIT ();
-    return thread->thread.state;
 }
 
 #include	<signal.h>
@@ -1162,7 +562,485 @@ ThreadsRun (Value thread, Value lex)
 	else if (thread && !Runnable (thread))
 	    break;
 	else if (running)
-	    ThreadStep (running);
+	{
+	    ENTER ();
+	    Value   thread = running;
+	    InstPtr	inst, next;
+	    FramePtr	fp;
+	    int		i;
+	    int		stack = 0;
+	    Value	value, v, w;
+	    BoxPtr	box;
+
+	    inst = thread->thread.pc;
+	    value = thread->thread.v;
+	    next = inst + 1;
+	    complete = False;
+	    /*    InstDump (inst, 1, 0, 0, 0); */
+	    switch (inst->base.opCode) {
+	    case OpNoop:
+		break;
+	    case OpBranch:
+		next = inst + inst->branch.offset;
+		break;
+	    case OpBranchFalse:
+		if (!True (value))
+		    next = inst + inst->branch.offset;
+		break;
+	    case OpBranchTrue:
+		if (True (value))
+		    next = inst + inst->branch.offset;
+		break;
+	    case OpCase:
+		value = Equal (Stack(stack), value);
+		if (True (value))
+		{
+		    next = inst + inst->branch.offset;
+		    stack++;
+		}
+		break;
+	    case OpDefault:
+		next = inst + inst->branch.offset;
+		stack++;
+		break;
+	    case OpTagCase:
+		if (!ValueIsUnion(value))
+		{
+		    RaiseStandardException (exception_invalid_argument,
+					    "union switch expression not union",
+					    2,
+					    Zero, value);
+		    break;
+		}
+		if (value->unions.tag == inst->tagcase.tag)
+		    next = inst + inst->tagcase.offset;
+		break;
+	    case OpReturnVoid:
+		value = Void;
+		/* fall through */
+	    case OpReturn:
+		if (!thread->thread.frame)
+		{
+		    RaiseError ("return outside of function");
+		    break;
+		}
+		if (!TypeCompatibleAssign (thread->thread.frame->function->func.code->base.type,
+					   value))
+		{
+		    RaiseStandardException (exception_invalid_argument,
+					    "Incompatible type in return",
+					    2, NewInt (0), value);
+		    break;
+		}
+		if (aborting)
+		    break;
+		complete = True;
+		next = thread->thread.frame->savePc;
+		thread->thread.code = thread->thread.frame->saveCode;
+		thread->thread.frame = thread->thread.frame->previous;
+		break;
+	    case OpGlobal:
+	    case OpGlobalRef:
+	    case OpGlobalRefStore:
+		box = inst->var.name->global.value;
+		if (inst->base.opCode != OpGlobalRefStore)
+		    ThreadBoxCheck (box, 0, inst->var.name->symbol.type);
+		if (inst->base.opCode == OpGlobal)
+		    value = BoxValue (box, 0);
+		else
+		    value = NewRef (box, 0);
+		break;
+	    case OpStatic:
+	    case OpStaticRef:
+	    case OpStaticRefStore:
+		for (i = 0, fp = thread->thread.frame; i < inst->var.staticLink; i++)
+		    fp = fp->staticLink;
+		box = fp->statics;
+		i = inst->var.name->local.element;
+		if (inst->base.opCode != OpStaticRefStore)
+		    ThreadBoxCheck (box, i, inst->var.name->symbol.type);
+		if (inst->base.opCode == OpStatic)
+		    value = BoxValue (box, i);
+		else
+		    value = NewRef (box, i);
+		break;
+	    case OpLocal:
+	    case OpLocalRef:
+	    case OpLocalRefStore:
+		for (i = 0, fp = thread->thread.frame; i < inst->var.staticLink; i++)
+		    fp = fp->staticLink;
+		box = fp->frame;
+		i = inst->var.name->local.element;
+		if (inst->base.opCode != OpLocalRefStore)
+		    ThreadBoxCheck (box, i, inst->var.name->symbol.type);
+		if (inst->base.opCode == OpLocal)
+		    value = BoxValue (box, i);
+		else
+		    value = NewRef (box, i);
+		break;
+	    case OpConst:
+		value = inst->constant.constant;
+		break;
+	    case OpBuildArray:
+		stack = inst->array.ndim;
+		value = ThreadArray (thread, stack, inst->array.type);
+		break;
+	    case OpInitArray:
+		stack = inst->ints.value;
+		ThreadInitArray (thread, value, stack);
+		break;
+	    case OpBuildStruct:
+		value = NewStruct (inst->structs.structs, False);
+		break;
+	    case OpInitStruct:
+		w = Stack(stack); stack++;
+		v = StructRef (w, inst->atom.atom);
+		if (!v)
+		{
+		    RaiseStandardException (exception_invalid_struct_member,
+					    "Invalid struct member",
+					    2, v, 
+					    NewStrString (AtomName (inst->atom.atom)));
+		    break;
+		}
+		ThreadAssign (v, value, True);
+		value = w;
+		break;
+	    case OpBuildUnion:
+		value = NewUnion (inst->structs.structs, False);
+		break;
+	    case OpInitUnion:
+		v = UnionRef (value, inst->atom.atom);
+		if (!v)
+		{
+		    RaiseStandardException (exception_invalid_struct_member,
+					    "Invalid union member",
+					    2, value, 
+					    NewStrString (AtomName (inst->atom.atom)));
+		    break;
+		}
+		w = Stack(stack); stack++;
+		ThreadAssign (v, w, True);
+		break;
+	    case OpArray:
+	    case OpArrayRef:
+	    case OpArrayRefStore:
+		switch (ValueTag(value)) {
+		    char    *s;
+		case type_string:
+		    if (inst->base.opCode != OpArray)
+		    {
+			RaiseStandardException (exception_invalid_unop_value,
+						"Strings aren't addressable",
+						1, value);
+			break;
+		    }
+		    if (inst->ints.value != 1)
+		    {
+			RaiseStandardException (exception_invalid_binop_values,
+						"Strings have only 1 dimension",
+						2, NewInt (inst->ints.value), value);
+			break;
+		    }
+		    stack = 0;
+		    v = Stack(stack); stack++;
+		    i = IntPart (v, "Invalid string index");
+		    if (aborting)
+			break;
+		    s = StringChars (&value->string);
+		    if (i < 0 || strlen (s) < i)
+		    {
+			RaiseStandardException (exception_invalid_binop_values,
+						"String index out of bounds",
+						2, v, value);
+			break;
+		    }
+		    value = NewInt (s[i]);
+		    break;
+		case type_array:
+		    if (inst->ints.value != value->array.ndim)
+		    {
+			RaiseStandardException (exception_invalid_binop_values,
+						"Mismatching dimensionality",
+						2, NewInt (inst->ints.value), value);
+			break;
+		    }
+		    stack = inst->ints.value;
+		    i = ThreadArrayIndex (thread, stack);
+		    if (!aborting)
+		    {
+			if (inst->base.opCode != OpArrayRefStore)
+			    ThreadBoxCheck (value->array.values, i, value->array.type);
+			if (inst->base.opCode == OpArray)
+			    value = BoxValue (value->array.values, i);
+			else
+			    value = NewRef (value->array.values, i);
+		    }
+		    break;
+		default:
+		    RaiseStandardException (exception_invalid_unop_value,
+					    "Not an array",
+					    1, value);
+		    break;
+		}
+		break;
+	    case OpCall:
+	    case OpTailCall:
+		if (!ValueIsFunc(value))
+		{
+		    RaiseStandardException (exception_invalid_unop_value,
+					    "Not a function",
+					    1, value);
+		    break;
+		}
+		stack = inst->ints.value;
+		value = ThreadCall (thread, inst->base.opCode == OpTailCall,
+				    &next, &stack);
+		break;
+	    case OpArrow:
+	    case OpArrowRef:
+	    case OpArrowRefStore:
+		if (!ValueIsRef(value) ||
+		    (!ValueIsStruct(RefValue (value)) && !ValueIsUnion(RefValue (value))))
+		{
+		    RaiseStandardException (exception_invalid_unop_value,
+					    "Not a struct/union reference",
+					    1, value);
+		    break;
+		}
+		value = RefValue (value);
+	    case OpDot:
+	    case OpDotRef:
+	    case OpDotRefStore:
+		switch (ValueTag(value)) {
+		default:
+		    RaiseStandardException (exception_invalid_unop_value,
+					    "Not a struct/union",
+					    1, value);
+		    break;
+		case type_struct:
+		    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
+			v = StructValue (value, inst->atom.atom);
+		    else
+			v = StructRef (value, inst->atom.atom);
+		    if (!v)
+		    {
+			RaiseStandardException (exception_invalid_struct_member,
+						"no such struct member",
+						2, value, 
+						NewStrString (AtomName (inst->atom.atom)));
+			break;
+		    }
+		    value = v;
+		    break;
+		case type_union:
+		    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
+			v = UnionValue (value, inst->atom.atom);
+		    else
+		    {
+			v = UnionRef (value, inst->atom.atom);
+		    }
+		    if (!v)
+		    {
+			if (StructTypes (value->unions.type, inst->atom.atom))
+			    RaiseStandardException (exception_invalid_struct_member,
+						    "requested union tag not current",
+						    2, value,
+						    NewStrString (AtomName (inst->atom.atom)));
+			else
+			    RaiseStandardException (exception_invalid_struct_member,
+						    "no such union tag",
+						    2, value, 
+						    NewStrString (AtomName (inst->atom.atom)));
+			break;
+		    }
+		    value = v;
+		    break;
+		}
+		break;
+	    case OpObj:
+		value = NewFunc (inst->code.code, thread->thread.frame);
+		break;
+	    case OpStaticInit:
+		/* Always follows OpObj so the function is sitting in value */
+		ThreadStaticInit (thread, &next);
+		break;
+	    case OpStaticDone:
+		if (!thread->thread.frame)
+		{
+		    RaiseError ("StaticInitDone outside of function");
+		    break;
+		}
+		if (aborting)
+		    break;
+		complete = True;
+		next = thread->thread.frame->savePc;
+		thread->thread.code = thread->thread.frame->saveCode;
+		thread->thread.frame = thread->thread.frame->previous;
+		/* Fetch the Obj from the stack */
+		value = Stack (stack); stack++;
+		break;
+	    case OpBinOp:
+		value = BinaryOperate (Stack(stack), value, inst->binop.op); stack++;
+		break;
+	    case OpBinFunc:
+		value = (*inst->binfunc.func) (Stack(stack), value); stack++;
+		break;
+	    case OpUnOp:
+		value = UnaryOperate (value, inst->unop.op);
+		break;
+	    case OpUnFunc:
+		value = (*inst->unfunc.func) (value);
+		break;
+	    case OpPreOp:
+		v = BinaryOperate (Dereference (value), One, inst->binop.op);
+		ThreadAssign (value, v, False);
+		value = v;
+		break;
+	    case OpPostOp:
+		v = Dereference (value);
+		ThreadAssign (value, BinaryOperate (v, One, inst->binop.op), False);
+		value = v;
+		break;
+	    case OpAssign:
+		v = Stack(stack); stack++;
+		ThreadAssign (value, v, inst->assign.initialize);
+		value = v;
+		break;
+	    case OpAssignOp:
+		v = BinaryOperate (Dereference (value), Stack(stack), inst->binop.op);
+		stack++;
+		ThreadAssign (value, v, False);
+		value = v;
+		break;
+	    case OpAssignFunc:
+		v = (*inst->binfunc.func) (Dereference (value), Stack(stack));
+		stack++;
+		ThreadAssign (value, v, False);
+		value = v;
+		break;
+	    case OpFork:
+		value = NewThread (thread->thread.frame, inst->obj.obj); 
+		break;
+	    case OpCatch:
+		if (aborting)
+		    break;
+		ThreadCatch (thread, inst->catch.exception, inst->catch.offset);
+		complete = True;
+		next = inst + inst->catch.offset;
+		break;
+	    case OpEndCatch:
+		if (aborting)
+		    break;
+		thread->thread.catches = thread->thread.catches->previous;
+		complete = True;
+		break;
+	    case OpRaise:
+		if (aborting)
+		    break;
+		ThreadRaise (thread, inst->raise.argc, inst->raise.exception, &next);
+		if (!aborting)
+		    complete = True;
+		break;
+	    case OpTwixt:
+		if (aborting)
+		    break;
+		ThreadTwixt (thread, inst->twixt.enter, inst->twixt.leave);
+		complete = True;
+		break;
+	    case OpTwixtDone:
+		if (aborting)
+		    break;
+		thread->thread.twixts = thread->thread.twixts->previous;
+		complete = True;
+		break;
+	    case OpEnterDone:
+		if (!True (value))
+		{
+		    next = inst + inst->branch.offset;
+		    thread->thread.jump = 0;
+		}
+		else
+		{
+		    if (aborting)
+			break;
+		    if (thread->thread.jump)
+		    {
+			value = JumpContinuation (thread->thread.jump, &next);
+			complete = True;
+		    }
+		}
+		break;
+	    case OpLeaveDone:
+		if (thread->thread.jump)
+		{
+		    if (aborting)
+			break;
+		    value = JumpContinuation (thread->thread.jump, &next);
+		    complete = True;
+		}
+		else
+		    next = inst + inst->branch.offset;
+		break;
+	    case OpUnwind:
+		if (aborting)
+		    break;
+		ThreadUnwind (thread, inst->unwind.twixt, inst->unwind.catch, &next);
+		complete = True;
+		break;
+	    case OpEnd:
+		SetSignalFinished ();
+		break;
+	    default:
+		break;
+	    }
+	    if (!aborting || complete)
+	    {
+		/* this instruction has been completely executed */
+		thread->thread.partial = 0;
+		thread->thread.v = value;
+		if (stack)
+		    STACK_DROP (thread->thread.stack, stack);
+		if (inst->base.push)
+		    STACK_PUSH (thread->thread.stack, value);
+		thread->thread.pc = next;
+		if (thread->thread.next)
+		    ThreadStepped (thread);
+	    }
+	    else
+	    {
+		/*
+		 * Check for pending execution signals
+		 */
+		if (signalSuspend)
+		{
+		    signalSuspend = False;
+		    ThreadSetState (thread, ThreadSuspended);
+		}
+		if (signalFinished)
+		{
+		    signalFinished = False;
+		    ThreadFinish (thread);
+		}
+		if (signalException)
+		{
+		    signalException = False;
+		    JumpStandardException (thread, &next);
+		    thread->thread.pc = next;
+		}
+		if (signalError)
+		{
+		    signalError = False;
+		    DebugStart (NewContinuation (thread->thread.frame,
+						 inst,
+						 thread->thread.stack,
+						 thread->thread.catches,
+						 thread->thread.twixts));
+		    ThreadFinish (thread);
+		}
+	    }
+	    EXIT ();
+	}
 	else
 	{
 	    sigset_t	set, oset;

@@ -141,6 +141,7 @@ NewStruct (StructType *type, Bool constant)
 
     ret = ALLOCATE (&structType.data, sizeof (Struct));
     ret->structs.type = type;
+    ret->structs.values = 0;
     ret->structs.values = NewBox (constant, False, type->nelements);
     se = StructTypeElements (type);    
     for (i = 0; i < type->nelements; i++)

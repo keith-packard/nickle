@@ -27,9 +27,15 @@ ObjMark (void *object)
     {
 	MemReference (inst->base.stat);
 	switch (inst->base.opCode) {
-	case OpName:
-	case OpNameRef:
-	case OpNameRefStore:
+	case OpGlobal:
+	case OpGlobalRef:
+	case OpGlobalRefStore:
+	case OpStatic:
+	case OpStaticRef:
+	case OpStaticRefStore:
+	case OpLocal:
+	case OpLocalRef:
+	case OpLocalRefStore:
 	    MemReference (inst->var.name);
 	    break;
 	case OpBuildStruct:
@@ -117,9 +123,13 @@ AddInst (ObjPtr obj)
 typedef enum _tail { TailNever, TailVoid, TailAlways } Tail;
 
 ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createIfNecessary, Bool assign, Bool initialize);
-ObjPtr	CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
-ObjPtr	CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
-ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
+ObjPtr	CompileBinOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code);
+ObjPtr	CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code);
+ObjPtr	CompileUnOp (ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code);
+ObjPtr	CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr code);
+ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, Bool initialize, ExprPtr stat, CodePtr code);
+ObjPtr	CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code);
+ObjPtr	CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code);
 ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, int *ndimp);
 ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code);
 ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
@@ -273,6 +283,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
     SymbolPtr	s;
     int		depth;
     int		ndim;
+    OpCode	opCode;
     
     switch (expr->base.tag) {
     case NAME:
@@ -283,22 +294,37 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	    expr->base.type = typesPoly;
 	    break;
 	}
-	if (!ClassStorage (s->symbol.class) || (!initialize && s->symbol.class == class_const))
-	{
+	opCode = OpNoop;
+	switch (s->symbol.class) {
+	case class_const:
+	    if (!initialize) {
+		CompileError (obj, stat, "Attempt to assign to static variable \"%A\"",
+			      expr->atom.atom);
+		expr->base.type = typesPoly;
+		break;
+	    }
+	    /* fall through ... */
+	case class_global:
+	    opCode = OpGlobalRef;
+	    break;
+	case class_static:
+	    opCode = OpStaticRef;
+	    break;
+	case class_arg:
+	case class_auto:
+	    opCode = OpLocalRef;
+	    break;
+	default:
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  s->symbol.class, expr->atom.atom);
-	
 	    expr->base.type = typesPoly;
 	    break;
 	}
+	if (opCode == OpNoop)
+	    break;
 	if (assign)
-	{
-	    BuildInst(obj, OpNameRefStore, inst, stat);
-	}
-	else
-	{
-	    BuildInst(obj, OpNameRef, inst, stat);
-	}
+	    opCode++;
+        BuildInst(obj, opCode, inst, stat);
 	inst->var.name = s;
 	inst->var.staticLink = depth;
 	expr->base.type = s->symbol.type;
@@ -400,8 +426,9 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
  * compile the left side, push, compile the right and then
  * add the operator
  */
+
 ObjPtr
-CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code)
+CompileBinOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr inst;
@@ -419,7 +446,32 @@ CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr co
 		      expr->tree.right->base.type);
 	expr->base.type = typesPoly;
     }
-    BuildInst (obj, opCode, inst, stat);
+    BuildInst (obj, OpBinOp, inst, stat);
+    inst->binop.op = op;
+    RETURN (obj);
+}
+
+ObjPtr
+CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code)
+{
+    ENTER ();
+    InstPtr inst;
+    
+    obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+    SetPush (obj);
+    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
+    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+					 expr->base.tag,
+					 expr->tree.right->base.type);
+    if (!expr->base.type)
+    {
+	CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
+		      expr->tree.left->base.type,
+		      expr->tree.right->base.type);
+	expr->base.type = typesPoly;
+    }
+    BuildInst (obj, OpBinFunc, inst, stat);
+    inst->binfunc.func = func;
     RETURN (obj);
 }
 
@@ -427,8 +479,9 @@ CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr co
  * Unaries are easy --
  * compile the operand and add the operator
  */
+
 ObjPtr
-CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code)
+CompileUnOp (ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr inst;
@@ -446,7 +499,32 @@ CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr cod
 		      down->base.type);
 	expr->base.type = typesPoly;
     }
-    BuildInst (obj, opCode, inst, stat);
+    BuildInst (obj, OpUnOp, inst, stat);
+    inst->unop.op = op;
+    RETURN (obj);
+}
+
+ObjPtr
+CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr code)
+{
+    ENTER ();
+    InstPtr inst;
+    ExprPtr down;
+    
+    if (expr->tree.right)
+	down = expr->tree.right;
+    else
+	down = expr->tree.left;
+    obj = _CompileExpr (obj, down, True, stat, code);
+    expr->base.type = TypeCombineUnary (down->base.type, expr->base.tag);
+    if (!expr->base.type)
+    {
+	CompileError (obj, stat, "Incompatible type '%T' in unary operation",
+		      down->base.type);
+	expr->base.type = typesPoly;
+    }
+    BuildInst (obj, OpUnFunc, inst, stat);
+    inst->unfunc.func = func;
     RETURN (obj);
 }
 
@@ -455,15 +533,14 @@ CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr cod
  * compile the value, build a ref for the LHS and add the operator
  */
 ObjPtr
-CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code)
+CompileAssign (ObjPtr obj, ExprPtr expr, Bool initialize, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr inst;
     
     obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
     SetPush (obj);
-    obj = CompileLvalue (obj, expr->tree.left, stat, code, opCode == OpAssign, 
-			 opCode == OpAssign || opCode == OpInitialize, opCode == OpInitialize);
+    obj = CompileLvalue (obj, expr->tree.left, stat, code, True, True, initialize);
     expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					 expr->base.tag,
 					 expr->tree.right->base.type);
@@ -474,7 +551,56 @@ CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr co
 		      expr->tree.right->base.type);
 	expr->base.type = typesPoly;
     }
-    BuildInst (obj, opCode, inst, stat);
+    BuildInst (obj, OpAssign, inst, stat);
+    inst->assign.initialize = initialize;
+    RETURN (obj);
+}
+
+ObjPtr
+CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code)
+{
+    ENTER ();
+    InstPtr inst;
+    
+    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
+    SetPush (obj);
+    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
+    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+					 expr->base.tag,
+					 expr->tree.right->base.type);
+    if (!expr->base.type)
+    {
+	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
+		      expr->tree.left->base.type,
+		      expr->tree.right->base.type);
+	expr->base.type = typesPoly;
+    }
+    BuildInst (obj, OpAssignOp, inst, stat);
+    inst->binop.op = op;
+    RETURN (obj);
+}
+
+ObjPtr
+CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code)
+{
+    ENTER ();
+    InstPtr inst;
+    
+    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
+    SetPush (obj);
+    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
+    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+					 expr->base.tag,
+					 expr->tree.right->base.type);
+    if (!expr->base.type)
+    {
+	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
+		      expr->tree.left->base.type,
+		      expr->tree.right->base.type);
+	expr->base.type = typesPoly;
+    }
+    BuildInst (obj, OpAssignFunc, inst, stat);
+    inst->binfunc.func = func;
     RETURN (obj);
 }
 
@@ -742,6 +868,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     inst->base.opCode = OpEnterDone;
     inst->base.stat = stat;
     inst->branch.offset = obj->used - enter_done_inst;
+    inst->branch.mod = BranchModNone;
     
     /* Compile else */
     if (expr->tree.right->tree.right)
@@ -752,6 +879,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     inst->base.opCode = OpLeaveDone;
     inst->base.stat = stat;
     inst->branch.offset = obj->used - leave_done_inst;
+    inst->branch.mod = BranchModNone;
 
     RETURN (obj);
 }
@@ -1245,9 +1373,10 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	BuildInst (obj, OpEndCatch, inst, stat);
 	
 	inst = ObjCode (obj, exception_inst);
-	inst->base.opCode = OpException;
+	inst->base.opCode = OpBranch;
 	inst->base.stat = stat;
 	inst->branch.offset = obj->used - exception_inst;
+	inst->branch.mod = BranchModNone;
     }
     else
 	obj = _CompileStat (obj, body, False, code);
@@ -1263,26 +1392,41 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     InstPtr inst;
     SymbolPtr	s;
     Types	*t;
+    OpCode	opCode;
+    int		staticLink;
     
     switch (expr->base.tag) {
     case NAME:
-	BuildInst (obj, OpName, inst, stat);
-	s = CompileCheckSymbol (obj, stat, expr, code,
-				&inst->var.staticLink, False);
+	s = CompileCheckSymbol (obj, stat, expr, code, &staticLink, False);
 	if (!s)
 	{
 	    expr->base.type = typesPoly;
 	    break;
 	}
-	if (!ClassStorage (s->symbol.class))
-	{
+	switch (s->symbol.class) {
+	case class_const:
+	case class_global:
+	    opCode = OpGlobal;
+	    break;
+	case class_static:
+	    opCode = OpStatic;
+	    break;
+	case class_arg:
+	case class_auto:
+	    opCode = OpLocal;
+	    break;
+	default:
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  s->symbol.class, expr->atom.atom);
-	
 	    expr->base.type = typesPoly;
+	    opCode = OpNoop;
 	    break;
 	}
+	if (opCode == OpNoop)
+	    break;
+	BuildInst (obj, opCode, inst, stat);
 	inst->var.name = s;
+	inst->var.staticLink = staticLink;
 	expr->base.type = s->symbol.type;
 	break;
     case VAR:
@@ -1482,7 +1626,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	expr->base.type = NewTypesFunc (expr->code.code->base.type,
 					expr->code.code->base.args);
 	break;
-    case STAR:	    obj = CompileUnary (obj, expr, OpStar, stat, code); break;
+    case STAR:	    obj = CompileUnFunc (obj, expr, Dereference, stat, code); break;
     case AMPER:	    
 	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
 	expr->base.type = NewTypesRef (expr->tree.left->base.type);
@@ -1494,10 +1638,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    break;
 	}
 	break;
-    case UMINUS:    obj = CompileUnary (obj, expr, OpUminus, stat, code); break;
-    case LNOT:	    obj = CompileUnary (obj, expr, OpLnot, stat, code); break;
-    case BANG:	    obj = CompileUnary (obj, expr, OpBang, stat, code); break;
-    case FACT:	    obj = CompileUnary (obj, expr, OpFact, stat, code); break;
+    case UMINUS:    obj = CompileUnOp (obj, expr, NegateOp, stat, code); break;
+    case LNOT:	    obj = CompileUnFunc (obj, expr, Lnot, stat, code); break;
+    case BANG:	    obj = CompileUnFunc (obj, expr, Not, stat, code); break;
+    case FACT:	    obj = CompileUnFunc (obj, expr, Factorial, stat, code); break;
     case INC:	    
 	if (expr->tree.left)
 	{
@@ -1505,7 +1649,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNPLUS,
 						 typesPrim[type_int]);
-	    BuildInst (obj, OpPreInc, inst, stat);
+	    BuildInst (obj, OpPreOp, inst, stat);
 	}
 	else
 	{
@@ -1513,8 +1657,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNPLUS,
 						 typesPrim[type_int]);
-	    BuildInst (obj, OpPostInc, inst, stat);
+	    BuildInst (obj, OpPostOp, inst, stat);
 	}
+        inst->binop.op = PlusOp;
 	if (!expr->base.type)
 	{
 	    CompileError (obj, stat, "Incompatible type '%T' in ++",
@@ -1531,7 +1676,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNMINUS,
 						 typesPrim[type_int]);
-	    BuildInst (obj, OpPreDec, inst, stat);
+	    BuildInst (obj, OpPreOp, inst, stat);
 	}
 	else
 	{
@@ -1539,8 +1684,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNMINUS,
 						 typesPrim[type_int]);
-	    BuildInst (obj, OpPostDec, inst, stat);
+	    BuildInst (obj, OpPostOp, inst, stat);
 	}
+	inst->binop.op = MinusOp;
 	if (!expr->base.type)
 	{
 	    CompileError (obj, stat, "Incompatible type '%T' in --",
@@ -1550,12 +1696,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    break;
 	}
 	break;
-    case PLUS:	    obj = CompileBinary (obj, expr, OpPlus, stat, code); break;
-    case MINUS:	    obj = CompileBinary (obj, expr, OpMinus, stat, code); break;
-    case TIMES:	    obj = CompileBinary (obj, expr, OpTimes, stat, code); break;
-    case DIVIDE:    obj = CompileBinary (obj, expr, OpDivide, stat, code); break;
-    case DIV:	    obj = CompileBinary (obj, expr, OpDiv, stat, code); break;
-    case MOD:	    obj = CompileBinary (obj, expr, OpMod, stat, code); break;
+    case PLUS:	    obj = CompileBinOp (obj, expr, PlusOp, stat, code); break;
+    case MINUS:	    obj = CompileBinOp (obj, expr, MinusOp, stat, code); break;
+    case TIMES:	    obj = CompileBinOp (obj, expr, TimesOp, stat, code); break;
+    case DIVIDE:    obj = CompileBinOp (obj, expr, DivideOp, stat, code); break;
+    case DIV:	    obj = CompileBinOp (obj, expr, DivOp, stat, code); break;
+    case MOD:	    obj = CompileBinOp (obj, expr, ModOp, stat, code); break;
     case POW:
 	obj = _CompileExpr (obj, expr->tree.right->tree.left, True, stat, code);
 	SetPush (obj);
@@ -1577,8 +1723,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->ints.value = 2;
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case SHIFTL:    obj = CompileBinary (obj, expr, OpShiftL, stat, code); break;
-    case SHIFTR:    obj = CompileBinary (obj, expr, OpShiftR, stat, code); break;
+    case SHIFTL:    obj = CompileBinFunc (obj, expr, ShiftL, stat, code); break;
+    case SHIFTR:    obj = CompileBinFunc (obj, expr, ShiftR, stat, code); break;
     case QUEST:
 	/*
 	 * a ? b : c
@@ -1592,14 +1738,16 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	obj = _CompileExpr (obj, expr->tree.right->tree.left, evaluate, stat, code);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, test_inst);
-	inst->base.opCode = OpQuest;
+	inst->base.opCode = OpBranchFalse;
 	inst->base.stat = stat;
 	inst->branch.offset = obj->used - test_inst;
+	inst->branch.mod = BranchModNone;
 	obj = _CompileExpr (obj, expr->tree.right->tree.right, evaluate, stat, code);
 	inst = ObjCode (obj, middle_inst);
-	inst->base.opCode = OpColon;
+	inst->base.opCode = OpBranch;
 	inst->base.stat = stat;
 	inst->branch.offset = obj->used - middle_inst;
+	inst->branch.mod = BranchModNone;
 	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
 					     COLON,
 					     expr->tree.right->tree.right->base.type);
@@ -1613,9 +1761,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case LXOR:	    obj = CompileBinary (obj, expr, OpLxor, stat, code); break;
-    case LAND:	    obj = CompileBinary (obj, expr, OpLand, stat, code); break;
-    case LOR:	    obj = CompileBinary (obj, expr, OpLor, stat, code); break;
+    case LXOR:	    obj = CompileBinFunc (obj, expr, Lxor, stat, code); break;
+    case LAND:	    obj = CompileBinOp (obj, expr, LandOp, stat, code); break;
+    case LOR:	    obj = CompileBinOp (obj, expr, LorOp, stat, code); break;
     case AND:
 	/*
 	 * a && b
@@ -1627,9 +1775,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	NewInst (test_inst, obj);
 	obj = _CompileExpr (obj, expr->tree.right, evaluate, stat, code);
 	inst = ObjCode (obj, test_inst);
-	inst->base.opCode = OpAnd;
+	inst->base.opCode = OpBranchFalse;
 	inst->base.stat = stat;
 	inst->branch.offset = obj->used - test_inst;
+	inst->branch.mod = BranchModNone;
 	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					     COLON,
 					     expr->tree.right->base.type);
@@ -1654,9 +1803,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	NewInst (test_inst, obj);
 	obj = _CompileExpr (obj, expr->tree.right, evaluate, stat, code);
 	inst = ObjCode (obj, test_inst);
-	inst->base.opCode = OpOr;
+	inst->base.opCode = OpBranchTrue;
 	inst->base.stat = stat;
 	inst->branch.offset = obj->used - test_inst;
+	inst->branch.mod = BranchModNone;
 	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					     COLON,
 					     expr->tree.right->base.type);
@@ -1670,13 +1820,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case ASSIGN:	obj = CompileAssign (obj, expr, OpAssign, stat, code); break;
-    case ASSIGNPLUS:	obj = CompileAssign (obj, expr, OpAssignPlus, stat, code); break;
-    case ASSIGNMINUS:	obj = CompileAssign (obj, expr, OpAssignMinus, stat, code); break;
-    case ASSIGNTIMES:	obj = CompileAssign (obj, expr, OpAssignTimes, stat, code); break;
-    case ASSIGNDIVIDE:	obj = CompileAssign (obj, expr, OpAssignDivide, stat, code); break;
-    case ASSIGNDIV:	obj = CompileAssign (obj, expr, OpAssignDiv, stat, code); break;
-    case ASSIGNMOD:	obj = CompileAssign (obj, expr, OpAssignMod, stat, code); break;
+    case ASSIGN:	obj = CompileAssign (obj, expr, False, stat, code); break;
+    case ASSIGNPLUS:	obj = CompileAssignOp (obj, expr, PlusOp, stat, code); break;
+    case ASSIGNMINUS:	obj = CompileAssignOp (obj, expr, MinusOp, stat, code); break;
+    case ASSIGNTIMES:	obj = CompileAssignOp (obj, expr, TimesOp, stat, code); break;
+    case ASSIGNDIVIDE:	obj = CompileAssignOp (obj, expr, DivideOp, stat, code); break;
+    case ASSIGNDIV:	obj = CompileAssignOp (obj, expr, DivOp, stat, code); break;
+    case ASSIGNMOD:	obj = CompileAssignOp (obj, expr, ModOp, stat, code); break;
     case ASSIGNPOW:
 	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
 	SetPush (obj);
@@ -1698,17 +1848,17 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->ints.value = 2;
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case ASSIGNSHIFTL:	obj = CompileAssign (obj, expr, OpAssignShiftL, stat, code); break;
-    case ASSIGNSHIFTR:	obj = CompileAssign (obj, expr, OpAssignShiftR, stat, code); break;
-    case ASSIGNLXOR:	obj = CompileAssign (obj, expr, OpAssignLxor, stat, code); break;
-    case ASSIGNLAND:	obj = CompileAssign (obj, expr, OpAssignLand, stat, code); break;
-    case ASSIGNLOR:	obj = CompileAssign (obj, expr, OpAssignLor, stat, code); break;
-    case EQ:	    obj = CompileBinary (obj, expr, OpEq, stat, code); break;
-    case NE:	    obj = CompileBinary (obj, expr, OpNe, stat, code); break;
-    case LT:	    obj = CompileBinary (obj, expr, OpLt, stat, code); break;
-    case GT:	    obj = CompileBinary (obj, expr, OpGt, stat, code); break;
-    case LE:	    obj = CompileBinary (obj, expr, OpLe, stat, code); break;
-    case GE:	    obj = CompileBinary (obj, expr, OpGe, stat, code); break;
+    case ASSIGNSHIFTL:	obj = CompileAssignFunc (obj, expr, ShiftL, stat, code); break;
+    case ASSIGNSHIFTR:	obj = CompileAssignFunc (obj, expr, ShiftR, stat, code); break;
+    case ASSIGNLXOR:	obj = CompileAssignFunc (obj, expr, Lxor, stat, code); break;
+    case ASSIGNLAND:	obj = CompileAssignOp (obj, expr, LandOp, stat, code); break;
+    case ASSIGNLOR:	obj = CompileAssignOp (obj, expr, LorOp, stat, code); break;
+    case EQ:	    obj = CompileBinOp (obj, expr, EqualOp, stat, code); break;
+    case NE:	    obj = CompileBinFunc (obj, expr, NotEqual, stat, code); break;
+    case LT:	    obj = CompileBinOp (obj, expr, LessOp, stat, code); break;
+    case GT:	    obj = CompileBinFunc (obj, expr, Greater, stat, code); break;
+    case LE:	    obj = CompileBinFunc (obj, expr, LessEqual, stat, code); break;
+    case GE:	    obj = CompileBinFunc (obj, expr, GreaterEqual, stat, code); break;
     case COMMA:	    
 	obj = _CompileExpr (obj, expr->tree.left, False, stat, code);
 	expr->base.type = expr->tree.left->base.type;
@@ -1753,17 +1903,18 @@ CompilePatchLoop (ObjPtr obj, int start, int continue_offset)
     while (start < obj->used)
     {
 	inst = ObjCode (obj, start);
-	switch (inst->base.opCode) {
-	case OpBreak:
-	    if (inst->branch.offset == 0)
+	if (inst->base.opCode == OpBranch && inst->branch.offset == 0)
+	{
+	    switch (inst->branch.mod) {
+	    case BranchModBreak:
 		inst->branch.offset = break_offset - start;
-	    break;
-	case OpContinue:
-	    if (inst->branch.offset == 0 && continue_offset >= 0)
-		inst->branch.offset = continue_offset - start;
-	    break;
-	default:
-	    break;
+		break;
+	    case BranchModContinue:
+		if (continue_offset >= 0)
+		    inst->branch.offset = continue_offset - start;
+		break;
+	    default:
+	    }
 	}
 	++start;
     }
@@ -1817,7 +1968,7 @@ ObjPtr
 _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 {
     ENTER ();
-    int		top_inst, continue_inst, test_inst, middle_inst, bottom_inst;
+    int		start_inst, top_inst, continue_inst, test_inst, middle_inst;
     ExprPtr	c;
     int		ncase, *case_inst, icase;
     Bool	has_default;
@@ -1828,64 +1979,75 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	/*
 	 * if (a) b
 	 *
-	 * a IF b
-	 *   +----+
+	 * a BRANCHFALSE b
+	 *   +-------------+
 	 */
 	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
 	obj = _CompileStat (obj, expr->tree.right, last, code);
 	inst = ObjCode (obj, test_inst);
-	inst->base.opCode = OpIf;
+	inst->base.opCode = OpBranchFalse;
 	inst->base.stat = expr;
 	inst->branch.offset = obj->used - test_inst;
+	inst->branch.mod = BranchModNone;
 	break;
     case ELSE:
 	/*
 	 * if (a) b else c
 	 *
-	 * a IF b ELSE c
-	 *   +---------+
-	 *        +------+
+	 * a BRANCHFALSE b BRANCH c
+	 *   +--------------------+
+	 *                 +--------+
 	 */
 	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
 	obj = _CompileStat (obj, expr->tree.right->tree.left, last, code);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, test_inst);
-	inst->base.opCode = OpIf;
+	inst->base.opCode = OpBranchFalse;
 	inst->base.stat = expr;
 	inst->branch.offset = obj->used - test_inst;
+	inst->branch.mod = BranchModNone;
 	obj = _CompileStat (obj, expr->tree.right->tree.right, last, code);
 	inst = ObjCode (obj, middle_inst);
-	inst->base.opCode = OpElse;
+	inst->base.opCode = OpBranch;
 	inst->base.stat = expr;
 	inst->branch.offset = obj->used - middle_inst;
+	inst->branch.mod = BranchModNone;
 	break;
     case WHILE:
 	/*
 	 * while (a) b
 	 *
-	 * a WHILE b ENDWHILE
-	 *   +----------------+
-	 * +---------+
+	 * BRANCH b a BRANCHTRUE
+	 * +--------+
+	 *        +---+
 	 */
-	continue_inst = obj->used;
-	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
-	NewInst (test_inst, obj);
+	NewInst (start_inst, obj);
+	    
+        top_inst = obj->used;
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
 				     NON_LOCAL_BREAK|NON_LOCAL_CONTINUE);
 	obj = _CompileStat (obj, expr->tree.right, False, code);
 	obj->nonLocal = obj->nonLocal->prev;
-	NewInst (bottom_inst, obj);
+
+	inst = ObjCode (obj, start_inst);
+	inst->base.opCode = OpBranch;
+	inst->base.stat = expr;
+	inst->branch.offset = obj->used - start_inst;
+	inst->branch.mod = BranchModNone;
+	
+	continue_inst = obj->used;
+	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
+	NewInst (test_inst, obj);
+
 	inst = ObjCode (obj, test_inst);
-	inst->base.opCode = OpWhile;
+	inst->base.opCode = OpBranchTrue;
 	inst->base.stat = expr;
-	inst->branch.offset = obj->used - test_inst;
-	inst = ObjCode (obj, bottom_inst);
-	inst->base.opCode = OpEndWhile;
-	inst->base.stat = expr;
-	inst->branch.offset = continue_inst - bottom_inst;
-	CompilePatchLoop (obj, continue_inst, continue_inst);
+	inst->branch.offset = top_inst - test_inst;
+	inst->branch.mod = BranchModNone;
+	
+	CompilePatchLoop (obj, top_inst, continue_inst);
 	break;
     case DO:
 	/*
@@ -1902,47 +2064,69 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
 	NewInst (test_inst, obj);
 	inst = ObjCode (obj, test_inst);
-	inst->base.opCode = OpDo;
+	inst->base.opCode = OpBranchTrue;
 	inst->base.stat = expr;
 	inst->branch.offset = continue_inst - test_inst;
+	inst->branch.mod = BranchModNone;
 	CompilePatchLoop (obj, continue_inst, continue_inst);
 	break;
     case FOR:
 	/*
 	 * for (a; b; c) d
 	 *
-	 * a b FOR d c ENDFOR
-	 *     +--------------+
-	 *   +---------+
+	 * a BRANCH d c b BRANCHTRUE
+	 *   +----------+
+	 *          +-----+
 	 */
+	/* a */
 	if (expr->tree.left->tree.left)
 	    obj = _CompileExpr (obj, expr->tree.left->tree.left, False, expr, code);
-	top_inst = obj->used;
+	
 	test_inst = -1;
+	start_inst = -1;
+	
+	/* check for b */
 	if (expr->tree.left->tree.right)
-	{
-	    obj = _CompileExpr (obj, expr->tree.left->tree.right, True, expr, code);
-	    NewInst (test_inst, obj);
-	}
+	    NewInst (start_inst, obj);
+
+	top_inst = obj->used;
+
+	/* d */
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
 				     NON_LOCAL_BREAK|NON_LOCAL_CONTINUE);
 	obj = _CompileStat (obj, expr->tree.right->tree.right, False, code);
 	obj->nonLocal = obj->nonLocal->prev;
+
+	/* c */
 	continue_inst = obj->used;
 	if (expr->tree.right->tree.left)
 	    obj = _CompileExpr (obj, expr->tree.right->tree.left, False, expr, code);
-	NewInst (bottom_inst, obj);
-	if (test_inst != -1)
+	
+	/* b */
+	if (expr->tree.left->tree.right)
 	{
-	    inst = ObjCode (obj, test_inst);
-	    inst->base.opCode = OpFor;
+	    /* patch start branch */
+	    inst = ObjCode (obj, start_inst);
+	    inst->base.opCode = OpBranch;
 	    inst->base.stat = expr;
-	    inst->branch.offset = obj->used - test_inst;
+	    inst->branch.offset = obj->used - start_inst;
+	    inst->branch.mod = BranchModNone;
+	    
+	    obj = _CompileExpr (obj, expr->tree.left->tree.right, True, expr, code);
+	    NewInst (test_inst, obj);
+	    inst = ObjCode (obj, test_inst);
+	    inst->base.opCode = OpBranchTrue;
 	}
-	inst = ObjCode (obj, bottom_inst);
-	inst->base.opCode = OpEndFor;
+	else
+	{
+	    NewInst (test_inst, obj);
+	    inst = ObjCode (obj, test_inst);
+	    inst->base.opCode = OpBranchTrue;
+	}
 	inst->base.stat = expr;
-	inst->branch.offset = top_inst - bottom_inst;
+	inst->branch.offset = top_inst - test_inst;
+	inst->branch.mod = BranchModNone;
+
 	CompilePatchLoop (obj, top_inst, continue_inst);
 	break;
     case SWITCH:
@@ -2010,6 +2194,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		{
 		    inst->base.opCode = OpCase;
 		    inst->branch.offset = obj->used - case_inst[icase];
+		    inst->branch.mod = BranchModNone;
 		}
 		else
 		{
@@ -2026,9 +2211,10 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		if (expr->base.tag == SWITCH)
 		    inst->base.opCode = OpDefault;
 		else
-		    inst->base.opCode = OpTagDefault;
+		    inst->base.opCode = OpBranch;
 		inst->base.stat = expr;
 		inst->branch.offset = obj->used - test_inst;
+		inst->branch.mod = BranchModNone;
 	    }
 	    while (s->tree.left)
 	    {
@@ -2044,9 +2230,10 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    if (expr->base.tag == SWITCH)
 		inst->base.opCode = OpDefault;
 	    else
-		inst->base.opCode = OpTagDefault;
+		inst->base.opCode = OpBranch;
 	    inst->base.stat = expr;
 	    inst->branch.offset = obj->used - test_inst;
+	    inst->branch.mod = BranchModNone;
 	}
 	CompilePatchLoop (obj, top_inst, -1);
 	break;
@@ -2066,17 +2253,19 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	obj = CompileNonLocal (obj, NON_LOCAL_BREAK, expr);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, middle_inst);
-	inst->base.opCode = OpBreak;
+	inst->base.opCode = OpBranch;
 	inst->base.stat = expr;
 	inst->branch.offset = 0;    /* filled in by PatchLoop */
+	inst->branch.mod = BranchModBreak;
 	break;
     case CONTINUE:
 	obj = CompileNonLocal (obj, NON_LOCAL_CONTINUE, expr);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, middle_inst);
-	inst->base.opCode = OpContinue;
+	inst->base.opCode = OpBranch;
 	inst->base.stat = expr;
 	inst->branch.offset = 0;    /* filled in by PatchLoop */
+	inst->branch.mod = BranchModContinue;
 	break;
     case RETURNTOK:
 	if (!code)
@@ -2123,7 +2312,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	break;
     case FUNCTION:
 	obj = CompileDecl (obj, expr->tree.left, False, expr, code); 
-	obj = CompileAssign (obj, expr->tree.right, OpInitialize, expr, code);
+	obj = CompileAssign (obj, expr->tree.right, True, expr, code);
 	break;
     case NAMESPACE:
 	obj = _CompileStat (obj, expr->tree.right, last, code);
@@ -2147,24 +2336,12 @@ static Bool
 CompileIsBranch (InstPtr inst)
 {
     switch (inst->base.opCode) {
-    case OpIf:
-    case OpElse:
-    case OpWhile:
-    case OpEndWhile:
-    case OpDo:
-    case OpFor:
-    case OpEndFor:
+    case OpBranch:
+    case OpBranchFalse:
+    case OpBranchTrue:
     case OpCase:
     case OpTagCase:
     case OpDefault:
-    case OpTagDefault:
-    case OpBreak:
-    case OpContinue:
-    case OpQuest:
-    case OpColon:
-    case OpAnd:
-    case OpOr:
-    case OpException:
     case OpLeaveDone:
     case OpCatch:
 	return True;
@@ -2266,6 +2443,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
     Publish	    publish;
     CodePtr	    code_compile = 0;
     ObjPtr	    *initObj;
+    OpCode	    opCode;
     
     class = decls->decl.class;
     if (class == class_undef)
@@ -2281,6 +2459,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	code_compile = code;
 	while (code_compile && code_compile->base.previous)
 	    code_compile = code_compile->base.previous;
+	opCode = OpGlobal;
 	break;
     case class_static:
 	/*
@@ -2288,6 +2467,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	 * the nearest enclosing function
 	 */
 	code_compile = code;
+	opCode = OpStatic;
 	break;
     case class_auto:
     case class_arg:
@@ -2295,8 +2475,10 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	 * Autos are compiled where they lie; just make sure a function
 	 * exists somewhere to hang them from
 	 */
+	opCode = OpLocal;
 	break;
     default:
+	opCode = OpNoop;
 	break;
     }
     if (ClassFrame (class) && !code)
@@ -2357,7 +2539,8 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 			      lvalue->base.type,
 			      init->base.type);
 	    }
-	    BuildInst (*initObj, OpInitialize, inst, decls);
+	    BuildInst (*initObj, OpAssign, inst, stat);
+	    inst->assign.initialize = True;
 	}
     }
     if (evaluate)
@@ -2365,7 +2548,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	if (s)
 	{
 	    InstPtr	inst;
-	    BuildInst (obj, OpName, inst, stat);
+	    BuildInst (obj, opCode, inst, stat);
 	    inst->var.name = s;
 	    decls->base.type = s->symbol.type;
 	}
@@ -2414,25 +2597,16 @@ char *OpNames[] = {
     /*
      * Statement op codes
      */
-    "If",
-    "Else",
-    "While",
-    "EndWhile",
-    "Do",
-    "For",
-    "EndFor",
+    "Branch",
+    "BranchFalse",
+    "BranchTrue",
     "Case",
     "TagCase",
     "Default",
-    "TagDefault",
-    "Break",
-    "Continue",
     "Return",
     "ReturnVoid",
-    "Function",
     "Fork",
     "Catch",
-    "Exception",
     "EndCatch",
     "Raise",
     "OpTwixt",
@@ -2443,9 +2617,15 @@ char *OpNames[] = {
     /*
      * Expr op codes
      */
-    "Name",
-    "NameRef",
-    "NameRefStore",
+    "Global",
+    "GlobalRef",
+    "GlobalRefStore",
+    "Static",
+    "StaticRef",
+    "StaticRefStore",
+    "Local",
+    "LocalRef",
+    "LocalRefStore",
     "Const",
     "BuildArray",
     "InitArray",
@@ -2467,53 +2647,62 @@ char *OpNames[] = {
     "Obj",
     "StaticInit",
     "StaticDone",
-    "Star",
-    "Uminus",
-    "Lnot",
-    "Bang",
-    "Fact",
-    "PreInc",
-    "PostInc",
-    "PreDec",
-    "PostDec",
-    "Plus",
-    "Minus",
-    "Times",
-    "Divide",
-    "Div",
-    "Mod",
-    "Pow",
-    "ShiftL",
-    "ShiftR",
-    "Quest",
-    "Colon",
-    "Lxor",
-    "Land",
-    "Lor",
-    "And",
-    "Or",
+    "BinOp",
+    "BinFunc",
+    "UnOp",
+    "UnFunc",
+    "PreOp",
+    "PostOp",
     "Assign",
-    "AssignPlus",
-    "AssignMinus",
-    "AssignTimes",
-    "AssignDivide",
-    "AssignDiv",
-    "AssignMod",
-    "AssignPow",
-    "AssignShiftL",
-    "AssignShiftR",
-    "AssignLxor",
-    "AssignLand",
-    "AssignLor",
-    "Initialize",
-    "Eq",
-    "Ne",
-    "Lt",
-    "Gt",
-    "Le",
-    "Ge",
+    "AssignOp",
+    "AssignFunc",
     "End",
 };
+
+static char *
+ObjBinFuncName (BinaryFunc func)
+{
+    static struct {
+	BinaryFunc  func;
+	char	    *name;
+    } funcs[] = {
+	{ ShiftL,	"ShiftL" },
+	{ ShiftR,	"ShiftR" },
+	{ Lxor,		"Lxor" },
+	{ NotEqual,	"NotEqual" },
+	{ Greater,	"Greater" },
+	{ LessEqual,	"LessEqual" },
+	{ GreaterEqual,	"GreaterEqual" },
+	{ 0, 0 }
+    };
+    int	i;
+
+    for (i = 0; funcs[i].func; i++)
+	if (funcs[i].func == func)
+	    return funcs[i].name;
+    return "<unknown>";
+}
+
+static char *
+ObjUnFuncName (UnaryFunc func)
+{
+    static struct {
+	UnaryFunc   func;
+	char	    *name;
+    } funcs[] = {
+	{ Dereference,	"Dereference" },
+	{ Lnot,		"Lnot" },
+	{ Not,		"Not" },
+	{ Factorial,	"Factorial" },
+	{ 0, 0 }
+    };
+    int	i;
+
+    for (i = 0; funcs[i].func; i++)
+	if (funcs[i].func == func)
+	    return funcs[i].name;
+    return "<unknown>";
+}
 
 static void
 ObjIndent (int indent)
@@ -2522,6 +2711,7 @@ ObjIndent (int indent)
     for (j = 0; j < indent; j++)
         FilePrintf (FileStdout, "    ");
 }
+
 
 void
 InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
@@ -2541,23 +2731,11 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	FilePrintf (FileStdout, "\"%A\" ", 
 		    inst->catch.exception->symbol.name);
 	goto branch;
-    case OpIf:
-    case OpElse:
-    case OpWhile:
-    case OpEndWhile:
-    case OpDo:
-    case OpFor:
-    case OpEndFor:
+    case OpBranch:
+    case OpBranchFalse:
+    case OpBranchTrue:
     case OpCase:
     case OpDefault:
-    case OpTagDefault:
-    case OpBreak:
-    case OpContinue:
-    case OpQuest:
-    case OpColon:
-    case OpAnd:
-    case OpOr:
-    case OpException:
     case OpLeaveDone:
     branch:
 	if (branch)
@@ -2592,9 +2770,15 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	FilePrintf (FileStdout, "twixt %d catch %d",
 		    inst->unwind.twixt, inst->unwind.catch);
 	break;
-    case OpName:
-    case OpNameRef:
-    case OpNameRefStore:
+    case OpGlobal:
+    case OpGlobalRef:
+    case OpGlobalRefStore:
+    case OpStatic:
+    case OpStaticRef:
+    case OpStaticRefStore:
+    case OpLocal:
+    case OpLocalRef:
+    case OpLocalRefStore:
 	if (inst->var.name)
 	{
 	    SymbolPtr	s = inst->var.name;
@@ -2649,6 +2833,22 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	}
 	ObjDump (inst->code.code->func.body.obj, indent+1);
 	break;
+    case OpBinOp:
+    case OpPreOp:
+    case OpPostOp:
+    case OpAssignOp:
+	FilePrintf (FileStdout, "%O", inst->binop.op);
+	break;
+    case OpBinFunc:
+    case OpAssignFunc:
+	FilePrintf (FileStdout, "%s", ObjBinFuncName (inst->binfunc.func));
+	break;
+    case OpUnOp:
+	FilePrintf (FileStdout, "%U", inst->unop.op);
+	break;
+    case OpUnFunc:
+	FilePrintf (FileStdout, "%s", ObjUnFuncName (inst->unfunc.func));
+	break;
     default:
 	break;
     }
@@ -2665,6 +2865,7 @@ ObjDump (ObjPtr obj, int indent)
     int	    b;
 
     branch = AllocateTemp (obj->used * sizeof (int));
+    memset (branch, '\0', obj->used * sizeof (int));
     
     ObjIndent (indent);
     FilePrintf (FileStdout, "%d instructions (0x%x)\n",

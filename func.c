@@ -45,15 +45,22 @@ NewFuncCode (Types *type, ArgType *args, ExprPtr code)
     fc = ALLOCATE (&FuncCodeType, sizeof (FuncCode));
     fc->base.builtin = False;
     fc->base.type = type;
-    fc->base.args = args;
     fc->base.argc = 0;
     fc->base.varargs = HasVarargs (args);
-    fc->func.statics = 0;
+    fc->base.args = args;
+    fc->base.name = 0;
+    fc->base.previous = 0;
+    
     fc->func.code = code;
+    
     fc->func.body.dynamics = 0;
     fc->func.body.obj = 0;
     fc->func.staticInit.obj = 0;
     fc->func.staticInit.dynamics = 0;
+    
+    fc->func.statics = 0;
+    fc->func.inStaticInit = False;
+    fc->func.inGlobalInit = False;
     RETURN (fc);
 }
 
@@ -77,9 +84,12 @@ NewBuiltinCode (Types *type, ArgType *args, int argc,
     bc = ALLOCATE (&BuiltinCodeType, sizeof (BuiltinCode));
     bc->base.builtin = True;
     bc->base.type = type;
-    bc->base.args = args;
     bc->base.argc = argc;
     bc->base.varargs = HasVarargs (args);
+    bc->base.args = args;
+    bc->base.name = 0;
+    bc->base.previous = 0;
+    
     bc->builtin.needsNext = needsNext;
     bc->builtin.b = builtin;
     RETURN (bc);

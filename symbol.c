@@ -58,6 +58,7 @@ NewSymbolType (Atom name, Types *type)
     SymbolPtr	s;
 
     s = ALLOCATE (&SymbolTypeType, sizeof (SymbolType));
+    s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_typedef;
     s->symbol.type = type;
@@ -72,9 +73,11 @@ NewSymbolException (Atom name, Types *type)
     SymbolPtr	s;
 
     s = ALLOCATE (&SymbolTypeType, sizeof (SymbolType));
+    s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_exception;
     s->symbol.type = type;
+    s->symbol.forward = False;
     RETURN (s);
 }
 
@@ -85,9 +88,11 @@ NewSymbolConst (Atom name, Types *type)
     SymbolPtr	s;
 
     s = ALLOCATE (&SymbolGlobalType, sizeof (SymbolGlobal));
+    s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_const;
     s->symbol.type = type;
+    s->symbol.forward = False;
     s->global.value = NewBox (True, False, 1);
     BoxType (s->global.value, 0) = type;
     RETURN (s);
@@ -100,9 +105,11 @@ NewSymbolGlobal (Atom name, Types *type)
     SymbolPtr	s;
 
     s = ALLOCATE (&SymbolGlobalType, sizeof (SymbolGlobal));
+    s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_global;
     s->symbol.type = type;
+    s->symbol.forward = False;
     s->global.value = NewBox (False, False, 1);
     BoxType (s->global.value, 0) = type;
     RETURN (s);
@@ -115,9 +122,11 @@ NewSymbolArg (Atom name, Types *type)
     SymbolPtr	s;
 
     s = ALLOCATE (&SymbolLocalType, sizeof (SymbolLocal));
+    s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_arg;
     s->symbol.type = type;
+    s->symbol.forward = False;
     s->local.element = 0;
     RETURN (s);
 }
@@ -129,9 +138,11 @@ NewSymbolAuto (Atom name, Types *type)
     SymbolPtr	s;
 
     s = ALLOCATE (&SymbolLocalType, sizeof (SymbolLocal));
+    s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_auto;
     s->symbol.type = type;
+    s->symbol.forward = False;
     s->local.element = -1;
     RETURN (s);
 }
@@ -143,9 +154,11 @@ NewSymbolStatic (Atom name, Types *type)
     SymbolPtr	s;
 
     s = ALLOCATE (&SymbolLocalType, sizeof (SymbolLocal));
+    s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_static;
     s->symbol.type = type;
+    s->symbol.forward = False;
     s->local.element = -1;
     RETURN (s);
 }
@@ -157,9 +170,11 @@ NewSymbolNamespace (Atom name, NamespacePtr namespace)
     SymbolPtr	s;
 
     s = ALLOCATE (&SymbolNamespaceType, sizeof (SymbolNamespace));
+    s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_namespace;
     s->symbol.type = 0;
+    s->symbol.forward = False;
     s->namespace.namespace = namespace;
     RETURN (s);
 }

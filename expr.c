@@ -79,6 +79,9 @@ ExprBaseInit (Expr *e, int tag)
     e->base.file = LexFileName ();
     e->base.line = LexFileLine ();
     e->base.namespace = CurrentNamespace;
+    e->base.type = 0;
+    e->base.ticks = 0 ;
+    e->base.sub_ticks = 0;
 }
 
 Expr *

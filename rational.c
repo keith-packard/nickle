@@ -488,9 +488,9 @@ NewPartial (Natural *partial)
     if (!partial)
 	RETURN (0);
     p = ALLOCATE (&PartialType, sizeof (Partial));
+    p->down = 0;
     p->partial = partial;
     p->power = 0;
-    p->down = 0;
     RETURN (p);
 }
 
@@ -523,6 +523,7 @@ NewFactor (Natural *prime, int power, FactorPtr next)
     f->next = next;
     f->prime = prime;
     f->power = power;
+    f->partials = 0;
     f->partials = NewPartial (prime);
     f->partials->power = 0;
     RETURN (f);

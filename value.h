@@ -248,17 +248,19 @@ typedef enum _type {
 	type_semaphore = 7,
 	type_continuation = 8,
 	type_void = 9,
+	type_ref = 10,
+	type_func = 11,
     
- 	type_array = 10,
-	type_ref = 11,
-	type_struct = 12,
-	type_union = 13,
-	type_func = 14
+	/* mutable types */
+ 	type_array = 12,
+	type_struct = 13,
+	type_union = 14
 } Type;
 
 /* because type_undef is -1, using (unsigned) makes these a single compare */
-#define Numericp(t) ((unsigned) (t) <= (unsigned) type_float)
-#define Integralp(t) ((unsigned) (t) <= (unsigned) type_integer)
+#define Numericp(t)	((unsigned) (t) <= (unsigned) type_float)
+#define Integralp(t)	((unsigned) (t) <= (unsigned) type_integer)
+#define Mutablep(t)	((t) >= type_array)
 
 extern ValueType    IntType, IntegerType, RationalType, FloatType;
 extern ValueType    StringType, ArrayType, FileType;
@@ -669,9 +671,8 @@ typedef struct _box {
 #define BoxValueGet(box,e)	((BoxElements(box)[e].value))
 #define BoxConstant(box,e)	((box)->constant)
 #define BoxType(box,e)		(BoxElements(box)[e].type)
-
+				 
 extern BoxPtr	NewBox (Bool constant, Bool array, int nvalues);
-extern Value	BoxValue (BoxPtr box, int e);
 
 typedef struct _boxTypes {
     DataType	*data;
@@ -688,6 +689,15 @@ extern int	AddBoxTypes (BoxTypesPtr *btp, TypesPtr t);
 
 extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr types);
 			     
+typedef struct {
+    DataType	data;
+    int		size;
+} ValueCache, *ValueCachePtr;
+
+ValueCachePtr	NewValueCache (int size);
+
+#define ValueCacheValues(vc)	((Value *) ((vc) + 1))
+
 Value	NewInt (int value);
 Value	NewInteger (Sign sign, Natural *mag);
 Value	NewIntInteger (int value);
@@ -708,12 +718,31 @@ Value	NewContinuation (FramePtr frame, InstPtr pc,
 unsigned    FpartLength (Fpart *a);
 
 #define DEFAULT_FLOAT_PREC	256
+#define REF_CACHE_SIZE		1031
+
+extern ValueCachePtr	refCache;
 
 Value	NewString (int);
 Value	NewStrString (char *);
 Value	NewArray (Bool constant, TypesPtr type, int ndim, int *dims);
 Value	NewFile (int fd);
+Value	NewRefReal (BoxPtr box, int element, Value *re);
+
+#ifdef HAVE_C_INLINE
+static inline Value
+NewRef (BoxPtr box, int element)
+{
+    int	    c = ((unsigned) (&BoxElements(box)[element])) % REF_CACHE_SIZE;
+    Value   *re = &ValueCacheValues(refCache)[c];
+    Value   ret = *re;
+
+    if (ret && ret->ref.box == box && ret->ref.element == element)
+	return ret;
+    return NewRefReal (box, element, re);
+}
+#else
 Value	NewRef (BoxPtr box, int element);
+#endif
 Value	NewStruct (StructType *type, Bool constant);
 StructType  *NewStructType (int nelements);
 Types	*StructTypes (StructType *st, Atom name);
@@ -769,6 +798,9 @@ extern Bool	anyFileReadBlocked;
 
 extern Value    FileStdin, FileStdout, FileStderr;
 
+typedef Value	(*BinaryFunc) (Value, Value);
+typedef Value	(*UnaryFunc) (Value);
+
 Value	Plus (Value, Value), Minus (Value, Value);
 Value	Times (Value, Value), Divide (Value, Value), Div (Value, Value);
 Value	Mod (Value, Value);
@@ -792,7 +824,19 @@ Value	Lor (Value, Value), Lnot (Value);
 Bool	Print (Value, Value, char format, int base, int width, int prec, unsigned char fill);
 void	RaiseError (char *s, ...);
 void	PrintError (char *s, ...);
+Value	CopyMutable (Value v);
+#ifdef HAVE_C_INLINE
+static inline Value
+Copy (Value v)
+{
+    if (v && Mutablep (ValueTag(v)))
+	return CopyMutable (v);
+    return v;
+}
+#else
 Value	Copy (Value);
+#endif
+Value	Dereference (Value);
 Value	Default (TypesPtr);
 Value	ValueEqual (Value a, Value b, int expandOk);
 
@@ -858,6 +902,12 @@ Bool	Zerop (Value);
 Bool	Negativep (Value);
 Bool	Evenp (Value);
 
+#ifdef HAVE_C_INLINE
+#define INLINE inline
+#else
+#define INLINE
+#endif
+
 int	ArrayInit (void);
 int	AtomInit (void);
 int	FileInit (void);
@@ -867,6 +917,7 @@ int	RationalInit (void);
 int	FpartInit (void);
 int	StringInit (void);
 int	StructInit (void);
+int	RefInit (void);
 int	ValueInit (void);
 
 #ifndef MAXINT

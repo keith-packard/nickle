@@ -1306,9 +1306,10 @@ NewDeclList (Atom name, ExprPtr init, DeclListPtr next)
     DeclListPtr	dl;
 
     dl = ALLOCATE (&DeclListType, sizeof (DeclList));
-    dl->name = name;
-    dl->init = init;
     dl->next = next;
+    dl->name = name;
+    dl->symbol = 0;
+    dl->init = init;
     RETURN (dl);
 }
 
@@ -1331,9 +1332,9 @@ NewMemList (AtomListPtr atoms, Types *type, MemListPtr next)
     MemListPtr	ml;
 
     ml = ALLOCATE (&MemListType, sizeof (MemList));
+    ml->next = next;
     ml->type = type;
     ml->atoms = atoms;
-    ml->next = next;
     RETURN (ml);
 }
 

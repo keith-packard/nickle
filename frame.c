@@ -42,6 +42,10 @@ NewFrame (Value		function,
     frame->function = function;
     if (dynamics)
 	frame->frame = NewTypedBox (False, dynamics);
+    else
+	frame->frame = 0;
     frame->statics = statics;
+    frame->savePc = 0;
+    frame->saveCode = 0;
     RETURN (frame);
 }

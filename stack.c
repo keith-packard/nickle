@@ -13,15 +13,9 @@
 
 static void	stackMark (void *);
 
-static DataType stackType = {
-    stackMark, 0
-};
+static DataType stackType = { stackMark, 0 };
 
-static void	stackChunkMark (void *);
-
-static DataType stackChunkType = {
-    stackChunkMark, 0
-};
+static DataType stackChunkType = { 0, 0 };
 
 static void
 addChunk (StackObject *stack)
@@ -36,24 +30,9 @@ addChunk (StackObject *stack)
     else
 	chunk = MemAllocate (&stackChunkType, sizeof (StackChunk));
     
-    chunk->stackPointer = &chunk->elements[STACK_ENTS_PER_CHUNK];
     chunk->previous = stack->current;
     stack->current = chunk;
-}
-
-static void
-StackValidate (StackObject *stack)
-{
-    StackChunk	*chunk;
-
-    for (chunk = stack->current; chunk; chunk = chunk->previous)
-    {
-	if (!(chunk->elements <= chunk->stackPointer &&
-	      chunk->stackPointer <= chunk->elements + STACK_ENTS_PER_CHUNK))
-	{
-	    panic ("invalid stack");
-	}
-    }
+    STACK_TOP(stack) = CHUNK_MAX(chunk);
 }
 
 StackObject *
@@ -62,6 +41,9 @@ StackCreate (void)
     StackObject	*stack;
 
     stack = MemAllocate (&stackType, sizeof (StackObject));
+    stack->current = 0;
+    stack->save = 0;
+    stack->temp = 0;
     TemporaryData = stack;
     addChunk (stack);
     TemporaryData = 0;
@@ -71,9 +53,6 @@ StackCreate (void)
 void *
 StackPush (StackObject *stack, StackElement object)
 {
-#if 0
-    StackValidate (stack);
-#endif
     if (STACK_TOP(stack) == STACK_MIN(stack))
     {
 	stack->temp = object;
@@ -86,9 +65,6 @@ StackPush (StackObject *stack, StackElement object)
 void *
 StackPop (StackObject *stack)
 {
-#if 0
-    StackValidate (stack);
-#endif
     if (STACK_TOP(stack) == STACK_MAX(stack))
     {
 	StackChunk  *previous = stack->current->previous;
@@ -101,6 +77,7 @@ StackPop (StackObject *stack)
 	stack->current = previous;
 	if (!stack->current)
 	    panic ("Stack underflow");
+	STACK_TOP(stack) = previous->elements;
     }
     return *STACK_TOP(stack)++;
 }
@@ -110,9 +87,6 @@ StackDrop (StackObject *stack, int i)
 {
     int		this;
     StackChunk	*previous;
-#if 0
-    StackValidate (stack);
-#endif
     while (i)
     {
 	this = STACK_MAX(stack) - STACK_TOP(stack);
@@ -132,15 +106,13 @@ StackDrop (StackObject *stack, int i)
 	stack->current = previous;
 	if (!stack->current)
 	    panic ("Stack underflow");
+	STACK_TOP(stack) = CHUNK_MIN(previous);
     }
 }
 
 void
 StackReset (StackObject *stack, StackPointer stackPointer)
 {
-#if 0
-    StackValidate (stack);
-#endif
     while (!(STACK_TOP(stack) <= stackPointer && stackPointer <= STACK_MAX(stack)))
     {
 	StackChunk  *previous = stack->current->previous;
@@ -153,6 +125,7 @@ StackReset (StackObject *stack, StackPointer stackPointer)
 	stack->current = previous;
 	if (!stack->current)
 	    panic ("Stack underflow");
+	STACK_TOP(stack) = CHUNK_MIN(previous);
     }
     STACK_TOP(stack) = stackPointer;
 }
@@ -168,36 +141,19 @@ StackElement
 StackElt (StackObject *stack, int i)
 {
     StackChunk	    *chunk;
+    StackPointer    stackPointer;
 
     chunk = stack->current;
-    while (!(chunk->stackPointer + i < chunk->elements + STACK_ENTS_PER_CHUNK))
+    stackPointer = STACK_TOP(stack);
+    while (stackPointer + i >= CHUNK_MAX(chunk))
     {
-	i -= (chunk->elements + STACK_ENTS_PER_CHUNK) - chunk->stackPointer;
+	i -= CHUNK_MAX(chunk) - stackPointer;
 	chunk = chunk->previous;
 	if (!chunk)
 	    panic ("StackElt underflow");
+	stackPointer = CHUNK_MIN(chunk);
     }
-    return chunk->stackPointer[i];
-}
-
-int
-StackCheck (StackObject *stack, StackElement object)
-{
-    StackChunk	    *chunk;
-    StackPointer    stackPointer;
-
-    StackValidate (stack);
-    for (chunk = stack->current; chunk; chunk = chunk->previous)
-    {
-	for (stackPointer = chunk->stackPointer; 
-	     stackPointer != chunk->elements + STACK_ENTS_PER_CHUNK;
-	     stackPointer++)
-	{
-	    if (*stackPointer == object)
-		return 1;
-	}
-    }
-    return 0;
+    return stackPointer[i];
 }
 
 StackObject *
@@ -219,7 +175,6 @@ StackCopy (StackObject *stack)
 	 * Copy stack data and fix stack pointer
 	 */
 	*nchunk = *chunk;
-	nchunk->stackPointer = nchunk->elements + (chunk->stackPointer - chunk->elements);
 	
 	/*
 	 * Link into chain
@@ -229,27 +184,29 @@ StackCopy (StackObject *stack)
 	chunk = chunk->previous;
 	nchunk = 0;
     }
+    STACK_TOP(new) = new->current->elements + (STACK_TOP(stack) - stack->current->elements);
     RETURN (new);
 }
 
 static void
 stackMark (void *object)
 {
-    StackObject	*stack = object;
-
-    MemReference (stack->temp);
-    MemReference (stack->current);
-    MemReference (stack->save);
-}
-
-static void
-stackChunkMark (void *object)
-{
-    StackChunk	    *chunk = object;
+    StackObject	    *stack = object;
+    StackChunk	    *chunk;
     StackPointer    stackPointer;
 
-    stackPointer = chunk->stackPointer;
-    while (stackPointer != chunk->elements + STACK_ENTS_PER_CHUNK)
-	MemReference (*stackPointer++);
-    MemReference (chunk->previous);
+    MemReference (stack->temp);
+    MemReference (stack->save);
+    chunk = stack->current;
+    stackPointer = STACK_TOP(stack);
+    for (;;)
+    {
+	MemReference (chunk);
+	while (stackPointer != CHUNK_MAX(chunk))
+	    MemReference (*stackPointer++);
+	chunk = chunk->previous;
+	if (!chunk)
+	    break;
+	stackPointer = CHUNK_MIN(chunk);
+    }
 }

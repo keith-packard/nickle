@@ -399,10 +399,40 @@ typedef struct _instCode {
     CodePtr	code;
 } InstCode;
 
+typedef enum _branchMod {
+    BranchModNone, BranchModBreak, BranchModContinue
+} BranchMod;
+
 typedef struct _instBranch {
     InstBase	inst;
     int		offset;
+    BranchMod	mod;
 } InstBranch;
+
+typedef struct _instBinOp {
+    InstBase	inst;
+    BinaryOp	op;
+} InstBinOp;
+
+typedef struct _instBinFunc {
+    InstBase	inst;
+    BinaryFunc	func;
+} InstBinFunc;
+
+typedef struct _instUnOp {
+    InstBase	inst;
+    UnaryOp	op;
+} InstUnOp;
+
+typedef struct _instUnFunc {
+    InstBase	inst;
+    UnaryFunc	func;
+} InstUnFunc;
+
+typedef struct _instAssign {
+    InstBase	inst;
+    Bool	initialize;
+} InstAssign;
 
 typedef struct _instObj {
     InstBase	inst;
@@ -449,6 +479,11 @@ typedef union _inst {
     InstArray	array;
     InstCode	code;
     InstBranch	branch;
+    InstBinOp	binop;
+    InstBinFunc	binfunc;
+    InstUnOp	unop;
+    InstUnFunc	unfunc;
+    InstAssign	assign;
     InstObj	obj;
     InstCatch	catch;
     InstRaise	raise;
@@ -573,6 +608,7 @@ void	BuiltinInit (void);
 
 Bool	DebugSetFrame (Value continuation, int offset);
 void	DebugStart (Value continuation);
+void	DebugBreak (Value thread);
 
 void	ProfileInterrupt (Value thread);
 
@@ -679,6 +715,22 @@ RaiseStandardException (StandardException   se,
 
 void
 JumpStandardException (Value thread, InstPtr *next);
+
+#ifdef HAVE_C_INLINE
+static inline Value
+BoxValue (BoxPtr box, int e)
+{
+    if (!BoxElements(box)[e].value)
+    {
+	RaiseStandardException (exception_uninitialized_value,
+				"Uninitialized value", 0);
+	return (Zero);
+    }
+    return (BoxElements(box)[e].value);
+}
+#else
+extern Value BoxValue (BoxPtr box, int e);
+#endif
 
 /* vararg builtins */
 Value	do_printf (int, Value *);

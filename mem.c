@@ -43,15 +43,11 @@
 #include	<config.h>
 
 #include	<memory.h>
+#define MEM_NEED_ALLOCATE
 #include	"mem.h"
-#include	"avl.h"
 #include	"memp.h"
 #include	<stdlib.h>
 
-static void	*allocBlock (void);
-static void	*gimmeBlock (void);
-static void	*allocHuge(int size);
-static void	*gimmeHuge (int size);
 static void	noteBlock (struct block *);
 static void	checkBlockRef (struct block *);
 #ifdef DEBUG
@@ -68,7 +64,7 @@ int	GCdebug;
 
 StackObject *MemStack;
 
-static struct bfree *freeList[NUMSIZES];
+struct bfree *freeList[NUMSIZES];
 
 int	sinceGarbage = 0;
 
@@ -85,13 +81,31 @@ int	totalObjectsFree;
 int	totalObjectsUsed;
 int	useMap[NUMSIZES+1];
 
+static struct block *
+MemNewBlock (unsigned size, int sizeIndex)
+{
+    struct block    *b;
+    if (++sinceGarbage >= GarbageTime)
+    {
+	MemCollect ();
+	if (sizeIndex >= 0 && freeList[sizeIndex])
+	    return 0;
+    }
+    b = (struct block *) malloc (size);
+    if (!b)
+    {
+	MemCollect ();
+	if (sizeIndex >= 0 && freeList[sizeIndex])
+	    return 0;
+	b = (struct block *) malloc (size);
+	if (!b)
+	    panic (0, "out of memory - quiting\n");
+    }
+    return b;
+}
 
-#ifdef HAVE_C_INLINE
-static inline void *
-#else
-static void *
-#endif
-newHunk (int sizeIndex)
+void *
+MemHunkMore (int sizeIndex)
 {
     unsigned char	*new;
     unsigned char	*limit;
@@ -99,169 +113,57 @@ newHunk (int sizeIndex)
     int			bsize;
     int			dsize;
 
-    if (!freeList[sizeIndex]) {
-	bsize = HUNKSIZE(sizeIndex);
-	b = (struct block *) gimmeBlock ();
-	if (!b) {
-	    if (freeList[sizeIndex])
-		goto gotsome;
-	    b = (struct block *) allocBlock ();
-	    if (!b)
-		panic (0, "out of memory - quiting\n");
-	}
-	/*
-	 * fill in per-block data fields
-	 */
-	b->sizeIndex = sizeIndex;
-	b->bitmap = ((unsigned char *) b) + HEADSIZE;
-	b->bitmapsize = BITMAPSIZE(bsize);
-	b->data = (unsigned char *)
-	    ((((PtrInt) (b->bitmap + b->bitmapsize)) + (MINHUNK-1))
-	     & (~(MINHUNK-1)));
-	dsize = (((unsigned char *) b) + BLOCKSIZE) - b->data;
-	b->datasize = (dsize / bsize) * bsize;
-	/*
-	 * put this block into the address converter
-	 */
-	noteBlock (b);
-	/*
-	 * put it's contents on the free list
-	 */
-	limit = b->data + (b->datasize - bsize);
-	for (new = b->data; new < limit; new += bsize) {
-	    ((struct bfree *) new)->type = 0;
-	    ((struct bfree *) new)->next = (struct bfree *) (new + bsize);
-	}
+    b = MemNewBlock ((unsigned) BLOCKSIZE, sizeIndex);
+    if (!b)
+	return freeList[sizeIndex];
+    /*
+     * fill in per-block data fields
+     */
+    bsize = HUNKSIZE(sizeIndex);
+    b->sizeIndex = sizeIndex;
+    b->bitmap = ((unsigned char *) b) + HEADSIZE;
+    b->bitmapsize = BITMAPSIZE(bsize);
+    b->data = (unsigned char *)
+	((((PtrInt) (b->bitmap + b->bitmapsize)) + (MINHUNK-1))
+	 & (~(MINHUNK-1)));
+    dsize = (((unsigned char *) b) + BLOCKSIZE) - b->data;
+    b->datasize = (dsize / bsize) * bsize;
+    /*
+     * put this block into the address converter
+     */
+    noteBlock (b);
+    /*
+     * put it's contents on the free list
+     */
+    limit = b->data + (b->datasize - bsize);
+    for (new = b->data; new < limit; new += bsize) {
 	((struct bfree *) new)->type = 0;
-	((struct bfree *) new)->next = freeList[sizeIndex];
-	freeList[sizeIndex] = (struct bfree *) b->data;
+	((struct bfree *) new)->next = (struct bfree *) (new + bsize);
     }
-gotsome:
-    new = (unsigned char *) freeList[sizeIndex];
-    freeList[sizeIndex] = freeList[sizeIndex]->next;
-#ifdef DEBUG
-    memset (new, '\0', HUNKSIZE(sizeIndex));
-#endif
-    return new;
+    ((struct bfree *) new)->type = 0;
+    ((struct bfree *) new)->next = freeList[sizeIndex];
+    return freeList[sizeIndex] = (struct bfree *) b->data;
 }
 
 /*
  * take care of giant requests
  */
-#ifdef HAVE_C_INLINE
-static inline void *
-#else
-static void *
-#endif
-newHuge (int size)
+
+void *
+MemAllocateHuge (DataType *type, int size)
 {
     struct block	*huge;
 
-    huge = (struct block *) gimmeHuge (HEADSIZE + size);
-    if (!huge) {
-	huge = (struct block *) allocHuge
-	(HEADSIZE + size);
-	if (!huge)
-	    panic (0, "out of memory - quiting\n");
-    }
+    huge = MemNewBlock ((unsigned) (size + HEADSIZE), -1);
     huge->sizeIndex = NUMSIZES;
     huge->bitmapsize = 0;
     huge->datasize = size;
     huge->bitmap = 0;
     huge->data = (void *) (huge + 1);
     noteBlock (huge);
-    if (((PtrInt) huge) & 01)
-	abort ();
+    memset (huge->data, '\0', size);
+    *((DataType **) huge->data) = type;
     return huge->data;
-}
-
-#ifdef HAVE_C_INLINE
-static inline void *
-#else
-static void *
-#endif
-newObject (int size)
-{
-    int	sizeIndex;
-
-    if (size > MAXHUNK)
-	return newHuge (size);
-    
-    sizeIndex = 0;
-    /*
-     * A binary search would be faster given a random distribution,
-     * but most blocks are of small size
-     *
-     *	int sizeStep;
-     *	sizeStep = NUMSIZES/2;
-     *	while (sizeStep)
-     *	{
-     *	    while (HUNKSIZE(sizeIndex + sizeStep - 1) < size)
-     *		sizeIndex += sizeStep;
-     *	    sizeStep >>= 1;
-     *	}
-     */
-    while (size > HUNKSIZE(sizeIndex))
-	sizeIndex++;
-    return newHunk (sizeIndex);
-}
-
-static void *
-gimmeBlock (void)
-{
-    void	*result;
-
-    if (++sinceGarbage >= GarbageTime) {
-	MemCollect ();
-	sinceGarbage = 0;
-	return 0;
-    }
-    result = allocBlock ();
-    if (!result) {
-	MemCollect ();
-	sinceGarbage = 0;
-    }
-    return result;
-}
-
-static void *
-allocBlock (void)
-{
-    return malloc ((unsigned) BLOCKSIZE);
-}
-
-#ifdef HAVE_C_INLINE
-static inline void
-#else
-static void
-#endif
-disposeBlock (struct block *b)
-{
-    free ((char *) b);
-}
-
-static void *
-gimmeHuge (int size)
-{
-    char	*result;
-
-    if (++sinceGarbage >= GarbageTime) {
-	MemCollect ();
-	sinceGarbage = 0;
-	return 0;
-    }
-    result = allocHuge (size);
-    if (!result) {
-	MemCollect ();
-	sinceGarbage = 0;
-    }
-    return result;
-}
-
-static void *
-allocHuge (int size)
-{
-    return malloc ((unsigned) size);
 }
 
 /*
@@ -536,10 +438,10 @@ checkRef (void)
     while (hughFree) {
 	n = (struct block *) hughFree->bitmap;
 	unNoteBlock (hughFree);
-	disposeBlock (hughFree);
+	free (hughFree);
 	hughFree = n;
     }
-    GarbageTime = GARBAGETIME - (totalBytesFree / GOODBLOCKSIZE);
+    GarbageTime = GARBAGETIME/* - (totalBytesFree / BLOCKSIZE) */;
     if (GarbageTime < 10)
 	GarbageTime = 10;
 #ifdef DEBUG
@@ -564,19 +466,6 @@ MemInitialize (void)
 	MemStack = StackCreate ();
 	MemAddRoot (MemStack);
     }
-}
-
-void *
-MemAllocate (DataType *type, int size)
-{
-    DataType	**data;
-
-    if (size == 0)
-	abort ();
-    data = newObject (size);
-    memset ((void *) data, '\0', size);
-    *data = type;
-    return data;
 }
 
 void
@@ -639,6 +528,7 @@ MemCollect (void)
     totalObjectsFree = 0;
     totalBytesUsed = 0;
     totalObjectsUsed = 0;
+    sinceGarbage = 0;
     clearRef ();
     tossFree ();
 #ifdef DEBUG

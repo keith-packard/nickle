@@ -182,14 +182,38 @@ ValueType RefType = {
     RefTypeCheck,
 };
     
+ValueCachePtr	refCache;
+
+Value
+NewRefReal (BoxPtr box, int element, Value *re)
+{
+    ENTER ();
+    Value   ret = ALLOCATE (&RefType.data, sizeof (Ref));
+    ret->ref.box = box;
+    ret->ref.element = element;
+    *re = ret;
+    RETURN (ret);
+}
+
+#ifndef HAVE_C_INLINE
 Value
 NewRef (BoxPtr box, int element)
 {
-    ENTER ();
-    Value   ret;
+    int	    c = ((unsigned) (&BoxElements(box)[element])) % REF_CACHE_SIZE;
+    Value   *re = &ValueCacheValues(refCache)[c];
+    Value   ret = *re;
 
-    ret = ALLOCATE (&RefType.data, sizeof (Ref));
-    ret->ref.box = box;
-    ret->ref.element = element;
-    RETURN (ret);
+    if (ret && ret->ref.box == box && ret->ref.element == element)
+	return ret;
+    return NewRefReal (box, element, re);
+}
+#endif
+
+int
+RefInit (void)
+{
+    ENTER ();
+    refCache = NewValueCache(REF_CACHE_SIZE);
+    EXIT ();
+    return 1;
 }

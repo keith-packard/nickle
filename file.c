@@ -101,7 +101,10 @@ NewFile (int fd)
     Value   ret;
 
     ret = ALLOCATE (&FileType.data, sizeof (File));
+    ret->file.next = 0;
     ret->file.fd = fd;
+    ret->file.pid = 0;
+    ret->file.status = 0;
     ret->file.flags = 0;
     ret->file.error = 0;
     ret->file.input = 0;

@@ -182,8 +182,9 @@ CompileCheckSymbol (ObjPtr obj, ExprPtr stat, ExprPtr name, CodePtr code,
     s = name->atom.symbol;
     if (!s)
     {
-        CompileError (obj, stat, "No symbol \"%A\" in namespace", 
-		      name->atom.atom);
+        CompileError (obj, stat, "No visible symbol \"%A\" in scope%s", 
+		      name->atom.atom,
+		      name->atom.privateFound ? " (found non-public symbol)" : "");
 	RETURN (0);
     }
     /*
@@ -1073,7 +1074,7 @@ CompileCompositeImplicitInit (Types *type)
 	    {
 		init = NewExprTree (COMMA,
 				    NewExprTree (ASSIGN, 
-						 NewExprAtom (se[i].name, 0), 
+						 NewExprAtom (se[i].name, 0, False), 
 						 member),
 				    init);
 	    }
@@ -2339,7 +2340,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	    /*
 	     * Assign it
 	     */
-	    lvalue = NewExprAtom (decl->name, decl->symbol);
+	    lvalue = NewExprAtom (decl->name, decl->symbol, False);
 	    *initObj = CompileLvalue (*initObj, lvalue,
 				       decls, code, False, True, True);
 	    if (!TypeCombineBinary (lvalue->base.type,

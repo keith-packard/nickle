@@ -117,7 +117,7 @@ NewExprConst (int tag, Value val)
 }
 
 Expr *
-NewExprAtom (Atom atom, SymbolPtr symbol)
+NewExprAtom (Atom atom, SymbolPtr symbol, Bool privateFound)
 {
     ENTER ();
     Expr    *e;
@@ -126,6 +126,7 @@ NewExprAtom (Atom atom, SymbolPtr symbol)
     ExprBaseInit (e, NAME);
     e->atom.atom = atom;
     e->atom.symbol = symbol;
+    e->atom.privateFound = privateFound;
     RETURN (e);
 }
 

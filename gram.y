@@ -299,7 +299,7 @@ rawatom		: NAME
 		| TYPENAME
 		;
 rawnamespace	: rawnamespace NAMESPACENAME COLONCOLON
-		    { $$ = NewExprTree (COLONCOLON, $1, NewExprAtom ($2, 0)); }
+		    { $$ = NewExprTree (COLONCOLON, $1, NewExprAtom ($2, 0, False)); }
                 |
 		    { $$ = 0; }
                 ;
@@ -450,7 +450,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			    decl->init = NewExprCode (NewFuncCode (ret,
 								   argType,
 								   $2),
-						      NewExprAtom (symbol->symbol.name, symbol));
+						      NewExprAtom (symbol->symbol.name, symbol, False));
 			}
 			$$ = NewExprDecl (decl, class, type, publish);
 		    }
@@ -540,7 +540,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			 * the parser stack
 			 */
 			CurrentNamespace = $2;
-			$$ = NewExprTree (NAMESPACE, NewExprAtom ($4, 0), $7);
+			$$ = NewExprTree (NAMESPACE, NewExprAtom ($4, 0, False), $7);
 		    }
 		| opt_publish IMPORT ignorenl fullname SEMI attendnl
 		    {
@@ -611,7 +611,7 @@ union_cases	: union_case union_cases
 		    { $$ = 0; }
 		;
 union_case	: CASE NAME COLON statements
-		    { $$ = NewExprTree (CASE, NewExprAtom ($2, 0), $4); }
+		    { $$ = NewExprTree (CASE, NewExprAtom ($2, 0, False), $4); }
 		| DEFAULT COLON statements
 		    { $$ = NewExprTree (CASE, 0, $3); }
 		;
@@ -1153,13 +1153,13 @@ primary		: fullname
 		| OP type DOT NAME CP primary				%prec UNIONCAST
 		    {
 			ParseCanonType ($2);
-			$$ = NewExprTree (UNION, NewExprAtom ($4, 0), $6); 
+			$$ = NewExprTree (UNION, NewExprAtom ($4, 0, False), $6); 
 			$$->base.type = $2;
 		    }
 		| type DOT NAME opt_cast_arg				%prec UNIONCAST
 		    {
 			ParseCanonType ($1);
-			$$ = NewExprTree (UNION, NewExprAtom ($3, 0), $4); 
+			$$ = NewExprTree (UNION, NewExprAtom ($3, 0, False), $4); 
 			$$->base.type = $1;
 		    }
 		| DOLLAR opt_integer
@@ -1175,9 +1175,9 @@ primary		: fullname
 		| primary OP opt_exprs CP				%prec CALL
 		    { $$ = NewExprTree (OP, $1, $3); }
 		| primary DOT NAME
-		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0)); }
+		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0, False)); }
 		| primary ARROW NAME
-		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3, 0)); }
+		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3, 0, False)); }
 		;
 opt_integer	: integer
 		|
@@ -1238,9 +1238,9 @@ structelts	: structelts COMMA structelt
 		    { $$ = NewExprTree (COMMA, 0, $1); }
 		;
 structelt	: NAME ASSIGN lambdaexpr
-		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0), $3); }
+		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0, False), $3); }
 		| NAME ASSIGN structinit
-		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0), $3); }
+		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0, False), $3); }
 		;
 
 init		: arrayinit
@@ -1367,6 +1367,8 @@ BuildName (char *ns, char *n)
     Bool	    search = True;
     NamespacePtr    namespace = CurrentNamespace;
     ExprPtr	    e;
+    Bool	    ns_privateFound = False;
+    Bool	    privateFound = False;
 
     if (ns)
     {
@@ -1375,17 +1377,25 @@ BuildName (char *ns, char *n)
 	if (ns_symbol && ns_symbol->symbol.class == class_namespace)
 	    namespace = ns_symbol->namespace.namespace;
 	else
+	{
+	    if (!ns_symbol)
+		ns_privateFound = NamespaceIsNamePrivate (namespace, ns_atom, search);
 	    namespace = 0;
+	}
 	search = False;
     }
     atom = AtomId (n);
     if (namespace)
+    {
 	symbol = NamespaceFindName (namespace, atom, search);
+	if (!symbol)
+	    privateFound = NamespaceIsNamePrivate (namespace, atom, search);
+    }
     else
 	symbol = 0;
-    e = NewExprAtom (atom, symbol);
+    e = NewExprAtom (atom, symbol, privateFound);
     if (ns_atom)
-	e = NewExprTree (COLONCOLON, NewExprAtom (ns_atom, ns_symbol), e);
+	e = NewExprTree (COLONCOLON, NewExprAtom (ns_atom, ns_symbol, ns_privateFound), e);
     RETURN (e);
 }
 
@@ -1429,6 +1439,7 @@ BuildFullname (ExprPtr left, Atom atom)
     SymbolPtr	    symbol;
     Bool	    search;
     ExprPtr	    nameExpr;
+    Bool	    privateFound = False;
 
     if (left)
     {
@@ -1448,10 +1459,14 @@ BuildFullname (ExprPtr left, Atom atom)
 	search = True;
     }
     if (namespace)
+    {
 	symbol = NamespaceFindName (namespace, atom, search);
+	if (!symbol)
+	    privateFound = NamespaceIsNamePrivate (namespace, atom, search);
+    }
     else
 	symbol = 0;
-    nameExpr = NewExprAtom (atom, symbol);
+    nameExpr = NewExprAtom (atom, symbol, privateFound);
     if (left)
 	nameExpr = NewExprTree (COLONCOLON, left, nameExpr);
     RETURN (nameExpr);

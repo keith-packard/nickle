@@ -87,7 +87,7 @@ NamespaceInit (void)
 }
 
 static NamelistPtr
-NamespaceFindNamelist (NamespacePtr namespace, Atom atom, Bool search)
+NamespaceFindNamelist (NamespacePtr namespace, Atom atom, Bool search, Bool allow_private)
 {
     NamelistPtr	namelist;
 
@@ -95,7 +95,8 @@ NamespaceFindNamelist (NamespacePtr namespace, Atom atom, Bool search)
     {
 	for (namelist = namespace->names; namelist; namelist = namelist->next)
 	    if (namelist->symbol->symbol.name == atom &&
-		(namespace->publish != publish_private ||
+		(allow_private ||
+		 namespace->publish != publish_private ||
 		 namelist->publish != publish_private))
 		return namelist;
 	namespace = namespace->previous;
@@ -108,10 +109,16 @@ NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search)
 {
     NamelistPtr	namelist;
 
-    namelist = NamespaceFindNamelist (namespace, atom, search);
+    namelist = NamespaceFindNamelist (namespace, atom, search, False);
     if (namelist)
 	return namelist->symbol;
     return 0;
+}
+
+Bool
+NamespaceIsNamePrivate (NamespacePtr namespace, Atom atom, Bool search)
+{
+    return NamespaceFindNamelist (namespace, atom, search, True) != 0;
 }
 
 SymbolPtr
@@ -246,7 +253,7 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publ
 	}
 	namelist = NamespaceFindNamelist (namespace, 
 					  AtomId (StringChars (&string->string)),
-					  search);
+					  search, False);
 	search = False;
 	if (!namelist)
 	{

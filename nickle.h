@@ -83,6 +83,7 @@ typedef struct _namespace {
 
 NamespacePtr	NewNamespace (NamespacePtr previous);
 SymbolPtr	NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search);
+Bool		NamespaceIsNamePrivate (NamespacePtr namespace, Atom atom, Bool search);
 SymbolPtr	NamespaceAddName (NamespacePtr namespace, SymbolPtr symbol, Publish publish);
 Bool		NamespaceRemoveName (NamespacePtr namespace, Atom atom);
 void		NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish);
@@ -217,6 +218,7 @@ typedef struct _exprAtom {
     ExprBase	expr;
     Atom	atom;
     SymbolPtr	symbol;
+    Bool	privateFound;	/* used to clarify error message for missing names */
 } ExprAtom;
 
 typedef struct _exprCode {
@@ -243,7 +245,7 @@ typedef union _expr {
 
 Expr	*NewExprTree (int tag, Expr *left, Expr *right);
 Expr	*NewExprConst (int tag, Value val);
-Expr	*NewExprAtom (Atom atom, SymbolPtr symbol);
+Expr	*NewExprAtom (Atom atom, SymbolPtr symbol, Bool privateFound);
 Expr	*NewExprCode (CodePtr code, ExprPtr name);
 Expr	*NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish);
 

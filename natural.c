@@ -629,19 +629,30 @@ NaturalLor (Natural *a, Natural *b)
     ENTER ();
     digit	*at, *bt, *rt;
     Natural	*result;
-    int		resultlen;
+    int		alength;
+    int		blength;
 
-    resultlen = length (a);
-    if (resultlen < length(b))
-	resultlen = length(b);
-    if (resultlen == 0)
+    alength = length(a);
+    blength = length(b);
+    if (alength < blength)
+    {
+	result = a;
+	a = b;
+	b = a;
+	alength = length(a);
+	blength = length(b);
+    }
+    if (alength == 0)
 	RETURN (zero_natural);
-    result = AllocNatural (resultlen);
+    result = AllocNatural (alength);
     at = data(a);
     bt = data(b);
     rt = data(result);
-    while (resultlen--)
+    alength -= blength;
+    while (blength--)
 	*rt++ = *at++ | *bt++;
+    while (alength--)
+	*rt++ = *at++;
     RETURN (result);
 }
 

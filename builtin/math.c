@@ -77,7 +77,10 @@ Value
 Popcount (Value av)
 {
     ENTER ();
-    Natural *i, *count, *mask;
+    Natural	*i, *count;
+    Value	ret;
+    digit	*d;
+    int		n;
 
     if (!Integralp (ValueTag(av)))
     {
@@ -91,23 +94,35 @@ Popcount (Value av)
     }
     switch (ValueTag(av)) {
     case rep_int:
-	count = NewNatural (count_bits (ValueInt (av)));
+	ret = NewInt (count_bits (ValueInt(av)));
 	break;
     case rep_integer:
-	count = zero_natural;
 	i = IntegerMag (av);
-	mask = NewNatural (0xffffffff);
-	while (!NaturalZero (i)) {
-	    int bitcount = count_bits (NaturalToInt (NaturalLand (i, mask)));
-	    count = NaturalPlus (count, NewNatural (bitcount));
-	    i = NaturalRsl (i, 32);
+	n = i->length;
+	d = NaturalDigits(i);
+	/*
+	 * If the result will certainly fit in an int, use one of those
+	 */
+	if (n < MAX_NICKLE_INT >> LLBASE2)
+	{
+	    unsigned t = 0;
+	    while (n--)
+		t += count_bits(*d++);
+	    ret = NewInt(t);
+	}
+	else
+	{
+	    count = zero_natural;
+	    while (n--)
+		count = NaturalPlus (count, NewNatural (count_bits (*d++)));
+	    ret = Reduce (NewInteger (Positive, count));
 	}
 	break;
     default:
 	RaiseError ("popcount: uncaught non-integer argument %v", av);
 	RETURN (Void);
     }
-    RETURN (NewInteger (Positive, count));
+    RETURN (ret);
 }
 
 Value

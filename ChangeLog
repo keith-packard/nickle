@@ -1,3 +1,17 @@
+2004-02-26  Keith Packard  <keithp@keithp.com>
+
+	* Makefile.am:
+	* debian/changelog:
+	* debian/compat:
+	* debian/control:
+	* debian/copyright:
+	* debian/nickle.install:
+	* debian/rules:
+	* make-version.sh:
+	Clean up debian build instructions to make non-native package
+	that conforms to policy.
+	Change version.h build instructions
+
 2004-02-15  Keith Packard  <keithp@keithp.com>
 
 	* Makefile.am:

@@ -16,10 +16,10 @@ EXAMPLES = examples/circle.5c examples/comb.5c examples/kaiser.5c \
 	examples/rsa.5c
 TEST = test/gcdtest.5c test/inttest.5c test/rattest.5c
 
-DEBIAN = debian/changelog  debian/control debian/copyright \
-	debian/docs debian/files debian/rules
-
-EXTRA_DIST = README.name autogen.sh update-version.sh \
+DEBIAN = debian/nickle.install debian/changelog debian/compat \
+	 debian/control debian/copyright debian/rules
+	 
+EXTRA_DIST = README.name autogen.sh update-version.sh make-version.sh \
 	$(NICKLEFILES) gram.h $(EXAMPLES) $(TEST) $(DEBIAN) version.m4
 
 bin_PROGRAMS = nickle
@@ -68,5 +68,12 @@ $(USES_GRAM_H): gram.h
 
 builtin.o: builtin/version.h
 
-builtin/version.h: $(top_srcdir)/update-version.sh $(top_srcdir)/version.m4
-	sh $(top_srcdir)/update-version.sh $(top_srcdir)/version.m4
+version.h: $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
+	sh $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
+
+debuild: distdir
+	cp -a $(PACKAGE)-$(VERSION) $(PACKAGE)-$(VERSION).orig
+	rm -rf $(PACKAGE)-$(VERSION).orig/debian
+	(cd $(PACKAGE)-$(VERSION)/debian && debuild)
+
+.PHONY: debuild

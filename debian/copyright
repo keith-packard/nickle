@@ -1,11 +1,10 @@
-This package was debianized by Bart Massey <bart@nickle.org> on
-Sat, 20 Oct 2001 23:09:13 -0700.
+This package was debianized by Keith Packard on 18 Feb 2004.
 
-It was downloaded from http://nickle.org
+Original source can be found at: http://nickle.org
 
 Upstream Authors: Bart Massey <bart@nickle.org>, Keith Packard <keithp@nickle.org>
 
-Copyright:
+Nickle is distributed under the MIT license:
 
 Copyright © 1988-2004 Keith Packard and Bart Massey. All Rights Reserved.
 

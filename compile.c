@@ -59,6 +59,9 @@ ObjMark (void *object)
 	case OpRaise:
 	    MemReference (inst->raise.exception);
 	    break;
+	case OpFarJump:
+	    MemReference (inst->farJump.farJump);
+	    break;
 	default:
 	    break;
 	}
@@ -133,11 +136,16 @@ ObjPtr	CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr sta
 ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, int *ndimp);
 ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code);
 ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
-void	CompilePatchLoop (ObjPtr obj, int start, int continue_offset);
+void	CompilePatchLoop (ObjPtr obj, int start,
+			  int continue_offset,
+			  int break_offset);
 ObjPtr	_CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code);
-ObjPtr	CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous);
+ObjPtr	CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous, NonLocalPtr nonLocal);
 ObjPtr	CompileDecl (ObjPtr obj, ExprPtr decls, Bool evaluate, ExprPtr stat, CodePtr code);
-ObjPtr	CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous);
+ObjPtr	CompileFuncCode (CodePtr	code,
+			 ExprPtr	stat,
+			 CodePtr	previous,
+			 NonLocalPtr	nonLocal);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
 /*
@@ -848,7 +856,7 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 				 NON_LOCAL_BREAK);
     obj = _CompileStat (obj, expr->tree.right->tree.left, False, code);
     obj->nonLocal = obj->nonLocal->prev;
-    CompilePatchLoop (obj, twixt_body_inst, -1);
+    CompilePatchLoop (obj, twixt_body_inst, -1, obj->used);
     BuildInst (obj, OpTwixtDone, inst, stat);
     
     /* finish the twixt instruction */
@@ -1356,10 +1364,26 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	}
 	NewInst (catch_inst, obj);
 
+	/*
+	 * Exception arguments are sitting in value, push
+	 * them on the stack
+	 */
 	BuildInst (obj, OpNoop, inst, stat);
 	inst->base.push = True;
 
-	obj = CompileFunc (obj, catch->code.code, stat, code);
+	/*
+	 * Compile the exception handler and the
+	 * call to get to it.
+	 */
+	catch->code.code->base.func = code->base.func;
+	obj = CompileFunc (obj, catch->code.code, stat, code,
+			   NewNonLocal (obj->nonLocal, 
+					NonLocalCatch, 
+					NON_LOCAL_RETURN));
+	/*
+	 * Patch non local returns inside
+	 */
+	CompilePatchLoop (obj, catch_inst, -1, -1);
 	
 	BuildInst (obj, OpExceptionCall, inst, stat);
 	
@@ -1371,7 +1395,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	inst->catch.offset = obj->used - catch_inst;
 	inst->catch.exception = exception;
     
-	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalCatch, 0);
+	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTry, 0);
 	
 	obj = CompileCatch (obj, catches->tree.right, body, stat, code);
 	
@@ -1629,7 +1653,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case FUNC:
-	obj = CompileFunc (obj, expr->code.code, stat, code);
+	obj = CompileFunc (obj, expr->code.code, stat, code, 0);
 	expr->base.type = NewTypesFunc (expr->code.code->base.type,
 					expr->code.code->base.args);
 	break;
@@ -1901,39 +1925,88 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 }
 
 void
-CompilePatchLoop (ObjPtr obj, int start, int continue_offset)
+CompilePatchLoop (ObjPtr    obj, 
+		  int	    start,
+		  int	    continue_offset,
+		  int	    break_offset)
 {
-    int	    break_offset;
     InstPtr inst;
 
-    break_offset = obj->used;
     while (start < obj->used)
     {
 	inst = ObjCode (obj, start);
-	if (inst->base.opCode == OpBranch && inst->branch.offset == 0)
-	{
-	    switch (inst->branch.mod) {
-	    case BranchModBreak:
-		inst->branch.offset = break_offset - start;
-		break;
-	    case BranchModContinue:
-		if (continue_offset >= 0)
-		    inst->branch.offset = continue_offset - start;
-		break;
-	    default:
+	switch (inst->base.opCode) {
+	case OpBranch:
+	    if (inst->branch.offset == 0)
+	    {
+		switch (inst->branch.mod) {
+		case BranchModBreak:
+		    inst->branch.offset = break_offset - start;
+		    break;
+		case BranchModContinue:
+		    if (continue_offset >= 0)
+			inst->branch.offset = continue_offset - start;
+		    break;
+		default:
+		}
 	    }
+	    break;
+	case OpFarJump:
+	    if (inst->farJump.farJump->inst == -1)
+	    {
+		switch (inst->farJump.mod) {
+		case BranchModBreak:
+		    inst->farJump.farJump->inst = break_offset;
+		    break;
+		case BranchModContinue:
+		    inst->farJump.farJump->inst = continue_offset;
+		    break;
+		case BranchModReturn:
+		case BranchModReturnVoid:
+		    inst->farJump.farJump->inst = -2;
+		    break;
+		case BranchModNone:
+		    break;
+		}
+	    }
+	    break;
+	case OpObj:
+	    if (!inst->code.code->base.builtin &&
+		inst->code.code->func.body.obj->nonLocal)
+	    {
+		if (inst->code.code->func.body.obj)
+		    CompilePatchLoop (inst->code.code->func.body.obj, 0,
+				      continue_offset,
+				      break_offset);
+		if (inst->code.code->func.staticInit.obj)
+		    CompilePatchLoop (inst->code.code->func.staticInit.obj, 0,
+				      continue_offset,
+				      break_offset);
+	    }
+	    break;
+	default:
+	    break;
 	}
 	++start;
     }
 }
 
 static ObjPtr
-CompileNonLocal (ObjPtr obj, int target, ExprPtr expr)
+_CompileNonLocal (ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
 {
     ENTER ();
+    int		twixt = 0, catch = 0, frame = 0;
     NonLocal	*nl;
-    int		twixt = 0, catch = 0;
+    InstPtr	inst;
+    int		target;
 
+    switch (mod) {
+    case BranchModBreak:	target = NON_LOCAL_BREAK; break;
+    case BranchModContinue:	target = NON_LOCAL_CONTINUE; break;
+    case BranchModReturn:
+    case BranchModReturnVoid:	target = NON_LOCAL_RETURN; break;
+    case BranchModNone:		RETURN(obj);
+    }
     for (nl = obj->nonLocal; nl; nl = nl->prev)
     {
 	if (nl->target & target)
@@ -1942,8 +2015,11 @@ CompileNonLocal (ObjPtr obj, int target, ExprPtr expr)
 	case NonLocalTwixt:
 	    twixt++;
 	    break;
-	case NonLocalCatch:
+	case NonLocalTry:
 	    catch++;
+	    break;
+	case NonLocalCatch:
+	    frame++;
 	    break;
 	case NonLocalControl:
 	    break;
@@ -1958,17 +2034,43 @@ CompileNonLocal (ObjPtr obj, int target, ExprPtr expr)
 	case NON_LOCAL_CONTINUE:
 	    CompileError (obj, expr, "continue not in loop");
 	    break;
+	case NON_LOCAL_RETURN:
+	    break;
 	}
     }
-    if (twixt || catch)
+    if (twixt || catch || frame)
     {
-	InstPtr	inst;
-	BuildInst (obj, OpUnwind, inst, expr);
+	BuildInst (obj, OpFarJump, inst, expr);
 	inst->base.stat = expr;
-	inst->unwind.twixt = twixt;
-	inst->unwind.catch = catch;
+	inst->farJump.farJump = 0;
+	inst->farJump.farJump = NewFarJump (-1, twixt, catch, frame);
+	inst->farJump.mod = mod;
+    }
+    else
+    {
+	switch (mod) {
+	case BranchModReturn:
+	    BuildInst (obj, OpReturn, inst, expr);
+	    break;
+	case BranchModReturnVoid:
+	    BuildInst (obj, OpReturnVoid, inst, expr);
+	    break;
+	case BranchModBreak:
+	case BranchModContinue:
+	    BuildInst (obj, OpBranch, inst, expr);
+	    inst->branch.offset = 0;	/* filled in by PatchLoop */
+	    inst->branch.mod = mod;
+	case BranchModNone:
+	    break;
+	}
     }
     RETURN (obj);
+}
+
+static Bool
+_CompileCanTailCall (ObjPtr obj, CodePtr code)
+{
+    return obj->nonLocal == 0 && (!code || code->base.func == code);
 }
 
 ObjPtr
@@ -2054,7 +2156,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	inst->branch.offset = top_inst - test_inst;
 	inst->branch.mod = BranchModNone;
 	
-	CompilePatchLoop (obj, top_inst, continue_inst);
+	CompilePatchLoop (obj, top_inst, continue_inst, obj->used);
 	break;
     case DO:
 	/*
@@ -2075,7 +2177,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	inst->base.stat = expr;
 	inst->branch.offset = continue_inst - test_inst;
 	inst->branch.mod = BranchModNone;
-	CompilePatchLoop (obj, continue_inst, continue_inst);
+	CompilePatchLoop (obj, continue_inst, continue_inst, obj->used);
 	break;
     case FOR:
 	/*
@@ -2134,7 +2236,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	inst->branch.offset = top_inst - test_inst;
 	inst->branch.mod = BranchModNone;
 
-	CompilePatchLoop (obj, top_inst, continue_inst);
+	CompilePatchLoop (obj, top_inst, continue_inst, obj->used);
 	break;
     case SWITCH:
     case UNION:
@@ -2242,7 +2344,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    inst->branch.offset = obj->used - test_inst;
 	    inst->branch.mod = BranchModNone;
 	}
-	CompilePatchLoop (obj, top_inst, -1);
+	CompilePatchLoop (obj, top_inst, -1, obj->used);
 	break;
     case FUNC:
 	obj = CompileDecl (obj, expr, False, expr, code);
@@ -2257,52 +2359,37 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	}
 	break;
     case BREAK:
-	obj = CompileNonLocal (obj, NON_LOCAL_BREAK, expr);
-	NewInst (middle_inst, obj);
-	inst = ObjCode (obj, middle_inst);
-	inst->base.opCode = OpBranch;
-	inst->base.stat = expr;
-	inst->branch.offset = 0;    /* filled in by PatchLoop */
-	inst->branch.mod = BranchModBreak;
+	obj = _CompileNonLocal (obj, BranchModBreak, expr, code);
 	break;
     case CONTINUE:
-	obj = CompileNonLocal (obj, NON_LOCAL_CONTINUE, expr);
-	NewInst (middle_inst, obj);
-	inst = ObjCode (obj, middle_inst);
-	inst->base.opCode = OpBranch;
-	inst->base.stat = expr;
-	inst->branch.offset = 0;    /* filled in by PatchLoop */
-	inst->branch.mod = BranchModContinue;
+	obj = _CompileNonLocal (obj, BranchModContinue, expr, code);
 	break;
     case RETURNTOK:
-	if (!code)
+	if (!code->base.func)
 	{
 	    CompileError (obj, expr, "return not in function");
 	    break;
 	}
 	if (expr->tree.right)
 	{
-	    if (expr->tree.right->base.tag == OP && !profiling)
+	    if (expr->tree.right->base.tag == OP && 
+		_CompileCanTailCall (obj, code))
 	    {
 		obj = CompileCall (obj, expr->tree.right, TailAlways, expr, code);
 	    }
 	    else
 	    {
 		obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
-		obj = CompileNonLocal (obj, NON_LOCAL_RETURN, expr);
-		BuildInst (obj, OpReturn, inst, expr);
-		inst->base.stat = expr;
+		obj = _CompileNonLocal (obj, BranchModReturn, expr, code);
 	    }
 	    expr->base.type = expr->tree.right->base.type;
 	}
 	else
 	{
-	    obj = CompileNonLocal (obj, NON_LOCAL_RETURN, expr);
-	    BuildInst (obj, OpReturnVoid, inst, expr);
-	    inst->base.stat = expr;
+	    obj = _CompileNonLocal (obj, BranchModReturnVoid, expr, code);
 	    expr->base.type = typesPrim[type_void];
 	}
-	if (!TypeCombineBinary (code->base.type, ASSIGN, expr->base.type))
+	if (!TypeCombineBinary (code->base.func->base.type, ASSIGN, expr->base.type))
 	{
 	    CompileError (obj, expr, "Incompatible types '%T', '%T' in return",
 			  code->base.type, expr->base.type);
@@ -2342,6 +2429,7 @@ CompileIsBranch (InstPtr inst)
     case OpBranch:
     case OpBranchFalse:
     case OpBranchTrue:
+    case OpFarJump:
     case OpCase:
     case OpTagCase:
     case OpDefault:
@@ -2360,7 +2448,10 @@ CompileOpIsReturn (OpCode op)
 }
 
 ObjPtr
-CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous)
+CompileFuncCode (CodePtr	code,
+		 ExprPtr	stat,
+		 CodePtr	previous,
+		 NonLocalPtr	nonLocal)
 {
     ENTER ();
     ObjPtr  obj;
@@ -2370,6 +2461,7 @@ CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous)
     
     code->base.previous = previous;
     obj = NewObj (OBJ_INCR);
+    obj->nonLocal = nonLocal;
     obj = _CompileStat (obj, code->func.code, True, code);
     needReturn = False;
     if (!obj->used || !CompileOpIsReturn (ObjCode (obj, ObjLast(obj))->base.opCode))
@@ -2396,7 +2488,11 @@ CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous)
 }
 
 ObjPtr
-CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
+CompileFunc (ObjPtr	    obj,
+	     CodePtr	    code,
+	     ExprPtr	    stat,
+	     CodePtr	    previous,
+	     NonLocalPtr    nonLocal)
 {
     ENTER ();
     InstPtr	    inst;
@@ -2409,7 +2505,7 @@ CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
 	if (!args->varargs)
 	    code->base.argc++;
     }
-    code->func.body.obj = CompileFuncCode (code, stat, previous);
+    code->func.body.obj = CompileFuncCode (code, stat, previous, nonLocal);
     obj->error |= code->func.body.obj->error;
     BuildInst (obj, OpObj, inst, stat);
     inst->code.code = code;
@@ -2616,7 +2712,7 @@ char *OpNames[] = {
     "OpTwixtDone",
     "OpEnterDone",
     "OpLeaveDone",
-    "OpUnwind",
+    "OpFarJump",
     /*
      * Expr op codes
      */
@@ -2716,11 +2812,24 @@ ObjIndent (int indent)
         FilePrintf (FileStdout, "    ");
 }
 
+static char *
+BranchModName (BranchMod mod)
+{
+    switch (mod) {
+    case BranchModNone:		return "BranchModNone";
+    case BranchModBreak:	return "BranchModBreak";
+    case BranchModContinue:	return "BranchModContinue";
+    case BranchModReturn:	return "BranchModReturn";
+    case BranchModReturnVoid:	return "BranchModReturnVoid";
+    }
+    return "?";
+}
 
 void
 InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 {
     int	    j;
+    Bool    realBranch = False;
     
     ObjIndent (indent);
     FilePrintf (FileStdout, "%s%s %c ",
@@ -2741,6 +2850,7 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
     case OpCase:
     case OpDefault:
     case OpLeaveDone:
+	realBranch = True;
     branch:
 	if (branch)
 	{
@@ -2752,6 +2862,9 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	}
 	else
 		FilePrintf (FileStdout, "branch %d", inst->branch.offset);
+	if (realBranch)
+	    FilePrintf (FileStdout, " %s", 
+			BranchModName (inst->branch.mod));
 	break;
     case OpReturn:
     case OpReturnVoid:
@@ -2770,9 +2883,13 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	FilePrintf (FileStdout, "enter %d leave %d",
 		    inst->twixt.enter, inst->twixt.leave);
 	break;
-    case OpUnwind:
-	FilePrintf (FileStdout, "twixt %d catch %d",
-		    inst->unwind.twixt, inst->unwind.catch);
+    case OpFarJump:
+	FilePrintf (FileStdout, "twixt %d catch %d frame %d inst %d mod %s\n",
+		    inst->farJump.farJump->twixt,
+		    inst->farJump.farJump->catch,
+		    inst->farJump.farJump->frame,
+		    inst->farJump.farJump->inst,
+		    BranchModName (inst->farJump.mod));
 	break;
     case OpGlobal:
     case OpGlobalRef:

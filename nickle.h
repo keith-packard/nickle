@@ -250,6 +250,7 @@ typedef struct _codeBase {
     ArgType	*args;
     ExprPtr	name;
     CodePtr	previous;
+    CodePtr	func;	    /* function context, usually self */
 } CodeBase;
 
 /*
@@ -342,6 +343,17 @@ CodePtr	NewBuiltinCode (Types *type, ArgType *args, int argc,
 			BuiltinFunc func, Bool needsNext);
 Value	NewFunc (CodePtr, FramePtr);
 
+typedef struct _farJump {
+    DataType	*data;
+    int		inst;
+    int		twixt;
+    int		catch;
+    int		frame;
+} FarJump, *FarJumpPtr;
+
+FarJumpPtr  NewFarJump (int inst, int twixt, int catch, int frame);
+Value	    FarJumpContinuation (ContinuationPtr continuation, FarJumpPtr farJump);
+
 typedef struct _instBase {
     OpCode	opCode;
     Bool	push;
@@ -386,7 +398,8 @@ typedef struct _instCode {
 } InstCode;
 
 typedef enum _branchMod {
-    BranchModNone, BranchModBreak, BranchModContinue
+    BranchModNone, BranchModBreak, BranchModContinue, 
+    BranchModReturn, BranchModReturnVoid
 } BranchMod;
 
 typedef struct _instBranch {
@@ -455,6 +468,12 @@ typedef struct _instUnwind {
     int		catch;
 } InstUnwind;
 
+typedef struct _instFarJump {
+    InstBase	inst;
+    FarJumpPtr	farJump;
+    BranchMod	mod;
+} InstFarJump;
+
 typedef union _inst {
     InstBase	base;
     InstVar	var;
@@ -476,6 +495,7 @@ typedef union _inst {
     InstTwixt	twixt;
     InstTagCase	tagcase;
     InstUnwind	unwind;
+    InstFarJump farJump;
 } Inst;
 
 /*
@@ -485,7 +505,7 @@ typedef union _inst {
  */
 
 typedef enum _nonLocalKind { 
-    NonLocalControl, NonLocalTwixt, NonLocalCatch,
+    NonLocalControl, NonLocalTwixt, NonLocalTry, NonLocalCatch
 } NonLocalKind;
 
 #define NON_LOCAL_RETURN    0
@@ -497,7 +517,8 @@ typedef struct _nonLocal {
     struct _nonLocal	*prev;
     NonLocalKind	kind;	/* kind of non local object */
     int			target;	/* what kind of targets */
-} NonLocal;
+    ObjPtr		obj;
+} NonLocal, *NonLocalPtr;
 
 typedef struct _obj {
     DataType	*data;

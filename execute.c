@@ -472,34 +472,15 @@ ThreadExceptionCall (Value thread, InstPtr *next, int *stack)
 }
 
 static void
-ThreadUnwind (Value thread, Value ret, int twixts, int catches, InstPtr *next)
+ThreadFarJump (Value thread, Value ret, FarJumpPtr farJump, InstPtr *next)
 {
     ENTER ();
     Value	continuation;
-    CatchPtr	catch;
-    TwixtPtr	twixt;
-    
+
     /*
-     * Create a continuation that unwinds the twixts
-     * and catches and then ends up executing the next
-     * instruction
+     * Build the continuation
      */
-    continuation = NewContinuation (&thread->thread.continuation, *next);
-    /*
-     * Unwind correct number of twixts
-     */
-    twixt = continuation->continuation.twixts;
-    while (twixts--)
-	twixt = twixt->continuation.twixts;
-    
-    continuation->continuation.twixts = twixt;
-    /*
-     * Unwind correct number of catches
-     */
-    catch = continuation->continuation.catches;
-    while (catches--)
-	catch = catch->continuation.catches;;
-    continuation->continuation.catches = catch;
+    continuation = FarJumpContinuation (&thread->thread.continuation, farJump);
     /*
      * And jump
      */
@@ -1005,8 +986,8 @@ ThreadsRun (Value thread, Value lex)
 		else
 		    next = inst + inst->branch.offset;
 		break;
-	    case OpUnwind:
-		ThreadUnwind (thread, value, inst->unwind.twixt, inst->unwind.catch, &next);
+	    case OpFarJump:
+		ThreadFarJump (thread, value, inst->farJump.farJump, &next);
 		break;
 	    case OpEnd:
 		SetSignalFinished ();

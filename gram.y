@@ -567,7 +567,7 @@ catches		:   catch catches
 		    { $$ = 0; }
 		;
 catch		: CATCH fullname namespace_start args block namespace_end
-		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $5), $2); }
+		    { $$ = NewExprCode (NewFuncCode (typesPrim[type_void], $4, $5), $2); }
 		;
 func_body    	: { ++funcDepth; } block { --funcDepth; $$ = $2; }
 		| SEMI

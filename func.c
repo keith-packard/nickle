@@ -50,6 +50,7 @@ NewFuncCode (Types *type, ArgType *args, ExprPtr code)
     fc->base.args = args;
     fc->base.name = 0;
     fc->base.previous = 0;
+    fc->base.func = fc;
     
     fc->func.code = code;
     

@@ -494,6 +494,89 @@ ThreadInit (void)
     EXIT ();
 }
 
+DataType FarJumpType = { 0, 0 };
+
+FarJumpPtr
+NewFarJump (int inst, int twixt, int catch, int frame)
+{
+    ENTER ();
+    FarJumpPtr	farJump;
+
+    farJump = ALLOCATE (&FarJumpType, sizeof (FarJump));
+    farJump->inst = inst;
+    farJump->twixt = twixt;
+    farJump->catch = catch;
+    farJump->frame = frame;
+    RETURN (farJump);
+}
+
+Value
+FarJumpContinuation (ContinuationPtr continuation, FarJumpPtr farJump)
+{
+    ENTER ();
+    Value	ret;
+    CatchPtr	catch;
+    TwixtPtr	twixt;
+    FramePtr	frame;
+    InstPtr	pc;
+    ObjPtr	obj;
+    int		twixts;
+    int		catches;
+    int		frames;
+
+    ret = NewContinuation (continuation, 0);
+    
+    /*
+     * Unwind twixts
+     */
+    twixts = farJump->twixt;
+    twixt = ret->continuation.twixts;
+    while (twixts--)
+	twixt = twixt->continuation.twixts;
+    ret->continuation.twixts = twixt;
+
+    /*
+     * Unwind catches
+     */
+    catches = farJump->catch;
+    catch = ret->continuation.catches;
+    while (catches--)
+	catch = catch->continuation.catches;
+    ret->continuation.catches = catch;
+
+    /*
+     * Unwind frames
+     */
+    frames = farJump->frame;
+    frame = ret->continuation.frame;
+    obj = continuation->obj;
+    pc = continuation->pc;
+    if (farJump->inst < 0)
+	frames++;
+    while (frames--)
+    {
+	pc = frame->savePc;
+	obj = frame->saveObj;
+	frame = frame->previous;
+    }
+    ret->continuation.frame = frame;
+    /* 
+     * Set pc for non-return jumps
+     */
+    if (farJump->inst >= 0)
+	pc = ObjCode (obj, farJump->inst);
+
+    /*
+     * Assertion here -- the stack is OK because
+     * only intervening catch frames are on the stack
+     * and they never have extra values on the stack
+     */
+    
+    ret->continuation.pc = pc;
+    ret->continuation.obj = obj;
+    RETURN (ret);
+}
+
 void
 ContinuationMark (void *object)
 {

@@ -3066,7 +3066,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 * all possible values
 	 */
 	test_inst = 0;
-	if (expr->base.tag == UNION)
+	if (expr->base.tag == UNION && st)
 	{
 	    Bool	    missing = False;
 	    int		    i;

@@ -228,7 +228,7 @@ ThreadAssign (Value ref, Value v)
     {
 	RaiseStandardException (exception_readonly_box,
 				"Attempted assignment to constant box",
-				2, v);
+				1, v);
     }
     else if (ref->ref.element >= ref->ref.box->nvalues)
     {
@@ -353,7 +353,7 @@ ThreadArrayIndex (Value thread, int ndim)
 	if (part < 0 || a->array.dim[dim] <= part)
 	{
 	    RaiseStandardException (exception_invalid_array_bounds,
-				    "array index out of bounds",
+				    "Array index out of bounds",
 				    2, a, dim);
 	    break;
 	}
@@ -630,25 +630,31 @@ ThreadStep (Value thread)
 	switch (value->value.tag) {
 	    char    *s;
 	case type_string:
-	    if (inst->base.opCode == OpArrayRef)
+	    if (inst->base.opCode != OpArray)
 	    {
-		RaiseError ("strings aren't addressable");
+		RaiseStandardException (exception_invalid_unop_type,
+					"Strings aren't addressable",
+					1, value);
 		break;
 	    }
 	    if (inst->ints.value != 1)
 	    {
-		RaiseError ("strings don't have %d dimensions",
-			    inst->ints.value);
+		RaiseStandardException (exception_invalid_binop_types,
+					"Strings have only 1 dimension",
+					2, NewInt (inst->ints.value), value);
 		break;
 	    }
 	    stack = 0;
-	    i = IntPart (Stack(stack), "Invalid string index"); stack++;
+	    v = Stack(stack); stack++;
+	    i = IntPart (v, "Invalid string index");
 	    if (aborting)
 		break;
 	    s = StringChars (&value->string);
-	    if (i > strlen (s))
+	    if (i < 0 || strlen (s) < i)
 	    {
-		RaiseError ("String index too large");
+		RaiseStandardException (exception_invalid_binop_types,
+					"String index out of bounds",
+					2, v, value);
 		break;
 	    }
 	    value = NewInt (s[i]);
@@ -656,8 +662,9 @@ ThreadStep (Value thread)
 	case type_array:
 	    if (inst->ints.value != value->array.ndim)
 	    {
-		RaiseError ("mismatching number of dimensions %d != %d",
-			    value->array.ndim, inst->ints.value);
+		RaiseStandardException (exception_invalid_binop_types,
+					"Mismatching dimensionality",
+					2, NewInt (inst->ints.value), value);
 		break;
 	    }
 	    stack = inst->ints.value;
@@ -673,14 +680,18 @@ ThreadStep (Value thread)
 	    }
 	    break;
 	default:
-	    RaiseError ("attempt to use non-array as array");
+	    RaiseStandardException (exception_invalid_unop_type,
+				    "Not an array",
+				    1, value);
 	    break;
 	}
 	break;
     case OpCall:
 	if (value->value.tag != type_func)
 	{
-	    RaiseError ("%v not a function", value);
+	    RaiseStandardException (exception_invalid_unop_type,
+				    "Not a function",
+				    1, value);
 	    break;
 	}
         stack = inst->ints.value;
@@ -693,7 +704,9 @@ ThreadStep (Value thread)
 	    (RefValue (value)->value.tag != type_struct &&
 	     RefValue (value)->value.tag != type_union))
 	{
-	    RaiseError ("%v not a structure reference", value);
+	    RaiseStandardException (exception_invalid_unop_type,
+				    "Not a struct/union reference",
+				    1, value);
 	    break;
 	}
 	value = RefValue (value);
@@ -702,7 +715,9 @@ ThreadStep (Value thread)
     case OpDotRefStore:
 	switch (value->value.tag) {
 	default:
-	    RaiseError ("%v not a structure", value);
+	    RaiseStandardException (exception_invalid_unop_type,
+				    "Not a struct/union",
+				    1, value);
 	    break;
 	case type_struct:
 	    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
@@ -768,7 +783,9 @@ ThreadStep (Value thread)
     case OpStar:
 	if (value->value.tag != type_ref)
 	{
-	    RaiseError ("%v not a reference", value);
+	    RaiseStandardException (exception_invalid_unop_type,
+				    "Not a reference",
+				    1, value);
 	    break;
 	}
 	value = RefValue (value);
@@ -791,7 +808,9 @@ ThreadStep (Value thread)
     case OpPostDec:
 	if (value->value.tag != type_ref)
 	{
-	    RaiseError ("%v not an lvalue", value);
+	    RaiseStandardException (exception_invalid_unop_type,
+				    "Not an lvalue",
+				    1, value);
 	    break;
 	}
 	v = RefValue (value);

@@ -99,6 +99,7 @@ NewBuiltinCode (Type *type, ArgType *args, int argc,
     bc->base.args = args;
     bc->base.name = 0;
     bc->base.previous = 0;
+    bc->base.func = 0;
     bc->base.doc = doc ? NewStrString (doc) : Void;
     
     bc->builtin.needsNext = needsNext;

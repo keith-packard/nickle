@@ -20,6 +20,7 @@ ExprTreeMark (void *object)
 {
     ExprTree	*et = object;
 
+    MemReference (et->expr.scope);
     MemReference (et->left);
     MemReference (et->right);
 }
@@ -29,12 +30,15 @@ ExprConstMark (void *object)
 {
     ExprConst	*ec = object;
 
+    MemReference (ec->expr.scope);
     MemReference (ec->constant);
 }
 
 static void
 ExprAtomMark (void *object)
 {
+    ExprAtom	*ea = object;
+    MemReference (ea->expr.scope);
 }
 
 static void
@@ -42,6 +46,7 @@ ExprCodeMark (void *object)
 {
     ExprCode	*ec = object;
 
+    MemReference (ec->expr.scope);
     MemReference (ec->code);
 }
 
@@ -50,6 +55,7 @@ ExprDeclMark (void *object)
 {
     ExprDecl	*ed = object;
 
+    MemReference (ed->expr.scope);
     MemReference (ed->decl);
 }
 

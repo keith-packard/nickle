@@ -27,6 +27,8 @@
 
 #undef DEBUG
 
+SymbolPtr CompileScope (ExprPtr, ScopePtr);
+
 static void
 ObjMark (void *object)
 {
@@ -229,7 +231,6 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     ENTER ();
     InstPtr inst;
     SymbolPtr s;
-    int	i;
     
     expr->base.scope = scope;
     switch (expr->base.tag) {
@@ -246,10 +247,7 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	/*
 	 * Yurg -- check for scope reference
 	 */
-	if (expr->tree.left->base.tag == NAME &&
-	    (s = FindSymbol (obj, stat, scope, expr->tree.left->atom.atom,
-			     &i, type_undef, False)) &&
-	    s->symbol.class == class_scope)
+	if ((s = CompileScope (expr->tree.left, scope)))
 	{
 	    obj = _CompileLvalue (obj, expr->tree.right,
 				  s->scope.scope, stat);
@@ -503,6 +501,27 @@ _CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr sta
     RETURN (obj);
 }
 
+SymbolPtr
+CompileScope (ExprPtr expr, ScopePtr scope)
+{
+    SymbolPtr	s;
+    int		depth;
+    
+    switch (expr->base.tag) {
+    case DOT:
+	s = CompileScope (expr->tree.left, scope);
+	if (s)
+	    return CompileScope (expr->tree.right, s->scope.scope);
+	break;
+    case NAME:
+	s = ScopeFindSymbol (scope, expr->atom.atom, &depth);
+	if (s && s->symbol.class == class_scope)
+	    return s;
+	break;
+    }
+    return 0;
+}
+
 ObjPtr
 _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 {
@@ -562,13 +581,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	break;
     case DOT:
 	/*
-	 * Yurg -- check for scope reference
+	 * Yurg -- check for scope reference -- syntatically
+	 * identical to structure member reference, but
+	 * semantically backwards
 	 */
-	if (expr->tree.left->base.tag == NAME &&
-	    (s = FindSymbol (obj, stat, scope, 
-			     expr->tree.left->atom.atom,
-			     &i, type_undef, False)) &&
-	    s->symbol.class == class_scope)
+	if ((s = CompileScope (expr->tree.left, scope)))
 	{
 	    obj = _CompileExpr (obj, expr->tree.right,
 				s->scope.scope, stat);

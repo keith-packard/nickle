@@ -126,7 +126,7 @@ do_Debug_done (void)
     TopNamespace = CurrentNamespace = GlobalNamespace;
     CurrentFrame = 0;
     DebugDeleteCommands ();
-    RETURN (Zero);
+    RETURN (Void);
 }
 
 Value
@@ -141,10 +141,10 @@ do_Debug_up (void)
     if (ValueIsContinuation(continuation) && ValueIsInt(frame))
     {
 	if (DebugSetFrame (continuation, frame->ints.value + 1))
-	    RETURN (One);
+	    RETURN (TrueVal);
 	FilePrintf (FileStderr, "Already at top\n");
     }
-    RETURN (Zero);
+    RETURN (FalseVal);
 }
 
 Value
@@ -161,9 +161,9 @@ do_Debug_down (void)
 	if (frame->ints.value <= 0)
 	    FilePrintf (FileStderr, "Already at bottom\n");
 	else if (DebugSetFrame (continuation, frame->ints.value - 1))
-	    RETURN (One);
+	    RETURN (TrueVal);
     }
-    RETURN (Zero);
+    RETURN (FalseVal);
 }
 
 Value
@@ -176,7 +176,7 @@ do_Debug_dump (Value f)
     if (code->base.builtin)
     {
 	FilePuts (FileStdout, "<builtin>\n");
-	RETURN (Zero);
+	RETURN (Void);
     }
     if (code->func.staticInit.obj)
     {
@@ -186,5 +186,5 @@ do_Debug_dump (Value f)
     }
     FilePuts (FileStdout, "Function body\n");
     ObjDump (code->func.body.obj, 1);
-    RETURN (Zero);
+    RETURN (Void);
 }

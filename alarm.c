@@ -131,16 +131,16 @@ do_sleep (Value ms)
     int		    delta;
 
     if (running->thread.partial)
-	RETURN (One);
+	RETURN (Void);
     delta = IntPart (ms, "Invalid sleep value");
     /* don't queue if instruction is aborting */
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     TimerInsert (running, _sleepDone, delta, 0);
     /* This primitive has been partially executed */
     running->thread.partial = 1;
     SetSignalSuspend();
-    RETURN (Zero);
+    RETURN (Void);
 }
 
 ReferencePtr	SleepingReference;

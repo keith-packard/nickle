@@ -19,18 +19,18 @@ RefPlus (Value av, Value bv, int expandOk)
     {
 	i = IntPart (av, "Attempt to add non-integer to reference type");
 	if (aborting)
-	    RETURN (Zero);
+	    RETURN (Void);
 	ref = &bv->ref;
     }
     else if (ValueIsInt(bv))
     {
 	i = IntPart (bv, "Attempt to add non-integer to reference type");
 	if (aborting)
-	    RETURN (Zero);
+	    RETURN (Void);
 	ref = &av->ref;
     }
     else
-	RETURN (Zero);
+	RETURN (Void);
     i = i + ref->element;
     if (i < 0 || i >= ref->box->nvalues ||
 	(!ref->box->array && i != ref->element))
@@ -38,7 +38,7 @@ RefPlus (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_invalid_array_bounds,
 				"Element out of range in reference addition",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (NewRef (ref->box, i));
 }
@@ -55,7 +55,7 @@ RefMinus (Value av, Value bv, int expandOk)
     {
 	i = IntPart (av, "Attempt to subtract non-integer to reference type");
 	if (aborting)
-	    RETURN (Zero);
+	    RETURN (Void);
 	ref = &bv->ref;
 	element = -ref->element;
     }
@@ -63,7 +63,7 @@ RefMinus (Value av, Value bv, int expandOk)
     {
 	i = -IntPart (bv, "Attempt to subtract non-integer to reference type");
 	if (aborting)
-	    RETURN (Zero);
+	    RETURN (Void);
 	ref = &av->ref;
 	element = ref->element;
     }
@@ -74,7 +74,7 @@ RefMinus (Value av, Value bv, int expandOk)
 	if (ref->box != bref->box)
 	{
 	    RaiseError ("Attempt to subtract references to different objects %v - %v", av, bv);
-	    RETURN (Zero);
+	    RETURN (Void);
 	}
 	RETURN (NewInt (ref->element - bref->element));
     }
@@ -84,7 +84,7 @@ RefMinus (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_invalid_array_bounds,
 				"Element out of range in reference subtraction",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (NewRef (ref->box, i));
 }
@@ -99,11 +99,11 @@ RefLess (Value av, Value bv, int expandOk)
     {
 	RaiseError ("Attempt to order references to different objects %v < %v",
 		    av, bv);
-	return Zero;
+	return FalseVal;
     }
     if (aref->element < bref->element)
-	return One;
-    return Zero;
+	return TrueVal;
+    return FalseVal;
 }
 
 static Value
@@ -112,8 +112,8 @@ RefEqual (Value av, Value bv, int expandOk)
     Ref	*aref = &av->ref, *bref = &bv->ref;
 
     if (aref->box != bref->box || aref->element != bref->element)
-	return Zero;
-    return One;
+	return FalseVal;
+    return TrueVal;
 }
 
 static ValueType *

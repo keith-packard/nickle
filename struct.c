@@ -95,14 +95,14 @@ StructEqual (Value a, Value b, int expandOk)
     StructElement   *ae = StructTypeElements(at);
     
     if (at->nelements != b->structs.type->nelements)
-	return Zero;
+	return FalseVal;
     for (i = 0; i < at->nelements; i++)
     {
-	if (Zerop (Equal (BoxValue (a->structs.values, i),
+	if (False (Equal (BoxValue (a->structs.values, i),
 			  StructValue (b, ae[i].name))))
-	    return Zero;
+	    return FalseVal;
     }
-    return One;
+    return TrueVal;
 }
 
 ValueType    structType = { 

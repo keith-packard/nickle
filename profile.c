@@ -59,8 +59,9 @@ Value
 do_profile (Value on)
 {
     struct itimerval    v;
+    Bool    previous = profiling;
 	
-    if (!Zerop (on))
+    if (!True (on))
     {
 	currentTick = previousTick = 0;
 	catchSignal (SIGVTALRM, sigprofile);
@@ -78,5 +79,5 @@ do_profile (Value on)
 	setitimer (ITIMER_VIRTUAL, &v, 0);
 	profiling = False;
     }
-    return Zero;
+    return previous ? TrueVal : FalseVal;
 }

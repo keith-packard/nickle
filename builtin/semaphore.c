@@ -24,9 +24,9 @@ import_Semaphore_namespace()
 {
     ENTER ();
     static struct fbuiltin_1 funcs_1[] = {
-        { do_Semaphore_signal, "signal", "i", "S" },
-        { do_Semaphore_test, "test", "i", "S" },
-        { do_Semaphore_wait, "wait", "i", "S" },
+        { do_Semaphore_signal, "signal", "v", "S" },
+        { do_Semaphore_test, "test", "b", "S" },
+        { do_Semaphore_wait, "wait", "v", "S" },
         { 0 }
     };
 

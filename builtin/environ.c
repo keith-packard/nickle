@@ -24,14 +24,14 @@ import_Environ_namespace()
 {
     ENTER ();
     static struct fbuiltin_1 funcs_1[] = {
-        { do_Environ_check, "check", "i", "s" },
+        { do_Environ_check, "check", "b", "s" },
         { do_Environ_get, "get", "s", "s" },
-        { do_Environ_unset, "unset", "i", "s" },
+        { do_Environ_unset, "unset", "b", "s" },
         { 0 }
     };
 
     static struct fbuiltin_2 funcs_2[] = {
-        { do_Environ_set, "set", "s", "ss" },
+        { do_Environ_set, "set", "b", "ss" },
         { 0 }
     };
 
@@ -53,7 +53,7 @@ do_Environ_get (Value av)
 	RaiseStandardException (exception_invalid_argument,
 				"name not available",
 				2, NewInt(0), av);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (NewStrString (c));
 }
@@ -66,8 +66,8 @@ do_Environ_check (Value av)
 
     c = getenv (StringChars (&av->string));
     if (c)
-	RETURN (One);
-    RETURN (Zero);
+	RETURN (TrueVal);
+    RETURN (FalseVal);
 }
 
 extern char **environ;
@@ -85,11 +85,11 @@ do_Environ_unset (Value av)
 		tail++;
 	    *environ = *tail;
 	    *tail = 0;
-	    RETURN(One);
+	    RETURN(TrueVal);
 	}
 	environ++;
     }
-    RETURN (Zero);
+    RETURN (FalseVal);
 }
 
 Value
@@ -104,6 +104,6 @@ do_Environ_set (Value name, Value value)
     (void) strcat (StringChars(&binding->string),
 		   StringChars(&value->string));
     if (putenv (StringChars (&binding->string)) < 0)
-	RETURN (Zero);
-    RETURN (One);
+	RETURN (FalseVal);
+    RETURN (TrueVal);
 }

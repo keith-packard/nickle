@@ -34,34 +34,31 @@ namespace Mutex {
     public exception deadlock (mutex m, thread self);
     public exception notowned (mutex m, thread self, mutex_owner owner);
 
-    public int acquire (mutex m)
+    public bool acquire (mutex m)
     {
 	if (m->owner == mutex_owner.owner (Thread::current()))
 	    raise deadlock (m, Thread::current ());
 	Semaphore::wait(m->sem);
 	m->owner = mutex_owner.owner (Thread::current ());
-	return 1;
+	return true;
     }
 
-    public int try_acquire (mutex m)
+    public bool try_acquire (mutex m)
     {
-	int ret = 0;
-	
 	if (m->owner == mutex_owner.owner (Thread::current()))
 	    raise deadlock (m, Thread::current());
-        ret = Semaphore::test (m->sem);
+        bool ret = Semaphore::test (m->sem);
         if (ret)
 	    m->owner = mutex_owner.owner (Thread::current());
 	return ret;
     }
 
-    public int release (mutex m)
+    public void release (mutex m)
     {
 	if (m->owner != mutex_owner.owner (Thread::current()))
 	    raise notowned (m, Thread::current (), m->owner);
 	m->owner = mutex_owner.nobody;
 	Semaphore::signal (m->sem);
-	return 1;
     }
 
     public mutex_owner owner (mutex m)

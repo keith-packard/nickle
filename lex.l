@@ -374,6 +374,7 @@ catch		{ yylval.ints = CATCH; return CATCH; }
 twixt		{ yylval.ints = TWIXT; return TWIXT; }
 
 poly		{ yylval.type = type_undef; return POLY; }
+bool		{ yylval.type = type_bool; return BOOL; }
 int		{ yylval.type = type_integer; return INTEGER; }
 rational    	{ yylval.type = type_rational; return RATIONAL; }
 real		{ yylval.type = type_float; return REAL; }
@@ -386,6 +387,8 @@ struct		{ yylval.ints = STRUCT; return STRUCT; }
 union		{ yylval.ints = UNION; return UNION; }
 enum		{ yylval.ints = ENUM; return ENUM; }
 void		{ yylval.type = type_void; return VOID; }
+true		{ yylval.value = TrueVal; return BOOLVAL; }
+false		{ yylval.value = FalseVal; return BOOLVAL; }
 
 typedef		{ yylval.ints = TYPEDEF; return TYPEDEF; }
 func		{ yylval.ints = FUNC; return FUNC; }
@@ -458,6 +461,13 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 ":"		{ yylval.ints = COLON; return COLON; }
 " "		;
 "\t"		;
+\'\\[0-7]+\'	{   ENTER ();
+		    yytext[yyleng-1] = '\0';
+		    yylval.value = atov (yytext+2,8);
+		    EXIT ();
+		    REFERENCE (yylval.value);
+		    return CHAR_CONST;
+		}
 \'\\?.\'	{   ENTER ();
 		    int	i;
 		    
@@ -472,26 +482,47 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 		}
 \"([^\n\"]|\\\")*\"	{
 			ENTER ();
-			register char	*c, *s;
+			char	*d, *s;
+			int	c;
     			yytext[yyleng - 1] = '\0';
 			yylval.value = NewString (yyleng-2);
-			c = StringChars (&yylval.value->string);
+			d = StringChars (&yylval.value->string);
 			s = yytext + 1;
-			while (*s) {
-				if (*s == '\\')
-					*c++ = lexEscape (*++s);
+			while ((s = StringNextChar (s, &c)))
+			{
+			    if (c == '\\')
+			    {
+				if (!(s = StringNextChar (s, &c)))
+				    break;
+				if ('0' <= c && c <= '7')
+				{
+				    int	    ch;
+    				    char    *ps = s;
+				    c = c - '0';
+				    while ((s = StringNextChar (s, &ch)) &&
+					   '0' <= ch && ch <= '7')
+				    {
+					c = (c << 3) | (ch - '0');
+					ps = s;
+				    }
+				    s = ps;
+				}
 				else
-					*c++ = *s;
-				++s;
+				    c = lexEscape (c);
+			    }
+			    d += StringPutChar (c, d);
 			}
-			*c = '\0';
+			*d = '\0';
 			EXIT ();
 			REFERENCE (yylval.value);
 			return STRING_CONST;
 		}
 0[0-7]*		{
 		yylval.value = atov(yytext+1, 8);
-		return OCTAL0_NUM;
+		if (yytext[1] == '\0')
+		    return TEN_NUM;
+	        else
+		    return OCTAL0_NUM;
 		}
 0o[0-7]+	{
 		yylval.value = atov(yytext+2, 8);
@@ -609,6 +640,9 @@ lexEscape (int c)
     case 'f':
 	return '\f';
 	break;
+    case 'v':
+	return '\v';
+	break;
     default:
 	return c;
     }
@@ -716,7 +750,7 @@ aetov (char *s, int base)
 	    rep_part++;
 	    next = strchr (rep_part, '}');
 	    if (!next)
-		RETURN (Zero);	    /* "can't" happen */
+		RETURN (Void);	    /* "can't" happen */
 	    rep_len = next - rep_part;
 	    next = next + 1;
 	}

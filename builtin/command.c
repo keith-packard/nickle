@@ -24,23 +24,23 @@ import_Command_namespace()
 {
     ENTER ();
     static struct fbuiltin_1 funcs_1[] = {
-        { do_Command_delete, "delete", "i", "s" },
-        { do_Command_edit, "edit", "i", "A*s" },
-        { do_Command_lex_file, "lex_file", "i", "s" },
-        { do_Command_lex_library, "lex_library", "i", "s" },
-        { do_Command_lex_string, "lex_string", "i", "s" },
+        { do_Command_delete, "delete", "b", "s" },
+        { do_Command_edit, "edit", "v", "A*s" },
+        { do_Command_lex_file, "lex_file", "b", "s" },
+        { do_Command_lex_library, "lex_library", "b", "s" },
+        { do_Command_lex_string, "lex_string", "b", "s" },
         { 0 }
     };
 
     static struct fbuiltin_2 funcs_2[] = {
-        { do_Command_new, "new", "i", "sp" },
-        { do_Command_new_names, "new_names", "i", "sp" },
-        { do_Command_pretty_print, "pretty_print", "i", "fA*s" },
+        { do_Command_new, "new", "v", "sp" },
+        { do_Command_new_names, "new_names", "v", "sp" },
+        { do_Command_pretty_print, "pretty_print", "v", "fA*s" },
         { 0 }
     };
 
     static struct fbuiltin_v funcs_v[] = {
-        { do_Command_undefine, "undefine", "i", ".A*s" },
+        { do_Command_undefine, "undefine", "v", ".A*s" },
         { 0 }
     };
 
@@ -64,7 +64,7 @@ do_Command_new_common (Value name, Value func, Bool names)
 	RaiseStandardException (exception_invalid_argument,
 				"argument must be func",
 				2, NewInt (1), func);
-	RETURN (Zero);
+	RETURN (Void);
     }
     cmd = StringChars (&name->string);
     while ((c = *cmd++))
@@ -79,12 +79,12 @@ do_Command_new_common (Value name, Value func, Bool names)
 	RaiseStandardException (exception_invalid_argument,
 				"argument must be valid name",
 				2, NewInt (0), name);
-	RETURN (Zero);
+	RETURN (Void);
     }
     CurrentCommands = NewCommand (CurrentCommands, 
 				  AtomId (StringChars (&name->string)),
 				  func, names);
-    RETURN (One);
+    RETURN (Void);
 }
 
 Value
@@ -107,9 +107,9 @@ do_Command_delete (Value name)
 
     id = AtomId (StringChars (&name->string));
     if (!CommandFind (CurrentCommands, id))
-	RETURN (Zero);
+	RETURN (FalseVal);
     CurrentCommands = CommandRemove (CurrentCommands, id);
-    RETURN (One);
+    RETURN (TrueVal);
 }
 
 Value
@@ -119,9 +119,9 @@ do_Command_lex_file (Value name)
     Value   r;
 
     if (LexFile (StringChars (&name->string), False, False))
-	r = One;
+	r = TrueVal;
     else
-	r = Zero;
+	r = FalseVal;
     RETURN (r);
 }
 
@@ -132,9 +132,9 @@ do_Command_lex_library (Value name)
     Value   r;
 
     if (LexLibrary (StringChars (&name->string), False, False))
-	r = One;
+	r = TrueVal;
     else
-	r = Zero;
+	r = FalseVal;
     RETURN (r);
 }
 
@@ -144,7 +144,7 @@ do_Command_lex_string (Value name)
     ENTER ();
 
     LexString (StringChars (&name->string), False);
-    RETURN (One);
+    RETURN (Void);
 }
 
 Value
@@ -157,7 +157,7 @@ do_Command_pretty_print (Value f, Value names)
 
     if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
 	PrettyPrint (f, publish, symbol);
-    RETURN (One);
+    RETURN (Void);
 }
 
 Value
@@ -172,7 +172,7 @@ do_Command_undefine (int argc, Value *args)
     for (i = 0; i < argc; i++)
 	if (NamespaceLocate (args[i], &namespace, &symbol, &publish) && symbol)
 	    NamespaceRemoveName (namespace, symbol->symbol.name);
-    RETURN (One);
+    RETURN (Void);
 }
 
 Value
@@ -185,5 +185,5 @@ do_Command_edit (Value names)
 
     if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
 	EditFunction (symbol, publish); 
-    RETURN (One);
+    RETURN (Void);
 }

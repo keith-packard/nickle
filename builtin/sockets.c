@@ -92,10 +92,10 @@ do_Sockets_create (Value type)
     int itype, s;
     itype = IntPart (type, "Illegal socket type");
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     s = socket (PF_INET, itype, 0);
     if (s == -1)
-	RETURN (Zero);
+	RETURN (Void);
     RETURN (FileCreate (s, FileReadable|FileWritable));
 }
 
@@ -151,7 +151,7 @@ do_Sockets_connect (Value s, Value host, Value port)
     struct sockaddr_in addr;
 
     if (!address_lookup (host, port, &addr))
-	RETURN (Zero);
+	RETURN (Void);
 
     if (!running->thread.partial)
     {
@@ -163,17 +163,17 @@ do_Sockets_connect (Value s, Value host, Value port)
 		running->thread.partial = 1;
 	    }
 	    else
-		RETURN (Zero); /* FIXME: more here? */
+		RETURN (Void); /* FIXME: more here? */
 	}
     }
     if (s->file.flags & FileOutputBlocked)
     {
 	ThreadSleep (running, s, PriorityIo);
-	RETURN (Zero);
+	RETURN (Void);
     }
     
     complete = True;
-    RETURN (One);
+    RETURN (Void);
 }
 
 /* void do_Sockets_bind (File::file s, String host, String port); */
@@ -184,12 +184,12 @@ do_Sockets_bind (Value s, Value host, Value port)
     struct sockaddr_in addr;
 
     if (!address_lookup (host, port, &addr))
-	RETURN (Zero);
+	RETURN (Void);
 
     if (bind (s->file.fd, (struct sockaddr *) &addr, sizeof addr) == -1)
-	RETURN (Zero); /* FIXME: more here? */
+	RETURN (Void); /* FIXME: more here? */
 
-    RETURN (One);
+    RETURN (Void);
 }
 
 /* void do_Sockets_listen (File::file s, int backlog); */
@@ -201,14 +201,14 @@ do_Sockets_listen (Value s, Value backlog)
 
     ibacklog = IntPart (backlog, "Illegal backlog length");
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
 
     if (listen (s->file.fd, ibacklog) == -1)
     {
-	RETURN (Zero); /* FIXME: more here? */
+	RETURN (Void); /* FIXME: more here? */
     }
 
-    RETURN (One);
+    RETURN (Void);
 }
 
 /* File::file do_Sockets_accept (File::file s); */
@@ -230,7 +230,7 @@ do_Sockets_accept (Value s)
 				strerror (errno),
 				2, FileGetError (errno),
 				s);
-        RETURN (Zero); /* FIXME: more here? */
+        RETURN (Void); /* FIXME: more here? */
     }
 
     complete = True;
@@ -246,12 +246,12 @@ do_Sockets_shutdown (Value s, Value how)
 
     ihow = IntPart (how, "Illegal socket shutdown request");
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
 
     if (shutdown (s->file.fd, ihow) == -1)
     {
-	RETURN (Zero); /* FIXME: more here? */
+	RETURN (Void); /* FIXME: more here? */
     }
 
-    RETURN (One);
+    RETURN (Void);
 }

@@ -180,7 +180,7 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 						    Arg(6));
 		break;
 	    default:
-		value = Zero;
+		value = Void;
 		break;
 	    }
 	}
@@ -448,12 +448,12 @@ ThreadExceptionCall (Value thread, InstPtr *next, int *stack)
 				"exception call argument must be array",
 				1, args);
 	*stack = 1;
-	RETURN (Zero);
+	RETURN (Void);
     }
     if (aborting)
     {
 	*stack = 1;
-	RETURN (Zero);
+	RETURN (Void);
     }
     complete = True;
     argc = args->array.ents;
@@ -492,15 +492,31 @@ ThreadFarJump (Value thread, Value ret, FarJumpPtr farJump, InstPtr *next)
     EXIT ();
 }
 
-#define ThreadBoxCheck(box,i,type) (BoxValueGet(box,i) == 0 ? ThreadBoxSetDefault(box,i,type) : 0)
+#define ThreadBoxCheck(box,i,type) (BoxValueGet(box,i) == 0 ? ThreadBoxSetDefault(box,i,type,0) : 0)
+
+typedef struct _TypeChain {
+    struct _TypeChain	*prev;
+    Types   *type;
+} TypeChain;
 
 static void
-ThreadBoxSetDefault (BoxPtr box, int i, Types *type)
+ThreadBoxSetDefault (BoxPtr box, int i, Types *type, TypeChain *chain)
 {
     if (BoxValueGet (box, i) == 0)
     {
-	Types   *ctype = TypesCanon (type);
+	Types	    *ctype = TypesCanon (type);
 	StructType  *st = ctype->structs.structs;
+	TypeChain   link, *c;
+
+	/*
+	 * Check for recursion
+	 */
+	for (c = chain; c; c = c->prev)
+	    if (c->type == ctype)
+		return;
+
+	link.prev = chain;
+	link.type = ctype;
 	
 	switch (ctype->base.tag) {
 	case types_union:
@@ -510,7 +526,11 @@ ThreadBoxSetDefault (BoxPtr box, int i, Types *type)
 	    BoxValueSet (box, i, NewStruct (st, False));
 	    box = BoxValueGet (box, i)->structs.values;
 	    for (i = 0; i < st->nelements; i++)
-		ThreadBoxCheck (box, i, StructTypeElements(st)[i].type);
+	    {
+		if (BoxValueGet (box, i) == 0)
+		    ThreadBoxSetDefault (box, i, StructTypeElements(st)[i].type,
+					&link);
+	    }
 	    break;
 	default:
 	    break;
@@ -583,10 +603,24 @@ ThreadsRun (Value thread, Value lex)
 		next = inst + inst->branch.offset;
 		break;
 	    case OpBranchFalse:
+		if (!ValueIsBool(value))
+		{
+		    RaiseStandardException (exception_invalid_argument,
+					    "conditional expression not bool",
+					    2, value, Void);
+		    break;
+		}
 		if (!True (value))
 		    next = inst + inst->branch.offset;
 		break;
 	    case OpBranchTrue:
+		if (!ValueIsBool(value))
+		{
+		    RaiseStandardException (exception_invalid_argument,
+					    "conditional expression not bool",
+					    2, value, Void);
+		    break;
+		}
 		if (True (value))
 		    next = inst + inst->branch.offset;
 		break;
@@ -607,8 +641,7 @@ ThreadsRun (Value thread, Value lex)
 		{
 		    RaiseStandardException (exception_invalid_argument,
 					    "union switch expression not union",
-					    2,
-					    Zero, value);
+					    2, value, Void);
 		    break;
 		}
 		if (value->unions.tag == inst->tagcase.tag)
@@ -628,7 +661,7 @@ ThreadsRun (Value thread, Value lex)
 		{
 		    RaiseStandardException (exception_invalid_argument,
 					    "Incompatible type in return",
-					    2, NewInt (0), value);
+					    2, value, Void);
 		    break;
 		}
 		if (aborting)
@@ -676,6 +709,9 @@ ThreadsRun (Value thread, Value lex)
 		    value = BoxValue (box, i);
 		else
 		    value = NewRef (box, i);
+		break;
+	    case OpFetch:
+		value = Dereference (value);
 		break;
 	    case OpConst:
 		value = inst->constant.constant;
@@ -747,14 +783,14 @@ ThreadsRun (Value thread, Value lex)
 		    if (aborting)
 			break;
 		    s = StringChars (&value->string);
-		    if (i < 0 || strlen (s) < i)
+		    if (i < 0 || StringLength (s) < i)
 		    {
 			RaiseStandardException (exception_invalid_binop_values,
 						"String index out of bounds",
 						2, v, value);
 			break;
 		    }
-		    value = NewInt (s[i]);
+		    value = NewInt (StringGet (s, i));
 		    break;
 		case type_array:
 		    if (inst->ints.value != value->array.ndim)
@@ -902,20 +938,16 @@ ThreadsRun (Value thread, Value lex)
 		value = v;
 		break;
 	    case OpAssign:
-		v = Stack(stack); stack++;
-		ThreadAssign (value, v, inst->assign.initialize);
-		value = v;
+		ThreadAssign (Stack(stack), value, inst->assign.initialize); stack++;
 		break;
 	    case OpAssignOp:
-		v = BinaryOperate (Dereference (value), Stack(stack), inst->binop.op);
-		stack++;
-		ThreadAssign (value, v, False);
+		v = BinaryOperate (Stack(stack), value, inst->binop.op); stack++;
+		ThreadAssign (Stack(stack), v, False); stack++;
 		value = v;
 		break;
 	    case OpAssignFunc:
-		v = (*inst->binfunc.func) (Dereference (value), Stack(stack));
-		stack++;
-		ThreadAssign (value, v, False);
+		v = (*inst->binfunc.func) (Stack(stack), value); stack++;
+		ThreadAssign (Stack(stack), v, False); stack++;
 		value = v;
 		break;
 	    case OpFork:
@@ -959,6 +991,13 @@ ThreadsRun (Value thread, Value lex)
 		complete = True;
 		break;
 	    case OpEnterDone:
+		if (!ValueIsBool(value))
+		{
+		    RaiseStandardException (exception_invalid_argument,
+					    "conditional expression not bool",
+					    2, value, Void);
+		    break;
+		}
 		if (!True (value))
 		{
 		    if (aborting)

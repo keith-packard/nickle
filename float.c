@@ -382,7 +382,7 @@ FloatDivide (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_divide_by_zero,
 				"real divide by zero",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     DebugF ("Dividend ", a);
     DebugF ("Divisor ", b);
@@ -429,29 +429,29 @@ FloatLess (Value av, Value bv, int expandOk)
     {
 	if (b->mant->sign == Positive && 
 	    !FpartEqual (b->mant, zero_fpart))
-	    ret = One;
+	    ret = TrueVal;
 	else
-	    ret = Zero;
+	    ret = FalseVal;
     }
     else if (FpartEqual (b->mant, zero_fpart))
     {
 	if (a->mant->sign == Negative)
-	    ret = One;
+	    ret = TrueVal;
 	else
-	    ret = Zero;
+	    ret = FalseVal;
     }
     else if (FpartEqual (a->exp, b->exp))
     {
-	ret = Zero;
+	ret = FalseVal;
 	if (FpartLess (a->mant, b->mant))
-	    ret = One;
+	    ret = TrueVal;
     }
     else
     {
 	av = FloatMinus (av, bv, expandOk);
-	ret = Zero;
+	ret = FalseVal;
 	if (av->floats.mant->sign == Negative)
-	    ret = One;
+	    ret = TrueVal;
     }
     RETURN (ret);
 }
@@ -465,16 +465,16 @@ FloatEqual (Value av, Value bv, int expandOk)
 
     if (FpartEqual (a->exp, b->exp))
     {
-	ret = Zero;
+	ret = FalseVal;
 	if (FpartEqual (a->mant, b->mant))
-	    ret = One;
+	    ret = TrueVal;
     }
     else
     {
 	av = FloatMinus (av, bv, expandOk);
-	ret = Zero;
+	ret = FalseVal;
 	if (NaturalZero (av->floats.mant->mag))
-	    ret = One;
+	    ret = TrueVal;
     }
     RETURN (ret);
 }
@@ -688,8 +688,8 @@ FloatExp (Value exp2, Value *ratio, int ibase, unsigned prec)
 	if (aborting)
 	{
 	    EXIT ();
-	    *ratio = Zero;
-	    return Zero;
+	    *ratio = Void;
+	    return Void;
 	}
 	nmean = Div (Plus (min, max), two);
 	if (mean && True(Equal (nmean, mean)))

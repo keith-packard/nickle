@@ -52,7 +52,7 @@ do_String_length (Value av)
 {
     ENTER();
     Value ret;
-    ret = NewInt(strlen(StringChars(&av->string)));
+    ret = NewInt(StringLength(StringChars(&av->string)));
     RETURN (ret);
 }
 
@@ -61,26 +61,34 @@ do_String_new (Value av)
 {
     ENTER ();
     Value   ret;
-    int	    len, i;
+    int	    len, i, size;
     char    *s;
 
     if (ValueIsArray(av) && av->array.ndim == 1)
     {
 	len = av->array.dim[0];
-	ret = NewString (len);
+	size = 0;
+	for (i = 0; i < len; i++)
+	    size += StringCharSize (IntPart (BoxValue (av->array.values, i),
+					     "new: array element not integer"));
+	ret = NewString (size);
 	s = StringChars (&ret->string);
 	for (i = 0; i < len; i++)
-	    *s++ = IntPart (BoxValue (av->array.values, i),
-			    "new: array element not integer");
-	*s++ = '\0';
+	{
+	    s += StringPutChar (IntPart (BoxValue (av->array.values, i),
+					 "new: array element not integer"),
+				s);
+	}
+	*s = '\0';
     }
     else
     {
-	len = 1;
-	ret = NewString (len);
+	int c = IntPart (av, "new: argument not integer");
+	size = StringCharSize (c);
+	ret = NewString (size);
 	s = StringChars (&ret->string);
-	s[0] = IntPart (av, "new: argument not integer");
-	s[1] = '\0';
+	s += StringPutChar (c, s);
+	*s = '\0';
     }
     RETURN (ret);
 }
@@ -91,12 +99,20 @@ do_String_index (Value av, Value bv)
     ENTER();
     char *a, *b, *p;
     Value ret;
+    int i;
     a = StringChars(&av->string);
     b = StringChars(&bv->string);
     p = strstr(a, b);
     if (!p)
 	RETURN (NewInt(-1));
-    ret = NewInt(p - a);
+    i = 0;
+    while (a < p)
+    {
+	int c;
+	a = StringNextChar (a, &c);
+	i++;
+    }
+    ret = NewInt(i);
     RETURN (ret);
 }
 
@@ -104,11 +120,11 @@ Value
 do_String_substr (Value av, Value bv, Value cv)
 {
     ENTER();
-    char *a, *rchars;
-    int b, c, al;
+    char *a, *rchars, *e;
+    int b, c, al, size;
     Value ret;
     a = StringChars(&av->string);
-    al = strlen(a);
+    al = StringLength (a);
     b = IntPart(bv, "substr: index not integer");
     c = IntPart(cv, "substr: count not integer");
     if (c < 0) {
@@ -129,9 +145,29 @@ do_String_substr (Value av, Value bv, Value cv)
 				2, NewInt (2), cv);
 	RETURN (av);
     }
-    ret = NewString(c);
+    /*
+     * Find start of substring
+     */
+    while (b > 0)
+    {
+	int ch;
+	a = StringNextChar (a, &ch);
+	b--;
+    }
+    /*
+     * Find size of substring
+     */
+    e = a;
+    while (c > 0)
+    {
+	int ch;
+	e = StringNextChar (e, &ch);
+	c--;
+    }
+    size = e - a;
+    ret = NewString(size);
     rchars = StringChars(&ret->string);
-    strncpy(rchars, a + b, c);
-    rchars[c] = '\0';
+    strncpy(rchars, a, size);
+    rchars[size] = '\0';
     RETURN (ret);
 }

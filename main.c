@@ -63,7 +63,11 @@ try_nicklerc (void)
 static void
 try_nicklelib (void)
 {
-    LexFile (NICKLELIB "/builtin.5c", True, False);
+    char    *nicklelib;
+
+    if ((nicklelib = getenv ("NICKLELIB")) == 0)
+	nicklelib = NICKLELIB "/builtin.5c";
+    LexFile (nicklelib, True, False);
 }    
 
 RETSIGTYPE	intr(int), ferr(int);

@@ -719,7 +719,7 @@ BoxValue (BoxPtr box, int e)
     {
 	RaiseStandardException (exception_uninitialized_value,
 				"Uninitialized value", 0);
-	return (Zero);
+	return (Void);
     }
     return (BoxElements(box)[e].value);
 }
@@ -743,7 +743,7 @@ Value	do_Command_undefine (int, Value *);
 Value	do_Thread_cont (void);
 Value	do_Thread_current (void);
 Value	do_Thread_list (void);
-Value	do_getchar (void);
+Value	do_getbyte (void);
 Value	do_time (void);
 Value	do_File_string_write (void);
 Value	do_Debug_up (void);
@@ -752,7 +752,7 @@ Value	do_Debug_done (void);
 Value	do_Debug_collect (void);
 
 /* one argument builtins */
-Value	do_putchar (Value);
+Value	do_putbyte (Value);
 Value	do_sleep (Value);
 Value	do_exit (Value);
 Value	do_dim (Value);
@@ -777,11 +777,11 @@ Value	do_is_file (Value);
 Value	do_is_thread (Value);
 Value	do_is_semaphore (Value);
 Value	do_is_continuation (Value);
-Value	do_is_void (Value);
 Value	do_is_array (Value);
 Value	do_is_ref (Value);
 Value	do_is_struct (Value);
 Value	do_is_func (Value);
+Value	do_is_bool (Value);
 Value	do_is_void (Value);
 Value	do_Thread_get_priority (Value);
 Value	do_Thread_id_to_thread (Value);
@@ -791,7 +791,7 @@ Value	do_Semaphore_wait (Value);
 Value	do_Semaphore_test (Value);
 Value	do_File_close (Value);
 Value	do_File_flush (Value);
-Value	do_File_getc (Value);
+Value	do_File_getb (Value);
 Value	do_File_end (Value);
 Value	do_File_error (Value);
 Value	do_File_clear_error (Value);
@@ -820,8 +820,8 @@ Value	do_gcd (Value, Value);
 Value	do_xor (Value, Value);
 Value	do_Math_pow (Value, Value);
 Value	do_Math_assignpow (Value, Value);
-Value	do_File_putc (Value, Value);
-Value	do_File_ungetc (Value, Value);
+Value	do_File_putb (Value, Value);
+Value	do_File_ungetb (Value, Value);
 Value	do_File_setbuf (Value, Value);
 Value	do_String_index (Value, Value);
 Value	do_setjmp (Value, Value);

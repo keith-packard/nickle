@@ -92,7 +92,7 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %token		    NL SEMI MOD OC CC DOLLAR DOTS
 %token <class>	    GLOBAL AUTO STATIC CONST
 %token <type>	    POLY INTEGER NATURAL RATIONAL REAL STRING
-%token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID
+%token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID BOOL
 %token		    FUNCTION FUNC EXCEPTION RAISE
 %token		    TYPEDEF IMPORT NEW
 %token <namespace>  NAMESPACE
@@ -104,7 +104,7 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %token <value>	    TEN_NUM OCTAL0_NUM OCTAL_NUM BINARY_NUM HEX_NUM
 %token <value>	    TEN_FLOAT OCTAL0_FLOAT OCTAL_FLOAT BINARY_FLOAT HEX_FLOAT
 %token <value>	    CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
-%token <value>	    VOIDVAL
+%token <value>	    VOIDVAL BOOLVAL
 
 %nonassoc 	POUND
 %right		COMMA
@@ -859,6 +859,7 @@ basetype    	: POLY
 		| CONTINUATION
 		| THREAD
 		| VOID
+		| BOOL
 		;
 opt_stars	: stars
 		|
@@ -1186,6 +1187,8 @@ primary		: fullname
 		    { $$ = NewExprConst(STRING_CONST, $1); }
 		| VOIDVAL
 		    { $$ = NewExprConst(VOIDVAL, $1); }
+		| BOOLVAL
+		    { $$ = NewExprConst(BOOLVAL, $1); }
 		| OP type CP namespace_start init namespace_end
 		    { 
 			ParseCanonType ($2);
@@ -1389,7 +1392,7 @@ lookupVar (char *ns, char *n)
     if (symbol && symbol->symbol.class == class_global)
 	v = BoxValue (symbol->global.value, 0);
     else
-	v = Zero;
+	v = Void;
     RETURN (v);
 }
 

@@ -523,9 +523,8 @@ FileStringString (Value file)
     {
 	RaiseStandardException (exception_invalid_argument,
 				"string_string: not string file",
-				2,
-				Zero, file);
-	RETURN (Zero);
+				2, file, Void);
+	RETURN (Void);
     }
     len = 0;
     for (out = file->file.output; out; out = out->next)
@@ -842,12 +841,12 @@ int
 FileStringWidth (char *string, char format)
 {
     if (format == 's')
-	return strlen (string);
+	return StringLength (string);
     else
     {
 	int	    width = 2;
-	char    c;
-	while ((c = *string++))
+	int	    c;
+	while ((string = StringNextChar (string, &c)))
 	{
 	    if (c < ' ' || '~' < c)
 		switch (c) {
@@ -856,6 +855,7 @@ FileStringWidth (char *string, char format)
 		case '\t':
 		case '\b':
 		case '\f':
+		case '\v':
 		    width += 2;
 		    break;
 		default:
@@ -880,8 +880,9 @@ FilePutString (Value f, char *string, char format)
     {
 	int c;
 	FileOutput (f, '"');
-	while ((c = *string++ & 0xff)) {
-	    if (c < ' ' || '~' < c)
+	while ((string = StringNextChar (string, &c))) 
+	{
+	    if (c < ' ')
 		switch (c) {
 		case '\n':
 		    FilePuts (f, "\\n");
@@ -898,6 +899,9 @@ FilePutString (Value f, char *string, char format)
 		case '\f':
 		    FilePuts (f, "\\f");
 		    break;
+		case '\v':
+		    FilePuts (f, "\\v");
+		    break;
 		default:
 		    FileOutput (f, '\\');
 		    Print (f, NewInt (c), 'o', 8, 3, -1, '0');
@@ -906,7 +910,12 @@ FilePutString (Value f, char *string, char format)
 	    else if (c == '"')
 		FilePuts (f, "\\\"");
 	    else
-		FileOutput (f, c);
+	    {
+		char	dest[7];
+		int l = StringPutChar (c, dest);
+		dest[l] = '\0';
+		FilePuts (f, dest);
+	    }
 	}
 	FileOutput (f, '"');
     }
@@ -944,6 +953,9 @@ FilePutType (Value f, Type tag, Bool minimal)
 	break;
     case type_continuation:
 	FilePuts (f, "continuation");
+	break;
+    case type_bool:
+	FilePuts (f, "bool");
 	break;
     case type_void:
 	FilePuts (f, "void");

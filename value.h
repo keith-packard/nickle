@@ -247,14 +247,15 @@ typedef enum _type {
 	type_thread = 6,
 	type_semaphore = 7,
 	type_continuation = 8,
-	type_void = 9,
-	type_ref = 10,
-	type_func = 11,
+	type_bool = 9,
+	type_void = 10,
+	type_ref = 11,
+	type_func = 12,
     
 	/* mutable types */
- 	type_array = 12,
-	type_struct = 13,
-	type_union = 14
+ 	type_array = 13,
+	type_struct = 14,
+	type_union = 15
 } Type;
 
 /* because type_undef is -1, using (unsigned) makes these a single compare */
@@ -265,7 +266,7 @@ typedef enum _type {
 extern ValueType    IntType, IntegerType, RationalType, FloatType;
 extern ValueType    StringType, ArrayType, FileType;
 extern ValueType    RefType, structType, unionType, FuncType, ThreadType;
-extern ValueType    SemaphoreType, ContinuationType, UnitType;
+extern ValueType    SemaphoreType, ContinuationType, UnitType, BoolType;
 
 #define ValueIsInt(v) ((v)->value.type == &IntType)
 #define ValueIsInteger(v) ((v)->value.type == &IntegerType)
@@ -282,7 +283,7 @@ extern ValueType    SemaphoreType, ContinuationType, UnitType;
 #define ValueIsSemaphore(v) ((v)->value.type == &SemaphoreType)
 #define ValueIsContinuation(v) ((v)->value.type == &ContinuationType)
 #define ValueIsUnit(v) ((v)->value.type == &UnitType)
-
+#define ValueIsBool(v) ((v)->value.type == &BoolType)
 
 /*
  * Aggregate types
@@ -374,6 +375,7 @@ extern Types	    *typesPrim[type_void - type_int + 1];
 #define typesEnum   ((Types *) 1)
 
 #define TypePoly(t) ((t)->base.tag == types_prim && (t)->prim.prim == type_undef)
+#define TypeBool(t) ((t)->base.tag == types_prim && (t)->prim.prim == type_bool)
 
 Types	*NewTypesName (ExprPtr expr, Types *type);
 Types	*NewTypesRef (Types *ref);
@@ -763,6 +765,11 @@ Value	NewStrString (char *);
 Value	NewArray (Bool constant, TypesPtr type, int ndim, int *dims);
 Value	NewFile (int fd);
 Value	NewRefReal (BoxPtr box, int element, Value *re);
+char	*StringNextChar (char *src, int *dst);
+int	StringPutChar (int c, char *dest);
+int	StringLength (char *src);
+int	StringCharSize (int c);
+int	StringGet (char *src, int i);
 
 #ifdef HAVE_C_INLINE
 static inline Value
@@ -794,10 +801,10 @@ Value	NumericDiv (Value av, Value bv, int expandOk);
 
 # define	OK_TRUNC	1
 
-extern Value	Zero, One, Blank, Empty, Elementless, Void;
+extern Value	Zero, One, Blank, Empty, Elementless, Void, TrueVal, FalseVal;
 
-# define True(v)	(!Zerop(v))
-# define False(v)	(Zerop(v))
+# define True(v)	((v) == TrueVal)
+# define False(v)	((v) != TrueVal)
 
 Value	FileGetError (int err);
 int	FileInput (Value);
@@ -874,7 +881,6 @@ Copy (Value v)
 Value	Copy (Value);
 #endif
 Value	Dereference (Value);
-Value	Default (TypesPtr);
 Value	ValueEqual (Value a, Value b, int expandOk);
 
 /*

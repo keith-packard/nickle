@@ -90,7 +90,7 @@ int nttstates = 0;
     }
 
     /* first, try to look up an old entry */
-    for (*ttent t = ttable; t; t = t->next)
+    for (*ttent t = ttable; t != 0; t = t->next)
 	for (int i = 0; i < 8; i++)
 	    if (t->posns[i] == pos)
 		return t;

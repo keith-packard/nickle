@@ -36,12 +36,12 @@ import_File_namespace()
     };
 
     static struct fbuiltin_1 funcs_1[] = {
-        { do_File_clear_error, "clear_error", "i", "f" },
-        { do_File_close, "close", "i", "f" },
-        { do_File_end, "end", "i", "f" },
-        { do_File_error, "error", "i", "f" },
-        { do_File_flush, "flush", "i", "f" },
-        { do_File_getc, "getc", "i", "f" },
+        { do_File_clear_error, "clear_error", "v", "f" },
+        { do_File_close, "close", "v", "f" },
+        { do_File_end, "end", "b", "f" },
+        { do_File_error, "error", "b", "f" },
+        { do_File_flush, "flush", "v", "f" },
+        { do_File_getb, "getb", "i", "f" },
         { do_File_string_read, "string_read", "f", "s" },
         { do_File_string_string, "string_string", "s", "f" },
         { 0 }
@@ -49,9 +49,9 @@ import_File_namespace()
 
     static struct fbuiltin_2 funcs_2[] = {
         { do_File_open, "open", "f", "ss" },
-        { do_File_putc, "putc", "i", "if" },
+        { do_File_putb, "putb", "i", "if" },
         { do_File_setbuf, "setbuffer", "i", "fi" },
-        { do_File_ungetc, "ungetc", "i", "if" },
+        { do_File_ungetb, "ungetb", "i", "if" },
         { 0 }
     };
 
@@ -61,7 +61,7 @@ import_File_namespace()
     };
 
     static struct fbuiltin_7 funcs_7[] = {
-        { do_File_print, "print", "i", "fpsiiis" },
+        { do_File_print, "print", "v", "fpsiiis" },
         { 0 }
     };
 
@@ -99,13 +99,13 @@ do_File_print (Value file, Value value, Value format,
     
     ibase = IntPart (base, "Illegal base");
     if (aborting)
-	return Zero;
+	return Void;
     iwidth = IntPart (width, "Illegal width");
     if (aborting)
-	return Zero;
+	return Void;
     iprec = IntPart (prec, "Illegal precision");
     if (aborting)
-	return Zero;
+	return Void;
     if (file->file.flags & FileOutputBlocked)
 	ThreadSleep (running, file, PriorityIo);
     else
@@ -119,7 +119,7 @@ do_File_print (Value file, Value value, Value format,
 				    2, FileGetError (file->file.output_errno), file);
 	}
     }
-    return Zero;
+    return Void;
 }
 
 Value 
@@ -133,14 +133,14 @@ do_File_open (Value name, Value mode)
     n = StringChars (&name->string);
     m = StringChars (&mode->string);
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     ret = FileFopen (n, m, &err);
     if (!ret)
     {
 	RaiseStandardException (exception_open_error,
 				strerror (err),
 				2, FileGetError (err), name);
-	RETURN (Zero);
+	RETURN (Void);
     }
     complete = True;
     RETURN (ret);
@@ -159,14 +159,14 @@ do_File_flush (Value f)
 				2, FileGetError (f->file.output_errno), f);
 	break;
     }
-    return One;
+    return Void;
 }
 
 Value 
 do_File_close (Value f)
 {
     if (aborting)
-	return Zero;
+	return Void;
     switch (FileFlush (f)) {
     case FileBlocked:
 	ThreadSleep (running, f, PriorityIo);
@@ -186,7 +186,7 @@ do_File_close (Value f)
 	else
 	    complete = True;
     }
-    return One;
+    return Void;
 }
 
 Value
@@ -207,7 +207,7 @@ do_File_pipe (Value file, Value argv, Value mode)
     }
     args[argc] = 0;
     if (aborting)
-	RETURN(Zero);
+	RETURN(Void);
     ret = FilePopen (StringChars (&file->string), args, 
 		     StringChars (&mode->string), &err);
     if (!ret)
@@ -215,7 +215,7 @@ do_File_pipe (Value file, Value argv, Value mode)
 	RaiseStandardException (exception_open_error,
 				strerror (err),
 				2, FileGetError (err), file);
-	ret = Zero;
+	ret = Void;
     }
     complete = True;
     RETURN (ret);
@@ -246,7 +246,7 @@ do_File_string_string (Value f)
 }
 
 Value 
-do_File_getc (Value f)
+do_File_getb (Value f)
 {
     ENTER ();
     int	    c;
@@ -257,18 +257,18 @@ do_File_getc (Value f)
 	switch (c) {
 	case FileBlocked:
 	    ThreadSleep (running, f, PriorityIo);
-	    RETURN (Zero);
+	    RETURN (Void);
 	case FileError:
 	    RaiseStandardException (exception_io_error,
 				    strerror (f->file.input_errno),
 				    2, FileGetError (f->file.input_errno), f);
-	    RETURN (Zero);
+	    RETURN (Void);
 	default:
 	    complete = True;
 	    RETURN (NewInt (c));
 	}
     }
-    RETURN (Zero);
+    RETURN (Void);
 }
 
 Value
@@ -276,9 +276,9 @@ do_File_end (Value f)
 {
     ENTER ();
     if (f->file.flags & FileEnd)
-	RETURN (One);
+	RETURN (TrueVal);
     else
-	RETURN (Zero);
+	RETURN (FalseVal);
 }
 
 Value
@@ -286,9 +286,9 @@ do_File_error (Value f)
 {
     ENTER ();
     if (f->file.flags & (FileInputError|FileOutputError))
-	RETURN (One);
+	RETURN (TrueVal);
     else
-	RETURN (Zero);
+	RETURN (FalseVal);
 }
 
 Value
@@ -296,11 +296,11 @@ do_File_clear_error (Value f)
 {
     ENTER ();
     f->file.flags &= ~(FileInputError|FileOutputError|FileEnd);
-    RETURN (One);
+    RETURN (Void);
 }
 
 Value 
-do_File_putc (Value v, Value f)
+do_File_putb (Value v, Value f)
 {
     ENTER ();
     
@@ -310,7 +310,7 @@ do_File_putc (Value v, Value f)
     {
 	if (!aborting)
 	{
-	    if (FileOutput (f, IntPart (v, "putc non integer")) == FileError)
+	    if (FileOutput (f, IntPart (v, "putb non integer")) == FileError)
 	    {
 		RaiseStandardException (exception_io_error,
 					strerror (f->file.output_errno),
@@ -324,7 +324,7 @@ do_File_putc (Value v, Value f)
 }
 
 Value 
-do_File_ungetc (Value v, Value f)
+do_File_ungetb (Value v, Value f)
 {
     ENTER ();
     
@@ -335,7 +335,7 @@ do_File_ungetc (Value v, Value f)
 	if (!aborting)
 	{
 	    complete = True;
-	    FileUnput (f, IntPart (v, "ungetc: non integer"));
+	    FileUnput (f, IntPart (v, "ungetb: non integer"));
 	}
     }
     RETURN (v);

@@ -24,21 +24,20 @@ import_Debug_namespace()
 {
     ENTER ();
     static struct fbuiltin_0 funcs_0[] = {
-        { do_Debug_collect, "collect", "i", "" },
-        { do_Debug_done, "done", "i", "" },
-        { do_Debug_down, "down", "i", "" },
-        { do_Debug_up, "up", "i", "" },
+        { do_Debug_collect, "collect", "v", "" },
+        { do_Debug_done, "done", "v", "" },
+        { do_Debug_down, "down", "b", "" },
+        { do_Debug_up, "up", "b", "" },
         { 0 }
     };
 
     static struct fbuiltin_1 funcs_1[] = {
-        { do_Debug_dump, "dump", "i", "p" },
+        { do_Debug_dump, "dump", "v", "p" },
         { 0 }
     };
 
     static struct fbuiltin_v funcs_v[] = {
-        { do_Thread_trace, "trace", "i", ".p" },
-        { do_Thread_trace, "trace", "i", ".p" },
+        { do_Thread_trace, "trace", "v", ".p" },
         { 0 }
     };
 
@@ -55,5 +54,5 @@ do_Debug_collect (void)
 {
     ENTER ();
     MemCollect ();
-    RETURN (One);
+    RETURN (Void);
 }

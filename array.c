@@ -27,15 +27,15 @@ ArrayEqual (Value av, Value bv, int expandOk)
     int	    i;
 
     if (a->ndim != b->ndim)
-	return Zero;
+	return FalseVal;
     for (i = 0; i < a->ndim; i++)
 	if (a->dim[i] != b->dim[i])
-	    return Zero;
+	    return FalseVal;
     for (i = 0; i < a->ents; i++)
-	if (Zerop (Equal ( BoxValue (a->values, i), 
+	if (False (Equal ( BoxValue (a->values, i), 
 			  BoxValue (b->values, i))))
-	    return Zero;
-    return One;
+	    return FalseVal;
+    return TrueVal;
 }
 
 static Bool

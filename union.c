@@ -81,7 +81,7 @@ UnionEqual (Value av, Value bv, int expandOk)
     if (!ValueIsUnion(bv))
 	return Equal (BoxValue (a->value, 0), bv);
     if (a->tag != b->tag)
-	return Zero;
+	return FalseVal;
     return Equal (BoxValue (a->value, 0), BoxValue (b->value, 0));
 }
 

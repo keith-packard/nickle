@@ -6,26 +6,67 @@ extend namespace File {
     /*
      * Include existing public File members
      */
-    public import File;
+    
+    public exception invalid_utf8 (file f, int c);
+    
+    public int getc (file f)
+    {
+	int result = File::getc (f);
+
+	if (result == -1)
+	    return -1;
+	if ((result & 0x80) != 0)
+	{
+	    if ((result & 0xc0) != 0xc0)
+		raise invalid_utf8 (f, result);
+	    int mask = 0x20;
+	    int extra = 1;
+	    while ((result & mask) != 0)
+	    {
+		extra++;
+		mask >>= 1;
+	    }
+	    result &= (mask - 1);
+	    while (extra-- > 0)
+	    {
+		int c = File::getb (f);
+		if (c == -1 || (c & 0xc0) != 0x80)
+		    raise invalid_utf8 (f, c);
+		result = (result << 6) | (c & 0x3f);
+	    }
+	}
+	return result;
+    }
+
+    public void ungetc (int c, file f)
+    {
+	int[7]	bytes;
+	int	j = 7;
+
+	void push(int c) {  }
+	to_utf8(c, void func (int c) { bytes[--j] = c; });
+	while (j < 7)
+	    File::ungetb (bytes[j++], f);
+    }
     
     /*
      * vfscanf
      */
     public int vfscanf (file f, string format, (*poly)[*] args)
     {
-	int iswhite (int c)
+	bool iswhite (int c)
 	{
 	    switch (c) {
 	    case ' ':
 	    case '\t':
 	    case '\n':
-		return 1;
+		return true;
 	    }
-	    return 0;
+	    return false;
 	}
 
 	/* Skip whitespace */
-	function whitespace ()
+	void whitespace ()
 	{
 	    int c;
 
@@ -34,19 +75,19 @@ extend namespace File {
 	    File::ungetc (c, f);
 	}
 
-	int isnumber (int c)
+	bool isnumber (int c)
 	{
 	    if ('0' <= c && c <= '9')
-		return 1;
+		return true;
 	    if ('a' <= c && c <= 'f')
-		return 1;
+		return true;
 	    if ('A' <= c && c <= 'F')
-		return 1;
+		return true;
 	    if (c == '-')
-		return 1;
+		return true;
 	    if (c == '.')
-		return 1;
-	    return 0;
+		return true;
+	    return false;
 	}
 
 	/* return next number in input */
@@ -147,19 +188,29 @@ extend namespace File {
 	    }
 	}
     }
+
+    public int scanf (string format, *poly args...)
+    {
+	return File::vfscanf (stdin, format, args);
+    }
+
+    public int vscanf (string format, (*poly)[*] args)
+    {
+	return File::vfscanf (stdin, format, args);
+    }    
+
+    public string gets ()
+    {
+	return File::fgets (stdin);
+    }
+
+    public int getchar ()
+    {
+	return File::getc (stdin);
+    }
 }
 
-public int scanf (string format, *poly args...)
-{
-    return File::vfscanf (stdin, format, args);
-}
-
-public int vscanf (string format, (*poly)[*] args)
-{
-    return File::vfscanf (stdin, format, args);
-}    
-
-public string gets ()
-{
-    return File::fgets (stdin);
-}
+public int (string format, *poly args...) scanf = File::scanf;
+public int (string format, (*poly)[*] args) vscanf = File::vscanf;
+public string () gets = File::gets;
+public int () getchar = File::getchar;

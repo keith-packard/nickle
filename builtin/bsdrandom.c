@@ -65,5 +65,5 @@ do_BSD_srandom (Value seed)
     int n = IntPart (seed, "srandom: non-integer seed");
 
     srandom ((unsigned int) n);
-    RETURN (Zero);
+    RETURN (seed);
 }

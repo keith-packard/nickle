@@ -168,12 +168,12 @@ do_Thread_join (Value target)
     if (!ValueIsThread(target))
     {
 	RaiseError ("Join needs thread argument");
-	RETURN (Zero);
+	RETURN (Void);
     }
     if ((target->thread.state & ThreadFinished) == 0)
     {
 	ThreadSleep (running, target, PrioritySync);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (target->thread.continuation.value);
 }
@@ -199,6 +199,7 @@ ThreadListState (Value thread)
 Value
 do_Thread_list (void)
 {
+    ENTER ();
     Value   t;
 
     for (t = running; t; t = t->thread.next)
@@ -215,7 +216,7 @@ do_Thread_list (void)
 	    FilePrintf (FileStdout, " %v", t->thread.sleep);
 	FileOutput (FileStdout, '\n');
     }
-    return Zero;
+    RETURN(Void);
 }
 
 Value
@@ -227,14 +228,14 @@ do_Thread_id_to_thread (Value id)
 
     i = IntPart (id, "Invalid thread id");
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     for (t = running; t; t = t->thread.next)
 	if (t->thread.id == i)
 	    RETURN (t);
     for (t = stopped; t; t = t->thread.next)
 	if (t->thread.id == i)
 	    RETURN (t);
-    RETURN (Zero);
+    RETURN (Void);
 }
 
 Value
@@ -245,7 +246,7 @@ do_Thread_current (void)
     if (running)
 	ret = running;
     else
-	ret = Zero;
+	ret = Void;
     RETURN (ret);
 }
 
@@ -257,11 +258,11 @@ do_Thread_set_priority (Value thread, Value priority)
     if (!ValueIsThread(thread))
     {
 	RaiseError ("SetPriority: %v not a thread", thread);
-	RETURN (Zero);
+	RETURN (Void);
     }
     i = IntPart (priority, "Invalid thread priority");
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     if (i != thread->thread.priority)
     {
 	_ThreadRemove (thread);
@@ -278,7 +279,7 @@ do_Thread_get_priority (Value thread)
     if (!ValueIsThread(thread))
     {
 	RaiseError ("GetPriority: %v not a thread", thread);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (NewInt (thread->thread.priority));
 }
@@ -401,10 +402,10 @@ do_Thread_trace (int n, Value *p)
 	    RaiseError ("trace: no default continuation");
 	else
 	    RaiseError ("trace: %v neither continuation nor thread", v);
-	RETURN (Zero);
+	RETURN (Void);
     }
     TraceFrame (frame, pc);
-    RETURN(One);
+    RETURN(Void);
 }
 
 static void
@@ -702,7 +703,7 @@ ContinuationInit (ContinuationPtr dst)
     dst->pc = 0;
     dst->obj = 0;
     dst->frame = 0;
-    dst->value = Zero;
+    dst->value = Void;
     dst->catches = 0;
     dst->twixts = 0;
     dst->stack = 0;
@@ -872,7 +873,7 @@ do_setjmp (Value continuation_ref, Value ret)
     if (!ValueIsRef(continuation_ref))
     {
 	RaiseError ("setjump: not a reference %v", continuation_ref);
-	RETURN (Zero);
+	RETURN (Void);
     }
     continuation = NewContinuation (&running->thread.continuation,
 				    running->thread.continuation.pc + 1);
@@ -893,11 +894,11 @@ do_longjmp (InstPtr *next, Value continuation, Value ret)
     ENTER ();
 
     if (!running)
-	RETURN (Zero);
+	RETURN (Void);
     if (!ValueIsContinuation(continuation))
     {
 	RaiseError ("longjump: not a continuation %v", continuation);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (ContinuationJump (running, &continuation->continuation, ret, next));
 }

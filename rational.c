@@ -131,7 +131,7 @@ RationalDivide (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_divide_by_zero,
 				"rational divide by zero",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     sign = Positive;
     if (a->sign != b->sign)
@@ -176,7 +176,7 @@ RationalMod (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_divide_by_zero,
 				"rational modulus by zero",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     div = NaturalTimes (b->num, a->den);
     quo = NaturalDivide (NaturalTimes (a->num, b->den), div, &rem);
@@ -214,7 +214,7 @@ RationalLess (Value av, Value bv, int expandOk)
 	ret = 1;
 	break;
     }
-    RETURN (ret ? One : Zero);
+    RETURN (ret ? TrueVal : FalseVal);
 }
 
 static Value
@@ -226,9 +226,9 @@ RationalEqual (Value av, Value bv, int expandOk)
 	NaturalEqual (a->num, b->num) && 
 	NaturalEqual (a->den, b->den))
     {
-	return One;
+	return TrueVal;
     }
-    return Zero;
+    return FalseVal;
 }
 
 static Value

@@ -26,7 +26,7 @@ import_Thread_namespace()
     static struct fbuiltin_0 funcs_0[] = {
         { do_Thread_cont, "cont", "i", "" },
         { do_Thread_current, "current", "t", "" },
-        { do_Thread_list, "list", "i", "" },
+        { do_Thread_list, "list", "v", "" },
         { 0 }
     };
 

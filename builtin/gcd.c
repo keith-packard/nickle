@@ -49,3 +49,4 @@ do_Gcd_kary_reduction (Value a, Value b)
     ENTER ();
     RETURN (KaryReduction (a, b));
 }
+#endif

@@ -882,8 +882,6 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
     case COLON:
-    case AND:
-    case OR:
 	if (TypePoly (left))
 	{
 	    rets = TypeAdd (rets, typesPoly, &nret, &sret);
@@ -901,6 +899,14 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 		rets = TypeAdd (rets, left, &nret, &sret);
 	}
 	break;
+    case AND:
+    case OR:
+	if ((TypePoly (left) || TypeBool (left)) &&
+	    (TypePoly (right) || TypeBool (right)))
+	{
+	    rets = TypeAdd (rets, typesPrim[type_bool], &nret, &sret);
+	}
+	break;
     case EQ:
     case NE:
 #if 0
@@ -912,7 +918,7 @@ TypeCombineBinary (Types *left, int tag, Types *right)
     case LE:
     case GE:
 	if (TypeCompatible (left, right, False))
-	    rets = TypeAdd (rets, typesPrim[type_integer], &nret, &sret);
+	    rets = TypeAdd (rets, typesPrim[type_bool], &nret, &sret);
 	break;
     }
     RETURN (TypeCombineFlatten (rets, nret, sret));
@@ -967,9 +973,8 @@ TypeCombineUnary (Types *type, int tag)
 	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
     case BANG:
-	ret = TypeCombineBinary (type, EQ, typesNil);
-	if (ret)
-	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if (TypePoly (type) || TypeBool (type))
+	    rets = TypeAdd (rets, typesPrim[type_bool], &nret, &sret);
 	break;
     case FACT:
 	ret = TypeUnaryIntegral (type);

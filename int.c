@@ -138,7 +138,7 @@ IntDivide (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_divide_by_zero,
 				"int divide by zero",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     if (expandOk && a % b != 0)
 	ret = Divide (NewIntRational (a), NewIntRational (b));
@@ -160,7 +160,7 @@ IntDiv (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_divide_by_zero,
 				"int div by zero",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     switch (catagorize_signs (sign(a), sign(b))) {
     case BothPositive:
@@ -204,7 +204,7 @@ IntMod (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_divide_by_zero,
 				"int modulus by zero",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     switch (catagorize_signs (sign(a), sign(b))) {
     case BothPositive:
@@ -233,8 +233,8 @@ IntEqual (Value av, Value bv, int expandOk)
 {
     int		a = av->ints.value, b = bv->ints.value;
     if (a == b)
-	return One;
-    return Zero;
+	return TrueVal;
+    return FalseVal;
 }
 
 static Value
@@ -242,8 +242,8 @@ IntLess (Value av, Value bv, int expandOk)
 {
     int		a = av->ints.value, b = bv->ints.value;
     if (a < b)
-	return One;
-    return Zero;
+	return TrueVal;
+    return FalseVal;
 }
 
 static Value
@@ -302,13 +302,14 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
 	letter = 'a';
     if (base == 0)
 	base = 10;
-    s = space + sizeof (space);
-    *--s = '\0';
     switch (format) {
     case 'c':
-	*--s = a & 0xff;
+	space[StringPutChar (a, space)] = '\0';
+	s = space;
 	break;
     default:
+	s = space + sizeof (space);
+	*--s = '\0';
 	neg = 0;
 	if (a < 0)
 	{
@@ -333,7 +334,7 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
 		*--s = '-';
 	}
     }
-    w = (space + sizeof (space) - s) - 1;
+    w = StringLength (s);
     fraction_width = 0;
     if (prec >= 0)
     {

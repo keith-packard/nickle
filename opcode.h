@@ -43,6 +43,7 @@ typedef enum _OpCode {
     OpLocal,
     OpLocalRef,
     OpLocalRefStore,
+    OpFetch,
     OpConst,
     OpBuildArray,
     OpInitArray,

@@ -15,7 +15,7 @@ do_Semaphore_wait (Value s)
 {
     ENTER ();
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     if (!running->thread.partial)
     {
 	--s->semaphore.count;
@@ -23,11 +23,11 @@ do_Semaphore_wait (Value s)
 	{
 	    running->thread.partial = 1;
 	    ThreadSleep (running, s, PrioritySync);
-	    RETURN (One);
+	    RETURN (Void);
 	}
     }
     complete = True;
-    RETURN (One);
+    RETURN (Void);
 }
 
 Value
@@ -35,8 +35,9 @@ do_Semaphore_test (Value s)
 {
     ENTER ();
     if (s->semaphore.count <= 0)
-	RETURN (Zero);
-    RETURN (do_Semaphore_wait (s));
+	RETURN (FalseVal);
+    do_Semaphore_wait (s);
+    RETURN (TrueVal);
 }
 
 Value
@@ -44,17 +45,12 @@ do_Semaphore_signal (Value s)
 {
     ENTER ();
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     ++s->semaphore.count;
     if (s->semaphore.count <= 0)
 	ThreadsWakeup (s, WakeOne);
     complete = True;
-    RETURN (One);
-}
-
-static void
-SemaphoreMark (void *object)
-{
+    RETURN (Void);
 }
 
 static Bool
@@ -65,7 +61,7 @@ SemaphorePrint (Value f, Value av, char format, int base, int width, int prec, u
 }
 
 ValueType   SemaphoreType = {
-    { SemaphoreMark, 0 },   /* base */
+    { 0, 0 },   /* base */
     type_semaphore,	    /* tag */
     {			    /* binary */
 	0,
@@ -111,7 +107,7 @@ do_Semaphore_new (int n, Value *value)
 				2,
 				NewInt (1),
 				NewInt (n));
-	RETURN(Zero);
+	RETURN(Void);
     }
     ret = ALLOCATE (&SemaphoreType.data, sizeof (Semaphore));
     ret->semaphore.count = count;

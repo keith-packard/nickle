@@ -113,7 +113,7 @@ IntegerDivide (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_divide_by_zero,
 				"integer divide by zero",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     sign = Positive;
     if (a->sign != b->sign)
@@ -137,7 +137,7 @@ IntegerDiv (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_divide_by_zero,
 				"integer div by zero",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     quo = NaturalDivide (a->mag, b->mag, &rem);
     sign = Positive;
@@ -160,7 +160,7 @@ IntegerMod (Value av, Value bv, int expandOk)
 	RaiseStandardException (exception_divide_by_zero,
 				"integer modulus by zero",
 				2, av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     quo = NaturalDivide (a->mag, b->mag, &rem);
     if (a->sign == Negative && !NaturalZero (rem))
@@ -174,20 +174,20 @@ IntegerLess (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Value	ret;
 
-    ret = Zero;
+    ret = FalseVal;
     switch (catagorize_signs (a->sign, b->sign)) {
     case BothPositive:
 	if (NaturalLess (a->mag, b->mag))
-	    ret = One;
+	    ret = TrueVal;
 	break;
     case FirstPositive:
 	break;
     case SecondPositive:
-	ret = One;
+	ret = TrueVal;
 	break;
     case BothNegative:
 	if (NaturalLess (b->mag, a->mag))
-	    ret = One;
+	    ret = TrueVal;
 	break;
     }
     return ret;
@@ -199,8 +199,8 @@ IntegerEqual (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
 
     if (a->sign == b->sign && NaturalEqual (a->mag, b->mag))
-	return One;
-    return Zero;
+	return TrueVal;
+    return FalseVal;
 }
 
 #if 0

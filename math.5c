@@ -21,7 +21,7 @@ extend namespace Math {
 	    err = 1/(2**(precision (v)+3));
 	    prev = imprecise (1 / (2**(floor (exponent(v)/2))), precision(v));
 	    iter = precision (v) + 15;
-	    while (iter--)
+	    while (iter-- > 0)
 	    {
 		cur = 0.5 * prev * (3 - v * prev**2);
 		if (abs (cur - prev) < err)
@@ -133,7 +133,7 @@ extend namespace Math {
 	 *
 	 *  exp(n) = 1 + n/1 + n**2/2! + n**3/3!
 	 */
-	while (iter--)
+	while (iter-- > 0)
 	{
 	    real term = num/den;
 	    e = e + term;
@@ -371,7 +371,7 @@ extend namespace Math {
 	     */
 	    real one = imprecise (1, iprec);
 
-	    while (maxiter--)
+	    while (maxiter-- > 0)
 	    {
 		real term = a * exp (-v) - one;
 		/* printf ("v: %g term: %g err: %g term*err: %g\n",
@@ -394,7 +394,7 @@ extend namespace Math {
 	static real	loge = 0;
 
 	a = imprecise (a);
-	if (!loge || precision (loge) < precision (a))
+	if (loge == 0 || precision (loge) < precision (a))
 	    loge = 1/log(imprecise (10, precision (a)));
 	return loge * log(a);
     }
@@ -409,7 +409,7 @@ extend namespace Math {
 	static real	loge = 0;
 
 	a = imprecise (a);
-	if (!loge || precision (loge) < precision (a))
+	if (loge == 0 || precision (loge) < precision (a))
 	    loge = 1/log(imprecise (2, precision (a)));
 	return loge * log(a);
     }
@@ -486,7 +486,7 @@ extend namespace Math {
 	    result = 1 / den;
 	    pv = 1 / (den ** p);
 	    qv = 1 / (den ** q);
-	    while (l--)
+	    while (l-- > 0)
 	    {
 		partial = pv / p - qv / q;
 		if (partial == 0)
@@ -556,9 +556,10 @@ extend namespace Math {
 	    aj = a**j;
 	    iter = prec + 8;
 	    v = 0;
-	    while (iter--)
+	    while (iter-- > 0)
 	    {
 		term = ai/i! - aj/j!;
+		/* printf ("sin iter %d term %d\n", iter, term);*/
 		v += term;
 		if (exponent (v) > exponent (term) + iprec)
 		    break;
@@ -613,7 +614,7 @@ extend namespace Math {
 	    a4 = a**4;
 	    iter = prec + 8;
 	    v = 0;
-	    while (iter--)
+	    while (iter-- > 0)
 	    {
 		term = ai/i! - aj/j!;
 		v += term;
@@ -658,9 +659,9 @@ extend namespace Math {
 	a = limit_angle_to_pi (a);
 	c = cos (a);
 	s = sign(a) * abs (cos_to_sin(c));
-	if (cosp)
+	if (cosp != 0)
 	    *cosp = c;
-	if (sinp)
+	if (sinp != 0)
 	    *sinp = s;
     }
     
@@ -695,7 +696,7 @@ extend namespace Math {
 	    v4 = v**4;
 	    a = 0;
 	    iter = prec + 8;
-	    while (iter--)
+	    while (iter-- > 0)
 	    {
 		term = vi/i - vj/j;
 		a += term;
@@ -830,14 +831,14 @@ extend namespace Math {
 		b = -b;
 	    }
 	    result = 1;
-	    while (b)
+	    while (b > 0)
 	    {
-		if (b % 2)
+		if (b % 2 != 0)
 		    result *= a;
-		if (b //= 2)
+		if ((b //= 2) != 0)
 		    a *= a;
 	    }
-	    if (flip)
+	    if (flip != 0)
 		result = 1/result;
 	}
 	else

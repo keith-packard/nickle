@@ -71,7 +71,7 @@ BoxValue (BoxPtr box, int e)
     {
 	RaiseStandardException (exception_uninitialized_value,
 				"Uninitialized value", 0);
-	return (Zero);
+	return (Void);
     }
     return (BoxElements(box)[e].value);
 }

@@ -18,6 +18,28 @@ extend namespace File {
     public exception too_many_arguments (string format, poly[*] args);
     public exception too_few_arguments (string format, poly[*] args);
     
+    void to_utf8 (int c, void(int c) f)
+    {
+	int	bits;
+	
+	     if (c <        0x0) return;
+	else if (c <       0x80) { f(c);                          bits= -6; }
+	else if (c <      0x800) { f(((c >>  6) & 0x1F) | 0xC0);  bits=  0; }
+	else if (c <    0x10000) { f(((c >> 12) & 0x0F) | 0xE0);  bits=  6; }
+	else if (c <   0x200000) { f(((c >> 18) & 0x07) | 0xF0);  bits= 12; }
+	else if (c <  0x4000000) { f(((c >> 24) & 0x03) | 0xF8);  bits= 18; }
+	else if (c < 0x80000000) { f(((c >> 30) & 0x01) | 0xFC);  bits= 24; }
+	else return;
+    
+	for ( ; bits >= 0; bits-= 6)
+	    f(((c >> bits) & 0x3F) | 0x80);
+    }
+    
+    public void putc (int c, file f)
+    {
+	to_utf8 (c, void func (int c) { File::putb (c, f); });
+    }
+    
     public void vfprintf (file f, string format, poly[*] args)
     {
 	/*
@@ -30,7 +52,7 @@ extend namespace File {
 	    /*
 	     * Return whether the end of the string has been reached
 	     */
-	    public int done () { 
+	    public bool done () { 
 		return i >= len; 
 	    }
 
@@ -54,13 +76,13 @@ extend namespace File {
 	    /*
 	     * Return true and step if current character matches 'm'
 	     */
-	    public int match(int m) {
+	    public bool match(int m) {
 		if (c() == m) 
 		{
 		    step();
-		    return 1;
+		    return true;
 		}
-		return 0;
+		return false;
 	    }
 		    
 	    /*
@@ -168,7 +190,13 @@ extend namespace File {
     {
 	return vsprintf (format, args);
     }
+
+    public void putchar (int c)
+    {
+	putc (c, stdout);
+    }
 }
     
 void (string format, poly args...) printf = File::printf;
 string (string format, poly args...) sprintf = File::sprintf;
+void (int c) putchar = File::putchar;

@@ -22,7 +22,7 @@ import_Toplevel_namespace()
 {
     ENTER ();
     static struct fbuiltin_0 funcs_0[] = {
-        { do_getchar, "getchar", "i", "" },
+        { do_getbyte, "getbyte", "i", "" },
         { do_time, "time", "i", "" },
         { 0 }
     };
@@ -37,27 +37,28 @@ import_Toplevel_namespace()
         { do_exit, "exit", "v", "i" },
         { do_exponent, "exponent", "i", "R" },
         { do_floor, "floor", "i", "R" },
-        { do_is_array, "is_array", "i", "p" },
-        { do_is_continuation, "is_continuation", "i", "p" },
-        { do_is_file, "is_file", "i", "p" },
-        { do_is_func, "is_func", "i", "p" },
-        { do_is_int, "is_int", "i", "p" },
-        { do_is_number, "is_number", "i", "p" },
-        { do_is_rational, "is_rational", "i", "p" },
-        { do_is_ref, "is_ref", "i", "p" },
-        { do_is_semaphore, "is_semaphore", "i", "p" },
-        { do_is_string, "is_string", "i", "p" },
-        { do_is_struct, "is_struct", "i", "p" },
-        { do_is_thread, "is_thread", "i", "p" },
-        { do_is_void, "is_void", "i", "p" },
+        { do_is_array, "is_array", "b", "p" },
+        { do_is_continuation, "is_continuation", "b", "p" },
+        { do_is_file, "is_file", "b", "p" },
+        { do_is_func, "is_func", "b", "p" },
+        { do_is_int, "is_int", "b", "p" },
+        { do_is_number, "is_number", "b", "p" },
+        { do_is_rational, "is_rational", "b", "p" },
+        { do_is_ref, "is_ref", "b", "p" },
+        { do_is_semaphore, "is_semaphore", "b", "p" },
+        { do_is_string, "is_string", "b", "p" },
+        { do_is_struct, "is_struct", "b", "p" },
+        { do_is_thread, "is_thread", "b", "p" },
+        { do_is_bool, "is_bool", "b", "p" },
+        { do_is_void, "is_void", "b", "p" },
         { do_mantissa, "mantissa", "r", "R" },
         { do_numerator, "numerator", "i", "R" },
         { do_precision, "precision", "i", "R" },
-        { do_profile, "profile", "i", "i" },
-        { do_putchar, "putchar", "i", "i" },
+        { do_profile, "profile", "b", "b" },
+        { do_putbyte, "putbyte", "i", "i" },
         { do_reference, "reference", "*p", "p" },
         { do_sign, "sign", "i", "R" },
-        { do_sleep, "sleep", "i", "i" },
+        { do_sleep, "sleep", "v", "i" },
         { do_string_to_real, "string_to_real", "R", "s" },
         { 0 }
     };
@@ -89,17 +90,17 @@ import_Toplevel_namespace()
 }
 
 Value 
-do_getchar ()
+do_getbyte ()
 {
     ENTER ();
-    RETURN (do_File_getc (FileStdin));
+    RETURN (do_File_getb (FileStdin));
 }
 
 Value 
-do_putchar (Value v)
+do_putbyte (Value v)
 {
     ENTER ();
-    RETURN (do_File_putc (v, FileStdout));
+    RETURN (do_File_putb (v, FileStdout));
 }
 
 Value 
@@ -146,7 +147,7 @@ do_string_to_integer (int n, Value *p)
 				2,
 				NewInt (2),
 				NewInt (n));
-	RETURN(Zero);
+	RETURN(Void);
     }
     
     s = StringChars (&str->string);
@@ -260,10 +261,10 @@ do_exit (Value av)
 
     code = IntPart (av, "Illegal exit code");
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     IoFini ();
     exit (code);
-    RETURN (Zero);
+    RETURN (Void);
 }
 
 Value
@@ -276,7 +277,7 @@ do_dim(Value av)
 	RaiseStandardException (exception_invalid_argument,
 				"dim: argument must be one-dimensional array",
 				2, NewInt (0), av);
-	RETURN (Zero);
+	RETURN (Void);
     }
     ret = NewInt(av->array.dim[0]);
     RETURN (ret);
@@ -346,7 +347,7 @@ do_exponent (Value av)
 	RaiseStandardException (exception_invalid_argument,
 				"exponent: argument must be imprecise",
 				2, NewInt (0), av);
-	RETURN (Zero);
+	RETURN (Void);
     }
     ret = NewInteger (av->floats.exp->sign, av->floats.exp->mag);
     ret = Plus (ret, NewInt (FpartLength (av->floats.mant)));
@@ -364,7 +365,7 @@ do_mantissa (Value av)
 	RaiseStandardException (exception_invalid_argument,
 				"mantissa: argument must be imprecise",
 				2, NewInt (0), av);
-	RETURN (Zero);
+	RETURN (Void);
     }
     ret = NewInteger (av->floats.mant->sign, av->floats.mant->mag);
     ret = Divide (ret, Pow (NewInt (2), 
@@ -387,7 +388,7 @@ do_numerator (Value av)
 	RaiseStandardException (exception_invalid_argument,
 				"numerator: argument must be precise",
 				2, NewInt (0), av);
-	av = Zero;
+	av = Void;
 	break;
     }
     RETURN (av);
@@ -409,7 +410,7 @@ do_denominator (Value av)
 	RaiseStandardException (exception_invalid_argument,
 				"denominator: argument must be precise",
 				2, NewInt (0), av);
-	av = Zero;
+	av = Void;
 	break;
     }
     RETURN (av);
@@ -430,7 +431,7 @@ do_bit_width (Value av)
 	RaiseStandardException (exception_invalid_argument,
 				"bit_width: argument must be integer",
 				2, NewInt (0), av);
-	av = Zero;
+	av = Void;
 	break;
     }
     RETURN (av);
@@ -443,10 +444,10 @@ do_is_int (Value av)
     switch (ValueTag(av)) {
     case type_int:
     case type_integer:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -460,10 +461,10 @@ do_is_rational (Value av)
     case type_int:
     case type_integer:
     case type_rational:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -478,10 +479,10 @@ do_is_number (Value av)
     case type_integer:
     case type_rational:
     case type_float:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -493,10 +494,10 @@ do_is_string (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_string:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -508,10 +509,10 @@ do_is_file (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_file:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -523,10 +524,10 @@ do_is_thread (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_thread:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -538,10 +539,10 @@ do_is_semaphore (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_semaphore:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -553,10 +554,25 @@ do_is_continuation (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_continuation:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_is_bool (Value av)
+{
+    ENTER ();
+    switch (ValueTag(av)) {
+    case type_bool:
+	av = TrueVal;
+	break;
+    default:
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -568,10 +584,10 @@ do_is_void (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_void:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -583,10 +599,10 @@ do_is_array (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_array:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -598,10 +614,10 @@ do_is_ref (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_ref:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -613,10 +629,10 @@ do_is_struct (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_struct:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);
@@ -628,10 +644,10 @@ do_is_func (Value av)
     ENTER ();
     switch (ValueTag(av)) {
     case type_func:
-	av = One;
+	av = TrueVal;
 	break;
     default:
-	av = Zero;
+	av = FalseVal;
 	break;
     }
     RETURN (av);

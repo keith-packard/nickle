@@ -136,6 +136,7 @@ ObjPtr	CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr sta
 ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, int *ndimp);
 ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code);
 ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
+ObjPtr	_CompileBoolExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
 void	CompilePatchLoop (ObjPtr obj, int start,
 			  int continue_offset,
 			  int break_offset);
@@ -546,9 +547,9 @@ CompileAssign (ObjPtr obj, ExprPtr expr, Bool initialize, ExprPtr stat, CodePtr 
     ENTER ();
     InstPtr inst;
     
-    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
-    SetPush (obj);
     obj = CompileLvalue (obj, expr->tree.left, stat, code, True, True, initialize);
+    SetPush (obj);
+    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
     expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					 expr->base.tag,
 					 expr->tree.right->base.type);
@@ -570,9 +571,11 @@ CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr co
     ENTER ();
     InstPtr inst;
     
-    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
-    SetPush (obj);
     obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
+    SetPush (obj);
+    BuildInst (obj, OpFetch, inst, stat);
+    SetPush (obj);
+    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
     expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					 expr->base.tag,
 					 expr->tree.right->base.type);
@@ -594,9 +597,11 @@ CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, Code
     ENTER ();
     InstPtr inst;
     
-    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
-    SetPush (obj);
     obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
+    SetPush (obj);
+    BuildInst (obj, OpFetch, inst, stat);
+    SetPush (obj);
+    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
     expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					 expr->base.tag,
 					 expr->tree.right->base.type);
@@ -839,11 +844,11 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 
     /* Compile enter expression */
     if (expr->tree.left->tree.left)
-	obj = _CompileExpr (obj, expr->tree.left->tree.left, True, stat, code);
+	obj = _CompileBoolExpr (obj, expr->tree.left->tree.left, True, stat, code);
     else
     {
 	BuildInst (obj, OpConst, inst, stat);
-	inst->constant.constant = One;
+	inst->constant.constant = TrueVal;
     }
     NewInst (enter_done_inst, obj);
     
@@ -1595,6 +1600,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->constant.constant = expr->constant.constant;
 	expr->base.type = typesPrim[type_void];
 	break;
+    case BOOLVAL:
+	BuildInst (obj, OpConst, inst, stat);
+	inst->constant.constant = expr->constant.constant;
+	expr->base.type = typesPrim[type_bool];
+	break;
     case POLY_CONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
@@ -1768,7 +1778,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	 *   +-------------+
 	 *           +-------+
 	 */
-	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	obj = _CompileBoolExpr (obj, expr->tree.left, True, stat, code);
 	NewInst (test_inst, obj);
 	obj = _CompileExpr (obj, expr->tree.right->tree.left, evaluate, stat, code);
 	NewInst (middle_inst, obj);
@@ -1815,7 +1825,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->branch.offset = obj->used - test_inst;
 	inst->branch.mod = BranchModNone;
 	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
-					     COLON,
+					     AND,
 					     expr->tree.right->base.type);
 	if (!expr->base.type)
 	{
@@ -1843,7 +1853,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->branch.offset = obj->used - test_inst;
 	inst->branch.mod = BranchModNone;
 	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
-					     COLON,
+					     OR,
 					     expr->tree.right->base.type);
 	if (!expr->base.type)
 	{
@@ -2079,6 +2089,17 @@ _CompileCanTailCall (ObjPtr obj, CodePtr code)
 }
 
 ObjPtr
+_CompileBoolExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code)
+{
+    obj = _CompileExpr (obj, expr, evaluate, stat, code);
+    if (!TypePoly (expr->base.type) && !TypeBool (expr->base.type))
+    {
+	CompileError (obj, expr, "Conditional is '%T', not bool", expr->base.type);
+    }
+    return obj;
+}
+
+ObjPtr
 _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 {
     ENTER ();
@@ -2096,7 +2117,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 * a BRANCHFALSE b
 	 *   +-------------+
 	 */
-	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
+	obj = _CompileBoolExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
 	obj = _CompileStat (obj, expr->tree.right, last, code);
 	inst = ObjCode (obj, test_inst);
@@ -2113,7 +2134,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 *   +--------------------+
 	 *                 +--------+
 	 */
-	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
+	obj = _CompileBoolExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
 	obj = _CompileStat (obj, expr->tree.right->tree.left, last, code);
 	NewInst (middle_inst, obj);
@@ -2152,7 +2173,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	inst->branch.mod = BranchModNone;
 	
 	continue_inst = obj->used;
-	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
+	obj = _CompileBoolExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
 
 	inst = ObjCode (obj, test_inst);
@@ -2175,7 +2196,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 				     NON_LOCAL_BREAK|NON_LOCAL_CONTINUE);
 	obj = _CompileStat (obj, expr->tree.left, False, code);
 	obj->nonLocal = obj->nonLocal->prev;
-	obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
+	obj = _CompileBoolExpr (obj, expr->tree.right, True, expr, code);
 	NewInst (test_inst, obj);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpBranchTrue;
@@ -2226,7 +2247,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    inst->branch.offset = obj->used - start_inst;
 	    inst->branch.mod = BranchModNone;
 	    
-	    obj = _CompileExpr (obj, expr->tree.left->tree.right, True, expr, code);
+	    obj = _CompileBoolExpr (obj, expr->tree.left->tree.right, True, expr, code);
 	    NewInst (test_inst, obj);
 	    inst = ObjCode (obj, test_inst);
 	    inst->base.opCode = OpBranchTrue;
@@ -2620,6 +2641,13 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 		if (code != code_compile)
 		    code->func.inGlobalInit = True;
 	    }
+	    /*
+	     * Assign it
+	     */
+	    lvalue = NewExprAtom (decl->name, decl->symbol, False);
+	    *initObj = CompileLvalue (*initObj, lvalue,
+				       decls, code, False, True, True);
+	    SetPush (*initObj);
 	    *initObj = _CompileExpr (*initObj, init, 
 				     True, stat, code);
 	    if (code_compile)
@@ -2627,14 +2655,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 		code_compile->func.inStaticInit = False;
 		code->func.inGlobalInit = False;
 	    }
-	    SetPush (*initObj);
 	    
-	    /*
-	     * Assign it
-	     */
-	    lvalue = NewExprAtom (decl->name, decl->symbol, False);
-	    *initObj = CompileLvalue (*initObj, lvalue,
-				       decls, code, False, True, True);
 	    if (!TypeCombineBinary (lvalue->base.type,
 				    ASSIGN,
 				    init->base.type))
@@ -2730,6 +2751,7 @@ char *OpNames[] = {
     "Local",
     "LocalRef",
     "LocalRefStore",
+    "Fetch",
     "Const",
     "BuildArray",
     "InitArray",

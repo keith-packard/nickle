@@ -142,6 +142,7 @@ BuiltinType (char *format, Types **type)
     case 't': t = typesPrim[type_thread]; break;
     case 'S': t = typesPrim[type_semaphore]; break;
     case 'c': t = typesPrim[type_continuation]; break;
+    case 'b': t = typesPrim[type_bool]; break;
     case 'v': t = typesPrim[type_void]; break;
     default: 
 	t = 0;

@@ -13,6 +13,7 @@
 #include	"nickle.h"
 
 Value	Void;
+Value	TrueVal, FalseVal;
 
 volatile Bool	aborting;
 volatile Bool	signaling;
@@ -138,10 +139,10 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 				    "invalid operands",
 				    2,
 				    av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     ret = (*type->binary[operator]) (av, bv, 1);
     if (ret->value.type->reduce)
 	ret = (*ret->value.type->reduce) (ret);
@@ -159,10 +160,10 @@ UnaryOperate (Value v, UnaryOp operator)
 	RaiseStandardException (exception_invalid_unop_value,
 				"invalid operand",
 				1, v);
-	RETURN (Zero);
+	RETURN (Void);
     }
     if (aborting)
-	RETURN (Zero);
+	RETURN (Void);
     ret = (*v->value.type->unary[operator])(v, 1);
     if (ret->value.type->reduce)
 	ret = (*ret->value.type->reduce) (ret);
@@ -287,10 +288,11 @@ Not (Value av)
 {
     ENTER ();
 
-    if (Zerop (av))
-	RETURN (One);
+    if (True (av))
+	av = FalseVal;
     else
-	RETURN (Zero);
+	av = TrueVal;
+    RETURN (av);
 }
 
 Value
@@ -331,7 +333,7 @@ Factorial (Value av)
 				"invalid operand",
 				1,
 				av);
-	RETURN (Zero);
+	RETURN (Void);
     }
     /*
      * A bit of reference magic here to avoid churning
@@ -348,7 +350,7 @@ Factorial (Value av)
     for (;;)
     {
 	ENTER ();
-	if (aborting || Zerop (Less (i, av)))
+	if (aborting || False (Less (i, av)))
 	{
 	    EXIT ();
 	    break;
@@ -392,7 +394,7 @@ Pow (Value av, Value bv)
 				"invalid operands",
 				2,
 				av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     switch (ValueTag(bv)) {
     case type_int:
@@ -411,7 +413,7 @@ Pow (Value av, Value bv)
 	    result = One;
 	    while (i) {
 		if (aborting)
-		    RETURN (Zero);
+		    RETURN (Void);
 		if (i & 1)
 		    result = Times (result, p);
 		i >>= 1;
@@ -438,7 +440,7 @@ Pow (Value av, Value bv)
 	    result = One;
 	    while (!NaturalZero (i)) {
 		if (aborting)
-		    RETURN (Zero);
+		    RETURN (Void);
 		if (!NaturalEven (i))
 		    result = Times (result, p);
 		i = NaturalDivide (i, two, &rem);
@@ -451,7 +453,7 @@ Pow (Value av, Value bv)
 	break;
     default:
 	RaiseError ("pow: non-integer power %v", bv);
-	result = Zero;
+	result = Void;
 	break;
     }
     RETURN (result);
@@ -464,7 +466,7 @@ ShiftL (Value av, Value bv)
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseError ("non-integer %v << %v\n", av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     if (Negativep (bv))
 	RETURN (ShiftR(av, Negate (bv)));
@@ -493,7 +495,7 @@ ShiftR (Value av, Value bv)
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseError ("non-integer %v >> %v\n", av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     if (Negativep (bv))
 	RETURN (ShiftL(av, Negate (bv)));
@@ -529,7 +531,7 @@ Gcd (Value av, Value bv)
 				"invalid gcd argument values",
 				2,
 				av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (Reduce (NewInteger (Positive, 
 				NaturalGcd (IntegerType.promote (av, 0)->integer.mag,
@@ -548,7 +550,7 @@ Bdivmod (Value av, Value bv)
 				"invalid gcd argument values",
 				2,
 				av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (Reduce (NewInteger (Positive,
 				NaturalBdivmod (IntegerType.promote (av, 0)->integer.mag,
@@ -566,7 +568,7 @@ KaryReduction (Value av, Value bv)
 				"invalid kary_reduction argument values",
 				2,
 				av, bv);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (Reduce (NewInteger (Positive,
 				NaturalKaryReduction (IntegerType.promote (av, 0)->integer.mag,
@@ -665,7 +667,7 @@ Copy (Value v)
 Value
 ValueEqual (Value a, Value b, int expandOk)
 {
-    return a == b ? One : Zero;
+    return a == b ? TrueVal : FalseVal;
 }
 
 Value
@@ -677,30 +679,15 @@ Dereference (Value v)
 	RaiseStandardException (exception_invalid_unop_value,
 				"Not a reference",
 				1, v);
-	RETURN (Zero);
+	RETURN (Void);
     }
     RETURN (RefValue (v));
-}
-
-Value
-Default (TypesPtr t)
-{
-    switch (BaseType (t)) {
-    default:
-	return Zero;
-    case type_string:
-	return Blank;
-    case type_array:
-	return Empty;
-    case type_struct:
-	return Elementless;
-    }
 }
 
 static Value
 UnitEqual (Value av, Value bv, int expandOk)
 {
-    return One;
+    return TrueVal;
 }
 
 static Bool
@@ -740,6 +727,49 @@ NewVoid (void)
     RETURN (ret);
 }
 
+static Value
+BoolEqual (Value av, Value bv, int expandOk)
+{
+    return (av == TrueVal) == (bv == TrueVal) ? TrueVal : FalseVal;
+}
+
+static Bool
+BoolPrint (Value f, Value av, char format, int base, int width, int prec, unsigned char fill)
+{
+    FilePuts (f, av == TrueVal ? "true" : "false");
+    return True;
+}
+
+ValueType BoolType = {
+    { 0, 0 },	    /* data */
+    type_bool,	    /* tag */
+    { 
+	0,	    /* Plus */
+	0,	    /* Minus */
+	0,	    /* Times */
+	0,	    /* Divide */
+	0,	    /* Div */
+	0,	    /* Mod */
+	0,	    /* Less */
+	BoolEqual,  /* Equal */
+	0,	    /* Land */
+	0,	    /* Lor */
+    },	    /* binary */
+    { 0 },	    /* unary */
+    0, 0,
+    BoolPrint,	    /* print */
+};
+
+static Value
+NewBool (void)
+{
+    ENTER ();
+    Value   ret;
+
+    ret = ALLOCATE (&BoolType.data, sizeof (BaseValue));
+    RETURN (ret);
+}
+
 /*
  * This is a bit odd, but it's just a cache so
  * erase it at GC time
@@ -768,8 +798,6 @@ NewValueCache (int size)
     RETURN (vc);
 }
 
-
-
 int
 ValueInit (void)
 {
@@ -797,6 +825,10 @@ ValueInit (void)
     MemAddRoot (ValuePrintStack);
     Void = NewVoid ();
     MemAddRoot (Void);
+    TrueVal = NewBool ();
+    MemAddRoot (TrueVal);
+    FalseVal = NewBool ();
+    MemAddRoot (FalseVal);
     ValuePrintLevel = 0;
     return 1;
 }

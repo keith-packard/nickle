@@ -1,0 +1,236 @@
+#!/usr/bin/env nickle
+
+/*
+ * MENACE was a 1960 construction by Michie which
+ * learned to play Tic-Tac-Toe.  Remarkably, it did this
+ * using only a large number of matchboxes and
+ * colored glass beads: no computer was involved.
+ *   http://www.atarimagazines.com/v3n1/matchboxttt.html
+ * 
+ * MENACE2 is a simulation of this system in Nickle.
+ *   http://www.cs.pdx.edu/~bart/cs541-fall2001/homework/3-learn.html
+ *
+ * Bart Massey 2001/11/21
+ */
+
+/* initial weight */
+const int initial_weight = 32;
+
+/* move weights for legal moves */
+typedef int[3,3] weights;
+
+/* pieces/players */
+typedef enum {
+    x, o, none
+} piece;
+
+/* board positions */
+typedef piece[3,3] position;
+
+/* all rotations and reflections of a board position */
+typedef position[8] poslist;
+
+/* transposition table (memory) entry */
+typedef ttent;
+typedef struct {
+    piece on_move;
+    poslist posns;
+    int nmoves;
+    int tweight;
+    weights val;
+    *ttent next;
+} ttent;
+
+/* the transposition table (memory) */
+*ttent ttable = 0;
+
+/* whose turn it is: piece.none == board full  */
+piece function side_on_move(*position b) {
+  int n = 0;
+  for(int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      if (b*[i,j] != piece.none)
+	n++;
+  if (n == 9)
+    return piece.none;
+  if (n % 2 == 1)
+    return piece.o;
+  return piece.x;
+}
+
+/* number of explored states */
+int nttstates = 0;
+
+
+/* lookup or create the current pos in the ttable */
+*ttent function ttable_lookup(position pos) {
+
+    /* return all rotations/reflections of pos */
+    poslist function all_posns(position pos) {
+	/* a transformation: elems are in 3 * y + x form */
+	typedef int[9] xform;
+	xform rot = {2,5,8,1,4,7,0,3,6};
+	xform refl = {0,3,6,1,4,7,2,5,8};
+	/* return the x-transformed version of p */
+	position function do_xform(xform x, position p) {
+	    position np;
+	    for (int i = 0; i < 9; i++)
+		np[x[i] % 3, x[i] // 3] = p[i % 3, i // 3];
+	    return np;
+	}
+	poslist result;
+	int j = 0;
+	for (int i = 0; i < 4; i++) {
+	    result[j++] = pos;
+	    position reflpos = do_xform(refl, pos);
+	    result[j++] = reflpos;
+	    pos = do_xform(rot, pos);
+	}
+	return result;
+    }
+
+    /* first, try to look up an old entry */
+    for (*ttent t = ttable; t; t = t->next)
+	for (int i = 0; i < 8; i++)
+	    if (t->posns[i] == pos)
+		return t;
+    /* nope: create a new entry */
+    nttstates++;
+    ttent t = {
+	on_move = side_on_move(&pos),
+	posns = all_posns(pos),
+	next = ttable
+    };
+    /* count legal moves */
+    int nmoves = 0;
+    for (int i = 0; i < 3; i++)
+	for (int j = 0; j < 3; j++)
+	    if (pos[i, j] == piece.none)
+		nmoves++;
+    t.nmoves = nmoves;
+    /* set up initial weights */
+    t.tweight = 0;
+    for (int i = 0; i < 3; i++) {
+	for (int j = 0; j < 3; j++) {
+	    if (pos[i, j] == piece.none) {
+		t.val[i, j] = initial_weight;
+		t.tweight += initial_weight;
+	    } else {
+		t.val[i, j] = 0;
+	    }
+	}
+    }
+    /* insert the new entry into the table */
+    ttable = &t;
+    return ttable;
+}
+
+/* actually run a game from the given position
+   and adjust the weights */
+piece function menace2(position b) {
+
+    /* check for a win */
+    piece function win(*position b) {
+
+	/* check for a row, given delta and base in x and y */
+	piece function row(*position b,
+			   int dx, int dy,
+			   int bx, int by) {
+	  if (b*[dx + bx,dy + by] == b*[bx,by] &&
+	      b*[dx + dx + bx,dy + dy + by] == b*[bx,by])
+	    return b*[bx,by];
+	  return piece.none;
+	}
+
+	/* check rows and columns */
+	for (int i = 0; i < 3; i++) {
+	  piece w = row(b, 0, 1, i, 0);
+	  if (w != piece.none)
+	    return w;
+	  piece w = row(b, 1, 0, 0, i);
+	  if (w != piece.none)
+	    return w;
+	}
+	/* check diagonals */
+	piece w = row(b, 1, 1, 0, 0);
+	if (w != piece.none)
+	  return w;
+	return row(b, 1, -1, 0, 2);
+      }
+
+    piece w = win(&b);
+    if (w != piece.none)
+	return w;
+    piece us = side_on_move(&b);
+    if (us == piece.none)
+	return us;
+    *ttent t = ttable_lookup(b);
+    b = t->posns[0];
+    int r = PRNG::randint(t->tweight) + 1;
+    for (int i = 0; i < 3; i++) {
+	for (int j = 0; j < 3; j++) {
+	    if (b[i, j] == piece.none) {
+		r -= t->val[i, j];
+		if (r <= 0) {
+		    b[i, j] = us;
+		    piece w = menace2(b);
+		    b[i, j] = piece.none;
+		    if (t->nmoves <= 1)
+			return w;
+		    rational delta;
+		    switch (w) {
+		    case us:
+			t->val[i,j] += 3;
+			t->tweight += 3;
+			return w;
+		    case piece.none:
+			return w;
+		    }
+		    if (t->val[i,j] <= 1)
+			return w;
+		    --t->val[i,j];
+		    --t->tweight;
+		    return w;
+		}
+	    }
+	}
+    }
+    abort("menace2: weird t->val");
+}
+
+void function go(int n) {
+    position b;
+    for (int i = 0; i < 9; i++) {
+	int j;
+	scanf("%d", &j);
+	switch (j) {
+	case -1: b[i % 3, i // 3] = piece.o; break;
+	case 1: b[i % 3, i // 3] = piece.x; break;
+	case 0: b[i % 3, i // 3] = piece.none; break;
+	default: abort("bad piece on input");
+	}
+    }
+    for(int i = 0; i < n; i++)
+	piece w = menace2(b);
+    *ttent t = ttable_lookup(b);
+    for(int j = 0; j < 3; j++) {
+    	for(int i = 0; i < 3; i++) {
+	    string function label(piece p) {
+		union switch (p) {
+		case x: return "X";
+		case o: return "O";
+		}
+		abort("label: blank label");
+	    }
+	    if (b[i,j] == piece.none)
+		printf("%d ", t->val[i,j]);
+	    else
+		printf("  %s   ", label(b[i,j]));
+	}
+        printf("\n");
+    }
+    printf("%d states explored\n", nttstates);
+}
+
+int n = string_to_integer(argv[1]);
+go(n);

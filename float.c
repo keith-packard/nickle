@@ -553,17 +553,9 @@ FloatFloor (Value av, int expandOk)
     if (NaturalLess (NewNatural (a->prec), a->exp->mag))
 	RETURN (Zero);
     d = NaturalToInt (a->exp->mag);
-    if (a->mant->sign == Positive)
-    {
-	mant = FpartRsl (a->mant, d);
-    }
-    else
-    {
-	mant = FpartRsl (a->mant, d - 1);
-	if (!NaturalEven (a->mant->mag))
-	    mant = FpartAdd (mant, one_fpart, True);
-	mant = FpartRsl (mant, 1);
-    }
+    mant = FpartRsl (a->mant, d);
+    if (d && a->mant->sign == Negative)
+	mant = FpartAdd (mant, one_fpart, False);
     exp = zero_fpart;
     RETURN (FloatInteger (NewFloat (mant, exp, a->prec - d)));
 }
@@ -581,18 +573,10 @@ FloatCeil (Value av, int expandOk)
 	RETURN (FloatInteger (av));
     if (NaturalLess (NewNatural (a->prec), a->exp->mag))
 	RETURN (Zero);
-    d = -NaturalToInt (a->exp->mag);
-    if (a->mant->sign == Negative)
-    {
-	mant = FpartRsl (a->mant, d);
-    }
-    else
-    {
-	mant = FpartRsl (a->mant, d - 1);
-	if (!NaturalEven (a->mant->mag))
-	    mant = FpartAdd (mant, one_fpart, False);
-	mant = FpartRsl (mant, 1);
-    }
+    d = NaturalToInt (a->exp->mag);
+    mant = FpartRsl (a->mant, d);
+    if (d && a->mant->sign == Positive)
+	mant = FpartAdd (mant, one_fpart, False);
     exp = zero_fpart;
     RETURN (FloatInteger (NewFloat (mant, exp, a->prec - d)));
 }

@@ -98,7 +98,9 @@ AddInst (ObjPtr obj)
     (_inst)->base.opCode = (_op); \
     (_inst)->base.stat = (_stat); \
 }
-#define SetPush(_o)  (ObjCode((_o), ObjLast(_o))->base.push = True);
+#define SetPush(_o)  ((_o)->used ? (ObjCode((_o), \
+					     ObjLast(_o))->base.push = True) \
+				     : 0)
 
 ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat, Bool createIfNecessary);
 ObjPtr	CompileBinary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat);

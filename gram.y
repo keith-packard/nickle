@@ -18,8 +18,14 @@ int funcDepth;
 void ParseError (char *fmt, ...);
 void yyerror (char *msg);
 
-static Bool
-ParseCanonType (TypesPtr type);
+typedef enum _CanonTypeResult {
+    CanonTypeUndefined,
+    CanonTypeForward,
+    CanonTypeDefined,
+} CanonTypeResult;
+    
+static CanonTypeResult
+ParseCanonType (TypesPtr type, Bool forwardAllowed);
 
 static SymbolPtr
 ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
@@ -426,7 +432,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			    if ($2)
 			    {
 				symbol->symbol.forward = False;
-				ParseCanonType (ret);
+				ParseCanonType (ret, False);
 				decl->init = NewExprCode (NewFuncCode (ret,
 								       argType,
 								       $2),
@@ -930,13 +936,13 @@ argdecls	: argdecl COMMA argdecls
 		;
 argdecl		: type NAME
 		    { 
-			ParseCanonType ($1);
+			ParseCanonType ($1, False);
 			$$.type = $1; 
 			$$.name = $2; 
 		    }
 		| type
 		    { 
-			ParseCanonType ($1);
+			ParseCanonType ($1, False);
 			$$.type = $1;
 			$$.name = 0; 
 		    }
@@ -956,7 +962,7 @@ opt_argdefines	: argdefines
 			for (args = $1; args; args = args->next)
 			{
 			    type = args->type;
-			    if (!ParseCanonType (type))
+			    if (ParseCanonType (type, False) != CanonTypeDefined)
 				break;
 			    if (args->varargs)
 			    {
@@ -1191,7 +1197,7 @@ primary		: fullname
 		    { $$ = NewExprConst(BOOLVAL, $1); }
 		| OP type CP namespace_start init namespace_end
 		    { 
-			ParseCanonType ($2);
+			ParseCanonType ($2, False);
 			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = $2;
 		    }
@@ -1199,7 +1205,7 @@ primary		: fullname
 		    { 
 			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
-			ParseCanonType ($$->base.type);
+			ParseCanonType ($$->base.type, False);
 		    }
 		| OS dims CS namespace_start opt_arrayinit namespace_end
 		    { 
@@ -1208,13 +1214,13 @@ primary		: fullname
 		    }
 		| OP type DOT NAME CP primary				%prec UNIONCAST
 		    {
-			ParseCanonType ($2);
+			ParseCanonType ($2, False);
 			$$ = NewExprTree (UNION, NewExprAtom ($4, 0, False), $6); 
 			$$->base.type = $2;
 		    }
 		| type DOT NAME opt_cast_arg				%prec UNIONCAST
 		    {
-			ParseCanonType ($1);
+			ParseCanonType ($1, False);
 			$$ = NewExprTree (UNION, NewExprAtom ($3, 0, False), $4); 
 			$$->base.type = $1;
 		    }
@@ -1236,7 +1242,7 @@ primary		: fullname
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3, 0, False)); }
 		| opt_type FUNC namespace_start args block namespace_end
 		    { 
-			ParseCanonType ($1);
+			ParseCanonType ($1, False);
 			$$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); 
 		    }
 		;
@@ -1565,13 +1571,14 @@ BuildCall (char *scope, char *name, int nargs, ...)
 /*
  * Walk a type structure and resolve any type names
  */
-static Bool
-ParseCanonType (TypesPtr type)
+static CanonTypeResult
+ParseCanonType (TypesPtr type, Bool forwardAllowed)
 {
-    SymbolPtr	symbol;
-    ArgType	*arg;
-    int		n;
-    Bool	ret = True;
+    SymbolPtr	    symbol;
+    ArgType	    *arg;
+    int		    n;
+    CanonTypeResult ret = CanonTypeDefined, t;
+    Bool	    anyResolved;
     
     if (!type)
     {
@@ -1593,46 +1600,79 @@ ParseCanonType (TypesPtr type)
 	    {
 		ParseError ("No typedef \"%A\" in namespace",
 			 e->atom.atom);
-		ret = False;
+		ret = CanonTypeUndefined;
 	    }
 	    else if (symbol->symbol.class != class_typedef)
 	    {
 		ParseError ("Symbol \"%A\" not a typedef", e->atom.atom);
-		ret = False;
+		ret = CanonTypeUndefined;
 	    }
 	    else if (!symbol->symbol.type)
 	    {
-		ParseError ("Typedef \"%A\" not defined yet", e->atom.atom);
-		ret = False;
+		if (!forwardAllowed)
+		    ParseError ("Typedef \"%A\" not defined yet", e->atom.atom);
+		ret = CanonTypeForward;
 	    }
 	    else
 	    {
 		type->name.type = symbol->symbol.type;
-		ret = ParseCanonType (type->name.type);
+		ret = ParseCanonType (type->name.type, forwardAllowed);
 	    }
 	}
 	break;
     case types_ref:
-    	ret = ParseCanonType (type->ref.ref);
+	ret = ParseCanonType (type->ref.ref, True);
+	if (ret == CanonTypeForward)
+	    ret = CanonTypeDefined;
 	break;
     case types_func:
 	if (type->func.ret)
-	    ret = ParseCanonType (type->func.ret);
+	    ret = ParseCanonType (type->func.ret, forwardAllowed);
 	for (arg = type->func.args; arg; arg = arg->next)
-	    ret = ret && ParseCanonType (arg->type);
+	{
+	    t = ParseCanonType (arg->type, forwardAllowed);
+	    if (t < ret)
+		ret = t;
+	}
 	break;
     case types_array:
-	ret = ParseCanonType (type->array.type);
+	ret = ParseCanonType (type->array.type, forwardAllowed);
 	break;
     case types_struct:
+	for (n = 0; n < type->structs.structs->nelements; n++)
+	{
+	    StructElement   *se;
+
+	    se = &StructTypeElements(type->structs.structs)[n];
+	    t = ParseCanonType (se->type, forwardAllowed);
+	    if (t < ret)
+		ret = t;
+	}
+	break;
     case types_union:
+	anyResolved = False;
 	for (n = 0; n < type->structs.structs->nelements; n++)
 	{
 	    StructElement   *se;
 
 	    se = &StructTypeElements(type->structs.structs)[n];
 	    if (se->type != typesEnum)
-		ret = ret && ParseCanonType (se->type);
+	    {
+		t = ParseCanonType (se->type, True);
+		if (t < ret)
+		    ret = t;
+		if (t == CanonTypeDefined)
+		    anyResolved = True;
+	    }
+	    else
+		anyResolved = True;
+	}
+	if (t == CanonTypeForward)
+	{
+	    if (anyResolved)
+		ret = CanonTypeDefined;
+	    else if (!forwardAllowed)
+		ParseError ("No member of '%T' defined yet", type);
 	}
 	break;
     }
@@ -1648,9 +1688,9 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name)
     if (class == class_undef)
 	class = funcDepth ? class_auto : class_global;
 
-    if (class == class_typedef || 
-	class == class_namespace || 
-	ParseCanonType (type))
+    if (class == class_namespace || 
+	(class == class_typedef && type == 0) || 	
+	ParseCanonType (type, False) == CanonTypeDefined)
     {
 	switch (class) {
 	case class_const:

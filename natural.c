@@ -263,11 +263,11 @@ DigitsAddInPlace (digit *x_orig, int xlen, digit *y, int ylen, int off)
     {
 	xlen--;
 	ylen--;
-	xv = *x;
 	yv = *y++ + carry;
 	if (yv)
 	{
 	    carry = 0;
+	    xv = *x;
 	    if ((*x = xv + yv) < xv)
 		carry = 1;
 	}
@@ -292,10 +292,7 @@ DigitsAddInPlace (digit *x_orig, int xlen, digit *y, int ylen, int off)
 	x++;
     }
     if (carry)
-    {
-	*x = carry;
-	x++;
-    }
+	*x++ = carry;
     return xlen + (x - x_orig);
 }
 
@@ -362,58 +359,70 @@ DigitTimes (digit *x, int xlen, digit y, digit *result)
 }
 
 static int
-DigitsGradeSchool (digit *x, int xlen, digit *y, int ylen, digit *result)
+DigitsGradeSchool (digit *x_orig, int xlen, digit *y_orig, int ylen, digit *result)
 {
+    digit	    *x, *y, *r, *rbase, *rloop;
     double_digit    temp;
     digit	    carry;
     digit	    xd;
-    int		    xindex, yindex, rindex;
+    int		    xindex, yindex;
+    int		    rlen;
 
     if (xlen == 0 || ylen == 0)
 	return 0;
     if (xlen == 1)
-	return DigitTimes (y, ylen, *x, result);
+	return DigitTimes (y_orig, ylen, *x_orig, result);
     if (ylen == 1)
-	return DigitTimes (x, xlen, *y, result);
-    memset (result, 0, (xlen + ylen) * sizeof (digit));
-    for (xindex = 0; xindex < xlen; xindex++)
+	return DigitTimes (x_orig, xlen, *y_orig, result);
+    memset (result, 0, (xlen + ylen + 1) * sizeof (digit));
+    rbase = 0;
+    x = x_orig;
+    xindex = xlen;
+    rbase = result;
+    while (xindex--)
     {
 	carry = 0;
+	rloop = rbase++;
 	xd = *x++;
-	for (yindex = 0; yindex < ylen; yindex++)
+	
+	y = y_orig;
+	yindex = ylen;
+	while (yindex--)
 	{
-	    temp = xd * (double_digit) y[yindex] + (double_digit) carry;
+	    temp = (double_digit) xd * (double_digit) *y++ + (double_digit) carry;
 	    carry = DivBase (temp);
 	    temp = ModBase (temp);
-	    rindex = yindex + xindex;
+	    r = rloop++;
 	    while (temp)
 	    {
-		temp += result[rindex];
-		result[rindex] = ModBase (temp);
+		temp += (double_digit) *r;
+		*r++ = ModBase (temp);
 		temp = DivBase (temp);
-		rindex++;
 	    }
 	}
 	if (carry)
 	{
-	    rindex = yindex + xindex;
+	    r = rloop;
 	    temp = carry;
 	    while (temp) 
 	    {
-		temp += result[rindex];
-		result[rindex] = ModBase (temp);
+		temp += (double_digit) *r;
+		*r++ = ModBase (temp);
 		temp = DivBase (temp);
-		rindex++;
 	    }
 	}
     }
-    rindex = xlen + ylen;
-    if (result[rindex - 1] == 0)
-	rindex--;
-    return rindex;
+    rlen = xlen + ylen + 1;
+    r = result + (rlen - 1);
+    while (rlen && *r == 0)
+    {
+	rlen--;
+	r--;
+    }
+    return rlen;
 }
 
-#define KARATSUBA_LIMIT	16
+#define KARATSUBA_LIMIT	100
 
 static int
 DigitsKaratsuba (digit *x, int xlen, digit *y, int ylen, digit *result, digit *tmp)
@@ -604,6 +613,7 @@ NaturalTimes (Natural *a, Natural *b)
 	}
 	result->length = rlen;
     }
+    
     RETURN (result);
 }
 
@@ -844,7 +854,7 @@ NaturalBottom (char *result, digit partial, int base, int digits, Bool fill)
 	partial = partial / base;
     } while (partial);
     if (fill)
-	while (digits--)
+	while (digits-- > 0)
 	    *--result = '0';
     return result;
 }
@@ -1310,9 +1320,37 @@ NaturalSubtractOffsetReverse (Natural *a, Natural *b, int offset)
 void
 NaturalAddOffset (Natural *a, Natural *b, int offset)
 {
-    a->length = DigitsAddInPlace (data(a), length (a),
-				  data(b), length (b),
-				  offset);
+    int	    index;
+    digit   carry;
+    digit   *at, *bt;
+    digit   av, bv;
+
+    carry = 0;
+    at = NaturalDigits(a) + offset;
+    bt = NaturalDigits(b);
+    index = b->length;
+    while (index--)
+    {
+	bv = *bt++ + carry;
+	if (bv)
+	{
+	    carry = 0;
+	    av = *at;
+	    if ((*at = av + bv) < av)
+		carry = 1;
+	}
+	at++;
+    }
+    if (carry)
+	*at = *at + carry;
+    if (at == NaturalDigits(a) + a->length - 1)
+    {
+	while (a->length && *at == 0)
+	{
+	    at--;
+	    a->length--;
+	}
+    }
 }
 
 Bool

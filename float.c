@@ -777,12 +777,12 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
 	return False;
     }
     DebugV ("expbase", expbase);
-    DebugV ("ratio  ", ratio);
+    DebugF ("ratio  ", &ratio->floats);
     down = Pow (NewInt (2),
 		NewInt ((int) length));
     DebugV ("down   ", down);
     fratio = Divide (ratio, down);
-    DebugV ("fratio ", fratio);
+    DebugF ("fratio ", &fratio->floats);
     negative = a->mant->sign == Negative;
     m = NewInteger (Positive, a->mant->mag);
     if (FpartLength (a->mant) == a->prec)

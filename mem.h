@@ -8,9 +8,14 @@
 
 #ifndef _MEM_H_
 #define _MEM_H_
-typedef struct _DataType DataType;
 
-#define MEM_TRACE
+#undef MEM_TRACE
+
+#ifndef MEM_TRACE
+typedef const struct _DataType DataType;
+#else
+typedef struct _DataType DataType;
+#endif
 
 struct _DataType {
     void    (*Mark) (void *);

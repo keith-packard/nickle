@@ -23,18 +23,18 @@ void
 import_String_namespace()
 {
     ENTER ();
-    static struct fbuiltin_1 funcs_1[] = {
+    static const struct fbuiltin_1 funcs_1[] = {
         { do_String_length, "length", "i", "s" },
         { do_String_new, "new", "s", "p" },
         { 0 }
     };
 
-    static struct fbuiltin_2 funcs_2[] = {
+    static const struct fbuiltin_2 funcs_2[] = {
         { do_String_index, "index", "i", "ss" },
         { 0 }
     };
 
-    static struct fbuiltin_3 funcs_3[] = {
+    static const struct fbuiltin_3 funcs_3[] = {
         { do_String_substr, "substr", "s", "sii" },
         { 0 }
     };

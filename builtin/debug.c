@@ -28,7 +28,7 @@ void
 import_Debug_namespace()
 {
     ENTER ();
-    static struct fbuiltin_0 funcs_0[] = {
+    static const struct fbuiltin_0 funcs_0[] = {
         { do_Debug_collect, "collect", "v", "" },
         { do_Debug_done, "done", "v", "" },
         { do_Debug_down, "down", "b", "" },
@@ -41,12 +41,12 @@ import_Debug_namespace()
         { 0 }
     };
 
-    static struct fbuiltin_1 funcs_1[] = {
+    static const struct fbuiltin_1 funcs_1[] = {
         { do_Debug_dump, "dump", "v", "p" },
         { 0 }
     };
 
-    static struct fbuiltin_v funcs_v[] = {
+    static const struct fbuiltin_v funcs_v[] = {
         { do_Thread_trace, "trace", "v", ".p" },
         { 0 }
     };

@@ -41,7 +41,7 @@ DebugDeleteCommand (char *function)
     CurrentCommands = CommandRemove (CurrentCommands, AtomId (function));
 }
 
-static struct {
+static const struct {
     char    *function;
     Bool    names;
 } debugCommands[] = {

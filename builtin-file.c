@@ -30,12 +30,12 @@ void
 import_File_namespace()
 {
     ENTER ();
-    static struct fbuiltin_0 funcs_0[] = {
+    static const struct fbuiltin_0 funcs_0[] = {
         { do_File_string_write, "string_write", "f", "" },
         { 0 }
     };
 
-    static struct fbuiltin_1 funcs_1[] = {
+    static const struct fbuiltin_1 funcs_1[] = {
         { do_File_clear_error, "clear_error", "v", "f" },
         { do_File_close, "close", "v", "f" },
         { do_File_end, "end", "b", "f" },
@@ -48,7 +48,7 @@ import_File_namespace()
         { 0 }
     };
 
-    static struct fbuiltin_2 funcs_2[] = {
+    static const struct fbuiltin_2 funcs_2[] = {
         { do_File_open, "open", "f", "ss" },
         { do_File_putb, "putb", "i", "if" },
         { do_File_setbuf, "setbuffer", "i", "fi" },
@@ -56,24 +56,24 @@ import_File_namespace()
         { 0 }
     };
 
-    static struct fbuiltin_3 funcs_3[] = {
+    static const struct fbuiltin_3 funcs_3[] = {
         { do_File_pipe, "pipe", "f", "sA*ss" },
         { 0 }
     };
 
-    static struct fbuiltin_7 funcs_7[] = {
+    static const struct fbuiltin_7 funcs_7[] = {
         { do_File_print, "print", "v", "fpsiiis" },
         { 0 }
     };
 
-    static struct ebuiltin excepts[] = {
+    static const struct ebuiltin excepts[] = {
 	{"open_error",		exception_open_error,		"sEs" },
 	{"io_error",		exception_io_error,		"sEf" },
 	{0,			0 },
     };
 
-    struct ebuiltin *e;
-    SymbolPtr	    s;
+    const struct ebuiltin   *e;
+    SymbolPtr		    s;
 
     FileNamespace = BuiltinNamespace (/*parent*/ 0, "File")->namespace.namespace;
 

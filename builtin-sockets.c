@@ -40,19 +40,19 @@ void
 import_Sockets_namespace()
 {
     ENTER ();
-    static struct fbuiltin_1 funcs_1[] = {
+    static const struct fbuiltin_1 funcs_1[] = {
         { do_Sockets_create, "create", "f", "i" },
         { do_Sockets_accept, "accept", "f", "f" },
         { 0 }
     };
 
-    static struct fbuiltin_2 funcs_2[] = {
+    static const struct fbuiltin_2 funcs_2[] = {
         { do_Sockets_listen, "listen", "v", "fi" },
         { do_Sockets_shutdown, "shutdown", "v", "fi" },
         { 0 }
     };
 
-    static struct fbuiltin_3 funcs_3[] = {
+    static const struct fbuiltin_3 funcs_3[] = {
         { do_Sockets_connect, "connect", "v", "fss" },
         { do_Sockets_bind, "bind", "v", "fss" },
         { 0 }

@@ -42,8 +42,8 @@ void
 EditFunction (SymbolPtr symbol, Publish publish)
 {
     Value	tmp;
-    static char	template[] = "/tmp/nXXXXXX";
-    static char	exten[] = ".5c";
+    static const char	template[] = "/tmp/nXXXXXX";
+    static const char	exten[] = ".5c";
     char	tmpName[sizeof (template)];
     char	nickleName[sizeof (template) + sizeof (exten) + 2];
     int		fd;

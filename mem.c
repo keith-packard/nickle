@@ -54,7 +54,7 @@ static void	checkBlockRef (struct block *);
 static void	verifyBlock (void);
 #endif
 
-int		GarbageTime = GARBAGETIME;
+int		GarbageTime;
 
 void		*TemporaryData;
 
@@ -66,7 +66,7 @@ StackObject *MemStack;
 
 struct bfree *freeList[NUMSIZES];
 
-int	sinceGarbage = 0;
+int	sinceGarbage;
 
 static void **Roots;
 static int  RootCount;
@@ -526,6 +526,7 @@ MemInitialize (void)
 	MemStack = StackCreate ();
 	MemAddRoot (MemStack);
     }
+    GarbageTime = GARBAGETIME;
 }
 
 void

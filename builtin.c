@@ -40,7 +40,7 @@ struct ebuiltin {
     NamespacePtr	*namespace;
 };
 
-static struct sbuiltin svars[] = {
+static const struct sbuiltin svars[] = {
     { "> ",	    "prompt" },
     { "+ ",	    "prompt2" },
     { "- ",	    "prompt3" },
@@ -56,19 +56,19 @@ static struct sbuiltin svars[] = {
 
 extern NamespacePtr CommandNamespace;
 
-static struct envbuiltin envvars[] = {
+static const struct envbuiltin envvars[] = {
     { "NICKLELIB",  NICKLELIB,	"library_path",	&CommandNamespace },
     { 0,    0 },
 };
 
-static struct filebuiltin fvars[] = {
+static const struct filebuiltin fvars[] = {
     { "stdin",	&FileStdin },
     { "stdout",	&FileStdout },
     { "stderr",	&FileStderr },
     { 0,	0 },
 };
 
-static struct ebuiltin excepts[] = {
+static const struct ebuiltin excepts[] = {
     {"uninitialized_value",	exception_uninitialized_value,	"s" },
     {"invalid_argument",	exception_invalid_argument,	"sip" },
     {"readonly_box",		exception_readonly_box,		"sp" },
@@ -250,13 +250,13 @@ void
 BuiltinInit (void)
 {
     ENTER ();
-    struct sbuiltin	*s;
-    struct envbuiltin	*env;
-    struct filebuiltin	*f;
-    struct ebuiltin	*e;
-    SymbolPtr		sym;
-    char		*home;
-    Value		home_val;
+    const struct sbuiltin	*s;
+    const struct envbuiltin	*env;
+    const struct filebuiltin	*f;
+    const struct ebuiltin	*e;
+    SymbolPtr			sym;
+    char			*home;
+    Value			home_val;
 
     /* Import standard namespaces (and their contents :) */
     import_Toplevel_namespace();

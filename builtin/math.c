@@ -23,7 +23,7 @@ void
 import_Math_namespace()
 {
     ENTER ();
-    static struct fbuiltin_2 funcs_2[] = {
+    static const struct fbuiltin_2 funcs_2[] = {
         { do_Math_assignpow, "assign_pow", "n", "*Ri" },
         { do_Math_pow, "pow", "n", "Ri" },
         { 0 }

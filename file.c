@@ -43,149 +43,148 @@ typedef struct _FileErrorMap {
     int		value;
     char	*name;
     char	*message;
-    Atom	atom;
 } FileErrorMap;
 
-FileErrorMap   fileErrorMap[] = {
-    { EPERM, "PERM", "Operation not permitted", 0 },
-    { ENOENT, "NOENT", "No such file or directory", 0 },
-    { ESRCH, "SRCH", "No such process", 0 },
-    { EINTR, "INTR", "Interrupted system call", 0 },
-    { EIO, "IO", "I/O error", 0 },
-    { ENXIO, "NXIO", "No such device or address", 0 },
-    { E2BIG, "2BIG", "Arg list too long", 0 },
-    { ENOEXEC, "NOEXEC", "Exec format error", 0 },
-    { EBADF, "BADF", "Bad file number", 0 },
-    { ECHILD, "CHILD", "No child processes", 0 },
-    { EAGAIN, "AGAIN", "Try again", 0 },
-    { ENOMEM, "NOMEM", "Out of memory", 0 },
-    { EACCES, "ACCES", "Permission denied", 0 },
-    { EFAULT, "FAULT", "Bad address", 0 },
-    { ENOTBLK, "NOTBLK", "Block device required", 0 },
-    { EBUSY, "BUSY", "Device or resource busy", 0 },
-    { EEXIST, "EXIST", "File exists", 0 },
-    { EXDEV, "XDEV", "Cross-device link", 0 },
-    { ENODEV, "NODEV", "No such device", 0 },
-    { ENOTDIR, "NOTDIR", "Not a directory", 0 },
-    { EISDIR, "ISDIR", "Is a directory", 0 },
-    { EINVAL, "INVAL", "Invalid argument", 0 },
-    { ENFILE, "NFILE", "File table overflow", 0 },
-    { EMFILE, "MFILE", "Too many open files", 0 },
-    { ENOTTY, "NOTTY", "Not a typewriter", 0 },
-    { ETXTBSY, "TXTBSY", "Text file busy", 0 },
-    { EFBIG, "FBIG", "File too large", 0 },
-    { ENOSPC, "NOSPC", "No space left on device", 0 },
-    { ESPIPE, "SPIPE", "Illegal seek", 0 },
-    { EROFS, "ROFS", "Read-only file system", 0 },
-    { EMLINK, "MLINK", "Too many links", 0 },
-    { EPIPE, "PIPE", "Broken pipe", 0 },
-    { EDOM, "DOM", "Math argument out of domain of func", 0 },
-    { ERANGE, "RANGE", "Math result not representable", 0 },
-    { EDEADLK, "DEADLK", "Resource deadlock would occur", 0 },
-    { ENAMETOOLONG, "NAMETOOLONG", "File name too long", 0 },
-    { ENOLCK, "NOLCK", "No record locks available", 0 },
-    { ENOSYS, "NOSYS", "Function not implemented", 0 },
-    { ENOTEMPTY, "NOTEMPTY", "Directory not empty", 0 },
-    { ELOOP, "LOOP", "Too many symbolic links encountered", 0 },
-    { EWOULDBLOCK, "WOULDBLOCK", "Operation would block", 0 },
-    { ENOMSG, "NOMSG", "No message of desired type", 0 },
-    { EIDRM, "IDRM", "Identifier removed", 0 },
-    { ECHRNG, "CHRNG", "Channel number out of range", 0 },
-    { EL2NSYNC, "L2NSYNC", "Level 2 not synchronized", 0 },
-    { EL3HLT, "L3HLT", "Level 3 halted", 0 },
-    { EL3RST, "L3RST", "Level 3 reset", 0 },
-    { ELNRNG, "LNRNG", "Link number out of range", 0 },
-    { EUNATCH, "UNATCH", "Protocol driver not attached", 0 },
-    { ENOCSI, "NOCSI", "No CSI structure available", 0 },
-    { EL2HLT, "L2HLT", "Level 2 halted", 0 },
-    { EBADE, "BADE", "Invalid exchange", 0 },
-    { EBADR, "BADR", "Invalid request descriptor", 0 },
-    { EXFULL, "XFULL", "Exchange full", 0 },
-    { ENOANO, "NOANO", "No anode", 0 },
-    { EBADRQC, "BADRQC", "Invalid request code", 0 },
-    { EBADSLT, "BADSLT", "Invalid slot", 0 },
-    { EDEADLOCK, "DEADLOCK", "Resource deadlock would occur", 0 },
-    { EBFONT, "BFONT", "Bad font file format", 0 },
-    { ENOSTR, "NOSTR", "Device not a stream", 0 },
-    { ENODATA, "NODATA", "No data available", 0 },
-    { ETIME, "TIME", "Timer expired", 0 },
-    { ENOSR, "NOSR", "Out of streams resources", 0 },
-    { ENONET, "NONET", "Machine is not on the network", 0 },
-    { ENOPKG, "NOPKG", "Package not installed", 0 },
-    { EREMOTE, "REMOTE", "Object is remote", 0 },
-    { ENOLINK, "NOLINK", "Link has been severed", 0 },
-    { EADV, "ADV", "Advertise error", 0 },
-    { ESRMNT, "SRMNT", "Srmount error", 0 },
-    { ECOMM, "COMM", "Communication error on send", 0 },
-    { EPROTO, "PROTO", "Protocol error", 0 },
-    { EMULTIHOP, "MULTIHOP", "Multihop attempted", 0 },
+const FileErrorMap   fileErrorMap[] = {
+    { EPERM, "PERM", "Operation not permitted" },
+    { ENOENT, "NOENT", "No such file or directory" },
+    { ESRCH, "SRCH", "No such process" },
+    { EINTR, "INTR", "Interrupted system call" },
+    { EIO, "IO", "I/O error" },
+    { ENXIO, "NXIO", "No such device or address" },
+    { E2BIG, "2BIG", "Arg list too long" },
+    { ENOEXEC, "NOEXEC", "Exec format error" },
+    { EBADF, "BADF", "Bad file number" },
+    { ECHILD, "CHILD", "No child processes" },
+    { EAGAIN, "AGAIN", "Try again" },
+    { ENOMEM, "NOMEM", "Out of memory" },
+    { EACCES, "ACCES", "Permission denied" },
+    { EFAULT, "FAULT", "Bad address" },
+    { ENOTBLK, "NOTBLK", "Block device required" },
+    { EBUSY, "BUSY", "Device or resource busy" },
+    { EEXIST, "EXIST", "File exists" },
+    { EXDEV, "XDEV", "Cross-device link" },
+    { ENODEV, "NODEV", "No such device" },
+    { ENOTDIR, "NOTDIR", "Not a directory" },
+    { EISDIR, "ISDIR", "Is a directory" },
+    { EINVAL, "INVAL", "Invalid argument" },
+    { ENFILE, "NFILE", "File table overflow" },
+    { EMFILE, "MFILE", "Too many open files" },
+    { ENOTTY, "NOTTY", "Not a typewriter" },
+    { ETXTBSY, "TXTBSY", "Text file busy" },
+    { EFBIG, "FBIG", "File too large" },
+    { ENOSPC, "NOSPC", "No space left on device" },
+    { ESPIPE, "SPIPE", "Illegal seek" },
+    { EROFS, "ROFS", "Read-only file system" },
+    { EMLINK, "MLINK", "Too many links" },
+    { EPIPE, "PIPE", "Broken pipe" },
+    { EDOM, "DOM", "Math argument out of domain of func" },
+    { ERANGE, "RANGE", "Math result not representable" },
+    { EDEADLK, "DEADLK", "Resource deadlock would occur" },
+    { ENAMETOOLONG, "NAMETOOLONG", "File name too long" },
+    { ENOLCK, "NOLCK", "No record locks available" },
+    { ENOSYS, "NOSYS", "Function not implemented" },
+    { ENOTEMPTY, "NOTEMPTY", "Directory not empty" },
+    { ELOOP, "LOOP", "Too many symbolic links encountered" },
+    { EWOULDBLOCK, "WOULDBLOCK", "Operation would block" },
+    { ENOMSG, "NOMSG", "No message of desired type" },
+    { EIDRM, "IDRM", "Identifier removed" },
+    { ECHRNG, "CHRNG", "Channel number out of range" },
+    { EL2NSYNC, "L2NSYNC", "Level 2 not synchronized" },
+    { EL3HLT, "L3HLT", "Level 3 halted" },
+    { EL3RST, "L3RST", "Level 3 reset" },
+    { ELNRNG, "LNRNG", "Link number out of range" },
+    { EUNATCH, "UNATCH", "Protocol driver not attached" },
+    { ENOCSI, "NOCSI", "No CSI structure available" },
+    { EL2HLT, "L2HLT", "Level 2 halted" },
+    { EBADE, "BADE", "Invalid exchange" },
+    { EBADR, "BADR", "Invalid request descriptor" },
+    { EXFULL, "XFULL", "Exchange full" },
+    { ENOANO, "NOANO", "No anode" },
+    { EBADRQC, "BADRQC", "Invalid request code" },
+    { EBADSLT, "BADSLT", "Invalid slot" },
+    { EDEADLOCK, "DEADLOCK", "Resource deadlock would occur" },
+    { EBFONT, "BFONT", "Bad font file format" },
+    { ENOSTR, "NOSTR", "Device not a stream" },
+    { ENODATA, "NODATA", "No data available" },
+    { ETIME, "TIME", "Timer expired" },
+    { ENOSR, "NOSR", "Out of streams resources" },
+    { ENONET, "NONET", "Machine is not on the network" },
+    { ENOPKG, "NOPKG", "Package not installed" },
+    { EREMOTE, "REMOTE", "Object is remote" },
+    { ENOLINK, "NOLINK", "Link has been severed" },
+    { EADV, "ADV", "Advertise error" },
+    { ESRMNT, "SRMNT", "Srmount error" },
+    { ECOMM, "COMM", "Communication error on send" },
+    { EPROTO, "PROTO", "Protocol error" },
+    { EMULTIHOP, "MULTIHOP", "Multihop attempted" },
 #ifdef EDOTDOT
-    { EDOTDOT, "DOTDOT", "RFS specific error", 0 },
+    { EDOTDOT, "DOTDOT", "RFS specific error" },
 #endif
-    { EBADMSG, "BADMSG", "Not a data message", 0 },
-    { EOVERFLOW, "OVERFLOW", "Value too large for defined data type", 0 },
-    { ENOTUNIQ, "NOTUNIQ", "Name not unique on network", 0 },
-    { EBADFD, "BADFD", "File descriptor in bad state", 0 },
-    { EREMCHG, "REMCHG", "Remote address changed", 0 },
-    { ELIBACC, "LIBACC", "Can not access a needed shared library", 0 },
-    { ELIBBAD, "LIBBAD", "Accessing a corrupted shared library", 0 },
-    { ELIBSCN, "LIBSCN", ".lib section in a.out corrupted", 0 },
-    { ELIBMAX, "LIBMAX", "Attempting to link in too many shared libraries", 0 },
-    { ELIBEXEC, "LIBEXEC", "Cannot exec a shared library directly", 0 },
-    { EILSEQ, "ILSEQ", "Illegal byte sequence", 0 },
-    { ERESTART, "RESTART", "Interrupted system call should be restarted", 0 },
-    { ESTRPIPE, "STRPIPE", "Streams pipe error", 0 },
-    { EUSERS, "USERS", "Too many users", 0 },
-    { ENOTSOCK, "NOTSOCK", "Socket operation on non-socket", 0 },
-    { EDESTADDRREQ, "DESTADDRREQ", "Destination address required", 0 },
-    { EMSGSIZE, "MSGSIZE", "Message too long", 0 },
-    { EPROTOTYPE, "PROTOTYPE", "Protocol wrong type for socket", 0 },
-    { ENOPROTOOPT, "NOPROTOOPT", "Protocol not available", 0 },
-    { EPROTONOSUPPORT, "PROTONOSUPPORT", "Protocol not supported", 0 },
-    { ESOCKTNOSUPPORT, "SOCKTNOSUPPORT", "Socket type not supported", 0 },
-    { EOPNOTSUPP, "OPNOTSUPP", "Operation not supported on transport endpoint", 0 },
-    { EPFNOSUPPORT, "PFNOSUPPORT", "Protocol family not supported", 0 },
-    { EAFNOSUPPORT, "AFNOSUPPORT", "Address family not supported by protocol", 0 },
-    { EADDRINUSE, "ADDRINUSE", "Address already in use", 0 },
-    { EADDRNOTAVAIL, "ADDRNOTAVAIL", "Cannot assign requested address", 0 },
-    { ENETDOWN, "NETDOWN", "Network is down", 0 },
-    { ENETUNREACH, "NETUNREACH", "Network is unreachable", 0 },
-    { ENETRESET, "NETRESET", "Network dropped connection because of reset", 0 },
-    { ECONNABORTED, "CONNABORTED", "Software caused connection abort", 0 },
-    { ECONNRESET, "CONNRESET", "Connection reset by peer", 0 },
-    { ENOBUFS, "NOBUFS", "No buffer space available", 0 },
-    { EISCONN, "ISCONN", "Transport endpoint is already connected", 0 },
-    { ENOTCONN, "NOTCONN", "Transport endpoint is not connected", 0 },
-    { ESHUTDOWN, "SHUTDOWN", "Cannot send after transport endpoint shutdown", 0 },
-    { ETOOMANYREFS, "TOOMANYREFS", "Too many references: cannot splice", 0 },
-    { ETIMEDOUT, "TIMEDOUT", "Connection timed out", 0 },
-    { ECONNREFUSED, "CONNREFUSED", "Connection refused", 0 },
-    { EHOSTDOWN, "HOSTDOWN", "Host is down", 0 },
-    { EHOSTUNREACH, "HOSTUNREACH", "No route to host", 0 },
-    { EALREADY, "ALREADY", "Operation already in progress", 0 },
-    { EINPROGRESS, "INPROGRESS", "Operation now in progress", 0 },
-    { ESTALE, "STALE", "Stale NFS file handle", 0 },
+    { EBADMSG, "BADMSG", "Not a data message" },
+    { EOVERFLOW, "OVERFLOW", "Value too large for defined data type" },
+    { ENOTUNIQ, "NOTUNIQ", "Name not unique on network" },
+    { EBADFD, "BADFD", "File descriptor in bad state" },
+    { EREMCHG, "REMCHG", "Remote address changed" },
+    { ELIBACC, "LIBACC", "Can not access a needed shared library" },
+    { ELIBBAD, "LIBBAD", "Accessing a corrupted shared library" },
+    { ELIBSCN, "LIBSCN", ".lib section in a.out corrupted" },
+    { ELIBMAX, "LIBMAX", "Attempting to link in too many shared libraries" },
+    { ELIBEXEC, "LIBEXEC", "Cannot exec a shared library directly" },
+    { EILSEQ, "ILSEQ", "Illegal byte sequence" },
+    { ERESTART, "RESTART", "Interrupted system call should be restarted" },
+    { ESTRPIPE, "STRPIPE", "Streams pipe error" },
+    { EUSERS, "USERS", "Too many users" },
+    { ENOTSOCK, "NOTSOCK", "Socket operation on non-socket" },
+    { EDESTADDRREQ, "DESTADDRREQ", "Destination address required" },
+    { EMSGSIZE, "MSGSIZE", "Message too long" },
+    { EPROTOTYPE, "PROTOTYPE", "Protocol wrong type for socket" },
+    { ENOPROTOOPT, "NOPROTOOPT", "Protocol not available" },
+    { EPROTONOSUPPORT, "PROTONOSUPPORT", "Protocol not supported" },
+    { ESOCKTNOSUPPORT, "SOCKTNOSUPPORT", "Socket type not supported" },
+    { EOPNOTSUPP, "OPNOTSUPP", "Operation not supported on transport endpoint" },
+    { EPFNOSUPPORT, "PFNOSUPPORT", "Protocol family not supported" },
+    { EAFNOSUPPORT, "AFNOSUPPORT", "Address family not supported by protocol" },
+    { EADDRINUSE, "ADDRINUSE", "Address already in use" },
+    { EADDRNOTAVAIL, "ADDRNOTAVAIL", "Cannot assign requested address" },
+    { ENETDOWN, "NETDOWN", "Network is down" },
+    { ENETUNREACH, "NETUNREACH", "Network is unreachable" },
+    { ENETRESET, "NETRESET", "Network dropped connection because of reset" },
+    { ECONNABORTED, "CONNABORTED", "Software caused connection abort" },
+    { ECONNRESET, "CONNRESET", "Connection reset by peer" },
+    { ENOBUFS, "NOBUFS", "No buffer space available" },
+    { EISCONN, "ISCONN", "Transport endpoint is already connected" },
+    { ENOTCONN, "NOTCONN", "Transport endpoint is not connected" },
+    { ESHUTDOWN, "SHUTDOWN", "Cannot send after transport endpoint shutdown" },
+    { ETOOMANYREFS, "TOOMANYREFS", "Too many references: cannot splice" },
+    { ETIMEDOUT, "TIMEDOUT", "Connection timed out" },
+    { ECONNREFUSED, "CONNREFUSED", "Connection refused" },
+    { EHOSTDOWN, "HOSTDOWN", "Host is down" },
+    { EHOSTUNREACH, "HOSTUNREACH", "No route to host" },
+    { EALREADY, "ALREADY", "Operation already in progress" },
+    { EINPROGRESS, "INPROGRESS", "Operation now in progress" },
+    { ESTALE, "STALE", "Stale NFS file handle" },
 #ifdef EUCLEAN
-    { EUCLEAN, "UCLEAN", "Structure needs cleaning", 0 },
+    { EUCLEAN, "UCLEAN", "Structure needs cleaning" },
 #endif
 #ifdef ENOTNAM
-    { ENOTNAM, "NOTNAM", "Not a XENIX named type file", 0 },
+    { ENOTNAM, "NOTNAM", "Not a XENIX named type file" },
 #endif
 #ifdef ENAVAIL
-    { ENAVAIL, "NAVAIL", "No XENIX semaphores available", 0 },
+    { ENAVAIL, "NAVAIL", "No XENIX semaphores available" },
 #endif
 #ifdef EISNAM
-    { EISNAM, "ISNAM", "Is a named type file", 0 },
+    { EISNAM, "ISNAM", "Is a named type file" },
 #endif
 #ifdef EREMOTEIO
-    { EREMOTEIO, "REMOTEIO", "Remote I/O error", 0 },
+    { EREMOTEIO, "REMOTEIO", "Remote I/O error" },
 #endif
-    { EDQUOT, "DQUOT", "Quota exceeded", 0 },
+    { EDQUOT, "DQUOT", "Quota exceeded" },
 #ifdef ENOMEDIUM
-    { ENOMEDIUM, "NOMEDIUM", "No medium found", 0 },
+    { ENOMEDIUM, "NOMEDIUM", "No medium found" },
 #endif
 #ifdef EMEDIUMTYPE
-    { EMEDIUMTYPE, "MEDIUMTYPE", "Wrong medium type", 0 },
+    { EMEDIUMTYPE, "MEDIUMTYPE", "Wrong medium type" },
 #endif
 };
 
@@ -205,9 +204,8 @@ FileInitErrors (void)
     se = StructTypeElements (st);
     for (i = 0; i < NUM_FILE_ERRORS; i++)
     {
-	fileErrorMap[i].atom = AtomId (fileErrorMap[i].name);
 	se[i].type = typePrim[rep_void];
-	se[i].name = fileErrorMap[i].atom;
+	se[i].name = AtomId (fileErrorMap[i].name);
     }
     typeFileError = NewTypeUnion (st, True);
     MemAddRoot (typeFileError);
@@ -230,16 +228,20 @@ Value
 FileGetError (int err)
 {
     ENTER();
-    Value   ret;
-    int	    i;
+    Value	    ret;
+    int		    i;
+    StructType	    *st;
+    StructElement   *se;
 
     for (i = 0; i < NUM_FILE_ERRORS; i++)
 	if (fileErrorMap[i].value == err)
 	    break;
     if (i == NUM_FILE_ERRORS)
 	i = 0;	    /* XXX weird error */
-    ret = NewUnion (typeFileError->structs.structs, True);
-    ret->unions.tag = fileErrorMap[i].atom;
+    st = typeFileError->structs.structs;
+    se = StructTypeElements (st);
+    ret = NewUnion (st, True);
+    ret->unions.tag = se[i].name;
     BoxValueSet (ret->unions.value,0,Void);
     RETURN (ret);
 }

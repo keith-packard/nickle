@@ -23,14 +23,14 @@ void
 import_Semaphore_namespace()
 {
     ENTER ();
-    static struct fbuiltin_1 funcs_1[] = {
+    static const struct fbuiltin_1 funcs_1[] = {
         { do_Semaphore_signal, "signal", "v", "S" },
         { do_Semaphore_test, "test", "b", "S" },
         { do_Semaphore_wait, "wait", "v", "S" },
         { 0 }
     };
 
-    static struct fbuiltin_v funcs_v[] = {
+    static const struct fbuiltin_v funcs_v[] = {
         { do_Semaphore_new, "new", "S", ".i" },
         { 0 }
     };

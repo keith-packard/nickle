@@ -3454,7 +3454,7 @@ CompileExpr (ExprPtr expr, CodePtr code)
     RETURN (obj);
 }
 
-char *OpNames[] = {
+const char *const OpNames[] = {
     "Noop",
     /*
      * Statement op codes
@@ -3528,7 +3528,7 @@ char *OpNames[] = {
 static char *
 ObjBinFuncName (BinaryFunc func)
 {
-    static struct {
+    static const struct {
 	BinaryFunc  func;
 	char	    *name;
     } funcs[] = {
@@ -3552,7 +3552,7 @@ ObjBinFuncName (BinaryFunc func)
 static char *
 ObjUnFuncName (UnaryFunc func)
 {
-    static struct {
+    static const struct {
 	UnaryFunc   func;
 	char	    *name;
     } funcs[] = {

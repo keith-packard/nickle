@@ -26,7 +26,11 @@
 
 typedef enum { False = 0, True = 1 }  	Bool;
 typedef char		*Atom;
+#ifndef MEM_TRACE
+typedef const struct _valueType   ValueRep;
+#else
 typedef struct _valueType   ValueRep;
+#endif
 typedef struct _box	*BoxPtr;
 typedef union _code	*CodePtr;
 typedef struct _frame	*FramePtr;

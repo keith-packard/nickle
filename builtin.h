@@ -52,7 +52,7 @@ BuiltinAddFunction (NamespacePtr *namespacep, char *name, char *ret_format,
     }
 
 #define BuiltinFuncsGeneric(ns, funcs, stype, bitem, jump) do { \
-    BuiltinFunc f; struct stype *fi; \
+    BuiltinFunc f; const struct stype *fi; \
     for (fi = (funcs); fi->name; fi++) { \
 	f.bitem = fi->func; \
 	BuiltinAddFunction ((ns), fi->name, fi->ret, fi->args, f, jump); \

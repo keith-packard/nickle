@@ -23,7 +23,7 @@ void
 import_Command_namespace()
 {
     ENTER ();
-    static struct fbuiltin_1 funcs_1[] = {
+    static const struct fbuiltin_1 funcs_1[] = {
         { do_Command_delete, "delete", "b", "s" },
         { do_Command_edit, "edit", "v", "A*s" },
 	{ do_Command_display, "display", "v", "p" },
@@ -31,18 +31,18 @@ import_Command_namespace()
         { 0 }
     };
 
-    static struct fbuiltin_2 funcs_2[] = {
+    static const struct fbuiltin_2 funcs_2[] = {
         { do_Command_new, "new", "v", "sp" },
         { do_Command_new_names, "new_names", "v", "sp" },
         { 0 }
     };
 
-    static struct fbuiltin_4 funcs_4[] = {
+    static const struct fbuiltin_4 funcs_4[] = {
 	{ do_Command_lex_input, "lex_input", "b", "fsbb" },
         { 0 }
     };
 
-    static struct fbuiltin_v funcs_v[] = {
+    static const struct fbuiltin_v funcs_v[] = {
         { do_Command_undefine, "undefine", "v", ".A*s" },
         { do_Command_pretty_print, "pretty_print", "v", "f.A*s" },
         { 0 }

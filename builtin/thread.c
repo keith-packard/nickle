@@ -23,26 +23,26 @@ void
 import_Thread_namespace()
 {
     ENTER ();
-    static struct fbuiltin_0 funcs_0[] = {
+    static const struct fbuiltin_0 funcs_0[] = {
         { do_Thread_cont, "cont", "i", "" },
         { do_Thread_current, "current", "t", "" },
         { do_Thread_list, "list", "v", "" },
         { 0 }
     };
 
-    static struct fbuiltin_1 funcs_1[] = {
+    static const struct fbuiltin_1 funcs_1[] = {
         { do_Thread_get_priority, "get_priority", "i", "t" },
         { do_Thread_id_to_thread, "id_to_thread", "t", "i" },
         { do_Thread_join, "join", "p", "t" },
         { 0 }
     };
 
-    static struct fbuiltin_2 funcs_2[] = {
+    static const struct fbuiltin_2 funcs_2[] = {
         { do_Thread_set_priority, "set_priority", "i", "ti" },
         { 0 }
     };
 
-    static struct fbuiltin_v funcs_v[] = {
+    static const struct fbuiltin_v funcs_v[] = {
         { do_Thread_kill, "kill", "i", ".t" },
         { 0 }
     };

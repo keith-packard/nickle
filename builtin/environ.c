@@ -23,14 +23,14 @@ void
 import_Environ_namespace()
 {
     ENTER ();
-    static struct fbuiltin_1 funcs_1[] = {
+    static const struct fbuiltin_1 funcs_1[] = {
         { do_Environ_check, "check", "b", "s" },
         { do_Environ_get, "get", "s", "s" },
         { do_Environ_unset, "unset", "b", "s" },
         { 0 }
     };
 
-    static struct fbuiltin_2 funcs_2[] = {
+    static const struct fbuiltin_2 funcs_2[] = {
         { do_Environ_set, "set", "b", "ss" },
         { 0 }
     };

@@ -21,13 +21,13 @@ void
 import_Toplevel_namespace()
 {
     ENTER ();
-    static struct fbuiltin_0 funcs_0[] = {
+    static const struct fbuiltin_0 funcs_0[] = {
         { do_getbyte, "getbyte", "i", "" },
         { do_time, "time", "i", "" },
         { 0 }
     };
 
-    static struct fbuiltin_1 funcs_1[] = {
+    static const struct fbuiltin_1 funcs_1[] = {
         { do_abs, "abs", "n", "R" },
         { do_bit_width, "bit_width", "i", "i" },
         { do_ceil, "ceil", "i", "R" },
@@ -64,19 +64,19 @@ import_Toplevel_namespace()
         { 0 }
     };
 
-    static struct fbuiltin_2 funcs_2[] = {
+    static const struct fbuiltin_2 funcs_2[] = {
         { do_gcd, "gcd", "i", "ii" },
         { do_setjmp, "setjmp", "p", "*cp" },
         { do_xor, "xor", "i", "ii" },
         { 0 }
     };
 
-    static struct fbuiltin_2j funcs_2j[] = {
+    static const struct fbuiltin_2j funcs_2j[] = {
         { do_longjmp, "longjmp", "p", "cp" },
         { 0 }
     };
 
-    static struct fbuiltin_v funcs_v[] = {
+    static const struct fbuiltin_v funcs_v[] = {
         { do_imprecise, "imprecise", "R", "R.i" },
         { do_string_to_integer, "string_to_integer", "i", "s.i" },
         { 0 }

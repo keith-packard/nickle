@@ -47,8 +47,6 @@ import_String_namespace()
     EXIT ();
 }
 
-#endif
-
 Value
 do_String_length (Value av)
 {

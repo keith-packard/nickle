@@ -121,7 +121,6 @@ do_gcd (Value a, Value b)
     ENTER ();
     RETURN (Gcd (a, b));
 }
-#endif
 
 Value
 do_xor (Value a, Value b)

@@ -223,9 +223,9 @@ void function go(int n) {
 		abort("label: blank label");
 	    }
 	    if (b[i,j] == piece.none)
-		printf("%d ", t->val[i,j]);
+		printf("%8d", t->val[i,j]);
 	    else
-		printf("  %s   ", label(b[i,j]));
+		printf("%8s", label(b[i,j]));
 	}
         printf("\n");
     }

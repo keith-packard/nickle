@@ -217,7 +217,11 @@ CommandRemove (CommandPtr command, Atom name)
 }
 
 Bool
-NamespaceLocate (Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publish *publishp)
+NamespaceLocate (Value		names, 
+		 NamespacePtr	*namespacep,
+		 SymbolPtr	*symbolp,
+		 Publish	*publishp,
+		 Bool		complain)
 {
     int		    i;
     NamespacePtr    namespace;
@@ -227,16 +231,14 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publ
     SymbolPtr	    symbol;
     Bool	    search = True;
     
-    if (!ValueIsArray(names) || names->array.ndim != 1)
+    if (!ValueIsArray(names) || names->array.ndim != 1 || names->array.dim[0] == 0)
     {
 	RaiseStandardException (exception_invalid_argument,
-				"not array of strings",
+				"not non-empty array of strings",
 				2,
 				NewInt (0), names);
 	return False;
     }
-    if (names->array.dim[0] == 0)
-	return False;
     GetNamespace (&namespace, &f);
     for (i = 0; i < names->array.dim[0]; i++)
     {
@@ -257,8 +259,9 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publ
 	search = False;
 	if (!namelist)
 	{
-	    FilePrintf (FileStdout, "No symbol \"%s\" in namespace\n",
-			StringChars (&string->string));
+	    if (complain)
+		FilePrintf (FileStdout, "No symbol \"%s\" in namespace\n",
+			    StringChars (&string->string));
 	    return False;
 	}
 	symbol = namelist->symbol;
@@ -266,8 +269,10 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publ
 	{
 	    if (symbol->symbol.class != class_namespace)
 	    {
-		FilePrintf (FileStdout, "\"%s\" is not a namespace\n",
-			    StringChars (&string->string));
+		RaiseStandardException (exception_invalid_argument,
+					"not namespace",
+					2,
+					NewInt(i), string);
 		return False;
 	    }
 	    namespace = symbol->namespace.namespace;

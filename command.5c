@@ -78,7 +78,7 @@
      *    load a library named "module-name.5c" and
      *    import ModuleName; do for each argument
      */
-    void do_require (string[*] args)
+    void do_require (string[*] args...)
     {
 	string make_filename(string m) {
 	    string r = "";
@@ -86,24 +86,36 @@
 		int c = m[i];
 		if (Ctype::isupper(c)) {
 		    c = Ctype::tolower(c);
-		    if (i > 0)
-			r = r + "-";
+#		    if (i > 0)
+#			r = r + "-";
 		}
 		r = r + String::new(c);
 	    }
 	    return r + ".5c";
 	}
-	for (int i = 0; i < dim(args); i++) {
-	    string m = args[i];
-	    string f = make_filename(m);
-	    if (!Command::lex_library (f)) {
+	
+	bool load_library (string library)
+	{
+	    string f = make_filename(library);
+	    if (!Command::lex_library (f)) 
+	    {
 		File::fprintf (stderr,
 			       "Cannot load required file \"%s\", giving up.\n",
 			       f);
-		return;
+		return false;
 	    }
-	    string mi = File::sprintf("import %s;\n", m);
-	    Command::lex_string(mi);
+	    Command::lex_string(File::sprintf("import %s;\n", library));
+	    return true;
+	}
+	
+	for (int i = 0; i < dim(args); i++) {
+	    string[*]	name = args[i];
+	    if (!Command::valid_name (name))
+	    {
+		for (int j = 0; j < dim(name); j++)
+		    if (!load_library (name[i]))
+			break;
+	    }
 	}
     }
 

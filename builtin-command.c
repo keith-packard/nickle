@@ -30,6 +30,7 @@ import_Command_namespace()
         { do_Command_lex_library, "lex_library", "b", "s" },
         { do_Command_lex_string, "lex_string", "v", "s" },
 	{ do_Command_display, "display", "v", "p" },
+	{ do_Command_valid_name, "valid_name", "b", "A*s" },
         { 0 }
     };
 
@@ -163,7 +164,7 @@ do_Command_pretty_print (int argc, Value *args)
     for (i = 1; i < argc; i++)
     {
 	names = args[i];
-	if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
+	if (NamespaceLocate (names, &namespace, &symbol, &publish, True))
 	    PrettyPrint (f, publish, symbol);
     }
     RETURN (Void);
@@ -179,9 +180,25 @@ do_Command_undefine (int argc, Value *args)
     int		    i;
     
     for (i = 0; i < argc; i++)
-	if (NamespaceLocate (args[i], &namespace, &symbol, &publish) && symbol)
+	if (NamespaceLocate (args[i], &namespace, &symbol, &publish, True))
 	    NamespaceRemoveName (namespace, symbol->symbol.name);
     RETURN (Void);
+}
+
+Value
+do_Command_valid_name (Value names)
+{
+    ENTER ();
+    NamespacePtr    namespace;
+    SymbolPtr	    symbol;
+    Publish	    publish;
+    Value	    ret;
+    
+    if (NamespaceLocate (names, &namespace, &symbol, &publish, False))
+	ret = TrueVal;
+    else
+	ret = FalseVal;
+    RETURN (ret);
 }
 
 Value
@@ -192,7 +209,7 @@ do_Command_edit (Value names)
     SymbolPtr	    symbol;
     Publish	    publish;
 
-    if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
+    if (NamespaceLocate (names, &namespace, &symbol, &publish, True))
 	EditFunction (symbol, publish); 
     RETURN (Void);
 }

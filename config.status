@@ -285,18 +285,9 @@ ${ac_eA}HAVE_GETTIMEOFDAY${ac_eB}HAVE_GETTIMEOFDAY${ac_eC}1${ac_eD}
 ${ac_dA}HAVE_SELECT${ac_dB}HAVE_SELECT${ac_dC}1${ac_dD}
 ${ac_uA}HAVE_SELECT${ac_uB}HAVE_SELECT${ac_uC}1${ac_uD}
 ${ac_eA}HAVE_SELECT${ac_eB}HAVE_SELECT${ac_eC}1${ac_eD}
-${ac_dA}HAVE_FINITE${ac_dB}HAVE_FINITE${ac_dC}1${ac_dD}
-${ac_uA}HAVE_FINITE${ac_uB}HAVE_FINITE${ac_uC}1${ac_uD}
-${ac_eA}HAVE_FINITE${ac_eB}HAVE_FINITE${ac_eC}1${ac_eD}
 ${ac_dA}GETPGRP_VOID${ac_dB}GETPGRP_VOID${ac_dC}1${ac_dD}
 ${ac_uA}GETPGRP_VOID${ac_uB}GETPGRP_VOID${ac_uC}1${ac_uD}
 ${ac_eA}GETPGRP_VOID${ac_eB}GETPGRP_VOID${ac_eC}1${ac_eD}
-CEOF
-  sed -f conftest.frag conftest.in > conftest.out
-  rm -f conftest.in
-  mv conftest.out conftest.in
-
-  cat > conftest.frag <<CEOF
 s%^[ 	]*#[ 	]*undef[ 	][ 	]*[a-zA-Z_][a-zA-Z_0-9]*%/* & */%
 CEOF
   sed -f conftest.frag conftest.in > conftest.out

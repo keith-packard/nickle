@@ -50,7 +50,7 @@ void yyerror (char *fmt, ...);
 %type  <tval>	basetype
 %type  <mval>	members
 %type  <cval>	class
-%type  <pval>	publish
+%type  <pval>	publish publish_extend
 
 %type  <atval>	opt_argdecls argdecls
 %type  <adval>	argdecl
@@ -76,7 +76,7 @@ void yyerror (char *fmt, ...);
 %token <tval>	FILET MUTEX SEMAPHORE CONTINUATION
 %token		FUNCTION FUNC EXCEPTION RAISE
 %token		TYPEDEF IMPORT NAMESPACE NEW
-%token <pval>	PUBLIC
+%token <pval>	PUBLIC EXTEND
 %token		IF ELSE WHILE DO FOR SWITCH
 %token		BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		TRY CATCH TWIXT
@@ -411,7 +411,7 @@ statement	: IF ignorenl OP expr CP statement
 							     dl->name,
 							     False);
 		    }
-		| publish NAMESPACE ignorenl NAME block
+		| publish_extend NAMESPACE ignorenl NAME block
 		    {
 			$$ = NewExprTree (NAMESPACE,
 					  NewExprDecl (NewDeclList ($4, 
@@ -611,6 +611,12 @@ class		: GLOBAL
 		;
 
 publish		: PUBLIC
+		|
+		    { $$ = publish_private; }
+		;
+
+publish_extend	: PUBLIC
+		| EXTEND
 		|
 		    { $$ = publish_private; }
 		;

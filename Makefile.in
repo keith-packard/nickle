@@ -67,7 +67,7 @@ PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 YACC = @YACC@
 
-EXTRA_DIST = README.name gram.h
+EXTRA_DIST = README.name
 
 bin_PROGRAMS = nickle
 
@@ -503,7 +503,7 @@ builtin.o: builtin.c config.status $(srcdir)/date-sh
 main.o: main.c
 	$(CC) -c -DNICKLELIB=\""$(datadir)/builtin.5c"\" -I. -I$(srcdir) $(CPPFLAGS) $(CFLAGS) main.c
 
-lex.o compile.o expr.o pretty.o: gram.h
+compile.o error.o expr.o lex.o pretty.o type.o: gram.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

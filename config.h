@@ -25,12 +25,6 @@
 /* The number of bytes in a long long.  */
 #define SIZEOF_LONG_LONG 8
 
-/* Define if you have the __setfpucw function.  */
-/* #undef HAVE___SETFPUCW */
-
-/* Define if you have the finite function.  */
-#define HAVE_FINITE 1
-
 /* Define if you have the gettimeofday function.  */
 #define HAVE_GETTIMEOFDAY 1
 

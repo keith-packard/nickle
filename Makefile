@@ -67,14 +67,14 @@ PACKAGE = nickle
 VERSION = 1.99.1
 YACC = byacc
 
-EXTRA_DIST = README.name gram.h
+EXTRA_DIST = README.name
 
 bin_PROGRAMS = nickle
 
 nickle_SOURCES = alarm.c array.c atom.c avl.c box.c builtin.c 	compile.c debug.c divide.c edit.c 	error.c execute.c expr.c file.c float.c frame.c func.c 	gcd.c history.c int.c integer.c io.c main.c mem.c 	natural.c pretty.c rational.c ref.c refer.c 	sched.c scope.c stack.c string.c struct.c 	symbol.c sync.c type.c util.c value.c 	avl.h mem.h memp.h nickle.h opcode.h ref.h stack.h value.h 	gram.y lex.l
 
 
-data_DATA = builtin.5c math.5c
+data_DATA = builtin.5c math.5c scanf.5c
 
 man_MANS = nickle.1
 
@@ -503,7 +503,7 @@ builtin.o: builtin.c config.status $(srcdir)/date-sh
 main.o: main.c
 	$(CC) -c -DNICKLELIB=\""$(datadir)/builtin.5c"\" -I. -I$(srcdir) $(CPPFLAGS) $(CFLAGS) main.c
 
-lex.o compile.o expr.o pretty.o: gram.h
+compile.o error.o expr.o lex.o pretty.o type.o: gram.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

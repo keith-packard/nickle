@@ -61,6 +61,9 @@ printpublish (Value f, Publish publish)
     case publish_public:
 	FilePuts (f, "public ");
 	break;
+    case publish_extend:
+	FilePuts (f, "extend ");
+	break;
     case publish_private:
 	break;
     }

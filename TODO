@@ -8,6 +8,7 @@ TODO
 + Add a PRNG
 + Finish the manual.
 + fix output formatting length problems
++ add file/line numbers to compile errors
 
 NOT TODO
 

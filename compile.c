@@ -211,32 +211,14 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
     SymbolPtr	s;
     
     CompileCanonType (obj, namespace, type, stat);
-#if 0
-    /*
-     * A bit of a special case here --
-     * redefining in the global scope is ignored, as long
-     * as the types match.
-     */
-    if (NamespaceDefaultClass (namespace) == class_global)
+    if (publish == publish_extend)
     {
 	s = NamespaceLookupSymbol (namespace, name);
-	if (s)
-	{
-	    if (s->symbol.class != class ||
-		!TypeEqual (s->symbol.type, type) ||
-		s->symbol.publish != publish)
-	    {
-		CompileError (obj, stat, "Cannot redefine \"%A\" from %P %C %t to %P %C %t",
-			      name,
-			      s->symbol.publish, s->symbol.class, s->symbol.type,
-			      publish, class, type);
-		RETURN (0);
-	    }
-	    *new = False;
-	    RETURN (s);
-	}
+	*new = False;
+	if (!s)
+	    CompileError (obj, stat, "No namespace \"%A\" in namespace", name);
+	return s;
     }
-#endif
 
     switch (class) {
     case class_global:
@@ -1648,18 +1630,22 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	if (new)
 	    sym->namespace.namespace = NewNamespace (namespace);
         namespace = sym->namespace.namespace;
+	/*
+	 * Make private symbols in this namespace visible
+	 */
+	namespace->publish = publish_public;
 	expr = expr->tree.right;
 	while (expr->tree.left)
 	{
 	    obj = _CompileStat (obj, expr->tree.left, namespace);
 	    expr = expr->tree.right;
 	}
+	/*
+	 * Make private symbols in this namespace not visible to searches
+	 */
+	namespace->publish = publish_private;
 	if (new)
 	{
-	    /*
-	     * Make private symbols in this namespace not visible to searches
-	     */
-	    namespace->publish = publish_private;
 	    CompileAddSymbol (namespace->previous, sym);
 	}
 	break;

@@ -806,6 +806,8 @@ FileFilter (char *program, char *args[], Value filev, int *errp)
     }
     pid = fork ();
     if (pid == -1) {
+	close (errpipe[0]);
+	close (errpipe[1]);
 	*errp = errno;
 	RETURN (0);
     }
@@ -826,13 +828,12 @@ FileFilter (char *program, char *args[], Value filev, int *errp)
     /* parent */
     close (errpipe[1]);
     nread = read(errpipe[0], &errcode, 1);
+    close (errpipe[0]);
     if (nread != 0) {
 	*errp = errcode;
 	assert (nread == 1);
-	close (errpipe[0]);
 	RETURN(0);
     }
-    close (errpipe[0]);
     for (i = 0; i < 3; i++) {
 	Value f = BoxValue (filev->array.values, i);
 	if (f->file.flags & FilePipe)

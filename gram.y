@@ -11,19 +11,21 @@
 #include	<stdio.h>
 
 /*
- * This grammar generates 2 reduce/reduce and 4 shift/reduce conflicts:
+ * This grammar generates 4 reduce/reduce and 4 shift/reduce conflicts:
  * 
- * reduce/reduce conflict on:
+ * reduce/reduce conflicts on:
  *
- *	    *int . func
+ *	    *int . func 
+ *	    **int . func
  *
  *	Is the '*' a dereference operator or a pointer type modifier?
  *	The grammar is ordered to make this a type modifier since
  *	the other way is less common.  Use parens when you want this.
  *
- *  reduce/reduce conflict on:
+ *  reduce/reduce conflicts on:
  *
  *	   &int . func
+ *	   &&int . func
  *
  *	Is the '&' a reference operator or a reference type modifier?
  *	The grammar is ordered to make this a type modifier since

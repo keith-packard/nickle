@@ -1,5 +1,11 @@
 2004-06-17  Keith Packard  <keithp@keithp.com>
 
+	* gram.y:
+	Update conflict comment to note new reduce/reduce
+	conflicts caused by accepting ** and && as unary operators
+
+2004-06-17  Keith Packard  <keithp@keithp.com>
+
 	* compile.c: (CompileLvalue):
 	Handle nested & in Lvalues with auto_reference so that &&7 works.
 	* gram.y:

@@ -1,3 +1,16 @@
+nickle (2.42-1) unstable; urgency=low
+  * unlimit stack to avoid crashes in recursive GC marking
+  * add skiplists as an example
+  * fix precedence of ** so that ++x**2 works
+  * fix crash in HashEqual
+  * fix minor newline tracking bug in lexer
+  * add do_make_uninit (Bart Massey)
+  * fix nasty allocator crash with continuations
+  * fix handling of parallel catch blocks
+  * fix tail call to longjmp
+
+ -- Keith Packard <keithp@keithp.com>  Wed,  4 Aug 2004 11:30:08 -0700
+ 
 nickle (2.41-1) unstable; urgency=low
   * Make a few grammar tweaks to improve NL handling
   * Fix crash with empty array/hash initializers

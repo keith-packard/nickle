@@ -1,4 +1,9 @@
 2004-08-04  Keith Packard  <keithp@keithp.com>
+
+	* debian/changelog:
+	Update to 2.42, noting significant changes.
+
+2004-08-04  Keith Packard  <keithp@keithp.com>
 version 2.42
 	* Bump version to 2.42
 

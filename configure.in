@@ -25,6 +25,8 @@ AC_CHECK_PROGS([DATE], date)
 
 dnl Checks for libraries.
 AC_CHECK_LIB(m, log)
+AC_CHECK_LIB(nsl, gethostbyname)
+AC_CHECK_LIB(socket, socket)
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -59,7 +61,7 @@ esac
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(gettimeofday select sigaction sigrelse sigignore)
+AC_CHECK_FUNCS(gettimeofday hstrerror select sigaction sigrelse sigignore)
 
 AC_FUNC_GETPGRP
 

@@ -21,7 +21,11 @@
 #include	<errno.h>
 
 #define perror(s) FilePrintf(FileStderr, s ": %s\n", strerror(errno))
+#ifdef HAVE_HSTRERROR
 #define herror(s) FilePrintf(FileStderr, s ": %s\n", hstrerror(h_errno))
+#else
+#define herror(s) FilePrintf(FileStderr, s ": network error %d\n", h_errno);
+#endif
 
 NamespacePtr SocketsNamespace;
 

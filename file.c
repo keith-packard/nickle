@@ -119,7 +119,9 @@ FileErrorMap   fileErrorMap[] = {
     { ECOMM, "COMM", "Communication error on send", 0 },
     { EPROTO, "PROTO", "Protocol error", 0 },
     { EMULTIHOP, "MULTIHOP", "Multihop attempted", 0 },
+#ifdef EDOTDOT
     { EDOTDOT, "DOTDOT", "RFS specific error", 0 },
+#endif
     { EBADMSG, "BADMSG", "Not a data message", 0 },
     { EOVERFLOW, "OVERFLOW", "Value too large for defined data type", 0 },
     { ENOTUNIQ, "NOTUNIQ", "Name not unique on network", 0 },
@@ -163,14 +165,28 @@ FileErrorMap   fileErrorMap[] = {
     { EALREADY, "ALREADY", "Operation already in progress", 0 },
     { EINPROGRESS, "INPROGRESS", "Operation now in progress", 0 },
     { ESTALE, "STALE", "Stale NFS file handle", 0 },
+#ifdef EUCLEAN
     { EUCLEAN, "UCLEAN", "Structure needs cleaning", 0 },
+#endif
+#ifdef ENOTNAM
     { ENOTNAM, "NOTNAM", "Not a XENIX named type file", 0 },
+#endif
+#ifdef ENAVAIL
     { ENAVAIL, "NAVAIL", "No XENIX semaphores available", 0 },
+#endif
+#ifdef EISNAM
     { EISNAM, "ISNAM", "Is a named type file", 0 },
+#endif
+#ifdef EREMOTEIO
     { EREMOTEIO, "REMOTEIO", "Remote I/O error", 0 },
+#endif
     { EDQUOT, "DQUOT", "Quota exceeded", 0 },
+#ifdef ENOMEDIUM
     { ENOMEDIUM, "NOMEDIUM", "No medium found", 0 },
+#endif
+#ifdef EMEDIUMTYPE
     { EMEDIUMTYPE, "MEDIUMTYPE", "Wrong medium type", 0 },
+#endif
 };
 
 #define NUM_FILE_ERRORS	(sizeof (fileErrorMap) / sizeof (fileErrorMap[0]))

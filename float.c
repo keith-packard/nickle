@@ -786,8 +786,12 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     DebugF ("fratio ", &fratio->floats);
     negative = a->mant->sign == Negative;
     m = NewInteger (Positive, a->mant->mag);
-    if (FpartLength (a->mant) == a->prec)
-	m = Plus (m, One);
+    
+    /*
+     * Round the mantissa up by adding a bit at the extreme of the precision
+     */
+    m = Plus (m, NewFloat (one_fpart,
+			   NewIntFpart (length - a->prec), a->prec + 2));
     m = Times (m, fratio);
     if (True (Less (m, One)))
     {
@@ -1094,6 +1098,33 @@ NewRationalFloat (Rational *r, unsigned prec)
     RETURN (FloatDivide (num, den, 1));
 }
 
+#define SCALE_BITS  52
+#define SCALE	    4503599627370496.0	/* 2 ** 52 */
+
+Value
+NewDoubleFloat (double d)
+{
+    ENTER ();
+    int	    e;
+    double  m;
+    Sign    ms;
+
+    double_digit    dd;
+    if (d == 0.0) RETURN (Zero);
+    e = ilogb (d);
+    m = significand (d);
+    ms = Positive;
+    if (m < 0)
+    {
+	ms = Negative;
+	m = -m;
+    }
+    e = e - SCALE_BITS;
+    dd = (double_digit) (m * SCALE + 0.5);
+    RETURN (NewFloat (NewFpart (ms, NewDoubleDigitNatural (dd)),
+		      NewIntFpart (e), SCALE_BITS));
+}
+
 Value
 NewValueFloat (Value av, unsigned prec)
 {
@@ -1116,4 +1147,42 @@ NewValueFloat (Value av, unsigned prec)
 	break;
     }
     RETURN (av);
+}
+
+double
+DoublePart (Value av, char *error)
+{
+    double  mantissa;
+    int	    i;
+    int	    e;
+    digit   *mt;
+    double  div;
+    
+    av = NewValueFloat (av, 64);
+    if (NaturalLess (av->floats.exp->mag, max_int_natural))
+	e = NaturalToInt (av->floats.exp->mag);
+    else
+	e = MAX_NICKLE_INT;
+    if (e > 1023)
+    {
+	RaiseStandardException (exception_invalid_argument, error,
+				2, NewInt (0), av);
+	return 0.0;
+    }
+    if (av->floats.exp->sign == Negative)
+	e = -e;
+    
+    mantissa = 0.0;
+    i = av->floats.mant->mag->length;
+    e += DIGITBITS * i;
+    mt = NaturalDigits (av->floats.mant->mag) + i;
+    div = 1.0 / (double) BASE;
+    while (i--)
+    {
+	mantissa = mantissa + (double) *--mt * div;
+	div *= 1.0 / (double) BASE;
+    }
+    if (av->floats.mant->sign == Negative)
+	mantissa = -mantissa;
+    return mantissa * pow (2.0, (double) e);
 }

@@ -1,3 +1,9 @@
+2004-12-10  Keith Packard  <keithp@keithp.com>
+
+	* float.c: (FloatPrint), (NewDoubleFloat), (DoublePart):
+	Round floats correctly for printing.
+	Add double<->real conversion for (eventual) use in C code.
+
 2004-12-09  Keith Packard  <keithp@keithp.com>
 
 	reviewed by: Martin Hoch <hoch.martin@web.de>

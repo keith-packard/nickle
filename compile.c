@@ -1615,7 +1615,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
     SymbolPtr	sym;
     Bool	new;
     
-    expr->base.namespace = namespace;
     switch (expr->base.tag) {
     case IF:
 	/*
@@ -1624,6 +1623,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 * a IF b
 	 *   +----+
 	 */
+	namespace = NewNamespace (namespace);
 	obj = _CompileExpr (obj, expr->tree.left, namespace, expr);
 	NewInst (test_inst, obj);
 	obj = _CompileStat (obj, expr->tree.right, namespace);
@@ -1640,6 +1640,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 *   +---------+
 	 *        +------+
 	 */
+	namespace = NewNamespace (namespace);
 	obj = _CompileExpr (obj, expr->tree.left, namespace, expr);
 	NewInst (test_inst, obj);
 	obj = _CompileStat (obj, expr->tree.right->tree.left, namespace);
@@ -1662,6 +1663,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 *   +----------------+
 	 * +---------+
 	 */
+	namespace = NewNamespace (namespace);
 	continue_inst = obj->used;
 	obj = _CompileExpr (obj, expr->tree.left, namespace, expr);
 	NewInst (test_inst, obj);
@@ -1687,6 +1689,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 * a b DO
 	 * +---+
 	 */
+	namespace = NewNamespace (namespace);
 	continue_inst = obj->used;
 	state = obj->state;
 	obj->state |= OBJ_STATE_LOOP;
@@ -1709,6 +1712,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 *     +--------------+
 	 *   +---------+
 	 */
+	namespace = NewNamespace (namespace);
 	if (expr->tree.left->tree.left)
 	    obj = _CompileExpr (obj, expr->tree.left->tree.left, namespace, expr);
 	top_inst = obj->used;
@@ -1749,6 +1753,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	 *              +-------------+
 	 *                     +--------+
 	 */
+	namespace = NewNamespace (namespace);
 	obj = _CompileExpr (obj, expr->tree.left, namespace, expr);
 	if (expr->base.tag == SWITCH)
 	    SetPush (obj);
@@ -1966,15 +1971,18 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 			  sym->symbol.name);
 	break;
     case CATCH:
+	namespace = NewNamespace (namespace);
 	obj = CompileCatch (obj, expr->tree.right, expr->tree.left, namespace, expr);
 	break;
     case RAISE:
 	obj = CompileRaise (obj, expr, namespace, expr);
 	break;
     case TWIXT:
+	namespace = NewNamespace (namespace);
 	obj = CompileTwixt (obj, expr, namespace, expr);
 	break;
     }
+    expr->base.namespace = namespace;
     RETURN (obj);
 }
 

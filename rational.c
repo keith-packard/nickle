@@ -924,7 +924,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     }
     if (rep_width)
     {
-#define MAX_SENSIBLE	1000000
+#define MAX_SENSIBLE	10000000
 	if (rep_width > MAX_SENSIBLE)
 	{
 	    repeat_width = -1;

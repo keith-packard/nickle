@@ -39,6 +39,7 @@ typedef enum _OpCode {
     OpTwixtDone,
     OpEnterDone,
     OpLeaveDone,
+    OpUnwind,
     /*
      * Expr op codes
      */

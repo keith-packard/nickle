@@ -426,6 +426,12 @@ typedef struct _instTagCase {
     Atom	tag;
 } InstTagCase;
 
+typedef struct _instUnwind {
+    InstBase	inst;
+    int		twixt;
+    int		catch;
+} InstUnwind;
+
 typedef union _inst {
     InstBase	base;
     InstVar	var;
@@ -441,17 +447,36 @@ typedef union _inst {
     InstRaise	raise;
     InstTwixt	twixt;
     InstTagCase	tagcase;
+    InstUnwind	unwind;
 } Inst;
 
-#define OBJ_STATE_ERROR	    1
-#define OBJ_STATE_LOOP	    2
-#define OBJ_STATE_SWITCH    4
+/*
+ * A structure used to process non-structured
+ * control flow changes (break, continue, return)
+ * within the presence of twixt/catch
+ */
+
+typedef enum _nonLocalKind { 
+    NonLocalControl, NonLocalTwixt, NonLocalCatch,
+} NonLocalKind;
+
+#define NON_LOCAL_RETURN    0
+#define NON_LOCAL_BREAK	    1
+#define NON_LOCAL_CONTINUE  2
+
+typedef struct _nonLocal {
+    DataType		*data;
+    struct _nonLocal	*prev;
+    NonLocalKind	kind;	/* kind of non local object */
+    int			target;	/* what kind of targets */
+} NonLocal;
 
 typedef struct _obj {
     DataType	*data;
     int		size;
     int		used;
-    int		state;
+    Bool	error;
+    NonLocal	*nonLocal;
 } Obj;
 
 #define ObjCode(obj,i)	(((InstPtr) (obj + 1)) + (i))

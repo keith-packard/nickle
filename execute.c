@@ -455,6 +455,34 @@ ThreadTwixt (Value thread, int enterOffset, int leaveOffset)
 }
 
 static void
+ThreadUnwind (Value thread, int twixts, int catches, InstPtr *next)
+{
+    ENTER ();
+    Value	continuation;
+    CatchPtr	catch;
+    TwixtPtr	twixt;
+    
+    twixt = thread->thread.twixts;
+    while (twixts--)
+	twixt = twixt->previous;
+    catch = thread->thread.catches;
+    while (catches--)
+	catch = catch->previous;
+    
+    /*
+     * Create a continuation that unwinds the twixts
+     * and catches and then ends up executing the next
+     * instruction
+     */
+    continuation = NewContinuation (thread->thread.frame,
+				    *next,
+				    running->thread.stack,
+				    catch, twixt);
+    (void) do_longjmp (next, continuation, Zero);
+    EXIT ();
+}
+
+static void
 ThreadBoxCheck (BoxPtr box, int i, Types *type)
 {
     if (BoxValueGet (box, i) == 0)
@@ -1035,6 +1063,12 @@ ThreadStep (Value thread)
 	}
 	else
 	    next = inst + inst->branch.offset;
+	break;
+    case OpUnwind:
+	if (aborting)
+	    break;
+	ThreadUnwind (thread, inst->unwind.twixt, inst->unwind.catch, &next);
+	complete = True;
 	break;
     }
     if (!aborting || complete)

@@ -526,7 +526,7 @@ NewThread (FramePtr frame, ObjPtr code)
     ret->thread.id = ++ThreadId;
     ret->thread.partial = 0;
     complete = True;
-    if (code->state & OBJ_STATE_ERROR)
+    if (code->error)
 	ret->thread.state = ThreadFinished;
     _ThreadInsert (ret);
     RETURN (ret);

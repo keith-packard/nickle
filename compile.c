@@ -21,6 +21,7 @@ ObjMark (void *object)
     InstPtr inst;
     int	    i;
 
+    MemReference (obj->nonLocal);
     inst = ObjCode (obj, 0);
     for (i = 0; i < obj->used; i++, inst++)
     {
@@ -69,7 +70,8 @@ NewObj (int size)
     obj = ALLOCATE (&ObjType, sizeof (Obj) + size * sizeof (Inst));
     obj->size = size;
     obj->used = 0;
-    obj->state = 0;
+    obj->error = False;
+    obj->nonLocal = 0;
     RETURN (obj);
 }
 
@@ -86,7 +88,8 @@ AddInst (ObjPtr obj)
 	nobj = NewObj (obj->size + OBJ_INCR);
 	memcpy (ObjCode (nobj, 0), ObjCode (obj, 0), obj->used * sizeof (Inst));
 	nobj->used = obj->used;
-	nobj->state = obj->state;
+	nobj->error = obj->error;
+	nobj->nonLocal = obj->nonLocal;
 	obj = nobj;
     }
     obj->used++;
@@ -136,7 +139,7 @@ CompileStorage (ObjPtr obj, ExprPtr stat, SymbolPtr symbol, CodePtr code)
     ENTER ();
     
     if (!symbol)
-	obj->state |= OBJ_STATE_ERROR;
+	obj->error = True;
     /*
      * For symbols hanging from a frame (statics, locals and args),
      * locate the frame and set their element value
@@ -253,7 +256,7 @@ CompileError (ObjPtr obj, ExprPtr stat, char *s, ...)
     FileVPrintf (FileStderr, s, args);
     va_end (args);
     FilePrintf (FileStderr, "\n");
-    obj->state |= OBJ_STATE_ERROR;
+    obj->error = True;
 }
 
 /*
@@ -564,6 +567,30 @@ CompileTypecheckArgs (ObjPtr	obj,
     return ret;
 }
 
+
+static void
+MarkNonLocal (void *object)
+{
+    NonLocal	*nl = object;
+
+    MemReference (nl->prev);
+}
+
+DataType    NonLocalType = { MarkNonLocal, 0 };
+
+static NonLocal *
+NewNonLocal (NonLocal *prev, NonLocalKind kind, int target)
+{
+    ENTER();
+    NonLocal	*nl;
+
+    nl = ALLOCATE (&NonLocalType, sizeof (NonLocal));
+    nl->prev = prev;
+    nl->kind = kind;
+    nl->target = target;
+    RETURN (nl);
+}
+
 /*
  * Compile a function call --
  * 
@@ -670,7 +697,6 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     ENTER ();
     int	    enter_inst, twixt_inst, twixt_body_inst,
 	    enter_done_inst, leave_done_inst;
-    int     state;
     InstPtr inst;
     
     enter_inst = obj->used;
@@ -690,11 +716,11 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 
     /* Compile the body */
     twixt_body_inst = obj->used;
-    state = obj->state;
-    obj->state |= OBJ_STATE_SWITCH;
+    obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTwixt,
+				 NON_LOCAL_BREAK);
     obj = _CompileStat (obj, expr->tree.right->tree.left, False, code);
+    obj->nonLocal = obj->nonLocal->prev;
     CompilePatchLoop (obj, twixt_body_inst, -1);
-    obj->state = (obj->state & ~OBJ_STATE_SWITCH) | (state & OBJ_STATE_SWITCH);
     BuildInst (obj, OpTwixtDone, inst, stat);
     
     /* finish the twixt instruction */
@@ -1207,8 +1233,12 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	inst->catch.offset = obj->used - catch_inst;
 	inst->catch.exception = exception;
     
+	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalCatch, 0);
+	
 	obj = CompileCatch (obj, catches->tree.right, body, stat, code);
 	
+	obj->nonLocal = obj->nonLocal->prev;
+
 	BuildInst (obj, OpEndCatch, inst, stat);
 	
 	inst = ObjCode (obj, exception_inst);
@@ -1709,6 +1739,50 @@ CompilePatchLoop (ObjPtr obj, int start, int continue_offset)
     }
 }
 
+static ObjPtr
+CompileNonLocal (ObjPtr obj, int target, ExprPtr expr)
+{
+    ENTER ();
+    NonLocal	*nl;
+    int		twixt = 0, catch = 0;
+
+    for (nl = obj->nonLocal; nl; nl = nl->prev)
+    {
+	if (nl->target & target)
+	    break;
+	switch (nl->kind) {
+	case NonLocalTwixt:
+	    twixt++;
+	    break;
+	case NonLocalCatch:
+	    catch++;
+	    break;
+	case NonLocalControl:
+	    break;
+	}
+    }
+    if (!nl) 
+    {
+	switch (target) {
+	case NON_LOCAL_BREAK:
+	    CompileError (obj, expr, "break not in loop/switch/twixt");
+	    break;
+	case NON_LOCAL_CONTINUE:
+	    CompileError (obj, expr, "continue not in loop");
+	    break;
+	}
+    }
+    if (twixt || catch)
+    {
+	InstPtr	inst;
+	BuildInst (obj, OpUnwind, inst, expr);
+	inst->base.stat = expr;
+	inst->unwind.twixt = twixt;
+	inst->unwind.catch = catch;
+    }
+    RETURN (obj);
+}
+
 ObjPtr
 _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 {
@@ -1716,7 +1790,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
     int		top_inst, continue_inst, test_inst, middle_inst, bottom_inst;
     ExprPtr	c;
     int		ncase, *case_inst, icase;
-    int		state;
     Bool	has_default;
     InstPtr	inst;
     
@@ -1769,10 +1842,10 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	continue_inst = obj->used;
 	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
 	NewInst (test_inst, obj);
-	state = obj->state;
-	obj->state |= OBJ_STATE_LOOP;
+	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
+				     NON_LOCAL_BREAK|NON_LOCAL_CONTINUE);
 	obj = _CompileStat (obj, expr->tree.right, False, code);
-	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
+	obj->nonLocal = obj->nonLocal->prev;
 	NewInst (bottom_inst, obj);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpWhile;
@@ -1792,10 +1865,10 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	 * +---+
 	 */
 	continue_inst = obj->used;
-	state = obj->state;
-	obj->state |= OBJ_STATE_LOOP;
+	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
+				     NON_LOCAL_BREAK|NON_LOCAL_CONTINUE);
 	obj = _CompileStat (obj, expr->tree.left, False, code);
-	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
+	obj->nonLocal = obj->nonLocal->prev;
 	obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
 	NewInst (test_inst, obj);
 	inst = ObjCode (obj, test_inst);
@@ -1803,7 +1876,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	inst->base.stat = expr;
 	inst->branch.offset = continue_inst - test_inst;
 	CompilePatchLoop (obj, continue_inst, continue_inst);
-	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
 	break;
     case FOR:
 	/*
@@ -1822,10 +1894,10 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    obj = _CompileExpr (obj, expr->tree.left->tree.right, True, expr, code);
 	    NewInst (test_inst, obj);
 	}
-	state = obj->state;
-	obj->state |= OBJ_STATE_LOOP;
+	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
+				     NON_LOCAL_BREAK|NON_LOCAL_CONTINUE);
 	obj = _CompileStat (obj, expr->tree.right->tree.right, False, code);
-	obj->state = (obj->state & ~OBJ_STATE_LOOP) | (state & OBJ_STATE_LOOP);
+	obj->nonLocal = obj->nonLocal->prev;
 	continue_inst = obj->used;
 	if (expr->tree.right->tree.left)
 	    obj = _CompileExpr (obj, expr->tree.right->tree.left, False, expr, code);
@@ -1887,8 +1959,8 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	/* add default case at the bottom */
     	NewInst (test_inst, obj);
 	top_inst = obj->used;
-	state = obj->state;
-	obj->state |= OBJ_STATE_SWITCH;
+	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalControl,
+				     NON_LOCAL_BREAK);
 	/*
 	 * Compile the statements
 	 */
@@ -1935,7 +2007,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    }
 	    c = c->tree.right;
 	}
-	obj->state = (obj->state & ~OBJ_STATE_SWITCH) | (state & OBJ_STATE_SWITCH);
+	obj->nonLocal = obj->nonLocal->prev;
 	if (!has_default)
 	{
 	    inst = ObjCode (obj, test_inst);
@@ -1961,8 +2033,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	}
 	break;
     case BREAK:
-	if ((obj->state & (OBJ_STATE_LOOP|OBJ_STATE_SWITCH)) == 0)
-	    CompileError (obj, expr, "break not in loop/switch/twixt");
+	obj = CompileNonLocal (obj, NON_LOCAL_BREAK, expr);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, middle_inst);
 	inst->base.opCode = OpBreak;
@@ -1970,8 +2041,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	inst->branch.offset = 0;    /* filled in by PatchLoop */
 	break;
     case CONTINUE:
-	if ((obj->state & OBJ_STATE_LOOP) == 0)
-	    CompileError (obj, expr, "continue not in loop");
+	obj = CompileNonLocal (obj, NON_LOCAL_CONTINUE, expr);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, middle_inst);
 	inst->base.opCode = OpContinue;
@@ -1993,6 +2063,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    else
 	    {
 		obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
+		obj = CompileNonLocal (obj, NON_LOCAL_RETURN, expr);
 		BuildInst (obj, OpReturn, inst, expr);
 		inst->base.stat = expr;
 	    }
@@ -2000,6 +2071,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	}
 	else
 	{
+	    obj = CompileNonLocal (obj, NON_LOCAL_RETURN, expr);
 	    BuildInst (obj, OpReturnVoid, inst, expr);
 	    inst->base.stat = expr;
 	    expr->base.type = typesPrim[type_void];
@@ -2128,7 +2200,7 @@ CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
 	    code->base.argc++;
     }
     code->func.body.obj = CompileFuncCode (code, stat, previous);
-    obj->state |= code->func.body.obj->state & OBJ_STATE_ERROR;
+    obj->error |= code->func.body.obj->error;
     BuildInst (obj, OpObj, inst, stat);
     inst->code.code = code;
     if ((staticInit = code->func.staticInit.obj))
@@ -2142,7 +2214,7 @@ CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
 	code->func.staticInit.obj = staticInit;
 	BuildInst (obj, OpStaticInit, inst, stat);
 	BuildInst (obj, OpNoop, inst, stat);
-	obj->state |= (staticInit->state & OBJ_STATE_ERROR);
+	obj->error |= staticInit->error;
     }
     RETURN (obj);
 }
@@ -2336,6 +2408,7 @@ char *OpNames[] = {
     "OpTwixtDone",
     "OpEnterDone",
     "OpLeaveDone",
+    "OpUnwind",
     /*
      * Expr op codes
      */
@@ -2483,6 +2556,10 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
     case OpTwixt:
 	FilePrintf (FileStdout, "enter %d leave %d",
 		    inst->twixt.enter, inst->twixt.leave);
+	break;
+    case OpUnwind:
+	FilePrintf (FileStdout, "twixt %d catch %d",
+		    inst->unwind.twixt, inst->unwind.catch);
 	break;
     case OpName:
     case OpNameRef:

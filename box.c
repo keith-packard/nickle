@@ -37,10 +37,10 @@ NewBox (Bool constant, Bool array, int nvalues, TypePtr type)
 
     box = ALLOCATE (&BoxType, sizeof (Box) + nvalues * sizeof (Value));
     box->constant = constant;
-/*    box->array = array; */
     box->homogeneous = True;
-    box->u.type = type;
+    box->replace = False;
     box->nvalues = nvalues;
+    box->u.type = type;
     for (i = 0; i < nvalues; i++)
 	BoxValueSet(box, i, 0);
     RETURN (box);

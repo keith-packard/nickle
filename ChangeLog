@@ -1,3 +1,8 @@
+2004-01-18  Keith Packard  <keithp@keithp.com>
+
+	* box.c: (NewBox):
+	box->replace was uninitialized
+
 2003-12-13  Keith Packard  <keithp@keithp.com>
 
 	* compile.c: (CompileBuildArray), (CompileArrayInit),

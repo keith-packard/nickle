@@ -35,6 +35,14 @@
  *	Shifting binds the CATCH to the nearest enclosing TRY,
  *	just like ELSE
  *
+ *  shift/reduce conflict in ASSIGN in initializers
+ *
+ *	That's because struct initializers look like assignment
+ *	expressions while array initializers permit any expression.
+ *	Shift yields struct initialization, so the effect is
+ *	to make assignment expressions invalid in array initializers
+ *	(of course, you can always enclose an assignment in parens)
+ *
  *  shift/reduce conflict on ELSE
  *
  *	Need we say more?
@@ -114,7 +122,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <argDecl>    argdefine
 %type  <bool>	    opt_dots
 
-%type  <expr>	    opt_expr expr opt_exprs exprs assignexpr simpleexpr primary
+%type  <expr>	    opt_expr expr opt_exprs exprs simpleexpr primary
 %type  <expr>	    opt_actuals actuals
 %type  <expr>	    comma_expr
 %type  <ints>	    assignop
@@ -614,7 +622,7 @@ func_body    	: { ++funcDepth; } block_or_expr { --funcDepth; $$ = $2; }
 		;
 block_or_expr	: block
 		    { $$ = $1; }
-		| ASSIGN assignexpr SEMI
+		| ASSIGN simpleexpr SEMI
 		    { 
 			$$ = NewExprTree (OC,
 					  NewExprTree (RETURNTOK, 0, $2),
@@ -778,7 +786,7 @@ func_name	: decl NAME OP
 			$$.decl = NewDeclList ($3, 0, 0); 
 		    }
 		;
-opt_init	: ASSIGN assignexpr
+opt_init	: ASSIGN simpleexpr
 		    { $$ = $2; }
 		| ASSIGN init
 		    { $$ = $2; }
@@ -948,9 +956,9 @@ stars		: stars COMMA TIMES
 		| TIMES
 		    { $$ = NewExprTree (COMMA, 0, 0); }
 		;
-dims		: assignexpr COMMA dims
+dims		: simpleexpr COMMA dims
 		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| assignexpr
+		| simpleexpr
 		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
 /*
@@ -1087,8 +1095,8 @@ expr		: comma_expr
 			$$ = NewExprDecl (VAR, $2, $1.class, $1.type, $1.publish); 
 		    }
 		;
-comma_expr	: assignexpr
-		| comma_expr COMMA assignexpr
+comma_expr	: simpleexpr
+		| comma_expr COMMA simpleexpr
 		    { $$ = NewExprTree(COMMA, $1, $3); }
 		;
 /*
@@ -1098,24 +1106,28 @@ opt_exprs	: exprs
 		|
 		    { $$ = 0; }
 		;
-exprs		: assignexpr COMMA exprs
+exprs		: simpleexpr COMMA exprs
 		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| assignexpr
+		| simpleexpr
 		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
 opt_actuals	: actuals
 		|
 		    { $$ = 0; }
 		;
-actuals		: assignexpr COMMA actuals
+actuals		: simpleexpr COMMA actuals
 		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| assignexpr opt_dots
+		| simpleexpr opt_dots
 		    {	
 			ExprPtr	arg = $2 ? NewExprTree (DOTS, $1, 0) : $1;
 			$$ = NewExprTree (COMMA, arg, 0); 
 		    }
 		;
-assignexpr	: simpleexpr assignop assignexpr    		%prec ASSIGN
+/*
+* Fundemental expression production
+*/
+simpleexpr	: primary
+		| simpleexpr assignop simpleexpr    		%prec ASSIGN
 		    { 
 			if ($2 == ASSIGNPOW)
 			    $$ = NewExprTree (ASSIGNPOW, 
@@ -1141,12 +1153,6 @@ assignexpr	: simpleexpr assignop assignexpr    		%prec ASSIGN
 			    $$ = NewExprTree($2, $1, $3); 
 			}
 		    }
-		| simpleexpr
-		;
-/*
-* Fundemental expression production
-*/
-simpleexpr	: primary
 		| MOD integer						%prec THREADID
 		    {   Value	t;
 			t = do_Thread_id_to_thread ($2);

@@ -899,7 +899,7 @@ Value	FileFopen (char *name, char *mode, int *errp);
 void	FilePutArgType (Value f, ArgType *at);
 Value	FilePopen (char *program, char *args[], char *mode, int *errp);
 int	FileStatus (Value file);
-void	FileCheckBlocked (void);
+void	FileCheckBlocked (Bool block);
 void	FileSetBlocked (Value file, int flag);
 void	FilePrintf (Value, char *, ...);
 void	FileVPrintf (Value, char *, va_list);

@@ -35,7 +35,7 @@ sigio (int sig)
 void
 IoInterrupt (void)
 {
-    FileCheckBlocked ();
+    FileCheckBlocked (False);
 }
 
 void
@@ -105,7 +105,7 @@ IoTimeout (void *closure)
 {
     if (anyTtyUnowned)
 	IoStart ();
-    FileCheckBlocked ();
+    FileCheckBlocked (False);
     if (anyFileWriteBlocked || anyFileReadBlocked || anyTtyUnowned)
 	return True;
     ioTimeoutQueued = False;

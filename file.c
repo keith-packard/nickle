@@ -497,6 +497,8 @@ void
 FileFini (void)
 {
     MemCollect ();
+    while (anyFileWriteBlocked)
+	FileCheckBlocked (True);
 }
 
 static int
@@ -1611,12 +1613,12 @@ FilePrintf (Value file, char *fmt, ...)
 }
 
 void
-FileCheckBlocked (void)
+FileCheckBlocked (Bool block)
 {
     ENTER ();
     fd_set	    readable, writable;
     int		    n, fd;
-    struct timeval  tv;
+    struct timeval  tv, *tvp;
     Value	    blocked, *prev;
     Bool	    ready;
     Bool	    writeBlocked;
@@ -1637,10 +1639,16 @@ FileCheckBlocked (void)
 	if (fd >= n)
 	    n = fd + 1;
     }
-    tv.tv_usec = 0;
-    tv.tv_sec = 0;
+    if (block)
+	tvp = 0;
+    else
+    {
+	tv.tv_usec = 0;
+	tv.tv_sec = 0;
+	tvp = &tv;
+    }
     if (n > 0)
-	n = select (n, &readable, &writable, 0, &tv);
+	n = select (n, &readable, &writable, 0, tvp);
     if (n > 0)
     {
 	writeBlocked = False;

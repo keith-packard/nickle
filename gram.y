@@ -90,7 +90,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
     FuncDecl	    funcDecl;
 }
 
-%type  <expr>	    fullname
+%type  <expr>	    fullname fullnames
 %type  <expr>	    opt_rawnames rawname rawnames rawnamespace
 %type  <atom>	    rawatom
 %type  <expr>	    block opt_func_body func_body func_right catches catch
@@ -382,6 +382,15 @@ fullname	: namespace namespacename
 			LexNamespace = 0;
 		    }
 		;
+fullnames	: fullname
+		    {
+			$$ = $1;
+		    }
+		| fullname COMMA fullnames
+		    {
+			$$ = NewExprTree (COMMA, $1, $3);
+		    }
+		;
 namespace	: namespace NAMESPACENAME COLONCOLON
 		    { 
 			ExprPtr	    e;
@@ -604,27 +613,40 @@ simple_statement: if_statement namespace_end attendnl
 			CurrentNamespace = $2;
 			$$ = NewExprTree (NAMESPACE, NewExprAtom ($4, 0, False), $7);
 		    }
-		| opt_publish IMPORT ignorenl fullname SEMI attendnl
+		| opt_publish IMPORT ignorenl fullnames SEMI attendnl
 		    {
 			SymbolPtr	symbol;
-			ExprPtr		e;
+			ExprPtr		p, e, n;
 
-			e = $4;
-			if ($4->base.tag == COLONCOLON)
-			    e = e->tree.right;
-			symbol = e->atom.symbol;
-			if (!symbol)
+			p = $4;
+			for (p = $4; p; p = n)
 			{
-			    ParseError ("non-existant namespace %A", e->atom.atom);
-			    YYERROR;
+			    if (p->base.tag == COMMA)
+			    {
+				e = p->tree.left;
+				n = p->tree.right;
+			    }
+			    else
+			    {
+				e = p;
+				n = 0;
+			    }
+			    if (e->base.tag == COLONCOLON)
+				e = e->tree.right;
+			    symbol = e->atom.symbol;
+			    if (!symbol)
+			    {
+				ParseError ("non-existant namespace %A", e->atom.atom);
+				YYERROR;
+			    }
+			    else if (symbol->symbol.class != class_namespace)
+			    {
+				ParseError ("%A is not a namespace", e->atom.atom);
+				YYERROR;
+			    }
+			    NamespaceImport (CurrentNamespace, 
+					     symbol->namespace.namespace, $1);
 			}
-			else if (symbol->symbol.class != class_namespace)
-			{
-			    ParseError ("%A is not a namespace", e->atom.atom);
-			    YYERROR;
-			}
-			NamespaceImport (CurrentNamespace, 
-					 symbol->namespace.namespace, $1);
 			$$ = NewExprTree (IMPORT, $4, NewExprDecl (IMPORT,
 								   0, 
 								   class_undef,

@@ -1,5 +1,10 @@
 2004-10-09  Keith Packard  <keithp@keithp.com>
 
+	* gram.y:
+	Permit multiple namespaces in import statements
+
+2004-10-09  Keith Packard  <keithp@keithp.com>
+
 	* value.c: (ShiftL), (ShiftR):
 	Optimize shifts of small ints by small ints
 

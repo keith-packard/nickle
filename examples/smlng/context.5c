@@ -34,7 +34,7 @@ function context_set (*context c, string value)
 	c->styles |= style_b;
 	break;
     case "EM":
-	if (! c->styles & style_s) {
+	if (! (c->styles & style_s)) {
 	    c->styles ^= style_em;
 	}
 	break;

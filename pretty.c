@@ -555,6 +555,30 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest, ProfileData 
 	FilePuts (f, ")");
 }
 
+static void
+_PrettyCatch (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
+{
+    CodePtr	catch;
+    Atom	name;
+    
+    if (!e)
+	return;
+    _PrettyCatch (f, e->tree.left, level, nest, pd);
+    if (nest)
+	PrettyIndent (f, 0, level, pd);
+    e = e->tree.right;
+    catch = e->code.code;
+    if (catch->base.name->base.tag == COLONCOLON)
+	name = catch->base.name->tree.right->atom.atom;
+    else
+	name = catch->base.name->atom.atom;
+    FilePuts (f, "catch ");
+    PrettyExpr (f, catch->base.name, 0, level, nest, pd);
+    FilePuts (f, " ");
+    PrettyBody (f, catch, level, nest, pd);
+    FilePuts (f, "\n");
+}
+
 void
 PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest, ProfileData *pd)
 {
@@ -732,29 +756,11 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest, ProfileData
 	if (nest)
 	{
 	    FilePuts (f, "\n");
-	    PrettyStatement (f, e->tree.left, level+1, level, nest, pd);
+	    PrettyStatement (f, e->tree.right, level+1, level, nest, pd);
 	}
 	else
 	    FilePuts (f, " ");
-	while ((e = e->tree.right))
-	{
-	    CodePtr	catch;
-	    Atom	name;
-	    if (nest)
-	    {
-		PrettyIndent (f, 0, level, pd);
-	    }
-	    catch = e->tree.left->code.code;
-	    if (catch->base.name->base.tag == COLONCOLON)
-		name = catch->base.name->tree.right->atom.atom;
-	    else
-		name = catch->base.name->atom.atom;
-	    FilePuts (f, "catch ");
-	    PrettyExpr (f, catch->base.name, 0, level, nest, pd);
-	    FilePuts (f, " ");
-	    PrettyBody (f, e->tree.left->code.code, level, nest, pd);
-	    FilePuts (f, "\n");
-	}
+	_PrettyCatch (f, e->tree.left, level, nest, pd);
 	break;
     case RAISE:
 	PrettyIndent (f, e, level, pd);

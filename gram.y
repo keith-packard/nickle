@@ -607,14 +607,14 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 								   $1));
 		    }
 		| TRY ignorenl statement catches attendnl
-		    { $$ = NewExprTree (CATCH, $3, $4); }
+		    { $$ = NewExprTree (CATCH, $4, $3); }
 		| TWIXT ignorenl namespace_start OP opt_expr SEMI opt_expr CP statement namespace_end attendnl
 		    { $$ = NewExprTree (TWIXT, 
 					NewExprTree (TWIXT, $5, $7),
 					NewExprTree (TWIXT, $9, 0));
 		    }
 		;
-catches		:   catch catches
+catches		:   catches catch
 		    { $$ = NewExprTree (CATCH, $1, $2); }
 		|   
 		    { $$ = 0; }

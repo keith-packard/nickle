@@ -1840,7 +1840,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
     
     if (catches)
     {
-	catch = catches->tree.left;
+	catch = catches->tree.right;
 	/*
 	 * try a catch b
 	 *
@@ -1909,7 +1909,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
     
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTry, 0);
 	
-	obj = CompileCatch (obj, catches->tree.right, body, stat, code);
+	obj = CompileCatch (obj, catches->tree.left, body, stat, code);
 	
 	obj->nonLocal = obj->nonLocal->prev;
 
@@ -3327,7 +3327,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
     case IMPORT:
 	break;
     case CATCH:
-	obj = CompileCatch (obj, expr->tree.right, expr->tree.left, expr, code);
+	obj = CompileCatch (obj, expr->tree.left, expr->tree.right, expr, code);
 	break;
     case RAISE:
 	obj = CompileRaise (obj, expr, expr, code);

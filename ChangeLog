@@ -1,3 +1,15 @@
+2004-10-17  Keith Packard  <keithp@keithp.com>
+
+	* gram.y:
+	Add POW2 and POW3 operators
+	
+	* lex.l:
+	Add several non-ascii character equivalents.
+	Make \r be white space (and ignored)
+	
+	* mem.h:
+	Remove spurious semi-colon from ALLOCATE definition.
+
 2004-10-09  Keith Packard  <keithp@keithp.com>
 
 	* gram.y:

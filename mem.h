@@ -122,7 +122,7 @@ extern struct bfree *freeList[NUMSIZES];
 
 #define REFERENCE(o)	    STACK_PUSH(MemStack, (o))
 #define ENTER()		    StackPointer    __stackPointer = STACK_TOP(MemStack)
-#define ALLOCATE(type,size) MemAllocateRef(type,size);
+#define ALLOCATE(type,size) MemAllocateRef(type,size)
 #define EXIT()		    STACK_RESET(MemStack, __stackPointer)
 #define RETURN(r)	    return (STACK_RETURN (MemStack, __stackPointer, (r)))
 #define NOREFRETURN(r)	    return (EXIT(), (r))

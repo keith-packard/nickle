@@ -354,10 +354,14 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 ","		{ yylval.ints = COMMA; return COMMA; }
 "$"		{ yylval.ints = DOLLAR; return DOLLAR; }
 "..."		{ yylval.ints = DOTDOTDOT; return DOTDOTDOT; }
+"…"		{ yylval.ints = DOTDOTDOT; return DOTDOTDOT; }
 "."		{ yylval.ints = DOT; return DOT; }
 "->"		{ yylval.ints = ARROW; return ARROW; }
+"→"		{ yylval.ints = ARROW; return ARROW; }
 "=>"		{ yylval.ints = DARROW; return DARROW; }
+"⇒"		{ yylval.ints = DARROW; return DARROW; }
 "<>"		{ yylval.value = Void; return VOIDVAL; }
+"◊"		{ yylval.value = Void; return VOIDVAL; }
 \n		{ 
 		    if (lexInput->at_eof) { strcpy (yytext, "EOF"); yylval.ints = ENDFILE; return ENDFILE; }
 		    if (!ignorenl) { yylval.ints = NL; return NL; } 
@@ -372,12 +376,17 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 "+="		{ yylval.ints = ASSIGNPLUS; return ASSIGNPLUS; }
 "-="		{ yylval.ints = ASSIGNMINUS; return ASSIGNMINUS; }
 "*="		{ yylval.ints = ASSIGNTIMES; return ASSIGNTIMES; }
+"×="		{ yylval.ints = ASSIGNTIMES; return ASSIGNTIMES; }
 "/="		{ yylval.ints = ASSIGNDIVIDE; return ASSIGNDIVIDE; }
+"÷="		{ yylval.ints = ASSIGNDIVIDE; return ASSIGNDIVIDE; }
 "//="		{ yylval.ints = ASSIGNDIV; return ASSIGNDIV; }
+"⫽="		{ yylval.ints = ASSIGNDIV; return ASSIGNDIV; }
 "%="		{ yylval.ints = ASSIGNMOD; return ASSIGNMOD; }
-"**="		{ yylval.ints = ASSIGNPOW; return ASSIGNPOW; }
+"↑="		{ yylval.ints = ASSIGNPOW; return ASSIGNPOW; }
 "<<="		{ yylval.ints = ASSIGNSHIFTL; return ASSIGNSHIFTL; }
+"⪡="		{ yylval.ints = ASSIGNSHIFTL; return ASSIGNSHIFTL; }
 ">>="		{ yylval.ints = ASSIGNSHIFTR; return ASSIGNSHIFTR; }
+"⪢="		{ yylval.ints = ASSIGNSHIFTR; return ASSIGNSHIFTR; }
 "^="		{ yylval.ints = ASSIGNLXOR; return ASSIGNLXOR; }
 "&="		{ yylval.ints = ASSIGNLAND; return ASSIGNLAND; }
 "|="		{ yylval.ints = ASSIGNLOR; return ASSIGNLOR; }
@@ -386,9 +395,13 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 "+"		{ yylval.ints = PLUS; return PLUS; }
 "-"		{ yylval.ints = MINUS; return MINUS; }
 "*"		{ yylval.ints = TIMES; return TIMES; }
+"×"		{ yylval.ints = TIMES; return TIMES; }
 "/"		{ yylval.ints = DIVIDE; return DIVIDE; }
+"÷"		{ yylval.ints = DIVIDE; return DIVIDE; }
 "//"		{ yylval.ints = DIV; return DIV; }
+"⫽"		{ yylval.ints = DIV; return DIV; }
 "**"		{ yylval.ints = STARSTAR; return STARSTAR; }
+"↑"		{ yylval.ints = STARSTAR; return STARSTAR; }
 "%"		{ yylval.ints = MOD; return MOD; }
 "!"		{ yylval.ints = BANG; return BANG; }
 "#"		{ yylval.ints = POUND; return POUND; }
@@ -396,23 +409,35 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 "|"		{ yylval.ints = LOR; return LOR; }
 "^"		{ yylval.ints = LXOR; return LXOR; }
 "~"		{ yylval.ints = LNOT; return LNOT; }
+"¬"		{ yylval.ints = LNOT; return LNOT; }
 "++"		{ yylval.ints = INC; return INC; }
+"⧺"		{ yylval.ints = INC; return INC; }
 "--"		{ yylval.ints = DEC; return DEC; }
 "=="		{ yylval.ints = EQ; return EQ; }
 "!="		{ yylval.ints = NE; return NE; }
+"≠"		{ yylval.ints = NE; return NE; }
 "<"		{ yylval.ints = LT; return LT; }
 ">"		{ yylval.ints = GT; return GT; }
 "<="		{ yylval.ints = LE; return LE; }
+"≤"		{ yylval.ints = LE; return LE; }
 ">="		{ yylval.ints = GE; return GE; }
+"≥"		{ yylval.ints = GE; return GE; }
 "&&"		{ yylval.ints = AND; return AND; }
+"∧"		{ yylval.ints = AND; return AND; }
 "||"		{ yylval.ints = OR; return OR; }
+"∨"		{ yylval.ints = OR; return OR; }
 "<<"		{ yylval.ints = SHIFTL; return SHIFTL; }
+"⪡"		{ yylval.ints = SHIFTL; return SHIFTL; }
 ">>"		{ yylval.ints = SHIFTR; return SHIFTR; }
+"⪢"		{ yylval.ints = SHIFTR; return SHIFTR; }
 "?"		{ yylval.ints = QUEST; return QUEST; }
 "::"		{ yylval.ints = COLONCOLON; return COLONCOLON; }
 ":"		{ yylval.ints = COLON; return COLON; }
+"²"		{ yylval.ints = POW2; return POW2; }
+"³"		{ yylval.ints = POW3; return POW3; }
 " "		;
 "\t"		;
+"\r"		;
 \'([^\n\']|\\\')*\'	{
 			ENTER ();
 			char	 *s;

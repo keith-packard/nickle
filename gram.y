@@ -175,7 +175,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %left		SHIFTL SHIFTR
 %left		PLUS MINUS
 %left		TIMES DIVIDE DIV MOD
-%right		POW STARSTAR
+%right		POW STARSTAR POW2 POW3
 %left		UNIONCAST
 %right		UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
 %left		OS CS DOT ARROW STAROS CALL OP CP
@@ -1324,6 +1324,22 @@ simpleexpr	: simpleexpr assignop simpleexpr    		%prec ASSIGN
 			$$ = NewExprTree(POW, 
 					 BuildName ("Math", "pow"), 
 					 NewExprTree (POW, $1, $3)); 
+		    }
+		| simpleexpr POW2
+		    {
+			$$ = NewExprTree (POW,
+					  BuildName("Math", "pow"),
+					  NewExprTree (POW, $1,
+						       NewExprConst (TEN_NUM,
+								     NewInt(2))));
+		    }
+		| simpleexpr POW3
+		    {
+			$$ = NewExprTree (POW,
+					  BuildName("Math", "pow"),
+					  NewExprTree (POW, $1,
+						       NewExprConst (TEN_NUM,
+								     NewInt(3))));
 		    }
 		| simpleexpr SHIFTL simpleexpr
 		    { $$ = NewExprTree(SHIFTL, $1, $3); }

@@ -839,6 +839,11 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     else
     {
 	exp_string = NaturalSprint (0, exp->mag, base, &exp_width);
+	if (aborting)
+	{
+	    EXIT ();
+	    return True;
+	}
 	exp_width++;
 	if (exp->sign == Negative)
 	    exp_width++;
@@ -862,6 +867,11 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     int_string = NaturalSprint (int_buffer + int_width + 1,
 				int_n, base, &int_width);
     
+    if (aborting)
+    {
+	EXIT ();
+	return True;
+    }
     frac_prec = mant_prec - int_width;
     if (*int_string == '0')
 	frac_prec++;
@@ -890,6 +900,12 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	    frac_width = prec + 1;
     }
 
+    /*
+     * Limit fraction to available precision
+     */
+    if (frac_width > frac_prec + 1)
+	frac_width = frac_prec + 1;
+    
     if (frac_width < 2)
 	frac_width = 0;
     frac_buffer = 0;
@@ -908,6 +924,12 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	frac_buffer = malloc (frac_width + 1);
 	frac_string = NaturalSprint (frac_buffer + frac_width + 1,
 				     frac_n, base, &frac_wrote);
+	if (aborting)
+	{
+	    EXIT ();
+	    return True;
+	}
+	    
 	while (frac_wrote < frac_width - 1)
 	{
 	    *--frac_string = '0';

@@ -1220,7 +1220,7 @@ Remove these names from the system.
 Load a file given by the string name E.
 .IP "library E"
 Load a library given by the string name E.  See the discussion of the
-NICKLELIB environment variable in ENVIRONMENT
+NICKLEPATH environment variable in ENVIRONMENT
 below, and the discussion of Command::library_path above.
 .IP "E # E"
 Print expr1 in base expr2 .
@@ -1280,12 +1280,16 @@ of nickle execution if possible.
 .IP HOME
 Used to find the user's .nicklerc
 if NICKLERC is not set.
-.IP NICKLELIB
+.IP NICKLEPATH
 A colon-separated path whose elements are directories
 containing Nickle code.  The library command and the -l flag,
 described above, search this path for a filename matching the
 given file.  The default library path in the
 absence of this variable is @datadir@/nickle.
+.IP NICKLESTART
+The filename of the file that should be loaded as a bootstrap
+on Nickle startup.  The default in the absence of this variable
+is to load @datadir@/nickle/builtin.5c.
 .\"
 .SH EXAMPLES
 .PP

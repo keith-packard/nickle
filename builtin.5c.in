@@ -9,18 +9,40 @@
  * provide the "library" command.
  */
 extend namespace Command {
-    public string nickle_library_path = "@nicklelib@";
-    library_path = nickle_library_path;
+    import String;
+
+    /* normally /usr/share/nickle */
+    public string nicklelibdir = "@nicklelibdir@";
+    /* actually controls library loading */
+    public string library_path = nicklelibdir + ":.";
+    if (Environ::check("NICKLEPATH"))
+	library_path = Environ::get("NICKLEPATH");
+
+    public bool lex_file (string name) {
+	return Command::lex_input (File::open (name, "r"), name, false, false);
+    }
+	
+    /* currently just does ~ expansion */
+    public string glob(string filename) {
+	if (filename[0] == '~' && filename[1] == '/') {
+	    exception bad_glob();
+	    if (!Environ::check("HOME"))
+		raise bad_glob();
+	    return Environ::get("HOME") + 
+		substr(filename, 1, length(filename) - 1);
+	}
+	return filename;
+    }
 
     string path_first (string path)
     {
 	int	i = String::index (path, ":");
 
 	if (i < 0)
-	    return path;
+	    return glob(path);
 	if (i == 0)
 	    return ".";
-	return String::substr (path, 0, i);
+	return glob(String::substr (path, 0, i));
     }
 
     string path_rest (string path)
@@ -35,12 +57,8 @@ extend namespace Command {
 	return String::substr (path, i + 1, l - i - 1);
     }
     
-    public bool lex_file (string name) {
-	return Command::lex_input (File::open (name, "r"), name, false, false);
-    }
-	
     public bool lex_library (string name) {
-	for (string path = nickle_library_path;
+	for (string path = library_path;
 	     path != "";
 	     path = path_rest (path))
 	{
@@ -146,7 +164,12 @@ string[*] start (string[*] argv)
 	     * Add the script base directory to the library
 	     * path
 	     */
-	    Command::script_dir(Command::dirname(argv[0]));
+	    if (!Environ::check("NICKLEPATH")) {
+		Command::library_path =
+		    Command::nicklelibdir +
+		    ":" +
+		    Command::dirname(argv[0]);
+            }
 	    files[nfiles].library = false;
 	    files[nfiles].name = argv[i];
 	    nfiles++;

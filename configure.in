@@ -5,7 +5,7 @@ dnl All Rights Reserved.  See the file COPYING in this directory
 dnl for licensing information.
 
 AC_INIT(nickle.h)
-AM_INIT_AUTOMAKE(nickle,2.10)
+AM_INIT_AUTOMAKE(nickle,2.11)
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_AUX_DIR(.)
 
@@ -72,10 +72,10 @@ if test "x$prefix" = xNONE; then
     prefix="$ac_default_prefix"
 fi
 
-nicklelib=`eval echo ${datadir}`/nickle
+nicklelibdir=`eval echo ${datadir}`/nickle
 
-AC_SUBST(nicklelib)
+AC_SUBST(nicklelibdir)
 
-AC_DEFINE_UNQUOTED([NICKLELIB], "$nicklelib", [Nickle data directory])
+AC_DEFINE_UNQUOTED([NICKLELIBDIR], "$nicklelibdir", [Nickle data directory])
 
 AC_OUTPUT(Makefile builtin/Makefile date-sh nickle.1 builtin.5c, , [chmod +x ${srcdir}/date-sh])

@@ -39,13 +39,13 @@ setArgv (int argc, char **argv)
 }
 
 static Bool
-try_nicklelib (void)
+try_nicklestart (void)
 {
-    char    *nicklelib;
+    char    *nicklestart;
 
-    if ((nicklelib = getenv ("NICKLELIB")) == 0)
-	nicklelib = NICKLELIB "/builtin.5c";
-    return LexFile (nicklelib, True, False);
+    if ((nicklestart = getenv ("NICKLESTART")) == 0)
+	nicklestart = NICKLELIBDIR "/builtin.5c";
+    return LexFile (nicklestart, True, False);
 }    
 
 RETSIGTYPE	intr(int), ferr(int);
@@ -79,7 +79,7 @@ main (int argc, char **argv)
     stdin_interactive = isatty(0);
     init ();
     setArgv (argc - 1, argv + 1);
-    if (try_nicklelib())
+    if (try_nicklestart())
     {
 	/*
 	 * Run the parser

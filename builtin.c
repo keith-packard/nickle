@@ -56,10 +56,12 @@ static const struct sbuiltin svars[] = {
 
 extern NamespacePtr CommandNamespace;
 
+#ifdef CENVIRONMENT
 static const struct envbuiltin envvars[] = {
     { "NICKLELIB",  NICKLELIB,	"library_path",	&CommandNamespace },
     { 0,    0 },
 };
+#endif
 
 static const struct filebuiltin fvars[] = {
     { "stdin",	&FileStdin },
@@ -251,12 +253,14 @@ BuiltinInit (void)
 {
     ENTER ();
     const struct sbuiltin	*s;
-    const struct envbuiltin	*env;
     const struct filebuiltin	*f;
     const struct ebuiltin	*e;
     SymbolPtr			sym;
+#ifdef CENVIRONMENT
+    const struct envbuiltin	*env;
     char			*home;
     Value			home_val;
+#endif
 
     /* Import standard namespaces (and their contents :) */
     import_Toplevel_namespace();
@@ -282,6 +286,7 @@ BuiltinInit (void)
 	BoxValueSet (sym->global.value, 0, NewStrString (s->value));
     }
 
+#ifdef CENVIRONMENT
     /* Get the user's home directory in case it's referenced in the
      * environment */
     home = getenv ("HOME");
@@ -305,6 +310,7 @@ BuiltinInit (void)
 	    val = NewStrString (v);
 	BoxValueSet (sym->global.value, 0, val);
     }
+#endif
 
     /* Import File objects with predefined values */
     for (f = fvars; f->name; f++) {

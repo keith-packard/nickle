@@ -228,10 +228,4 @@ extend namespace Command {
 	return (String::substr(name, 0, n));
     }
 
-    /* XXX externally non-obvious semantic: suggestions? */
-    public void script_dir(string name)
-    {
-	library_path = name + ":" + nickle_library_path;
-    }
-
 }

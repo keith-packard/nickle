@@ -416,7 +416,7 @@ typedef struct _instCode {
 
 typedef enum _branchMod {
     BranchModNone, BranchModBreak, BranchModContinue, 
-    BranchModReturn, BranchModReturnVoid
+    BranchModReturn, BranchModReturnVoid, BranchModCatch
 } BranchMod;
 
 typedef struct _instBranch {

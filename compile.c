@@ -223,7 +223,8 @@ ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, Code
 ObjPtr	_CompileBoolExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
 void	CompilePatchLoop (ObjPtr obj, int start,
 			  int continue_offset,
-			  int break_offset);
+			  int break_offset,
+			  int catch_offset);
 ObjPtr	_CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code);
 ObjPtr	CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous, NonLocalPtr nonLocal);
 ObjPtr	CompileDecl (ObjPtr obj, ExprPtr decls, Bool evaluate, ExprPtr stat, CodePtr code);
@@ -1828,7 +1829,7 @@ CompileStructUnionInit (ObjPtr obj, ExprPtr expr, Type *type,
 
 static ObjPtr
 CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body, 
-	      ExprPtr stat, CodePtr code)
+	      ExprPtr stat, CodePtr code, int nest)
 {
     ENTER ();
     int		catch_inst, exception_inst;
@@ -1897,11 +1898,25 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	/*
 	 * Patch non local returns inside
 	 */
-	CompilePatchLoop (obj, catch_inst, -1, -1);
+	CompilePatchLoop (obj, catch_inst, -1, -1, -1);
+	
+	/*
+	 * Unwind any peer catch blocks while executing catch
+	 */
+	if (nest)
+	{
+	    BuildInst (obj, OpUnwind, inst, stat);
+	    inst->unwind.twixt = 0;
+	    inst->unwind.catch = nest;
+	}
 	
 	BuildInst (obj, OpExceptionCall, inst, stat);
 	
-	NewInst (obj, OpBranch, exception_inst, stat);
+	exception_inst = obj->used;
+
+	BuildInst (obj, OpBranch, inst, stat);
+	inst->branch.offset = 0;
+	inst->branch.mod = BranchModCatch;
     
 	inst = ObjCode (obj, catch_inst);
 	inst->catch.offset = obj->used - catch_inst;
@@ -1909,15 +1924,18 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
     
 	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTry, 0);
 	
-	obj = CompileCatch (obj, catches->tree.left, body, stat, code);
+	obj = CompileCatch (obj, catches->tree.left, body, stat, code, nest+1);
 	
 	obj->nonLocal = obj->nonLocal->prev;
 
-	BuildInst (obj, OpEndCatch, inst, stat);
-	
-	inst = ObjCode (obj, exception_inst);
-	inst->branch.offset = obj->used - exception_inst;
-	inst->branch.mod = BranchModNone;
+	if (!nest)
+	{
+	    BuildInst (obj, OpEndCatch, inst, stat);
+	    /*
+	     * Patch Catch branches inside
+	     */
+	    CompilePatchLoop (obj, exception_inst, -1, -1, obj->used);
+	}
     }
     else
 	obj = _CompileStat (obj, body, False, code);
@@ -2547,7 +2565,8 @@ void
 CompilePatchLoop (ObjPtr    obj, 
 		  int	    start,
 		  int	    continue_offset,
-		  int	    break_offset)
+		  int	    break_offset,
+		  int	    catch_offset)
 {
     InstPtr inst;
 
@@ -2565,6 +2584,10 @@ CompilePatchLoop (ObjPtr    obj,
 		case BranchModContinue:
 		    if (continue_offset >= 0)
 			inst->branch.offset = continue_offset - start;
+		    break;
+		case BranchModCatch:
+		    if (catch_offset >= 0)
+			inst->branch.offset = catch_offset - start;
 		    break;
 		default:
 		    break;
@@ -2586,6 +2609,7 @@ CompilePatchLoop (ObjPtr    obj,
 		    inst->farJump.farJump->inst = -2;
 		    break;
 		case BranchModNone:
+		case BranchModCatch:
 		    break;
 		}
 	    }
@@ -2597,11 +2621,12 @@ CompilePatchLoop (ObjPtr    obj,
 		if (inst->code.code->func.body.obj)
 		    CompilePatchLoop (inst->code.code->func.body.obj, 0,
 				      continue_offset,
-				      break_offset);
+				      break_offset,
+				      -1);
 		if (inst->code.code->func.staticInit.obj)
 		    CompilePatchLoop (inst->code.code->func.staticInit.obj, 0,
 				      continue_offset,
-				      break_offset);
+				      break_offset, -1);
 	    }
 	    break;
 	default:
@@ -2638,7 +2663,7 @@ CompileMoveObj (ObjPtr	obj,
 		    CompileMoveObj (inst->code.code->func.body.obj, 0,
 				    depth + 1, amount);
 		if (inst->code.code->func.staticInit.obj)
-		    CompilePatchLoop (inst->code.code->func.staticInit.obj, 0,
+		    CompileMoveObj (inst->code.code->func.staticInit.obj, 0,
 				      depth + 1, amount);
 	    }
 	    break;
@@ -2719,6 +2744,7 @@ _CompileNonLocal (ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
 	    inst->branch.offset = 0;	/* filled in by PatchLoop */
 	    inst->branch.mod = mod;
 	case BranchModNone:
+	case BranchModCatch:
 	    break;
 	}
     }
@@ -2915,7 +2941,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    inst->branch.mod = BranchModNone;
 	}
 	
-	CompilePatchLoop (obj, top_inst, continue_inst, obj->used);
+	CompilePatchLoop (obj, top_inst, continue_inst, obj->used, -1);
 	break;
     case DO:
 	/*
@@ -2950,7 +2976,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    inst->branch.offset = top_inst - ObjLast(obj);
 	    inst->branch.mod = BranchModNone;
 	}
-	CompilePatchLoop (obj, top_inst, continue_inst, obj->used);
+	CompilePatchLoop (obj, top_inst, continue_inst, obj->used, -1);
 	break;
     case FOR:
 	/*
@@ -3048,7 +3074,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    inst->branch.mod = BranchModNone;
 	}
 
-	CompilePatchLoop (obj, top_inst, continue_inst, obj->used);
+	CompilePatchLoop (obj, top_inst, continue_inst, obj->used, -1);
 	break;
     case SWITCH:
     case UNION:
@@ -3260,7 +3286,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    inst->branch.offset = obj->used - test_inst;
 	    inst->branch.mod = BranchModNone;
 	}
-	CompilePatchLoop (obj, top_inst, -1, obj->used);
+	CompilePatchLoop (obj, top_inst, -1, obj->used, -1);
 	break;
     case FUNC:
 	obj = CompileDecl (obj, expr, False, expr, code);
@@ -3327,7 +3353,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
     case IMPORT:
 	break;
     case CATCH:
-	obj = CompileCatch (obj, expr->tree.left, expr->tree.right, expr, code);
+	obj = CompileCatch (obj, expr->tree.left, expr->tree.right, expr, code, 0);
 	break;
     case RAISE:
 	obj = CompileRaise (obj, expr, expr, code);
@@ -3346,10 +3372,10 @@ CompileIsUnconditional (InstPtr inst)
     case OpBranch:
     case OpFarJump:
     case OpDefault:
-    case OpCatch:
     case OpReturn:
     case OpReturnVoid:
     case OpTailCall:
+    case OpCatch:
     case OpRaise:
 	return True;
     default:
@@ -3651,6 +3677,7 @@ const char *const OpNames[] = {
     "OpEnterDone",
     "OpLeaveDone",
     "OpFarJump",
+    "OpUnwind",
     /*
      * Expr op codes
      */
@@ -3761,6 +3788,7 @@ BranchModName (BranchMod mod)
     case BranchModContinue:	return "BranchModContinue";
     case BranchModReturn:	return "BranchModReturn";
     case BranchModReturnVoid:	return "BranchModReturnVoid";
+    case BranchModCatch:	return "BranchModCatch";
     }
     return "?";
 }
@@ -3839,12 +3867,16 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	}
 	break;
     case OpFarJump:
-	FilePrintf (FileStdout, "twixt %d catch %d frame %d inst %d mod %s\n",
+	FilePrintf (FileStdout, "twixt %d catch %d frame %d inst %d mod %s",
 		    inst->farJump.farJump->twixt,
 		    inst->farJump.farJump->catch,
 		    inst->farJump.farJump->frame,
 		    inst->farJump.farJump->inst,
 		    BranchModName (inst->farJump.mod));
+	break;
+    case OpUnwind:
+	FilePrintf (FileStdout, "twixt %d catch %d",
+		    inst->unwind.twixt, inst->unwind.catch);
 	break;
     case OpGlobal:
     case OpGlobalRef:

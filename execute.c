@@ -656,6 +656,15 @@ ThreadFarJump (Value thread, Value ret, FarJumpPtr farJump, InstPtr *next)
     EXIT ();
 }
 
+static void
+ThreadUnwind (Value thread, int twixt, int catch)
+{
+    while (twixt--)
+	thread->thread.continuation.twixts = thread->thread.continuation.twixts->continuation.twixts;
+    while (catch--)
+	thread->thread.continuation.catches = thread->thread.continuation.catches->continuation.catches;
+}
+
 #define ThreadBoxCheck(box,i,type) (BoxValueGet(box,i) == 0 ? ThreadBoxSetDefault(box,i,type,0) : 0)
 
 typedef struct _TypeChain {
@@ -1290,6 +1299,9 @@ ThreadsRun (Value thread, Value lex)
 		    break;
 		case OpFarJump:
 		    ThreadFarJump (thread, value, inst->farJump.farJump, &next);
+		    break;
+		case OpUnwind:
+		    ThreadUnwind (thread, inst->unwind.twixt, inst->unwind.catch);
 		    break;
 		case OpEnd:
 		    SetSignalFinished ();

@@ -11,6 +11,8 @@ extend namespace Math {
 
     public real function sqrt (real v)
     {
+	if (v < 0)
+	    raise invalid_argument ("sqrt of negative number", 0, v);
 	real function real_sqrt(real v)
 	{
 	    real	err;

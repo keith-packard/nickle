@@ -218,7 +218,7 @@ do_Thread_list (void)
 	FilePrintf (FileStdout, "\t%%%d", t->thread.id);
 	ThreadListState (t);
 	if (t->thread.sleep)
-	    FilePrintf (FileStdout, " %v", t->thread.sleep);
+	    FilePrintf (FileStdout, " %g", t->thread.sleep);
 	FileOutput (FileStdout, '\n');
     }
     RETURN(Void);
@@ -362,7 +362,7 @@ TraceFunction (Value file, FramePtr frame, CodePtr code, ExprPtr name)
     {
 	if (fe)
 	    FilePuts (file, ", ");
-	FilePrintf (file, "%v", BoxValue (frame->frame, fe));
+	FilePrintf (file, "%g", BoxValue (frame->frame, fe));
     }
     FilePuts (file, ")\n");
 }
@@ -381,7 +381,8 @@ TraceFrame (Value file, FramePtr frame, ObjPtr obj, InstPtr pc, int depth)
     int		max;
     CodePtr	code;
 
-    TraceStatement (file, ObjStatement (obj, pc));
+    if (obj && pc)
+	TraceStatement (file, ObjStatement (obj, pc));
     for (max = depth; frame && max--; frame = frame->previous)
     {
 	code = frame->function->func.code;
@@ -396,7 +397,7 @@ static void
 TraceIndent (int indent)
 {
     while (indent--)
-	FilePuts (file, "    ");
+	FilePuts (FileStdout, "    ");
 }
 #endif
 
@@ -686,7 +687,7 @@ EmptyContinuation (void)
 
 #ifdef DEBUG_JUMP
 
-void
+static void
 ContinuationTrace (char *where, Continuation *continuation, int indent)
 {
     int	    s;
@@ -706,12 +707,16 @@ ContinuationTrace (char *where, Continuation *continuation, int indent)
     {
 	if (s)
 	    FilePuts (FileStdout, ", ");
-	FilePrintf (FileStdout, "%v", STACK_ELT(stack, s));
+	FilePrintf (FileStdout, "%g", STACK_ELT(stack, s));
     }
     FilePuts (FileStdout, "\n");
     TraceIndent (indent);
+    FilePuts (FileStdout, "frame:\nCALLS\n");
+    TraceFrame (FileStdout, continuation->frame, obj, pc, 20);
+    FilePuts (FileStdout, "END CALLS\n");
+    TraceIndent (indent);
     FilePuts (FileStdout, "catches:   ");
-    for (s = 0; catches; catches = catches->previous, s++)
+    for (s = 0; catches; catches = catches->continuation.catches, s++)
     {
 	if (s)
 	    FilePuts (FileStdout, ", ");
@@ -720,7 +725,10 @@ ContinuationTrace (char *where, Continuation *continuation, int indent)
     FilePuts (FileStdout, "\n");
     TraceIndent (indent);
     FilePuts (FileStdout, "statement: ");
-    PrettyStat (FileStdout, ObjStatement (obj, pc), False);
+    if (obj && pc)
+	PrettyStat (FileStdout, ObjStatement (obj, pc), False);
+    else
+	FilePuts (FileStdout, "corrupted continuation!\n");
     for (s = 0; twixts; twixts = twixts->continuation.twixts, s++)
     {
 	ContinuationTrace ("twixt", &twixts->continuation, indent+1);
@@ -1072,7 +1080,7 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 	    int	    dim = ArrayLimits(&args->array)[0];
 	    for (i = 0; i < dim; i++)
 	    {
-		PrintError ("%v", ArrayValueGet (&args->array, i));
+		PrintError ("%g", ArrayValueGet (&args->array, i));
 		if (i < dim - 1)
 		    PrintError (", ");
 	    }

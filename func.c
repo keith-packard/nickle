@@ -115,7 +115,11 @@ void printCode (Value f, CodePtr code, int level);
 static Bool
 FuncPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
-    PrettyCode (f, av->func.code, 0, class_undef, publish_private, 0, True);
+    Bool    nest = False;
+
+    if (format == 'v')
+	nest = True;
+    PrettyCode (f, av->func.code, 0, class_undef, publish_private, 0, nest);
     return True;
 }
 

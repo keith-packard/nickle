@@ -224,13 +224,16 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 		value = Void;
 		break;
 	    }
-	}
-	if (tail && !aborting)
-	{
-	    complete = True;
-	    thread->thread.continuation.obj = thread->thread.continuation.frame->saveObj;
-	    *next = thread->thread.continuation.frame->savePc;
-	    thread->thread.continuation.frame = thread->thread.continuation.frame->previous;
+	    /*
+	     * For a tail call, drop the topmost frame
+	     */
+	    if (tail && !aborting)
+	    {
+		complete = True;
+		thread->thread.continuation.obj = thread->thread.continuation.frame->saveObj;
+		*next = thread->thread.continuation.frame->savePc;
+		thread->thread.continuation.frame = thread->thread.continuation.frame->previous;
+	    }
 	}
     }
     else

@@ -1,3 +1,17 @@
+2004-06-19  Keith Packard  <keithp@keithp.com>
+
+	* execute.c: (ThreadCall):
+	Tail call to lonjmp should not pop frame
+
+	* func.c: (FuncPrint):
+	Make 'g' format print only the declaration, leaving 'v' printing
+	the definition as well.
+	
+	* sched.c: (do_Thread_list), (TraceFunction), (TraceFrame),
+	(TraceIndent), (ContinuationTrace), (RaiseException):
+	Clean up continuation debug code to include call trace
+	and adjust for changes since the last time it was used.
+
 2004-06-17  Keith Packard  <keithp@keithp.com>
 version 2.41
 

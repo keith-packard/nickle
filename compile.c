@@ -1742,6 +1742,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 		if (mt == typePrim[rep_void])
 		{
 		    CompileError (obj, stat, "Union type '%T', member '%A' requires no constructor value",
+				  expr->base.type,
 				  expr->tree.left->atom.atom);
 		    break;
 		}

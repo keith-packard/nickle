@@ -80,7 +80,7 @@ newBlock (int sizeIndex)
 	    return 0;
 	b = (struct block *) malloc (size);
 	if (!b)
-	    panic (0, "out of memory - quiting\n");
+	    panic ("Out of memory\n");
     }
     b->sizeIndex = sizeIndex;
     b->next = head;
@@ -225,7 +225,7 @@ MemAddRoot (void *object)
 	    RootSize *= 2;
 	roots = malloc (sizeof (void *) * RootSize);
 	if (!roots)
-	    panic ("out of memory");
+	    panic ("Out of memory");
 	memcpy (roots, Roots, RootCount * sizeof (void *));
 	if (Roots)
 	    free (Roots);

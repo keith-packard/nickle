@@ -1,25 +1,9 @@
+/* $Header$ */
+
 /*
- * $Id$
- *
- * Copyright 1996 Keith Packard
- *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Keith Packard not be used in
- * advertising or publicity pertaining to distribution of the software without
- * specific, written prior permission.  Keith Packard makes no
- * representations about the suitability of this software for any purpose.  It
- * is provided "as is" without express or implied warranty.
- *
- * KEITH PACKARD DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL KEITH PACKARD BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
 #ifndef _STACK_H_
@@ -77,16 +61,9 @@ extern StackElement StackElt (StackObject *stack, int i);
 #define STACK_PUSH(s,o)	    ((STACK_TOP(s) == STACK_MIN(s)) ? \
 			     StackPush ((s), (o)) : (*--STACK_TOP(s) = (o)))
 #endif
-#ifdef __GNUC__
-#define INLINE inline
-#else
-#ifdef __alpha
-#define INLINE __inline
-#endif
-#endif
 
-#ifdef INLINE
-static INLINE StackElement
+#ifdef HAVE_C_INLINE
+static inline StackElement
 StackPushInline(StackObject *s, StackElement o)
 {
     if (STACK_TOP(s) == STACK_MIN(s))
@@ -94,7 +71,7 @@ StackPushInline(StackObject *s, StackElement o)
     return *--STACK_TOP(s) = o;
 }
 #define STACK_PUSH(s,o) StackPushInline(s,o)
-static INLINE StackElement
+static inline StackElement
 StackReturnInline(StackObject *s, StackPointer sp, StackElement o)
 {
     STACK_RESET(s, sp);

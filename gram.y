@@ -1,18 +1,16 @@
-/* $Header$ */
-/*
- * This program is Copyright (C) 1988 by Keith Packard.  NICK is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * NICK, including source, provided that this notice is included in all the
- * files.
- */
-/*
- *	grammar for nick
- */
-
 %{
+/* $Header$ */
 
-# include	<math.h>
-# include	"nick.h"
+/*
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+#include	<config.h>
+
+#include	<math.h>
+#include	"nickle.h"
 
 int ignorenl;
 extern int	yyfiledeep;

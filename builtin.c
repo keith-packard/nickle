@@ -1,21 +1,24 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  NICK is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * NICK, including source, provided that this notice is included in all the
- * files.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
+
 /*
  *	builtin.c
  *
  *	initialize builtin functions
  */
 
-# include	<math.h>
-# include	<ctype.h>
-# include	<strings.h>
-# include	<time.h>
-# include	"nick.h"
+#include	<config.h>
+
+#include	<math.h>
+#include	<ctype.h>
+#include	<strings.h>
+#include	<time.h>
+#include	"nickle.h"
 
 #ifndef PI
 # define PI	3.14159265358979323846
@@ -230,7 +233,11 @@ struct sbuiltin svars[] = {
     { "- ",	"prompt3" },
     { "%g",	"format" },
     { VERSION,	"version" },
+#ifdef BUILD
     { BUILD,	"build" },
+#else
+    { "?",	"build" },
+#endif
     { 0,    0 },
 };
 
@@ -480,6 +487,7 @@ dofformat (Value f, char *fmt, int n, Value *p)
 		switch (c) {
 		case 'b': base = 2; break;
 		case 'x': base = 16; break;
+		case 'X': base = 16; break;
 		case 'o': base = 8; break;
 		}
 		if (n > pn) {

@@ -1,15 +1,14 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  IC is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * IC, including source, provided that this notice is included in all the
- * files.
- */
-/*
- * int.c
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
-# include	"value.h"
+#include	<config.h>
+
+#include	"value.h"
 
 # define sign(i)	((i) < 0 ? Negative : Positive)
 
@@ -271,8 +270,13 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
     int		    digit;
     int		    w;
     unsigned char   space[64], *s;
+    unsigned char   letter;
     int		    neg;
 
+    if ('A' <= format && format <= 'Z')
+	letter = 'A';
+    else
+	letter = 'a';
     if (base == 0)
 	base = 10;
     s = space + sizeof (space);
@@ -298,7 +302,7 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
 		if (digit <= 9) 
 		    digit = '0' + digit;
 		else
-		    digit = 'a' + digit - 10;
+		    digit = letter + digit - 10;
 		*--s = digit;
 		a /= base;
 	    }

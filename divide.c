@@ -1,17 +1,20 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  IC is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * IC, including source, provided that this notice is included in all the
- * files.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
+
 /*
  * divide.c
  *
  * perform natural number division
  */
 
-# include	"value.h"
+#include	<config.h>
+
+#include	"value.h"
 
 #undef CHECK
 #undef DEBUG

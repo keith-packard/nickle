@@ -1,26 +1,11 @@
+/* $Header$ */
+
 /*
- * $Id$
- *
- * Copyright 1996 Keith Packard
- *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Keith Packard not be used in
- * advertising or publicity pertaining to distribution of the software without
- * specific, written prior permission.  Keith Packard makes no
- * representations about the suitability of this software for any purpose.  It
- * is provided "as is" without express or implied warranty.
- *
- * KEITH PACKARD DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL KEITH PACKARD BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
+
 /*
  * mem.c
  *
@@ -39,7 +24,6 @@
  *
  * local routines:
  *
- * sizeToIndex(size)	- returns the bucket number for a particular size
  * gimmeBlock()		- calls iGarbageCollect (if it is time) or malloc
  * allocBlock()		- calls malloc
  * disposeBlock()	- calls free
@@ -56,10 +40,12 @@
  * checkBlockRef(b)	- puts unreferenced hunks in a block on free lists
  */
 
-# include	<memory.h>
-# include	"mem.h"
-# include	"avl.h"
-# include	"memp.h"
+#include	<config.h>
+
+#include	<memory.h>
+#include	"mem.h"
+#include	"avl.h"
+#include	"memp.h"
 
 
 static void	*allocBlock (void);
@@ -82,17 +68,7 @@ void		*TemporaryData;
 int	GCdebug;
 #endif
 
-static int sizeMap[NUMSIZES] = {
-    MINHUNK,
-    MINHUNK*2,
-    MINHUNK*4,
-    MINHUNK*8,
-    MINHUNK*16,
-    MINHUNK*32,
-    MINHUNK*64,
-    MINHUNK*128,
-    MAXHUNK,
-};
+static int sizeMap[NUMSIZES];
 
 StackObject *MemStack;
 
@@ -114,7 +90,7 @@ int	totalObjectsUsed;
 int	useMap[NUMSIZES+1];
 
 
-static INLINE void *
+static inline void *
 newHunk (int sizeIndex)
 {
     register char	*new;
@@ -169,21 +145,10 @@ gotsome:
     return new;
 }
 
-static INLINE int
-sizeToIndex (int size)
-{
-    int	sizeIndex;
-
-    for (sizeIndex = 0; sizeIndex < NUMSIZES; sizeIndex++)
-	if (sizeMap[sizeIndex] >= size)
-	    return sizeIndex;
-    return -1;
-}
-
 /*
  * take care of giant requests
  */
-static INLINE void *
+static inline void *
 newHuge (int size)
 {
     struct block	*huge;
@@ -206,15 +171,15 @@ newHuge (int size)
     return huge->data;
 }
 
-static INLINE void *
+static inline void *
 newObject (int size)
 {
     int	sizeIndex;
 
-    sizeIndex = sizeToIndex (size);
-    if (sizeIndex == -1)
-	return newHuge (size);
-    return newHunk (sizeIndex);
+    for (sizeIndex = 0; sizeIndex < NUMSIZES; sizeIndex++)
+	if (sizeMap[sizeIndex] >= size)
+	    return newHunk (sizeIndex);
+    return newHuge (size);
 }
 
 static void *
@@ -241,7 +206,7 @@ allocBlock (void)
     return malloc ((unsigned) BLOCKSIZE);
 }
 
-static INLINE void
+static inline void
 disposeBlock (struct block *b)
 {
     free ((char *) b);
@@ -533,6 +498,10 @@ checkRef (void)
 void
 MemInitialize (void)
 {
+    int	    i;
+
+    for (i = 0; i < NUMSIZES; i++)
+	sizeMap[i] = MINHUNK << i;
     if (!MemStack)
     {
 	MemStack = StackCreate ();

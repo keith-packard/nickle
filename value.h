@@ -1,10 +1,11 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  IC is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * IC, including source, provided that this notice is included in all the
- * files.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
+
 /*
  * value.h
  *
@@ -13,14 +14,14 @@
 
 #ifndef _VALUE_H_
 #define _VALUE_H_
-#include <stdio.h>
-#include <stdarg.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <memory.h>
-#include <string.h>
-#include <math.h>
-#include "mem.h"
+#include	<stdio.h>
+#include	<stdarg.h>
+#include	<unistd.h>
+#include	<stdlib.h>
+#include	<memory.h>
+#include	<string.h>
+#include	<math.h>
+#include	"mem.h"
 
 typedef enum _Bool { False = 0, True = 1 }  	Bool;
 
@@ -49,7 +50,7 @@ typedef struct _AtomList {
 # define LBASE10	4
 # define DIGITBITS	16
 #else
-# ifdef __GNUC__
+# if SIZEOF_LONG_LONG == 8
 #  define BASE		((double_digit) 65536 * (double_digit) 65536)
 #  define LBASE2	32
 #  define LLBASE2	5

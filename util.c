@@ -1,18 +1,21 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  NICK is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * NICK, including source, provided that this notice is included in all the
- * files.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
+
 /*
  *	util.c
  *
  *	general purpose utilities
  */
 
-# include	<math.h>
-# include	"nick.h"
+#include	<config.h>
+
+#include	<math.h>
+#include	"nickle.h"
 
 #ifdef notdef
 double
@@ -36,8 +39,17 @@ AllocateTemp (int size)
     return b + 1;
 }
 
-#include    <stdarg.h>
-#include    <stdio.h>
+#include	<stdarg.h>
+#include	<stdio.h>
+
+#ifdef HAVE_VPRINTF
+
+/*
+ * Currently vfprintf() is required.  It would
+ * be easy to do a _doprnt() version if necessary,
+ * and it would certainly be possible to develop
+ * non-varargs versions of these.  Contributed code welcome.
+ */
 
 void
 debug (char *format, ...)
@@ -59,3 +71,5 @@ panic (char *format, ...)
     va_end (ap);
     abort ();
 }
+
+#endif

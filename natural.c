@@ -1,19 +1,22 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  IC is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * IC, including source, provided that this notice is included in all the
- * files.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
+
 /*
  * natural.c
  *
  * arithmetic for natural numbers
  */
 
-# include   <stdio.h>
-# include   <math.h>
-# include   "value.h"
+#include	<config.h>
+
+#include	<stdio.h>
+#include	<math.h>
+#include	"value.h"
 
 # define length(n)	((n)->length)
 # define data(n)	NaturalDigits(n)
@@ -802,7 +805,7 @@ NaturalMask (Natural *v, int bits)
 	length = v->length;
 	mask = (digit) ~0;
     }
-    while (NaturalDigits(v)[length - 1] == 0)
+    while (length && (NaturalDigits(v)[length - 1] & mask) == 0)
     {
 	length--;
 	mask = (digit) ~0;

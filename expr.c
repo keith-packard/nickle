@@ -1,9 +1,9 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  NICK is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * NICK, including source, provided that this notice is included in all the
- * files.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
 /*
@@ -12,8 +12,10 @@
  *	handle expression trees
  */
 
-# include	"nick.h"
-# include	"y.tab.h"
+#include	<config.h>
+
+#include	"nickle.h"
+#include	"gram.h"
 
 static void
 ExprTreeMark (void *object)

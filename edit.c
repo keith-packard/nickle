@@ -1,21 +1,24 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  NICK is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * NICK, including source, provided that this notice is included in all the
- * files.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
+
 /*
  * edit.c
  *
  * invoke the users editor (default /bin/ed) 
  */
 
-# include	<stdio.h>
-# include	<string.h>
-# include	<stdlib.h>
-# include	<unistd.h>
-# include	"nick.h"
+#include	<config.h>
+
+#include	<stdio.h>
+#include	<string.h>
+#include	<stdlib.h>
+#include	<unistd.h>
+#include	"nickle.h"
     
 #ifndef DEFAULT_EDITOR
 #define DEFAULT_EDITOR	"ed"

@@ -1,10 +1,20 @@
+/* $Header$ */
+
+/*
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
 /*
  * Semi-Balanced trees (avl).  This only contains two
  * routines - insert and delete.  Searching is
  * reserved for the client to write.
  */
 
-# include	"avl.h"
+#include	<config.h>
+
+#include	"avl.h"
 
 static int	rebalance_right (tree **), rebalance_left (tree **);
 

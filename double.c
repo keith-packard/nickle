@@ -1,16 +1,34 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  IC is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * IC, including source, provided that this notice is included in all the
- * files.
- */
-/*
- * double.c
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
-# include	<math.h>
-# include	"value.h"
+#include	<config.h>
+
+#include	<math.h>
+#include	"value.h"
+#ifdef HAVE_IEEEFP_H
+/* finite() on Solaris */
+#include <ieeefp.h>
+#endif
+#ifdef HAS_FPU_CONTROL_H
+#include	<fpu_control.h>
+#endif
+
+void
+ignore_ferr (void)
+{
+#ifdef _FPU_IEEE
+#ifdef HAS___SETFPUCW
+    __setfpucw (_FPU_IEEE);
+#else
+    _FPU_SETCW(_FPU_IEEE);
+#endif
+#endif
+}
 
 Value
 DoublePlus (Value av, Value bv, int expandOk)

@@ -1,11 +1,21 @@
 $Header$
 
-This contains the sources for 'nick' an interpretive language
+This contains the sources for 'nickle', a desk calculator
+language with powerful programming and scripting capabilities.
 
-This program compiles on SunOS and Linux systems.  It uses only Posix
-style system call interfaces, and should compile on most anything.
+This program has been tested on Solaris and Linux.  It uses
+only Posix-style system call interfaces, and should easily
+port to most any reasonable platform.
 
 Have fun!
 
 Keith Packard
 keithp@ncd.com
+
+Bart Massey
+bart@cs.pdx.edu
+
+---
+Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.

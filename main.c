@@ -1,20 +1,23 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  NICK is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * NICK, including source, provided that this notice is included in all the
- * files.
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
+
 /*
  *	main.c
  *
  *	main routine for nick
  */
 
-# include	<setjmp.h>
-# include	<signal.h>
-# include	<stdio.h>
-# include	"nick.h"
+#include	<config.h>
+
+#include	<setjmp.h>
+#include	<signal.h>
+#include	<stdio.h>
+#include	"nickle.h"
 
 int	stdin_interactive;
 int	interactive;
@@ -49,9 +52,8 @@ try_nickrc (void)
     pushinput (nickrc, False);
 }
 
-void	intr(int), ferr(int);
-void	stop (int), die (int), segv (int);
-void	ignore_ferr (void);
+RETSIGTYPE	intr(int), ferr(int);
+RETSIGTYPE	stop (int), die (int), segv (int);
 
 /*ARGSUSED*/
 int
@@ -105,7 +107,7 @@ init (void)
 volatile Bool	abortInterrupt;
 volatile Bool	abortException;
 
-void
+RETSIGTYPE
 intr (int sig)
 {
     void	intr(int);
@@ -116,17 +118,7 @@ intr (int sig)
     abortInterrupt = True;
 }
 
-#include <fpu_control.h>
-
-void
-ignore_ferr (void)
-{
-#ifdef _FPU_IEEE
-    __setfpucw (_FPU_IEEE);
-#endif
-}
-
-void
+RETSIGTYPE
 ferr(int sig)
 {
     aborting = True;
@@ -134,7 +126,7 @@ ferr(int sig)
     abortException = True;
 }
 
-void
+RETSIGTYPE
 stop (int sig)
 {
     sigset_t	set, oset;
@@ -152,14 +144,14 @@ stop (int sig)
     (void) signal (sig, stop);
 }
 
-void
+RETSIGTYPE
 die (int sig)
 {
     IoStop ();
     _exit (sig);
 }
 
-void
+RETSIGTYPE
 segv (int sig)
 {
     IoStop ();

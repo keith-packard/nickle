@@ -1,29 +1,36 @@
 /* $Header$ */
+
 /*
- * This program is Copyright (C) 1988 by Keith Packard.  IC is provided to
- * you without charge, and with no warranty.  You may give away copies of
- * IC, including source, provided that this notice is included in all the
- * files.
- */
-/*
- * file.c
+ * Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
-#include    <unistd.h>
-#include    <fcntl.h>
-#include    <signal.h>
-#include    <sys/time.h>
-#include    <sys/types.h>
-#include    <errno.h>
-#include    "nick.h"
-#include    "ref.h"
+#include	<config.h>
 
-#define ShouldntBlock
+#include	<unistd.h>
+#include	<fcntl.h>
+#include	<signal.h>
+#include	<sys/time.h>
+#include	<sys/types.h>
+#include	<errno.h>
+#include	"nickle.h"
+#include	"ref.h"
 
-#ifdef FNONBLOCK
-#define NOBLOCK	FNONBLOCK
+#ifdef O_NONBLOCK
+#define NOBLOCK	O_NONBLOCK
 #else
-#define NOBLOCK FNDELAY
+#define NOBLOCK O_NDELAY
+#endif
+
+#ifdef O_ASYNC
+#define ASYNC O_ASYNC
+#else
+#ifdef HAVE_STROPTS_H
+#define USE_STREAMS_ASYNC
+#define ASYNC 0
+#include <stropts.h>
+#endif
 #endif
 
 ReferencePtr	fileBlockedReference;
@@ -92,8 +99,11 @@ FileSetFd (int fd)
     
     fcntl (fd, F_SETOWN, getpid());
     flags = fcntl (fd, F_GETFL);
-    flags |= FASYNC|NOBLOCK;
+    flags |= ASYNC|NOBLOCK;
     (void) fcntl (fd, F_SETFL, flags);
+#ifdef USE_STREAMS_ASYNC
+    (void) ioctl(fd, I_SETSIG, S_INPUT | S_OUTPUT | S_ERROR | S_HANGUP);
+#endif
 }
 
 void
@@ -102,8 +112,11 @@ FileResetFd (int fd)
     int	flags;
 
     flags = fcntl (fd, F_GETFL);
-    flags &= ~(FASYNC|NOBLOCK);
+    flags &= ~(ASYNC|NOBLOCK);
     (void) fcntl (fd, F_SETFL, flags);
+#ifdef  USE_STREAMS_ASYNC
+    (void) ioctl(fd, I_SETSIG, 0);
+#endif
 }
 
 static void

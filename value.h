@@ -235,6 +235,11 @@ typedef struct _argDecl {
     Atom    name;
 } ArgDecl;
 
+typedef struct _argList {
+    ArgType *argType;
+    Bool    varargs;
+} ArgList;
+
 extern Types	*typesPoly;
 
 Types	*NewTypesPrim (Type prim);

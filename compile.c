@@ -730,7 +730,7 @@ CompileArray (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, E
 	ndim++;
     }
     obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
-    expr->base.type = TypeCombineUnary (expr->tree.left->base.type, OC);
+    expr->base.type = TypeCombineUnary (expr->tree.left->base.type, OS);
     if (!expr->base.type)
 	CompileError (obj, stat, "Object left of '[]' is not an array");
     BuildInst (obj, opCode, inst, stat);
@@ -920,7 +920,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	obj = CompileFunc (obj, catch->code.code, namespace, stat);
 	
 	BuildInst (obj, OpCall, inst, stat);
-	inst->ints.value = catch->code.code->base.argc;
+	inst->ints.value = -1;
 	
 	NewInst (exception_inst, obj);
     
@@ -1623,6 +1623,17 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
 	CompileCanonType (obj, namespace, args->type, stat);
 	local = NewSymbolArg (args->name, args->type);
 	CompileAddSymbol (namespace, local);
+    }
+    if (code->base.varargs)
+    {
+	local = NewSymbolArg (AtomId ("args"), 
+			      NewTypesArray (typesPoly, 
+					     NewExprTree (COMMA,
+							  NewExprConst (NewInt (0)),
+							  0)));
+	local->local.element = AddBoxTypes (&namespace->code->func.dynamics,
+					    local->symbol.type);
+	NamespaceAddSymbol (namespace, local);
     }
     code->func.obj = CompileFuncCode (code, namespace, stat);
     obj->errors += code->func.obj->errors;

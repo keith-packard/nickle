@@ -440,7 +440,7 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 }
 
 static ArgType *
-BuiltinArgTypes (char *format, int *argcp)
+BuiltinArgTypes (char *format, int *argcp, Bool *varargs)
 {
     ENTER ();
     ArgType	*args, *a, **last;
@@ -451,11 +451,12 @@ BuiltinArgTypes (char *format, int *argcp)
     args = 0;
     last = &args;
     argc = 0;
+    *varargs = False;
     while (*format)
     {
 	if (*format == '.')
 	{
-	    argc = -1;
+	    *varargs = True;
 	    break;
 	}
 	ref = False;
@@ -496,11 +497,12 @@ BuiltinAddFunction (NamespacePtr *namespacep, char *name, Type ret,
     Value	func;
     SymbolPtr	sym;
     int		argc;
+    Bool	varargs;
     ArgType	*args;
 
-    args = BuiltinArgTypes (format, &argc);
+    args = BuiltinArgTypes (format, &argc, &varargs);
     sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim (ret), True, args));
-    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, False), 0);
+    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, varargs, f, False), 0);
     BoxValue (sym->global.value, 0) = func;
     EXIT ();
 }
@@ -513,11 +515,12 @@ BuiltinAddJumpingFunction (NamespacePtr *namespacep, char *name, Type ret,
     Value	func;
     SymbolPtr	sym;
     ArgType	*args;
+    Bool	varargs;
     int		argc;
     
-    args = BuiltinArgTypes (format, &argc);
+    args = BuiltinArgTypes (format, &argc, &varargs);
     sym = BuiltinSymbol (namespacep, name, NewTypesFunc (NewTypesPrim(ret), True, args));
-    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, f, True), 0);
+    func =  NewFunc (NewBuiltinCode (NewTypesPrim (ret), args, argc, varargs, f, True), 0);
     BoxValue (sym->global.value, 0) = func;
     EXIT ();
 }

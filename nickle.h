@@ -239,6 +239,7 @@ typedef struct _codeBase {
     Bool	builtin;
     Types	*type;
     int		argc;
+    Bool	varargs;
     ArgType	*args;
     Atom	name;
 } CodeBase;
@@ -284,9 +285,9 @@ typedef union _code {
     BuiltinCode	builtin;
 } Code;
 
-CodePtr	NewFuncCode (Types *type, ArgType *args, ExprPtr code);
+CodePtr	NewFuncCode (Types *type, Bool varargs, ArgType *args, ExprPtr code);
 CodePtr	NewBuiltinCode (Types *type, ArgType *args, int argc, 
-			BuiltinFunc func, Bool needsNext);
+			Bool varargs, BuiltinFunc func, Bool needsNext);
 Value	NewFunc (CodePtr, FramePtr);
 
 typedef struct _instBase {

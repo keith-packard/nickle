@@ -24,7 +24,7 @@ void yyerror (char *fmt, ...);
     Value	    vval;
     Class	    cval;
     Type	    tval;
-    ArgType	    *atval;
+    ArgList	    alval;
     Types	    *tsval;
     Publish	    pval;
     ExprPtr	    eval;
@@ -50,9 +50,9 @@ void yyerror (char *fmt, ...);
 %type  <cval>	class
 %type  <pval>	publish
 
-%type  <atval>	opt_argdecls argdecls
+%type  <alval>	opt_argdecls argdecls
 %type  <adval>	argdecl
-%type  <atval>	opt_argdefines argdefines
+%type  <alval>	opt_argdefines argdefines
 %type  <adval>	argdefine
 
 %type  <eval>	opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
@@ -66,7 +66,7 @@ void yyerror (char *fmt, ...);
 %token		ASSIGNPOW ASSIGNLXOR ASSIGNLAND ASSIGNLOR
 %token		VAR EXPR ARRAY STRUCT
 
-%token		NL SEMI MOD OC CC DOLLAR
+%token		NL SEMI MOD OC CC DOLLAR DOTS
 %token		UNDEFINE LOAD HISTORY PRINT EDIT QUIT
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
@@ -204,11 +204,11 @@ command		: QUIT NL
 						     &depth);
 			    if (!s)
 			    {
-				RaiseError (0, "Undefined symbol %A", dl->name);
+				RaiseError ("Undefined symbol %A", dl->name);
 			    }
 			    else if (depth)
 			    {
-				RaiseError (0, "Can't undefine at higher scope %A", dl->name);
+				RaiseError ("Can't undefine at higher scope %A", dl->name);
 			    }
 			    else
 			    {
@@ -372,14 +372,16 @@ statement	: IF ignorenl OP expr CP statement
 
 			decl = NewExprDecl (NewDeclList ($4, 0, 0),
 					    $1.class,
-					    NewTypesFunc ($1.type, False, $6),
+					    NewTypesFunc ($1.type, $6.varargs,
+							  $6.argType),
 					    $1.publish);
 			if ($8)
 			    $$ = NewExprTree (FUNCTION, decl,
 					      NewExprTree (ASSIGN,
 							   NewExprAtom ($4),
 							   NewExprCode (NewFuncCode ($1.type,
-										     $6,
+										     $6.varargs,
+										     $6.argType,
 										     $8),
 									$4)));
 			else
@@ -388,7 +390,7 @@ statement	: IF ignorenl OP expr CP statement
 		| publish EXCEPTION ignorenl NAME OP opt_argdefines CP SEMI
 		    { $$ = NewExprDecl (NewDeclList ($4, 0, 0),
 					class_exception,
-					NewTypesFunc (0, False, $6),
+					NewTypesFunc (0, $6.varargs, $6.argType),
 					$1);
 		    }
 		| RAISE NAME OP opt_exprs CP
@@ -444,7 +446,7 @@ catches		:   catch catches
 		    { $$ = 0; }
 		;
 catch		: CATCH NAME OP opt_argdefines CP block
-		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $6), $2); }
+		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4.varargs, $4.argType, $6), $2); }
 func_body    	: block
 		| SEMI
 		    { $$ = 0; }
@@ -528,7 +530,7 @@ type		: basetype
 		| TIMES type			%prec STAR
 		    { $$ = NewTypesRef ($2); }
 		| type OP opt_argdecls CP	%prec CALL
-		    { $$ = NewTypesFunc ($1, False, $3); }
+		    { $$ = NewTypesFunc ($1, $3.varargs, $3.argType); }
 		| type OS opt_exprs CS
 		    { $$ = NewTypesArray ($1, $3); }
 		| STRUCT OC members CC
@@ -602,12 +604,26 @@ publish		: PUBLIC
 */
 opt_argdecls	: argdecls
 		|
-		    { $$ = 0; }
+		    { 
+			$$.argType = 0; 
+			$$.varargs = False;
+		    }
 		;
 argdecls	: argdecl COMMA argdecls
-		    { $$ = NewArgType ($1.type, $1.name, $3); }
+		    { 
+			$$.argType = NewArgType ($1.type, $1.name, $3.argType); 
+			$$.varargs = $3.varargs;
+		    }
 		| argdecl
-		    { $$ = NewArgType ($1.type, $1.name, 0); }
+		    { 
+			$$.argType = NewArgType ($1.type, $1.name, 0); 
+			$$.varargs = False;
+		    }
+		| DOTS
+		    {
+			$$.argType = 0;
+			$$.varargs = False;
+		    }
 		;
 argdecl		: type NAME
 		    { $$.type = $1; $$.name = $2; }
@@ -622,12 +638,26 @@ argdecl		: type NAME
 */
 opt_argdefines	: argdefines
 		|
-		    { $$ = 0; }
+		    { 
+			$$.argType = 0; 
+			$$.varargs = False;
+		    }
 		;
 argdefines	: argdefine COMMA argdefines
-		    { $$ = NewArgType ($1.type, $1.name, $3); }
+		    { 
+			$$.argType = NewArgType ($1.type, $1.name, $3.argType); 
+			$$.varargs = $3.varargs;
+		    }
 		| argdefine
-		    { $$ = NewArgType ($1.type, $1.name, 0); }
+		    { 
+			$$.argType = NewArgType ($1.type, $1.name, 0); 
+			$$.varargs = False;
+		    }
+		| DOTS
+		    { 
+			$$.argType = 0;
+			$$.varargs = True;
+		    }
 		;
 argdefine	: opt_type NAME
 		    { $$.type = $1; $$.name = $2; }
@@ -662,7 +692,7 @@ exprs		: exprs COMMA lambdaexpr
 * because of grammar ambiguities
 */
 lambdaexpr	: opt_type FUNC OP opt_argdefines CP block
-		    { $$ = NewExprCode (NewFuncCode ($1, $4, $6), 0); }
+		    { $$ = NewExprCode (NewFuncCode ($1, $4.varargs, $4.argType, $6), 0); }
 		| simpleexpr
 		;
 /*

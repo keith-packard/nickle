@@ -25,7 +25,8 @@ Bool	abortSuspend;	    /* current thread is suspending */
 static ThreadState ThreadStep (Value thread);
 
 static FramePtr
-BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
+BuildFrame (Value thread, Value func, Bool varargs, int nformal, 
+	    int nargs, InstPtr savePc)
 {
     ENTER ();
     CodePtr	    code = func->func.code;
@@ -37,7 +38,7 @@ BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
 		      func->func.staticLink, 
 		      code->func.dynamics,
 		      func->func.statics);
-    for (fe = 0; fe < nargs; fe++)
+    for (fe = 0; fe < nformal; fe++)
     {
 	type = BoxTypesValue (code->func.dynamics, fe);
 	if (!AssignTypeCompatiblep (type, Stack(fe)))
@@ -52,6 +53,20 @@ BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
 	    abort ();
 	BoxValue (frame->frame, fe) = Copy (Stack(fe));
     }
+    if (varargs)
+    {
+	int	extra = nargs - nformal;
+	Value	array;
+	
+	array = NewArray (True, typesPoly, 1, &extra);
+	BoxValue (frame->frame, fe) = array;
+	for (; fe < nargs; fe++)
+	{
+	    if (!Stack(fe))
+		abort ();
+	    BoxValue (array->array.values, fe-nformal) = Stack(fe);
+	}
+    }
     frame->function = func;
     frame->savePc = savePc;
     frame->saveCode = thread->thread.code;
@@ -62,21 +77,38 @@ static Value
 ThreadCall (Value thread, InstPtr *next, int *stack)
 {
     ENTER ();
-    InstPtr	inst = thread->thread.pc;
     Value	value = thread->thread.v;
     CodePtr	code = value->func.code;
     FramePtr	frame;
+    int		argc = *stack;
     
-    if (code->base.argc != -1 && code->base.argc != inst->ints.value)
+    if (code->base.varargs)
     {
-	RaiseError ("function requiring %d arguments was called with %d",
-		code->base.argc, inst->ints.value);
-	RETURN (value);
+	if (argc < code->base.argc)
+	{
+	    RaiseError ("function requiring at least %d arguments was called with %d",
+			code->base.argc, argc);
+	    RETURN (value);
+	}
+    }
+    else
+    {
+	if (argc != code->base.argc)
+	{
+	    RaiseError ("function requiring %d arguments was called with %d",
+			code->base.argc, argc);
+	    RETURN (value);
+	}
     }
     if (code->base.builtin)
     {
 	Value	*values;
 	int	arg;
+	int	formal;
+
+	formal = code->base.argc;
+	if (code->base.varargs)
+	    formal = -1;
 
 	if (code->builtin.needsNext) 
 	{
@@ -84,12 +116,12 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
 	     * Let the non-local function handle the stack adjust
 	     */
 	    *stack = 0;
-	    switch (code->base.argc) {
+	    switch (formal) {
 	    case -1:
-		values = AllocateTemp (inst->ints.value * sizeof (Value));
-		for (arg = 0; arg < inst->ints.value; arg++)
+		values = AllocateTemp (argc * sizeof (Value));
+		for (arg = 0; arg < argc; arg++)
 		    values[arg] = Stack(arg);
-		value = (*code->builtin.b.builtinNJ)(next, inst->ints.value, values);
+		value = (*code->builtin.b.builtinNJ)(next, argc, values);
 		break;
 	    case 0:
 		value = (*code->builtin.b.builtin0J)(next);
@@ -104,12 +136,12 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
 	}
 	else 
 	{
-	    switch (code->base.argc) {
+	    switch (formal) {
 	    case -1:
-		values = AllocateTemp (inst->ints.value * sizeof (Value));
-		for (arg = 0; arg < inst->ints.value; arg++)
+		values = AllocateTemp (argc * sizeof (Value));
+		for (arg = 0; arg < argc; arg++)
 		    values[arg] = Stack(arg);
-		value = (*code->builtin.b.builtinN)(inst->ints.value, values);
+		value = (*code->builtin.b.builtinN)(argc, values);
 		break;
 	    case 0:
 		value = (*code->builtin.b.builtin0)();
@@ -148,7 +180,8 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
     }
     else
     {
-	frame = BuildFrame (thread, value, inst->ints.value, *next);
+	frame = BuildFrame (thread, value, code->base.varargs, 
+			    code->base.argc, argc, *next);
 	if (exception)
 	    RETURN (value);
 	complete = True;
@@ -526,6 +559,11 @@ ThreadStep (Value thread)
 	    break;
 	}
         stack = inst->ints.value;
+	if (stack == -1)
+	{
+	    v = STACK_POP (thread->thread.stack);
+	    stack = v->ints.value;
+	}
 	value = ThreadCall (thread, &next, &stack);
 	break;
     case OpArrow:

@@ -134,6 +134,7 @@ public		{ yylval.pval = publish_public; return PUBLIC; }
 ";"		{ yylval.ival = SEMI; return SEMI; }
 ","		{ yylval.ival = COMMA; return COMMA; }
 "$"		{ yylval.ival = DOLLAR; return DOLLAR; }
+"..."		{ yylval.ival = DOTS; return DOTS; }
 "."		{ yylval.ival = DOT; return DOT; }
 "->"		{ yylval.ival = ARROW; return ARROW; }
 "*["		{ yylval.ival = REFARRAY; return REFARRAY; }

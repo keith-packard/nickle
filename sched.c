@@ -686,6 +686,7 @@ ContinuationArgs (Value thread, BoxPtr args)
 	int	    i = args->nvalues;
 	while (--i >= 0)
 	    STACK_PUSH (thread->thread.stack, BoxValue (args, i));
+	STACK_PUSH (thread->thread.stack, NewInt (args->nvalues));
     }
 }
 

@@ -65,6 +65,7 @@ void yyerror (char *fmt, ...);
 %type  <vval>	opt_const const
 %type  <eval>	opt_arrayinit arrayinit arrayelts  arrayelt
 %type  <eval>	structinit structelts structelt
+%type  <eval>	init
 
 %token		VAR EXPR ARRAY STRUCT UNION
 
@@ -843,20 +844,15 @@ primary		: NAME
 		    { $$ = NewExprConst(CONST, $1); }
 		| CCONST
 		    { $$ = NewExprConst(CCONST, $1); }
-		| OP type CP structinit
+		| OP type CP init
 		    { 
 			$$ = NewExprTree (NEW, $4, 0); 
 			$$->base.type = $2;
 		    }
-		| OP type CP OS opt_stars CS arrayinit
+		| OP type OS exprs CS CP opt_arrayinit
 		    { 
 			$$ = NewExprTree (NEW, $7, 0); 
-			$$->base.type = NewTypesArray ($2, $5); 
-		    }
-		| OP type CP OS exprs CS opt_arrayinit
-		    { 
-			$$ = NewExprTree (NEW, $7, 0); 
-			$$->base.type = NewTypesArray ($2, $5); 
+			$$->base.type = NewTypesArray ($2, $4); 
 		    }
 		| OS stars CS arrayinit
 		    { 
@@ -937,6 +933,9 @@ structelt	: NAME ASSIGN lambdaexpr
 		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1), $3); }
 		;
 
+init		: arrayinit
+		| structinit
+		;
 %%
 
 static void

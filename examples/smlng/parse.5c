@@ -221,7 +221,7 @@ public namespace Parse {
 		context_set (c->ctxt, t.value);
 		break;
 	    case Lex::End:
-		if (c->ctxt == root_context)
+		if (c->ctxt == &root_context)
 		    raise Syntax ("Closing tag </"+t.value+"> encountered with no remaining open tags");
 		if (t.value != c->active_tag)
 		    raise Syntax ("Illegal closing tag </"+t.value+"> (expected </"+c->active_tag+">)");

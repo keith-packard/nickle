@@ -79,16 +79,20 @@ extend namespace Command {
 # Load the prerequisites for the extra commands.
 library "string.5c";
 library "ctype.5c";
+library "file.5c";
 library "printf.5c";
 library "history.5c";
+
 # Now load the extra commands.
 library "command.5c";
+
 # Note that some libraries extend namespaces, and
 # thus aren't autoload/autoimport candidates.
 library "math.5c";
 import Math;
 library "scanf.5c";
 library "socket.5c"
+
 # Now autoload/autoimport the bonus stuff
 autoimport Abort;
 autoload Mutex;

@@ -6,11 +6,6 @@
  */
 
 extend namespace File {
-    /*
-     * Include existing public File members
-     */
-    public import File;
-    
     int default_output_precision = -1;
     int infinite_output_precision = -2;
 
@@ -203,11 +198,6 @@ extend namespace File {
 	vfprintf (stdout, format, args);
     }
 
-    public void printf (string format, poly args...)
-    {
-	vprintf (format, args);
-    }
-    
     public string vsprintf (string format, poly[*] args)
     {
 	file	f = File::string_write ();
@@ -215,17 +205,19 @@ extend namespace File {
 	return File::string_string (f);
     }
 
-    public string sprintf (string format, poly args...)
-    {
-	return vsprintf (format, args);
+    public namespace PrintfGlobals {
+
+	public void printf (string format, poly args...)
+	{
+	    vprintf (format, args);
+	}
+
+	public string sprintf (string format, poly args...)
+	{
+	    return vsprintf (format, args);
+	}
     }
 
-    public void putchar (int c)
-    {
-	putc (c, stdout);
-    }
+    public import PrintfGlobals;
 }
-    
-void (string format, poly args...) printf = File::printf;
-string (string format, poly args...) sprintf = File::sprintf;
-void (int c) putchar = File::putchar;
+public import File::PrintfGlobals;

@@ -2,28 +2,14 @@
  * Scanf code.  Extend File namespace with reading code
  */
 extend namespace File {
-    /*
-     * vfscanf
-     */
     public int vfscanf (file f, string format, (*poly)[*] args)
     {
-	bool iswhite (int c)
-	{
-	    switch (c) {
-	    case ' ':
-	    case '\t':
-	    case '\n':
-		return true;
-	    }
-	    return false;
-	}
-
 	/* Skip whitespace */
 	void whitespace ()
 	{
 	    int c;
 
-	    while (iswhite (c = File::getc (f)))
+	    while (Ctype::isspace (c = File::getc (f)))
 		;
 	    File::ungetc (c, f);
 	}
@@ -116,7 +102,7 @@ extend namespace File {
 
 	    whitespace();
 	    s = "";
-	    while (!iswhite (c = File::getc(f)) && !File::end(f))
+	    while (Ctype::isprint (c = File::getc(f)) && !File::end(f))
 		s = s + String::new(c);
 	    File::ungetc (c, f);
 	    return s;
@@ -195,55 +181,18 @@ extend namespace File {
         return n;
     }
 
-    public string fgets (file f)
+    public int scanf (string format, *poly args...)
     {
-	string	s;
-	int	c;
-
-	s = "";
-	for (;;)
-	{
-	    c = getc (f);
-	    switch (c) {
-	    case '\n':
-	    case -1:
-		return s;
-	    default:
-		s = s + String::new (c);
-	    }
-	}
+	return File::vfscanf (stdin, format, args);
     }
 
-    public namespace FileGlobals {
-
-	public int scanf (string format, *poly args...)
-	{
-	    return File::vfscanf (stdin, format, args);
-	}
-
+    public namespace ScanfGlobals {
 	public int vscanf (string format, (*poly)[*] args)
 	{
 	    return File::vfscanf (stdin, format, args);
-	}    
-
-	public string gets ()
-	{
-	    return File::fgets (stdin);
 	}
-
-	public int getchar ()
-	{
-	    return File::getc (stdin);
-	}
-
-	public void ungetchar (int ch)
-	{
-	    File::ungetc (ch, stdin);
-	}
-
     }
 
-    public import FileGlobals;
+    public import ScanfGlobals;
 }
-
-import File::FileGlobals;
+import File::ScanfGlobals;

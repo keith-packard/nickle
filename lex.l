@@ -9,32 +9,193 @@
 
 #include	"nickle.h"
 #include	"gram.h"
+#include	"ref.h"
 #include	<strings.h>
 #include	<errno.h>
-
-int	    at_bol = True;
-int	    yylineno = 0;
-int	    at_eof = False;
     
-#undef YY_INPUT
-#define YY_NO_UNPUT
+typedef struct _lexInput {
+    DataType		data;
+    struct _lexInput	*next;
+    Value		file;
+    Atom		name;
+    int			lineno;
+    Bool		at_bol;
+    Bool		at_eof;
+    Bool		interactive;
+} LexInput;
+
+LexInput    *lexInput;
 
 #define	    FILE_END_CHAR	-2
     
+static void lexInputMark (void *object)
+{
+    LexInput *lex = object;
+    
+    MemReference (lex->next);
+    MemReference (lex->file);
+}
+
+static DataType lexInputType = {
+    lexInputMark, 0
+};
+
+static LexInput *
+NewLexInput (LexInput *next, Value file, Atom name)
+{
+    ENTER ();
+    LexInput	*lex;
+
+    lex = MemAllocate (&lexInputType, sizeof (*lex));
+    lex->next = next;
+    lex->file = file;
+    lex->name = name;
+    lex->lineno = 0;
+    lex->at_bol = True;
+    lex->at_eof = False;
+    lex->interactive = False;
+    RETURN (lex);
+}
+
+ReferencePtr	LexInputReference;
+
+void
+LexInit (void)
+{
+    ENTER ();
+
+    LexInputReference = NewReference ((void **) &lexInput);
+    MemAddRoot (LexInputReference);
+    EXIT ();
+}
+
+Atom
+LexFileName (void)
+{
+    if (lexInput)
+	return lexInput->name;
+    return AtomId ("<initialization>");
+}
+
+int
+LexFileLine (void)
+{
+    if (lexInput)
+	return lexInput->lineno;
+    return 0;
+}
+
+Bool
+LexInteractive (void)
+{
+    if (lexInput)
+	return lexInput->interactive;
+    return False;
+}
+
+Bool
+lexfile(char *s)
+{
+    Value	f;
+    
+    f = FileFopen (s, "r");
+    if (f == 0) 
+    {
+	FilePrintf (FileStderr, "cannot open file \"%s\"\n", s);
+	return False;
+    }
+    lexInput = NewLexInput (0, f, AtomId (s));
+    return True;
+}
+
+void
+lexstdin(void)
+{
+    while (lexInput)
+    {
+	FileClose (lexInput->file);
+	lexInput = lexInput->next;
+    }
+    lexInput = NewLexInput (0, FileStdin, 0);
+    lexInput->interactive = stdin_interactive;
+}
+	
+Bool
+pushinput (char *s, Bool complain)
+{
+    Value	f;
+
+    f = FileFopen (s, "r");
+    if (f == 0) {
+	if (complain)
+	    (void) FilePrintf (FileStderr, "cannot open file %s\n", s);
+	return False;
+    }
+    lexInput = NewLexInput (lexInput, f, AtomId (s));
+    return True;
+}
+
+int
+popinput (void)
+{
+    int	    c;
+
+    for (;;)
+    {
+	c = FileInput (lexInput->file);
+	if (c >= 0)
+	    return c;
+	if (c == FileBlocked)
+	    ThreadsRun (0, lexInput->file);
+	else
+	{
+	    FileClose (lexInput->file);
+	    
+	    if (!lexInput->next)
+		return FileEOF;
+	    lexInput = lexInput->next;
+	    return FILE_END_CHAR;
+	}
+    }
+}
+
+void
+yyprompt (void)
+{
+    ENTER ();
+    Value	v;
+    
+    if (LexInteractive())
+    {
+	if (ignorenl)
+	    v = lookupVar ("prompt2");
+	else if (CurrentFrame)
+	    v = lookupVar ("prompt3");
+	else
+	    v = lookupVar ("prompt");
+	dofformat (FileStdout, "%s", 1, &v);
+	FileFlush (FileStdout);
+    }
+    EXIT ();
+}
+
+#undef YY_INPUT
+#define YY_NO_UNPUT
+
 static int yy_input (char *buf, int max_size)
 {
     int	    c;
     int	    result = 0;
     
-    at_eof = False;
-    if (at_bol) { yylineno++; yyprompt (); }
+    lexInput->at_eof = False;
+    if (lexInput->at_bol) { lexInput->lineno++; yyprompt (); }
     while (result < max_size) {
-	c = FileInput (yyinput);
-	at_bol = False;
+	c = FileInput (lexInput->file);
+	lexInput->at_bol = False;
 	if (c < 0) {
 	    c = popinput ();
 	    if (c == -2) {
-		at_eof = True;
+		lexInput->at_eof = True;
 		buf[result++] = '\n';
 		break;
 	    }
@@ -44,7 +205,7 @@ static int yy_input (char *buf, int max_size)
 	buf[result++] = c;
 	if (c == '\n')
 	{
-	    at_bol = True;
+	    lexInput->at_bol = True;
 	    break;
 	}
     }
@@ -70,21 +231,10 @@ int input (void)
 void unput (char c)
 {
     if (c == '\n')
-	yylineno--;
-    FileUnput (yyinput, c);
+	lexInput->lineno--;
+    FileUnput (lexInput->file, c);
 }
 #endif
-
-#define		YYINDEEP	20
-Value	yyinstack[YYINDEEP];
-Value	*yyinpt = yyinstack + YYINDEEP;
-Value	yyinput;
-int		linenos[YYINDEEP];
-int		*linenopt = linenos + YYINDEEP;
-Atom		yyfile = 0;
-Atom		fnames[YYINDEEP];
-Atom		*fnamept = fnames + YYINDEEP;
-int		yyfiledeep = 0;
 
 %}
 %%
@@ -288,22 +438,22 @@ skipcomment (void)
     int	c;
 
     c = input();
-    if (at_eof)
+    if (lexInput->at_eof)
     {
 bail:	
         yyerror ("Missing */ at end of file");
-	at_eof = False;
+	lexInput->at_eof = False;
         return;
     }
     for (;;) {
 	while (c != EOF && c != '*')
 	{
 	    c = input();
-	    if (c == EOF || at_eof)
+	    if (c == EOF || lexInput->at_eof)
 		goto bail;
 	}
 	c = input();
-	if (c == EOF || at_eof)
+	if (c == EOF || lexInput->at_eof)
 	    goto bail;
 	if (c == '/')
 	    return;
@@ -432,114 +582,5 @@ aetov (char *s)
 	    v = Divide (v, sv);
     }
     RETURN (v);
-}
-
-Bool
-lexfile(char *s)
-{
-    Value	f;
-    f = FileFopen (s, "r");
-    interactive = 0;
-    if (f == 0) 
-    {
-	FilePrintf (FileStderr, "cannot open file \"%s\"\n", s);
-	return False;
-    }
-    ++yyfiledeep;
-    yyinput = f;
-    yyfile = AtomId (s);
-    return True;
-}
-
-void
-lexstdin(void)
-{
-    if (yyfiledeep)
-    {
-	--yyfiledeep;
-	(void) FileClose (yyinput);
-    }
-    yyfile = 0;
-    yyinput = FileStdin;
-    interactive = stdin_interactive;
-}
-	
-Bool
-pushinput (char *s, Bool complain)
-{
-    Value	f;
-
-    if (yyinpt == yyinstack) {
-	(void) FilePrintf (FileStderr, "files nested too deeply\n");
-	return False;
-    }
-    f = FileFopen (s, "r");
-    if (f == 0) {
-	if (complain)
-	    (void) FilePrintf (FileStderr, "cannot open file %s\n", s);
-	return False;
-    }
-    ++yyfiledeep;
-    *--yyinpt = yyinput;
-    *--linenopt = yylineno;
-    *--fnamept = yyfile;
-    yyinput = f;
-    yylineno = 0;
-    at_bol = True;
-    yyfile = AtomId (s);
-    interactive = 0;
-    return True;
-}
-
-int
-popinput (void)
-{
-    int	    c;
-
-/*    printf ("popinput\n"); */
-    for (;;)
-    {
-	c = FileInput (yyinput);
-	if (c >= 0)
-	    return c;
-	if (c == FileBlocked)
-	    ThreadsRun (0, yyinput);
-	else
-	{
-	    FileClose (yyinput);
-	    if (yyinpt == yyinstack + YYINDEEP)
-		return FileEOF;
-	    yyinput = *yyinpt++;
-	    if (yyinput == FileStdin)
-	    {
-		interactive = stdin_interactive;
-		yyprompt ();
-	    }
-	    yylineno = *linenopt++;
-	    yyfile = *fnamept++;
-	    --yyfiledeep;
-	    return FILE_END_CHAR;
-	}
-    }
-}
-
-void
-yyprompt (void)
-{
-    ENTER ();
-    Value	v;
-    
-    if (interactive)
-    {
-	if (ignorenl)
-	    v = lookupVar ("prompt2");
-	else if (CurrentFrame)
-	    v = lookupVar ("prompt3");
-	else
-	    v = lookupVar ("prompt");
-	dofformat (FileStdout, "%s", 1, &v);
-	FileFlush (FileStdout);
-    }
-    EXIT ();
 }
 

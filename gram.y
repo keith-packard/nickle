@@ -11,7 +11,6 @@
 #include	<stdio.h>
 
 int ignorenl;
-extern int	yyfiledeep;
 
 void yyerror (char *fmt, ...);
 
@@ -1069,7 +1068,7 @@ BuildCall (char *scope, char *name, int nargs, ...)
 int
 yywrap (void)
 {
-    if (interactive)
+    if (LexInteractive())
 	printf ("\n");
     return 1;
 }
@@ -1078,11 +1077,9 @@ void
 yyerror (char *fmt, ...)
 {
     va_list	args;
-    extern Atom	yyfile;
-    extern int	yylineno;
 
-    if (yyfile)
-	FilePrintf (FileStderr, "%A:%d: ", yyfile, yylineno);
+    if (LexFileName ())
+	FilePrintf (FileStderr, "%A:%d: ", LexFileName (), LexFileLine ());
     va_start (args, fmt);
     FileVPrintf (FileStderr, fmt, args);
     FilePrintf (FileStderr, "\n");

@@ -14,8 +14,6 @@
 
 #include	"nickle.h"
 #include	"gram.h"
-extern Atom	yyfile;
-extern int	yylineno;
 
 static void
 ExprTreeMark (void *object)
@@ -77,8 +75,8 @@ static void
 ExprBaseInit (Expr *e, int tag)
 {
     e->base.tag = tag;
-    e->base.file = yyfile;
-    e->base.line = yylineno;
+    e->base.file = LexFileName ();
+    e->base.line = LexFileLine ();
 }
 
 Expr *

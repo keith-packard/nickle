@@ -18,7 +18,6 @@
 #include	"nickle.h"
 
 int	stdin_interactive;
-int	interactive;
 
 static void
 setArgv (int argc, char **argv)
@@ -117,6 +116,7 @@ init (void)
     TypesInit ();
     ValueInit ();
     IoInit ();
+    LexInit ();
     NamespaceInit ();
     SymbolInit ();
     BuiltinInit ();

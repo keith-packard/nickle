@@ -510,6 +510,11 @@ void	GetNamespace (NamespacePtr *, FramePtr *);
 ExprPtr	BuildName (char *);
 ExprPtr	BuildCall (char *, char *, int, ...);
 
+Atom	LexFileName (void);
+int	LexFileLine (void);
+Bool	LexInteractive (void);
+void	LexInit (void);
+
 int	yywrap (void);
 void	yyerror (char *fmt, ...);
 int	yylex (void);
@@ -529,7 +534,7 @@ int	dofformat (Value, char *, int, Value *);
 
 extern void	init (void);
 extern int	yyparse (void);
-extern int	interactive, stdin_interactive;
+extern int	stdin_interactive;
 
 void	intr(int);
 void	stop (int), die (int), segv (int);

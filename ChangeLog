@@ -1,3 +1,10 @@
+2004-12-11  Keith Packard  <keithp@keithp.com>
+
+	* builtin-foreign.c: (do_Foreign_load), (import_Foreign_namespace):
+	* foreign.c: (ForeignEqual), (ForeignPrint), (ForeignHash),
+	(ForeignMark), (ForeignFree), (ForeignInit), (NewForeign):
+	Forgot to add actual foreign dataype and interface code.
+
 2004-12-10  Keith Packard  <keithp@keithp.com>
 
 	* builtin.c: (BuiltinSetUserdefType), (BuiltinType):

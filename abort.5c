@@ -4,4 +4,9 @@ namespace Abort {
     public void abort(string reason) {
 	raise aborting(reason);
     }
+
+    public void assert(bool ok, string failmsg) {
+	if (!ok)
+	    abort(failmsg);
+    }
 }

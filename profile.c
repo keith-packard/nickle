@@ -61,7 +61,7 @@ do_profile (Value on)
     struct itimerval    v;
     Bool    previous = profiling;
 	
-    if (!True (on))
+    if (True (on))
     {
 	currentTick = previousTick = 0;
 	catchSignal (SIGVTALRM, sigprofile);

@@ -140,9 +140,44 @@ Resize (HashTablePtr ht, const HashSetPtr hs)
     EXIT ();
 }
 
+#if HAVE_STDINT_H
+typedef uint32_t	crc32_t;
+#else
+typedef unsigned int	crc32_t;
+#endif
+
+static crc32_t crc32_table[256];
+
+static void
+generate_crc32_table(void)
+{
+    crc32_t	c, p;
+    int		n, m;
+
+    p = 0xedb88320;
+    for (n = 0; n < 256; n++)
+    {
+	c = n;
+	for (m = 0; m < 8; m++)
+	    c = (c >> 1) ^ ((c & 1) ? p : 0);
+	crc32_table[n] = c;
+    }
+}
+
+HashValue
+HashCrc32 (unsigned char *bytes, int nbytes)
+{
+    crc32_t	crc32 = ~0;
+    if (crc32_table[1] == 0) abort ();
+    while (nbytes--)
+	crc32 = (crc32 >> 8) ^ crc32_table[(crc32 ^ *bytes++) & 0xff];
+    return (HashValue) ~crc32;
+}
+
 int
 HashInit (void)
 {
+    generate_crc32_table ();
     return 1;
 }
 

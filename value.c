@@ -679,10 +679,10 @@ ValueHash (Value v)
     ValueRep	*rep;
 
     if (!v)
-	return 0;
+	return Zero;
     rep = ValueRep(v);
     if (!rep->hash)
-	return 0;
+	return Zero;
     return NewInt ((*rep->hash) (v) & MAX_NICKLE_INT);
 }
 
@@ -810,8 +810,8 @@ NewDataCache (int size)
 				      sizeof (DataCache) +
 				      size * sizeof (void *));
     dc->size = size;
-    MemAddRoot (dc);
     memset (DataCacheValues(dc), '\0', size * sizeof (Value));
+    MemAddRoot (dc);
     RETURN (dc);
 }
 

@@ -1106,6 +1106,7 @@ Value	Lxor(Value, Value), Lnot (Value);
 Value   Popcount(Value);
 Bool	Print (Value, Value, char format, int base, int width, int prec, int fill);
 void	PrintError (char *s, ...);
+HashValue HashCrc32 (unsigned char *bytes, int nbytes);
 Value	CopyMutable (Value v);
 #ifdef HAVE_C_INLINE
 static inline Value

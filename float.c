@@ -971,6 +971,15 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     return True;
 }
 
+static HashValue
+FloatHash (Value av)
+{
+    Float   *a = &av->floats;
+
+    return (NaturalHash(a->mant->mag) ^ a->mant->sign ^
+	    NaturalHash(a->exp->mag) ^ a->exp->sign);
+}
+
 static void
 FloatMark (void *object)
 {
@@ -1002,7 +1011,9 @@ ValueRep   FloatRep = {
     },
     FloatPromote,
     FloatReduce,
-    FloatPrint
+    FloatPrint,
+    0,
+    FloatHash,
 };
 
 Value

@@ -1410,20 +1410,11 @@ NaturalGreaterEqualOffset (Natural *a, Natural *b, int offset)
     return True;
 }
 
-#define hrot(i)	(((i) << 1) | ((i) >> (sizeof (HashValue) * 8 - 1)))
-
 HashValue
 NaturalHash (Natural *a)
 {
-    HashValue	h = 0;
-    digit	*at;
-    int		index;
-
-    at = NaturalDigits (a);
-    index = a->length;
-    while (index--)
-	h = hrot(h) ^ (HashValue) *at++;
-    return h;
+    return HashCrc32 ((unsigned char *) &a->length,
+		      sizeof (int) + sizeof (digit) * a->length);
 }
 
 int

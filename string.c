@@ -194,18 +194,11 @@ StrzPart (Value v, char *error)
     return StringChars (&v->string);
 }
 
-#define hrot(i)	(((i) << 1) | ((i) >> (sizeof (HashValue) * 8 - 1)))
-
 static HashValue
 StringHash (Value av)
 {
-    char	*string = StringChars (&av->string);
-    long	len = av->string.length;
-    HashValue	h = 0;
-
-    while (len--)
-	h = hrot(h) ^ (HashValue) *string++;
-    return h;
+    return HashCrc32 ((unsigned char *) StringChars(&av->string),
+		      av->string.length);
 }
 
 ValueRep   StringRep = {

@@ -1,3 +1,21 @@
+2004-11-30  Keith Packard  <keithp@keithp.com>
+
+	* float.c: (FloatHash):
+	Provide hash function for float representation
+	
+	* hash.c: (generate_crc32_table), (HashCrc32), (HashInit):
+	* value.h:
+	Implement general purpose crc32 function for hashing
+	
+	* natural.c: (NaturalHash):
+	* string.c: (StringHash):
+	Use crc32 hash for naturals and strings
+	
+	* value.c: (ValueHash), (NewDataCache):
+	Return Zero for representations without hash functions
+	instead of uninit (oops).
+	Initialize datacache to zero before adding as a root (just a cleanup)
+	
 2004-11-30  Bart Massey  <bart@cs.pdx.edu>
 
 	* math.5c

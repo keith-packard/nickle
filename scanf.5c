@@ -123,9 +123,28 @@ public namespace File {
 	return argc;
     }
 
-    int function fscanf (file f, string format, *poly args...)
+    public int function fscanf (file f, string format, *poly args...)
     {
 	return vfscanf (f, format, args);
+    }
+
+    public string function fgets (file f)
+    {
+	string	s;
+	int	c;
+
+	s = "";
+	for (;;)
+	{
+	    c = getc (f);
+	    switch (c) {
+	    case '\n':
+	    case -1:
+		return s;
+	    default:
+		s = s + Strings::new (c);
+	    }
+	}
     }
 }
 
@@ -138,3 +157,8 @@ public int function vscanf (string format, (*poly)[*] args)
 {
     return File::vfscanf (stdin, format, args);
 }    
+
+public string function gets ()
+{
+    return File::fgets (stdin);
+}

@@ -539,7 +539,10 @@ FloatFloor (Value av, int expandOk)
     d = NaturalToInt (a->exp->mag);
     mant = FpartRsl (a->mant, d);
     if (d && a->mant->sign == Negative)
+    {
 	mant = FpartAdd (mant, one_fpart, True);
+	d--;
+    }
     exp = zero_fpart;
     RETURN (FloatInteger (NewFloat (mant, exp, a->prec - d)));
 }
@@ -560,7 +563,10 @@ FloatCeil (Value av, int expandOk)
     d = NaturalToInt (a->exp->mag);
     mant = FpartRsl (a->mant, d);
     if (d && a->mant->sign == Positive)
+    {
 	mant = FpartAdd (mant, one_fpart, False);
+	d--;
+    }
     exp = zero_fpart;
     RETURN (FloatInteger (NewFloat (mant, exp, a->prec - d)));
 }

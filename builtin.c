@@ -184,6 +184,7 @@ static struct fbuiltin_0 funcs_0[] = {
     { do_Thread_list,	    "list",		    "i",    "",	    &ThreadNamespace },
     { do_getchar,	    "getchar",		    "i",    ""	    },
     { do_time,		    "time",		    "i",    ""	    },
+    { do_File_string_write, "string_write",	    "f",    "",	    &FileNamespace },
     { do_Debug_up,	    "up",		    "i",    "",	    &DebugNamespace, },
     { do_Debug_down,	    "down",		    "i",    "",	    &DebugNamespace },
     { do_Debug_done,	    "done",		    "i",    "",	    &DebugNamespace },
@@ -232,6 +233,8 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_File_end,	    "end",		    "i",    "f",    &FileNamespace },
     { do_File_error,	    "error",		    "i",    "f",    &FileNamespace },
     { do_File_clear_error,  "clear_error",	    "i",    "f",    &FileNamespace },
+    { do_File_string_read,  "string_read",	    "f",    "s",    &FileNamespace },
+    { do_File_string_string,"string_string",	    "s",    "f",    &FileNamespace },
     { do_String_length,	    "length",		    "i",    "s",    &StringNamespace },
     { do_String_new,	    "new",		    "s",    "p",    &StringNamespace },
 #ifdef BSD_RANDOM
@@ -259,6 +262,7 @@ static struct fbuiltin_2 funcs_2[] = {
 
 static struct fbuiltin_3 funcs_3[] = {
     { do_String_substr,	    "substr",		    "s",    "sii",  &StringNamespace },
+    { do_File_pipe,	    "pipe",		    "f",    "sA*ss", &FileNamespace },
     { 0,		    0 },
 };
 
@@ -899,8 +903,8 @@ do_File_print (Value file, Value value, Value format,
     if (file->file.flags & FileOutputBlocked)
 	ThreadSleep (running, file, PriorityIo);
     else
-	Print (file, value, *StringChars(format), ibase, iwidth,
-	       iprec, *StringChars(fill));
+	Print (file, value, *StringChars(&format->string), ibase, iwidth,
+	       iprec, *StringChars(&fill->string));
     return Zero;
 }
 
@@ -943,6 +947,56 @@ do_File_close (Value f)
 	(void) FileClose (f);
     }
     return One;
+}
+
+Value
+do_File_pipe (Value file, Value argv, Value mode)
+{
+    ENTER ();
+    char    **args;
+    int	    argc;
+    Value   arg;
+
+    args = AllocateTemp ((argv->array.dim[0] + 1) * sizeof (char *));
+    for (argc = 0; argc < argv->array.dim[0]; argc++)
+    {
+	arg = BoxValue (argv->array.values, argc);
+	args[argc] = StringChars (&arg->string);
+    }
+    args[argc] = 0;
+    RETURN (FilePopen (StringChars (&file->string), args, 
+		      StringChars (&mode->string)));
+}
+
+Value
+do_File_status (Value f)
+{
+    ENTER ();
+    RETURN (NewInt (FileStatus (f)));
+}
+
+Value
+do_File_string_read (Value s)
+{
+    ENTER ();
+    char    *str;
+
+    str = StringChars (&s->string);
+    RETURN (FileStringRead (str, strlen (str)));
+}
+
+Value
+do_File_string_write (void)
+{
+    ENTER ();
+    RETURN (FileStringWrite ());
+}
+
+Value
+do_File_string_string (Value f)
+{
+    ENTER ();
+    RETURN (FileStringString (f));
 }
 
 Value 

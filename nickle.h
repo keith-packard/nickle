@@ -592,6 +592,7 @@ Value	do_Mutex_new (void);
 Value	do_Thread_list (void);
 Value	do_getchar (void);
 Value	do_time (void);
+Value	do_File_string_write (void);
 Value	do_Debug_up (void);
 Value	do_Debug_down (void);
 Value	do_Debug_done (void);
@@ -641,6 +642,9 @@ Value	do_File_getc (Value);
 Value	do_File_end (Value);
 Value	do_File_error (Value);
 Value	do_File_clear_error (Value);
+Value	do_File_string_read (Value);
+Value	do_File_string_string (Value);
+Value	do_File_status (Value);
 Value	do_String_length (Value);
 Value	do_String_new (Value);
 Value	do_Primitive_random (Value);
@@ -662,9 +666,11 @@ Value	do_set_jump (Value, Value);
 
 /* three argument builtins */
 Value	do_String_substr (Value, Value, Value);
+Value	do_File_pipe (Value, Value, Value);
 
 /* seven argument builtins */
 Value	do_File_print (Value, Value, Value, Value, Value, Value, Value);
 
 /* two argument non-local builtins */
 Value	do_long_jump (InstPtr *, Value, Value);
+

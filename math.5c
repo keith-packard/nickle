@@ -1,5 +1,4 @@
-public namespace Math
-{
+public namespace Math {
     real function errbounds (real v)
     {
 	int	prec;
@@ -28,7 +27,7 @@ public namespace Math
 	return min;
     }
 
-    public real function sqrt(real v)
+    public real function sqrt (real v)
     {
 	real function real_sqrt(real v)
 	{
@@ -232,7 +231,6 @@ public namespace Math
 	return loge * log(a);
     }
     
-
     /*
      * log2(x) = log2(e) * log(x)
      *
@@ -248,9 +246,9 @@ public namespace Math
 	return loge * log(a);
     }
     
-    /* Number of bits required to represent ceil(a). */
-    public int function lg (real a) {
-        return ceil(log2(a));
+    /* Number of bits required to represent x. */
+    public int function lg(real x) {
+	return ceil(log2(x));
     }
 
     /*
@@ -258,6 +256,7 @@ public namespace Math
      *
      *  PI = 24*atan (1/8) + 8*atan (1/57) + 4*atan (1/239);
      */
+    
     real function calculate_pi (int prec)
     {
 	/*
@@ -584,6 +583,7 @@ public namespace Math
      *
      *  asin(q) = atan(q/sqrt(1-q**2))
      */
+    
     public real function asin (real v)
     {
 	v = imprecise (v);

@@ -11,6 +11,7 @@
 #include	<signal.h>
 #include	<sys/time.h>
 #include	<sys/types.h>
+#include	<sys/wait.h>
 #include	<errno.h>
 #include	"nickle.h"
 #include	"ref.h"
@@ -208,11 +209,122 @@ FileFopen (char *name, char *mode)
     RETURN (FileCreate (fd));
 }
 
+Value
+FilePopen (char *program, char *argv[], char *mode)
+{
+    ENTER ();
+    int	    fd, fds[2];
+    int	    pid;
+    Bool    reading;
+    Value   file;
+
+    if (*mode == 'r')
+	reading = True;
+    else
+	reading = False;
+    pipe (fds);
+    switch ((pid = fork ())) {
+    case -1:
+	close (fds[0]);
+	close (fds[1]);
+	fd = -1;
+	break;
+    case 0:
+	if (reading)
+	{
+	    close (1);
+	    dup2 (fds[1], 1);
+	}
+	else
+	{
+	    close (0);
+	    dup2 (fds[0], 0);
+	}
+	execvp (program, argv);
+	exit (1);
+    default:
+	if (reading)
+	{
+	    close (fds[1]);
+	    fd = fds[0];
+	}
+	else
+	{
+	    close (fds[0]);
+	    fd = fds[1];
+	}
+	break;
+    }
+    if (fd >= 0)
+    {
+	file = FileCreate (fd);
+	file->file.flags |= FilePipe;
+	file->file.pid = pid;
+    }
+    else
+	file = 0;
+    RETURN (file);
+}
+
+int
+FileStatus (Value file)
+{
+    return file->file.status;
+}
+
 int
 FileClose (Value file)
 {
     file->file.flags |= FileClosed;
     return FileFlush (file);
+}
+
+Value
+FileStringRead (char *string, int len)
+{
+    ENTER ();
+    Value   file;
+
+    file = NewFile (-1);
+    file->file.flags |= FileString;
+    file->file.input = NewFileChain (0, len);
+    memcpy (FileBuffer (file->file.input), string, len);
+    file->file.input->used = len;
+    RETURN (file);
+}
+
+Value
+FileStringWrite (void)
+{
+    ENTER ();
+    Value   file;
+
+    file = NewFile (-1);
+    file->file.flags |= FileString;
+    RETURN (file);
+}
+
+Value
+FileStringString (Value file)
+{
+    ENTER ();
+    int		    len;
+    FileChainPtr    out;
+    Value	    str;
+    char	    *s;
+
+    len = 0;
+    for (out = file->file.output; out; out = out->next)
+	len += out->used;
+    str = NewString (len);
+    s = StringChars (&str->string);
+    for (out = file->file.output; out; out = out->next)
+    {
+	memcpy (s, FileBuffer(out), out->used);
+	s += out->used;
+    }
+    *s = '\0';
+    RETURN (str);
 }
 
 #define DontBlockIO	(runnable && running)
@@ -231,7 +343,14 @@ FileInput (Value file)
     else
     {
 	if (!file->file.input)
+	{
+	    if (file->file.flags & FileString)
+	    {
+		EXIT ();
+		return FileEnd;
+	    }
 	    file->file.input = NewFileChain (0, FileBufferSize);
+	}
 	ic = file->file.input;
 	for (;;)
 	{
@@ -353,28 +472,29 @@ int
 FileFlush (Value file)
 {
     ENTER ();
-    FileChainPtr	ic, *prev;
-    int		n;
+    FileChainPtr    ic, *prev;
+    int		    n = 0;
 
-    if (!file->file.output)
-	n = 0;
-    else
+    if (file->file.output)
     {
-	for (;;)
+	if ((file->file.flags & FileString) == 0)
 	{
-	    for (prev = &file->file.output; (ic = *prev)->next; prev = &ic->next);
-	    n = FileFlushChain (file, ic);
-	    if (n)
-		break;
-	    /*
-	     * Leave a chain for new output
-	     */
-	    if (prev == &file->file.output)
+	    for (;;)
 	    {
-		ic->used = ic->ptr = 0;
-		break;
+		for (prev = &file->file.output; (ic = *prev)->next; prev = &ic->next);
+		n = FileFlushChain (file, ic);
+		if (n)
+		    break;
+		/*
+		 * Leave a chain for new output
+		 */
+		if (prev == &file->file.output)
+		{
+		    ic->used = ic->ptr = 0;
+		    break;
+		}
+		*prev = 0;
 	    }
-	    *prev = 0;
 	}
 	ic = file->file.output;
 	if (ic->used == ic->size)
@@ -387,6 +507,12 @@ FileFlush (Value file)
 	    FileResetFd (file->file.fd);
 	    close (file->file.fd);
 	    file->file.fd = -1;
+	}
+	/* FIXME -- dont block waiting for child */
+	if (file->file.pid != 0)
+	{
+	    while (waitpid (file->file.pid, &file->file.status, 0) < 0);
+	    file->file.pid = 0;
 	}
     }
     EXIT ();

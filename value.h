@@ -366,6 +366,8 @@ typedef struct _file {
     BaseValue	    base;
     union _value    *next;	/* used to chain blocked files together */
     int		    fd;
+    int		    pid;	/* for pipes, process id */
+    int		    status;	/* from wait */
     int		    flags;
     int		    error;
     FileChainPtr    input;
@@ -387,6 +389,8 @@ typedef struct _file {
 #define FileClosed	    0x40
 #define FileBlockWrites	    0x80
 #define FileEnd		    0x100
+#define FileString	    0x200
+#define FilePipe	    0x400
 
 typedef struct _ref {
     BaseValue	base;
@@ -624,6 +628,9 @@ void	FileUnput (Value, unsigned char);
 Value   FileCreate (int fd);
 int	FileFlush (Value);
 int	FileClose (Value);
+Value	FileStringRead (char *string, int len);
+Value	FileStringWrite (void);
+Value	FileStringString (Value file);
 void	FileSetFd (int fd), FileResetFd (int fd);
 void	FilePuts (Value, char *);
 void	FilePutIntBase (Value file, int a, int base);
@@ -633,6 +640,8 @@ void	FilePutClass (Value f, Class storage, Bool minimal);
 void	FilePutPublish (Value f, Publish publish, Bool minimal);
 void	FilePutTypes (Value f, Types *t, Bool minimal);
 Value	FileFopen (char *name, char *mode);
+Value	FilePopen (char *program, char *args[], char *mode);
+int	FileStatus (Value file);
 void	FileCheckBlocked (void);
 void	FileSetBlocked (Value file, int flag);
 void	FilePrintf (Value, char *, ...);

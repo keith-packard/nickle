@@ -1,6 +1,11 @@
 2004-05-27  Keith Packard  <keithp@keithp.com>
 version 2.37
 
+	* value.c: (ShiftR):
+	Ceiling, not Round for negative left operand in shift right
+
+2004-05-27  Keith Packard  <keithp@keithp.com>
+
 	* natural.c: (NaturalCompliment):
 	Bogus effort to truncate compliment answers resulted in
 	broken IntegerLand operation

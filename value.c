@@ -462,7 +462,7 @@ ShiftR (Value av, Value bv)
 	Sign	sign = Positive;
 	if (Negativep (av))
 	{
-	    av = Minus (av, ShiftL (One, Minus (bv, One)));
+	    av = Minus (av, Minus (ShiftL (One, bv), One));
 	    sign = Negative;
 	}
 	av = Reduce (NewInteger (sign,

@@ -520,6 +520,13 @@ FloatInteger (Value av)
 	    mag = NaturalLsl (mag, dist);
 	av = Reduce (NewInteger (a->mant->sign, mag));
     }
+    else
+    {
+	RaiseStandardException (exception_invalid_unop_value,
+				"ambiguous conversion to int",
+				1,
+				av);
+    }
     RETURN (av);
 }
 

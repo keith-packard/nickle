@@ -1,3 +1,12 @@
+2004-04-14  Bart Massey  <bart@cs.pdx.edu>
+
+	reviewed by: Keith Packard <keithp@keithp.com>
+
+	* hash.c: (HashGet), (HashSet):
+	Make hash table grow when full on get of
+	default value.  Clean boundary case in
+	test in HashSet.  Keithp really did this.
+
 2004-04-11  Bart Massey  <bart@cs.pdx.edu>
 
 	* string.5c: (split):

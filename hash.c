@@ -316,6 +316,11 @@ HashGet (Value hv, Value key)
 				    "uninitialized hash element", 0);
 	    return (Void);
 	}
+	if (ht->count >= ht->hashSet->entries && 
+	    ht->hashSet != &hashSets[NHASHSETS - 1])
+	{
+	    Resize (ht, ht->hashSet + 1);
+	}
 	ht->count++;
 	HashEltHash(he) = hash;
 	HashEltKey(he) = key;
@@ -331,7 +336,7 @@ HashSet (Value hv, Value key, Value value)
     Value	    hash = ValueHash (key);
     Value	    *he;
 
-    if (ht->count == ht->hashSet->entries && 
+    if (ht->count >= ht->hashSet->entries && 
 	ht->hashSet != &hashSets[NHASHSETS - 1])
     {
 	Resize (ht, ht->hashSet + 1);

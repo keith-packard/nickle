@@ -176,6 +176,7 @@ public namespace Parse {
     } c_list;
 
     function clist_show(*c_list c) {
+	printf ("clist show...\n");
 	while (c != 0 && c->ctxt != 0) {
 	    context_dump(*c->ctxt);
 	    printf("\n");
@@ -213,13 +214,12 @@ public namespace Parse {
 		p = &(*p)->next;
 		break;		
 	    case Lex::Start:
-		context new_context;
-		new_context = *c->ctxt;
-		context_set(&new_context, t.value);
+		poly function copy (x) { return x; }
 		c = reference ((c_list) {
-		    ctxt = &new_context,
+		    ctxt = reference (*c->ctxt),
 		    prev = c,
 		    active_tag = t.value });
+		context_set (c->ctxt, t.value);
 		clist_show(c);
 		break;
 	    case Lex::End:

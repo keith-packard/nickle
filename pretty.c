@@ -18,6 +18,8 @@
 
 extern Bool profiling;
 
+#define PRETTY_NUM_WIDTH    10
+
 static int
 PrettyNumWidth (unsigned long i)
 {
@@ -33,13 +35,13 @@ PrettyNumWidth (unsigned long i)
 static void
 PrettyProfNum (Value f, unsigned long i, int pad_left)
 {
-    int	spaces = 7 - PrettyNumWidth (i);
+    int	spaces = PRETTY_NUM_WIDTH - PrettyNumWidth (i);
     if (pad_left)
-	while (spaces--)
+	while (spaces-- > 0)
 	    FilePuts (f, " ");
     FilePrintf (f, "%d", i);
     if (!pad_left)
-	while (spaces--)
+	while (spaces-- > 0)
 	    FilePuts (f, " ");
 }
 
@@ -51,7 +53,7 @@ PrettyProf (Value f, Expr *e)
 	PrettyProfNum (f, e ? e->base.sub_ticks : 0, 1);
 	FilePuts (f, ",");
 	PrettyProfNum (f, e ? e->base.ticks : 0, 0);
-	FilePuts (f, ": ");
+	FilePuts (f, ":  ");
     }
 }
 	    

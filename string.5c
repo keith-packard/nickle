@@ -51,6 +51,9 @@ extend namespace String {
 	return ss;
     }
 
+
+
+
     public string chomp(string s) 
 	/*
 	 * Trim whitespace from begining and end of 's'
@@ -72,6 +75,29 @@ extend namespace String {
 	 */
     {
 	return index(String::new(c), s) >= 0;
+    }
+
+    public string[*] wordsplit(string s, string sep) 
+    /*
+     * Split 's' at boundaries consisting of sequences of
+     * 'sep' characters, returning an array of the resulting
+     * pieces
+     */
+    {
+	string[...] ss = {};
+	int i = 0; 
+	while(i < length(s)) {
+	    while (i < length(s) && inchars(s[i], sep))
+		i++;
+	    int j = i;
+	    while (j < length(s) && !inchars(s[j], sep))
+		j++;
+	    if (i == j)
+		break;
+	    ss[dim(ss)] = substr(s, i, j - i);
+	    i = j;
+	}
+	return ss;
     }
 
     public typedef struct { 

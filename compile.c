@@ -1585,12 +1585,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	 */
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	NewInst (test_inst, obj);
-	obj = _CompileExpr (obj, expr->tree.right->tree.left, True, stat, code);
+	obj = _CompileExpr (obj, expr->tree.right->tree.left, evaluate, stat, code);
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpQuest;
 	inst->branch.offset = obj->used - test_inst;
-	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
+	obj = _CompileExpr (obj, expr->tree.right->tree.right, evaluate, stat, code);
 	inst = ObjCode (obj, middle_inst);
 	inst->base.opCode = OpColon;
 	inst->branch.offset = obj->used - middle_inst;
@@ -1619,7 +1619,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	 */
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	NewInst (test_inst, obj);
-	obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
+	obj = _CompileExpr (obj, expr->tree.right, evaluate, stat, code);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpAnd;
 	inst->base.stat = stat;
@@ -1646,7 +1646,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	 */
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	NewInst (test_inst, obj);
-	obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
+	obj = _CompileExpr (obj, expr->tree.right, evaluate, stat, code);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpOr;
 	inst->base.stat = stat;
@@ -1704,11 +1704,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case LE:	    obj = CompileBinary (obj, expr, OpLe, stat, code); break;
     case GE:	    obj = CompileBinary (obj, expr, OpGe, stat, code); break;
     case COMMA:	    
-	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	obj = _CompileExpr (obj, expr->tree.left, False, stat, code);
 	expr->base.type = expr->tree.left->base.type;
 	if (expr->tree.right)
 	{
-	    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
+	    obj = _CompileExpr (obj, expr->tree.right, evaluate, stat, code);
 	    expr->base.type = expr->tree.right->base.type;
 	}
 	break;
@@ -1729,7 +1729,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	break;
     case DOLLAR:
 	/* reposition statement reference so top-level errors are nicer*/
-	obj = _CompileExpr (obj, expr->tree.left, True, expr, code);
+	obj = _CompileExpr (obj, expr->tree.left, evaluate, expr, code);
 	expr->base.type = expr->tree.left->base.type;
 	break;
     }

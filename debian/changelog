@@ -1,3 +1,9 @@
+nickle (2.28-2) unstable; urgency=low
+
+  * Separate build dependencies with commas
+
+ -- Keith Packard <keithp@keithp.com>  Tue,  2 Mar 2004 19:08:52 -0800
+
 nickle (2.28-1) unstable; urgency=low
 
   * Add ilog function (Bart Massey)

@@ -1,3 +1,9 @@
+2004-03-02  Keith Packard  <keithp@keithp.com>
+
+	* debian/changelog:
+	* debian/control:
+	Separate build dependencies with commas
+
 2004-02-26  Keith Packard  <keithp@keithp.com>
 
 	* Makefile.am:

@@ -82,7 +82,7 @@ NewBoxTypes (int size)
     ENTER ();
     BoxTypesPtr    bt;
 
-    bt = ALLOCATE (&BoxTypesType, sizeof (BoxTypes) + size * sizeof (Type));
+    bt = ALLOCATE (&BoxTypesType, sizeof (BoxTypes) + size * sizeof (Types *));
     bt->size = size;
     bt->count = 0;
     RETURN (bt);

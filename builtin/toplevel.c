@@ -291,7 +291,7 @@ do_dims(Value av)
     Value ret;
     int i;
 
-    ret = NewArray(True, type_int, 1, &av->array.ndim);
+    ret = NewArray(True, typesPrim[type_int], 1, &av->array.ndim);
     for (i = 0; i < av->array.ndim; i++) {
       Value d = NewInt(av->array.dim[i]);
       BoxValueSet(ret->array.values, i, d);

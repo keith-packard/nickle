@@ -1409,9 +1409,9 @@ integer		: TEN_NUM
  */
 opt_arrayinit	: arrayinit
 		| OC CC
-		    { $$ = 0; }
+		    { $$ = NewExprTree (ARRAY, 0, 0); }
 		|
-		    { $$ = 0; }
+		    { $$ = NewExprTree (ARRAY, 0, 0); }
 		;
 arrayinit    	: OC arrayelts opt_comma opt_dotdotdot CC
 		    { 
@@ -1471,9 +1471,9 @@ arrayelt	: simpleexpr
  */
 opt_hashinit	: hashinit
 		| OC CC
-		    { $$ = 0; }
+		    { $$ = NewExprTree (HASH, 0, 0); }
 		|
-		    { $$ = 0; }
+		    { $$ = NewExprTree (HASH, 0, 0); }
 		;
 hashinit	: OC hashelts opt_comma CC
 		    {

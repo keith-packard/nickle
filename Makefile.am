@@ -86,6 +86,9 @@ nickle.spec: nickle.spec.in ChangeLog config.h
 	sed -e 's,@''VERSION@,$(VERSION),' \
 	    -e 's,@''pkgdatadir@,$(pkgdatadir),' $(top_srcdir)/nickle.spec.in > $@
 	    
+clean-local:
+	rm -f nickle.1 nickle.spec
+	
 #
 # This assumes you've got Mike Harris's rpmbuild-nonroot stuff installed
 # using the defaults

@@ -1,3 +1,8 @@
+nickle (2.43-1) unstable; urgency=low
+  * rewrite garbage collector to use simpler data structures
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 12 Aug 2004 21:21:28 -0700
+ 
 nickle (2.42-1) unstable; urgency=low
   * unlimit stack to avoid crashes in recursive GC marking
   * add skiplists as an example

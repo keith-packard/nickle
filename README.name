@@ -36,7 +36,9 @@ In addition (in no particular order), we note that:
   a common abbreviation among the Mattel Intellivision processor
   team for a 5-bit field.  (The term may have a longer and
   broader history.)  We figure the language is worth about
-  5 bits (i.e. $1.25 US).
+  5 bits (i.e. $0.625 US), and are amused to note that this
+  cannot be accurately represented to two decimal places.
+  (Thanks to Dan Flynn for the correction.)
 
   + The word "nickle" probably actually originates from the
   Germanic name "Nicholas", i.e. "Nick", as a short form of

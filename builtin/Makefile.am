@@ -14,9 +14,7 @@ libbuiltin_a_SOURCES =	builtin.h namespaces.h builtin.c \
 			string.c thread.c toplevel.c \
 			sockets.c # bsdrandom.c gcd.c
 
-builtin.c: ../gram.h
+$(libbuiltin_a_OBJECTS): builtin.h namespaces.h ../gram.h
 
 ../gram.h:
 	$(MAKE) -C .. gram.h
-
-$(libbuiltin_a_OBJECTS): builtin.h namespaces.h

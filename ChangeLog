@@ -1,5 +1,10 @@
 2004-11-15  Keith Packard  <keithp@keithp.com>
 
+	* compile.c: (CompileImplicitInit):
+	Implicitly initialize resizable arrays to zero-length array.
+
+2004-11-15  Keith Packard  <keithp@keithp.com>
+
 	* examples/Makefile.am:
 	* examples/apsp.5c:
 	* examples/comb.5c:

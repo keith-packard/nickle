@@ -1884,26 +1884,33 @@ CompileImplicitInit (Type *type)
     
     switch (type->base.tag) {
     case type_array:
-	if (type->array.dimensions && type->array.dimensions->tree.left)
+	if (type->array.dimensions)
 	{
-	    sub = type->array.type;
-	    init = CompileImplicitInit (sub);
-	    if (init)
+	    if (type->array.resizable)
 	    {
-		dim = CompileCountDeclDimensions (type->array.dimensions);
-		while (--dim >= 0)
-		{
-		    init = NewExprTree (ARRAY,
-					NewExprTree (COMMA,
-						     init,
-						     NewExprTree (COMMA,
-								  NewExprTree (DOTDOTDOT, 0, 0),
-								  0)),
-					0);
-		}
-	    }
-	    else
 		init = NewExprTree (ANONINIT, 0, 0);
+	    }
+	    else if (type->array.dimensions->tree.left)
+	    {
+		sub = type->array.type;
+		init = CompileImplicitInit (sub);
+		if (init)
+		{
+		    dim = CompileCountDeclDimensions (type->array.dimensions);
+		    while (--dim >= 0)
+		    {
+			init = NewExprTree (ARRAY,
+					    NewExprTree (COMMA,
+							 init,
+							 NewExprTree (COMMA,
+								      NewExprTree (DOTDOTDOT, 0, 0),
+								      0)),
+					    0);
+		    }
+		}
+		else
+		    init = NewExprTree (ANONINIT, 0, 0);
+	    }
 	}
 	break;
     case type_hash:

@@ -37,7 +37,7 @@ ScopeMark (void *object)
 DataType scopeType = { ScopeMark, 0 };
 
 ScopePtr
-NewScope (ScopePtr previous, ScopeType type)
+NewScope (ScopePtr previous)
 {
     ENTER ();
     ScopePtr	scope;
@@ -45,8 +45,6 @@ NewScope (ScopePtr previous, ScopeType type)
     scope = ALLOCATE (&scopeType, sizeof (Scope));
     scope->previous = previous;
     scope->symbols = 0;
-    scope->count = 0;
-    scope->type = type;
     scope->code = 0;
     RETURN (scope);
 }
@@ -81,29 +79,40 @@ ScopeInit (void)
 {
     ENTER ();
 
-    GlobalScope = NewScope (0, ScopeGlobal);
+    GlobalScope = NewScope (0);
     MemAddRoot (GlobalScope);
     EXIT ();
 }
 
 SymbolPtr
-ScopeFindSymbol (ScopePtr scope, Atom name, int *depth)
+ScopeLookupSymbol (ScopePtr scope, Atom name)
 {
     ScopeChainPtr   chain;
+    
+    for (chain = scope->symbols; chain; chain = chain->next)
+	if (chain->symbol->symbol.name == name)
+	    return chain->symbol;
+    return 0;
+}
+
+SymbolPtr
+ScopeFindSymbol (ScopePtr scope, Atom name, int *depth)
+{
     int		    d;
+    SymbolPtr	    s;
 
     d = 0;
     while (scope)
     {
-	for (chain = scope->symbols; chain; chain = chain->next)
-	    if (chain->symbol->symbol.name == name)
-	    {
-		*depth = d;
-		return chain->symbol;
-	    }
-	scope = scope->previous;
-	if (scope && scope->type == ScopeFrame)
+	s = ScopeLookupSymbol (scope, name);
+	if (s)
+	{
+	    *depth = d;
+	    return s;
+	}
+	if (scope->code)
 	    d++;
+	scope = scope->previous;
     }
     return 0;
 }
@@ -116,22 +125,27 @@ ScopeAddSymbol (ScopePtr scope, SymbolPtr symbol)
 
     chain = NewScopeChain (scope->symbols, symbol);
     scope->symbols = chain;
-    switch (symbol->symbol.class) {
-    case class_static:
-	if (scope->type != ScopeStatic)
+    /*
+     * For symbols hanging from a frame (statics, locals and args),
+     * locate the frame and set their element value
+     */
+    if (ClassFrame(symbol->symbol.class))
+    {
+	while (!scope->code)
+	    scope = scope->previous;
+	switch (symbol->symbol.class) {
+	case class_static:
+	    symbol->local.element = scope->code->func.staticc++;
 	    break;
-	symbol->local.element = scope->count;
-	scope->count++;
-	break;
-    case class_arg:
-    case class_auto:
-	if (scope->type != ScopeFrame)
+	case class_arg:
+	    symbol->local.element = scope->code->base.argc++;
 	    break;
-	symbol->local.element = scope->count;
-	scope->count++;
-	break;
-    default:
-	break;
+	case class_auto:
+	    symbol->local.element = scope->code->func.autoc++;
+	    break;
+	default:
+	    break;
+	}
     }
     RETURN (symbol);
 }
@@ -146,7 +160,6 @@ ScopeRemoveSymbol (ScopePtr scope, SymbolPtr symbol)
 	if ((*prev)->symbol == symbol)
 	{
 	    *prev = (*prev)->next;
-	    scope->count--;
 	    return True;
 	}
     }

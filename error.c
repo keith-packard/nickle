@@ -88,6 +88,9 @@ fprintClass (Value f, Class storage)
     case class_struct:
 	FilePuts (f, "struct");
 	break;
+    case class_scope:
+	FilePuts (f, "scope");
+	break;
     }
 }
 

@@ -105,10 +105,6 @@ extern SymbolPtr    NewSymbolAuto (Atom name, Type type);
 extern SymbolPtr    NewSymbolStruct (Atom name, StructType *type);
 extern SymbolPtr    NewSymbolScope (Atom name, ScopePtr scope);
 
-typedef enum _scopeType {
-    ScopeGlobal, ScopeStatic, ScopeFrame,
-} ScopeType;
-
 typedef struct _scopeChain {
     DataType	*data;
     struct _scopeChain	*next;
@@ -119,12 +115,11 @@ typedef struct _scope {
     DataType	*data;
     ScopePtr	previous;
     ScopeChainPtr   symbols;
-    ScopeType	type;
-    int		count;
     CodePtr	code;
 } Scope;
 
-extern ScopePtr	    NewScope (ScopePtr previous, ScopeType type);
+extern ScopePtr	    NewScope (ScopePtr previous);
+extern SymbolPtr    ScopeLookupSymbol (ScopePtr scope, Atom name);
 extern SymbolPtr    ScopeFindSymbol (ScopePtr scope, Atom name, int *depth);
 extern SymbolPtr    ScopeAddSymbol (ScopePtr scope, SymbolPtr symbol);
 extern Bool	    ScopeRemoveSymbol (ScopePtr scope, SymbolPtr symbol);
@@ -243,6 +238,7 @@ typedef struct _funcCode {
     ObjPtr	obj;
     int		staticc;
     ObjPtr	staticInit;
+    Bool	inStaticInit;
 } FuncCode, *FuncCodePtr;
 
 typedef union _builtinFunc {

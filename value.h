@@ -168,6 +168,9 @@ typedef enum _class {
     class_struct, class_scope, class_undef,
 } Class;
 
+#define ClassLocal(c)	((c) == class_arg || (c) == class_auto)
+#define ClassFrame(c)	((c) == class_static || ClassLocal(c))
+
 typedef struct _valueType   ValueType;
 
 typedef struct _box	*BoxPtr;

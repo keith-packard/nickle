@@ -116,28 +116,33 @@ ObjPtr	_CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope);
 ObjPtr	_CompileFuncCode (CodePtr code, ScopePtr scope, ExprPtr stat);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
+Class
+DefaultClass (ScopePtr scope)
+{
+    while (scope && !scope->code)
+	scope = scope->previous;
+    if (scope)
+	return class_auto;
+    return class_global;
+}
+
 SymbolPtr
 AddSymbol (ScopePtr scope, Atom name, Type defType)
 {
     ENTER ();
     SymbolPtr	s;
-    switch (scope->type) {
-    case ScopeGlobal:
-	s = NewSymbolGlobal (name, defType);
-	break;
-    case ScopeFrame:
+    
+    if (DefaultClass (scope) == class_auto)
 	s = NewSymbolAuto (name, defType);
-	break;
-    case ScopeStatic:
-	s = NewSymbolStatic (name, defType);
-	break;
-    }
+    else
+	s = NewSymbolGlobal (name, defType);
     ScopeAddSymbol (scope, s);
     RETURN (s);
 }
 
 SymbolPtr
-FindSymbol (ObjPtr obj, ExprPtr stat, ScopePtr scope, Atom name, int *depth, Type defType, Bool force)
+FindSymbol (ObjPtr obj, ExprPtr stat, ScopePtr scope, Atom name, 
+	    int *depth, Type defType, Bool createIfNecessary)
 {
     ENTER ();
     SymbolPtr   s;
@@ -145,10 +150,25 @@ FindSymbol (ObjPtr obj, ExprPtr stat, ScopePtr scope, Atom name, int *depth, Typ
     s = ScopeFindSymbol (scope, name, depth);
     if (!s)
     {
-	if (scope->type != ScopeGlobal && !force)
+	if (!createIfNecessary)
 	    CompileError (obj, stat, "No symbol \"%A\" in scope", name);
 	s = AddSymbol (scope, name, defType);
 	*depth = 0;
+    }
+    /*
+     * For args and autos, make sure we're not compiling a static
+     * initializer, in that case, the locals will not be in dynamic
+     * scope
+     */
+    if (ClassLocal (s->symbol.class))
+    {
+	while (scope && !scope->code)
+	    scope = scope->previous;
+	if (scope && scope->code->func.inStaticInit)
+	{
+	    CompileError (obj, stat, "Symbol \"%A\" not in initializer scope",
+			  name);
+	}
     }
     RETURN (s);
 }
@@ -179,7 +199,8 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     case NAME:
 	BuildInst(obj, OpNameRef, inst, stat);
 	inst->var.name = FindSymbol (obj, stat, scope, expr->atom.atom, 
-				     &inst->var.staticLink, type_undef, False);
+				     &inst->var.staticLink, type_undef,
+				     True);
 	if (inst->var.name->symbol.class == class_scope)
 	    CompileError (obj, stat, "Invalid use of scope \"%A\"",
 			  expr->atom.atom);
@@ -686,51 +707,13 @@ _PatchLoop (ObjPtr obj, int start, int continue_offset)
     }
 }
 
-SymbolPtr
-_MarkScope (ScopePtr scope, ScopeType type)
-{
-    while (scope && scope->type != type)
-	scope = scope->previous;
-    if (scope && scope->symbols)
-	return scope->symbols->symbol;
-    return 0;
-}
-
-void
-_ResetScope (ScopePtr scope, ScopeType type, SymbolPtr mark)
-{
-    ScopeChainPtr   chain;
-    CodePtr	    code;
-    
-    while (scope && scope->type != type)
-	scope = scope->previous;
-    if (scope)
-    {
-	code = 0;
-	if (scope->type == ScopeFrame)
-	    code = scope->code;
-	while ((chain = scope->symbols))
-	{
-	    if (chain->symbol == mark)
-		break;
-	    scope->symbols = chain->next;
-	    if (code)
-	    {
-		chain->next = code->func.locals->symbols;
-		code->func.locals->symbols = chain;
-	    }
-	}
-    }
-}
-
 ObjPtr
 _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 {
     ENTER ();
     int		top_inst, continue_inst, test_inst, middle_inst, bottom_inst;
     InstPtr	inst;
-    SymbolPtr	markFrame, markStatic, markGlobal;
-
+    SymbolPtr	sym;
     
     switch (expr->base.tag) {
     case IF:
@@ -846,17 +829,16 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 	_PatchLoop (obj, top_inst, continue_inst);
 	break;
     case OC:
-	markFrame = _MarkScope (scope, ScopeFrame);
-	markStatic = _MarkScope (scope, ScopeStatic);
-	markGlobal = _MarkScope (scope, ScopeGlobal);
+	/*
+	 * Create an anonymous scope
+	 */
+	scope = NewScope (scope);
 	while (expr->tree.left)
 	{
 	    obj = _CompileStat (obj, expr->tree.left, scope);
 	    expr = expr->tree.right;
 	}
-	_ResetScope (scope, ScopeFrame, markFrame);
-	_ResetScope (scope, ScopeStatic, markStatic);
-	_ResetScope (scope, ScopeGlobal, markGlobal);
+	scope->previous = 0;
 	break;
     case BREAK:
 	NewInst (middle_inst, obj);
@@ -889,12 +871,11 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 	/*
 	 * Make sure the symbol is defined in the current scope
 	 */
-	FindSymbol (obj, expr, scope, expr->tree.left->atom.atom,
-		    &top_inst, type_func, True);
+	sym = ScopeLookupSymbol (scope, expr->tree.left->atom.atom);
 	/* 
 	 * if declared in some enclosing scope, redeclare here
 	 */
-	if (top_inst != 0)
+	if (!sym)
 	    AddSymbol (scope, expr->tree.left->atom.atom, type_func);
 	obj = _CompileAssign (obj, expr, scope, OpAssign, expr);
 	break;
@@ -902,28 +883,28 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 	obj = _CompileDecl (obj, expr, scope);
 	break;
     case SCOPE:
-	scope = NewScope (scope, scope->type);
-	markGlobal = NewSymbolScope (expr->tree.left->atom.atom,
-				     scope);
+	scope = NewScope (scope);
+	sym = NewSymbolScope (expr->tree.left->atom.atom,
+			      scope);
 	expr = expr->tree.right;
 	while (expr->tree.left)
 	{
 	    obj = _CompileStat (obj, expr->tree.left, scope);
 	    expr = expr->tree.right;
 	}
-	ScopeAddSymbol (scope->previous, markGlobal);
+	ScopeAddSymbol (scope->previous, sym);
 	scope->previous = 0;
 	break;
     case IMPORT:
-	markGlobal = FindSymbol (obj, expr, scope,
-				 expr->tree.left->atom.atom,
-				 &top_inst, type_undef, False);
-	if (markGlobal && markGlobal->symbol.class == class_scope)
+	sym = FindSymbol (obj, expr, scope,
+			  expr->tree.left->atom.atom,
+			  &top_inst, type_undef, False);
+	if (sym && sym->symbol.class == class_scope)
 	{
-	    markGlobal->scope.scope->previous = scope;
+	    sym->scope.scope->previous = scope;
 	    obj = _CompileStat (obj, expr->tree.right,
-				markGlobal->scope.scope);
-	    markGlobal->scope.scope->previous = 0;
+				sym->scope.scope);
+	    sym->scope.scope->previous = 0;
 	}
 	break;
     }
@@ -953,36 +934,23 @@ _CompileFunc (ObjPtr obj, CodePtr code, ScopePtr scope, ExprPtr stat)
     ENTER ();
     InstPtr	    inst;
     SymbolPtr	    local;
-    ScopePtr	    statics;
-    ScopePtr	    frames;
     ExprPtr	    args;
     DeclListPtr	    argd;
     ObjPtr	    staticInit;
 
-    code->func.locals = NewScope (scope, ScopeFrame);
-    statics = NewScope (scope, ScopeStatic);
-    statics->code = code;
-    frames = NewScope (statics, ScopeFrame);
-    frames->code = code;
+    scope = NewScope (scope);
+    scope->code = code;
+    code->func.locals = scope;
     for (args = code->func.args; args; args = args->tree.right)
     {
 	for (argd = args->tree.left->decl.decl; argd; argd = argd->next)
 	{
 	    local = NewSymbolArg (argd->name, 
 				  args->tree.left->decl.type);
-	    ScopeAddSymbol (frames, local);
+	    ScopeAddSymbol (scope, local);
 	}
     }
-    code->base.argc = frames->count;
-    code->func.obj = _CompileFuncCode (code, frames, stat);
-    code->func.autoc = frames->count - code->base.argc;
-    code->func.staticc = statics->count;
-    /*
-     * Empty the scope, moving all remaining variables into the code
-     * structure
-     */
-    _ResetScope (statics, ScopeStatic, 0);
-    _ResetScope (frames, ScopeFrame, 0);
+    code->func.obj = _CompileFuncCode (code, scope, stat);
     BuildInst (obj, OpObj, inst, stat);
     inst->code.code = code;
     if ((staticInit = code->func.staticInit))
@@ -1008,26 +976,13 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
     SymbolPtr	    s;
     DeclListPtr	    decl;
     Class	    class;
+    ScopePtr	    code_scope;
     ScopePtr	    compile_scope;
-    ScopePtr	    lifetime_scope;
     ObjPtr	    *initObj;
     
     class = decls->decl.class;
     if (class == class_undef)
-    {
-	switch (scope->type) {
-	case ScopeGlobal:
-	    class = class_global;
-	    break;
-	case ScopeStatic:
-	    class = class_static;
-	    break;
-	case ScopeFrame:
-	    class = class_auto;
-	    break;
-	}
-    }
-    lifetime_scope = scope;
+	class = DefaultClass (scope);
     compile_scope = 0;
     switch (class) {
     case class_global:
@@ -1035,30 +990,34 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
 	 * Globals are compiled in the static initializer for
 	 * the outermost enclosing function.
 	 */
-	while (lifetime_scope && lifetime_scope->type != ScopeGlobal)
-	{
-	    compile_scope = lifetime_scope;
-	    lifetime_scope = lifetime_scope->previous;
-	}
+	for (code_scope = scope; code_scope; code_scope = code_scope->previous)
+	    if (code_scope->code)
+		compile_scope = code_scope;
 	break;
     case class_static:
 	/*
 	 * Statics are compiled in the static initializer for
-	 * the enclosing static scope
+	 * the nearest enclosing function
 	 */
-	while (lifetime_scope && lifetime_scope->type != ScopeStatic)
-	    lifetime_scope = lifetime_scope->previous;
-	compile_scope = lifetime_scope;
+	for (code_scope = scope; code_scope; code_scope = code_scope->previous)
+	    if (code_scope->code)
+		break;
+	compile_scope = code_scope;
 	break;
     case class_auto:
     case class_arg:
-	while (lifetime_scope && lifetime_scope->type != ScopeFrame)
-	    lifetime_scope = lifetime_scope->previous;
+	/*
+	 * Autos are compiled where they lie; just make sure a function
+	 * exists somewhere to hang them from
+	 */
+	for (code_scope = scope; code_scope; code_scope = code_scope->previous)
+	    if (code_scope->code)
+		break;
 	break;
     default:
 	break;
     }
-    if (!lifetime_scope)
+    if (ClassFrame (class) && !code_scope)
     {
 	CompileError (obj, decls, "Invalid storage class %C", class);
 	RETURN (obj);
@@ -1090,20 +1049,24 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
 		if (!code->func.staticInit)
 		    code->func.staticInit = NewObj (OBJ_INCR);
 		initObj = &code->func.staticInit;
+		code->func.inStaticInit = True;
 	    }
 	    *initObj = _CompileExpr (*initObj, decl->init, 
-				     lifetime_scope, decls);
+				     scope, decls);
+	    if (compile_scope && compile_scope->code)
+	    {
+		CodePtr	code = compile_scope->code;
+		code->func.inStaticInit = False;
+	    }
 	    SetPush (*initObj);
 	}
 	ScopeAddSymbol (scope, s);
-	if (lifetime_scope != scope)
-	    ScopeAddSymbol (lifetime_scope, s);
 	if (decl->init)
 	{
 	    InstPtr inst;
 	    
 	    *initObj = _CompileLvalue (*initObj, NewExprAtom (decl->name),
-				       lifetime_scope, decls);
+				       scope, decls);
 	    BuildInst (*initObj, OpAssign, inst, decls);
 	}
     }

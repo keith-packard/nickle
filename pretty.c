@@ -495,6 +495,20 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	printindent (f, level);
 	printDecl (f, e, level, nest);
 	break;
+    case SCOPE:
+	printindent (f, level);
+	FilePuts (f, "scope ");
+	printExpr (f, e->tree.left, -1, level, nest);
+	FilePuts (f, "\n");
+	printStatement (f, e->tree.right, level + 1, level, nest);
+	break;
+    case IMPORT:
+	printindent (f, level);
+	FilePuts (f, "import ");
+	printExpr (f, e->tree.left, -1, level, nest);
+	FilePuts (f, "\n");
+	printStatement (f, e->tree.right, level + 1, level, nest);
+	break;
     }
 }
 

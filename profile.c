@@ -10,6 +10,8 @@
 #include	<sys/time.h>
 #include	<assert.h>
 
+#define TICK_MS	10
+
 volatile static unsigned long	currentTick;
 volatile Bool			signalProfile;
 static unsigned long		previousTick;
@@ -19,19 +21,22 @@ static RETSIGTYPE
 sigprofile (int sig)
 {
     resetSignal (SIGVTALRM, sigprofile);
-    currentTick++;
+    currentTick += TICK_MS;
     SetSignalProfile ();
 }
 
 void
 ProfileInterrupt (Value thread)
 {
-    unsigned long   ticks = currentTick - previousTick;
+    unsigned long   now;
+    unsigned long   ticks;
     InstPtr	    pc;
     ExprPtr	    stat;
     FramePtr	    frame;
     
-    previousTick = 0;
+    now = currentTick;
+    ticks = now - previousTick;
+    previousTick = now;
     if (!thread)
 	return;
     pc = thread->thread.continuation.pc;
@@ -60,10 +65,10 @@ do_profile (Value on)
 	
     if (True (on))
     {
-	currentTick = previousTick = 0;
+	previousTick = currentTick;
 	catchSignal (SIGVTALRM, sigprofile);
 	v.it_interval.tv_sec = 0;
-	v.it_interval.tv_usec = 10000;
+	v.it_interval.tv_usec = TICK_MS * 1000;
 	v.it_value = v.it_interval;
 	setitimer (ITIMER_VIRTUAL, &v, 0);
 	profiling = True;

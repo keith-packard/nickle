@@ -894,7 +894,7 @@ doPrettyPrint (Value f, Publish publish, SymbolPtr symbol, int level, Bool nest)
     if (!symbol)
 	return;
     if (profiling)
-	FilePuts (f, "    called       self\n");
+	FilePuts (f, "    called(ms)   self(ms)\n");
     PrettyIndent (f, 0, level, 0);
     switch (symbol->symbol.class) {
     case class_const:

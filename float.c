@@ -941,6 +941,9 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	    frac_wrote++;
 	}
 	*--frac_string = '.';
+	if (orig_prec < 0)
+	    while (frac_buffer[frac_width-1] == '0')
+		frac_buffer[--frac_width] = '\0';
     }
     else
 	frac_width = 0;

@@ -1,5 +1,10 @@
 2004-12-16  Keith Packard  <keithp@keithp.com>
 
+	* float.c: (FloatPrint):
+	Trim '0's from floating point when no precision is specified
+
+2004-12-16  Keith Packard  <keithp@keithp.com>
+
 	* builtin.c: (BuiltinSetUserdefType), (BuiltinType):
 	* builtin.h:
 	Add support for up to 100 user-defined types for builtin functions

@@ -748,10 +748,7 @@ opt_init	: ASSIGN simpleexpr
 		    { $$ = $2; }
 		| ASSIGN init
 		    { 
-			if (!$2)
-			    $$ = NewExprTree (NEW, 0, 0);
-			else
-			    $$ = $2;
+			$$ = NewExprTree (NEW, $2, 0);
 		    }
 		|
 		    { $$ = 0; }
@@ -1027,12 +1024,6 @@ expr		: comma_expr
 			{
 			    if (decl->init)
 			    {
-				if (decl->init->base.tag == STRUCT ||
-				    decl->init->base.tag == ARRAY ||
-				    decl->init->base.tag == COMP)
-				{
-				    decl->init = NewExprTree (NEW, decl->init, 0);
-				}
 				if (!decl->init->base.type)
 				    decl->init->base.type = $1.type;
 			    }

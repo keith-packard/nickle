@@ -383,6 +383,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  s->symbol.class, expr->atom.atom);
 	
+	    expr->base.type = typesPoly;
 	    break;
 	}
 	if (assign)
@@ -402,6 +403,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	if (!s)
 	{
 	    CompileError (obj, stat, "Object left of ':' is not a namespace");
+	    expr->base.type = typesPoly;
 	    break;
 	}
 	obj = CompileLvalue (obj, expr->tree.right,
@@ -418,6 +420,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	    CompileError (obj, stat, "Object left of '.' is not a struct or union containing \"%A\"",
 			  expr->tree.right->atom.atom);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	if (assign)
 	{
@@ -439,6 +442,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	    CompileError (obj, stat, "Object left of '->' is not a struct or union containing \"%A\"",
 			  expr->tree.right->atom.atom);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	if (assign)
 	{
@@ -462,6 +466,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	    CompileError (obj, stat, "Incompatible type '%T' in array operation",
 			  expr->tree.left->base.type, ndim);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	if (assign)
 	{
@@ -481,10 +486,12 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	    CompileError (obj, stat, "Incompatible type '%T' in unary operation",
 			  expr->tree.left->base.type);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	break;
     default:
 	CompileError (obj, stat, "Invalid lvalue");
+        expr->base.type = typesPoly;
 	break;
     }
     RETURN (obj);
@@ -1135,6 +1142,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  s->symbol.class, expr->atom.atom);
 	
+	    expr->base.type = typesPoly;
 	    break;
 	}
 	inst->var.name = s;
@@ -1289,6 +1297,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    CompileError (obj, stat, "Type '%T' is not a %d dimensional array or string",
 			  expr->tree.left->base.type, ndim);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	BuildInst (obj, OpArray, inst, stat);
 	inst->ints.value = ndim;
@@ -1301,6 +1310,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	if (!s)
 	{
 	    CompileError (obj, stat, "Object left of ':' is not a namespace");
+	    expr->base.type = typesPoly;
 	    break;
 	}
 	obj = _CompileExpr (obj, expr->tree.right,
@@ -1318,6 +1328,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 			  expr->tree.left->base.type,
 			  expr->tree.left->atom.atom);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	BuildInst (obj, OpDot, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
@@ -1333,6 +1344,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 			  expr->tree.left->base.type,
 			  expr->tree.right->atom.atom);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	BuildInst (obj, OpArrow, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
@@ -1351,6 +1363,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    CompileError (obj, stat, "Type '%T' cannot be an l-value",
 			  expr->tree.left->base.type);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	break;
     case UMINUS:    obj = CompileUnary (obj, expr, namespace, OpUminus, stat); break;
@@ -1380,6 +1393,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	break;
     case DEC:
@@ -1405,6 +1419,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	break;
     case PLUS:	    obj = CompileBinary (obj, expr, namespace, OpPlus, stat); break;
@@ -1429,6 +1444,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	BuildInst (obj, OpCall, inst, stat);
 	inst->ints.value = 2;
@@ -1464,6 +1480,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 			  expr->tree.right->tree.left->base.type,
 			  expr->tree.right->tree.right->base.type);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
@@ -1493,6 +1510,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
@@ -1519,6 +1537,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
@@ -1545,6 +1564,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
 	    expr->base.type = typesPoly;
+	    break;
 	}
 	BuildInst (obj, OpCall, inst, stat);
 	inst->ints.value = 2;

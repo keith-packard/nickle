@@ -52,7 +52,7 @@ namespace PRNG {
     int na = dim(a);
     for (int i = 0; i < na - 1; i++) {
       int j = randint(na - i) + i;
-      int tmp = a[i];
+      poly tmp = a[i];
       a[i] = a[j];
       a[j] = tmp;
     }

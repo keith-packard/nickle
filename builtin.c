@@ -247,6 +247,7 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_Debug_dump,	    "dump",		    "i",    "p",    &DebugNamespace },
     { do_Command_delete,    "delete",		    "i",    "s",    &CommandNamespace },
     { do_Command_push_input,"push_input",	    "i",    "s",    &CommandNamespace },
+    { do_Command_push_string,"push_string",	    "i",    "s",    &CommandNamespace },
     { do_Command_edit,	    "edit",		    "i",    "A*s",  &CommandNamespace },
     { 0,		    0 },
 };
@@ -1868,6 +1869,15 @@ do_Command_push_input (Value name)
     ENTER ();
 
     pushinput (StringChars (&name->string), True);
+    RETURN (One);
+}
+
+Value
+do_Command_push_string (Value name)
+{
+    ENTER ();
+
+    pushstring (StringChars (&name->string));
     RETURN (One);
 }
 

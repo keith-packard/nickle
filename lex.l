@@ -154,6 +154,15 @@ pushinput (char *s, Bool complain)
     return True;
 }
 
+void
+pushstring (char *s)
+{
+    Value   f;
+
+    f = FileStringRead (s, strlen (s));
+    lexInput = NewLexInput (lexInput, f, AtomId ("<string>"));
+}
+
 int
 popinput (void)
 {

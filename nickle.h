@@ -538,6 +538,7 @@ int	yywrap (void);
 void	yyerror (char *fmt, ...);
 int	yylex (void);
 Bool	pushinput (char *, Bool);
+void	pushstring (char *);
 void	yyprompt (void);
 Value	atov (char *, int), aetov (char *);
 extern int  ignorenl;
@@ -678,6 +679,7 @@ Value	do_Primitive_srandom (Value);
 Value	do_Debug_dump (Value);
 Value	do_Command_delete (Value);
 Value	do_Command_push_input (Value);
+Value	do_Command_push_string (Value);
 Value	do_Command_edit (Value);
 
 /* two argument builtins */

@@ -91,19 +91,40 @@ main (int argc, char **argv)
     (void) catchSignal (SIGTTOU, stop);
     stdin_interactive = isatty(0);
     init ();
-    lexstdin ();
     try_nicklelib();
     if (argc > 1)
     {
-	setArgv (argc - 1, argv + 1);
-	if (!lexfile (argv[1]))
+	if (!strcmp (argv[1], "-e"))
 	{
-	    IoFini ();
-	    return 1;
+	    Value   s;
+	    int	    i;
+
+	    ENTER ();
+	    s = NewString (0);
+	    for (i = 2; i < argc; i++)
+	    {
+		s = Plus (s, NewStrString (argv[i]));
+		if (i != argc-1)
+		    s = Plus (s, NewStrString (" "));
+	    }
+	    pushstring (StringChars (&s->string));
+	    EXIT ();
+	}
+	else
+	{
+	    setArgv (argc - 1, argv + 1);
+	    if (!lexfile (argv[1]))
+	    {
+		IoFini ();
+		return 1;
+	    }
 	}
     }
     else
+    {
 	try_nicklerc();
+	lexstdin ();
+    }
     (void) yyparse ();
     IoFini ();
     return 0;

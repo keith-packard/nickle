@@ -1,0 +1,29 @@
+/* Miller-Rabin test from Corwin/Rivest/Leiserson */
+int function witnessexp(int b, int e, int m) {
+  if (e == 0)
+    return -1;
+  if (e == 1)
+    return b % m;
+  int res = witnessexp(b, e // 2, m);
+  if (res == -1)
+    return res;
+  int t = (res * res) % m;
+  if (t == 1 && res != 1 && res != m - 1)
+    return -1;
+  if (e % 2 == 0)
+    return t;
+  return (t * b) % m;
+}
+
+/* Note that rather than trying random
+   bases, we try *all* bases[*]... */
+/* ([*] Don't even think it.) */
+public int function composite(int n) {
+  for (int j = 0; j < n - 1; j++) {
+    if (witnessexp(j + 1, n - 1, n) != 1)
+      return j + 1;
+  }
+  return 0;
+}
+
+composite(39157)

@@ -1,0 +1,5 @@
+int function choose(int n, int r) {
+  return (n! // (r! * (n - r)!));
+}
+
+choose(20000,5000)

@@ -1,0 +1,15 @@
+define ifact(n) {
+  auto f;
+  f = 1;
+  while(n >= 2) {
+    f *= n;
+    n -= 1;
+  }
+  return (f);
+}
+
+define choose(n, r) {
+  return (ifact(n) / (ifact(r) * ifact(n - r)));
+}
+
+choose(20000, 5000)

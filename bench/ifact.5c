@@ -1,0 +1,10 @@
+int function ifact(int n) {
+  int f = 1;
+  while(n >= 2) {
+    f *= n;
+    --n;
+  }
+  return f;
+}
+
+ifact(20000)

@@ -2308,7 +2308,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	 * which fully specify the storage
 	 */
 	init = decl->init;
-	if (!init)
+	if (!init && s)
 	    init = CompileCompositeImplicitInit (s->symbol.type);
 	if (init)
 	{

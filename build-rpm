@@ -1,8 +1,15 @@
 #!/bin/sh
 VERSION=`egrep AM_INIT_AUTOMAKE configure.in | sed -e 's/^.*,//' -e 's/).*$//'`
 echo "Building nickle $VERSION RPM..." >&2
-cvs export -D now -d nickle-$VERSION nickle
+cvs -r export -D now -d nickle-$VERSION nickle
 (cd nickle-$VERSION && sh ./autoconfigure.sh)
-tar cIf /usr/src/redhat/SOURCES/nickle-$VERSION.tar.bz2 nickle-$VERSION
-sed "s/VERSION/$VERSION/g" < nickle.spec > nickle-$VERSION/nickle.spec
-rpm -bb nickle-$VERSION/nickle.spec
+chmod +w nickle-$VERSION/nickle.spec
+ed nickle-$VERSION/nickle.spec << EOF
+g/VERSION/s/VERSION/$VERSION/
+w
+q
+EOF
+chmod -w nickle-$VERSION/nickle.spec
+tar cf - nickle-$VERSION | bzip2 > nickle-$VERSION.tar.gz 
+rm -rf nickle-$VERSION
+rpm -ta --clean nickle-$VERSION.tar.bz2

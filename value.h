@@ -21,6 +21,7 @@
 #include	<memory.h>
 #include	<string.h>
 #include	<signal.h>
+#include	<assert.h>
 #include	"mem.h"
 #include	"opcode.h"
 
@@ -580,10 +581,13 @@ typedef struct _ref {
     int		element;
 } Ref;
 
-#define RefValueSet(r,v)    BoxValueSet((r)->ref.box, (r)->ref.element, (v))
-#define RefValue(r)	    BoxValue((r)->ref.box, (r)->ref.element)
-#define RefValueGet(r)	    BoxValueGet((r)->ref.box, (r)->ref.element)
-#define RefType(r)	    BoxType((r)->ref.box, (r)->ref.element)
+int  RefRewrite (Value r);
+
+#define RefCheck(r)	    ((r)->ref.box->replace ? RefRewrite(r) : 0)
+#define RefValueSet(r,v)    (RefCheck (r), BoxValueSet((r)->ref.box, (r)->ref.element, (v)))
+#define RefValue(r)	    (RefCheck (r), BoxValue((r)->ref.box, (r)->ref.element))
+#define RefValueGet(r)	    (RefCheck (r), BoxValueGet((r)->ref.box, (r)->ref.element))
+#define RefType(r)	    (RefCheck (r), BoxType((r)->ref.box, (r)->ref.element))
 #define RefConstant(r)	    BoxConstant((r)->ref.box, (r)->ref.element)
 
 typedef struct _structType {
@@ -748,27 +752,43 @@ struct _valueType {
     Hash	hash;
 };
 
+typedef struct _boxReplace {
+    DataType	    *data;
+    BoxPtr	    new;
+    int		    oldstride;
+    int		    newstride;
+} BoxReplace, *BoxReplacePtr;
+
 typedef struct _box {
     DataType	    *data;
     unsigned long   constant : 1;
-    unsigned long   array : 1;
     unsigned long   homogeneous : 1;
+    unsigned long   replace : 1;
     unsigned long   nvalues : 29;
     union {
 	BoxTypesPtr	    types;
 	TypePtr		    type;
+	BoxReplacePtr	    replace;
     } u;
 } Box;
 
-#define BoxElements(box)	((Value *) ((box) + 1))
+#if 1
+#define BoxCheck(box)		assert (!(box)->replace),
+#else
+#define BoxCheck(box)
+#endif
+#define BoxElements(box)	(BoxCheck (box) ((Value *) ((box) + 1)))
 #define BoxValueSet(box,e,v)	((BoxElements(box)[e]) = (v))
 #define BoxValueGet(box,e)	((BoxElements(box)[e]))
 #define BoxConstant(box,e)	((box)->constant)
-#define BoxType(box,e)		((box)->homogeneous ? (box)->u.type : \
-				 BoxTypesValue((box)->u.types, e))
+#define BoxReplace(box)		((box)->replace)
+#define BoxType(box,e)		(BoxCheck (box) ((box)->homogeneous ? (box)->u.type : \
+				 BoxTypesValue((box)->u.types, e)))
 				 
 extern BoxPtr	NewBox (Bool constant, Bool array, int nvalues, TypePtr type);
 extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr types);
+void		BoxSetReplace (BoxPtr old, BoxPtr new, int oldstride, int newstride);
+BoxPtr		BoxRewrite (BoxPtr box, int *ep);
 			     
 typedef struct {
     DataType	*data;

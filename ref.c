@@ -33,7 +33,7 @@ RefPlus (Value av, Value bv, int expandOk)
 	RETURN (Void);
     i = i + ref->element;
     if (i < 0 || i >= ref->box->nvalues ||
-	(!ref->box->array && i != ref->element))
+	(!ref->box->homogeneous && i != ref->element))
     {
 	RaiseStandardException (exception_invalid_array_bounds,
 				"Element out of range in reference addition",
@@ -79,7 +79,7 @@ RefMinus (Value av, Value bv, int expandOk)
 	RETURN (NewInt (ref->element - bref->element));
     }
     i = i + element;
-    if (i < 0 || i >= ref->box->nvalues || (!ref->box->array && i != ref->element))
+    if (i < 0 || i >= ref->box->nvalues || (!ref->box->homogeneous && i != ref->element))
     {
 	RaiseStandardException (exception_invalid_array_bounds,
 				"Element out of range in reference subtraction",
@@ -95,7 +95,7 @@ RefLess (Value av, Value bv, int expandOk)
     Ref	*aref = &av->ref, *bref = &bv->ref;
 
     if (aref->box != bref->box || 
-	(!aref->box->array && aref->element != bref->element))
+	(!aref->box->homogeneous && aref->element != bref->element))
     {
 	RaiseError ("Attempt to order references to different objects %v < %v",
 		    av, bv);
@@ -146,13 +146,14 @@ RefPrint (Value f, Value av, char format, int base, int width, int prec, int fil
     FileOutput (f, '&');
     return Print (f, RefValueGet (av), format, base, width ? width - 1 : 0, prec, fill);
 }
-
     
 static void
 RefMark (void *object)
 {
     Ref	*ref = object;
 
+    if (ref->box->replace)
+	ref->box = BoxRewrite (ref->box, &ref->element);
     MemReference (ref->box);
 }
 
@@ -212,6 +213,17 @@ NewRef (BoxPtr box, int element)
     return NewRefReal (box, element, re);
 }
 #endif
+
+int
+RefRewrite (Value rv)
+{
+    Ref	    *ref= &rv->ref;
+    BoxPtr  box = ref->box;
+
+    if (box->replace)
+	ref->box = BoxRewrite (box, &ref->element);
+    return 0;
+}
 
 int
 RefInit (void)

@@ -16,7 +16,9 @@ BoxMark (void *object)
     int		i;
 
     elements = BoxElements(box);
-    if (box->homogeneous)
+    if (box->replace)
+	MemReference (box->u.replace);
+    else if (box->homogeneous)
 	MemReference (box->u.type);
     else
 	MemReference (box->u.types);
@@ -35,7 +37,7 @@ NewBox (Bool constant, Bool array, int nvalues, TypePtr type)
 
     box = ALLOCATE (&BoxType, sizeof (Box) + nvalues * sizeof (Value));
     box->constant = constant;
-    box->array = array;
+/*    box->array = array; */
     box->homogeneous = True;
     box->u.type = type;
     box->nvalues = nvalues;
@@ -53,7 +55,7 @@ NewTypedBox (Bool array, BoxTypesPtr bt)
 
     box = ALLOCATE (&BoxType, sizeof (Box) + bt->count * sizeof (Value));
     box->constant = False;
-    box->array = array;
+/*    box->array = array; */
     box->homogeneous = False;
     box->u.types = bt;
     box->nvalues = bt->count;
@@ -75,6 +77,48 @@ BoxValue (BoxPtr box, int e)
     return (BoxElements(box)[e].value);
 }
 #endif
+
+static void
+MarkBoxReplace (void *object)
+{
+    BoxReplacePtr   replace = object;
+
+    MemReference (replace->new);
+}
+
+DataType    BoxReplaceType = { MarkBoxReplace, 0, "BoxReplaceType" };
+
+void
+BoxSetReplace (BoxPtr old, BoxPtr new, int oldstride, int newstride)
+{
+    ENTER ();
+    BoxReplacePtr   r = ALLOCATE (&BoxReplaceType, sizeof (BoxReplace));
+    r->new = new;
+    r->oldstride = oldstride;
+    r->newstride = newstride;
+    old->replace = True;
+    old->u.replace = r;
+    EXIT ();
+}
+
+BoxPtr
+BoxRewrite (BoxPtr box, int *ep)
+{
+    int	e = *ep;
+    
+    while (box->replace)
+    {
+	BoxReplacePtr	r = box->u.replace;
+	int		chunk, off;
+
+	chunk = e / r->oldstride;
+	off = e % r->oldstride;
+	e = chunk * r->newstride + off;
+	box = r->new;
+    }
+    *ep = e;
+    return box;
+}
 
 static void MarkBoxTypes (void *object)
 {

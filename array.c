@@ -280,6 +280,7 @@ ArrayResize (Value av, int dim, int size)
 	    memset (n, '\0', chunk_zero * sizeof (Value));
 	    n += chunk_zero;
 	}
+	BoxSetReplace (a->values, nbox, chunk_size, chunk_skip);
 	a->values = nbox;
 	a->ents = ents;
 	dims[dim] = odim;

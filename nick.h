@@ -350,7 +350,6 @@ ObjPtr	CompileStat (ExprPtr expr, ScopePtr scope);
 ObjPtr	CompileExpr (ExprPtr expr, ScopePtr scope);
 
 Value	    NewThread (FramePtr frame, ObjPtr code);
-ThreadState ThreadStep (Value thread);
 void	    ThreadSleep (Value thread, Value sleep, int priority);
 void	    ThreadStepped (Value thread);
 void	    ThreadsWakeup (Value sleep);

@@ -114,7 +114,7 @@ int	totalObjectsUsed;
 int	useMap[NUMSIZES+1];
 
 
-static void *
+static INLINE void *
 newHunk (int sizeIndex)
 {
     register char	*new;
@@ -169,7 +169,7 @@ gotsome:
     return new;
 }
 
-static int
+static INLINE int
 sizeToIndex (int size)
 {
     int	sizeIndex;
@@ -183,7 +183,7 @@ sizeToIndex (int size)
 /*
  * take care of giant requests
  */
-static void *
+static INLINE void *
 newHuge (int size)
 {
     struct block	*huge;
@@ -206,7 +206,7 @@ newHuge (int size)
     return huge->data;
 }
 
-static void *
+static INLINE void *
 newObject (int size)
 {
     int	sizeIndex;
@@ -241,7 +241,7 @@ allocBlock (void)
     return malloc ((unsigned) BLOCKSIZE);
 }
 
-static void
+static INLINE void
 disposeBlock (struct block *b)
 {
     free ((char *) b);

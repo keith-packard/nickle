@@ -36,6 +36,8 @@ Bool	complete;
 Bool	abortFinished;	    /* current thread is finished */
 Bool	abortSuspend;	    /* current thread is suspending */
 
+static ThreadState ThreadStep (Value thread);
+
 FramePtr
 BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
 {
@@ -299,7 +301,7 @@ ThreadArrayIndex (Value thread, int ndim)
     return i;
 }
 
-ThreadState
+static INLINE ThreadState
 ThreadStep (Value thread)
 {
     ENTER ();
@@ -649,7 +651,8 @@ ThreadStep (Value thread)
 	if (inst->base.push)
 	    STACK_PUSH (thread->thread.stack, value);
 	thread->thread.pc = next;
-	ThreadStepped (thread);
+	if (thread == running && thread->thread.priority > PriorityMin)
+	    ThreadStepped (thread);
     }
     else
     {

@@ -1255,7 +1255,7 @@ CompileInit (ObjPtr obj, ExprPtr expr, Type *type,
 
     switch (type->base.tag) {
     case type_array:
-	if (!expr || expr->base.tag == ARRAY)
+	if (!expr || expr->base.tag == ARRAY || expr->base.tag == COMP)
 	    return CompileArrayInit (obj, expr, type, stat, code);
 	break;
     case type_struct:
@@ -1267,6 +1267,7 @@ CompileInit (ObjPtr obj, ExprPtr expr, Type *type,
     }
     switch (expr->base.tag) {
     case ARRAY:
+    case COMP:
 	CompileError (obj, stat, "Array initializer for '%T'", type);
 	break;
     case STRUCT:
@@ -1368,6 +1369,13 @@ CompileComprehension (ObjPtr	obj,
      * Convert a single expression into a block containing a 
      * return statement
      */
+    switch (body->base.tag) {
+    case ARRAY:
+    case STRUCT:
+	body = NewExprTree (NEW, body, 0);
+	body->base.type = type;
+	break;
+    }
     if (body->base.tag != OC)
 	body = NewExprTree (OC,
 			    NewExprTree (RETURNTOK, 0, body),

@@ -1306,7 +1306,7 @@ arrayinit    	: OC opt_arrayelts opt_comma opt_dots CC
 			$$ = NewExprTree (COMP, NewExprTree (COMP, $4, $5), $7);
 		    }
 		;
-comprehension	:   ASSIGN expr
+comprehension	:   ASSIGN arrayelt
 		    { $$ = $2; }
 		|   block
 		;

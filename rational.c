@@ -41,15 +41,17 @@ RationalPlusHelper (Sign sign, Rational *a, Rational *b)
 }
 
 static Value
-RationalMinusHelper (Sign sign, Rational *a, Rational *b)
+RationalMinusHelper (Rational *a, Rational *b)
 {
     ENTER ();
     Natural	*ra, *rb, *t;
+    Sign	sign = Positive;
 
     ra = NaturalTimes (a->num, b->den);
     rb = NaturalTimes (b->num, a->den);
-    if (NaturalLess (ra, rb)) {
-	sign = SignNegate (sign);
+    if (NaturalLess (ra, rb)) 
+    {
+	sign = Negative;
 	t = ra;
 	ra = rb;
 	rb = t;
@@ -72,10 +74,10 @@ RationalPlus (Value av, Value bv, int expandOk)
 	ret = RationalPlusHelper (a->sign, a, b);
 	break;
     case FirstPositive:
-	ret = RationalMinusHelper (a->sign, a, b);
+	ret = RationalMinusHelper (a, b);
 	break;
     case SecondPositive:
-	ret = RationalMinusHelper (b->sign, b, a);
+	ret = RationalMinusHelper (b, a);
 	break;
     }
     RETURN (ret);
@@ -90,7 +92,7 @@ RationalMinus (Value av, Value bv, int expandOk)
 
     switch (catagorize_signs(a->sign, b->sign)) {
     case BothPositive:
-	ret = RationalMinusHelper (a->sign, a, b);
+	ret = RationalMinusHelper (a, b);
 	break;
     case FirstPositive:
     case SecondPositive:
@@ -98,7 +100,7 @@ RationalMinus (Value av, Value bv, int expandOk)
 	ret = RationalPlusHelper (a->sign, a, b);
 	break;
     case BothNegative:
-	ret = RationalMinusHelper (b->sign, b, a);
+	ret = RationalMinusHelper (b, a);
 	break;
     }
     RETURN (ret);

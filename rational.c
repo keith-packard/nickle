@@ -828,7 +828,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 		int	    ev;
 		rv = RationalTimes (rv, NewRational (Positive, mag, one_natural), True);
 		r = &rv->rational;
-		exponent_width = 2;
+		exponent_width = 3;
 		ev = exponent;
 		while (ev >= base)
 		{
@@ -844,8 +844,6 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 	    exponent = 0;
     }
     CheckDecimalLength (prec, r->den, base, &initial_width, &repeat_width);
-    if (initial_width > 0)
-	initial_width = initial_width - exponent;
     if (aborting)
     {
 	EXIT ();

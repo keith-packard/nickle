@@ -835,9 +835,16 @@ extend namespace Math {
 	    if (flip != 0)
 		result = 1/result;
 	}
-	else
-	{
+	else switch (b) {
+	case .5:
+	    result = sqrt (a);
+	    break;
+	case 1/3:
+	    result = cbrt (a);
+	    break;
+	default:
 	    result = exp (b * log(a));
+	    break;
 	}
 	return result;
     }

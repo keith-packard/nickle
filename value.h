@@ -68,6 +68,7 @@ typedef struct _AtomList {
 #else
 # define BASE		((double_digit) 65536)
 # define LBASE2	16
+# define LLBASE2	4
 # define DIGITBITS	16
 #endif
 

@@ -211,6 +211,7 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_denominator,	    "denominator",	    "i",    "R"	    },
     { do_precision,	    "precision",	    "i",    "R"	    },
     { do_sign,		    "sign",		    "i",    "R"	    },
+    { do_bit_width,	    "bit_width",	    "i",    "i"	    },
     { do_is_int,	    "is_int",		    "i",    "p"	    },
     { do_is_rational,	    "is_rational",	    "i",    "p"	    },
     { do_is_number,	    "is_number",	    "i",    "p"	    },
@@ -1609,6 +1610,56 @@ do_denominator (Value av)
     default:
 	RaiseStandardException (exception_invalid_argument,
 				"denominator: argument must be precise",
+				2, NewInt (0), av);
+	av = Zero;
+	break;
+    }
+    RETURN (av);
+}
+
+Value
+do_bit_width (Value av)
+{
+    ENTER ();
+    switch (av->value.tag) {
+    case type_int:
+	{
+	    int	    i, j;
+	    j = av->ints.value;
+	    if (j < 0)
+		j = -j;
+	    i = 0;
+	    while (j)
+	    {
+		i++;
+		j >>= 1;
+	    }
+	    av = NewInt (i);
+	}
+	break;
+    case type_integer:
+	{
+	    int	    i;
+	    digit   j;
+
+	    i = 0;
+	    if (NaturalLength (av->integer.mag))
+	    {
+		i = NaturalLength (av->integer.mag) - 1;
+		j = NaturalDigits(av->integer.mag)[i];
+		i <<= LLBASE2;
+		while (j)
+		{
+		    i++;
+		    j >>= 1;
+		}
+	    }
+	    av = NewInt (i);
+	}
+	break;
+    default:
+	RaiseStandardException (exception_invalid_argument,
+				"bit_width: argument must be integer",
 				2, NewInt (0), av);
 	av = Zero;
 	break;

@@ -638,7 +638,7 @@ NaturalLor (Natural *a, Natural *b)
     {
 	result = a;
 	a = b;
-	b = a;
+	b = result;
 	alength = length(a);
 	blength = length(b);
     }

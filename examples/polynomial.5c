@@ -1,0 +1,200 @@
+namespace Polynomial {
+
+ /*
+  * Change the typedef to rational for rational
+  * coefficients, then walk carefully through code below.
+  */
+ typedef int coefficient;
+
+ /*
+  * Polynomials are stored as an array of
+  * coefficients indexed by degree.  There
+  * is always a constant term, and the leading
+  * term of a polynomial is always nonzero (except
+  * for the zero polynomial).
+  */
+ public typedef coefficient[*] polynomial;
+
+
+ /*
+  * Bug: There's currently no Nickle way to normalize the
+  * polynomial by shortening the array.  This should be
+  * fixed.  In the meantime, we will just make a copy.
+  */
+ polynomial normalize(polynomial p) {
+     int n = dim(p) - 1;
+     if (p[n] != 0)
+	 return p;
+     while (n > 0 && p[n] == 0)
+	 --n;
+     coefficient[n + 1] q = { [i] = p[i] };
+     return q;
+ }
+
+
+ /*
+  * Addition is performed using an array comprehension
+  * block.  I'm not sure whether this is better or worse
+  * than just doing it with a loop.
+  */
+ public polynomial add(polynomial a, polynomial b) {
+     coefficient na = dim(a);
+     coefficient nb = dim(b);
+     coefficient nc = max(na, nb);
+     coefficient[nc] c = { [i] {
+	 coefficient get_coeff(coefficient[*] a) {
+	     if (i < dim(a))
+		 return a[i];
+	     return 0;
+	 }
+	 coefficient ai = get_coeff(a);
+         coefficient bi = get_coeff(b);
+	 return ai + bi;
+     } };
+     return normalize(c);
+ }
+
+
+ /*
+  * Multiplication efficiency might be minutely improved by
+  * avoiding the all-zeros initialization.  Or it might
+  * not...
+  */
+ public polynomial mult(polynomial a, polynomial b) {
+     coefficient na = dim(a);
+     coefficient nb = dim(b);
+     coefficient nc = na + nb - 1;
+     coefficient[nc] c = {0 ...};
+
+     for (coefficient i = 0; i < na; i++)
+	 for (coefficient j = 0; j < nb; j++)
+	     c[i + j] += a[i] * b[j];
+     return c;
+ }
+
+
+ /*
+  * The quotient and remainder for polynomial division are
+  * computed simultaneously, and thus should be returned
+  * together.
+  */
+ public typedef struct {
+     polynomial quot;
+     polynomial rem;
+ } quot_rem;
+
+
+ /*
+  * Return quotient and remainder of a div b.  This code
+  * assumes that with integer coefficients, leading
+  * coefficient of b must be 1.
+  */
+ public quot_rem div_mod(polynomial a, polynomial b) {
+     coefficient na = dim(a);
+     coefficient nb = dim(b);
+     if (b[nb - 1] != 1)
+	 abort("leading integer coefficient in divisor should be 1");
+     coefficient nq = na - nb + 1;
+     if (nq <= 0)
+	 return (quot_rem) { quot = (polynomial){0}, rem = b };
+     coefficient[nq] q = {0 ...};
+
+     while (na >= nb) {
+         coefficient xn = na - nb;
+	 coefficient cx = a[na - 1] / b[nb - 1];
+	 for (int i = 0; i < nb; i++)
+	     a[i + xn] -= cx * b[i];
+	 q[xn] += cx;
+	 if (a[na - 1] != 0)
+	     abort("leading coefficient error");
+	 --na;
+	 while (na >= 1 && a[na - 1] == 0)
+	     --na;
+     }
+     return (quot_rem) { quot = q, rem = normalize(a) };
+ }
+
+
+ /*
+  * Returns b ** e computed using the usual fast algorithm
+  * (O(log e) multiplies).
+  */
+ public polynomial
+ power(polynomial b, int e) {
+     if (e < 0)
+	 abort("negative exponent error");
+     if (e == 0)
+	 return (polynomial) {1};
+     if (e == 1)
+	 return b;
+     polynomial tmp = power(b, e // 2);
+     polynomial tmp2 = mult(tmp, tmp);
+     if (e % 2 == 0)
+	 return tmp2;
+     return mult(tmp2, b);
+ }
+
+
+ /*
+  * Returns b ** e (mod m) computed using the usual
+  * fast algorithm (O(log e) multiplies, each requiring
+  * O(|m|*|b**2|) primitive steps).
+  */
+ public polynomial
+ power_mod(polynomial b, int e, polynomial m) {
+     if (e < 0)
+	 abort("negative exponent error");
+     if (e == 0)
+	 return (polynomial) {1};
+     if (e == 1)
+	 return div_mod(b, m).rem;
+     polynomial tmp = power_mod(b, e // 2, m);
+     polynomial tmp2 = mult(tmp, tmp);
+     if (e % 2 == 0)
+	 return div_mod(tmp2, m).rem;
+     return div_mod(mult(tmp2, b), m).rem;
+ }
+
+ /*
+  * Returns a string representation of p suitable for Maple
+  * input.  x is the name of the polynomial basis variable
+  * (usually just "x").  There's a lot of boundary cases
+  * here.
+  */
+ public string maple(polynomial p, string x) {
+     string s = "";
+     bool started = false;
+     for (int i = 0; i < dim(p); i++) {
+	 /* Don't print absent terms. */
+	 if (p[i] == 0)
+	     continue;
+	 /* If a term has already been printed, this one
+	    must be added or subtracted */
+	 if (started) {
+	     if (p[i] > 0) {
+		 s += " + ";
+	     } else {
+		 s += " - ";
+		 p[i] = -p[i];
+	     }
+	 }
+	 /* Don't print 1*x or 1*x^n. */
+	 string star = "*";
+	 if (p[i] == 1 && i > 0)
+	     star = "";
+	 else
+	     s += sprintf("%d", p[i]);
+	 /* Don't print x^0 or x^1.  If there's no leading
+	    coefficient due to previous logic, don't print
+	    the multiply symbol. */
+	 if (i == 1)
+	     s += sprintf("%s%s", star, x);
+	 else if (i > 1)
+	     s += sprintf("%s%s^%d", star, x, i);
+	 /* A term has now been printed */
+	 started = true;
+     }
+     return s;
+ }
+
+} 

@@ -11,14 +11,12 @@
 namespace Numbers {
 
   public int function bigpowmod(int b, int e, int m) {
-    int tmp, tmp2;
-
     if (e == 0)
       return 1;
     if (e == 1)
       return b % m;
-    tmp = bigpowmod(b, e // 2, m);
-    tmp2 = (tmp * tmp) % m;
+    int tmp = bigpowmod(b, e // 2, m);
+    int tmp2 = (tmp * tmp) % m;
     if (e % 2 == 0)
       return tmp2;
     return (tmp2 * b) % m;

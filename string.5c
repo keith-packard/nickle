@@ -52,7 +52,7 @@ extend namespace String {
     }
 
 
-    void shiftn(&(poly[...]) array, int n)
+    public void shiftn(&(poly[...]) array, int n)
     /*
      * Shift a growable array n elements: left is positive
      */
@@ -67,7 +67,7 @@ extend namespace String {
 	    setdim(array, f - n);
     }
 
-    void shift(&(poly[...]) array)
+    public void shift(&(poly[...]) array)
     /*
      * Shift a growable array one element to the left
      */
@@ -75,7 +75,7 @@ extend namespace String {
 	shiftn(&array, 1);
     }
 
-    string chump(string s)
+    public string chump(string s)
     /*
      * Return s with any trailing newlines removed
      */

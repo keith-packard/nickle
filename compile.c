@@ -125,7 +125,8 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
     
     if (!type)
     {
-	CompileError (obj, stat, "Type missing inside compiler");
+	if (complete)
+	    CompileError (obj, stat, "Type missing inside compiler");
 	return;
     }
     switch (type->base.tag) {
@@ -430,7 +431,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Object left of '.' is not a struct or union containing \"%A\"",
+	    CompileError (obj, stat, "Object left of '->' is not a struct or union containing \"%A\"",
 			  expr->tree.right->atom.atom);
 	    expr->base.type = typesPoly;
 	}
@@ -1188,7 +1189,16 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     case CONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
-	expr->base.type = NewTypesPrim (expr->constant.constant->value.tag);
+	/*
+	 * Magic - 0 is both integer and *poly
+	 */
+	if (expr->constant.constant->value.tag == type_int &&
+	    expr->constant.constant->ints.value == 0)
+	{
+	    expr->base.type = typesNil;
+	}
+	else
+	    expr->base.type = NewTypesPrim (expr->constant.constant->value.tag);
 	break;
     case OS:	    
 	obj = CompileArrayIndex (obj, expr->tree.right,
@@ -1227,7 +1237,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Type '%T' is not a struct containing \"%A\"",
+	    CompileError (obj, stat, "Type '%T' is not a struct or union containing \"%A\"",
 			  expr->tree.left->base.type,
 			  expr->tree.left->atom.atom);
 	    expr->base.type = typesPoly;

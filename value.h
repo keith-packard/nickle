@@ -255,6 +255,7 @@ extern Types	    *typesPoly;
 extern Types	    *typesGroup;
 extern Types	    *typesField;
 extern Types	    *typesRefPoly;
+extern Types	    *typesNil;
 extern Types	    *typesPrim[type_continuation - type_int + 1];
 
 Types	*NewTypesPrim (Type prim);

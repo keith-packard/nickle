@@ -19,6 +19,7 @@ Types		*typesPoly;
 Types		*typesGroup;
 Types		*typesField;
 Types		*typesRefPoly;
+Types		*typesNil;
 Types		*typesPrim[type_continuation - type_int + 1];
 
 static void
@@ -1146,6 +1147,12 @@ TypesInit (void)
     StructTypeElements(st)[0].type = typesPrim[type_rational];
     StructTypeElements(st)[1].type = typesPrim[type_float];
     typesField = NewTypesUnion (st);
+    MemAddRoot (typesField);
+    
+    st = NewStructType (2);
+    StructTypeElements(st)[0].type = typesPrim[type_int];
+    StructTypeElements(st)[1].type = typesRefPoly;
+    typesNil = NewTypesUnion (st);
     MemAddRoot (typesField);
     
     TypeCheckStack = StackCreate ();

@@ -464,10 +464,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 		if (block->tree.left->tree.left)
 		{
 		    FilePuts (f, "case ");
-		    if (e->base.tag == SWITCH)
-			PrettyExpr (f, block->tree.left->tree.left, -1, level, nest);
-		    else
-			FilePutTypes (f, block->tree.left->decl.type, False);
+		    PrettyExpr (f, block->tree.left->tree.left, -1, level, nest);
 		}
 		else
 		    FilePuts (f, "default");

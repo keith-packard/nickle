@@ -488,12 +488,12 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	    printStatement (f, e->tree.right->tree.right, level+1, level, nest);
 	break;
     case SWITCH:
-    case UNION:
+    case TYPESWITCH:
 	printindent (f, level);
 	if (e->base.tag == SWITCH)
 	    FilePuts (f, "switch (");
 	else
-	    FilePuts (f, "union switch (");
+	    FilePuts (f, "typeswitch (");
 	printExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, ")");
 	if (nest)
@@ -507,7 +507,10 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 		if (block->tree.left->tree.left)
 		{
 		    FilePuts (f, "case ");
-		    printExpr (f, block->tree.left->tree.left, -1, level, nest);
+		    if (e->base.tag == SWITCH)
+			printExpr (f, block->tree.left->tree.left, -1, level, nest);
+		    else
+			fprintTypes (f, block->tree.left->decl.type);
 		}
 		else
 		    FilePuts (f, "default");

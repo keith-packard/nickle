@@ -14,7 +14,7 @@ nickle_SOURCES = alarm.c array.c atom.c avl.c box.c builtin.c \
 	gcd.c history.c int.c integer.c io.c main.c mem.c \
 	natural.c pretty.c rational.c ref.c refer.c \
 	sched.c scope.c stack.c string.c struct.c \
-	symbol.c sync.c type.c union.c util.c value.c \
+	symbol.c sync.c type.c util.c value.c \
 	avl.h mem.h memp.h nickle.h opcode.h ref.h stack.h value.h \
 	gram.y lex.l
 

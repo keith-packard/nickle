@@ -171,7 +171,6 @@ typedef enum _type {
  	type_array = 10,
 	type_ref = 11,
 	type_struct = 12,
-	type_union = 13,
 	type_func = 14
 } Type;
 
@@ -231,6 +230,11 @@ typedef struct _typesStruct {
     StructTypePtr   structs;
 } TypesStruct;    
 
+typedef struct _typesUnion {
+    TypesBase	    base;
+    int		    nelements;
+} TypesUnion;
+
 typedef union _types {
     TypesBase	base;
     TypesPrim	prim;
@@ -239,6 +243,7 @@ typedef union _types {
     TypesFunc	func;
     TypesArray	array;
     TypesStruct	structs;
+    TypesUnion	unions;
 } Types;
 
 typedef struct _argDecl {
@@ -259,7 +264,7 @@ Types	*NewTypesRef (Types *ref);
 Types	*NewTypesFunc (Types *ret, ArgType *args);
 Types	*NewTypesArray (Types *type, ExprPtr dimensions);
 Types	*NewTypesStruct (StructTypePtr structs);
-Types	*NewTypesUnion (StructTypePtr structs);
+Types	*NewTypesUnion (int nelements);
 Types	*TypesCanon (Types *type);
 Type	BaseType (Types *type);
 int	TypesInit (void);
@@ -413,13 +418,6 @@ typedef struct _struct {
     BoxPtr	values;
 } Struct;
 
-typedef struct _union {
-    BaseValue	base;
-    StructType	*type;
-    Atom	tag;
-    BoxPtr	value;
-} Union;
-
 typedef struct _func {
     BaseValue	base;
     CodePtr	code;
@@ -497,7 +495,6 @@ typedef union _value {
     File	file;
     Ref		ref;
     Struct	structs;
-    Union	unions;
     Func	func;
     Thread	thread;
     Mutex	mutex;
@@ -596,9 +593,6 @@ StructType  *NewStructType (int nelements);
 Types	*StructTypes (StructType *st, Atom name);
 Value	StructRef (Value sv, Atom name);
 Value	StructValue (Value sv, Atom name);
-Value	NewUnion (StructType *type, Bool constant);
-Value	UnionValue (Value uv, Atom name);
-Value	UnionRef (Value uv, Atom name);
 
 Value	BinaryOperate (Value av, Value bv, BinaryOp operator);
 Value	UnaryOperate (Value v, UnaryOp operator);

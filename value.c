@@ -135,10 +135,6 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	    bv = (*av->value.type->promote) (bv, av);
 	type = av->value.type;
     }
-    else if (av->value.tag == type_union)
-	type = av->value.type;
-    else if (bv->value.tag == type_union)
-	type = bv->value.type;
     if (!type || !type->binary[operator])
     {
 	if (operator != EqualOp)
@@ -533,15 +529,6 @@ Copy (Value v)
 	    nv = NewStruct (v->structs.type, False);
 	    for (i = 0; i < v->structs.type->nelements; i++)
 		BoxValueSet (nv->structs.values, i, Copy (BoxValueGet (v->structs.values, i)));
-	    v = nv;
-	}
-	break;
-    case type_union:
-	if (!v->unions.value->constant)
-	{
-	    nv = NewUnion (v->unions.type, False);
-	    nv->unions.tag = v->unions.tag;
-	    BoxValueSet (nv->unions.value, 0, Copy (BoxValueGet (v->unions.value, 0)));
 	    v = nv;
 	}
 	break;

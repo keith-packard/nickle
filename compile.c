@@ -157,7 +157,6 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 	CompileCanonType (obj, namespace, type->array.type, stat);
 	break;
     case types_struct:
-    case types_union:
 	for (n = 0; n < type->structs.structs->nelements; n++)
 	{
 	    StructElement   *se;
@@ -165,6 +164,10 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 	    se = &StructTypeElements(type->structs.structs)[n];
 	    CompileCanonType (obj, namespace, se->type, stat);
 	}
+	break;
+    case types_union:
+	for (n = 0; n < type->unions.nelements; n++)
+	    CompileCanonType (obj, namespace, TypesUnionElements(type)[n], stat);
 	break;
     }
 }
@@ -420,7 +423,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Object left of '->' is not a struct or union");
+	    CompileError (obj, stat, "Object left of '->' is not a struct");
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case OS:
@@ -1134,7 +1137,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "%t is not a struct or union containing \"%A\"",
+	    CompileError (obj, stat, "%t is not a struct containing \"%A\"",
 			  expr->tree.left->base.type,
 			  expr->tree.left->atom.atom);
 	BuildInst (obj, OpDot, inst, stat);
@@ -1146,7 +1149,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "%t is not a struct or union ref containing \"%A\"",
+	    CompileError (obj, stat, "%t is not a struct ref containing \"%A\"",
 			  expr->tree.left->base.type,
 			  expr->tree.left->atom.atom);
 	BuildInst (obj, OpArrow, inst, stat);
@@ -1539,7 +1542,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	CompilePatchLoop (obj, top_inst, continue_inst);
 	break;
     case SWITCH:
-    case UNION:
+    case TYPESWITCH:
 	/*
 	 * switch (a) { case b: c; case d: e; }
 	 *
@@ -1610,9 +1613,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 		}
 		else
 		{
-		    inst->base.opCode = OpTagCase;
-		    inst->tagcase.offset = obj->used - case_inst[icase];
-		    inst->tagcase.tag = c->tree.left->tree.left->atom.atom;
+		    inst->base.opCode = OpTypeCase;
+		    inst->typecase.offset = obj->used - case_inst[icase];
+		    inst->typecase.type = c->tree.left->tree.left->decl.type;
 		}
 		inst->base.stat = expr;
 		icase++;
@@ -1623,7 +1626,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 		if (expr->base.tag == SWITCH)
 		    inst->base.opCode = OpDefault;
 		else
-		    inst->base.opCode = OpTagDefault;
+		    inst->base.opCode = OpTypeDefault;
 		inst->base.stat = expr;
 		inst->branch.offset = obj->used - test_inst;
 	    }
@@ -1641,7 +1644,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	    if (expr->base.tag == SWITCH)
 		inst->base.opCode = OpDefault;
 	    else
-		inst->base.opCode = OpTagDefault;
+		inst->base.opCode = OpTypeDefault;
 	    inst->base.stat = expr;
 	    inst->branch.offset = obj->used - test_inst;
 	}
@@ -1786,9 +1789,9 @@ CompileIsBranch (InstPtr inst)
     case OpFor:
     case OpEndFor:
     case OpCase:
-    case OpTagCase:
+    case OpTypeCase:
     case OpDefault:
-    case OpTagDefault:
+    case OpTypeDefault:
     case OpBreak:
     case OpContinue:
     case OpQuest:
@@ -2074,9 +2077,9 @@ char *OpNames[] = {
     "For",
     "EndFor",
     "Case",
-    "TagCase",
+    "TypeCase",
     "Default",
-    "TagDefault",
+    "TypeDefault",
     "Break",
     "Continue",
     "Return",
@@ -2095,6 +2098,7 @@ char *OpNames[] = {
      */
     "Name",
     "NameRef",
+    "NameRefStore",
     "Const",
     "BuildArray",
     "InitArray",
@@ -2102,11 +2106,14 @@ char *OpNames[] = {
     "InitStruct",
     "Array",
     "ArrayRef",
+    "ArrayRefStore",
     "Call",
     "Dot",
     "DotRef",
+    "DotRefStore",
     "Arrow",
     "ArrowRef",
+    "ArrowRefStore",
     "Obj",
     "StaticInit",
     "StaticDone",
@@ -2202,8 +2209,10 @@ ObjDump (ObjPtr obj, int indent)
 		    "            " + strlen(OpNames[inst->base.opCode]),
 		    inst->base.push ? '^' : ' ');
 	switch (inst->base.opCode) {
-	case OpTagCase:
-	    FilePrintf (FileStdout, "\"%s\" ", AtomName (inst->tagcase.tag));
+	case OpTypeCase:
+	    FilePrintf (FileStdout, "(");
+	    fprintTypes (FileStdout, inst->typecase.type);
+	    FilePrintf (FileStdout, ") ");
 	    goto branch;
 	case OpCatch:
 	    FilePrintf (FileStdout, "\"%s\" ", AtomName (inst->catch.exception->symbol.name));
@@ -2217,7 +2226,7 @@ ObjDump (ObjPtr obj, int indent)
 	case OpEndFor:
 	case OpCase:
 	case OpDefault:
-	case OpTagDefault:
+	case OpTypeDefault:
 	case OpBreak:
 	case OpContinue:
 	case OpQuest:

@@ -107,6 +107,7 @@ do		{ yylval.ival = DO; return DO; }
 if		{ yylval.ival = IF; return IF; }
 else		{ yylval.ival = ELSE; return ELSE; }
 switch		{ yylval.ival = SWITCH; return SWITCH; }
+typeswitch	{ yylval.ival = TYPESWITCH; return TYPESWITCH; }
 break		{ yylval.ival = BREAK; return BREAK; }
 continue	{ yylval.ival = CONTINUE; return CONTINUE; }
 case		{ yylval.ival = CASE; return CASE; }

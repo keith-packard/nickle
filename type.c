@@ -74,6 +74,17 @@ TypesStructMark (void *object)
     MemReference (ts->structs);
 }
 
+static void
+TypesUnionMark (void *object)
+{
+    Types	*t = object;
+    TypesUnion	*tu = object;
+    int		n;
+
+    for (n = 0; n < tu->nelements; n++)
+	MemReference (TypesUnionElements(t)[n]);
+}
+
 DataType    TypesPrimType = { TypesPrimMark, 0 };
 DataType    TypesNameType = { TypesNameMark, 0 };
 DataType    TypesRefType = { TypesRefMark, 0 };
@@ -81,6 +92,7 @@ DataType    ArgTypeType = { ArgTypeMark, 0 };
 DataType    TypesFuncType = { TypesFuncMark, 0 };
 DataType    TypesArrayType = { TypesArrayMark, 0 };
 DataType    TypesStructType = { TypesStructMark, 0 };
+DataType    TypesUnionType = { TypesUnionMark, 0 };
 
 Types *
 NewTypesPrim (Type prim)
@@ -177,14 +189,15 @@ NewTypesStruct (StructType *structs)
 }
 
 Types *
-NewTypesUnion (StructType *structs)
+NewTypesUnion (int nelements)
 {
     ENTER ();
     Types   *t;
 
-    t = ALLOCATE (&TypesStructType, sizeof (TypesStruct));
+    t = ALLOCATE (&TypesUnionType, sizeof (TypesUnion) + 
+		  nelements * sizeof (Types *));
     t->base.tag = types_union;
-    t->structs.structs = structs;
+    t->unions.nelements = nelements;
     RETURN (t);
 }
 
@@ -207,7 +220,7 @@ BaseType (Types *t)
 	case types_struct:
 	    return type_struct;
 	case types_union:
-	    return type_union;
+	    return type_undef;
 	}
     }
     return type_undef;
@@ -332,6 +345,22 @@ TypeCompatible (Types *a, Types *b, Bool contains)
         return TypeCompatible (a->name.type, b, contains);
     if (b->base.tag == types_name)
 	return TypeCompatible (a, b->name.type, contains);
+    if (a->base.tag == types_union)
+    {
+	Types	**ut = TypesUnionElements (a);
+	for (n = 0; n < a->unions.nelements; n++)
+	    if (TypeCompatible (ut[n], b, contains))
+	        return True;
+	return False;
+    }
+    if (b->base.tag == types_union)
+    {
+	Types	**ut = TypesUnionElements (a);
+	for (n = 0; n < b->unions.nelements; n++)
+	    if (TypeCompatible (a, ut[n], contains))
+		return True;
+	return False;
+    }
     if (a->base.tag != b->base.tag)
 	return False;
     switch (a->base.tag) {
@@ -380,7 +409,6 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	    return TypeCompatible (a->array.type, b->array.type, contains);
 	break;
     case types_struct:
-    case types_union:
 	if (!contains && a->structs.structs->nelements != b->structs.structs->nelements)
 	    break;
 	for (n = 0; n < a->structs.structs->nelements; n++)
@@ -414,7 +442,38 @@ TypeCombineAssign (Types *left, int tag, Types *right)
 	return TypeCombineAssign (left->name.type, tag, right);
     if (right->base.tag == types_name)
 	return TypeCombineAssign (left, tag, right->name.type);
-    
+    if (left->base.tag == types_union)
+    {
+	int		n;
+	Types		**ut;
+
+	ut = TypesUnionElements (left);
+	for (n = 0; n < left->unions.nelements; n++)
+	{
+	    Types	    *ret;
+
+	    ret = TypeCombineAssign (ut[n], tag, right);
+	    if (ret)
+		return ret;
+	}
+	return 0;
+    }
+    if (right->base.tag == types_union)
+    {
+	int		n;
+	Types		**ut;
+
+	ut = TypesUnionElements (right);
+	for (n = 0; n < right->unions.nelements; n++)
+	{
+	    Types	    *ret;
+
+	    ret = TypeCombineAssign (left, tag, ut[n]);
+	    if (ret)
+		return right;
+	}
+	return 0;
+    }
     switch (tag) {
     case ASSIGN:
 	if (TypeCompatible (left, right, True))
@@ -460,54 +519,108 @@ TypeCombineAssign (Types *left, int tag, Types *right)
 Types *
 TypeCombineBinary (Types *left, int tag, Types *right)
 {
+    ENTER ();
+
     if (TypePoly (left) || TypePoly (right))
-	return typesPoly;
+	RETURN (typesPoly);
 
     if (left->base.tag == types_name)
-	return TypeCombineBinary (left->name.type, tag, right);
+	RETURN (TypeCombineBinary (left->name.type, tag, right));
     if (right->base.tag == types_name)
-	return TypeCombineBinary (left, tag, right->name.type);
+	RETURN (TypeCombineBinary (left, tag, right->name.type));
     
+    if (left->base.tag == types_union)
+    {
+	int	    n, t;
+	Types	    **ut;
+	Types	    **rets;
+	Types	    *ret;
+
+	rets = AllocateTemp (left->unions.nelements * sizeof (Types *));
+	ut = TypesUnionElements (left);
+	t = 0;
+	for (n = 0; n < left->unions.nelements; n++)
+	{
+	    ret = TypeCombineBinary (ut[n], tag, right);
+	    if (ret)
+		rets[t++] = ret;
+	}
+	if (t == 0)
+	    RETURN (0);
+	if (t == 1)
+	    RETURN (rets[0]);
+	ret = NewTypesUnion (t);
+	for (t = 0; t < ret->unions.nelements; t++)
+	    TypesUnionElements(ret)[t] = rets[t];
+	RETURN(ret);
+    }
+    if (right->base.tag == types_union)
+    {
+	int	    n, t;
+	Types	    **ut;
+	Types	    **rets;
+	Types	    *ret;
+
+	rets = AllocateTemp (right->unions.nelements * sizeof (Types *));
+	ut = TypesUnionElements (right);
+	t = 0;
+	for (n = 0; n < right->unions.nelements; n++)
+	{
+	    Types	    *ret;
+
+	    ret = TypeCombineBinary (left, tag, ut[n]);
+	    if (ret)
+		rets[t++] = ret;
+	}
+	if (t == 0)
+	    RETURN (0);
+	if (t == 1)
+	    RETURN (rets[0]);
+	ret = NewTypesUnion (t);
+	for (t = 0; t < ret->unions.nelements; t++)
+	    TypesUnionElements(ret)[t] = rets[t];
+	RETURN(ret);
+    }
     switch (tag) {
     case PLUS:
 	if (TypeString (left) && TypeString (right))
-	    return left;
+	    RETURN (left);
     case MINUS:
 	if (left->base.tag == types_ref && TypeNumeric (right))
-	    return left;
+	    RETURN (left);
 	if (TypeNumeric (left) && right->base.tag == types_ref)
-	    return right;
+	    RETURN (right);
     case TIMES:
     case DIV:
     case MOD:
 	if (TypeNumeric (left) && TypeNumeric (right))
 	{
 	    if (TypePoly (left) || TypePoly (right))
-		return typesPoly;
+		RETURN (typesPoly);
 	    if (left->prim.prim > right->prim.prim)
-		return left;
+		RETURN (left);
 	    else
-		return right;
+		RETURN (right);
 	}
 	break;
     case POW:
 	if (TypeNumeric (left) && TypeNumeric (right))
 	{
 	    if (TypePoly (left) || TypePoly (right))
-		return typesPoly;
+		RETURN (typesPoly);
 	    if (right->prim.prim >= type_rational)
 	    {
 		if (left->prim.prim < type_float)
-		    return typesPrim[type_float];
+		    RETURN (typesPrim[type_float]);
 		else
-		    return left;
+		    RETURN (left);
 	    }
 	    else
 	    {
 		if (left->prim.prim > right->prim.prim)
-		    return left;
+		    RETURN (left);
 		else
-		    return right;
+		    RETURN (right);
 	    }
 	}
 	break;
@@ -515,13 +628,13 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	if (TypeNumeric (left) && TypeNumeric (right))
 	{
 	    if (TypePoly (left) || TypePoly (right))
-		return typesPoly;
+		RETURN (typesPoly);
 	    if (left->prim.prim > right->prim.prim)
 		right = left;
 	    if (right->prim.prim < type_rational)
-		return typesPrim[type_rational];
+		RETURN (typesPrim[type_rational]);
 	    else
-		return right;
+		RETURN (right);
 	}
 	break;
     case SHIFTL:
@@ -532,11 +645,11 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	if (TypeIntegral (left) && TypeIntegral (right))
 	{
 	    if (TypePoly (left) || TypePoly (right))
-		return typesPoly;
+		RETURN (typesPoly);
 	    if (left->prim.prim > right->prim.prim)
-		return left;
+		RETURN (left);
 	    else
-		return right;
+		RETURN (right);
 	}
 	break;
     case COLON:
@@ -547,25 +660,25 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	    if (TypeNumeric (left) && TypeNumeric (right))
 	    {
 		if (left->prim.prim > right->prim.prim)
-		    return left;
+		    RETURN (left);
 		else
-		    return right;
+		    RETURN (right);
 	    }
-	    return left;
+	    RETURN (left);
 	}
 	break;
     case EQ:
-	return typesPrim[type_integer];
+	RETURN (typesPrim[type_integer]);
     case NE:
     case LT:
     case GT:
     case LE:
     case GE:
 	if (TypeCompatible (left, right, False))
-	    return typesPrim[type_integer];
+	    RETURN (typesPrim[type_integer]);
 	break;
     }
-    return 0;
+    RETURN (0);
 }
 
 Types *
@@ -610,7 +723,7 @@ TypeCombineStruct (Types *type, int tag, Atom atom)
 	
     switch (tag) {
     case DOT:
-	if (type->base.tag == types_struct || type->base.tag == types_union)
+	if (type->base.tag == types_struct)
 	{
 	    return StructTypes (type->structs.structs, atom);
 	}
@@ -723,7 +836,6 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 	    return TypeCompatible (a->array.type, b->array.type, True);
 	break;
     case types_struct:
-    case types_union:
 	for (n = 0; n < a->structs.structs->nelements; n++)
 	{
 	    StructElement   *ae;
@@ -738,6 +850,12 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 	}
 	if (n == a->structs.structs->nelements)
 	    return True;
+	break;
+    case types_union:
+	for (n = 0; n < a->unions.nelements; n++)
+	    if (TypeCompatibleAssign (TypesUnionElements(a)[n], 
+				      b, False))
+		return True;
 	break;
     default:	
     }

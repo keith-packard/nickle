@@ -33,7 +33,7 @@ ProfileInterrupt (Value thread)
     previousTick = 0;
     if (!thread)
 	return;
-    pc = thread->thread.pc;
+    pc = thread->thread.context.pc;
     if (pc)
     {
 	stat = pc->base.stat;
@@ -43,7 +43,7 @@ ProfileInterrupt (Value thread)
 	    stat->base.sub_ticks += ticks;
 	}
     }
-    for (frame = thread->thread.frame; frame; frame = frame->previous)
+    for (frame = thread->thread.context.frame; frame; frame = frame->previous)
     {
 	pc = frame->savePc;
 	if (pc)

@@ -79,8 +79,8 @@ DebugSetFrame (Value continuation, int offset)
     Bool	    ret;
     ExprPtr	    stat;
     
-    frame = continuation->continuation.frame;
-    stat = continuation->continuation.pc->base.stat;
+    frame = continuation->continuation.context.frame;
+    stat = continuation->continuation.context.pc->base.stat;
     while (frame && frame->function->func.code->base.builtin)
     {
 	stat = frame->savePc->base.stat;

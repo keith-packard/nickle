@@ -149,7 +149,7 @@ typedef struct _frame {
     BoxPtr	    frame;
     BoxPtr	    statics;
     InstPtr	    savePc;
-    ObjPtr	    saveCode;
+    ObjPtr	    saveObj;
 } Frame;
 
 extern FramePtr	NewFrame (Value		function,
@@ -169,25 +169,16 @@ CatchPtr    NewCatch (CatchPtr previous, Value continuation, SymbolPtr exception
 
 typedef struct _twixt {
     DataType	    *data;
-    TwixtPtr	    previous;
-    int		    depth;
-    FramePtr	    frame;
-    InstPtr	    enter;
+    Context	    context;
     InstPtr	    leave;
-    CatchPtr	    catches;
-    StackObject	    *stack;
+    int		    depth;
 } Twixt;
 
 TwixtPtr
-NewTwixt (TwixtPtr	previous,
-	  FramePtr	frame, 
-	  InstPtr	enter,
-	  InstPtr	leave,
-	  CatchPtr	catches,
-	  StackObject	*stack);
+NewTwixt (ContextPtr context, InstPtr enter, InstPtr leave);
 
-void	    TwixtJump (Value thread, TwixtPtr twixt, Bool enter, InstPtr *next);
-int	    TwixtDepth (TwixtPtr twixt);
+InstPtr	    TwixtJump (Value thread, TwixtPtr twixt, Bool enter);
+#define TwixtDepth(t)	((t) ? (t)->depth : 0)
 TwixtPtr    TwixtNext (TwixtPtr twixt, TwixtPtr last);
 
 # define	NOTHING	0
@@ -545,17 +536,10 @@ void	    ThreadInit (void);
 void	    TraceFunction (FramePtr frame, CodePtr code, ExprPtr name);
 void	    TraceFrame (FramePtr frame, InstPtr pc);
 #ifdef DEBUG_JUMP
-void	    TraceContinuation (char	    *where,
-			       FramePtr	    frame,
-			       StackObject  *stack,
-			       CatchPtr	    catches,
-			       TwixtPtr	    twixts,
-			       InstPtr	    pc,
-			       int	    indent);
+void	    ContextTrace (char *where, Context *context, int indent);
 void	    ContinuationTrace (char	*where, Value continuation);
 #endif
-void	    ContinuationJump (Value thread, Value continuation, InstPtr *next);
-void	    ContinuationArgs (Value thread, BoxPtr args);
+Value	    ContinuationJump (Value thread, Value continuation, Value ret, InstPtr *next);
 
 typedef struct _jump {
     DataType	    *data;
@@ -565,12 +549,11 @@ typedef struct _jump {
     TwixtPtr	    parent;
     Value	    continuation;
     Value	    ret;
-    BoxPtr	    args;
 } Jump;
 
-Value	    JumpContinuation (JumpPtr jump, InstPtr *next);
-JumpPtr	    JumpBuild (TwixtPtr leave, TwixtPtr enter, 
-		       Value continuation, Value ret, InstPtr *next);
+Value	    JumpContinue (Value thread, InstPtr *next);
+InstPtr	    JumpStart (Value thread, TwixtPtr leave, TwixtPtr enter, 
+		       Value continuation, Value ret);
 JumpPtr	    NewJump (TwixtPtr leave, TwixtPtr enter, 
 		     TwixtPtr parent, Value continuation, Value ret);
 
@@ -701,7 +684,7 @@ typedef enum _standardException {
 } StandardException;
 
 void
-RaiseException (Value thread, SymbolPtr exception, BoxPtr args, InstPtr *next);
+RaiseException (Value thread, SymbolPtr exception, Value ret, InstPtr *next);
 
 void
 RegisterStandardException (StandardException	se,

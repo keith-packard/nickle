@@ -19,7 +19,6 @@ FrameMark (void *object)
 	MemReference (frame->function);
 	MemReference (frame->frame);
 	MemReference (frame->statics);
-	MemReference (frame->saveCode);
 	frame = frame->previous;
     } while (MemReferenceNoRecurse (frame) == 0);
 }
@@ -46,6 +45,6 @@ NewFrame (Value		function,
 	frame->frame = 0;
     frame->statics = statics;
     frame->savePc = 0;
-    frame->saveCode = 0;
+    frame->saveObj = 0;
     RETURN (frame);
 }

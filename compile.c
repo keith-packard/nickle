@@ -1351,10 +1351,12 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	}
 	NewInst (catch_inst, obj);
 
+	BuildInst (obj, OpNoop, inst, stat);
+	inst->base.push = True;
+
 	obj = CompileFunc (obj, catch->code.code, stat, code);
 	
-	BuildInst (obj, OpCall, inst, stat);
-	inst->ints.value = -1;
+	BuildInst (obj, OpExceptionCall, inst, stat);
 	
 	NewInst (exception_inst, obj);
     
@@ -2638,6 +2640,7 @@ char *OpNames[] = {
     "ArrayRefStore",
     "Call",
     "TailCall",
+    "ExceptionCall",
     "Dot",
     "DotRef",
     "DotRefStore",

@@ -174,7 +174,7 @@ do_Thread_join (Value target)
 	ThreadSleep (running, target, PrioritySync);
 	RETURN (Zero);
     }
-    RETURN (target->thread.v);
+    RETURN (target->thread.context.value);
 }
 
 static void
@@ -375,54 +375,6 @@ TraceIndent (int indent)
     while (indent--)
 	FilePuts (FileStdout, "    ");
 }
-
-void
-TraceContinuation (char	    *where,
-		   FramePtr frame,
-		   StackObject *stack,
-		   CatchPtr catches,
-		   TwixtPtr twixts,
-		   InstPtr  pc,
-		   int	    indent)
-{
-    int	    s;
-    
-    TraceIndent (indent);
-    FilePuts (FileStdout, "*** ");
-    FilePuts (FileStdout, where);
-    FilePuts (FileStdout, " ***\n");
-    TraceIndent (indent);
-    FilePuts (FileStdout, "stack:     ");
-    for (s = 0; STACK_TOP(stack) + (s) < STACK_MAX(stack); s++)
-    {
-	if (s)
-	    FilePuts (FileStdout, ", ");
-	FilePrintf (FileStdout, "%v", STACK_ELT(stack, s));
-    }
-    FilePuts (FileStdout, "\n");
-    TraceIndent (indent);
-    FilePuts (FileStdout, "catches:   ");
-    for (s = 0; catches; catches = catches->previous, s++)
-    {
-	if (s)
-	    FilePuts (FileStdout, ", ");
-	FilePrintf (FileStdout, "%A", catches->exception->symbol.name);
-    }
-    FilePuts (FileStdout, "\n");
-    TraceIndent (indent);
-    FilePuts (FileStdout, "statement: ");
-    PrettyStat (FileStdout, pc->base.stat, False);
-    for (s = 0; twixts; twixts = twixts->previous, s++)
-    {
-	TraceContinuation ("twixt",
-			   twixts->frame,
-			   twixts->stack,
-			   twixts->catches,
-			   0,
-			   twixts->enter,
-			   indent+1);
-    }
-}
 #endif
 
 Value
@@ -439,12 +391,9 @@ do_Thread_trace (int n, Value *p)
 	v = *p;
     switch (ValueTag(v)) {
     case type_thread:
-	frame = v->thread.frame;
-	pc = v->thread.pc;
-	break;
     case type_continuation:
-	frame = v->continuation.frame;
-	pc = v->continuation.pc;
+	frame = v->continuation.context.frame;
+	pc = v->continuation.context.pc;
 	break;
     default:
 	if (n == 0)
@@ -462,12 +411,7 @@ ThreadMark (void *object)
 {
     ThreadPtr	thread = object;
 
-    MemReference (thread->v);
-    MemReference (thread->stack);
-    MemReference (thread->frame);
-    MemReference (thread->code);
-    MemReference (thread->catches);
-    MemReference (thread->twixts);
+    ContextMark (&thread->context);
     MemReference (thread->jump);
     MemReference (thread->sleep);
     MemReference (thread->next);
@@ -515,17 +459,17 @@ NewThread (FramePtr frame, ObjPtr code)
     Value ret;
 
     ret = ALLOCATE (&ThreadType.data, sizeof (Thread));
-    ret->thread.v = Zero;
-    ret->thread.stack = 0;
-    ret->thread.pc = ObjCode (code, 0);
-    ret->thread.code = code;
-    ret->thread.frame = frame;
+    
+    ret->thread.jump = 0;
     ret->thread.state = ThreadRunning;
     ret->thread.priority = 0;
     ret->thread.sleep = 0;
     ret->thread.id = ++ThreadId;
     ret->thread.partial = 0;
-    ret->thread.stack = StackCreate ();
+    ret->thread.next = 0;
+    
+    ContextInit (&ret->thread.context);
+    ret->thread.context.pc = ObjCode (code, 0);
     
     complete = True;
     if (code->error)
@@ -552,10 +496,7 @@ ContinuationMark (void *object)
 {
     ContinuationPtr continuation = object;
 
-    MemReference (continuation->value.type);
-    MemReference (continuation->frame);
-    MemReference (continuation->stack);
-    MemReference (continuation->catches);
+    ContextMark (&continuation->context);
 }
 
 static Bool
@@ -592,20 +533,101 @@ ValueType    ContinuationType = {
 };
 
 Value
-NewContinuation (FramePtr frame, InstPtr pc, 
-		 StackObject *stack, CatchPtr catches,
-		 TwixtPtr twixts)
+NewContinuation (ContextPtr context, InstPtr pc)
 {
     ENTER ();
     Value   ret;
 
     ret = ALLOCATE (&ContinuationType.data, sizeof (Continuation));
-    ret->continuation.frame = frame;
-    ret->continuation.pc = pc;
-    ret->continuation.stack = stack;
-    ret->continuation.catches = catches;
-    ret->continuation.twixts = twixts;
+    ret->continuation.context.pc = pc;
+    ContextSet (&ret->continuation.context, context);
     RETURN (ret);
+}
+
+#ifdef DEBUG_JUMP
+
+void
+ContextTrace (char *where, Context *context, int indent)
+{
+    int	    s;
+    StackObject	*stack = context->stack;
+    CatchPtr	catches = context->catches;
+    TwixtPtr	twixts = context->twixts;
+    InstPtr	pc = context->pc;
+    
+    TraceIndent (indent);
+    FilePuts (FileStdout, "*** ");
+    FilePuts (FileStdout, where);
+    FilePuts (FileStdout, " ***\n");
+    TraceIndent (indent);
+    FilePuts (FileStdout, "stack:     ");
+    for (s = 0; STACK_TOP(stack) + (s) < STACK_MAX(stack); s++)
+    {
+	if (s)
+	    FilePuts (FileStdout, ", ");
+	FilePrintf (FileStdout, "%v", STACK_ELT(stack, s));
+    }
+    FilePuts (FileStdout, "\n");
+    TraceIndent (indent);
+    FilePuts (FileStdout, "catches:   ");
+    for (s = 0; catches; catches = catches->previous, s++)
+    {
+	if (s)
+	    FilePuts (FileStdout, ", ");
+	FilePrintf (FileStdout, "%A", catches->exception->symbol.name);
+    }
+    FilePuts (FileStdout, "\n");
+    TraceIndent (indent);
+    FilePuts (FileStdout, "statement: ");
+    PrettyStat (FileStdout, pc->base.stat, False);
+    for (s = 0; twixts; twixts = twixts->context.twixts, s++)
+    {
+	ContextTrace ("twixt", &twixts->context, indent+1);
+    }
+}
+#endif
+
+InstPtr
+ContextSet (ContextPtr dst, ContextPtr src)
+{
+    ENTER ();
+    dst->obj = src->obj;
+    dst->frame = src->frame;
+    dst->value = src->value;
+    dst->catches = src->catches;
+    dst->twixts = src->twixts;
+    dst->stack = 0;
+    /* last, to make sure remaining entries are initialized before any GC */
+    dst->stack = StackCopy (src->stack);
+    RETURN (src->pc);
+}
+
+void
+ContextInit (ContextPtr dst)
+{
+    dst->pc = 0;
+    dst->obj = 0;
+    dst->frame = 0;
+    dst->value = Zero;
+    dst->catches = 0;
+    dst->twixts = 0;
+    dst->stack = 0;
+    dst->stack = StackCreate ();
+}
+
+#include <assert.h>
+
+void
+ContextMark (ContextPtr	context)
+{
+    assert (ObjCode (context->obj, 0) <= context->pc &&
+	    context->pc <= ObjCode (context->obj, ObjLast(context->obj))); 
+    MemReference (context->obj);
+    MemReference (context->frame);
+    MemReference (context->stack);
+    MemReference (context->value);
+    MemReference (context->catches);
+    MemReference (context->twixts);
 }
 
 static void
@@ -619,14 +641,13 @@ MarkJump (void *object)
     MemReference (jump->parent);
     MemReference (jump->continuation);
     MemReference (jump->ret);
-    MemReference (jump->args);
 }
 
 DataType    JumpType = { MarkJump, 0 };
 
 JumpPtr
-NewJump (TwixtPtr leave, TwixtPtr enter, 
-	 TwixtPtr parent, Value continuation, Value ret)
+NewJump (TwixtPtr leave, TwixtPtr enter, TwixtPtr parent,
+	 Value continuation, Value ret)
 {
     ENTER ();
     JumpPtr jump;
@@ -638,121 +659,127 @@ NewJump (TwixtPtr leave, TwixtPtr enter,
     jump->parent = parent;
     jump->continuation = continuation;
     jump->ret = ret;
-    jump->args = 0;
     RETURN (jump);
 }
 
+Value
+ContinuationJump (Value thread, Value continuation, Value ret, InstPtr *next)
+{
+    ENTER ();
 #ifdef DEBUG_JUMP
-void
-ContinuationTrace (char	*where, Value continuation)
-{
-    TraceContinuation (where,
-		       continuation->continuation.frame,
-		       continuation->continuation.stack,
-		       continuation->continuation.catches,
-		       continuation->continuation.twixts,
-		       continuation->continuation.pc,
-		       1);
-}
+    ContextTrace ("ContinuationJump from", &thread->thread.context, 1);
+    ContextTrace ("ContinuationJump to", &continuation->continuation.context, 1);
 #endif
-
-void
-ContinuationJump (Value thread, Value continuation, InstPtr *next)
-{
-#ifdef DEBUG_JUMP
-    ContinuationTrace ("ContinuationJump", continuation);
-#endif
-    running->thread.frame = continuation->continuation.frame;
-    running->thread.stack = StackCopy (continuation->continuation.stack);
-    running->thread.catches = continuation->continuation.catches;
-    running->thread.twixts = continuation->continuation.twixts;
-    running->thread.jump = 0;
-    *next = continuation->continuation.pc;
-}
-
-void
-ContinuationArgs (Value thread, BoxPtr args)
-{
-    if (thread->thread.jump)
-	thread->thread.jump->args = args;
+    /*
+     * If there are twixt enter or leave blocks to execute, build a Jump
+     * that walks them and then resets the context.
+     *
+     * Otherwise, just jump
+     */
+    if (thread->thread.context.twixts != continuation->continuation.context.twixts)
+	*next = JumpStart (thread, 
+			   thread->thread.context.twixts,
+			   continuation->continuation.context.twixts,
+			   continuation, ret);
     else
-    {
-	int	    i = args->nvalues;
-	while (--i >= 0)
-	    STACK_PUSH (thread->thread.stack, BoxValue (args, i));
-	STACK_PUSH (thread->thread.stack, NewInt (args->nvalues));
-    }
+	*next = ContextSet (&thread->thread.context, 
+			    &continuation->continuation.context);
+    RETURN (ret);
 }
 
 /*
  * Figure out where to go next in a longjmp through twixts
  */
 Value
-JumpContinuation (JumpPtr jump, InstPtr *next)
+JumpContinue (Value thread, InstPtr *next)
 {
     ENTER ();
+    JumpPtr	jump = thread->thread.jump;
     TwixtPtr	twixt;
     
     if (jump->leave)
     {
+	/*
+	 * Going up
+	 */
 	twixt = jump->leave;
-	jump->leave = twixt->previous;
+	jump->leave = twixt->context.twixts;
+	/*
+	 * Matching element of the twixt chain, next time start
+	 * back down the other side
+	 */
 	if (jump->leave == jump->parent)
 	    jump->leave = 0;
-	TwixtJump (running, twixt, False, next);
+	ContextSet (&thread->thread.context, &twixt->context);
+	*next = twixt->leave;
     }
     else if (jump->entering)
     {
+	/*
+	 * Going down
+	 */
 	twixt = jump->entering;
 	jump->entering = TwixtNext (jump->entering, jump->enter);
-	TwixtJump (running, twixt, True, next);
+	*next = ContextSet (&thread->thread.context, &twixt->context);
     }
     else
     {
-	ContinuationJump (running, jump->continuation, next);
-	if (jump->args)
-	    ContinuationArgs (running, jump->args);
+	/*
+	 * All done, set to final context and drop the jump object
+	 */
+	running->thread.jump = 0;
+	*next = ContextSet (&thread->thread.context, 
+			    &jump->continuation->continuation.context);
     }
     RETURN (jump->ret);
 }
 
-JumpPtr
-JumpBuild (TwixtPtr leave, TwixtPtr enter, 
-	   Value continuation, Value ret, InstPtr  *next)
+/*
+ * Build a Jump that threads through all of the necessary twixt blocks
+ * ending up at 'continuation' returning 'ret'
+ */
+InstPtr
+JumpStart (Value thread, TwixtPtr leave, TwixtPtr enter, 
+	   Value continuation, Value ret)
 {
     ENTER ();
     int	diff;
     TwixtPtr	leave_parent, enter_parent, parent;
-    JumpPtr	jump = 0;
+    InstPtr	next;
 
     leave_parent = leave;
     enter_parent = enter;
     /*
-     * Make both lists the same length 
+     * Make both lists the same length.  Note that either can be empty
      */
     diff = TwixtDepth (leave_parent) - TwixtDepth (enter_parent);
     if (diff >= 0)
 	while (diff-- > 0)
-	    leave_parent = leave_parent->previous;
+	    leave_parent = leave_parent->context.twixts;
     else
 	while (diff++ < 0)
-	    enter_parent = enter_parent->previous;
+	    enter_parent = enter_parent->context.twixts;
     /*
      * Now find the common parent
      */
     while (leave_parent != enter_parent)
     {
-	leave_parent = leave_parent->previous;
-	enter_parent = enter_parent->previous;
+	leave_parent = leave_parent->context.twixts;
+	enter_parent = enter_parent->context.twixts;
     }
 
     parent = enter_parent;
     /*
      * Build a data structure to get from leave to enter via parent
      */
-    jump = NewJump (leave, enter, parent, continuation, ret);
-    JumpContinuation (jump, next);
-    RETURN (jump);
+    thread->thread.jump = NewJump (leave, enter, parent, continuation, ret);
+    /*
+     * Don't need the jump return value yet; we're off to the twixt
+     * blocks; after that, the return value will get retrieved by the
+     * final OpLeaveDone or OpEnterDone instruction
+     */
+    (void) JumpContinue (thread, &next);
+    RETURN (next);
 }
 
 
@@ -767,26 +794,21 @@ do_setjmp (Value continuation_ref, Value ret)
 {
     ENTER ();
     Value	continuation;
-    StackObject	*stack;
     
     if (!ValueIsRef(continuation_ref))
     {
 	RaiseError ("setjump: not a reference %v", continuation_ref);
 	RETURN (Zero);
     }
-    stack = StackCopy (running->thread.stack);
+    continuation = NewContinuation (&running->thread.context,
+				    running->thread.context.pc + 1);
     /*
      * Adjust stack for set jump return
      */
-    STACK_DROP (stack, 2);
-    continuation = NewContinuation (running->thread.frame, 
-				    running->thread.pc + 1,
-				    stack,
-				    running->thread.catches,
-				    running->thread.twixts);
+    STACK_DROP (continuation->continuation.context.stack, 2);
     RefValueSet (continuation_ref, continuation);
 #ifdef DEBUG_JUMP
-    ContinuationTrace ("do_setjmp", continuation);
+    ContextTrace ("do_setjmp", &continuation->continuation.context, 1);
 #endif
     RETURN (ret);
 }
@@ -795,7 +817,6 @@ Value
 do_longjmp (InstPtr *next, Value continuation, Value ret)
 {
     ENTER ();
-    TwixtPtr	leave, enter;
 
     if (!running)
 	RETURN (Zero);
@@ -804,32 +825,7 @@ do_longjmp (InstPtr *next, Value continuation, Value ret)
 	RaiseError ("longjump: not a continuation %v", continuation);
 	RETURN (Zero);
     }
-#ifdef DEBUG_JUMP
-    TraceContinuation ("do_longjmp from",
-		       running->thread.frame,
-		       running->thread.stack,
-		       running->thread.catches,
-		       running->thread.twixts,
-		       running->thread.pc,
-		       1);
-    ContinuationTrace ("do_longjmp to", continuation);
-#endif      
-    /*
-     * Check for intervening twixts
-     */
-    leave = running->thread.twixts;
-    if (continuation)
-	enter = continuation->continuation.twixts;
-    else
-	enter = 0;
-    if (leave != enter)
-	running->thread.jump = JumpBuild (leave,
-					  enter,
-					  continuation, ret,
-					  next);
-    else
-	ContinuationJump (running, continuation, next);
-    RETURN (ret);
+    RETURN (ContinuationJump (running, continuation, ret, next));
 }
 
 static void
@@ -858,106 +854,68 @@ NewCatch (CatchPtr previous, Value continuation, SymbolPtr except)
 }
 
 static void
-MarkTwixt (void *object)
+TwixtMark (void *object)
 {
     TwixtPtr	twixt = object;
 
-    MemReference (twixt->previous);
-    MemReference (twixt->frame);
-    MemReference (twixt->catches);
-    MemReference (twixt->stack);
+    ContextMark (&twixt->context);
+    MemReference (twixt->leave);
 }
 
-DataType    TwixtType = { MarkTwixt, 0 };
+DataType    TwixtType = { TwixtMark, 0 };
 
 TwixtPtr
-NewTwixt (TwixtPtr	previous,
-	  FramePtr	frame, 
+NewTwixt (ContextPtr	context,
 	  InstPtr	enter,
-	  InstPtr	leave,
-	  CatchPtr	catches,
-	  StackObject	*stack)
+	  InstPtr	leave)
 {
     ENTER ();
     TwixtPtr	twixt;
 
     twixt = ALLOCATE (&TwixtType, sizeof (Twixt));
-    twixt->previous = previous;
-    if (previous)
-	twixt->depth = previous->depth + 1;
+    twixt->context.pc = enter;
+    twixt->leave = leave;
+    if (context->twixts)
+	twixt->depth = context->twixts->depth + 1;
     else
 	twixt->depth = 1;
-    twixt->frame = frame;
-    twixt->enter = enter;
-    twixt->leave = leave;
-    twixt->catches = catches;
-    twixt->stack = stack;
+    ContextSet (&twixt->context, context);
     RETURN (twixt);
 }
 
 /*
- * Set up for execution in a twixt context
+ * Twixts are chained deepest first.  Walking
+ * down the list is a bit of work
  */
-void
-TwixtJump (Value thread, TwixtPtr twixt, Bool enter, InstPtr *next)
-{
-#ifdef DEBUG_JUMP
-    TraceContinuation ("TwixtJump",
-		       twixt->frame,
-		       twixt->stack,
-		       twixt->catches,
-		       twixt->previous,
-		       enter ? twixt->enter : twixt->leave,
-		       1);
-#endif
-    thread->thread.frame = twixt->frame;
-    thread->thread.stack = StackCopy (twixt->stack);
-    thread->thread.catches = twixt->catches;
-    thread->thread.twixts = twixt->previous;
-    if (enter)
-	*next = twixt->enter;
-    else
-	*next = twixt->leave;
-}
-
-int
-TwixtDepth (TwixtPtr twixt)
-{
-    if (!twixt)
-	return 0;
-    return twixt->depth;
-}
 
 TwixtPtr
 TwixtNext (TwixtPtr twixt, TwixtPtr last)
 {
     if (last == twixt)
 	return 0;
-    while (last->previous != twixt)
-	last = last->previous;
+    while (last->context.twixts != twixt)
+	last = last->context.twixts;
     return last;
 }
 
 void
-RaiseException (Value thread, SymbolPtr except, BoxPtr args, InstPtr *next)
+RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 {
     ENTER ();
     Bool	caught = False;
     CatchPtr	catch;
     
-    for (catch = thread->thread.catches; catch; catch = catch->previous)
+    for (catch = thread->thread.context.catches; catch; catch = catch->previous)
 	if (catch->exception == except)
 	{
-	    do_longjmp (next, catch->continuation, Zero);
-	    if (args)
-		ContinuationArgs (thread, args);
+	    ContinuationJump (thread, catch->continuation, args, next);
 	    caught = True;
 	    break;
 	}
     if (!caught)
     {
 	int	i;
-	ExprPtr	stat = thread->thread.pc->base.stat;
+	ExprPtr	stat = thread->thread.context.pc->base.stat;
 	
 	if (stat->base.file)
 	    PrintError ("Unhandled exception \"%A\" at %A:%d\n", 
@@ -967,8 +925,8 @@ RaiseException (Value thread, SymbolPtr except, BoxPtr args, InstPtr *next)
 			except->symbol.name);
 	if (args)
 	{
-	    for (i = args->nvalues - 1; i >= 0; i--)
-		PrintError ("\t%v\n", BoxValueGet (args, i));
+	    for (i = args->array.ents - 1; i >= 0; i--)
+		PrintError ("\t%v\n", BoxValueGet (args->array.values, i));
 	}
 	SetSignalError ();
     }
@@ -977,7 +935,7 @@ RaiseException (Value thread, SymbolPtr except, BoxPtr args, InstPtr *next)
 
 SymbolPtr	    standardExceptions[_num_standard_exceptions];
 StandardException   standardException;
-BoxPtr		    standardExceptionArgs;
+Value		    standardExceptionArgs;
 ReferencePtr	    standardExceptionArgsRef;
 
 void
@@ -1002,18 +960,17 @@ RaiseStandardException (StandardException   se,
 			...)
 {
     ENTER ();
-    BoxPtr	args;
+    Value	args;
     int		i;
     va_list	va;
     
     va_start (va, argc);
-    args = NewBox (True, False, argc + 1);
-    BoxValueSet (args, 0, NewStrString (string));
+    i = argc + 1;
+    args = NewArray (False, typesPoly, 1, &i);
+    BoxValueSet (args->array.values, 0, NewStrString (string));
     if (argc)
-    {
 	for (i = 0; i < argc; i++)
-	    BoxValueSet (args, i+1, va_arg (va, Value));
-    }
+	    BoxValueSet (args->array.values, i+1, va_arg (va, Value));
     standardException = se;
     standardExceptionArgs = args;
     SetSignalException ();

@@ -49,3 +49,5 @@ void function gcd_test (int amin, int amax, int bmin, int bmax)
 	for (b = bmin; b <= bmax; b++)
 	    gcd_random (a, b);
 }
+
+gcd_test (2, 200, 2, 200)

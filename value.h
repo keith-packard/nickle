@@ -32,6 +32,7 @@ typedef union _code	*CodePtr;
 typedef struct _frame	*FramePtr;
 typedef struct _thread	*ThreadPtr;
 typedef struct _continuation	*ContinuationPtr;
+typedef struct _context		*ContextPtr;
 typedef union _value	*Value;
 typedef struct _obj	*ObjPtr;
 typedef union _inst	*InstPtr;
@@ -556,6 +557,21 @@ typedef struct _func {
     BoxPtr	statics;
 } Func;
 
+/*
+ * This structure is used within continuations, twixts and
+ * threads to hold an execution context
+ */
+
+typedef struct _context {
+    Value	value;	    /* accumulator */
+    InstPtr	pc;	    /* program counter */
+    ObjPtr	obj;	    /* reference to obj containing pc */
+    FramePtr	frame;	    /* function call frame list */
+    StackObject	*stack;	    /* value stack */
+    CatchPtr	catches;    /* handled exceptions */
+    TwixtPtr	twixts;	    /* pending twixts */
+} Context;
+
 typedef enum _ThreadState {
     ThreadRunning = 0,
     ThreadSuspended = 1,
@@ -568,13 +584,10 @@ typedef struct _thread {
     /*
      * Execution context
      */
-    Value	v;
-    StackObject	*stack;
-    InstPtr	pc;
-    FramePtr	frame;
-    ObjPtr	code;
-    CatchPtr	catches;
-    TwixtPtr	twixts;
+    Context	context;
+    /*
+     * Currently executing jump
+     */
     JumpPtr	jump;
     /*
      * Thread status
@@ -601,13 +614,29 @@ typedef struct _semaphore {
     int		id;
 } Semaphore;
 
+/*
+ * Set the context at dst to that at src.  Return the src
+ * context instruction pointer
+ */
+InstPtr	ContextSet (ContextPtr	dst,
+		    ContextPtr	src);
+
+void
+ContextJump (ContextPtr dst, ContextPtr src, InstPtr *next);
+
+/*
+ * Mark memory referenced from a context,
+ */
+void	ContextMark (ContextPtr	ctx);
+
+/*
+ * Initialize a context to default values
+ */
+void	ContextInit (ContextPtr dst);
+
 typedef struct _continuation {
     BaseValue	value;
-    FramePtr	frame;
-    InstPtr	pc;
-    StackObject	*stack;
-    CatchPtr	catches;
-    TwixtPtr	twixts;
+    Context	context;
 } Continuation;
 
 typedef union _value {
@@ -710,10 +739,7 @@ Value	NewIntegerFloat (Integer *i, unsigned prec);
 Value	NewNaturalFloat (Sign sign, Natural *n, unsigned prec);
 Value	NewRationalFloat (Rational *r, unsigned prec);
 Value	NewValueFloat (Value av, unsigned prec);
-Value	NewContinuation (FramePtr frame, InstPtr pc, 
-			 StackObject *stack,
-			 CatchPtr catches,
-			 TwixtPtr twixts);
+Value	NewContinuation (ContextPtr context, InstPtr pc);
 
 unsigned    FpartLength (Fpart *a);
 

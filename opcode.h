@@ -55,6 +55,7 @@ typedef enum _OpCode {
     OpArrayRefStore,
     OpCall,
     OpTailCall,
+    OpExceptionCall,
     OpDot,
     OpDotRef,
     OpDotRefStore,

@@ -221,3 +221,27 @@ x!|1
 true ? x! : 2
 false ? 1 : x!
 
+
+*int pntr;
+pntr=&x;
+
+
+*pntr**2
+2***pntr
+*pntr*2
+2*pntr
+*pntr/100
+100/ *pntr
+*pntr//100
+100//*pntr
+*pntr%100
+100%*pntr
+*pntr+7
+7+*pntr
+*pntr-7
+7-*pntr
+*pntr>>1
+1>>*pntr
+*pntr<<1
+1<<*pntr
+

@@ -1410,6 +1410,22 @@ NaturalGreaterEqualOffset (Natural *a, Natural *b, int offset)
     return True;
 }
 
+#define rotDigit(x)	(((x) >> 1) | ((x) << (DIGITBITS-1)))
+
+int
+NaturalHash (Natural *a)
+{
+    digit   h = 0;
+    digit   *at;
+    int	    index;
+
+    at = NaturalDigits (a);
+    index = a->length;
+    while (index--)
+	h = rotDigit(h) ^ *at++;
+    return (int) h;
+}
+
 int
 NaturalInit (void)
 {

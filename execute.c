@@ -330,12 +330,14 @@ ThreadArray (Value thread, int ndim, Type *type)
 
 static int
 ThreadArrayIndex (Value array, Value thread, int ndim, 
-		  Value last, int off, Bool except)
+		  Value last, int off, Bool except, Bool resize)
 {
     int	    i;
     int	    dim;
     int	    part;
     Value   d;
+    int	    *dims = ArrayDims (&array->array);
+    int	    *limits = ArrayLimits (&array->array);
     
     i = 0;
     for (dim = ndim - 1; dim >= 0; dim--)
@@ -344,16 +346,31 @@ ThreadArrayIndex (Value array, Value thread, int ndim,
 	    d = last;
 	else
 	    d = Stack(dim + off - 1);
-	if (!ValueIsInt(d) || 
-	    (((part = ValueInt(d)) < 0 || 
-	      ArrayDims(&array->array)[dim] <= part) && except))
+	if (!ValueIsInt(d) || (part = ValueInt(d)) < 0)
 	{
-	    RaiseStandardException (exception_invalid_array_bounds,
-				    "Array index out of bounds",
-				    2, array, Stack(dim + off - 1));
+	    RaiseStandardException (exception_invalid_argument,
+				    "Array index not non-negative integer",
+				    2, array, d);
 	    return 0;
 	}
-	i = i * ArrayDims(&array->array)[dim] + part;
+	if (limits[dim] <= part)
+	{
+	    if (resize)
+	    {
+		if (dims[dim] > part)
+		    limits[dim] = part + 1;
+		else
+		    ArrayResize (array, dim, part + 1);
+	    }
+	    else if (except)
+	    {
+		RaiseStandardException (exception_invalid_array_bounds,
+					"Array index out of bounds",
+					2, array, d);
+		return 0;
+	    }
+	}
+	i = i * dims[dim] + part;
     }
     return i;
 }
@@ -452,7 +469,7 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 				2, array, value);
 		break;
 	    }
-	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2, True);
+	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2, True, False);
 	    if (aborting)
 		break;
 	    complete=True;
@@ -474,7 +491,7 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	STACK_PUSH (thread->thread.continuation.stack, NewInt (ndim));
 	if (mode == AInitModeRepeat)
 	{
-	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2, False);
+	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2, False, False);
 	    ThreadArrayReplicate (thread, array, dim, i);
 	}
 	break;
@@ -730,7 +747,7 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
 				    2, NewInt (stack), v);
 	    break;
 	}
-	i = ThreadArrayIndex (v, thread, stack, value, 0, True);
+	i = ThreadArrayIndex (v, thread, stack, value, 0, True, !fetch);
 	if (!aborting)
 	{
 	    if (typeCheck)

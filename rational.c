@@ -300,6 +300,14 @@ RationalReduce (Value av)
     RETURN (av);
 }
 
+static Value
+RationalHash (Value av)
+{
+    Rational	*a = &av->rational;
+
+    return NewInt (NaturalHash (a->den) ^ NaturalHash(a->num) ^ a->sign);
+}
+
 extern ValueRep    IntegerRep;
 
 extern Natural	*NaturalFactor (Natural *, Natural *);
@@ -1131,7 +1139,9 @@ ValueRep    RationalRep = {
     },
     RationalPromote,
     RationalReduce,
-    RationalPrint
+    RationalPrint,
+    0,
+    RationalHash,
 };
 
 Value

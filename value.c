@@ -578,6 +578,8 @@ CopyMutable (Value v)
 	    RETURN (v);
 	nv = NewArray (False, ArrayType(&v->array),
 		       v->array.ndim, ArrayDims(&v->array));
+	for (i = 0; i < v->array.ndim; i++)
+	    ArrayLimits(&nv->array)[i] = ArrayLimits(&v->array)[i];
 	box = v->array.values;
 	nbox = nv->array.values;
 	n = v->array.ents;
@@ -621,6 +623,19 @@ Value
 ValueEqual (Value a, Value b, int expandOk)
 {
     return a == b ? TrueVal : FalseVal;
+}
+
+Value
+ValueHash (Value v)
+{
+    ValueRep	*rep;
+
+    if (!v)
+	return Zero;
+    rep = ValueRep(v);
+    if (!rep->hash)
+	return Zero;
+    return (*rep->hash) (v);
 }
 
 #ifndef HAVE_C_INLINE

@@ -61,6 +61,7 @@ import_Toplevel_namespace()
         { do_sign, "sign", "i", "R" },
         { do_sleep, "sleep", "v", "i" },
         { do_string_to_real, "string_to_real", "R", "s" },
+	{ do_hash, "hash", "i", "p" },
         { 0 }
     };
 
@@ -666,4 +667,10 @@ do_is_func (Value av)
 	break;
     }
     RETURN (av);
+}
+
+Value
+do_hash (Value a)
+{
+    return ValueHash(a);
 }

@@ -382,6 +382,12 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, int
     return result != 0;
 }
 
+static Value
+IntegerHash (Value iv)
+{
+    return NewInt (NaturalHash (IntegerMag(iv)) ^ IntegerSign(iv));
+}
+
 static void
 IntegerMark (void *object)
 {
@@ -411,7 +417,9 @@ ValueRep    IntegerRep = {
     },
     IntegerPromote,
     IntegerReduce,
-    IntegerPrint
+    IntegerPrint,
+    0,
+    IntegerHash,
 };
 
 #define INTEGER_CACHE_SIZE  8191

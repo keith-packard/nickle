@@ -212,6 +212,7 @@ int	NaturalWidth (Natural *u);
 digit	DigitBmod (digit u, digit v, int s);
 int	IntWidth (int i);
 int	DoubleDigitWidth (double_digit i);
+int	NaturalHash (Natural *a);
 
 extern Natural	*max_int_natural;
 extern Natural	*zero_natural;
@@ -514,6 +515,7 @@ typedef struct _array {
 } Array;
 
 #define ArrayDims(a)	    ((int *) ((a) + 1))
+#define ArrayLimits(a)	    (ArrayDims(a) + (a)->ndim)
 #define ArrayType(a)	    ((a)->values->u.type)
 
 typedef struct _io_chain {
@@ -723,6 +725,8 @@ typedef Value	(*Promote) (Value, Value);
 
 typedef Value	(*Coerce) (Value);
 
+typedef Value	(*Hash) (Value);
+
 #define DEFAULT_OUTPUT_PRECISION    -1
 #define INFINITE_OUTPUT_PRECISION   -2
 
@@ -739,6 +743,7 @@ struct _valueType {
     Coerce	reduce;
     Output	print;
     TypeCheck	typecheck;
+    Hash	hash;
 };
 
 typedef struct _box {
@@ -796,6 +801,7 @@ extern DataCachePtr	refCache;
 Value	NewString (int);
 Value	NewStrString (char *);
 Value	NewArray (Bool constant, TypePtr type, int ndim, int *dims);
+void	ArrayResize (Value av, int dim, int size);
 Value	NewFile (int fd);
 Value	NewRefReal (BoxPtr box, int element, Value *re);
 char	*StringNextChar (char *src, unsigned *dst);
@@ -930,6 +936,8 @@ Copy (Value v)
 Value	Copy (Value);
 #endif
 Value	ValueEqual (Value a, Value b, int expandOk);
+
+Value	ValueHash (Value a);
 
 /*
  * There are two kinds of signals:

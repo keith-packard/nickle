@@ -320,6 +320,12 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, int fil
     return True;
 }
 
+static Value
+IntHash (Value av)
+{
+    return av;
+}
+
 ValueRep IntRep = {
     { 0, 0, "IntRep" },	    /* data */
     rep_int,	    /* tag */
@@ -341,7 +347,9 @@ ValueRep IntRep = {
 	IntCeil,
     },
     0, 0,
-    IntPrint
+    IntPrint,
+    0,
+    IntHash,
 };
 
 int

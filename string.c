@@ -164,6 +164,20 @@ StringCharSize (unsigned c)
     else return 0;
 }
 
+#define irot(i)	(((i) << 1) | ((i) >> (sizeof (int) * 8 - 1)))
+
+static Value
+StringHash (Value av)
+{
+    char    *string = StringChars (&av->string);
+    char    c;
+    int	    i = 0;
+
+    while ((c = *string++))
+	i = irot(i) ^ c;
+    return NewInt(i);
+}
+
 ValueRep   StringRep = {
     { 0, 0, "StringRep" },		/* base */
     rep_string,	/* tag */
@@ -185,6 +199,8 @@ ValueRep   StringRep = {
     0,
     0,
     StringPrint,
+    0,
+    StringHash,
 };
 
 Value

@@ -1,18 +1,13 @@
-Finish exception handling
-
-Move std math functions out of math, or import math
-
-Implement library autoload mechanism
-
-Write fixed position (scale=n) math library in nickle ala bc/dc.
-
-Replace nick-in-C code (e.g. gcd.c) with nick library code
-
-Copyright status of code?  AVL code in particular?
-
-read file should be load file?
-
-size(array)
-
-Remove gettimeofday() dependency?  select() dependency?
-
++ Finish exception handling.
++ Move std math functions out of math, or import math.
++ Implement library autoload mechanism.
++ Write fixed position (scale=n) math library in nickle ala bc/dc.
++ Replace nick-in-C code (e.g. gcd.c) with nick library code.
++ "read" file should be "load" file.
++ size(array) must be implemented.
++ Allow poll() as a substitue for select().
++ Allow nick to be built without all the async IO and
+  gettimeofday() and the like.
++ Build a small test suite.
++ Add a PRNG
++ "scope public" doesn't appear to work right.

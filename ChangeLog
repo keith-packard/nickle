@@ -1,5 +1,15 @@
 2004-04-15  Keith Packard  <keithp@keithp.com>
 
+	* autogen.sh:
+	Always regenerate configure in case version.m4 changes
+	* configure.in:
+	Update to autoconf 2.59 syntax
+	* debian/changelog:
+	* version.m4:
+	Update to version 2.31
+
+2004-04-15  Keith Packard  <keithp@keithp.com>
+
 	* array.c: (ArrayEqual), (ArrayPrint), (ArrayHash), (ArrayMark),
 	(BoxVectorMark), (NewBoxVector), (FillBoxVector), (NewArray),
 	(ArrayResize):

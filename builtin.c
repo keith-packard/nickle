@@ -14,7 +14,6 @@
 
 #include	<config.h>
 
-#include	<math.h>
 #include	<ctype.h>
 #include	<strings.h>
 #include	<time.h>

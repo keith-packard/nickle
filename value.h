@@ -20,7 +20,6 @@
 #include	<stdlib.h>
 #include	<memory.h>
 #include	<string.h>
-#include	<math.h>
 #include	"mem.h"
 
 typedef enum _Bool { False = 0, True = 1 }  	Bool;

@@ -14,7 +14,6 @@
 
 #include	<config.h>
 
-#include	<math.h>
 #include	"nickle.h"
 
 #ifdef notdef

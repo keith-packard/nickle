@@ -14,8 +14,8 @@
 
 #include	<config.h>
 
-#include	<stdio.h>
 #include	<math.h>
+#include	<stdio.h>
 #include	"value.h"
 
 # define length(n)	((n)->length)

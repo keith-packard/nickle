@@ -9,7 +9,6 @@
 
 #include	<config.h>
 
-#include	<math.h>
 #include	"nickle.h"
 #include	<stdio.h>
 

@@ -751,20 +751,28 @@ static ObjPtr
 CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
-    int	    enter_inst, twixt_inst, enter_done_inst, leave_done_inst;
+    int	    enter_inst, twixt_inst, twixt_body_inst,
+	    enter_done_inst, leave_done_inst;
+    int     state;
     InstPtr inst;
     
     enter_inst = obj->used;
 
     /* Compile enter expression */
-    obj = _CompileExpr (obj, expr->tree.left->tree.left, namespace, True, stat);
+    if (expr->tree.left->tree.left)
+	obj = _CompileExpr (obj, expr->tree.left->tree.left, namespace, True, stat);
     NewInst (enter_done_inst, obj);
     
     /* here's where the twixt instruction goes */
     NewInst (twixt_inst, obj);
 
     /* Compile the body */
+    twixt_body_inst = obj->used;
+    state = obj->state;
+    obj->state |= OBJ_STATE_SWITCH;
     obj = _CompileStat (obj, expr->tree.right->tree.left, namespace);
+    CompilePatchLoop (obj, twixt_body_inst, -1);
+    obj->state = (obj->state & ~OBJ_STATE_SWITCH) | (state & OBJ_STATE_SWITCH);
     BuildInst (obj, OpTwixtDone, inst, stat);
     
     /* finish the twixt instruction */
@@ -775,7 +783,8 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     inst->twixt.leave = obj->used - twixt_inst;
 
     /* Compile leave expression */
-    obj = _CompileExpr (obj, expr->tree.left->tree.right, namespace, False, stat);
+    if (expr->tree.left->tree.right)
+	obj = _CompileExpr (obj, expr->tree.left->tree.right, namespace, False, stat);
     NewInst (leave_done_inst, obj);
 
     /* finish the enter_done instruction */
@@ -1873,7 +1882,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	break;
     case BREAK:
 	if ((obj->state & (OBJ_STATE_LOOP|OBJ_STATE_SWITCH)) == 0)
-	    CompileError (obj, expr, "break not in loop/switch");
+	    CompileError (obj, expr, "break not in loop/switch/twixt");
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, middle_inst);
 	inst->base.opCode = OpBreak;

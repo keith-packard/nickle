@@ -69,7 +69,17 @@ stands for newline, "\\r" for carriage return,
 .IP name
 A variable reference.
 .IP "name() name(E,E,...,E)"
-A function call with zero or more arguments.
+A function call with zero or more arguments.  Note that
+functions are fully call-by-value: arrays and structures
+are copied rather than being referenced as in C.
+.IP "desc name  T name = value"
+Definition expressions: a new name is made available,
+with the value of the definition being the value
+of the initializer in the second form, and
+uninitialized in the first form.  The descriptor
+desc is not optional: it consists of any combination
+of publication, storage class or type (in that order).
+.\" HERE
 .PP
 A structured value expression is
 also possible: see VALUES below.
@@ -84,6 +94,8 @@ Cast the result of E into this type.
 Refers to the E'th element of this array,
 or the E1'th/E2'th/etc
 element of a multi-dimensional array.
+Note that both arrays of arrays ala C and multidimensional
+arrays ala NAWK are possible.
 .IP "struct.tag"
 Structure dereference.
 .IP "struct->tag"
@@ -292,7 +304,9 @@ Function expression: denotes a function of zero or more
 formal parameters with the given types and names, returning
 the given result type.  The function body is given by
 the curly-brace-enclosed statement list.  All types are
-optional, and default to poly.
+optional, and default to poly.  As noted above, functions
+are strictly call-by-value: in particular, arrays and structures
+are copied rather than referenced.
 .IP "T function name(T name,T name,...,T name){S;S;...S;}"
 Defines a function of zero or more arguments.  Syntactic
 sugar for
@@ -301,6 +315,17 @@ sugar for
 .br
 .LP
 Structures:
+.IP "(struct { T name; T name; ...T name; }){name = E; name = E; ...name=E;}"
+Create a value of a structured type. The named fields
+are initialized to the given values, with
+the remainder uninitialized.  As indicated, initialization is
+by label rather than positional as in C.
+.LP
+Unions:
+.IP "(union { T name; T name; ...T name; }.name) E"
+Create a value of the given union type, the variant
+given by .name, and the value given by E.  Note
+that E must be type-compatible with name.
 .\"
 .SH STATEMENTS
 The statement syntax very closely resembles
@@ -323,11 +348,41 @@ C-style for loop.
 .IP "switch (E) { case E: S-list  case E: S-list ... default: S-list }"
 C-style case statement.  Note that the case expressions
 are not required to be constant expressions, but may
-be arbitrary.
+be arbitrary.  The first case evaluating to the switch
+argument is taken, else the default if present, else the switch body
+is skipped.
+.IP "twixt(opt-E; opt-E) S"
+.IP "twixt(opt-E; opt-E) S else S"
+If first argument expression evaluates to true,
+the body of the twixt() and then the second argument expression
+will be evaluated.  If the first argument expression
+evaluates to false, the else statement will be executed
+if present.  Otherwise, the entire twixt() statement will be skipped.
+.PP
+The twixt() statement guarantees that all of these events
+will happen in the specified
+order regardless of the manner in which the twixt() is
+entered (from outside) or exited, including exceptions,
+continuations, and break.  (Compare with Java's ``finally'' clause.)
+.IP "try S;"
+.IP "try S catch name (T name, ...) { S; ... };"
+.IP "try S catch name (T name, ...) { S; ... } ... ;"
+Execute the first statement S.  If an exception
+is raised during execution, and the name matches
+the name in a catch block, bind the formal parameters in the
+catch block to the actual parameters of the exception,
+and execute the body of the catch block.  There may be
+multiple catch blocks per try.  Zero catches, while legal,
+is relatively useless.  After completion of a catch block,
+execution continues.
+.\" HERE
+.IP "raise name(name, name, ..., name)"
+Raise the named exception with zero or more arguments.
 .IP ";"
 The null statement
 .IP "break;"
-Discontinue execution of the nearest enclosing for/do/while/switch statement.
+Discontinue execution of the nearest enclosing for/do/while/switch/twixt statement.  The leave expression will be executed as the
+twixt statement is exited.
 .IP "continue;"
 Branch directly to the conditional test of the nearest enclosing
 for/do/while statement.

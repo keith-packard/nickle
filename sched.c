@@ -364,25 +364,15 @@ Kill (int n, Value *p)
 void
 TraceFunction (Value thread, FramePtr frame, CodePtr code, Atom name)
 {
-    ScopeChainPtr   chain;
-    SymbolPtr	    arg;
     int		    fe;
     
     FilePuts (FileStdout, name ? AtomName (name) : "<anonymous>");
     FilePuts (FileStdout, " (");
-    fe = 0;
-    for (chain = code->func.locals->symbols; chain; chain = chain->next)
+    for (fe = 0; fe < code->base.argc; fe++)
     {
-	arg = chain->symbol;
-	if (arg->symbol.class == class_arg)
-	{
-	    if (fe)
-		FilePuts (FileStdout, ", ");
-	    FilePuts (FileStdout, AtomName (arg->symbol.name));
-	    FilePuts (FileStdout, " = ");
-	    print (FileStdout, BoxValue (frame->frame, arg->local.element));
-	    fe++;
-	}
+	if (fe)
+	    FilePuts (FileStdout, ", ");
+	print (FileStdout, BoxValue (frame->frame, fe));
     }
     FilePuts (FileStdout, ")\n");
 }

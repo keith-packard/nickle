@@ -740,6 +740,7 @@ GetScope (ScopePtr *scope, FramePtr *fp)
 {
     Value	thread;
     FramePtr    frame;
+    ExprPtr	stat;
 
     thread = lookupVar ("thread");
     if (thread->value.tag == type_thread)
@@ -749,12 +750,16 @@ GetScope (ScopePtr *scope, FramePtr *fp)
 	    frame = thread->thread.frame;
 	    while (frame && frame->function->func.code->base.builtin)
 		frame = frame->previous;
+	    stat = thread->thread.pc->base.stat;
+	    if (stat)
+		*scope = stat->base.scope;
+	    else
+		*scope = GlobalScope;
 	    if (frame)
-	    {
 		*fp = frame;
-		*scope = frame->function->func.code->func.locals;
-		return;
-	    }
+	    else
+		*fp = 0;
+	    return;
 	}
 	else
 	{

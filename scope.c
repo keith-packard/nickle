@@ -46,6 +46,7 @@ NewScope (ScopePtr previous)
     scope->previous = previous;
     scope->symbols = 0;
     scope->code = 0;
+    scope->publish = publish_public;
     RETURN (scope);
 }
 
@@ -91,7 +92,9 @@ ScopeLookupSymbol (ScopePtr scope, Atom name)
     ScopeChainPtr   chain;
     
     for (chain = scope->symbols; chain; chain = chain->next)
-	if (chain->symbol->symbol.name == name)
+	if (chain->symbol->symbol.name == name &&
+	    (scope->publish == publish_public ||
+	     chain->publish == publish_public))
 	    return chain->symbol;
     return 0;
 }
@@ -126,28 +129,6 @@ ScopeAddSymbol (ScopePtr scope, SymbolPtr symbol)
 
     chain = NewScopeChain (scope->symbols, symbol, symbol->symbol.publish);
     scope->symbols = chain;
-    /*
-     * For symbols hanging from a frame (statics, locals and args),
-     * locate the frame and set their element value
-     */
-    if (ClassFrame(symbol->symbol.class))
-    {
-	while (!scope->code)
-	    scope = scope->previous;
-	switch (symbol->symbol.class) {
-	case class_static:
-	    symbol->local.element = scope->code->func.staticc++;
-	    break;
-	case class_arg:
-	    symbol->local.element = scope->code->base.argc++;
-	    break;
-	case class_auto:
-	    symbol->local.element = scope->code->func.autoc++;
-	    break;
-	default:
-	    break;
-	}
-    }
     RETURN (symbol);
 }
 

@@ -28,7 +28,8 @@ static void MarkFuncCode (void *object)
 {
     FuncCodePtr	fc = object;
 
-    MemReference (fc->locals);
+    MemReference (fc->dynamics);
+    MemReference (fc->statics);
     MemReference (fc->args);
     MemReference (fc->code);
     MemReference (fc->obj);
@@ -46,12 +47,11 @@ NewFuncCode (Type type, ExprPtr args, ExprPtr code)
     fc = ALLOCATE (&FuncCodeType, sizeof (FuncCode));
     fc->base.builtin = False;
     fc->base.type = type;
-    fc->func.autoc = 0;
-    fc->func.locals = 0;
+    fc->func.dynamics = 0;
+    fc->func.statics = 0;
     fc->func.args = args;
     fc->func.code = code;
     fc->func.obj = 0;
-    fc->func.staticc = 0;
     fc->func.staticInit = 0;
     RETURN (fc);
 }
@@ -126,8 +126,6 @@ NewFunc (CodePtr code, FramePtr staticLink)
 {
     ENTER ();
     Value	    ret;
-    ScopeChainPtr   chain;
-    SymbolPtr	    statics;
 
     ret = ALLOCATE (&FuncType.data, sizeof (Func));
     ret->value.tag = type_func;
@@ -137,21 +135,7 @@ NewFunc (CodePtr code, FramePtr staticLink)
     /*
      * Create the box containing static variables for this closure
      */
-    if (!code->base.builtin)
-    {
-	if (code->func.staticc)
-	{
-	    ret->func.statics = NewBox (False, code->func.staticc);
-	    for (chain = code->func.locals->symbols;
-		 chain;
-		 chain = chain->next)
-	    {
-		statics = chain->symbol;
-		if (statics->symbol.class == class_static)
-		    BoxValue (ret->func.statics, 
-			      statics->local.element) = Default (statics->symbol.type);
-	    }
-	}
-    }
+    if (!code->base.builtin && code->func.statics)
+	ret->func.statics = NewTypedBox (False, code->func.statics);
     RETURN (ret);
 }

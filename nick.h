@@ -118,6 +118,7 @@ typedef struct _scope {
     ScopePtr	previous;
     ScopeChainPtr   symbols;
     CodePtr	code;
+    Publish	publish;
 } Scope;
 
 extern ScopePtr	    NewScope (ScopePtr previous);
@@ -166,11 +167,11 @@ typedef struct _frame {
     ObjPtr	    saveCode;
 } Frame;
 
-extern FramePtr	NewFrame (Value	    function,
-			  FramePtr  previous,
-			  FramePtr  staticLink,
-			  int	    size,
-			  BoxPtr    statics);
+extern FramePtr	NewFrame (Value		function,
+			  FramePtr	previous,
+			  FramePtr	staticLink,
+			  BoxTypesPtr	dynamics,
+			  BoxPtr	statics);
 
 # define	NOTHING	0
 # define	CONT	1
@@ -180,6 +181,7 @@ extern FramePtr	NewFrame (Value	    function,
 typedef struct _exprBase {
     DataType	*data;
     int		tag;
+    ScopePtr	scope;
 } ExprBase;
 
 typedef struct _exprTree {
@@ -236,12 +238,13 @@ typedef struct _codeBase {
 
 typedef struct _funcCode {
     CodeBase	base;
-    int		autoc;
-    ScopePtr	locals;
     ExprPtr	args;
     ExprPtr	code;
     ObjPtr	obj;
-    int		staticc;
+    
+    BoxTypesPtr	dynamics;
+    BoxTypesPtr	statics;
+    
     ObjPtr	staticInit;
     Bool	inStaticInit;
 } FuncCode, *FuncCodePtr;
@@ -438,7 +441,7 @@ extern void	init (void);
 extern int	yyparse (void);
 extern int	interactive, stdin_interactive;
 
-void	intr(int), ferr(int);
+void	intr(int);
 void	stop (int), die (int), segv (int);
 void	ignore_ferr (void);
 

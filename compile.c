@@ -127,6 +127,37 @@ DefaultClass (ScopePtr scope)
 }
 
 SymbolPtr
+CompileAddSymbol (ScopePtr scope, SymbolPtr symbol)
+{
+    ENTER ();
+    ScopeAddSymbol (scope, symbol);
+    /*
+     * For symbols hanging from a frame (statics, locals and args),
+     * locate the frame and set their element value
+     */
+    if (ClassFrame(symbol->symbol.class))
+    {
+	while (!scope->code)
+	    scope = scope->previous;
+	switch (symbol->symbol.class) {
+	case class_static:
+	    symbol->local.element = AddBoxTypes (&scope->code->func.statics,
+						 symbol->symbol.type);
+	    break;
+	case class_arg:
+	    scope->code->base.argc++;
+	case class_auto:
+	    symbol->local.element = AddBoxTypes (&scope->code->func.dynamics,
+						 symbol->symbol.type);
+	    break;
+	default:
+	    break;
+	}
+    }
+    RETURN (symbol);
+}
+
+SymbolPtr
 AddSymbol (ScopePtr scope, Atom name, Type defType, Publish publish)
 {
     ENTER ();
@@ -136,7 +167,7 @@ AddSymbol (ScopePtr scope, Atom name, Type defType, Publish publish)
 	s = NewSymbolAuto (name, defType);
     else
 	s = NewSymbolGlobal (name, defType, publish);
-    ScopeAddSymbol (scope, s);
+    CompileAddSymbol (scope, s);
     RETURN (s);
 }
 
@@ -200,6 +231,7 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     SymbolPtr s;
     int	i;
     
+    expr->base.scope = scope;
     switch (expr->base.tag) {
     case NAME:
 	BuildInst(obj, OpNameRef, inst, stat);
@@ -480,6 +512,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     InstPtr inst;
     SymbolPtr	s;
     
+    expr->base.scope = scope;
     switch (expr->base.tag) {
     case NAME:
 	BuildInst (obj, OpName, inst, stat);
@@ -720,6 +753,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
     InstPtr	inst;
     SymbolPtr	sym;
     
+    expr->base.scope = scope;
     switch (expr->base.tag) {
     case IF:
 	/*
@@ -843,7 +877,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 	    obj = _CompileStat (obj, expr->tree.left, scope);
 	    expr = expr->tree.right;
 	}
-	scope->previous = 0;
 	break;
     case BREAK:
 	NewInst (middle_inst, obj);
@@ -900,8 +933,11 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 	    obj = _CompileStat (obj, expr->tree.left, scope);
 	    expr = expr->tree.right;
 	}
-	ScopeAddSymbol (scope->previous, sym);
-	scope->previous = 0;
+	/*
+	 * Make private symbols in this scope not visible to searches
+	 */
+	scope->publish = publish_private;
+	CompileAddSymbol (scope->previous, sym);
 	break;
     case IMPORT:
 	sym = FindSymbol (obj, expr, scope,
@@ -951,14 +987,13 @@ _CompileFunc (ObjPtr obj, CodePtr code, ScopePtr scope, ExprPtr stat)
 
     scope = NewScope (scope);
     scope->code = code;
-    code->func.locals = scope;
     for (args = code->func.args; args; args = args->tree.right)
     {
 	for (argd = args->tree.left->decl.decl; argd; argd = argd->next)
 	{
 	    local = NewSymbolArg (argd->name, 
 				  args->tree.left->decl.type);
-	    ScopeAddSymbol (scope, local);
+	    CompileAddSymbol (scope, local);
 	}
     }
     code->func.obj = _CompileFuncCode (code, scope, stat);
@@ -992,6 +1027,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
     ScopePtr	    compile_scope;
     ObjPtr	    *initObj;
     
+    decls->base.scope = scope;
     class = decls->decl.class;
     if (class == class_undef)
 	class = DefaultClass (scope);
@@ -1028,6 +1064,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
 		break;
 	break;
     default:
+	code_scope = 0;
 	break;
     }
     if (ClassFrame (class) && !code_scope)
@@ -1073,7 +1110,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
 	    }
 	    SetPush (*initObj);
 	}
-	ScopeAddSymbol (scope, s);
+	CompileAddSymbol (scope, s);
 	if (decl->init)
 	{
 	    InstPtr inst;

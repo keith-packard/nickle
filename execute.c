@@ -43,44 +43,27 @@ BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
     CodePtr	    code = func->func.code;
     int		    fe;
     FramePtr	    frame;
-    SymbolPtr	    local;
-    ScopeChainPtr   chain;
+    Type	    type;
     
     frame = NewFrame (func, thread->thread.frame, 
 		      func->func.staticLink, 
-		      nargs + code->func.autoc,
+		      code->func.dynamics,
 		      func->func.statics);
-    for (chain = code->func.locals->symbols; 
-	 chain; 
-	 chain = chain->next)
+    for (fe = 0; fe < nargs; fe++)
     {
-	local = chain->symbol;
-	switch (local->symbol.class) {
-	case class_arg:
-	    fe = local->local.element;
-	    if (!AssignTypeCompatiblep (local->symbol.type,
-					Stack(fe)))
-	    {
-		RaiseError ("Incompatible type for argument %d function %T = (%T) %v",
+	type = BoxTypesValue (code->func.dynamics, fe);
+	if (!AssignTypeCompatiblep (type, Stack(fe)))
+	{
+	    RaiseError ("Incompatible type for argument %d function %T = (%T) %v",
 			fe+1,
-			local->symbol.type,
+			type,
 			Stack(fe)->value.tag,
 			Stack(fe));
-		RETURN (0);
-	    }
-	    if (!Stack(fe))
-		abort ();
-	    BoxType (frame->frame, fe) = local->symbol.type;
-	    BoxValue (frame->frame, fe) = Copy (Stack(fe), local->symbol.type);
-	    break;
-	case class_auto:
-	    fe = local->local.element;
-	    BoxType (frame->frame, fe) = local->symbol.type;
-	    BoxValue (frame->frame, fe) = Default (local->symbol.type);
-	    break;
-	default:
-	    break;
+	    RETURN (0);
 	}
+	if (!Stack(fe))
+	    abort ();
+	BoxValue (frame->frame, fe) = Copy (Stack(fe), type);
     }
     frame->function = func;
     frame->savePc = savePc;

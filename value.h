@@ -402,6 +402,21 @@ typedef struct _box {
 
 extern BoxPtr	NewBox (Bool constant, int nvalues);
 
+typedef struct _boxTypes {
+    DataType	*data;
+    int		count;
+    int		size;
+} BoxTypes, *BoxTypesPtr;
+
+#define BoxTypesElements(bt)	((Type *) ((bt) + 1))
+#define BoxTypesValue(bt,e)	(BoxTypesElements(bt)[e])
+
+extern BoxTypesPtr NewBoxTypes (int size);
+
+extern int	AddBoxTypes (BoxTypesPtr *btp, Type t);
+
+extern BoxPtr	NewTypedBox (Bool constant, BoxTypesPtr types);
+			     
 Value	NewInt (int value);
 Value	NewInteger (Sign sign, Natural *mag);
 Value	NewIntInteger (int value);
@@ -527,5 +542,7 @@ int	ValueInit (void);
 
 # define oneNp(n)	((n)->length == 1 && NaturalDigits(n)[0] == 1)
 # define zeroNp(n)	((n)->length == 0)
+
+void	ferr(int);
 
 #endif /* _VALUE_H_ */

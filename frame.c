@@ -39,11 +39,11 @@ FrameMark (void *object)
 DataType FrameType = { FrameMark, 0 };
 
 FramePtr
-NewFrame (Value	    function,
-	  FramePtr  previous,
-	  FramePtr  staticLink,
-	  int	    size,
-	  BoxPtr    statics)
+NewFrame (Value		function,
+	  FramePtr	previous,
+	  FramePtr	staticLink,
+	  BoxTypesPtr	dynamics,
+	  BoxPtr	statics)
 {
     ENTER ();
     FramePtr	frame;
@@ -52,7 +52,7 @@ NewFrame (Value	    function,
     frame->previous = previous;
     frame->staticLink = staticLink;
     frame->function = function;
-    frame->frame = NewBox (False, size);
+    frame->frame = NewTypedBox (False, dynamics);
     frame->statics = statics;
     RETURN (frame);
 }

@@ -70,6 +70,45 @@ printtype (Value f, Type t)
 }
 
 void
+printclass (Value f, Class class)
+{
+    switch (class) {
+    case class_global:
+	FilePuts (f, "global");
+	break;
+    case class_static:
+	FilePuts (f, "static");
+	break;
+    case class_arg:
+	FilePuts (f, "arg");
+	break;
+    case class_auto:
+	FilePuts (f, "auto");
+	break;
+    case class_struct:
+	FilePuts (f, "struct");
+	break;
+    case class_scope:
+	FilePuts (f, "scope");
+	break;
+    case class_undef:
+	break;
+    }
+}
+
+void
+printpublish (Value f, Publish publish)
+{
+    switch (publish) {
+    case publish_public:
+	FilePuts (f, "public ");
+	break;
+    case publish_private:
+	break;
+    }
+}
+
+void
 printindent (Value f, int level)
 {
     int	i;
@@ -353,23 +392,11 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 }
 
 void
-printPublish (Value f, Publish publish)
-{
-    switch (publish) {
-    case publish_public:
-	FilePuts (f, "public ");
-	break;
-    case publish_private:
-	break;
-    }
-}
-
-void
 printDecl (Value f, Expr *e, int level, Bool nest)
 {
     DeclListPtr	decl;
 
-    printPublish (f, e->decl.publish);
+    printpublish (f, e->decl.publish);
     switch (e->decl.class) {
     case class_global:
 	if (e->decl.type != type_undef)
@@ -519,7 +546,7 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
     case IMPORT:
 	printindent (f, level);
 	FilePuts (f, "import ");
-	printPublish (f, e->tree.left->decl.publish);
+	printpublish (f, e->tree.left->decl.publish);
 	FilePuts (f, AtomName (e->tree.left->decl.decl->name));
 	FilePuts (f, ";\n");
 	break;
@@ -540,7 +567,7 @@ PrintCode (Value f, CodePtr code, char *name, Publish publish, int level, Bool n
     }
     if (name)
     {
-	printPublish (f, publish);
+	printpublish (f, publish);
 	FilePuts (f, name);
 	FileOutput (f, ' ');
     }
@@ -641,6 +668,12 @@ PrettyPrint (Value f, Symbol *name)
 	FilePuts (f, "\n");
 	break;
     default:
+	printpublish (f, name->symbol.publish);
+	printclass (f, name->symbol.class);
+	printtype (f, name->symbol.type);
+	FilePuts (f, " ");
+	FilePuts (f, AtomName (name->symbol.name));
+	FilePuts (f, ";\n");
 	break;
     }
 }

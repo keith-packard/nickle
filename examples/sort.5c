@@ -1,0 +1,107 @@
+/* $Header$
+ *
+ * Copyright © 2002 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+namespace Sort {
+    
+    /*
+     * Quicksort with random pivot
+     */
+    public poly[*] function qsort (poly[*] a, bool(poly, poly) gt)
+    {
+	void function quicksort (int p, int r)
+	{
+	    if (p < r)
+	    {
+		/* swap two array elements */
+		void function exchange (int i, int j)
+		{
+		    poly t = a[i]; a[i] = a[j]; a[j] = t;
+		}
+    
+		/* partition the array into two pieces and return the pivot */
+		int function partition (int p, int r)
+		{
+		    /* select a random element to pivot */
+		    int pivot = p + PRNG::randint(p-r);
+		    exchange (pivot, r);
+		    
+		    poly x = a[r];
+		    int i = p;
+		    for (int j = p; j < r; j++)
+		    {
+			if (gt (x, a[j]))
+			{
+			    exchange (i, j);
+			    i++;
+			}
+		    }
+		    exchange (i, r);
+		    return i;
+		}
+		
+		int q = partition (p, r);
+		quicksort (p, q-1);
+		quicksort (q+1, r);
+	    }
+	}
+    
+	quicksort (0, dim(a)-1);
+	return a;
+    }
+    
+    /*
+     * Mergesort
+     */
+    public poly[*] function mergesort (poly[*] a, bool(poly, poly) gt)
+    {
+	void function msort (int p, int r)
+	{
+	    if (p < r)
+	    {
+		/* merge two sorted lists together */
+		void function merge (int p, int q, int r)
+		{
+		    /* temporary storage for left half of array */
+		    int n1 = q - p + 1;
+		    poly[n1] L;
+		    for (int i = 0; i < n1; i++)
+			L[i] = a[p+i];
+		    
+		    /* temporary storage for right half of array */
+		    int n2 = r - q;
+		    poly[n2] R;
+		    for (int i = 0; i < n2; i++)
+			R[i] = a[q+i+1];
+    
+		    /* merge two halves back into main array */
+		    int i = 0, j = 0, k = p;
+		    while (i < n1 && j < n2)
+			a[k++] = gt (L[i], R[j]) ? R[j++] : L[i++];
+		    while (i < n1)
+			a[k++] = L[i++];
+		    while (j < n2)
+			a[k++] = R[j++];
+		}
+		
+		int q = (p + r) // 2;
+		msort (p, q);
+		msort (q+1, r);
+		merge (p, q, r);
+	    }
+	}
+	msort (0, dim(a)-1);
+	return a;
+    }
+	
+    protected int[*] function randomints (int n, int max)
+    {
+	int[n] a;
+	while (n-- > 0) a[n] = PRNG::randint(max);
+	return a;
+    }
+
+}

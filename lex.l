@@ -290,8 +290,8 @@ LexGetInteractiveChar (void)
     if (lexInput->at_bol)
     {
 	Value	v = prompt ();
-	Print (FileStdout, prompt (), 's', 0, 0, 0, ' ');
-	FileFlush (FileStdout);
+	Print (FileStdout, v, 's', 0, 0, 0, ' ');
+	FileFlush (FileStdout, True);
     }
     return LexGetChar ();
 #endif

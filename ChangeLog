@@ -1,5 +1,11 @@
 2004-04-01  Keith Packard  <keithp@keithp.com>
 
+	* gcd.c: (NaturalRslInplace), (NaturalBdivmodInplace):
+	Ouch.  NaturalRslInplace was not checking argument
+	for zero
+
+2004-04-01  Keith Packard  <keithp@keithp.com>
+
 	reviewed by: Mike Harris <mharris@redhat.com>
 
 	* .cvsignore:

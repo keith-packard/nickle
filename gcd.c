@@ -65,12 +65,12 @@ NaturalRslInplace (Natural *v, int shift)
     length = v->length - dshift;
     index = length;
     last = 1;
-    if ((NaturalDigits(v)[v->length - 1] >> shift) == 0)
+    if (length > 0 && (NaturalDigits(v)[v->length - 1] >> shift) == 0)
     {
 	length--;
 	last = 0;
     }
-    if (length < 0)
+    if (length <= 0)
     {
 	v->length = 0;
 	return;
@@ -371,13 +371,13 @@ NaturalBdivmodInplace (Natural *u, Natural *v, int bits)
     }
     if (bits)
     {
-	digit	dmask = (1 << bits) - 1;
+	digit	dmask = ((digit) 1 << bits) - 1;
 	
-#ifdef DEBUG_BDIVMOD
-	FilePrintf (FileStdout, "u[0] %x q0 %x\n",
-		    NaturalDigits(u)[0], q0);
-#endif
 	q0 = ((NaturalDigits(u)[0] & dmask) * v0_inv) & dmask;
+#ifdef DEBUG_BDIVMOD
+	FilePrintf (FileStdout, "u[0] %x q0 %x dmask %x\n",
+		    NaturalDigits(u)[0], q0, dmask);
+#endif
 	if (q0)
 	    NaturalBdivmodStepInplace (u, v, q0, False);
 	NaturalRslInplace (u, bits);

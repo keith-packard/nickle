@@ -26,7 +26,7 @@ typedef struct _DataType DataType;
 
 struct _DataType {
     void    (*Mark) (void *);
-    void    (*Free) (void *);
+    int	    (*Free) (void *);
     char    *name;
 #ifdef MEM_TRACE
     int	    added;

@@ -651,6 +651,8 @@ void	IoNoticeReadBlocked (void);
 void	IoNoticeTtyUnowned (void);
 void	IoInterrupt (void);
 
+void	FileFini (void);
+
 void	*AllocateTemp (int size);
 
 typedef struct _ProfileData {

@@ -483,7 +483,10 @@ checkBlockRef (struct block *b)
 	    object = b->data;
 	    type = TYPE(object);
 	    if (type && type->Free)
-		(*type->Free) (object);
+	    {
+		if (!(*type->Free) (object))
+		    goto largeStillBusy;
+	    }
 	    TYPE(object) = 0;
 	    totalBytesFree += b->datasize;
 	    totalObjectsFree++;
@@ -504,10 +507,11 @@ checkBlockRef (struct block *b)
 	byte = b->bitmap;
 	bit = 1;
 	for (object = b->data; object < max; object += size) {
-	    if (!(*byte & bit)) {
-		type = TYPE(object);
-		if (type && type->Free)
-		    (*type->Free) (object);
+	    if (!(*byte & bit) &&
+		(!(type = TYPE(object)) ||
+		 !type->Free ||
+		 (*type->Free) (object)))
+	    {
 		TYPE(object) = 0;
 		if (thisLast)
 		    thisLast->next = (struct bfree *) object;
@@ -533,6 +537,7 @@ checkBlockRef (struct block *b)
 	    thisLast->next = 0;
 	lastFree[sizeIndex] = thisLast;
     } else {
+largeStillBusy:
 	useMap[NUMSIZES]++;
 	totalBytesUsed += b->datasize;
     }

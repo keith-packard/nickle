@@ -487,22 +487,28 @@ FileMark (void *object)
 {
     File    *file = object;
 
+    FileFlush ((Value) file, False);
     MemReference (file->next);
     MemReference (file->input);
     MemReference (file->output);
 }
 
-static void
+void
+FileFini (void)
+{
+    MemCollect ();
+}
+
+static int
 FileFree (void *object)
 {
     File    *file = object;
 
-    if (file->fd != -1)
-    {
-	FileResetFd (file->fd);
-	close (file->fd);
-	file->fd = -1;
-    }
+    if (file->fd == -1)
+	return 1;
+    if (FileClose ((Value) file) != FileBlocked)
+	return 1;
+    return 0;
 }
 
 static Bool
@@ -961,6 +967,10 @@ FileFlushChain (Value file, FileChainPtr ic, Bool block)
     return 0;
 }
 
+/*
+ * May not allocate memory as it is called while garbage collecting
+ */
+
 int
 FileFlush (Value file, Bool block)
 {
@@ -989,9 +999,6 @@ FileFlush (Value file, Bool block)
 		*prev = 0;
 	    }
 	}
-	ic = file->file.output;
-	if (ic->used == ic->size)
-	    ic = file->file.output = NewFileChain (file->file.output, FileBufferSize);
     }
     if (file->file.flags & FileClosed && n != FileBlocked)
     {
@@ -1036,11 +1043,16 @@ FileOutput (Value file, char c)
     if (!ic)
 	ic = file->file.output = NewFileChain (0, FileBufferSize);
     if (ic->used == ic->size)
+    {
 	if (FileFlush (file, False) == FileError)
 	{
 	    EXIT ();
 	    return FileError;
 	}
+	ic = file->file.output;
+	if (ic->used == ic->size)
+	    ic = file->file.output = NewFileChain (file->file.output, FileBufferSize);
+    }
     ic = file->file.output;
     FileBuffer(ic)[ic->used++] = c;
     if ((c == '\n' && file->file.flags & FileLineBuf) ||

@@ -197,28 +197,36 @@ extend namespace File {
 	}
     }
 
-    public int scanf (string format, *poly args...)
-    {
-	return File::vfscanf (stdin, format, args);
+    public namespace FileGlobals {
+
+	public int scanf (string format, *poly args...)
+	{
+	    return File::vfscanf (stdin, format, args);
+	}
+
+	public int vscanf (string format, (*poly)[*] args)
+	{
+	    return File::vfscanf (stdin, format, args);
+	}    
+
+	public string gets ()
+	{
+	    return File::fgets (stdin);
+	}
+
+	public int getchar ()
+	{
+	    return File::getc (stdin);
+	}
+
+	public void ungetchar (int ch)
+	{
+	    File::ungetc (ch, stdin);
+	}
+
     }
 
-    public int vscanf (string format, (*poly)[*] args)
-    {
-	return File::vfscanf (stdin, format, args);
-    }    
-
-    public string gets ()
-    {
-	return File::fgets (stdin);
-    }
-
-    public int getchar ()
-    {
-	return File::getc (stdin);
-    }
+    import FileGlobals;
 }
 
-public int (string format, *poly args...) scanf = File::scanf;
-public int (string format, (*poly)[*] args) vscanf = File::vscanf;
-public string () gets = File::gets;
-public int () getchar = File::getchar;
+import File::FileGlobals;

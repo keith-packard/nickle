@@ -12,8 +12,12 @@
 
 int ignorenl;
 NamespacePtr	LexNamespace;
+int funcDepth;
 
 void yyerror (char *fmt, ...);
+
+static SymbolPtr
+ParseNewSymbol (Class class, Types *type, NamePtr name);
 
 %}
 
@@ -48,7 +52,7 @@ void yyerror (char *fmt, ...);
 %type  <expr>	    namespace
 %type  <atomList>   atoms
 %type  <declList>   initnames newtypenames
-%type  <name>	    name newname newtypename
+%type  <name>	    newname newtypename
 %type  <expr>	    opt_init
 %type  <fulltype>   decl func_decl
 %type  <types>	    opt_type type
@@ -138,7 +142,7 @@ ignorenl	:
 		;
 
 attendnl	:
-		    { ignorenl = 0; }
+		    { ignorenl = 0; LexNamespace = 0; funcDepth = 0; }
 		;
 opt_nl		: NL
 		|
@@ -403,30 +407,42 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 		| func_decl FUNCTION ignorenl newname namespace_start OP opt_argdefines CP func_body namespace_end
 		    { 
 			ExprPtr	decl;
+			Types	*type = NewTypesFunc ($1.type, $7);
+			ExprPtr	nameExpr;
+
+			$4->symbol = ParseNewSymbol ($1.class, type, $4);
+			$4->publish = $1.publish;
 
 			decl = NewExprDecl (NewDeclList ($4, 0, 0),
 					    $1.class,
-					    NewTypesFunc ($1.type, $7),
+					    type,
 					    $1.publish);
 			if ($9)
+			{
+			    nameExpr = NewExprName ($4);
 			    $$ = NewExprTree (FUNCTION, decl,
 					      NewExprTree (ASSIGN,
-							   NewExprName ($4),
+							   nameExpr,
 							   NewExprCode (NewFuncCode ($1.type,
 										     $7,
 										     $9),
-									$4)));
+									nameExpr)));
+			}
 			else
 			    $$ = decl;
 		    }
 		| publish EXCEPTION ignorenl newname namespace_start opt_argdecls namespace_end SEMI
-		    { $$ = NewExprDecl (NewDeclList ($4, 0, 0),
+		    { 
+			$4->symbol = ParseNewSymbol (class_exception, typesPoly, $4);
+			$4->publish = $1;
+
+			$$ = NewExprDecl (NewDeclList ($4, 0, 0),
 					class_exception,
 					NewTypesFunc (typesPoly, $6),
 					$1);
 		    }
-		| RAISE name OP opt_exprs CP SEMI;
-		    { $$ = NewExprTree (RAISE, NewExprName($2), $4); }
+		| RAISE fullname OP opt_exprs CP SEMI;
+		    { $$ = NewExprTree (RAISE, $2, $4); }
 		| publish TYPEDEF ignorenl newtypenames SEMI
 		    { 
 			DeclListPtr decl;
@@ -558,9 +574,10 @@ catches		:   catch catches
 		|   
 		    { $$ = 0; }
 		;
-catch		: CATCH name namespace_start opt_argdefines block namespace_end
-		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $5), $2); }
-func_body    	: block
+catch		: CATCH fullname namespace_start OP opt_argdefines CP block namespace_end
+		    { $$ = NewExprCode (NewFuncCode (typesPoly, $5, $7), $2); }
+func_body    	: { ++funcDepth; } block { --funcDepth; }
+		    { $$ = $2; }
 		| SEMI
 		    { $$ = 0; }
 		;
@@ -597,9 +614,6 @@ atoms		: NAME COMMA atoms
 		    { $$ = NewAtomList ($3, $1); }
 		| NAME
 		    { $$ = NewAtomList (0, $1); }
-		;
-name		: NAME
-		    { $$ = NamespaceFindName (CurrentNamespace, $1, True); }
 		;
 newname		: NAME
 		    { $$ = NamespaceNewName (CurrentNamespace, $1); }
@@ -783,9 +797,17 @@ argdecls	: argdecl COMMA argdecls
 		| argdecl opt_dots
 		    { $$ = NewArgType ($1.type, $2, $1.name, 0); }
 argdecl		: type newname
-		    { $$.type = $1; $$.name = $2; }
+		    { 
+			ParseCanonType ($1);
+			$$.type = $1; 
+			$$.name = $2; 
+		    }
 		| type
-		    { $$.type = $1; $$.name = 0; }
+		    { 
+			ParseCanonType ($1);
+			$$.type = $1;
+			$$.name = 0; 
+		    }
 		| newname
 		    { $$.type = typesPoly; $$.name = $1; }
 		;
@@ -794,6 +816,27 @@ argdecl		: type newname
 * Arguments in function definitions
 */
 opt_argdefines	: argdefines
+		    {
+			ArgType	*args;
+			Types	*type;
+
+			for (args = $1; args; args = args->next)
+			{
+			    type = args->type;
+			    if (!ParseCanonType (type))
+				break;
+			    if (args->varargs)
+			    {
+				type = NewTypesArray (type,
+						      NewExprTree (COMMA,
+								   NewExprConst (TEN_CONST, 
+										 NewInt (0)),
+								   0));
+			    }
+			    args->name->symbol = ParseNewSymbol (class_arg, type, args->name);
+			    args->name->publish = publish_private;
+			}
+		    }
 		|
 		    { $$ = 0; }
 		;
@@ -820,7 +863,17 @@ opt_expr	: expr
 		;
 expr		: comma_expr
 		| decl initnames
-		    { $$ = NewExprDecl ($2, $1.class, $1.type, $1.publish); }
+		    { 
+			DeclList    *decl;
+
+			for (decl = $2; decl; decl = decl->next)
+			{
+			    decl->name->symbol = ParseNewSymbol ($1.class, $1.type, decl->name);
+			    decl->name->publish = $1.publish;
+			}
+
+			$$ = NewExprDecl ($2, $1.class, $1.type, $1.publish); 
+		    }
 		;
 comma_expr	: lambdaexpr
 		| comma_expr COMMA lambdaexpr
@@ -923,7 +976,22 @@ simpleexpr	: primary
 					      BuildName ("Math", "assign_pow"),
 					      NewExprTree (ASSIGNPOW, $1, $3));
 			else
+			{
+			    /*
+			     * Automatically declare names used in
+			     * simple assignements at the top level
+			     */
+			    if ($2 == ASSIGN && 
+				funcDepth == 0 &&
+				$1->base.tag == NAME && 
+				!(NameSymbol ($1->name.name)))
+			    {
+				NamePtr	name = $1->name.name;
+				name->symbol = ParseNewSymbol (class_undef, typesPoly, name);
+				name->publish = publish_private;
+			    }
 			    $$ = NewExprTree($2, $1, $3); 
+			}
 		    }
 		| simpleexpr EQ simpleexpr
 		    { $$ = NewExprTree(EQ, $1, $3); }
@@ -971,11 +1039,13 @@ primary		: fullname
 		    { $$ = NewExprConst(VOIDVAL, $1); }
 		| OP type CP ignorenl namespace_start init namespace_end
 		    { 
+			ParseCanonType ($2);
 			$$ = NewExprTree (NEW, $6, 0); 
 			$$->base.type = $2;
 		    }
 		| OP type OS exprs CS CP ignorenl namespace_start opt_arrayinit namespace_end
 		    { 
+			ParseCanonType ($2);
 			$$ = NewExprTree (NEW, $9, 0); 
 			$$->base.type = NewTypesArray ($2, $4); 
 		    }
@@ -983,6 +1053,7 @@ primary		: fullname
 		    { 
 			$$ = NewExprTree (NEW, $6, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
+			ParseCanonType ($$->base.type);
 		    }
 		| OS exprs CS ignorenl namespace_start opt_arrayinit namespace_end
 		    { 
@@ -991,6 +1062,7 @@ primary		: fullname
 		    }
 		| OP type DOT NAME CP primary			%prec UNIONCAST
 		    {
+			ParseCanonType ($2);
 			$$ = NewExprTree (UNION, NewExprAtom ($4), $6); 
 			$$->base.type = $2;
 		    }
@@ -1297,6 +1369,118 @@ BuildCall (char *scope, char *name, int nargs, ...)
     printf ("\n");
 #endif
     RETURN (e);
+}
+
+/*
+ * Create a new symbol in the specified namespace, as a special
+ * case, re-use symbols if not inside a function, but require
+ * that the types match exactly
+ */
+static Bool
+ParseCanonType (TypesPtr type)
+{
+    NamePtr	name;
+    SymbolPtr	s;
+    ArgType	*arg;
+    int		n;
+    Bool	ret = True;
+    
+    if (!type)
+    {
+	yyerror ("Type missing inside compiler");
+	return False;
+    }
+    switch (type->base.tag) {
+    case types_prim:
+	break;
+    case types_name:
+	if (!type->name.type)
+	{
+	    name = TypeNameName (type);
+	    s = NameSymbol (name);
+	    if (!s)
+	    {
+		yyerror ("No typedef \"%A\" in namespace",
+			      name->atom);
+		ret = False;
+	    }
+	    else if (s->symbol.class != class_typedef)
+	    {
+		yyerror ("Symbol \"%A\" not a typedef",
+			      name->atom);
+		ret = False;
+	    }
+	    else if (!s->symbol.type)
+	    {
+		yyerror ("Typedef \"%A\" not defined yet",
+			      name->atom);
+		ret = False;
+	    }
+	    else
+	    {
+		type->name.type = s->symbol.type;
+		ret = ParseCanonType (type->name.type);
+	    }
+	}
+	break;
+    case types_ref:
+    	ret = ParseCanonType (type->ref.ref);
+	break;
+    case types_func:
+	if (type->func.ret)
+	    ret = ParseCanonType (type->func.ret);
+	for (arg = type->func.args; arg; arg = arg->next)
+	    ret = ret && ParseCanonType (arg->type);
+	break;
+    case types_array:
+	ret = ParseCanonType (type->array.type);
+	break;
+    case types_struct:
+    case types_union:
+	for (n = 0; n < type->structs.structs->nelements; n++)
+	{
+	    StructElement   *se;
+
+	    se = &StructTypeElements(type->structs.structs)[n];
+	    ret = ret && ParseCanonType (se->type);
+	}
+	break;
+    }
+    return ret;
+}
+
+static SymbolPtr
+ParseNewSymbol (Class class, Types *type, NamePtr name)
+{
+    ENTER ();
+    SymbolPtr	s = 0;
+    
+    if (class == class_undef)
+	class = funcDepth ? class_auto : class_global;
+
+    if (ParseCanonType (type))
+    {
+	switch (class) {
+	case class_global:
+	    s = NewSymbolGlobal (name->atom, type);
+	    break;
+	case class_static:
+	    s = NewSymbolStatic (name->atom, type);
+	    break;
+	case class_arg:
+	    s = NewSymbolArg (name->atom, type);
+	    break;
+	case class_auto:
+	    s = NewSymbolAuto (name->atom, type);
+	    break;
+	case class_exception:
+	    s = NewSymbolException (name->atom, type);
+	    break;
+	default:
+	    break;
+	}
+    }
+    RETURN (s);
 }
 
 int

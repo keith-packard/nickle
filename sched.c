@@ -333,11 +333,14 @@ do_Thread_kill (int n, Value *p)
 }
 
 void
-TraceFunction (FramePtr frame, CodePtr code, Atom name)
+TraceFunction (FramePtr frame, CodePtr code, ExprPtr name)
 {
     int		    fe;
     
-    FilePuts (FileStdout, name ? AtomName (name) : "<anonymous>");
+    if (name)
+	PrettyExpr (FileStdout, name, -1, 0, False);
+    else
+	FilePuts (FileStdout, "<anonymous>");
     FilePuts (FileStdout, " (");
     for (fe = 0; fe < code->base.argc; fe++)
     {
@@ -359,7 +362,7 @@ TraceFrame (FramePtr frame, InstPtr pc)
     for (max = 20; frame && max--; frame = frame->previous)
     {
 	code = frame->function->func.code;
-	TraceFunction (frame, code, code->base.name->atom);
+	TraceFunction (frame, code, code->base.name);
 	PrettyStat (FileStdout, frame->savePc->base.stat, False);
     }
     EXIT ();

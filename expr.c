@@ -150,7 +150,7 @@ NewExprName (NamePtr name)
 }
 
 Expr *
-NewExprCode (CodePtr code, NamePtr name)
+NewExprCode (CodePtr code, ExprPtr name)
 {
     ENTER ();
     Expr    *e;

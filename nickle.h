@@ -69,7 +69,6 @@ typedef struct _name {
     DataType	*data;
     NamePtr	next;
     Atom	atom;
-    NamePtr	ref;    /* if true, imported before defined */
     SymbolPtr	symbol;
     Publish	publish;
 } Name;
@@ -82,7 +81,7 @@ typedef struct _namespace {
 } Namespace;
 
 NamePtr		NewName (NamePtr next, Atom atom);
-SymbolPtr	NameSymbol (NamePtr name);
+#define NameSymbol(n)	((n)->symbol)
 NamespacePtr	NewNamespace (NamespacePtr previous);
 NamePtr		NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search);
 NamePtr		NamespaceNewName (NamespacePtr namespace, Atom atom);
@@ -244,7 +243,7 @@ Expr	*NewExprTree (int tag, Expr *left, Expr *right);
 Expr	*NewExprConst (int tag, Value val);
 Expr	*NewExprAtom (Atom atom);
 Expr	*NewExprName (NamePtr name);
-Expr	*NewExprCode (CodePtr code, NamePtr name);
+Expr	*NewExprCode (CodePtr code, ExprPtr name);
 Expr	*NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish);
 
 Expr	*ExprRehang (Expr *expr, Expr *right);
@@ -257,7 +256,7 @@ typedef struct _codeBase {
     int		argc;
     Bool	varargs;
     ArgType	*args;
-    NamePtr	name;
+    ExprPtr	name;
     CodePtr	previous;
 } CodeBase;
 
@@ -477,7 +476,7 @@ void	    ThreadFinish (Value thread);
 void	    ThreadSetState (Value thread, ThreadState state);
 void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);
-void	    TraceFunction (FramePtr frame, CodePtr code, Atom name);
+void	    TraceFunction (FramePtr frame, CodePtr code, ExprPtr name);
 void	    TraceFrame (FramePtr frame, InstPtr pc);
 #ifdef DEBUG_JUMP
 void	    TraceContinuation (char	    *where,

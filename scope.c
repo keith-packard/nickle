@@ -39,7 +39,6 @@ NameMark (void *object)
     NamePtr   name = object;
 
     MemReference (name->next);
-    MemReference (name->ref);
     MemReference (name->symbol);
 }
 
@@ -54,24 +53,8 @@ NewName (NamePtr next, Atom atom)
     name = ALLOCATE (&nameType, sizeof (Name));
     name->next = next;
     name->atom = atom;
-    name->ref = 0;
     name->symbol = 0;
     RETURN (name);
-}
-
-SymbolPtr
-NameSymbol (NamePtr name)
-{
-    SymbolPtr	s;
-
-    if (!(s = name->symbol))
-    {
-	if (name->ref)
-	    s = NameSymbol (name->ref);
-	if (s)
-	    name->symbol = s;
-    }
-    return s;
 }
 
 NamespacePtr	GlobalNamespace, CurrentNamespace;
@@ -156,8 +139,6 @@ NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish)
 	{
 	    new = NamespaceNewName (namespace, old->atom);
 	    new->symbol = NameSymbol (old);
-	    if (!new->symbol)
-		new->ref = old;
 	    new->publish = publish;
 	}
     }

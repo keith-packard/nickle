@@ -21,4 +21,4 @@ fi
 /bin/mv -f version.m4.new version.m4
 
 ( echo '/* This file is maintained automatically by update-version.sh */'
-  echo "#define BUILD_VERSION \"$CURVERSION\"" ) > builtin/version.h
+  echo "#define BUILD_VERSION \"$CURVERSION\"" ) > version.h

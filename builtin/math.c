@@ -60,8 +60,8 @@ do_Math_assignpow (Value a, Value b)
 
 static unsigned count_bits (unsigned n) {
     unsigned c3 = 0x0f0f0f0f;
-    unsigned c2 = c3 ^ (c3 << 2);
-    unsigned c1 = c2 ^ (c2 << 1);
+    unsigned c2 = c3 ^ (c3 << 2);  /* c2 == 0x33333333 */
+    unsigned c1 = c2 ^ (c2 << 1);  /* c1 == 0x55555555 */
     unsigned left = (n >> 1) & c1;
     n = left + (n & c1);
     left = (n >> 2) & c2;

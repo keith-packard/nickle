@@ -231,17 +231,21 @@ printf ("u_value %g\n", u_value);		/* u_value r = 1.2 */
 
 <sect3><title>Arrays</title>
 <para>
-Array types in Nickle determine only the number of dimensions and not the size of each dimension. Therefore they can be declared in either of two ways:
+Array types in Nickle determine only the number of dimensions and not the
+size of each dimension. Therefore they can be declared in one of three ways:
 <informalexample><screen>
 int[*] a;
-int[3] b;
+int[...] b;
+int[3] c;
 </screen></informalexample>
 </para>
 <para>
-By these declarations, <literal>a</literal> and <literal>b</literal> are of the same type (one-dimensional array).
-The specification of the size of <literal>b</literal> actually has no effect on its declaration but rather on its initialization.
-See Initialization below.
-Declaring multidimensional arrays in Nickle is different than in C; C provides only arrays of arrays while Nickle allows either:
+By these declarations, <literal>a</literal>, <literal>b</literal> and
+<literal>c</literal> are of the same type (one-dimensional array).
+The specification of the size of <literal>c</literal> actually has no effect
+on its declaration but rather on its initialization.  See Initialization
+below.  Declaring multidimensional arrays in Nickle is different than in C;
+C provides only arrays of arrays while Nickle allows either:
 <informalexample><screen>
 int[3,3]	array_2d = {};
 int[3][3]	array_of_arrays = { (int[3]) {} ... };
@@ -253,11 +257,46 @@ array_of_arrays[1] = (int[2]) { 1, 2 };
 </screen></informalexample>
 </para>
 <para>
-These two types can be used in similar circumstances, but the first ensures that the resulting objects are rectangular while the second allows for each row of the array to have a different number of elements.
-The second also allows for each row to be manipulated separately.
-The final example shows an entire row being replaced with new contents.
+These two types can be used in similar circumstances, but the first ensures
+that the resulting objects are rectangular while the second allows for each
+row of the array to have a different number of elements.  The second also
+allows for each row to be manipulated separately.  The final example shows
+an entire row being replaced with new contents.
+</para>
+<para>
+Array values created with '...' in place of the dimension information are
+resizable; requests to store beyond the bounds of such arrays will cause
+the array dimensions to be increased to include the specified location.
+Resizable arrays may also be passed to the <literal>setdim</literal> and
+<literal>setdims</literal> built-in functions.
 </para>
 </sect3>
+<sect3><title>Hashes</title>
+<para>
+Hashes provide an associative mapping from arbitrary keys
+to values. Any type may be used as the key.  This allows indexing by
+strings, and even composite values.  They are called
+<literal>hashes</literal> instead of associative arrays to make the
+performance characteristics of the underlying implementation clear.
+</para>
+<para>
+Hashes are declared a bit like arrays, but instead of a value in the
+brackets, a type is placed:
+<informalexample><screen>
+int[string]	string_to_int = { "hello" => 2, => 0 };
+float[float]	float_to_float = { 2.5 => 27 };
+
+string_to_int["bar"] = 17;
+string_to_int["foo"] += 12;
+float_to_float[pi] = pi/2;
+
+</screen></informalexample>
+</para>
+<para>
+The initializer syntax uses the double-arrow <literal>=></literal> to
+separate key from value.  Eliding the key specifies the
+"default" value -- used to instantiate newly created elements in the hash.
+</para>
 
 <sect3><title>Pointers</title>
 <para>

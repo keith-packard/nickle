@@ -1,5 +1,10 @@
 2004-04-10  Keith Packard  <keithp@keithp.com>
 
+	* doc/tutorial/intro/variables.sgml:
+	Primitive docs for resizable arrays and hashes.
+
+2004-04-10  Keith Packard  <keithp@keithp.com>
+
 	* builtin-toplevel.c: (do_setdims):
 	setdims arguments need to be inverted to match array
 	dimension order for ArrayResize.

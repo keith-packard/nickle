@@ -270,9 +270,9 @@ typedef struct _codeBase {
  * any name they can see *except* for dynamic variables in the function
  * scope.
  *
- * Global initializers are run in a global continuation, they can only access
+ * Global initializers are run in a global context, they can only access
  * variables which have global lifetime, that means only global variables.
- * When found inside a function continuation, they are placed in the static
+ * When found inside a function context, they are placed in the static
  * initializer block of the enclosing function at global scope.
  *
  *

@@ -116,7 +116,7 @@ ObjPtr	CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, Cod
 ObjPtr	CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
 ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
 ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, int *ndimp);
-ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code);
+ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Bool tail, ExprPtr stat, CodePtr code);
 ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
 void	CompilePatchLoop (ObjPtr obj, int start, int continue_offset);
 ObjPtr	_CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code);
@@ -574,7 +574,7 @@ CompileTypecheckArgs (ObjPtr	obj,
  *   no place to hang a push bit
  */
 ObjPtr
-CompileCall (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
+CompileCall (ObjPtr obj, ExprPtr expr, Bool tail, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr inst;
@@ -589,9 +589,17 @@ CompileCall (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 	RETURN (obj);
     }
     expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
-    BuildInst (obj, OpCall, inst, stat);
-    inst->ints.value = argc;
-    BuildInst (obj, OpNoop, inst, stat);
+    if (tail)
+    {
+	BuildInst (obj, OpTailCall, inst, stat);
+	inst->ints.value = argc;
+    }
+    else
+    {
+	BuildInst (obj, OpCall, inst, stat);
+	inst->ints.value = argc;
+	BuildInst (obj, OpNoop, inst, stat);
+    }
     RETURN (obj);
 }
 
@@ -1369,7 +1377,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->ints.value = ndim;
 	break;
     case OP:	    /* function call */
-	obj = CompileCall (obj, expr, stat, code);
+	obj = CompileCall (obj, expr, False, stat, code);
 	break;
     case COLONCOLON:
 	obj = _CompileExpr (obj, expr->tree.right, evaluate, stat, code);
@@ -1657,7 +1665,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 					     NewExprTree (COMMA, 
 							  expr->tree.left,
 							  (Expr *) 0)),
-			    stat, code);
+			   False,
+			   stat, code);
 	expr->base.type = typesPrim[type_thread];
 	break;
     case DOLLAR:
@@ -1972,17 +1981,23 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 	    break;
 	}
 	if (expr->tree.right)
-	    obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
-	NewInst (middle_inst, obj);
-	inst = ObjCode (obj, middle_inst);
-	if (expr->tree.right)
 	{
-	    inst->base.opCode = OpReturn;
+	    if (expr->tree.right->base.tag == OP)
+	    {
+		obj = CompileCall (obj, expr->tree.right, True, expr, code);
+	    }
+	    else
+	    {
+		obj = _CompileExpr (obj, expr->tree.right, True, expr, code);
+		BuildInst (obj, OpReturn, inst, expr);
+		inst->base.stat = expr;
+	    }
 	    expr->base.type = expr->tree.right->base.type;
 	}
 	else
 	{
-	    inst->base.opCode = OpReturnVoid;
+	    BuildInst (obj, OpReturnVoid, inst, expr);
+	    inst->base.stat = expr;
 	    expr->base.type = typesPrim[type_void];
 	}
 	if (!TypeCombineBinary (code->base.type, ASSIGN, expr->base.type))
@@ -1991,7 +2006,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, CodePtr code)
 			  code->base.type, expr->base.type);
 	    break;
 	}
-	inst->base.stat = expr;
 	break;
     case EXPR:
 	obj = _CompileExpr (obj, expr->tree.left, False, expr, code);
@@ -2332,6 +2346,7 @@ char *OpNames[] = {
     "ArrayRef",
     "ArrayRefStore",
     "Call",
+    "TailCall",
     "Dot",
     "DotRef",
     "DotRefStore",
@@ -2488,6 +2503,7 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	FilePrintf (FileStdout, "%v", inst->constant.constant);
 	break;
     case OpCall:
+    case OpTailCall:
 	FilePrintf (FileStdout, "%d args", inst->ints.value);
 	break;
     case OpBuildArray:

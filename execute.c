@@ -23,7 +23,7 @@ Bool	signalSuspend;	    /* current thread is suspending */
 static ThreadState ThreadStep (Value thread);
 
 static FramePtr
-BuildFrame (Value thread, Value func, Bool staticInit,
+BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,
 	    Bool varargs, int nformal, int off,
 	    int nargs, InstPtr savePc)
 {
@@ -33,7 +33,10 @@ BuildFrame (Value thread, Value func, Bool staticInit,
     int		    fe;
     FramePtr	    frame;
     
-    frame = NewFrame (func, thread->thread.frame, 
+    frame = thread->thread.frame;
+    if (tail)
+	frame = frame->previous;
+    frame = NewFrame (func, frame,
 		      func->func.staticLink, 
 		      body->dynamics,
 		      func->func.statics);
@@ -49,13 +52,21 @@ BuildFrame (Value thread, Value func, Bool staticInit,
 	for (; fe < nargs; fe++)
 	    BoxValueSet (array->array.values, fe-nformal, Stack(fe+off));
     }
-    frame->savePc = savePc;
-    frame->saveCode = thread->thread.code;
+    if (tail)
+    {
+	frame->savePc = thread->thread.frame->savePc;
+	frame->saveCode = thread->thread.frame->saveCode;
+    }
+    else
+    {
+	frame->savePc = savePc;
+	frame->saveCode = thread->thread.code;
+    }
     RETURN (frame);
 }
 
 static Value
-ThreadCall (Value thread, InstPtr *next, int *stack)
+ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 {
     ENTER ();
     Value	value = thread->thread.v;
@@ -186,7 +197,7 @@ ThreadCall (Value thread, InstPtr *next, int *stack)
     }
     else
     {
-	frame = BuildFrame (thread, value, False, code->base.varargs,
+	frame = BuildFrame (thread, value, False, tail, code->base.varargs,
 			    code->base.argc, off, argc, *next);
 	if (aborting)
 	    RETURN (value);
@@ -209,7 +220,7 @@ ThreadStaticInit (Value thread, InstPtr *next)
     CodePtr	code = value->func.code;
     FramePtr	frame;
     
-    frame = BuildFrame (thread, value, True, False, 0, 0, 0, *next);
+    frame = BuildFrame (thread, value, True, False, False, 0, 0, 0, *next);
     if (aborting)
 	return;
     complete = True;
@@ -708,6 +719,7 @@ ThreadStep (Value thread)
 	}
 	break;
     case OpCall:
+    case OpTailCall:
 	if (value->value.tag != type_func)
 	{
 	    RaiseStandardException (exception_invalid_unop_value,
@@ -716,7 +728,8 @@ ThreadStep (Value thread)
 	    break;
 	}
         stack = inst->ints.value;
-	value = ThreadCall (thread, &next, &stack);
+	value = ThreadCall (thread, inst->base.opCode == OpTailCall,
+			    &next, &stack);
 	break;
     case OpArrow:
     case OpArrowRef:

@@ -16,6 +16,7 @@ typedef struct {
 extern void	MemInitialize (void);
 extern void	*MemAllocate (DataType *type, int size);
 extern void	MemReference (void *object);
+extern int	MemReferenceNoRecurse (void *object);
 extern DataType	*MemType (void *object);
 extern void	MemAddRoot (void *object);
 extern void	MemCollect (void);

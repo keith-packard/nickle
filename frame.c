@@ -13,12 +13,15 @@ FrameMark (void *object)
 {
     Frame   *frame = object;
 
-    MemReference (frame->previous);
-    MemReference (frame->staticLink);
-    MemReference (frame->function);
-    MemReference (frame->frame);
-    MemReference (frame->statics);
-    MemReference (frame->saveCode);
+    do
+    {
+	MemReference (frame->staticLink);
+	MemReference (frame->function);
+	MemReference (frame->frame);
+	MemReference (frame->statics);
+	MemReference (frame->saveCode);
+	frame = frame->previous;
+    } while (MemReferenceNoRecurse (frame) == 0);
 }
 
 DataType FrameType = { FrameMark, 0 };

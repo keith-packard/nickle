@@ -586,6 +586,14 @@ MemReference (void *object)
     }
 }
 
+int
+MemReferenceNoRecurse (void *object)
+{
+    if (!object)
+	return 1;
+    return setReference (object);
+}
+
 DataType *
 MemType (void *object)
 {

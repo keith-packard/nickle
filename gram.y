@@ -441,7 +441,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 					NewTypesFunc (typesPoly, $6),
 					$1);
 		    }
-		| RAISE fullname OP opt_exprs CP SEMI;
+		| RAISE fullname OP opt_exprs CP SEMI
 		    { $$ = NewExprTree (RAISE, $2, $4); }
 		| publish TYPEDEF ignorenl newtypenames SEMI
 		    { 

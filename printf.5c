@@ -198,9 +198,14 @@ extend namespace File {
 	vfprintf (f, format, args);
     }
 
-    public void printf (string format, poly args...)
+    public void vprintf (string format, poly[*] args)
     {
 	vfprintf (stdout, format, args);
+    }
+
+    public void printf (string format, poly args...)
+    {
+	vprintf (format, args);
     }
     
     public string vsprintf (string format, poly[*] args)

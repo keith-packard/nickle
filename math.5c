@@ -870,4 +870,6 @@ extend namespace Math {
 
 }
 
-import Math;
+/* XXX these shouldn't be here, but it was *convenient* */
+&int(string, int ...) atoi = &string_to_integer;
+&rational(string) atof = &string_to_real;

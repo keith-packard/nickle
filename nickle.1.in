@@ -659,16 +659,17 @@ See the discussion of type real above.
 .IP "real imprecise(rational value, int prec)"
 See the discussion of type real above.
 .IP "int string_to_integer(string s)"
-Like the C atoi() function.
+.IP "int atoi(string s)"
 The argument s is a signed digit string, and
 the result is the integer it represents.
-If the string s appears to be a hexadecimal,
-octal, binary, or explicit base-10 constant
-as given above, then assume that it is.
+If the string s is syntactically a hexadecimal,
+octal, binary, or explicit base-10 constant,
+treat it as such.
 .IP "int string_to_integer(string s, int base)"
+.IP "int atoi(string s, int base)"
 Treat s as a string of digits in the given base.
-A base of 0 tries to pick a sensible
-default base as in the previous paragraph.
+A base of 0 acts as with no base argument.
+Otherwise, base specification syntax in the string is ignored.
 .IP "int putchar(int c)"
 Place the given character on the standard output
 using File::putc(c, stdout), and return its result.
@@ -690,6 +691,7 @@ Given an arbitrary value v, ``box'' that value
 into storage and return a pointer to
 the box.
 .IP "rational string_to_real(string s)"
+.IP "rational atof(string s)"
 Convert the real constant string s into
 its associated real number.
 .IP "number abs(real v)"

@@ -17,7 +17,7 @@ namespace PRNG {
   }
 
   public void dev_srandom(int nbits) {
-    twixt(file f = open("/dev/random", "r"); close(f)) {
+    twixt(file f = open("/dev/urandom", "r"); close(f)) {
       int seed = 0;
       while (nbits >= 8) {
 	seed = (seed << 8) | getb(f);

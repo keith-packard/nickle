@@ -22,4 +22,22 @@ extend namespace String {
 	return (substr(name, 0, n));
     }
 
+    public string[*] split(string s, string sep) {
+	string[...] ss = {};
+	int i = -1;
+	int j = 0;
+	while(j < length(s)) {
+	    if (index(sep, new(s[j])) >= 0) {
+		ss[dim(ss)] = substr(s, i + 1, j - i - 1);
+		i = j;
+	    }
+	    j++;
+	}
+	if (i + 1 >= length(s))
+	    ss[dim(ss)] = "";
+	else
+	    ss[dim(ss)] = substr(s, i + 1, j - i - 1);
+	return ss;
+    }
+
 }

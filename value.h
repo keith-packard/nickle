@@ -683,6 +683,11 @@ Value	Round (Value);
 Value	Pow (Value, Value), Factorial (Value), Reduce (Value);
 Value	ShiftL (Value, Value), ShiftR (Value, Value);
 Value	Gcd (Value, Value);
+#undef GCD_DEBUG
+#ifdef GCD_DEBUG
+Value	Bdivmod (Value av, Value bv);
+Value	KaryReduction (Value av, Value bv);
+#endif
 Value	Lxor(Value, Value), Land (Value, Value);
 Value	Lor (Value, Value), Lnot (Value);
 Bool	Print (Value, Value, char format, int base, int width, int prec, unsigned char fill);

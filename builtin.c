@@ -29,6 +29,9 @@ NamespacePtr    SemaphoreNamespace;
 NamespacePtr    StringNamespace;
 NamespacePtr    ThreadNamespace;
 NamespacePtr	CommandNamespace;
+#ifdef GCD_DEBUG
+NamespacePtr	GcdNamespace;
+#endif
 
 struct fbuiltin_v {
     Value	    (*func) (int, Value *);
@@ -270,6 +273,10 @@ static struct fbuiltin_2 funcs_2[] = {
     { do_Command_new_names, "new_names",    	    "i",    "sp",   &CommandNamespace },
     { do_Command_pretty_print,"pretty_print",	    "i",    "fA*s", &CommandNamespace },
     { do_Command_display,   "display",		    "i",    "sp",   &CommandNamespace },
+#ifdef GCD_DEBUG
+    { do_Gcd_bdivmod,	    "bdivmod",		    "i",    "ii",   &GcdNamespace},
+    { do_Gcd_kary_reduction,"kary_reduction",	    "i",    "ii",   &GcdNamespace},
+#endif
     { 0,		    0 },
 };
 
@@ -432,6 +439,9 @@ static struct nbuiltin nvars[] = {
     { "String",    &StringNamespace },
     { "Thread",	    &ThreadNamespace },
     { "Command",    &CommandNamespace },
+#ifdef GCD_DEBUG
+    { "Gcd",	    &GcdNamespace },
+#endif
     { 0,	    0 },
 };
 
@@ -1139,6 +1149,22 @@ do_gcd (Value a, Value b)
     ENTER ();
     RETURN (Gcd (a, b));
 }
+
+#ifdef GCD_DEBUG
+Value 
+do_Gcd_bdivmod (Value a, Value b)
+{
+    ENTER ();
+    RETURN (Bdivmod (a, b));
+}
+
+Value 
+do_Gcd_kary_reduction (Value a, Value b)
+{
+    ENTER ();
+    RETURN (KaryReduction (a, b));
+}
+#endif
 
 Value
 do_xor (Value a, Value b)

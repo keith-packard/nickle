@@ -14,6 +14,32 @@
 
 #include	"nickle.h"
 
+#undef CHECK
+#undef DEBUG_BMOD
+#undef DEBUG_BDIVMOD
+#undef DEBUG_GCD
+#undef DEBUG_KARY
+#undef DEBUG_RATMOD
+#undef DEBUG_FIX
+#undef DEBUG_POINTERS
+
+/* #define STATS */
+
+#ifdef STATS
+#define START	    int steps = 0
+#define STEP	    steps++
+#define FINISH(op)  FilePrintf (FileStdout, "%s %d steps\n", op, steps), steps = 0
+#else
+#define START
+#define STEP
+#define FINISH(op)
+#endif
+#ifdef DEBUG_POINTERS
+#define GcdCheckPointer(a,b,c) MemCheckPointer(a,b,c)
+#else
+#define GcdCheckPointer(a,b,c)
+#endif
+
 static void
 gcd_right_shift (Natural *v, int shift)
 {
@@ -71,19 +97,30 @@ DigitBmod (digit u, digit v, int s)
     int	    i;
     digit   umask = 0;
     digit   imask = 1;
+    digit   smask;
     digit   m = 0;
 
+#ifdef DEBUG_BMOD
+    FilePrintf (FileStdout, "DigitBmod (%u, %u, %d)\n", u, v, s);
+#endif
+    if (s == DIGITBITS)
+	smask = MAXDIGIT;
+    else
+	smask = (1 << s) - 1;
     for (i = 0; i < s; i++)
     {
 	umask |= imask;
 	if (u & umask)
 	{
-	    u = u - v;
+	    u = (u - v) & smask;
 	    m = m | imask;
 	}
 	imask <<= 1;
 	v <<= 1;
     }
+#ifdef DEBUG_BMOD
+    FilePrintf (FileStdout, "  = %u\n", m);
+#endif
     return m;
 }
 
@@ -151,26 +188,8 @@ DigitWidth (digit i)
 }
 
 
-/* #define CHECK */
-/* #define DEBUG */
-/* #define STATS */
-#ifdef STATS
-#define START	    int steps = 0
-#define STEP	    steps++
-#define FINISH(op)  FilePrintf (FileStdout, "%s %d steps\n", op, steps), steps = 0
-#else
-#define START
-#define STEP
-#define FINISH(op)
-#endif
-#ifdef DEBUG
-#define GcdCheckPointer(a,b,c) MemCheckPointer(a,b,c)
-#else
-#define GcdCheckPointer(a,b,c)
-#endif
-
 static void
-NaturalBdivmodStepInplace (Natural *u, int offset, Natural *v, int bits)
+NaturalBdivmodStepInplace (Natural *u, Natural *v, int bits, Bool shift)
 {
     double_digit    quo;
     digit	    carry_mul;
@@ -178,8 +197,10 @@ NaturalBdivmodStepInplace (Natural *u, int offset, Natural *v, int bits)
     digit	    quo_d;
     digit	    d;
     digit	    b;
+    digit	    r;
     digit	    *vd = NaturalDigits(v);
-    digit	    *ud = NaturalDigits(u) + offset;
+    digit	    *ud = NaturalDigits(u);
+    digit    	    *rd = ud;
     int		    i;
     
     b = DigitBmod (*ud, *vd, bits);
@@ -192,52 +213,74 @@ NaturalBdivmodStepInplace (Natural *u, int offset, Natural *v, int bits)
 	carry_mul = DivBase (quo);
 	quo_d = ModBase (quo) + carry_sub;
 
+        d = *ud++;
 	if (quo_d)
 	{
 	    carry_sub = 0;
 	    GcdCheckPointer (u, ud, sizeof (digit));
-	    d = *ud;
-	    if ((*ud = d - quo_d) > d)
+	    if ((r = d - quo_d) > d)
 		carry_sub = 1;
 	}
-	ud++;
+	else
+	    r = d;
+	if (!shift || i)
+	    *rd++ = r;
     }
     carry_sub = carry_sub + carry_mul;
-    while (carry_sub && i + offset < NaturalLength (u))
+    while (carry_sub && i < NaturalLength (u))
     {
 	quo_d = carry_sub;
 	carry_sub = 0;
 	GcdCheckPointer (u, ud, sizeof (digit));
-	d = *ud;
-	if ((*ud++ = d - quo_d) > d)
+	d = *ud++;
+	if ((r = d - quo_d) > d)
 	    carry_sub = 1;
+	if (!shift || i)
+	    *rd++ = r;
 	i++;
     }
-    if (i + offset == NaturalLength (u))
+    while (i < NaturalLength (u))
     {
+	r = *ud++;
+	if (!shift || i)
+	    *rd++ = r;
+	i++;
+    }
+    /*
+     * The caller must ensure that an extra digit space
+     * is available for this operation
+     */
+    if (carry_sub)
+    {
+	quo_d = carry_sub;
+	carry_sub = 0;
+	GcdCheckPointer (u, ud, sizeof (digit));
+	d = 0;
+	if ((r = d - quo_d) > d)
+	    carry_sub = 1;
+	if (!shift || i)
+	    *rd++ = r;
+	i = rd - NaturalDigits(u);
 	/*
 	 * Two's compliment negative results
 	 */
-	if (carry_sub)
+	carry_sub = 1;
+	rd = NaturalDigits (u);
+	while (i--)
 	{
-	    ud = NaturalDigits (u) + offset;
-	    while (i--)
-	    {
-		d = *ud;
-		*ud++ = (~d) + carry_sub;
-		if (d)
-		    carry_sub = 0;
-	    }
+	    d = *rd;
+	    *rd++ = (~d) + carry_sub;
+	    if (d)
+		carry_sub = 0;
 	}
     }
-    ud = NaturalDigits(u) + NaturalLength (u) - 1;
-    while (*ud == 0)
-    {
-        GcdCheckPointer (u, ud, sizeof (digit));
-	if (ud-- == NaturalDigits (u))
-	    break;
-    }
-    NaturalLength (u) = (ud - NaturalDigits (u)) + 1;
+    while (*--rd == 0)
+	if (rd == NaturalDigits (u))
+	{
+	    NaturalLength (u) = 0;
+	    return;
+	}
+    NaturalLength (u) = (rd - NaturalDigits (u)) + 1;
 }
 
 static void
@@ -245,38 +288,45 @@ NaturalBdivmodInplace (Natural *u, Natural *v)
 {
     ENTER ();
     digit   v0;
-    int	    i;
     int	    d;
     digit   dmask;
     
     v0 = NaturalDigits(v)[0];
-    i = 0;
     d = NaturalWidth (u) - NaturalWidth (v) + 1;
-    while (d > DIGITBITS)
+    while (d >= DIGITBITS)
     {
-#ifdef DEBUG
-	FilePrintf (FileStdout, "i %d u[i] %x\n", i, NaturalDigits(u)[i]);
+#ifdef DEBUG_BDIVMOD
+	FilePrintf (FileStdout, "u[0] %x\n", NaturalDigits(u)[0]);
 #endif
-	if (i < NaturalLength (u) && NaturalDigits(u)[i])
+	if (NaturalDigits(u)[0])
 	{
-	    NaturalBdivmodStepInplace (u, i, v, DIGITBITS);
-#ifdef DEBUG
-	    FilePrintf (FileStdout, "i %d u %N\n", i, u);
+	    NaturalBdivmodStepInplace (u, v, DIGITBITS, True);
+#ifdef DEBUG_BDIVMOD
+	    FilePrintf (FileStdout, "d %d u %N\n", d, u);
 #endif
 	}
-	i++;
+	else
+	{
+	    gcd_right_shift (u, DIGITBITS);
+	}
 	d -= DIGITBITS;
     }
-    if (d == DIGITBITS)
-	dmask = MAXDIGIT;
-    else
-	dmask = (((digit) 1) << d) - 1;
-    if (NaturalDigits(u)[i] & dmask)
+    if (d)
     {
-        NaturalBdivmodStepInplace (u, i, v, d);
+	dmask = (((digit) 1) << d) - 1;
+	if (NaturalDigits(u)[0] & dmask)
+	{
+	    NaturalBdivmodStepInplace (u, v, d, False);
+#ifdef DEBUG_BDIVMOD
+	    FilePrintf (FileStdout, "d %d u %N\n", d, u);
+#endif
+	}
+	if (NaturalLength (u))
+	    gcd_right_shift (u, d);
     }
-    if (NaturalLength (u))
-	gcd_right_shift (u, (i << LLBASE2) + d);
+#ifdef DEBUG_BDIVMOD
+    FilePrintf (FileStdout, "result u %N (shift %d)\n", u, d);
+#endif
     EXIT ();
 }
 
@@ -286,7 +336,7 @@ NaturalBdivmod (Natural *u_orig, Natural *v)
     ENTER ();
     Natural *u;
     
-    u = AllocNatural (u_orig->length);
+    u = AllocNatural (u_orig->length + 2);
     NaturalCopy (u_orig, u);
     NaturalBdivmodInplace (u, v);
     RETURN (u);
@@ -335,14 +385,16 @@ static void
 ReducedRatMod (Natural *x, Natural *y, digit *np, digit *dp)
 {
     digit   n1, n2, nt, n2i;
-    digit   d;
+    digit   d1, d2, dt, d;
     digit   c;
     int	    w2;
 
     c = DigitBmod (NaturalDigits(x)[0], NaturalDigits(y)[0], DIGITBITS);
 
     n1 = c;
+    d1 = 1;
     n2 = -n1;
+    d2 = -1;
 
     while ((w2 = DigitWidth (n2)) > DIGITBITS/2)
     {
@@ -350,19 +402,29 @@ ReducedRatMod (Natural *x, Natural *y, digit *np, digit *dp)
 	while (n1 >= n2)
 	{
 	    if (n1 >= (n2i = n2 << i))
+	    {
 		n1 = n1 - n2i;
+		d1 = d1 - (d2 << i);
+	    }
 	    i--;
 	}
 	nt = n1;
 	n1 = n2;
 	n2 = nt;
+	
+	dt = d1;
+	d1 = d2;
+	d2 = dt;
+#ifdef DEBUG_RATMOD
+	FilePrintf (FileStdout, "n1 %d n2 %d d1 %d d2 %d\n", n1, n2, d1, d2);
+#endif
     }
     *np = n2;
     d = DigitBmod (n2, c, DIGITBITS/2 + 1);
-    *dp = d;
-#ifdef DEBUG
+    *dp = d2;
+#ifdef DEBUG_RATMOD
     FilePrintf (FileStdout, "u %n v %n\n", x, y);
-    FilePrintf (FileStdout, "n %u d %u\n", *np, *dp);
+    FilePrintf (FileStdout, "c %u n %u d %u/%u\n", c, *np, *dp, d2);
 #endif
 }
 
@@ -370,7 +432,6 @@ static void
 NaturalKaryReductionInplace (Natural *u, Natural *v)
 {
     ENTER ();
-    Natural	    *t;
     digit	    n, d;
     digit	    *ud, *vd, *rd;
     double_digit    qd, qv;
@@ -378,20 +439,15 @@ NaturalKaryReductionInplace (Natural *u, Natural *v)
     digit	    quo_d, quo_v, r;
     int		    i;
     Bool	    add;
+    int		    lim;
     
-    if (NaturalLength (u) < NaturalLength (v))
-    {
-	t = u;
-	u = v;
-	v = t;
-    }
     ReducedRatMod (u, v, &n, &d);
     add = False;
     if (d & (1 << DIGITBITS/2))
     {
 	add = True;
 	d = -d & ((1 << DIGITBITS/2) - 1);
-#ifdef DEBUG
+#ifdef DEBUG_KARY
 	FilePrintf (FileStdout, "d changed to %d\n", d);
 #endif
     }
@@ -401,7 +457,10 @@ NaturalKaryReductionInplace (Natural *u, Natural *v)
     carry = 0;
     carry_d = 0;
     carry_v = 0;
-    for (i = 0; i < NaturalLength (v); i++)
+    lim = NaturalLength (v);
+    if (lim > NaturalLength (u))
+	lim = NaturalLength (u);
+    for (i = 0; i < lim; i++)
     {
 	GcdCheckPointer (u, ud, sizeof (digit));
 	qd      = (double_digit) d * (double_digit) *ud++ + carry_d;
@@ -462,7 +521,39 @@ NaturalKaryReductionInplace (Natural *u, Natural *v)
 	else
 	    r = quo_d;
 	GcdCheckPointer (u, rd, sizeof (digit));
-	*rd++ = r;
+	if (i)
+	    *rd++ = r;
+    }
+    for (; i < NaturalLength (v); i++)
+    {
+	quo_d = carry_d;
+	carry_d = 0;
+
+	GcdCheckPointer (v, vd, sizeof (digit));
+	qv = (double_digit) n * (double_digit) *vd++ + carry_v;
+	carry_v = DivBase (qv);
+	quo_v = ModBase (qv);
+
+	quo_v = quo_v + carry;
+	if (quo_v)
+	{
+	    carry = 0;
+	    if (add)
+	    {
+		if ((r = quo_d + quo_v) < quo_d)
+		    carry = 1;
+	    }
+	    else
+	    {
+		if ((r = quo_d - quo_v) > quo_d)
+		    carry = 1;
+	    }
+	}
+	else
+	    r = quo_d;
+	GcdCheckPointer (u, rd, sizeof (digit));
+	if (i)
+	    *rd++ = r;
     }
     quo_d = carry_d;
     quo_v = carry_v + carry;
@@ -490,8 +581,12 @@ NaturalKaryReductionInplace (Natural *u, Natural *v)
 	    abort ();
 	else
 	{
+	    /*
+	     * Two's compliment negative result
+	     */
 	    i = rd - NaturalDigits (u);
 	    rd = NaturalDigits (u);
+	    carry = 1;
 	    while (i--)
 	    {
 		r = *rd;
@@ -506,7 +601,7 @@ NaturalKaryReductionInplace (Natural *u, Natural *v)
     while (i > 0 && *--rd == 0)
 	i--;
     NaturalLength (u) = i;
-#ifdef DEBUG
+#ifdef DEBUG_KARY
     FilePrintf (FileStdout, "Reduction result %n\n", u);
 #endif
     EXIT ();
@@ -517,17 +612,58 @@ NaturalKaryReduction (Natural *u, Natural *v)
 {
     ENTER ();
     Natural *t;
+    int	    len;
     
-    if (NaturalLength (u) < NaturalLength (v))
-    {
-	t = u;
-	u = v;
-	v = t;
-    }
-    t = AllocNatural (NaturalLength (u));
+    len = NaturalLength (u);
+    if (len < NaturalLength (v))
+	len = NaturalLength (v);
+    t = AllocNatural (len + 1);
     NaturalCopy (u, t);
     NaturalKaryReductionInplace (t, v);
     RETURN (t);
+}
+
+/*
+ * Allocate space and initialize for GCD.  Extra space is needed for the
+ * rational reduction step
+ */
+
+static Natural *
+NaturalGcdNormalize (Natural *u, int shift)
+{
+    ENTER ();
+    Natural *r;
+    int	    dshift;
+    digit   d1, d2;
+    digit   *ut, *rt;
+    int	    index;
+
+    dshift = shift >> LLBASE2;
+    shift = shift & (LBASE2 - 1);
+    r = AllocNatural (NaturalLength (u) - dshift + 2);
+    rt = NaturalDigits (r);
+    ut = NaturalDigits (u) + dshift;
+    index = NaturalLength (u) - dshift;
+    if (shift)
+    {
+	d2 = *ut++;
+	while (--index)
+	{
+	    d1 = d2;
+	    d2 = *ut++;
+	    *rt++ = (d1 >> shift) | (d2 << (LBASE2 - shift));
+	}
+        *rt++ = (d2 >> shift);
+    }
+    else
+    {
+	while (index--)
+	    *rt++ = *ut++;
+    }
+    while (*--rt == 0)
+	;
+    NaturalLength (r) = rt - NaturalDigits (r) + 1;
+    RETURN (r);
 }
 
 Natural *
@@ -542,13 +678,17 @@ NaturalGcd (Natural *u0, Natural *v0)
     int		u_zeros, v_zeros;
     int		fix;
 
+    if (NaturalZero (u0))
+	RETURN (Zero);
+    if (NaturalZero (v0))
+	RETURN (Zero);
     u_zeros = NaturalZeroBits (u0);
     v_zeros = NaturalZeroBits (v0);
     normal = u_zeros;
     if (u_zeros > v_zeros)
 	normal = v_zeros;
-    u = NaturalRsl (u0, u_zeros);
-    v = NaturalRsl (v0, v_zeros);
+    u = NaturalGcdNormalize (u0, u_zeros);
+    v = NaturalGcdNormalize (v0, v_zeros);
     if (NaturalLess (u, v))
     {
 	t = u;
@@ -623,19 +763,28 @@ NaturalGcd (Natural *u0, Natural *v0)
     {
 	START;
 
-#if 0
-	NaturalBdivmodInplace (u, v);
-	if (NaturalZero (u))
-	    RETURN (NaturalLsl (v, normal));
-#endif
 	while (v->length)
 	{
 	    if (aborting)
 		RETURN (One);
+#ifdef DEBUG_GCD
+	    FilePrintf (FileStdout, "u = %n;\n", u);
+	    FilePrintf (FileStdout, "v = %n;\n", v);
+#endif
 	    if (NaturalWidth (u) - NaturalWidth (v) > 10)
+	    {
+#ifdef DEBUG_GCD
+		FilePrintf (FileStdout, "bdivmod\n");
+#endif
 		NaturalBdivmodInplace (u, v);
+	    }
 	    else
+	    {
+#ifdef DEBUG_GCD
+		FilePrintf (FileStdout, "kary\n");
+#endif
 		NaturalKaryReductionInplace (u, v);
+	    }
 	    u_zeros = NaturalZeroBits (u);
 	    if (u_zeros)
 		gcd_right_shift (u, u_zeros);
@@ -644,10 +793,10 @@ NaturalGcd (Natural *u0, Natural *v0)
 	    v = t;
 	    STEP;
 	}
-#ifdef DEBUG
+	FINISH ("gcd_weber");
+#ifdef DEBUG_FIX
 	FilePrintf (FileStdout, "After weber:\n u: %n\n v: %n\n", u, v);
 #endif
-	FINISH ("gcd_weber");
 	for (fix = 0; fix < 2; fix++)
 	{
 	    v = u;
@@ -655,15 +804,15 @@ NaturalGcd (Natural *u0, Natural *v0)
 		u = v0;
 	    else
 		u = u0;
+#ifdef DEBUG_FIX
+	    FilePrintf (FileStdout, " fix %d\n u = %n;\n v = %n;\n", fix, u, v);
+#endif
 	    u = NaturalBdivmod (u, v);
 	    if (NaturalZero (u))
 	    {
 		u = v;
 		continue;
 	    }
-#ifdef DEBUG
-	    FilePrintf (FileStdout, " fix %d\n u = %n;\n v = %n;\n", fix, u, v);
-#endif
 	    while (v->length)
 	    {
 		v_zeros = NaturalZeroBits (v);
@@ -678,7 +827,7 @@ NaturalGcd (Natural *u0, Natural *v0)
 		NaturalSubtractOffset (v, u, 0);
 		STEP;
 	    }
-#ifdef DEBUG
+#ifdef DEBUG_FIX
 	    FilePrintf (FileStdout, " fix %n\n", u);
 #endif
 	}

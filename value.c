@@ -481,6 +481,44 @@ Gcd (Value av, Value bv)
 					    IntegerType.promote (bv, 0)->integer.mag))));
 }
 
+#ifdef GCD_DEBUG
+Value
+Bdivmod (Value av, Value bv)
+{
+    ENTER ();
+    
+    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    {
+	RaiseStandardException (exception_invalid_binop_types,
+				"invalid gcd argument types",
+				2,
+				av, bv);
+	RETURN (Zero);
+    }
+    RETURN (Reduce (NewInteger (Positive,
+				NaturalBdivmod (IntegerType.promote (av, 0)->integer.mag,
+						IntegerType.promote (bv, 0)->integer.mag))));
+}
+
+Value
+KaryReduction (Value av, Value bv)
+{
+    ENTER ();
+    
+    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    {
+	RaiseStandardException (exception_invalid_binop_types,
+				"invalid kary_reduction argument types",
+				2,
+				av, bv);
+	RETURN (Zero);
+    }
+    RETURN (Reduce (NewInteger (Positive,
+				NaturalKaryReduction (IntegerType.promote (av, 0)->integer.mag,
+						      IntegerType.promote (bv, 0)->integer.mag))));
+}
+#endif
+
 StackObject *ValuePrintStack;
 int	    ValuePrintLevel;
 

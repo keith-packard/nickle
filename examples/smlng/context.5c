@@ -34,7 +34,7 @@ function context_set (*context c, string value)
 	c->styles |= style_b;
 	break;
     case "EM":
-	if (! (c->styles & style_s)) {
+	if ((c->styles & style_s) == 0) {
 	    c->styles ^= style_em;
 	}
 	break;
@@ -69,11 +69,11 @@ function context_set (*context c, string value)
 function context_dump (context c)
 {
     printf("%s %s %s %s %s %d %s %s ",
-	   (c.styles & style_b) ? "B" : "-",
-	   (c.styles & style_em) ? "EM" : "--",
-	   (c.styles & style_i) ? "I" : "-",
-	   (c.styles & style_s) ? "S" : "-",
-	   (c.styles & style_tt) ? "TT" : "--",
+	   (c.styles & style_b) != 0 ? "B" : "-",
+	   (c.styles & style_em) != 0 ? "EM" : "--",
+	   (c.styles & style_i) != 0 ? "I" : "-",
+	   (c.styles & style_s) != 0 ? "S" : "-",
+	   (c.styles & style_tt) != 0 ? "TT" : "--",
 	   c.underline,
 	   (c.color >= 0) ? String::new (colornames[c.color]) : "-",
 	   (c.size >= 0) ? String::new (c.size) : "-");

@@ -22,7 +22,7 @@ BuiltinAddName (NamespacePtr	*namespacep,
 SymbolPtr
 BuiltinSymbol (NamespacePtr *namespacep,
 	       char	    *string,
-	       Types	    *type);
+	       Type	    *type);
 
 SymbolPtr
 BuiltinNamespace (NamespacePtr  *namespacep,
@@ -31,7 +31,7 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 SymbolPtr
 BuiltinException (NamespacePtr  *namespacep,
 		  char		*string,
-		  Types		*type);
+		  Type		*type);
 
 void
 BuiltinAddException (NamespacePtr	*namespacep, 

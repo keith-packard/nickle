@@ -11,7 +11,7 @@ exception div0_attempt(continuation c);
 rational function f(int x) {
     continuation c;
     int y;
-    if (y = setjmp(&c, 0)) {
+    if ((y = setjmp(&c, 0)) != 0) {
 	printf("restarted after exception\n");
 	x = y;
     } else {

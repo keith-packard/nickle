@@ -62,23 +62,23 @@ import_Sockets_namespace()
     BuiltinFuncs2 (&SocketsNamespace, funcs_2);
     BuiltinFuncs3 (&SocketsNamespace, funcs_3);
 
-    sym = BuiltinSymbol (&SocketsNamespace, "SOCK_STREAM", typesPrim[type_int]);
+    sym = BuiltinSymbol (&SocketsNamespace, "SOCK_STREAM", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SOCK_STREAM));
-    sym = BuiltinSymbol (&SocketsNamespace, "SOCK_DGRAM", typesPrim[type_int]);
+    sym = BuiltinSymbol (&SocketsNamespace, "SOCK_DGRAM", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SOCK_DGRAM));
 
-    sym = BuiltinSymbol (&SocketsNamespace, "SHUT_RD", typesPrim[type_int]);
+    sym = BuiltinSymbol (&SocketsNamespace, "SHUT_RD", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SHUT_RD));
-    sym = BuiltinSymbol (&SocketsNamespace, "SHUT_WR", typesPrim[type_int]);
+    sym = BuiltinSymbol (&SocketsNamespace, "SHUT_WR", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SHUT_WR));
-    sym = BuiltinSymbol (&SocketsNamespace, "SHUT_RDWR", typesPrim[type_int]);
+    sym = BuiltinSymbol (&SocketsNamespace, "SHUT_RDWR", typePrim[rep_int]);
     BoxValueSet (sym->global.value, 0, NewInt (SHUT_RDWR));
 
-    sym = BuiltinSymbol (&SocketsNamespace, "INADDR_ANY", typesPrim[type_string]);
+    sym = BuiltinSymbol (&SocketsNamespace, "INADDR_ANY", typePrim[rep_string]);
     BoxValueSet (sym->global.value, 0, NewStrString ("0.0.0.0"));
-    sym = BuiltinSymbol (&SocketsNamespace, "INADDR_LOOPBACK", typesPrim[type_string]);
+    sym = BuiltinSymbol (&SocketsNamespace, "INADDR_LOOPBACK", typePrim[rep_string]);
     BoxValueSet (sym->global.value, 0, NewStrString ("127.0.0.1"));
-    sym = BuiltinSymbol (&SocketsNamespace, "INADDR_BROADCAST", typesPrim[type_string]);
+    sym = BuiltinSymbol (&SocketsNamespace, "INADDR_BROADCAST", typePrim[rep_string]);
     BoxValueSet (sym->global.value, 0, NewStrString ("255.255.255.255"));
 
     EXIT ();

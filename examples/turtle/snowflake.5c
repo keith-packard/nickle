@@ -10,7 +10,7 @@
 load "turtle.5c"
 import Turtle;
 
-void function
+void
 do_flake(int depth, rational scale) {
     if (depth == 0) {
 	stroke_turtle(scale);

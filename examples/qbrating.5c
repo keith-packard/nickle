@@ -6,9 +6,8 @@
  * decimal approximations, last only decimal approximations.
  */
 
-rational function qbrating
-  (int attempts, int completions, int yards,
-   int touchdowns, int interceptions)
+rational qbrating (int attempts, int completions, int yards,
+		   int touchdowns, int interceptions)
 {
     int v1, v2, v3, v4;
     
@@ -19,9 +18,8 @@ rational function qbrating
     return (v1 + v2 + v3 + v4) / (6 * attempts) + 25 / 12;
 }
 
-real function qbr2
-  (int attempts, int completions, int yards,
-   int touchdowns, int interceptions)
+real qbr2 (int attempts, int completions, int yards,
+	   int touchdowns, int interceptions)
 {
     real v1, v2, v3, v4;
     
@@ -32,9 +30,8 @@ real function qbr2
     return (v1 + v2 + v3 + v4) * 100 / 6;
 }
 
-real function qbr3
-  (int attempts, int completions, int yards,
-   int touchdowns, int interceptions)
+real qbr3 (int attempts, int completions, int yards,
+	   int touchdowns, int interceptions)
 {
     real v1, v2, v3, v4;
     

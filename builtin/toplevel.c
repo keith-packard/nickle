@@ -290,7 +290,7 @@ do_dims(Value av)
     Value ret;
     int i;
 
-    ret = NewArray(True, typesPrim[type_int], 1, &av->array.ndim);
+    ret = NewArray(True, typePrim[rep_int], 1, &av->array.ndim);
     for (i = 0; i < av->array.ndim; i++) {
       Value d = NewInt(av->array.dim[i]);
       BoxValueSet(ret->array.values, i, d);
@@ -378,10 +378,10 @@ do_numerator (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_int:
-    case type_integer:
+    case rep_int:
+    case rep_integer:
 	break;
-    case type_rational:
+    case rep_rational:
 	av = NewInteger (av->rational.sign, av->rational.num);
 	break;
     default:
@@ -399,11 +399,11 @@ do_denominator (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_int:
-    case type_integer:
+    case rep_int:
+    case rep_integer:
 	av = One;
 	break;
-    case type_rational:
+    case rep_rational:
 	av = NewInteger (Positive, av->rational.den);
 	break;
     default:
@@ -421,10 +421,10 @@ do_bit_width (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_int:
+    case rep_int:
 	av = NewInt (IntWidth (av->ints.value));
 	break;
-    case type_integer:
+    case rep_integer:
 	av = NewInt (NaturalWidth (av->integer.mag));
 	break;
     default:
@@ -442,8 +442,8 @@ do_is_int (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_int:
-    case type_integer:
+    case rep_int:
+    case rep_integer:
 	av = TrueVal;
 	break;
     default:
@@ -458,9 +458,9 @@ do_is_rational (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_int:
-    case type_integer:
-    case type_rational:
+    case rep_int:
+    case rep_integer:
+    case rep_rational:
 	av = TrueVal;
 	break;
     default:
@@ -475,10 +475,10 @@ do_is_number (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_int:
-    case type_integer:
-    case type_rational:
-    case type_float:
+    case rep_int:
+    case rep_integer:
+    case rep_rational:
+    case rep_float:
 	av = TrueVal;
 	break;
     default:
@@ -493,7 +493,7 @@ do_is_string (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_string:
+    case rep_string:
 	av = TrueVal;
 	break;
     default:
@@ -508,7 +508,7 @@ do_is_file (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_file:
+    case rep_file:
 	av = TrueVal;
 	break;
     default:
@@ -523,7 +523,7 @@ do_is_thread (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_thread:
+    case rep_thread:
 	av = TrueVal;
 	break;
     default:
@@ -538,7 +538,7 @@ do_is_semaphore (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_semaphore:
+    case rep_semaphore:
 	av = TrueVal;
 	break;
     default:
@@ -553,7 +553,7 @@ do_is_continuation (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_continuation:
+    case rep_continuation:
 	av = TrueVal;
 	break;
     default:
@@ -568,7 +568,7 @@ do_is_bool (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_bool:
+    case rep_bool:
 	av = TrueVal;
 	break;
     default:
@@ -583,7 +583,7 @@ do_is_void (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_void:
+    case rep_void:
 	av = TrueVal;
 	break;
     default:
@@ -598,7 +598,7 @@ do_is_array (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_array:
+    case rep_array:
 	av = TrueVal;
 	break;
     default:
@@ -613,7 +613,7 @@ do_is_ref (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_ref:
+    case rep_ref:
 	av = TrueVal;
 	break;
     default:
@@ -628,7 +628,7 @@ do_is_struct (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_struct:
+    case rep_struct:
 	av = TrueVal;
 	break;
     default:
@@ -643,7 +643,7 @@ do_is_func (Value av)
 {
     ENTER ();
     switch (ValueTag(av)) {
-    case type_func:
+    case rep_func:
 	av = TrueVal;
 	break;
     default:

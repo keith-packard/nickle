@@ -45,7 +45,7 @@ typedef struct {
 *ttent ttable = 0;
 
 /* whose turn it is: piece.none == board full  */
-piece function side_on_move(*position b) {
+piece side_on_move(*position b) {
   int n = 0;
   for(int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
@@ -63,16 +63,16 @@ int nttstates = 0;
 
 
 /* lookup or create the current pos in the ttable */
-*ttent function ttable_lookup(position pos) {
+*ttent ttable_lookup(position pos) {
 
     /* return all rotations/reflections of pos */
-    poslist function all_posns(position pos) {
+    poslist all_posns(position pos) {
 	/* a transformation: elems are in 3 * y + x form */
 	typedef int[9] xform;
 	xform rot = {2,5,8,1,4,7,0,3,6};
 	xform refl = {0,3,6,1,4,7,2,5,8};
 	/* return the x-transformed version of p */
-	position function do_xform(xform x, position p) {
+	position do_xform(xform x, position p) {
 	    position np;
 	    for (int i = 0; i < 9; i++)
 		np[x[i] % 3, x[i] // 3] = p[i % 3, i // 3];
@@ -127,13 +127,13 @@ int nttstates = 0;
 
 /* actually run a game from the given position
    and adjust the weights */
-piece function menace2(position b) {
+piece menace2(position b) {
 
     /* check for a win */
-    piece function win(*position b) {
+    piece win(*position b) {
 
 	/* check for a row, given delta and base in x and y */
-	piece function row(*position b,
+	piece row(*position b,
 			   int dx, int dy,
 			   int bx, int by) {
 	  if (b*[dx + bx,dy + by] == b*[bx,by] &&
@@ -198,7 +198,7 @@ piece function menace2(position b) {
     abort("menace2: weird t->val");
 }
 
-void function go(int n) {
+void go(int n) {
     position b;
     for (int i = 0; i < 9; i++) {
 	int j;
@@ -215,7 +215,7 @@ void function go(int n) {
     *ttent t = ttable_lookup(b);
     for(int j = 0; j < 3; j++) {
     	for(int i = 0; i < 3; i++) {
-	    string function label(piece p) {
+	    string label(piece p) {
 		union switch (p) {
 		case x: return "X";
 		case o: return "O";

@@ -43,7 +43,7 @@ public namespace Lexc {
 	    ch.id = Eof;
 	    break;
 	default:
-	    raise LexInvalidChar (ch.c);
+	    raise InvalidChar (ch.c);
 	}
 	return ch;
     }
@@ -233,7 +233,7 @@ public namespace Parse {
 
     public void function dump (*element e)
     {
-	if (e)
+	if (e != 0)
 	{
 	    context_dump (*e->ctxt);
 	    printf ("%v\n", e->data);

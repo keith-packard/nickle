@@ -5,7 +5,7 @@
  */
 
 import Mutex;
-int die;
+bool die;
 
 typedef struct {
     mutex	mut_ex;
@@ -41,7 +41,7 @@ function t (*(named_mutex[*]) mutexes, int self, int delay)
     int i;
     
     Semaphore::signal (started);
-    die = 0;
+    die = false;
     while (!die)
     {
 	for (i = 0; !die && i < dim (*mutexes); i++)
@@ -83,3 +83,16 @@ function start (int nthread, int nmut_ex, int delay)
 	Semaphore::wait (started);
     }
 }
+
+function monitor (int delay)
+{
+    for (;;)
+    {
+	status ();
+	sleep (delay);
+    }
+}
+
+start (20, 10, 100);
+monitor (200);
+    

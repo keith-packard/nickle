@@ -97,7 +97,7 @@ BuiltinAddName (NamespacePtr	*namespacep,
 SymbolPtr
 BuiltinSymbol (NamespacePtr *namespacep,
 	       char	    *string,
-	       Types	    *type)
+	       Type	    *type)
 {
     ENTER ();
     RETURN (BuiltinAddName (namespacep, 
@@ -106,9 +106,9 @@ BuiltinSymbol (NamespacePtr *namespacep,
 }
 
 static char *
-BuiltinType (char *format, Types **type)
+BuiltinType (char *format, Type **type)
 {
-    Types   *t;
+    Type   *t;
     Bool    ref = False;
     Bool    array = False;
     Expr    *dims = 0;
@@ -130,40 +130,40 @@ BuiltinType (char *format, Types **type)
 	}
     }
     switch (*format++) {
-    case 'p': t = typesPoly; break;
-    case 'n': t = typesGroup; break;
-    case 'N': t = typesField; break;
-    case 'E': t = typesFileError; break;
-    case 'R': t = typesPrim[type_float]; break;
-    case 'r': t = typesPrim[type_rational]; break;
-    case 'i': t = typesPrim[type_integer]; break;
-    case 's': t = typesPrim[type_string]; break;
-    case 'f': t = typesPrim[type_file]; break;
-    case 't': t = typesPrim[type_thread]; break;
-    case 'S': t = typesPrim[type_semaphore]; break;
-    case 'c': t = typesPrim[type_continuation]; break;
-    case 'b': t = typesPrim[type_bool]; break;
-    case 'v': t = typesPrim[type_void]; break;
+    case 'p': t = typePoly; break;
+    case 'n': t = typeGroup; break;
+    case 'N': t = typeField; break;
+    case 'E': t = typeFileError; break;
+    case 'R': t = typePrim[rep_float]; break;
+    case 'r': t = typePrim[rep_rational]; break;
+    case 'i': t = typePrim[rep_integer]; break;
+    case 's': t = typePrim[rep_string]; break;
+    case 'f': t = typePrim[rep_file]; break;
+    case 't': t = typePrim[rep_thread]; break;
+    case 'S': t = typePrim[rep_semaphore]; break;
+    case 'c': t = typePrim[rep_continuation]; break;
+    case 'b': t = typePrim[rep_bool]; break;
+    case 'v': t = typePrim[rep_void]; break;
     default: 
 	t = 0;
 	write (2, "Invalid builtin argument type\n", 30);
 	break;
     }
     if (ref)
-	t = NewTypesRef (t);
+	t = NewTypeRef (t);
     if (array)
-	t = NewTypesArray (t, dims);
+	t = NewTypeArray (t, dims);
     *type = t;
     return format;
 }
 	     
 static ArgType *
-BuiltinArgTypes (char *format, int *argcp)
+BuiltinArgType (char *format, int *argcp)
 {
     ENTER ();
     ArgType	*args, *a, **last;
     int		argc;
-    Types	*t;
+    Type	*t;
     Bool	varargs;
     
     args = 0;
@@ -201,7 +201,7 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 SymbolPtr
 BuiltinException (NamespacePtr  *namespacep,
 		  char		*string,
-		  Types		*type)
+		  Type		*type)
 {
     ENTER ();
     RETURN (BuiltinAddName (namespacep, 
@@ -217,12 +217,12 @@ BuiltinAddException (NamespacePtr	*namespacep,
     ENTER ();
     SymbolPtr	sym;
     ArgType	*args;
-    Types	*type;
+    Type	*type;
     int		argc;
 
-    args = BuiltinArgTypes (format, &argc);
-    type = NewTypesFunc (typesPoly, args);
-    sym = BuiltinException (namespacep, name, NewTypesFunc (typesPoly, args));
+    args = BuiltinArgType (format, &argc);
+    type = NewTypeFunc (typePoly, args);
+    sym = BuiltinException (namespacep, name, NewTypeFunc (typePoly, args));
     RegisterStandardException (exception, sym);
     EXIT ();
 }
@@ -236,11 +236,11 @@ BuiltinAddFunction (NamespacePtr *namespacep, char *name, char *ret_format,
     SymbolPtr	sym;
     int		argc;
     ArgType	*args;
-    Types	*ret;
+    Type	*ret;
 
-    args = BuiltinArgTypes (format, &argc);
+    args = BuiltinArgType (format, &argc);
     BuiltinType (ret_format, &ret);
-    sym = BuiltinSymbol (namespacep, name, NewTypesFunc (ret, args));
+    sym = BuiltinSymbol (namespacep, name, NewTypeFunc (ret, args));
     func =  NewFunc (NewBuiltinCode (ret, args, argc, f, jumping), 0);
     BoxValueSet (sym->global.value, 0, func);
     EXIT ();
@@ -278,7 +278,7 @@ BuiltinInit (void)
 
     /* Import builtin strings with predefined values */
     for (s = svars; s->name; s++) {
-	sym = BuiltinSymbol (s->namespace, s->name, typesPrim[type_string]);
+	sym = BuiltinSymbol (s->namespace, s->name, typePrim[rep_string]);
 	BoxValueSet (sym->global.value, 0, NewStrString (s->value));
     }
 
@@ -295,7 +295,7 @@ BuiltinInit (void)
     for (env = envvars; env->name; env++) {
 	char	*v;
 	Value	val;
-	sym = BuiltinSymbol (env->namespace, env->name, typesPrim[type_string]);
+	sym = BuiltinSymbol (env->namespace, env->name, typePrim[rep_string]);
 	v = getenv (env->var);
 	if (!v)
 	    v = env->def;
@@ -308,7 +308,7 @@ BuiltinInit (void)
 
     /* Import File objects with predefined values */
     for (f = fvars; f->name; f++) {
-	sym = BuiltinSymbol (f->namespace, f->name, typesPrim[type_file]);
+	sym = BuiltinSymbol (f->namespace, f->name, typePrim[rep_file]);
 	BoxValueSet (sym->global.value, 0, *f->value);
     }
 

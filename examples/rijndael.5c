@@ -188,7 +188,7 @@ public namespace Rijndael {
 	    /* multiply two elements of GF(2^m)
 	     * needed for MixColumn and InvMixColumn
 	     */
-	    if (a && b) 
+	    if (a != 0 && b != 0) 
 		return Alogtable[(Logtable[a] + Logtable[b])%255];
 	    else 
 		return 0;
@@ -915,7 +915,7 @@ public namespace Rijndael {
 	string	s = "";
 	int	i;
 
-	for (i = 0; i < dim(a) && a[i]; i++)
+	for (i = 0; i < dim(a) && a[i] != 0; i++)
 	    s = s + String::new (a[i]);
 	return s;
     }

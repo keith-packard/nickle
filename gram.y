@@ -11,7 +11,7 @@
 #include	<stdio.h>
 
 /*
- * This grammar generates:
+ * This grammar generates 2 reduce/reduce and 4 shift/reduce conflicts:
  * 
  * reduce/reduce conflict on:
  *
@@ -37,7 +37,7 @@
  *	and the grammar can't tell which opt_nl is reduced.
  *	No big deal.
  *
- *  2 shift/reduce conflicts on CATCH:
+ *  shift/reduce conflict on CATCH:
  *
  *	That's because CATCH blocks are optional and chained.
  *	Shifting binds the CATCH to the nearest enclosing TRY,

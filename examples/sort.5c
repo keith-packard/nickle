@@ -10,7 +10,7 @@ namespace Sort {
     /*
      * Quicksort with random pivot
      */
-    public poly[*] function qsort (poly[*] a, bool(poly, poly) gt)
+    public void function qsort (&poly[*] a, bool(poly, poly) gt)
     {
 	void function quicksort (int p, int r)
 	{
@@ -50,13 +50,12 @@ namespace Sort {
 	}
     
 	quicksort (0, dim(a)-1);
-	return a;
     }
     
     /*
      * Mergesort
      */
-    public poly[*] function mergesort (poly[*] a, bool(poly, poly) gt)
+    public void function mergesort (&poly[*] a, bool(poly, poly) gt)
     {
 	void function msort (int p, int r)
 	{
@@ -94,14 +93,8 @@ namespace Sort {
 	    }
 	}
 	msort (0, dim(a)-1);
-	return a;
     }
 	
-    protected int[*] function randomints (int n, int max)
-    {
-	int[n] a;
-	while (n-- > 0) a[n] = PRNG::randint(max);
-	return a;
-    }
-
+    protected int[*] function randomints (int n, int max) =
+	(int[n]) { [i] = PRNG::randint(max) };
 }

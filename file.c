@@ -13,6 +13,7 @@
 #include	<sys/types.h>
 #include	<sys/wait.h>
 #include	<errno.h>
+#include	<sys/socket.h>
 #include	"nickle.h"
 #include	"ref.h"
 #include	"gram.h"
@@ -44,6 +45,8 @@ typedef struct _FileErrorMap {
     char	*name;
     char	*message;
 } FileErrorMap;
+
+#define EUTF8    -128
 
 const FileErrorMap   fileErrorMap[] = {
 #ifdef EPERM
@@ -418,6 +421,9 @@ const FileErrorMap   fileErrorMap[] = {
 #ifdef EMEDIUMTYPE
     { EMEDIUMTYPE, "MEDIUMTYPE", "Wrong medium type" },
 #endif
+#ifdef EUTF8
+    { EUTF8, "UTF8", "Invalid UTF-8 byte sequence" },
+#endif
 };
 
 #define NUM_FILE_ERRORS	(sizeof (fileErrorMap) / sizeof (fileErrorMap[0]))
@@ -663,14 +669,27 @@ FilePopen (char *program, char *argv[], char *mode, int *errp)
     ENTER ();
     int	    fd, fds[2];
     int	    pid;
-    Bool    reading;
     Value   file;
+    int	    flags = 0;
 
-    if (*mode == 'r')
-	reading = True;
-    else
-	reading = False;
-    pipe (fds);
+    switch (mode[0]) {
+    case 'r':
+	if (mode[1] == '+')
+	    flags |= FileWritable;
+	flags |= FileReadable;
+	break;
+    case 'w':
+    case 'a':
+	if (mode[1] == '+')
+	    flags |= FileReadable;
+	flags |= FileWritable;
+	break;
+    }
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0)
+    {
+	*errp = errno;
+	RETURN(0);
+    }
     switch ((pid = fork ())) {
     case -1:
 	close (fds[0]);
@@ -679,36 +698,30 @@ FilePopen (char *program, char *argv[], char *mode, int *errp)
 	fd = -1;
 	break;
     case 0:
-	if (reading)
-	{
-	    close (1);
+	if (flags & FileReadable)
 	    dup2 (fds[1], 1);
-	    close (fds[0]);
-	}
 	else
-	{
-	    close (0);
-	    dup2 (fds[0], 0);
-	    close (fds[1]);
-	}
+	    shutdown (fds[1], SHUT_WR);
+	if (flags & FileWritable)
+	    dup2 (fds[1], 0);
+	else
+	    shutdown (fds[1], SHUT_RD);
+	close (fds[0]);
+	close (fds[1]);
 	execvp (program, argv);
 	exit (1);
     default:
-	if (reading)
-	{
-	    close (fds[1]);
-	    fd = fds[0];
-	}
-	else
-	{
-	    close (fds[0]);
-	    fd = fds[1];
-	}
+	fd = fds[0];
+        if (!(flags & FileReadable))
+	    shutdown (fds[0], SHUT_RD);
+	if (!(flags & FileWritable))
+	    shutdown (fds[0], SHUT_WR);
+	fd = fds[0];
 	break;
     }
     if (fd >= 0)
     {
-	file = FileCreate (fd, reading ? FileReadable : FileWritable);
+	file = FileCreate (fd, flags);
 	file->file.flags |= FilePipe;
 	file->file.pid = pid;
     }
@@ -1738,7 +1751,10 @@ FileInchar (Value file)
     if ((result & 0x80) != 0)
     {
 	if ((result & 0xc0) != 0xc0)
+	{
+	    file->file.input_errno = EUTF8;
 	    return FileError;
+	}
 	
 	mask = 0x20;
 	extra = 1;
@@ -1759,7 +1775,10 @@ FileInchar (Value file)
 	    }
 	    buf[n++] = c;
 	    if ((c & 0xc0) != 0x80)
+	    {
+		file->file.input_errno = EUTF8;
 		return FileError;
+	    }
 	    result = (result << 6) | (c & 0x3f);
 	}
     }

@@ -22,7 +22,7 @@ Bool	signalSuspend;	    /* current thread is suspending */
 
 static ThreadState ThreadStep (Value thread);
 
-#define Arg(n)  Stack((argc - 1) - ((n)+off))
+#define Arg(n)  Stack((argc - 1) - (n) + off)
 
 static FramePtr
 BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,

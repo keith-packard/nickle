@@ -1230,6 +1230,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
     
 	inst = ObjCode (obj, catch_inst);
 	inst->base.opCode = OpCatch;
+	inst->base.stat = stat;
 	inst->catch.offset = obj->used - catch_inst;
 	inst->catch.exception = exception;
     
@@ -1243,6 +1244,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	
 	inst = ObjCode (obj, exception_inst);
 	inst->base.opCode = OpException;
+	inst->base.stat = stat;
 	inst->branch.offset = obj->used - exception_inst;
     }
     else
@@ -1589,10 +1591,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	NewInst (middle_inst, obj);
 	inst = ObjCode (obj, test_inst);
 	inst->base.opCode = OpQuest;
+	inst->base.stat = stat;
 	inst->branch.offset = obj->used - test_inst;
 	obj = _CompileExpr (obj, expr->tree.right->tree.right, evaluate, stat, code);
 	inst = ObjCode (obj, middle_inst);
 	inst->base.opCode = OpColon;
+	inst->base.stat = stat;
 	inst->branch.offset = obj->used - middle_inst;
 	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
 					     COLON,
@@ -2680,7 +2684,7 @@ ObjDump (ObjPtr obj, int indent)
     for (i = 0; i < obj->used; i++)
     {
 	inst = ObjCode(obj, i);
-	if (inst->base.stat != stat)
+	if (inst->base.stat && inst->base.stat != stat)
 	{
 	    FilePrintf (FileStdout, "                                     ");
 	    PrettyStat (FileStdout, inst->base.stat, False);

@@ -664,7 +664,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	    FilePuts (f, " ");
 	while ((e = e->tree.right))
 	{
-	    FilePrintf (f, "catch %A ", e->tree.left->code.code->base.name);
+	    FilePrintf (f, "catch %A ", e->tree.left->code.code->base.name->atom.atom);
 	    PrettyCode (f, e->tree.left->code.code,
 		       0, class_undef,
 		       publish_private, level, nest);

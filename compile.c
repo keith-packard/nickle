@@ -1623,7 +1623,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	BuildInst (obj, OpArrow, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
-    case FUNCTION:
+    case FUNC:
 	obj = CompileFunc (obj, expr->code.code, stat, code);
 	expr->base.type = NewTypesFunc (expr->code.code->base.type,
 					expr->code.code->base.args);
@@ -2239,7 +2239,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	}
 	CompilePatchLoop (obj, top_inst, -1);
 	break;
-    case VAR:
+    case FUNC:
 	obj = CompileDecl (obj, expr, False, expr, code);
 	break;
     case TYPEDEF:
@@ -2311,10 +2311,6 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    obj = _CompileExpr (obj, expr->tree.left, False, expr, code);
 	break;
     case SEMI:
-	break;
-    case FUNCTION:
-	obj = CompileDecl (obj, expr->tree.left, False, expr, code); 
-	obj = CompileAssign (obj, expr->tree.right, True, expr, code);
 	break;
     case NAMESPACE:
 	obj = _CompileStat (obj, expr->tree.right, last, code);

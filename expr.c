@@ -140,20 +140,20 @@ NewExprCode (CodePtr code, ExprPtr name)
     Expr    *e;
 
     e = ALLOCATE (&ExprCodeType, sizeof (ExprCode));
-    ExprBaseInit (e, FUNCTION);
+    ExprBaseInit (e, FUNC);
     e->code.code = code;
     code->base.name = name;
     RETURN (e);
 }
 
 Expr *
-NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish)
+NewExprDecl (int tag, DeclListPtr decl, Class class, Types *type, Publish publish)
 {
     ENTER ();
     Expr    *e;
 
     e = ALLOCATE (&ExprDeclType, sizeof (ExprDecl));
-    ExprBaseInit (e, VAR);
+    ExprBaseInit (e, tag);
     e->decl.decl = decl;
     e->decl.class = class;
     e->decl.type = type;

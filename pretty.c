@@ -619,13 +619,18 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	PrettyExpr (f, e->tree.right, -1, level, nest);
 	FilePuts (f, ";\n");
 	break;
-    case FUNCTION:
+    case FUNC:
 	PrettyIndent (f, level);
-	PrettyCode (f, e->tree.right->tree.right->code.code, 
-		   e->tree.left->decl.decl->name,
-		   e->tree.left->decl.class,
-		   e->tree.left->decl.publish,
-		   level, nest);
+	{
+	    DeclListPtr	    decl = e->decl.decl;
+	    ExprPtr	    init = decl->init;
+	    CodePtr	    code = init->code.code;
+
+	    PrettyCode (f, code, decl->name, 
+			e->decl.class,
+			e->decl.publish,
+			level, nest);
+	}
 	FilePuts (f, "\n");
 	break;
     case TYPEDEF:
@@ -729,16 +734,9 @@ PrettyCode (Value f, CodePtr code, Atom name, Class class, Publish publish,
 	   int level, Bool nest)
 {
     if (name)
-	FilePrintf (f, "%p%k", publish, class);
-    FilePrintf (f, "%t", code->base.type);
-    if (name)
-    {
-	FilePuts (f, "function ");
-	FilePuts (f, AtomName (name));
-	FileOutput (f, ' ');
-    }
+	FilePrintf (f, "%p%k%T %A ", publish, class, code->base.type, name);
     else
-	FilePuts (f, "func ");
+	FilePrintf (f, "%tfunc", code->base.type);
     PrintArgs (f, code->base.args);
     if (code->base.builtin)
     {

@@ -59,10 +59,10 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %type  <atomList>   atoms
 %type  <declList>   initnames typenames
 %type  <symbol>	    name
-%type  <funcDecl>   func_decl
+%type  <funcDecl>   func_decl func_name
 %type  <atom>	    typename
 %type  <expr>	    opt_init
-%type  <fulltype>   decl opt_decl next_decl
+%type  <fulltype>   decl next_decl
 %type  <types>	    opt_type type opt_type_or_enum
 %type  <expr>	    opt_stars stars
 %type  <type>	    basetype
@@ -414,9 +414,9 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 		    { 
 			DeclList    *decl = $1.decl;
 			SymbolPtr   symbol = decl->symbol;
-			Class	    class = $1.class;
-			Publish	    publish = $1.publish;
-			TypesPtr    type = $1.type;
+			Class	    class = $1.type.class;
+			Publish	    publish = $1.type.publish;
+			TypesPtr    type = $1.type.type;
 			TypesPtr    ret = type->func.ret;
 			ArgType	    *argType = type->func.args;
 
@@ -433,7 +433,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			    else
 				symbol->symbol.forward = True;
 			}
-			$$ = NewExprDecl (decl, class, type, publish);
+			$$ = NewExprDecl (FUNC, decl, class, type, publish);
 		    }
 		| opt_publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end SEMI attendnl
 		    { 
@@ -443,7 +443,8 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			decl->symbol = ParseNewSymbol ($1, 
 						       class_exception, 
 						       typesPoly, $4);
-			$$ = NewExprDecl (decl,
+			$$ = NewExprDecl (EXCEPTION,
+					  decl,
 					  class_exception,
 					  NewTypesFunc (typesPoly, $6),
 					  $1);
@@ -457,7 +458,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			for (decl = $4; decl; decl = decl->next)
 			    decl->symbol = ParseNewSymbol ($1, class_typedef,
 							   0, decl->name);
-			$$ = NewExprTree (TYPEDEF, NewExprDecl ($4, class_typedef, 0, $1), 0);
+			$$ = NewExprTree (TYPEDEF, NewExprDecl (TYPEDEF, $4, class_typedef, 0, $1), 0);
 		    }
 		| opt_publish TYPEDEF ignorenl type typenames SEMI attendnl
 		    { 
@@ -466,7 +467,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			for (decl = $5; decl; decl = decl->next)
 			    decl->symbol = ParseNewSymbol ($1, class_typedef,
 							   $4, decl->name);
-			$$ = NewExprTree (TYPEDEF, NewExprDecl ($5, class_typedef, $4, $1), 0);
+			$$ = NewExprTree (TYPEDEF, NewExprDecl (TYPEDEF, $5, class_typedef, $4, $1), 0);
 		    }
 		| publish_extend NAMESPACE ignorenl namespacename
 		    {
@@ -659,42 +660,50 @@ next_decl	: COMMA
 /*
  * Declaration of a function
  */
-func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start opt_argdefines
+func_decl	: func_name namespace_start opt_argdefines CP
 		    {
-			DeclList    *decl = NewDeclList ($4, 0, 0);
-			
 			NamespacePtr	save = CurrentNamespace;
 			SymbolPtr	symbol;
-			Types		*type = NewTypesFunc ($1.type, $6);
+			Types		*type = NewTypesFunc ($1.type.type, $3);
 			/*
 			 * namespace_start pushed a new namespace, make sure
 			 * this symbol is placed in the original namespace
 			 */
 			CurrentNamespace = save->previous;
-			symbol = NamespaceFindName (CurrentNamespace, $4, True);
+			symbol = NamespaceFindName (CurrentNamespace, $1.decl->name, True);
 			if (symbol && symbol->symbol.forward)
 			{
 			    if (!TypeCompatible (symbol->symbol.type, type, 
 						 True))
 			    {
 				ParseError ("%A redefinition with different type",
-					    $4);
+					    $1.decl->name);
 				symbol = 0;
 			    }
 			}
 			else
 			{
-			    symbol = ParseNewSymbol ($1.publish,
-						     $1.class, 
+			    symbol = ParseNewSymbol ($1.type.publish,
+						     $1.type.class, 
 						     type,
-						     $4);
+						     $1.decl->name);
 			}
-			decl->symbol = symbol;
 			CurrentNamespace = save;
-			$$.publish = $1.publish;
-			$$.class = $1.class;
-			$$.decl = decl;
-			$$.type = type;
+			$$ = $1;
+			$$.decl->symbol = symbol;
+			$$.type.type = type;
+		    }
+		;
+func_name	: decl NAME OP ignorenl
+		    { $$.type = $1; $$.decl = NewDeclList ($2, 0, 0); }
+		| decl FUNCTION NAME OP ignorenl
+		    { $$.type = $1; $$.decl = NewDeclList ($3, 0, 0); }
+		| FUNCTION NAME OP ignorenl
+		    { 
+			$$.type.publish = publish_private;
+			$$.type.class = class_undef;
+			$$.type.type = typesPoly;
+			$$.decl = NewDeclList ($2, 0, 0); 
 		    }
 		;
 opt_init	: ASSIGN simpleexpr
@@ -711,11 +720,11 @@ opt_init	: ASSIGN simpleexpr
 		;
 /*
 * Full declaration including storage, type and publication
-*/
 opt_decl	: decl
 		|
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = typesPoly; }
 		;
+*/
 decl		: publish class type
 		    { $$.publish = $1; $$.class = $2; $$.type = $3; }
 		| class type
@@ -933,12 +942,12 @@ argdecl		: type NAME
 /*
 * Arguments in function definitions
 */
-opt_argdefines	: OP argdefines CP
+opt_argdefines	: argdefines
 		    {
 			ArgType	*args;
 			Types	*type;
 
-			for (args = $2; args; args = args->next)
+			for (args = $1; args; args = args->next)
 			{
 			    type = args->type;
 			    if (!ParseCanonType (type))
@@ -955,9 +964,9 @@ opt_argdefines	: OP argdefines CP
 							   class_arg, 
 							   type, args->name);
 			}
-			$$ = $2;
+			$$ = $1;
 		    }
-		| OP CP
+		| 
 		    { $$ = 0; }
 		;
 argdefines	: argdefine COMMA argdefines
@@ -1002,7 +1011,7 @@ expr		: comma_expr
 			    }
 			}
 
-			$$ = NewExprDecl ($2, $1.class, $1.type, $1.publish); 
+			$$ = NewExprDecl (VAR, $2, $1.class, $1.type, $1.publish); 
 		    }
 		;
 comma_expr	: lambdaexpr

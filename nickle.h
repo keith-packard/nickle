@@ -128,19 +128,17 @@ typedef struct _MemList {
 
 extern MemListPtr  NewMemList (AtomListPtr atoms, Types *type, MemListPtr next);
 
-typedef struct _funcDecl {
-    Publish	publish;
-    Class	class;
-    DeclList	*decl;
-    TypesPtr	type;
-} FuncDecl;
-
 typedef struct _Fulltype {
     Publish publish;
     Class   class;
     Types   *type;
 } Fulltype;
     
+typedef struct _funcDecl {
+    Fulltype	type;
+    DeclList	*decl;
+} FuncDecl;
+
 typedef struct _frame {
     DataType	    *data;
     FramePtr	    previous;
@@ -238,7 +236,7 @@ Expr	*NewExprTree (int tag, Expr *left, Expr *right);
 Expr	*NewExprConst (int tag, Value val);
 Expr	*NewExprAtom (Atom atom, SymbolPtr symbol, Bool privateFound);
 Expr	*NewExprCode (CodePtr code, ExprPtr name);
-Expr	*NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish);
+Expr	*NewExprDecl (int tag, DeclListPtr decl, Class class, Types *type, Publish publish);
 
 Expr	*ExprRehang (Expr *expr, Expr *right);
 

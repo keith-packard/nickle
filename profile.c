@@ -75,6 +75,11 @@ do_profile (Value on)
 	v.it_value = v.it_interval;
 	setitimer (ITIMER_VIRTUAL, &v, 0);
 	profiling = False;
+	/*
+	 * expr nodes clear their accumulated time 
+	 * on GC when profiling is false 
+	 */
+	MemCollect ();
     }
     return previous ? TrueVal : FalseVal;
 }

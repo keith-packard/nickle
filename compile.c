@@ -196,12 +196,12 @@ typedef enum _tail { TailNever, TailVoid, TailAlways } Tail;
 
 ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createIfNecessary, Bool assign, Bool initialize);
 ObjPtr	CompileBinOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code);
-ObjPtr	CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code);
+ObjPtr	CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code, char *name);
 ObjPtr	CompileUnOp (ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code);
-ObjPtr	CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr code);
+ObjPtr	CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr code, char *name);
 ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, Bool initialize, ExprPtr stat, CodePtr code);
 ObjPtr	CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code);
-ObjPtr	CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code);
+ObjPtr	CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code, char *name);
 ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, int *ndimp);
 ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code);
 ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
@@ -465,7 +465,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 					    True);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible type '%T' in array operation",
+	    CompileError (obj, stat, "Incompatible type, array '%T', for %d dimension operation",
 			  expr->tree.left->base.type, ndim);
 	    expr->base.type = typePoly;
 	    break;
@@ -485,7 +485,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	expr->base.type = TypeCombineUnary (expr->tree.left->base.type, expr->base.tag);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible type '%T' in unary operation",
+	    CompileError (obj, stat, "Incompatible type, value '%T', for unary operation",
 			  expr->tree.left->base.type);
 	    expr->base.type = typePoly;
 	    break;
@@ -533,9 +533,10 @@ CompileBinOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code)
 					 expr->tree.right->base.type);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
+	CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for %O operation",
 		      expr->tree.left->base.type,
-		      expr->tree.right->base.type);
+		      expr->tree.right->base.type,
+		      op);
 	expr->base.type = typePoly;
     }
     else if (obj->used == left + 2 &&
@@ -560,7 +561,7 @@ CompileBinOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code)
 }
 
 ObjPtr
-CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code)
+CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code, char *name)
 {
     ENTER ();
     InstPtr inst;
@@ -576,9 +577,10 @@ CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr
 					 expr->tree.right->base.type);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
+	CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for %s operation",
 		      expr->tree.left->base.type,
-		      expr->tree.right->base.type);
+		      expr->tree.right->base.type,
+		      name);
 	expr->base.type = typePoly;
     }
     else if (obj->used == left + 2 &&
@@ -623,8 +625,8 @@ CompileUnOp (ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code)
     expr->base.type = TypeCombineUnary (down->base.type, expr->base.tag);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible type '%T' in unary operation",
-		      down->base.type);
+	CompileError (obj, stat, "Incompatible type, value '%T', for %U operation",
+		      down->base.type, op);
 	expr->base.type = typePoly;
     }
     else if (obj->used == d + 1 &&
@@ -647,7 +649,7 @@ CompileUnOp (ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code)
 }
 
 ObjPtr
-CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr code)
+CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr code, char *name)
 {
     ENTER ();
     InstPtr inst;
@@ -663,7 +665,7 @@ CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr c
     expr->base.type = TypeCombineUnary (down->base.type, expr->base.tag);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible type '%T' in unary operation",
+	CompileError (obj, stat, "Incompatible type, value '%T', for %s operation",
 		      down->base.type);
 	expr->base.type = typePoly;
     }
@@ -703,7 +705,7 @@ CompileAssign (ObjPtr obj, ExprPtr expr, Bool initialize, ExprPtr stat, CodePtr 
 					 expr->tree.right->base.type);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
+	CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for = operation",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
 	expr->base.type = typePoly;
@@ -729,9 +731,10 @@ CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr co
 					 expr->tree.right->base.type);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
+	CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for %O= operation",
 		      expr->tree.left->base.type,
-		      expr->tree.right->base.type);
+		      expr->tree.right->base.type,
+		      op);
 	expr->base.type = typePoly;
     }
     BuildInst (obj, OpAssignOp, inst, stat);
@@ -740,7 +743,7 @@ CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr co
 }
 
 ObjPtr
-CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code)
+CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code, char *name)
 {
     ENTER ();
     InstPtr inst;
@@ -755,7 +758,7 @@ CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, Code
 					 expr->tree.right->base.type);
     if (!expr->base.type)
     {
-	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
+	CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for %s= operation",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
 	expr->base.type = typePoly;
@@ -816,7 +819,7 @@ CompileTypecheckArgs (ObjPtr	obj,
     func_type = TypeCombineFunction (type);
     if (!func_type)
     {
-	CompileError (obj, stat, "Incompatible type '%T' for call",
+	CompileError (obj, stat, "Incompatible type, value '%T', for call",
 		      type);
 	EXIT ();
 	return False;
@@ -831,13 +834,13 @@ CompileTypecheckArgs (ObjPtr	obj,
 	{
 	    if (!argt)
 	    {
-		CompileError (obj, stat, "Too many parameters");
+		CompileError (obj, stat, "Too many parameters for function type '%T'", func_type);
 		ret = False;
 		break;
 	    }
 	    if (!arg)
 	    {
-		CompileError (obj, stat, "Too few parameters");
+		CompileError (obj, stat, "Too few parameters for function type '%T'", func_type);
 		ret = False;
 		break;
 	    }
@@ -848,10 +851,11 @@ CompileTypecheckArgs (ObjPtr	obj,
 		actual_type = arg->tree.left->base.type;
 	    if (!TypeCompatible (argt->type, actual_type, True))
 	    {
-		CompileError (obj, stat, "Incompatible types '%T', '%T' argument %d",
+		CompileError (obj, stat, "Incompatible types, formal '%T', actual '%T', for argument %d",
 			      argt->type, arg->tree.left->base.type, i);
 		ret = False;
 	    }
+	    i++;
 	    if (!argt->varargs)
 		argt = argt->next;
 	    if (arg && (!varactual || !argt))
@@ -897,7 +901,6 @@ NewNonLocal (NonLocal *prev, NonLocalKind kind, int target)
  * + Add an OpNoop in case the result must be pushed; otherwise there's
  *   no place to hang a push bit
  */
-extern Bool profiling;
 
 ObjPtr
 CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
@@ -1054,8 +1057,8 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr,
 			     expr->tree.left->base.type,
 			     True))
 	{
-	    CompileError (obj, stat, "Index type '%T' is not integer",
-			  expr->tree.left->base.type);
+	    CompileError (obj, stat, "Incompatible type, index '%T', for array index %d",
+			  expr->tree.left->base.type, ndim);
 	    break;
 	}
 	expr = expr->tree.right;
@@ -1135,7 +1138,7 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 {
     int	    dim;
     
-    if (expr->base.tag == ARRAY)
+    if (expr->base.tag == ARRAY) 
     {
 	dim = 0;
 	expr = expr->tree.left;
@@ -1152,8 +1155,8 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
     else
     {
 	dim = 1;
-	    if (expr->tree.left->base.tag == DOTS)
-		return False;
+	if (expr->tree.left->base.tag == DOTS)
+	    return False;
 	if (ndims != 1)
 	    CompileSizeDimensions (expr, dims + 1, ndims - 1);
     }
@@ -1198,6 +1201,7 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
     ENTER ();
     InstPtr	inst;
     AInitMode	mode = AInitModeElement;
+    ExprPtr	e;
     
     switch (expr->base.tag) {
     case ARRAY:
@@ -1208,9 +1212,9 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
 	}
 	else
 	{
-	    for (expr = expr->tree.left; expr; expr = expr->tree.right)
+	    for (e = expr->tree.left; e; e = e->tree.right)
 	    {
-		obj = CompileArrayInits (obj, expr->tree.left,
+		obj = CompileArrayInits (obj, e->tree.left,
 					 type, ndim-1, stat, code);
 	    }
 	}
@@ -1222,7 +1226,7 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
 	obj = _CompileExpr (obj, expr, True, stat, code);
 	if (!TypeCombineBinary (type, ASSIGN, expr->base.type))
 	{
-	    CompileError (obj, stat, "Incompatible types '%T', '%T' in array initialization",
+	    CompileError (obj, stat, "Incompatible types, array '%T', value '%T', for initializer",
 			  type, expr->base.type);
 	}
     }
@@ -1233,13 +1237,23 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
     RETURN (obj);
 }
 
+static ExprPtr
+CompileArrayInitArgs (int ndim)
+{
+    ExprPtr a = NewExprConst (TEN_NUM, One);
+
+    a->base.type = typePrim[rep_integer];
+    if (!ndim)
+	return 0;
+    return NewExprTree (COMMA, a, CompileArrayInitArgs (ndim - 1));
+}
+
 static ObjPtr
 CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     int	    ndim;
     Type   *sub = type->array.type;
-    int	    i;
     Expr    *dimensions;
 
     ndim = CompileCountDeclDimensions (type->array.dimensions);
@@ -1254,26 +1268,88 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 	CompileError (obj, stat, "Non-dimensioned array with no initializers");
 	return obj;
     }
+    if (expr && expr->base.tag == COMP)
+    {
+	ExprPtr	args = CompileArrayInitArgs (ndim);
+	
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	if (!CompileTypecheckArgs (obj, expr->tree.left->base.type,
+				   args, ndim, stat))
+	{
+	    return obj;
+	}
+	expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
+	if (!TypeCombineBinary (sub, ASSIGN, expr->base.type))
+	{
+	    CompileError (obj, stat, "Incompatible types, array '%T', return '%T', for initializer",
+			  sub, expr->base.type);
+	    return obj;
+	}
+	SetPush (obj);
+    }
     obj = CompileBuildArray (obj, expr, type, dimensions, ndim, stat, code);
     if (expr)
     {
-	int	    ninitdim;
 	InstPtr	    inst;
 	
-	BuildInst (obj, OpInitArray, inst, stat);
-	inst->ainit.mode = AInitModeStart;
-	inst->ainit.dim = ndim;
-	if (expr->base.tag == FUNC)
+	if (expr->base.tag == COMP)
 	{
-	    CodePtr comp = expr->code.code;
+	    int	    start_inst;
+	    int	    top_inst;
 	    
-	    comp->base.type = sub;
-	    obj = CompileFunc (obj, comp, stat, code, 0);
-	    ninitdim = code->base.argc;
-	    i = 0;
+	    /*
+	     *	Comprehension:
+	     *
+	     *	    Obj		^ (obj)
+	     *	    InitArray	  ndim (Start)
+	     *	    Branch	  L1
+	     * L2:  InitArray	  ndim (Func)
+	     *	    Call
+	     *	    InitArray	  0 (Element)
+	     * L1:  InitArray	  n (Test)
+	     *	    BranchFalse	  L2
+	     *	    InitArray	  n (Element)
+	     */
+	    BuildInst (obj, OpInitArray, inst, stat);
+	    inst->ainit.mode = AInitModeStart;
+	    inst->ainit.dim = ndim;
+	    
+	    /* Branch L1 */
+	    NewInst (obj, OpBranch, start_inst, stat);
+
+	    top_inst = obj->used;
+	    BuildInst (obj, OpInitArray, inst, stat);
+	    inst->ainit.dim = ndim;
+	    inst->ainit.mode = AInitModeFunc;
+	    
+	    BuildInst (obj, OpCall, inst, stat);
+	    inst->ints.value = ndim;
+	    BuildInst (obj, OpInitArray, inst, stat);
+	    inst->ainit.dim = 0;
+	    inst->ainit.mode = AInitModeElement;
+	    
+	    /* Patch Branch L1 */
+	    inst = ObjCode (obj, start_inst);
+	    inst->branch.offset = obj->used - start_inst;
+	    inst->branch.mod = BranchModNone;
+
+	    BuildInst (obj, OpInitArray, inst, stat);
+	    inst->ainit.dim = 0;
+	    inst->ainit.mode = AInitModeTest;
+
+	    /* Branch L2 */
+	    BuildInst (obj, OpBranchFalse, inst, stat);
+	    inst->branch.offset = top_inst - ObjLast(obj);
+	    inst->branch.mod = BranchModNone;
+
+	    /* Finish up */
+	    BuildInst (obj, OpInitArray, inst, stat);
+	    inst->ainit.dim = ndim;
+	    inst->ainit.mode = AInitModeFuncDone;
 	}
 	else
 	{
+	    int	    ninitdim;
 	    if (expr->base.tag != ARRAY)
 	    {
 		CompileError (obj, stat, "Non array initializer");
@@ -1292,6 +1368,9 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 			      ndim, ninitdim);
 		RETURN (obj);
 	    }
+	    BuildInst (obj, OpInitArray, inst, stat);
+	    inst->ainit.mode = AInitModeStart;
+	    inst->ainit.dim = ndim;
 	    obj = CompileArrayInits (obj, expr, sub, ndim, stat, code);
 	}
     }
@@ -1436,7 +1515,7 @@ CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
 				ASSIGN,
 				init->base.type))
 	{
-	    CompileError (obj, stat, "Incompatible types '%T', '%T' in struct initializer",
+	    CompileError (obj, stat, "Incompatible types, member '%T', value '%T', for initializer",
 			  mem_type, init->base.type);
 	    continue;
 	}
@@ -1493,8 +1572,8 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	catch_type = NewTypeFunc (typePoly, catch->code.code->base.args);
 	if (!TypeCompatible (exception->symbol.type, catch_type, True))
 	{
-	    CompileError (obj, stat, "Incompatible types '%T', '%T' in catch",
-			  catch_type, exception->symbol.type);
+	    CompileError (obj, stat, "Incompatible types, formal '%T', actual '%T', for catch",
+			  exception->symbol.type, catch_type);
 	    RETURN (obj);
 	}
 	NewInst (obj, OpCatch, catch_inst, stat);
@@ -1625,7 +1704,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    break;
 	default:
 	    CompileError (obj, stat, 
-			  "Non composite type '%T' in composite initializer", t);
+			  "Incompatible type, type '%T', for composite initializer",
+			  t);
 	    break;
 	}
 	break;
@@ -1647,7 +1727,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    expr->tree.left->base.type = StructMemType (st, expr->tree.left->atom.atom);
 	    if (!expr->tree.left->base.type)
 	    {
-		CompileError (obj, stat, "Type '%T' is not a union containing \"%A\"",
+		CompileError (obj, stat, "Union type '%T' has no member \"%A\"",
 			      expr->base.type,
 			      expr->tree.left->atom.atom);
 		break;
@@ -1659,7 +1739,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    {
 		if (mt == typePrim[rep_void])
 		{
-		    CompileError (obj, stat, "Union member '%A' requires no constructor value",
+		    CompileError (obj, stat, "Union type '%T', member '%A' requires no constructor value",
 				  expr->tree.left->atom.atom);
 		    break;
 		}
@@ -1667,7 +1747,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 					ASSIGN,
 					expr->tree.right->base.type))
 		{
-		    CompileError (obj, stat, "Incompatible types '%T', '%T' in union constructor",
+		    CompileError (obj, stat, "Incompatible types, member '%T', value '%T', for union constructor",
 				  expr->tree.left->base.type,
 				  expr->tree.right->base.type);
 		    break;
@@ -1687,7 +1767,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	else
 	{
-	    CompileError (obj, stat, "Type '%T' is not a union", expr->base.type);
+	    CompileError (obj, stat, "Incompatible type, type '%T', for union constructor", expr->base.type);
 	    expr->base.type = typePoly;
 	    break;
 	}
@@ -1739,7 +1819,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 					    False);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Type '%T' is not a %d dimensional array or string",
+	    CompileError (obj, stat, "Incompatible type, array '%T', for %d dimension operation",
 			  expr->tree.left->base.type, ndim);
 	    expr->base.type = typePoly;
 	    break;
@@ -1791,7 +1871,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	expr->base.type = NewTypeFunc (expr->code.code->base.type,
 					expr->code.code->base.args);
 	break;
-    case STAR:	    obj = CompileUnFunc (obj, expr, Dereference, stat, code); break;
+    case STAR:	    obj = CompileUnFunc (obj, expr, Dereference, stat, code,"*"); break;
     case AMPER:	    
 	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
 	expr->base.type = NewTypeRef (expr->tree.left->base.type);
@@ -1804,9 +1884,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	break;
     case UMINUS:    obj = CompileUnOp (obj, expr, NegateOp, stat, code); break;
-    case LNOT:	    obj = CompileUnFunc (obj, expr, Lnot, stat, code); break;
-    case BANG:	    obj = CompileUnFunc (obj, expr, Not, stat, code); break;
-    case FACT:	    obj = CompileUnFunc (obj, expr, Factorial, stat, code); break;
+    case LNOT:	    obj = CompileUnFunc (obj, expr, Lnot, stat, code,"~"); break;
+    case BANG:	    obj = CompileUnFunc (obj, expr, Not, stat, code,"!"); break;
+    case FACT:	    obj = CompileUnFunc (obj, expr, Factorial, stat, code,"!"); break;
     case INC:	    
 	if (expr->tree.left)
 	{
@@ -1827,7 +1907,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
         inst->binop.op = PlusOp;
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible type '%T' in ++",
+	    CompileError (obj, stat, "Incompatible type, value '%T', for ++ operation ",
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
 	    expr->base.type = typePoly;
@@ -1854,7 +1934,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->binop.op = MinusOp;
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible type '%T' in --",
+	    CompileError (obj, stat, "Incompatible type, value '%T', for -- operation",
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
 	    expr->base.type = typePoly;
@@ -1878,7 +1958,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 					     expr->tree.right->tree.right->base.type);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
+	    CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for ** operation",
 			  expr->tree.right->tree.left->base.type,
 			  expr->tree.right->tree.right->base.type);
 	    expr->base.type = typePoly;
@@ -1888,8 +1968,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->ints.value = 2;
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case SHIFTL:    obj = CompileBinFunc (obj, expr, ShiftL, stat, code); break;
-    case SHIFTR:    obj = CompileBinFunc (obj, expr, ShiftR, stat, code); break;
+    case SHIFTL:    obj = CompileBinFunc (obj, expr, ShiftL, stat, code, "<<"); break;
+    case SHIFTR:    obj = CompileBinFunc (obj, expr, ShiftR, stat, code, ">>"); break;
     case QUEST:
 	/*
 	 * a ? b : c
@@ -1948,14 +2028,14 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 					     expr->tree.right->tree.right->base.type);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible types '%T', '%T' in ?:",
+	    CompileError (obj, stat, "Incompatible types, true '%T', false '%T', for ?: operation",
 			  expr->tree.right->tree.left->base.type,
 			  expr->tree.right->tree.right->base.type);
 	    expr->base.type = typePoly;
 	    break;
 	}
 	break;
-    case LXOR:	    obj = CompileBinFunc (obj, expr, Lxor, stat, code); break;
+    case LXOR:	    obj = CompileBinFunc (obj, expr, Lxor, stat, code, "^"); break;
     case LAND:	    obj = CompileBinOp (obj, expr, LandOp, stat, code); break;
     case LOR:	    obj = CompileBinOp (obj, expr, LorOp, stat, code); break;
     case AND:
@@ -2002,7 +2082,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 					     expr->tree.right->base.type);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible types '%T', '%T' in &&",
+	    CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for && operation",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
 	    expr->base.type = typePoly;
@@ -2053,7 +2133,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 					     expr->tree.right->base.type);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible types '%T', '%T' in ||",
+	    CompileError (obj, stat, "Incompatible types, left '%T', right, '%T', for || operation",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
 	    expr->base.type = typePoly;
@@ -2078,7 +2158,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 					     expr->tree.right->tree.right->base.type);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible types '%T', '%T' in assignment",
+	    CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for **= operation",
 			  expr->tree.right->tree.left->base.type,
 			  expr->tree.right->tree.right->base.type);
 	    expr->base.type = typePoly;
@@ -2088,17 +2168,17 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->ints.value = 2;
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
-    case ASSIGNSHIFTL:	obj = CompileAssignFunc (obj, expr, ShiftL, stat, code); break;
-    case ASSIGNSHIFTR:	obj = CompileAssignFunc (obj, expr, ShiftR, stat, code); break;
-    case ASSIGNLXOR:	obj = CompileAssignFunc (obj, expr, Lxor, stat, code); break;
+    case ASSIGNSHIFTL:	obj = CompileAssignFunc (obj, expr, ShiftL, stat, code, "<<"); break;
+    case ASSIGNSHIFTR:	obj = CompileAssignFunc (obj, expr, ShiftR, stat, code, ">>"); break;
+    case ASSIGNLXOR:	obj = CompileAssignFunc (obj, expr, Lxor, stat, code, "^"); break;
     case ASSIGNLAND:	obj = CompileAssignOp (obj, expr, LandOp, stat, code); break;
     case ASSIGNLOR:	obj = CompileAssignOp (obj, expr, LorOp, stat, code); break;
     case EQ:	    obj = CompileBinOp (obj, expr, EqualOp, stat, code); break;
-    case NE:	    obj = CompileBinFunc (obj, expr, NotEqual, stat, code); break;
+    case NE:	    obj = CompileBinFunc (obj, expr, NotEqual, stat, code,"!="); break;
     case LT:	    obj = CompileBinOp (obj, expr, LessOp, stat, code); break;
-    case GT:	    obj = CompileBinFunc (obj, expr, Greater, stat, code); break;
-    case LE:	    obj = CompileBinFunc (obj, expr, LessEqual, stat, code); break;
-    case GE:	    obj = CompileBinFunc (obj, expr, GreaterEqual, stat, code); break;
+    case GT:	    obj = CompileBinFunc (obj, expr, Greater, stat, code,">"); break;
+    case LE:	    obj = CompileBinFunc (obj, expr, LessEqual, stat, code,"<="); break;
+    case GE:	    obj = CompileBinFunc (obj, expr, GreaterEqual, stat, code,">="); break;
     case COMMA:	    
 	top_inst = obj->used;
 	obj = _CompileExpr (obj, expr->tree.left, False, stat, code);
@@ -2301,7 +2381,7 @@ _CompileBoolExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr
     obj = _CompileExpr (obj, expr, evaluate, stat, code);
     if (!TypePoly (expr->base.type) && !TypeBool (expr->base.type))
     {
-	CompileError (obj, expr, "Conditional is '%T', not bool", expr->base.type);
+	CompileError (obj, expr, "Incompatible type, value '%T', for boolean", expr->base.type);
     }
     return obj;
 }
@@ -2801,7 +2881,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	}
 	if (!TypeCombineBinary (code->base.func->base.type, ASSIGN, expr->base.type))
 	{
-	    CompileError (obj, expr, "Incompatible types '%T', '%T' in return",
+	    CompileError (obj, expr, "Incompatible types, formal '%T', actual '%T', for return",
 			  code->base.type, expr->base.type);
 	    break;
 	}
@@ -3072,7 +3152,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 				    ASSIGN,
 				    init->base.type))
 	    {
-		CompileError (obj, decls, "Incompatible types '%T', '%T' in initialization",
+		CompileError (obj, decls, "Incompatible types, variable '%T', value '%T', for initializer",
 			      lvalue->base.type,
 			      init->base.type);
 	    }
@@ -3391,7 +3471,9 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 		    inst->ainit.dim,
 		    inst->ainit.mode == AInitModeStart ? "start":
 		    inst->ainit.mode == AInitModeElement ? "element":
-		    inst->ainit.mode == AInitModeRepeat ? "repeat" : "?");
+		    inst->ainit.mode == AInitModeRepeat ? "repeat":
+		    inst->ainit.mode == AInitModeFunc ? "func":
+		    inst->ainit.mode == AInitModeTest ? "test": "?");
 	break;
     case OpDot:
     case OpDotRef:

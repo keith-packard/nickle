@@ -394,7 +394,12 @@ typedef struct _instArray {
 } InstArray;
 
 typedef enum _aInitMode {
-    AInitModeStart, AInitModeElement, AInitModeRepeat
+    AInitModeStart,	/* Build initialization data on stack */
+    AInitModeElement,	/* Initialize one element */
+    AInitModeRepeat,	/* Duplicate initialization values along row */
+    AInitModeFunc,	/* Build stack frame for function call */
+    AInitModeTest,	/* Check to see if the array is completely initialized */
+    AInitModeFuncDone	/* Clean up */
 } AInitMode;
 
 typedef struct _instAInit {
@@ -573,6 +578,7 @@ void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);
 void	    TraceFunction (FramePtr frame, CodePtr code, ExprPtr name);
 void	    TraceFrame (FramePtr frame, ObjPtr obj, InstPtr pc);
+void	    ThreadStackDump (Value thread);
 
 typedef struct _jump {
     DataType	    *data;
@@ -595,6 +601,7 @@ extern Value	running;    /* current thread */
 extern Value	stopped;    /* stopped threads */
 extern Bool	complete;   /* must complete current inst */
 extern int	runnable;   /* number of non-broken threads */
+extern Bool	profiling;  /* profiling is active */
 
 void	    InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch);
 void	    ObjDump (ObjPtr obj, int indent);
@@ -645,11 +652,16 @@ void	IoInterrupt (void);
 
 void	*AllocateTemp (int size);
 
+typedef struct _ProfileData {
+    int	    sub;
+    int	    self;
+} ProfileData;
+
 void	PrettyPrint (Value f, Publish publish, SymbolPtr name);
 void	PrettyCode (Value f, CodePtr code, Atom name, Class class, 
 		    Publish publish, int level, Bool nest);
 void	PrettyStat (Value F, Expr *e, Bool nest);
-void	PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
+void	PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest, ProfileData *pd);
 
 void	EditFunction (SymbolPtr name, Publish publish);
 void	EditFile (Value file_name);

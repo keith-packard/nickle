@@ -1065,7 +1065,7 @@ FilePutDimensions (Value f, ExprPtr dims)
     while (dims)
     {
 	if (dims->tree.left)
-	    PrettyExpr (f, dims->tree.left, -1, 0, False);
+	    PrettyExpr (f, dims->tree.left, -1, 0, False, 0);
 	else
 	    FilePuts (f, "*");
 	if (dims->tree.right)

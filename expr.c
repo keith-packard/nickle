@@ -24,6 +24,8 @@ ExprTreeMark (void *object)
     MemReference (et->expr.type);
     MemReference (et->left);
     MemReference (et->right);
+    if (!profiling)
+	et->expr.ticks = et->expr.sub_ticks = 0;
 }
 
 static void
@@ -34,6 +36,8 @@ ExprConstMark (void *object)
     MemReference (ec->expr.namespace);
     MemReference (ec->expr.type);
     MemReference (ec->constant);
+    if (!profiling)
+	ec->expr.ticks = ec->expr.sub_ticks = 0;
 }
 
 static void
@@ -43,6 +47,8 @@ ExprAtomMark (void *object)
     MemReference (ea->expr.namespace);
     MemReference (ea->expr.type);
     MemReference (ea->symbol);
+    if (!profiling)
+	ea->expr.ticks = ea->expr.sub_ticks = 0;
 }
 
 static void
@@ -53,6 +59,8 @@ ExprCodeMark (void *object)
     MemReference (ec->expr.namespace);
     MemReference (ec->expr.type);
     MemReference (ec->code);
+    if (!profiling)
+	ec->expr.ticks = ec->expr.sub_ticks = 0;
 }
 
 static void
@@ -64,6 +72,8 @@ ExprDeclMark (void *object)
     MemReference (ed->expr.type);
     MemReference (ed->decl);
     MemReference (ed->type);
+    if (!profiling)
+	ed->expr.ticks = ed->expr.sub_ticks = 0;
 }
 
 DataType    ExprTreeType = { ExprTreeMark, 0 };

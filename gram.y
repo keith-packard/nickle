@@ -92,7 +92,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    structinit structelts structelt
 %type  <expr>	    init
 
-%token		    VAR EXPR ARRAY STRUCT UNION ENUM
+%token		    VAR EXPR ARRAY STRUCT UNION ENUM COMP
 
 %token		    NL SEMI MOD OC CC DOLLAR DOTS
 %token <class>	    GLOBAL AUTO STATIC CONST
@@ -1294,9 +1294,9 @@ arrayinit    	: OC arrayelts opt_comma opt_dots CC
 			}
 			$$ = NewExprTree (ARRAY, elts, 0); 
 		    }
-		| OC opt_type FUNC namespace_start args block namespace_end CC
-		    {
-			$$ = NewExprCode (NewFuncCode ($2, $5, $6), 0);
+		| OC ASSIGN expr CC
+    		    {
+			$$ = NewExprTree (COMP, $3, 0);
 		    }
 		;
 arrayelts	: arrayelts COMMA arrayelt

@@ -340,7 +340,7 @@ TraceFunction (FramePtr frame, CodePtr code, ExprPtr name)
     int		    fe;
     
     if (name)
-	PrettyExpr (FileStdout, name, -1, 0, False);
+	PrettyExpr (FileStdout, name, -1, 0, False, 0);
     else
 	FilePuts (FileStdout, "<anonymous>");
     FilePuts (FileStdout, " (");

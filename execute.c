@@ -378,9 +378,12 @@ ThreadArrayReplicate (Value thread, Value array, int dim, int start)
 		 dimsize * sizeof (elements[0]));
 }
 
+void
+ThreadStackDump (Value thread);
+    
 static Value
 ThreadArrayInit (Value thread, Value value, AInitMode mode, 
-		 int dim, int *stack)
+		 int dim, int *stack, InstPtr *next)
 {
     ENTER ();
     Value   array;
@@ -441,6 +444,64 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	while (--dim >= 0)
 	    STACK_PUSH (thread->thread.continuation.stack, Zero);
 	STACK_PUSH (thread->thread.continuation.stack, NewInt (ndim));
+	break;
+    case AInitModeFunc:
+	if (aborting)
+	    break;
+	complete = True;
+	/*
+	 * Fetch the function
+	 */
+	value = Stack(dim+2);
+	/*
+	 * Push args. Tricky because the stack keeps growing
+	 */
+	i = dim;
+	while (--dim >= 0)
+	{
+	    STACK_PUSH (thread->thread.continuation.stack,
+			Stack(i));
+	}
+	break;
+    case AInitModeFuncDone:
+        ndim = Stack(0)->ints.value;
+	value = Stack(ndim+1);
+	*stack = ndim + 3;
+	break;
+    case AInitModeTest:
+	if (aborting)
+	    break;
+	complete = True;
+        ndim = Stack(0)->ints.value;
+	array = Stack(ndim+1);
+	value = FalseVal;
+	/* Done with this row? */
+	if (Stack(1)->ints.value == array->array.dim[0])
+	{
+	    /* Find dim with space */
+	    for (dim = 1; dim < ndim; dim++)
+		if (Stack(1+dim)->ints.value < array->array.dim[dim] - 1)
+		    break;
+	    /* All done? */
+	    if (dim == ndim)
+	    {
+		value = TrueVal;
+		break;
+	    }
+	    /*
+	     * Step to the next element
+	     */
+	    STACK_DROP(thread->thread.continuation.stack, dim+1);
+	    STACK_PUSH(thread->thread.continuation.stack,
+		       Plus (STACK_POP(thread->thread.continuation.stack),
+			     One));
+	    /*
+	     * Reset remaining indices to zero
+	     */
+	    while (--dim >= 0)
+		STACK_PUSH (thread->thread.continuation.stack, Zero);
+	    STACK_PUSH (thread->thread.continuation.stack, NewInt (ndim));
+	}
 	break;
     case AInitModeRepeat:
         ndim = Stack(0)->ints.value;
@@ -600,6 +661,27 @@ ThreadBoxSetDefault (BoxPtr box, int i, Type *type, TypeChain *chain)
 #include	<signal.h>
 
 void
+ThreadStackDump (Value thread)
+{
+    StackObject	    *stack = thread->thread.continuation.stack;
+    StackChunk	    *chunk;
+    StackPointer    stackPointer;
+    int		    i = 0;
+
+    chunk = stack->current;
+    stackPointer = STACK_TOP(stack);
+    while (chunk)
+    {
+	while (stackPointer < CHUNK_MAX(chunk))
+	{
+	    FilePrintf (FileStdout, "%d: %v\n", i++, (Value) *stackPointer++);
+	}
+	chunk = chunk->previous;
+	stackPointer = CHUNK_MIN(chunk);
+    }
+}
+
+void
 ThreadsRun (Value thread, Value lex)
 {
     signalInterrupt = False;
@@ -629,11 +711,6 @@ ThreadsRun (Value thread, Value lex)
 		signalIo = False;
 		IoInterrupt ();
 	    }
-	    if (signalProfile)
-	    {
-		signalProfile = False;
-		ProfileInterrupt (running);
-	    }
 	    if (lex && !(lex->file.flags & (FileInputBlocked|FileOutputBlocked)))
 		break;
 	}
@@ -642,7 +719,7 @@ ThreadsRun (Value thread, Value lex)
 	else if (running)
 	{
 	    ENTER ();
-	    Value   thread = running;
+	    Value	thread = running;
 	    InstPtr	inst, next;
 	    FramePtr	fp;
 	    int		i;
@@ -816,7 +893,7 @@ ThreadsRun (Value thread, Value lex)
 	    case OpInitArray:
 		stack = 0;
 		value = ThreadArrayInit (thread, value, inst->ainit.mode,
-					 inst->ainit.dim, &stack);
+					 inst->ainit.dim, &stack, &next);
 		break;
 	    case OpBuildStruct:
 		value = NewStruct (inst->structs.structs, False);
@@ -1147,6 +1224,11 @@ ThreadsRun (Value thread, Value lex)
 		     next <= ObjCode (thread->thread.continuation.obj,
 				      thread->thread.continuation.obj->used)));
 #endif
+	    if (signalProfile)
+	    {
+		signalProfile = False;
+		ProfileInterrupt (running);
+	    }
 	    if (!aborting || complete)
 	    {
 		/* this instruction has been completely executed */

@@ -1255,8 +1255,8 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type,
 		  ExprPtr stat, CodePtr code);
 
 static ObjPtr
-CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type, 
-		   ExprPtr stat, CodePtr code);
+CompileStructUnionInit (ObjPtr obj, ExprPtr expr, Type *type, 
+			ExprPtr stat, CodePtr code);
 
 static ExprPtr
 CompileImplicitInit (Type *type);
@@ -1276,8 +1276,9 @@ CompileInit (ObjPtr obj, ExprPtr expr, Type *type,
 	    obj = CompileArrayInit (obj, 0, type, stat, code);
 	    break;
 	case type_struct:
-	    obj = CompileStructInit (obj, 0, type, stat, code);
+	    obj = CompileStructUnionInit (obj, 0, type, stat, code);
 	    break;
+	case type_union:
 	default:
 	    CompileError (obj, stat, "Invalid empty initializer , type '%T'", type);
 	    break;
@@ -1287,17 +1288,17 @@ CompileInit (ObjPtr obj, ExprPtr expr, Type *type,
     case ARRAY:
     case COMP:
 	if (type->base.tag != type_array)
-	    CompileError (obj, stat, "Initializer type mismatch, type '%T'",
+	    CompileError (obj, stat, "Array initializer type mismatch, type '%T'",
 			  type);
 	else
 	    obj = CompileArrayInit (obj, expr, type, stat, code);
 	break;
     case STRUCT:
-	if (type->base.tag != type_struct)
-	    CompileError (obj, stat, "Initializer type mismatch, type '%T'",
+	if (type->base.tag != type_struct && type->base.tag != type_union)
+	    CompileError (obj, stat, "Struct/union initializer type mismatch, type '%T'",
 			  type);
 	else
-	    obj = CompileStructInit (obj, expr, type, stat, code);
+	    obj = CompileStructUnionInit (obj, expr, type, stat, code);
 	break;
     default:
 	obj = _CompileExpr (obj, expr, True, stat, code);
@@ -1654,8 +1655,8 @@ CompileStructInitElementIncluded (ExprPtr expr, Atom atom)
 }
 
 static ObjPtr
-CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
-		   ExprPtr stat, CodePtr code)
+CompileStructUnionInit (ObjPtr obj, ExprPtr expr, Type *type,
+			ExprPtr stat, CodePtr code)
 {
     ENTER ();
     StructType	    *structs = type->structs.structs;
@@ -1667,54 +1668,93 @@ CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
     TypePtr	    *types = BoxTypesElements (structs->types);
     Atom	    *atoms = StructTypeAtoms (structs);
     
-    BuildInst (obj, OpBuildStruct, inst, stat);
-    inst->structs.structs = structs;
-    /*
-     * Initialize any elements which were given explicit values
-     */
-    for (init = inits; init; init = init->tree.right)
+    if (type->base.tag == type_struct)
     {
-        mem_type = StructMemType (structs, init->tree.left->tree.left->atom.atom);
+	BuildInst (obj, OpBuildStruct, inst, stat);
+	inst->structs.structs = structs;
+	/*
+	 * Initialize any elements which were given explicit values
+	 */
+	for (init = inits; init; init = init->tree.right)
+	{
+	    mem_type = StructMemType (structs, init->tree.left->tree.left->atom.atom);
+	    if (!mem_type)
+	    {
+		CompileError (obj, stat, "Type '%T' is not a struct or union containing \"%A\"",
+			      type, init->tree.left->tree.left->atom.atom);
+		continue;
+	    }
+    
+	    SetPush (obj);	/* push the struct */
+	    
+	    /* 
+	     * Compute the initializer value 
+	     */
+	    obj = CompileInit (obj, init->tree.left->tree.right, mem_type, stat, code);
+    
+	    /*
+	     * Assign to the member
+	     */
+	    BuildInst (obj, OpInitStruct, inst, stat);
+	    inst->atom.atom = init->tree.left->tree.left->atom.atom;
+	}
+	
+	/*
+	 * Implicitly initialize any remaining elements
+	 */
+	for (i = 0; i < structs->nelements; i++)
+	{
+	    TypePtr	type = TypeCanon (types[i]);
+    
+	    if (!inits || !CompileStructInitElementIncluded (inits, atoms[i]))
+	    {
+		ExprPtr init = CompileImplicitInit (type);
+    
+		if (init)
+		{
+		    SetPush (obj);
+		    obj = CompileInit (obj, init, type, stat, code);
+		    BuildInst (obj, OpInitStruct, inst, stat);
+		    inst->atom.atom = atoms[i];
+		}
+	    }
+	}
+    }
+    else
+    {
+	init = inits;
+	if (!init)
+	{
+	    CompileError (obj, stat, "Empty initializer for union '%T'",
+			  type);
+	    RETURN (obj);
+	}
+	if (init->tree.right)
+	{
+	    CompileError (obj, stat, "Multiple initializers for union '%T'",
+			  type);
+	    RETURN (obj);
+	}
+	
+	mem_type = StructMemType (structs, init->tree.left->tree.left->atom.atom);
 	if (!mem_type)
 	{
 	    CompileError (obj, stat, "Type '%T' is not a struct or union containing \"%A\"",
 			  type, init->tree.left->tree.left->atom.atom);
-	    continue;
+	    RETURN (obj);
 	}
-
-	SetPush (obj);	/* push the struct */
-	
 	/* 
 	 * Compute the initializer value 
 	 */
 	obj = CompileInit (obj, init->tree.left->tree.right, mem_type, stat, code);
 
-	/*
-	 * Assign to the member
-	 */
-	BuildInst (obj, OpInitStruct, inst, stat);
+	SetPush (obj);	    /* push the initializer value */
+
+	BuildInst (obj, OpBuildUnion, inst, stat);
+	inst->structs.structs = structs;
+
+	BuildInst (obj, OpInitUnion, inst, stat);
 	inst->atom.atom = init->tree.left->tree.left->atom.atom;
-    }
-    
-    /*
-     * Implicitly initialize any remaining elements
-     */
-    for (i = 0; i < structs->nelements; i++)
-    {
-	TypePtr	type = TypeCanon (types[i]);
-
-	if (!inits || !CompileStructInitElementIncluded (inits, atoms[i]))
-	{
-	    ExprPtr init = CompileImplicitInit (type);
-
-	    if (init)
-	    {
-		SetPush (obj);
-		obj = CompileInit (obj, init, type, stat, code);
-		BuildInst (obj, OpInitStruct, inst, stat);
-		inst->atom.atom = atoms[i];
-	    }
-	}
     }
     RETURN (obj);
 }

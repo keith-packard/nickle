@@ -1,0 +1,215 @@
+/*
+ * Parse simple sgml-style grammar
+ */
+
+public namespace Lexc {
+    public global int Eof = 0;
+    public global int Printable = 1;
+    public global int White = 2;
+    public global int Left = 3;
+    public global int Right = 4;
+    public global int Slash = 5;
+    
+    public typedef struct {
+	int id;
+	int c;
+    } char;
+	
+    public exception InvalidChar (int c);
+    
+    public char function get (file in)
+    {
+	char	    ch;
+
+	ch.c = File::getc (in);
+	if (ch.c == '<')
+	    ch.id = Left;
+	else if (ch.c == '>')
+	    ch.id = Right;
+	else if (ch.c == '/')
+	    ch.id = Slash;
+	else if (' ' < ch.c)
+	    ch.id = Printable;
+	else switch (ch.c) {
+	case ' ':
+	case '\t':
+	case '\n':
+	case '\r':
+	    ch.id = White;
+	    break;
+	case -1:
+	    ch.id = Eof;
+	    break;
+	default:
+	    raise LexInvalidChar (ch.c);
+	}
+	return ch;
+    }
+
+    public void function unget (int c, file in)
+    {
+	File::ungetc (c, in);
+    }
+}
+	    
+public namespace Lex {
+
+    public global int Eof = 0;
+    public global int Text = 1;
+    public global int Start = 2;
+    public global int End = 3;
+
+    public typedef struct {
+	int	id;
+	string	value;
+    } token;
+    
+    public exception Syntax (int c);
+
+    global int	StateStart = 0;
+    global int	StateSeenLeft = 1;
+    global int	StateStartTag = 2;
+    global int	StateEndTag = 3;
+    global int	StateString = 4;
+
+    public token function get (file in)
+    {
+	Lexc::char  c;
+	token	    t;
+	int	    state = StateStart;
+	
+	for (;;)
+	{
+	    c = Lexc::get (in);
+	    switch (state) {
+	    case StateStart:
+		switch (c.id) {
+		case Lexc::Eof:
+		    return (token) { id = Eof, value = "" };
+		case Lexc::Printable:
+		case Lexc::White:
+		case Lexc::Slash:
+		    state = StateString;
+		    t = (token) { id = Text, value = String::new (c.c) };
+		    continue;
+		case Lexc::Left:
+		    state = StateSeenLeft;
+		    continue;
+		}
+		break;
+	    case StateSeenLeft:
+		switch (c.id) {
+		case Lexc::Printable:
+		    state = StateStartTag;
+		    t = (token) { id = Start, value = String::new (c.c) };
+		    continue;
+		case Lexc::Slash:
+		    state = StateEndTag;
+		    t = (token) { id = End, value = "" };
+		    continue;
+		}
+		break;
+	    case StateStartTag:
+	    case StateEndTag:
+		switch (c.id) {
+		case Lexc::Printable:
+		    t.value += String::new (c.c);
+		    continue;
+		case Lexc::Right:
+		    return t;
+		}
+		break;
+	    case StateString:
+		switch (c.id) {
+		case Lexc::Printable:
+		case Lexc::White:
+		    t.value += String::new (c.c);
+		    continue;
+		case Lexc::Left:
+		    Lexc::unget (c.c, in);
+		case Lexc::Eof:
+		    return t;
+		}
+		break;
+	    }
+	    raise Syntax (c.c);
+	}
+    }
+}
+
+public namespace Parse {
+
+    public exception Syntax (string token);
+
+    public typedef attrib;
+
+    public typedef struct {
+	string	tag;
+	*attrib	prev;
+    } attrib;
+
+    public typedef element;
+    
+    public typedef struct {
+	*element    next;
+	string	    data;
+	*attrib	    attr;
+    } element;
+
+    public exception Syntax (string token);
+    
+    public *element function get (file in)
+    {
+	*element    first = 0;
+	* *element   p = &first;
+	*attrib	    a = 0;
+
+	for (;;)
+	{
+	    Lex::token  t = Lex::get (in);
+
+	    switch (t.id) {
+	    case Lex::Eof:
+		if (a)
+		    raise Syntax (t.value);
+		return first;
+	    case Lex::Text:
+		*p = reference ((element) { 
+		    next = 0, 
+		    data = t.value,
+		    attr = a });
+		p = &(*p)->next;
+		break;
+	    case Lex::Start:
+		a = reference ((attrib) {
+		    prev = a,
+		    tag = t.value });
+		break;
+	    case Lex::End:
+		if (!a || t.value != a->tag)
+		    raise Syntax (t.value);
+		a = a->prev;
+		break;
+	    }
+	}
+    }
+
+    public void function dump (*element e)
+    {
+	void function dump_tag (*attrib a)
+	{
+	    if (a) 
+	    {
+		dump_tag (a->prev);
+		printf ("<%s> ", a->tag);
+	    }
+	}
+	
+	if (e)
+	{
+	    dump_tag (e->attr);
+	    printf ("%v\n", e->data);
+	    dump (e->next);
+	}
+    }
+}

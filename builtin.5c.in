@@ -58,3 +58,5 @@ autoload PRNG;
  */
 if (dim(argv) > 0)
      Command::script_dir(Command::dirname(argv[0]));
+/* XXX The dangling else screws the *#$! parser. */
+/*null statement*/ ;

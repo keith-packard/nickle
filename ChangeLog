@@ -1,6 +1,22 @@
 2004-02-15  Keith Packard  <keithp@keithp.com>
 
 	* Makefile.am:
+	* configure.in:
+	* builtin.h:
+	Move builtin sources to top level directory so that
+	make works right -- leaving them in the subdir meant that
+	yacc/lex wouldn't get run at the right time.
+	* value.h:
+	Use unsigned bitfields to make :1 values easier to read in gdb
+	Prototype more functions
+	* debian/control:
+	Switch standards version to 3.5.10 to make lintian happy
+	* debian/rules:
+	Don't install .cvsignore files in docs
+
+2004-02-15  Keith Packard  <keithp@keithp.com>
+
+	* Makefile.am:
 	* test/Makefile.am:
 	* builtin/Makefile.am:
 	Fix EXTRA_DIST.  Remove automatic version number updates.  That

@@ -127,4 +127,4 @@ BuiltinFuncStructDef(fbuiltin_2j, fbuiltin_2j_func);
 #define BuiltinFuncs2J(n, f) \
 	BuiltinFuncsGeneric(n, f, fbuiltin_2j, builtin2J, True)
 
-#include "namespaces.h"
+#include "builtin-namespaces.h"

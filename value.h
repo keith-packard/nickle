@@ -546,8 +546,8 @@ typedef struct _string {
 
 typedef struct _array {
     BaseValue	base;
-    int		resizable : 1;
-    int		ndim : (sizeof (int) * 8 - 1);
+    unsigned int	resizable : 1;
+    unsigned int	ndim : (sizeof (int) * 8 - 1);
     BoxPtr	values;
 } Array;
 
@@ -979,7 +979,10 @@ Value	FileStringRead (char *string, int len);
 Value	FileStringWrite (void);
 Value	FileStringString (Value file);
 void	FileSetFd (int fd), FileResetFd (int fd);
+Bool	FileIsReadable (int fd);
+Bool	FileIsWritable (int fd);
 void	FilePuts (Value, char *);
+void	FilePutDoubleDigitBase (Value file, double_digit a, int base);
 void	FilePutUIntBase (Value file, unsigned int a, int base);
 void	FilePutIntBase (Value file, int a, int base);
 void	FilePutInt (Value, int);
@@ -1002,8 +1005,6 @@ void	FileSetBlocked (Value file, int flag);
 void	FilePrintf (Value, char *, ...);
 void	FileVPrintf (Value, char *, va_list);
 void	FileSetBuffer (Value file, int buf);
-Bool	FileIsReadable (int fd);
-Bool	FileIsWritable (int fd);
 
 extern Bool	anyFileWriteBlocked;
 extern Bool	anyFileReadBlocked;

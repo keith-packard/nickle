@@ -86,7 +86,6 @@ AC_DEFINE_UNQUOTED([NICKLELIBDIR], "$nicklelibdir", [Nickle data directory])
 
 AC_CONFIG_FILES(
  Makefile
- builtin/Makefile
  test/Makefile
  bench/Makefile
  date-sh

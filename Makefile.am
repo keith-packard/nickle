@@ -27,7 +27,7 @@ nickle_SOURCES = alarm.c array.c atom.c avl.c box.c builtin.c \
 	avl.h mem.h memp.h nickle.h opcode.h ref.h stack.h value.h \
 	gram.y lex.l
 
-data_DATA = builtin.5c $(NICKLEFILES)
+pkgdata_DATA = builtin.5c $(NICKLEFILES)
 
 man_MANS = nickle.1
 

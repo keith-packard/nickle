@@ -67,8 +67,7 @@ AC_FUNC_GETPGRP
 if test "x$prefix" = xNONE; then
     prefix="$ac_default_prefix"
 fi
-datadir=`eval echo ${datadir}`/nickle
 
-AC_DEFINE_UNQUOTED([NICKLELIB], "$datadir", [Nickle data directory])
+AC_DEFINE_UNQUOTED([NICKLELIB], "$pkgdatadir", [Nickle data directory])
 
 AC_OUTPUT(Makefile date-sh nickle.1 builtin.5c, , [chmod +x ${srcdir}/date-sh])

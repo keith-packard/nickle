@@ -351,6 +351,7 @@ void unput (char c)
 "/\052"		skipcomment();
 ^#		skipline();
 auto		{ yylval.class = class_auto; return AUTO; }
+const		{ yylval.class = class_const; return CONST; }
 global		{ yylval.class = class_global; return GLOBAL; }
 static		{ yylval.class = class_static; return STATIC; }
 function	{ yylval.type = type_func; return FUNCTION; }
@@ -380,6 +381,7 @@ continuation	{ yylval.type = type_continuation; return CONTINUATION; }
 thread		{ yylval.type = type_thread; return THREAD; }
 struct		{ yylval.ints = STRUCT; return STRUCT; }
 union		{ yylval.ints = UNION; return UNION; }
+enum		{ yylval.ints = ENUM; return ENUM; }
 void		{ yylval.type = type_void; return VOID; }
 
 typedef		{ yylval.ints = TYPEDEF; return TYPEDEF; }

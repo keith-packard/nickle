@@ -116,7 +116,7 @@ AddInst (ObjPtr obj)
 
 typedef enum _tail { TailNever, TailVoid, TailAlways } Tail;
 
-ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createIfNecessary, Bool assign);
+ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createIfNecessary, Bool assign, Bool initialize);
 ObjPtr	CompileBinary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
 ObjPtr	CompileUnary (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
 ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr code);
@@ -265,7 +265,7 @@ CompileError (ObjPtr obj, ExprPtr stat, char *s, ...)
  */
 ObjPtr
 CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
-		Bool createIfNecessary, Bool assign)
+		Bool createIfNecessary, Bool assign, Bool initialize)
 {
     ENTER ();
     InstPtr	inst;
@@ -282,7 +282,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	    expr->base.type = typesPoly;
 	    break;
 	}
-	if (!ClassStorage (s->symbol.class))
+	if (!ClassStorage (s->symbol.class) || (!initialize && s->symbol.class == class_const))
 	{
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  s->symbol.class, expr->atom.atom);
@@ -303,7 +303,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	expr->base.type = s->symbol.type;
 	break;
     case COLONCOLON:
-	obj = CompileLvalue (obj, expr->tree.right, stat, code, False, assign);
+	obj = CompileLvalue (obj, expr->tree.right, stat, code, False, assign, initialize);
 	expr->base.type = expr->tree.right->base.type;
         break;
     case DOT:
@@ -462,7 +462,7 @@ CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr co
     obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
     SetPush (obj);
     obj = CompileLvalue (obj, expr->tree.left, stat, code, opCode == OpAssign, 
-			 opCode == OpAssign || opCode == OpInitialize);
+			 opCode == OpAssign || opCode == OpInitialize, opCode == OpInitialize);
     expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 					 expr->base.tag,
 					 expr->tree.right->base.type);
@@ -1318,7 +1318,13 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	break;
     case UNION:
-	_CompileExpr (obj, expr->tree.right, True, stat, code);
+	if (expr->tree.right)
+	    _CompileExpr (obj, expr->tree.right, True, stat, code);
+	else
+	{
+	    BuildInst (obj, OpConst, inst, stat);
+	    inst->constant.constant = Void;
+	}
 	SetPush (obj);
 	t = TypesCanon (expr->base.type);
 	if (t && t->base.tag == types_union)
@@ -1335,14 +1341,32 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    }
 	    BuildInst (obj, OpBuildUnion, inst, stat);
 	    inst->structs.structs = st;
-	    if (!TypeCombineBinary (expr->tree.left->base.type,
-				    ASSIGN,
-				    expr->tree.right->base.type))
+	    if (expr->tree.left->base.type == typesEnum)
 	    {
-		CompileError (obj, stat, "Incompatible types '%T', '%T' in union constructor",
-			      expr->tree.left->base.type,
-			      expr->tree.right->base.type);
-		break;
+		if (expr->tree.right)
+		{
+		    CompileError (obj, stat, "enum member '%A' takes no constructor argument",
+				  expr->tree.left->atom.atom);
+		    break;
+		}
+	    }
+	    else
+	    {
+		if (!expr->tree.right)
+		{
+		    CompileError (obj, stat, "union member '%A' requires constructor argument",
+				  expr->tree.left->atom.atom);
+		    break;
+		}
+		if (!TypeCombineBinary (expr->tree.left->base.type,
+					ASSIGN,
+					expr->tree.right->base.type))
+		{
+		    CompileError (obj, stat, "Incompatible types '%T', '%T' in union constructor",
+				  expr->tree.left->base.type,
+				  expr->tree.right->base.type);
+		    break;
+		}
 	    }
 	    BuildInst (obj, OpInitUnion, inst, stat);
 	    inst->atom.atom = expr->tree.left->atom.atom;
@@ -1455,7 +1479,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	break;
     case STAR:	    obj = CompileUnary (obj, expr, OpStar, stat, code); break;
     case AMPER:	    
-	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False);
+	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
 	expr->base.type = NewTypesRef (expr->tree.left->base.type);
 	if (!expr->base.type)
 	{
@@ -1472,7 +1496,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case INC:	    
 	if (expr->tree.left)
 	{
-	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False);
+	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNPLUS,
 						 typesPrim[type_int]);
@@ -1480,7 +1504,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	else
 	{
-	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False);
+	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNPLUS,
 						 typesPrim[type_int]);
@@ -1498,7 +1522,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case DEC:
 	if (expr->tree.left)
 	{
-	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False);
+	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNMINUS,
 						 typesPrim[type_int]);
@@ -1506,7 +1530,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	else
 	{
-	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False);
+	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNMINUS,
 						 typesPrim[type_int]);
@@ -1649,7 +1673,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case ASSIGNPOW:
 	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
 	SetPush (obj);
-	obj = CompileLvalue (obj, expr->tree.right->tree.left, stat, code, False, False);
+	obj = CompileLvalue (obj, expr->tree.right->tree.left, stat, code, False, False, False);
 	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
@@ -2242,6 +2266,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
     publish = decls->decl.publish;
     switch (class) {
     case class_global:
+    case class_const:
 	/*
 	 * Globals are compiled in the static initializer for
 	 * the outermost enclosing function.
@@ -2316,7 +2341,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	     */
 	    lvalue = NewExprAtom (decl->name, decl->symbol);
 	    *initObj = CompileLvalue (*initObj, lvalue,
-				       decls, code, False, True);
+				       decls, code, False, True, True);
 	    if (!TypeCombineBinary (lvalue->base.type,
 				    ASSIGN,
 				    init->base.type))
@@ -2325,11 +2350,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 			      lvalue->base.type,
 			      init->base.type);
 	    }
-	    BuildInst (*initObj, OpAssign, inst, decls);
-	    /*
-	     * TODO: analyze rvalue to see when it no other reference
-	     * could exist and use OpInitialize
-	     */
+	    BuildInst (*initObj, OpInitialize, inst, decls);
 	}
     }
     if (evaluate)

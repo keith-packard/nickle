@@ -171,11 +171,12 @@ NewTypesStruct (StructType *structs)
     t = ALLOCATE (&TypesStructType, sizeof (TypesStruct));
     t->base.tag = types_struct;
     t->structs.structs = structs;
+    t->structs.enumeration = False;
     RETURN (t);
 }
 
 Types *
-NewTypesUnion (StructType *structs)
+NewTypesUnion (StructType *structs, Bool enumeration)
 {
     ENTER ();
     Types   *t;
@@ -183,6 +184,7 @@ NewTypesUnion (StructType *structs)
     t = ALLOCATE (&TypesStructType, sizeof (TypesStruct));
     t->base.tag = types_union;
     t->structs.structs = structs;
+    t->structs.enumeration = enumeration;
     RETURN (t);
 }
 
@@ -739,7 +741,7 @@ TypeCombineFlatten (Types **rets, int nret, int sret)
     if (nret == 1)
 	RETURN (rets[0]);
     
-    ret = NewTypesUnion (NewStructType (nret));
+    ret = NewTypesUnion (NewStructType (nret), False);
     st = ret->structs.structs;
     for (nret = 0; nret < st->nelements; nret++)
 	StructTypeElements(st)[nret].type = rets[nret];
@@ -941,7 +943,7 @@ TypeCombineUnary (Types *type, int tag)
 	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
     case BANG:
-	ret = TypeCombineBinary (type, EQ, typesPrim[type_integer]);
+	ret = TypeCombineBinary (type, EQ, typesNil);
 	if (ret)
 	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
@@ -1224,19 +1226,19 @@ TypesInit (void)
     StructTypeElements(st)[0].type = typesPrim[type_integer];
     StructTypeElements(st)[1].type = typesPrim[type_rational];
     StructTypeElements(st)[2].type = typesPrim[type_float];
-    typesGroup = NewTypesUnion (st);
+    typesGroup = NewTypesUnion (st, False);
     MemAddRoot (typesGroup);
     
     st = NewStructType (2);
     StructTypeElements(st)[0].type = typesPrim[type_rational];
     StructTypeElements(st)[1].type = typesPrim[type_float];
-    typesField = NewTypesUnion (st);
+    typesField = NewTypesUnion (st, False);
     MemAddRoot (typesField);
     
     st = NewStructType (2);
     StructTypeElements(st)[0].type = typesPrim[type_int];
     StructTypeElements(st)[1].type = typesRefPoly;
-    typesNil = NewTypesUnion (st);
+    typesNil = NewTypesUnion (st, False);
     MemAddRoot (typesField);
     
     TypeCheckStack = StackCreate ();

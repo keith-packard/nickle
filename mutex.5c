@@ -14,10 +14,10 @@
  *	Raised when a thread attempts to release a mutex not owned by it.
  */
 
-/* A mutex is either owned by a thread or nobody (0) */
+/* A mutex is either owned by a thread or nobody */
 typedef union { 
     thread  owner; 
-    int	    nobody; 
+    enum    nobody; 
 } mutex_owner;
 
 public typedef struct { 
@@ -33,10 +33,10 @@ namespace Mutex {
 
     public int function acquire (mutex m)
     {
-	if (m->owner == (mutex_owner.owner) Thread::current())
+	if (m->owner == mutex_owner.owner (Thread::current()))
 	    raise deadlock (m, Thread::current ());
 	Semaphore::wait(m->sem);
-	m->owner = (mutex_owner.owner) Thread::current ();
+	m->owner = mutex_owner.owner (Thread::current ());
 	return 1;
     }
 
@@ -44,19 +44,19 @@ namespace Mutex {
     {
 	int ret = 0;
 	
-	if (m->owner == (mutex_owner.owner) Thread::current())
+	if (m->owner == mutex_owner.owner (Thread::current()))
 	    raise deadlock (m, Thread::current());
         ret = Semaphore::test (m->sem);
         if (ret)
-	    m->owner = (mutex_owner.owner) Thread::current();
+	    m->owner = mutex_owner.owner (Thread::current());
 	return ret;
     }
 
     public int function release (mutex m)
     {
-	if (m->owner != (mutex_owner.owner) Thread::current())
+	if (m->owner != mutex_owner.owner (Thread::current()))
 	    raise notowned (m, Thread::current (), m->owner);
-	m->owner = (mutex_owner.nobody) 0;
+	m->owner = mutex_owner.nobody;
 	Semaphore::signal (m->sem);
 	return 1;
     }
@@ -70,7 +70,7 @@ namespace Mutex {
     {
 	return reference ((mutex_struct) { 
 	    sem = Semaphore::new (1),
-	    owner = (mutex_owner.nobody) 0 
+	    owner = mutex_owner.nobody
 	});
     }
 }

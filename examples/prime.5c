@@ -58,7 +58,7 @@ namespace Factor {
 	    return l ? 1+list_length(l->next) : 0;
 	}
 
-	int[*]  a = (int [list_length (l)]);
+	int[*]  a = (int [list_length (l)]) {};
 	int	i = 0;
 	while (l)
 	{
@@ -71,7 +71,7 @@ namespace Factor {
 
     typedef union {
 	int[*]  array;
-	int	    none;
+	enum	none;
     } array_or_none;
 
     public array_or_none function factor (int i)
@@ -80,22 +80,22 @@ namespace Factor {
 	{
 	    union switch (a) {
 	    case array:
-		int[*]  n = (int [dim(a.array)+1]);
+		int[*]  n = (int [dim(a.array)+1]) {};
 		int	i;
 
 		for (i = 0; i < dim(a.array); i++)
 		    n[i] = a.array[i];
 		n[i] = v;
-		return (array_or_none.array) n;
+		return array_or_none.array (n);
 	    case none:
 		int[*]	n = (int [1]) { v };
-		return (array_or_none.array) n;
+		return array_or_none.array (n);
 	    }
 	}
 
 	if (i < 0) return array_append (factor (-i), -1);
 
-	array_or_none   result = (array_or_none.none) 0;
+	array_or_none   result = array_or_none.none;
 
 	int function one_factor (int i)
 	{

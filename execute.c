@@ -238,10 +238,10 @@ ThreadStaticInit (Value thread, InstPtr *next)
 }
 
 static void
-ThreadAssign (Value ref, Value v, Bool copy)
+ThreadAssign (Value ref, Value v, Bool initialize)
 {
     ENTER ();
-    if (RefConstant(ref))
+    if (RefConstant(ref) && !initialize)
     {
 	RaiseStandardException (exception_readonly_box,
 				"Attempted assignment to constant box",
@@ -263,8 +263,7 @@ ThreadAssign (Value ref, Value v, Bool copy)
     {
 	if (!v)
 	    abort ();
-	if (copy)
-	    v = Copy (v);
+	v = Copy (v);
 	if (!aborting)
 	{
 	    complete = True;
@@ -614,6 +613,7 @@ ThreadStep (Value thread)
     case OpNameRefStore:
 	switch (inst->var.name->symbol.class) {
 	case class_global:
+	case class_const:
 	    box = inst->var.name->global.value;
 	    i = 0;
 	    break;
@@ -888,7 +888,7 @@ ThreadStep (Value thread)
 	    w = Plus (v, One);
 	else
 	    w = Minus (v, One);
-	ThreadAssign (value, w, True);
+	ThreadAssign (value, w, False);
 	value = v;
 	if (inst->base.opCode == OpPreInc || inst->base.opCode == OpPreDec)
 	    value = w;
@@ -977,14 +977,14 @@ ThreadStep (Value thread)
 	default:
 	    break;
 	}
-	ThreadAssign (value, v, True);
+	ThreadAssign (value, v, False);
 	value = v;
 	break;
     case OpInitialize:
 	if (value->value.tag != type_ref)
 	    break;
 	v = Stack(stack); stack++;
-	ThreadAssign (value, v, False);
+	ThreadAssign (value, v, True);
 	value = v;
 	break;
     case OpEq:

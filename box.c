@@ -42,19 +42,15 @@ NewBox (Bool constant, Bool array, int nvalues)
 }
 
 BoxPtr
-NewTypedBox (Bool constant, Bool array, BoxTypesPtr bt)
+NewTypedBox (Bool array, BoxTypesPtr bt)
 {
     ENTER ();
     BoxPtr  box;
     int	    i;
-    Types   *t;
 
-    box = NewBox (constant, array, bt->count);
+    box = NewBox (False, array, bt->count);
     for (i = 0; i < bt->count; i++)
-    {
-	t = BoxTypesValue (bt, i);
-	BoxType (box, i) = t;
-    }
+	BoxType (box, i) = BoxTypesValue (bt, i);
     RETURN (box);
 }
 

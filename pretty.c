@@ -228,6 +228,11 @@ PrettyDecl (Value f, Expr *e, int level, Bool nest)
 /*    PrettyProf (f, e);*/
     FilePutPublish (f, e->decl.publish, True);
     switch (e->decl.class) {
+    case class_const:
+	FilePuts (f, "const");
+	if (e->decl.type)
+	    FilePutTypes (f, e->decl.type, False);
+	break;
     case class_global:
 	if (e->decl.type)
 	    FilePutTypes (f, e->decl.type, False);
@@ -323,8 +328,13 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePuts (f, " }");
 	break;
     case UNION:
-	FilePrintf (f, "(%T.%A) ", e->base.type, e->tree.left->atom.atom);
-	PrettyExpr (f, e->tree.right, selfPrec, level, nest);
+	FilePrintf (f, "%T.%A ", e->base.type, e->tree.left->atom.atom);
+	if (e->tree.right)
+	{
+	    FilePuts (f, "(");
+	    PrettyExpr (f, e->tree.right, selfPrec, level, nest);
+	    FilePuts (f, ")");
+	}
 	break;
     case TEN_CONST:
     case OCTAL_CONST:
@@ -764,6 +774,7 @@ doPrettyPrint (Value f, Publish publish, SymbolPtr symbol, int level, Bool nest)
 	return;
     PrettyIndent (f, level);
     switch (symbol->symbol.class) {
+    case class_const:
     case class_global:
 	v = BoxValueGet (symbol->global.value, 0);
 	if (v && v->value.tag == type_func)

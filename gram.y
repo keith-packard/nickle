@@ -61,11 +61,11 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %type  <atom>	    typename
 %type  <expr>	    opt_init
 %type  <fulltype>   decl opt_decl
-%type  <types>	    opt_type type
+%type  <types>	    opt_type type opt_type_or_enum
 %type  <expr>	    opt_stars stars
 %type  <type>	    basetype
-%type  <type>	    struct_or_union
-%type  <memList>    struct_members
+%type  <expr>	    dims
+%type  <memList>    struct_members union_members
 %type  <class>	    class
 %type  <publish>    opt_publish publish publish_extend
 %type  <atom>	    namespacename
@@ -78,16 +78,17 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 
 %type  <expr>	    opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
 %type  <expr>	    comma_expr
+%type  <expr>	    opt_cast_arg
 %type  <ints>	    assignop
 %type  <value>	    opt_integer integer
 %type  <expr>	    opt_arrayinit arrayinit arrayelts  arrayelt
 %type  <expr>	    structinit structelts structelt
 %type  <expr>	    init
 
-%token		    VAR EXPR ARRAY STRUCT UNION
+%token		    VAR EXPR ARRAY STRUCT UNION ENUM
 
 %token		    NL SEMI MOD OC CC DOLLAR DOTS
-%token <class>	    GLOBAL AUTO STATIC
+%token <class>	    GLOBAL AUTO STATIC CONST
 %token <type>	    POLY INTEGER NATURAL RATIONAL REAL STRING
 %token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID
 %token		    FUNCTION FUNC EXCEPTION RAISE
@@ -712,9 +713,9 @@ type		: basetype
 		    { $$ = NewTypesFunc ($1, $2); }
 		| type OS opt_stars CS
 		    { $$ = NewTypesArray ($1, $3); }
-		| type OS exprs CS
+		| type OS dims CS
 		    { $$ = NewTypesArray ($1, $3); }
-		| struct_or_union OC struct_members CC
+		| STRUCT OC struct_members CC
 		    {
 			AtomListPtr	al;
 			StructType	*st;
@@ -740,11 +741,59 @@ type		: basetype
 				nelements++;
 			    }
 			}
-			if ($1 == type_struct)
-			    $$ = NewTypesStruct (st);
-			else
-			    $$ = NewTypesUnion (st);
+			$$ = NewTypesStruct (st);
 		    }
+		| UNION OC union_members CC
+		    {
+			AtomListPtr	al;
+			StructType	*st;
+			StructElement	*se;
+			MemListPtr	ml;
+			int		nelements;
+
+			nelements = 0;
+			for (ml = $3; ml; ml = ml->next)
+			{
+			    for (al = ml->atoms; al; al = al->next)
+				nelements++;
+			}
+			st = NewStructType (nelements);
+			se = StructTypeElements (st);
+			nelements = 0;
+			for (ml = $3; ml; ml = ml->next)
+			{
+			    for (al = ml->atoms; al; al = al->next)
+			    {
+				se[nelements].type = ml->type;
+				se[nelements].name = al->atom;
+				nelements++;
+			    }
+			}
+			$$ = NewTypesUnion (st, False);
+		    }
+		| ENUM OC atoms CC
+		    {
+			AtomListPtr	al;
+			StructType	*st;
+			StructElement	*se;
+			int		nelements;
+
+			nelements = 0;
+			for (al = $3; al; al = al->next)
+			    nelements++;
+			
+			st = NewStructType (nelements);
+			se = StructTypeElements (st);
+			nelements = 0;
+			for (al = $3; al; al = al->next)
+			{
+			    se[nelements].type = typesEnum;
+			    se[nelements].name = al->atom;
+			    nelements++;
+			}
+			$$ = NewTypesUnion (st, True);
+		    }
+			    
 		| OP type CP
 		    { $$ = $2; }
 		| fulltype
@@ -771,10 +820,10 @@ stars		: stars COMMA TIMES
 		| TIMES
 		    { $$ = NewExprTree (COMMA, 0, 0); }
 		;
-struct_or_union	: STRUCT
-		    { $$ = type_struct; }
-		| UNION
-		    { $$ = type_union; }
+dims		: dims COMMA lambdaexpr
+		    { $$ = NewExprTree (COMMA, $3, $1); }
+		| lambdaexpr
+		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
 /*
 * Structure member declarations
@@ -784,12 +833,24 @@ struct_members	: opt_type atoms SEMI struct_members
 		|
 		    { $$ = 0; }
 		;
+union_members	: opt_type_or_enum atoms SEMI union_members
+		    { $$ = NewMemList ($2, $1, $4); }
+		|
+		    { $$ = 0; }
+		;
+opt_type_or_enum: type
+		| ENUM
+		    { $$ = typesEnum; }
+		|
+		    { $$ = typesPoly; }
+		;
 /*
 * Declaration modifiers
 */
 class		: GLOBAL
 		| AUTO
 		| STATIC
+		| CONST
 		;
 
 opt_publish	: publish
@@ -828,8 +889,6 @@ argdecl		: type NAME
 			$$.type = $1;
 			$$.name = 0; 
 		    }
-		| NAME
-		    { $$.type = typesPoly; $$.name = $1; }
 		;
 
 /*
@@ -1086,7 +1145,7 @@ primary		: fullname
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 			ParseCanonType ($$->base.type);
 		    }
-		| OS exprs CS namespace_start opt_arrayinit namespace_end
+		| OS dims CS namespace_start opt_arrayinit namespace_end
 		    { 
 			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
@@ -1097,15 +1156,21 @@ primary		: fullname
 			$$ = NewExprTree (UNION, NewExprAtom ($4, 0), $6); 
 			$$->base.type = $2;
 		    }
+		| type DOT NAME opt_cast_arg				%prec UNIONCAST
+		    {
+			ParseCanonType ($1);
+			$$ = NewExprTree (UNION, NewExprAtom ($3, 0), $4); 
+			$$->base.type = $1;
+		    }
 		| DOLLAR opt_integer
 		    { $$ = NewExprConst(POLY_CONST, History (0, $2)); }
 		| DOT
 		    { $$ = NewExprConst(POLY_CONST, History (0, Zero)); }
 		| OP expr CP
 		    { $$ = $2; }
-		| primary STAROS exprs CS
+		| primary STAROS dims CS
 		    { $$ = NewExprTree (OS, NewExprTree (STAR, $1, (Expr *) 0), $3); }
-		| primary OS exprs CS
+		| primary OS dims CS
 		    { $$ = NewExprTree(OS, $1, $3); }
 		| primary OP opt_exprs CP				%prec CALL
 		    { $$ = NewExprTree (OP, $1, $3); }
@@ -1122,6 +1187,11 @@ integer		: TEN_CONST
 		| OCTAL_CONST
 		| BINARY_CONST
 		| HEX_CONST
+		;
+opt_cast_arg	: OP expr CP
+		    { $$ = $2; }
+		|
+		    { $$ = 0; }
 		;
 /*
  * Array initializers
@@ -1483,7 +1553,8 @@ ParseCanonType (TypesPtr type)
 	    StructElement   *se;
 
 	    se = &StructTypeElements(type->structs.structs)[n];
-	    ret = ret && ParseCanonType (se->type);
+	    if (se->type != typesEnum)
+		ret = ret && ParseCanonType (se->type);
 	}
 	break;
     }
@@ -1504,6 +1575,9 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name)
 	ParseCanonType (type))
     {
 	switch (class) {
+	case class_const:
+	    s = NewSymbolConst (name, type);
+	    break;
 	case class_global:
 	    s = NewSymbolGlobal (name, type);
 	    break;

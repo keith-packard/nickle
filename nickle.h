@@ -58,6 +58,7 @@ typedef union _symbol {
 
 extern SymbolPtr    NewSymbolType (Atom name, Types *type);
 extern SymbolPtr    NewSymbolException (Atom name, Types *type);
+extern SymbolPtr    NewSymbolConst (Atom name, Types *type);
 extern SymbolPtr    NewSymbolGlobal (Atom name, Types *type);
 extern SymbolPtr    NewSymbolArg (Atom name, Types *type);
 extern SymbolPtr    NewSymbolStatic (Atom name, Types *Type);

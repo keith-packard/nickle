@@ -268,7 +268,7 @@ typedef struct _argType {
     struct _argType *next;
 } ArgType;
 
-ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name, 
+ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name,
 		     SymbolPtr symbol, ArgType *next);
 
 typedef enum _typesTag {
@@ -312,6 +312,7 @@ typedef struct _typesArray {
 typedef struct _typesStruct {
     TypesBase	    base;
     StructTypePtr   structs;
+    Bool	    enumeration;
 } TypesStruct;    
 
 typedef union _types {
@@ -341,12 +342,14 @@ extern Types	    *typesRefPoly;
 extern Types	    *typesNil;
 extern Types	    *typesPrim[type_void - type_int + 1];
 
+#define typesEnum   ((Types *) 1)
+
 Types	*NewTypesName (ExprPtr expr, Types *type);
 Types	*NewTypesRef (Types *ref);
 Types	*NewTypesFunc (Types *ret, ArgType *args);
 Types	*NewTypesArray (Types *type, ExprPtr dimensions);
 Types	*NewTypesStruct (StructTypePtr structs);
-Types	*NewTypesUnion (StructTypePtr structs);
+Types	*NewTypesUnion (StructTypePtr structs, Bool enumeration);
 Types	*TypesCanon (Types *type);
 Type	BaseType (Types *type);
 int	TypesInit (void);
@@ -374,13 +377,14 @@ int	TypeCountDimensions (ExprPtr dims);
  */
 
 typedef enum _class {
-    class_global, class_static, class_arg, class_auto, 
+    class_global, class_static, class_arg, class_auto, class_const,
     class_typedef, class_namespace, class_exception, class_undef
 } Class;
 
 #define ClassLocal(c)	((c) == class_arg || (c) == class_auto)
 #define ClassFrame(c)	((c) == class_static || ClassLocal(c))
-#define ClassStorage(c)	((c) <= class_auto)
+#define ClassStorage(c)	((c) <= class_const)
+#define ClassLvalue(c)	((c) <= class_auto)
 
 typedef enum _publish {
     publish_private, publish_protected, publish_public, publish_extend
@@ -485,7 +489,7 @@ typedef struct _ref {
 #define RefValue(r)	BoxValue((r)->ref.box, (r)->ref.element)
 #define RefValueGet(r)	BoxValueGet((r)->ref.box, (r)->ref.element)
 #define RefType(r)	BoxType((r)->ref.box, (r)->ref.element)
-#define RefConstant(r)    BoxConstant((r)->ref.box)
+#define RefConstant(r)    BoxConstant((r)->ref.box, (r)->ref.element)
 
 typedef struct _structElement {
     TypesPtr	type;
@@ -637,7 +641,7 @@ typedef struct _box {
 #define BoxElements(box)	((BoxElement *) ((box) + 1))
 #define BoxValueSet(box,e,v)	((BoxElements(box)[e].value) = (v))
 #define BoxValueGet(box,e)	((BoxElements(box)[e].value))
-#define BoxConstant(box)	((box)->constant)
+#define BoxConstant(box,e)	((box)->constant)
 #define BoxType(box,e)		(BoxElements(box)[e].type)
 
 extern BoxPtr	NewBox (Bool constant, Bool array, int nvalues);
@@ -656,7 +660,7 @@ extern BoxTypesPtr NewBoxTypes (int size);
 
 extern int	AddBoxTypes (BoxTypesPtr *btp, TypesPtr t);
 
-extern BoxPtr	NewTypedBox (Bool constant, Bool array, BoxTypesPtr types);
+extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr types);
 			     
 Value	NewInt (int value);
 Value	NewInteger (Sign sign, Natural *mag);

@@ -46,10 +46,14 @@ UnionPrint (Value f, Value av, char format, int base, int width, int prec, unsig
 	FileOutput (f, '{');
     if (u->tag)
     {
-	FilePuts (f, AtomName (u->tag));
-	FilePuts (f, " = ");
-	if (!Print (f, BoxValue (u->value, 0), format, base, width, prec, fill))
-	    return False;
+	Types	*t = StructTypes (u->type, u->tag);
+        FilePuts (f, AtomName (u->tag));
+	if (t != (Types*) 1)
+	{
+	    FilePuts (f, " = ");
+	    if (!Print (f, BoxValue (u->value, 0), format, base, width, prec, fill))
+		return False;
+	}
     }
     else
 	FilePuts (f, "<unset>");

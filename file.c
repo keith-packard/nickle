@@ -737,6 +737,9 @@ FilePutClass (Value f, Class storage, Bool minimal)
 	if (!minimal)
 	    FilePuts (f, "undefined");
 	break;
+    case class_const:
+	FilePuts (f, "const");
+	break;
     case class_global:
 	FilePuts (f, "global");
 	break;
@@ -876,20 +879,40 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	break;
     case types_struct:
     case types_union:
-	if (t->base.tag == types_struct)
-	    FilePuts (f, "struct { ");
-	else
-	    FilePuts (f, "union { ");
-	st = t->structs.structs;
-	se = StructTypeElements (st);
-	for (i = 0; i < st->nelements; i++)
+	if (t->structs.enumeration)
 	{
-	    FilePutTypes (f, se[i].type, se[i].name != 0);
-	    if (se[i].name)
-		FilePuts (f, AtomName (se[i].name));
-	    FilePuts (f, "; ");
+	    FilePuts (f, "enum { ");
+	    st = t->structs.structs;
+	    se = StructTypeElements (st);
+	    for (i = 0; i < st->nelements; i++)
+	    {
+		if (i)
+		    FilePuts (f, ", ");
+		if (se[i].name)
+		    FilePuts (f, AtomName (se[i].name));
+	    }
+	    FilePuts (f, " }");
 	}
-	FilePuts (f, "}");
+	else
+	{
+	    if (t->base.tag == types_struct)
+		FilePuts (f, "struct { ");
+	    else
+		FilePuts (f, "union { ");
+	    st = t->structs.structs;
+	    se = StructTypeElements (st);
+	    for (i = 0; i < st->nelements; i++)
+	    {
+		if (se[i].type == typesEnum)
+		    FilePuts (f, "enum ");
+		else
+		    FilePutTypes (f, se[i].type, se[i].name != 0);
+		if (se[i].name)
+		    FilePuts (f, AtomName (se[i].name));
+		FilePuts (f, "; ");
+	    }
+	    FilePuts (f, "}");
+	}
 	break;
     }
     if (spaceit)

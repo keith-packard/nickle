@@ -78,6 +78,21 @@ NewSymbolException (Atom name, Types *type)
 }
 
 SymbolPtr
+NewSymbolConst (Atom name, Types *type)
+{
+    ENTER ();
+    SymbolPtr	s;
+
+    s = ALLOCATE (&SymbolGlobalType, sizeof (SymbolGlobal));
+    s->symbol.name = name;
+    s->symbol.class = class_const;
+    s->symbol.type = type;
+    s->global.value = NewBox (True, False, 1);
+    BoxType (s->global.value, 0) = type;
+    RETURN (s);
+}
+
+SymbolPtr
 NewSymbolGlobal (Atom name, Types *type)
 {
     ENTER ();

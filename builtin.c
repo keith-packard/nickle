@@ -129,7 +129,7 @@ BuiltinSetUserdefType (Type *type, int n)
 }
 
 static char *
-BuiltinType (char *format, Type **type)
+BuiltinType (char *format, Type **type, Bool arg)
 {
     Type   *t;
     Bool    ref = False;
@@ -162,7 +162,7 @@ BuiltinType (char *format, Type **type)
     if (*format == 'H')
     {
 	hash = True;
-	format = BuiltinType (format + 1, &k);
+	format = BuiltinType (format + 1, &k, True);
     }
     switch (f = *format++) {
     case 'p': t = typePoly; break;
@@ -193,7 +193,7 @@ BuiltinType (char *format, Type **type)
 	break;
     }
     if (ref)
-	t = NewTypeRef (t, False);
+	t = NewTypeRef (t, arg ? False : True);
     if (array)
 	t = NewTypeArray (t, dims, resizable);
     if (hash)
@@ -222,7 +222,7 @@ BuiltinArgType (char *format, int *argcp)
 	    varargs = True;
 	    format++;
 	}
-	format = BuiltinType (format, &t);
+	format = BuiltinType (format, &t, True);
 	if (!varargs)
 	    argc++;
         a = NewArgType (t, varargs, 0, 0, 0);
@@ -291,7 +291,7 @@ BuiltinAddFunction (NamespacePtr *namespacep, char *name, char *ret_format,
     Type	*ret;
 
     args = BuiltinArgType (format, &argc);
-    BuiltinType (ret_format, &ret);
+    BuiltinType (ret_format, &ret, False);
     sym = BuiltinSymbol (namespacep, name, NewTypeFunc (ret, args));
     func =  NewFunc (NewBuiltinCode (ret, args, argc, f, jumping, doc), 0);
     BoxValueSet (sym->global.value, 0, func);

@@ -1,3 +1,11 @@
+nickle (2.47-1) unstable; urgency=low
+  * Make builtin functions return pointers instead of references.
+  * Check for NULL hash value in a valid hash element.
+  * Initialize base.func pointer to NULL (Eric Anholt)
+  * Functions returning reference type need to auto-dereference on return
+
+ -- Keith Packard <keithp@keithp.com>  Tue, 15 Mar 2005 11:29:22 -0800
+
 nickle (2.46-1) unstable; urgency=low
   * Fix error state confusion about nl handling
   * Make File builtins use error_type typedef instead of the union directly

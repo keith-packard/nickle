@@ -1,4 +1,13 @@
 2005-03-15  Keith Packard  <keithp@keithp.com>
+version 2.47
+
+	* debian/changelog:
+	Update for version 2.47
+	* builtin.c: (BuiltinType), (BuiltinArgType), (BuiltinAddFunction):
+	Builtin functions return pointers, not references as reference
+	return values now auto-dereference
+
+2005-03-15  Keith Packard  <keithp@keithp.com>
 
 	* hash.c: (HashGet):
 	Check for NULL hash value in a valid hash element.  This

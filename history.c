@@ -91,9 +91,9 @@ History (Value thread, Value h)
     }
     else
     {
-	if (i >= hist->index)
+	if (i > hist->index)
 	    return Zero;
-	return hist->array[i];
+	return hist->array[i - 1];
     }
 }
 
@@ -125,7 +125,7 @@ HistoryDisplay (Value format, Value *from, Value *to)
 	    t = hist->index-1;
 	v[0] = format;
 	while (f <= t) {
-	    fv = NewInt (f);
+	    fv = NewInt (f + 1);
 	    callformat (FileStdout, "$%-4d\t", 1, &fv);
 	    v[1] = hist->array[f];
 	    doprintf (2, v);

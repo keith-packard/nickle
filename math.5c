@@ -752,7 +752,7 @@ extend namespace Math {
     {
 	v = imprecise (v);
 	if (abs (v) > 1)
-	    return 1/0;
+	    raise invalid_argument ("asin argument out of range", 0, v);
 	if (v == 1)
 	    return pi_value (precision (v))/2;
 	if (v == -1)
@@ -770,7 +770,7 @@ extend namespace Math {
     {
 	v = imprecise(v);
 	if (abs (v) > 1)
-	    return 1/0;
+	    raise invalid_argument ("acos argument out of range", 0, v);
 	if (v == 1)
 	    return 0;
 	if (v == -1)

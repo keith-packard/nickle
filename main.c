@@ -38,36 +38,14 @@ setArgv (int argc, char **argv)
     EXIT ();
 }
 
-static void
-try_nicklerc (void)
-{
-    ENTER ();
-    char	*home;
-    char	*nicklerc;
-    static char filename[] = "/.nicklerc";
-
-    if ((nicklerc = getenv ("NICKLERC")))
-    {
-	LexFile (nicklerc, True, False);
-    }
-    else if ((home = getenv ("HOME")))
-    {
-	nicklerc = AllocateTemp (strlen (home) + strlen (filename) + 1);
-	strcpy (nicklerc, home);
-	strcat (nicklerc, filename);
-	LexFile (nicklerc, False, False);
-    }
-    EXIT ();
-}
-
-static void
+static Bool
 try_nicklelib (void)
 {
     char    *nicklelib;
 
     if ((nicklelib = getenv ("NICKLELIB")) == 0)
 	nicklelib = NICKLELIB "/builtin.5c";
-    LexFile (nicklelib, True, False);
+    return LexFile (nicklelib, True, False);
 }    
 
 RETSIGTYPE	intr(int), ferr(int);
@@ -87,9 +65,6 @@ releaseSignal(int sig) {
 int
 main (int argc, char **argv)
 {
-    Bool    tryrc = True;
-    Bool    stdin_prog = True;
-    
     (void) catchSignal (SIGHUP, die);
     (void) catchSignal (SIGINT, intr);
     (void) catchSignal (SIGQUIT, die);
@@ -103,80 +78,14 @@ main (int argc, char **argv)
     (void) catchSignal (SIGTTOU, stop);
     stdin_interactive = isatty(0);
     init ();
-    /*
-     * Get the main input stream set up
-     */
-    while (argc > 1) {
-	if (argc > 2 && !strcmp (argv[1], "-e"))
-	{
-	    Value   s;
-	    int	    i;
-
-	    ENTER ();
-	    s = NewStrString ("");
-	    for (i = 2; i < argc; i++)
-	    {
-		s = Plus (s, NewStrString (argv[i]));
-		if (i != argc-1)
-		    s = Plus (s, NewStrString (" "));
-		else
-		    s = Plus (s, NewStrString ("\n"));
-	    }
-	    LexString (StringChars (&s->string), True);
-	    EXIT ();
-	    stdin_prog = False;
-	    argc -= (i - 1);	/* argc == 1 */
-	    argv += (i - 1);	/* argv[1] == 0 */
-	    break;
-	}
-	if (argc > 2 && !strcmp (argv[1], "-f"))
-	{
-	    if (!LexFile (argv[2], True, True))
-	    {
-		IoFini ();
-		return 1;
-	    }
-	    argv += 2;
-	    argc -= 2;
-	    continue;
-	}
-	if (argc > 2 && !strcmp (argv[1], "-l"))
-	{
-	    if (!LexLibrary (argv[2], True, True))
-	    {
-		IoFini ();
-		return 1;
-	    }
-	    argv += 2;
-	    argc -= 2;
-	    continue;
-	}
-	if (argc <= 0)
-	    break;
-	tryrc = False;
-	stdin_prog = False;
-	if (!LexFile (argv[1], True, True))
-	{
-	    IoFini ();
-	    return 1;
-	}
-	break;
-    }
     setArgv (argc - 1, argv + 1);
-    if (stdin_prog)
+    if (try_nicklelib())
     {
-	LexStdin ();
+	/*
+	 * Run the parser
+	 */
+	(void) yyparse ();
     }
-    /*
-     * Push initialization files
-     */
-    if (tryrc)
-	try_nicklerc();
-    try_nicklelib();
-    /*
-     * Run the parser
-     */
-    (void) yyparse ();
     IoFini ();
     return 0;
 }

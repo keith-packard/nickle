@@ -44,6 +44,7 @@ import_File_namespace()
         { do_File_getb, "getb", "i", "f" },
         { do_File_string_read, "string_read", "f", "s" },
         { do_File_string_string, "string_string", "s", "f" },
+	{ do_File_isatty, "isatty", "b", "f" },
         { 0 }
     };
 
@@ -86,6 +87,9 @@ import_File_namespace()
 	BuiltinAddException (&FileNamespace, e->exception, e->name, e->args);
 
     s = NewSymbolType (AtomId("errorType"), typeFileError);
+    NamespaceAddName (FileNamespace, s, publish_public);
+    
+    s = NewSymbolType (AtomId("error_type"), typeFileError);
     NamespaceAddName (FileNamespace, s, publish_public);
     
     EXIT ();
@@ -243,6 +247,15 @@ do_File_string_string (Value f)
 {
     ENTER ();
     RETURN (FileStringString (f));
+}
+
+Value
+do_File_isatty (Value file)
+{
+    ENTER ();
+    if (file->file.flags & FileString)
+	return FalseVal;
+    RETURN(isatty (file->file.fd) ? TrueVal : FalseVal);
 }
 
 Value 

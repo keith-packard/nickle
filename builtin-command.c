@@ -26,9 +26,6 @@ import_Command_namespace()
     static struct fbuiltin_1 funcs_1[] = {
         { do_Command_delete, "delete", "b", "s" },
         { do_Command_edit, "edit", "v", "A*s" },
-        { do_Command_lex_file, "lex_file", "b", "s" },
-        { do_Command_lex_library, "lex_library", "b", "s" },
-        { do_Command_lex_string, "lex_string", "v", "s" },
 	{ do_Command_display, "display", "v", "p" },
 	{ do_Command_valid_name, "valid_name", "b", "A*s" },
         { 0 }
@@ -37,6 +34,11 @@ import_Command_namespace()
     static struct fbuiltin_2 funcs_2[] = {
         { do_Command_new, "new", "v", "sp" },
         { do_Command_new_names, "new_names", "v", "sp" },
+        { 0 }
+    };
+
+    static struct fbuiltin_4 funcs_4[] = {
+	{ do_Command_lex_input, "lex_input", "b", "fsbb" },
         { 0 }
     };
 
@@ -50,6 +52,7 @@ import_Command_namespace()
 
     BuiltinFuncs1 (&CommandNamespace, funcs_1);
     BuiltinFuncs2 (&CommandNamespace, funcs_2);
+    BuiltinFuncs4 (&CommandNamespace, funcs_4);
     BuiltinFuncsV (&CommandNamespace, funcs_v);
     EXIT ();
 }
@@ -112,41 +115,6 @@ do_Command_delete (Value name)
 	RETURN (FalseVal);
     CurrentCommands = CommandRemove (CurrentCommands, id);
     RETURN (TrueVal);
-}
-
-Value
-do_Command_lex_file (Value name)
-{
-    ENTER ();
-    Value   r;
-
-    if (LexFile (StringChars (&name->string), False, False))
-	r = TrueVal;
-    else
-	r = FalseVal;
-    RETURN (r);
-}
-
-Value
-do_Command_lex_library (Value name)
-{
-    ENTER ();
-    Value   r;
-
-    if (LexLibrary (StringChars (&name->string), False, False))
-	r = TrueVal;
-    else
-	r = FalseVal;
-    RETURN (r);
-}
-
-Value
-do_Command_lex_string (Value name)
-{
-    ENTER();
-
-    LexString (StringChars (&name->string), False);
-    RETURN (Void);
 }
 
 Value
@@ -220,4 +188,13 @@ do_Command_display (Value v)
     ENTER ();
     FilePrintf (FileStdout, "%v\n", v);
     RETURN (Void);
+}
+
+Value
+do_Command_lex_input (Value file, Value name, Value after, Value interactive)
+{
+    ENTER ();
+    NewLexInput (file, AtomId (StringChars (&name->string)), 
+		 after == TrueVal, interactive == TrueVal);
+    RETURN (TrueVal);
 }

@@ -681,15 +681,14 @@ int	LexFileLine (void);
 Bool	LexInteractive (void);
 Bool	LexResetInteractive (void);
 void	LexInit (void);
+void	NewLexInput (Value file, Atom name, Bool after, Bool interactive);
+
 
 int	yywrap (void);
 void	yyerror (char *msg);
 void	ParseError (char *fmt, ...);
 int	yylex (void);
 Bool	LexFile (char *file, Bool complain, Bool after);
-Bool	LexLibrary (char *file, Bool complain, Bool after);
-void	LexString (char *, Bool after);
-void	LexStdin (void);
 Value	atov (char *, int), aetov (char *, int);
 extern int  ignorenl;
 void	skipcomment (void);
@@ -835,6 +834,7 @@ Value	do_File_error (Value);
 Value	do_File_clear_error (Value);
 Value	do_File_string_read (Value);
 Value	do_File_string_string (Value);
+Value	do_File_isatty (Value);
 Value	do_File_status (Value);
 Value	do_String_length (Value);
 Value	do_String_new (Value);
@@ -844,9 +844,6 @@ Value	do_Debug_dump (Value);
 Value	do_Debug_dump_active (void);
 Value	do_Debug_mem_collect (void);
 Value	do_Command_delete (Value);
-Value	do_Command_lex_file (Value);
-Value	do_Command_lex_library (Value);
-Value	do_Command_lex_string (Value);
 Value	do_Command_edit (Value);
 Value	do_Command_display (Value);
 Value	do_Command_valid_name (Value);
@@ -879,6 +876,9 @@ Value	do_Environ_set (Value, Value);
 Value	do_File_vfprintf (Value, Value, Value);
 Value	do_String_substr (Value, Value, Value);
 Value	do_File_pipe (Value, Value, Value);
+
+/* four argument builtins */
+Value	do_Command_lex_input (Value file, Value name, Value after, Value interactive);
 
 /* seven argument builtins */
 Value	do_File_print (Value, Value, Value, Value, Value, Value, Value);

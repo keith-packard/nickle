@@ -1095,13 +1095,17 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr,
  * the initializers
  */
 static int
-CompileCountInitDimensions (ExprPtr expr)
+CompileCountInitDimensions (TypePtr type, ExprPtr expr)
 {
     int	    ndimMax, ndimSub, ndim;
     
     switch (expr->base.tag) {
     case ANONINIT:
-	ndim = 1;
+	type = TypeCanon (type);	
+	if (type->base.tag == type_struct)
+	    ndim = 0;
+	else
+	    ndim = 1;
 	break;
     case ARRAY:
 	expr = expr->tree.left;
@@ -1110,7 +1114,7 @@ CompileCountInitDimensions (ExprPtr expr)
 	{
 	    if (expr->tree.left && expr->tree.left->base.tag != DOTS)
 	    {
-		ndimSub = CompileCountInitDimensions (expr->tree.left);
+		ndimSub = CompileCountInitDimensions (type, expr->tree.left);
 		if (ndimSub < 0)
 		    return ndimSub;
 		if (ndimMax && ndimSub != ndimMax)
@@ -1546,7 +1550,7 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 		CompileError (obj, stat, "Non array initializer");
 		RETURN (obj);
 	    }
-	    ninitdim = CompileCountInitDimensions (expr);
+	    ninitdim = CompileCountInitDimensions (sub, expr);
 	    if (ninitdim < 0)
 	    {
 		CompileError (obj, stat, "Inconsistent array initializer dimensionality");

@@ -45,7 +45,7 @@ static DataType lexInputType = {
     lexInputMark, 0, "lexInputType"
 };
 
-static void
+void
 NewLexInput (Value file, Atom name, Bool after, Bool interactive)
 {
     ENTER ();
@@ -122,12 +122,6 @@ LexResetInteractive (void)
     return False;
 }
 
-void
-LexStdin (void)
-{
-    NewLexInput(FileStdin, 0, True, stdin_interactive);
-}
-	
 Bool
 LexFile (char *s, Bool complain, Bool after)
 {
@@ -143,59 +137,6 @@ LexFile (char *s, Bool complain, Bool after)
     }
     (void) NewLexInput(f, AtomId (s), after, False);
     return True;
-}
-
-Bool
-LexLibrary (char *filename, Bool complain, Bool after)
-{
-    ENTER ();
-    Value   library_path;
-    char    *nicklelib;
-    char    *lib;
-    char    *colon;
-    Bool    found = False;
-
-    library_path = lookupVar ("Command", "library_path");
-    if (library_path == Zero || !ValueIsString(library_path))
-    {
-	if (complain)
-	    (void) FilePrintf (FileStderr, "Command::library_path not set\n");
-	EXIT ();
-	return False;
-    }
-    lib = StringChars (&library_path->string);
-    while (*lib)
-    {
-	colon = strchr (lib, ':');
-	if (!colon)
-	    colon = lib + strlen (lib);
-	nicklelib = AllocateTemp (colon - lib + strlen (filename) + 2);
-	strncpy (nicklelib, lib, colon-lib);
-	nicklelib[colon-lib] = '\0';
-	strcat (nicklelib, "/");
-	strcat (nicklelib, filename);
-        if (LexFile (nicklelib, False, after))
-	{
-	    found = True;
-	    break;
-	}
-	lib = colon;
-	if (*lib == ':')
-	    lib++;
-    }
-    if (complain && !found)
-	(void) FilePrintf (FileStderr, "cannot locate library %s\n", filename);
-    EXIT ();
-    return found;
-}
-
-void
-LexString (char *s, Bool after)
-{
-    Value   f;
-
-    f = FileStringRead (s, strlen (s));
-    NewLexInput (f, 0, after, False);
 }
 
 static int

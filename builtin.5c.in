@@ -12,17 +12,54 @@ extend namespace Command {
     public string nickle_library_path = "@nicklelib@";
     library_path = nickle_library_path;
 
-    void do_library(string name) {
-	/* XXX: bootstrap to load printf.5c */
-	void put_err(string msg) {
-	    for (int i = 0; i < String::length(msg); i++)
-		File::putb(msg[i], stderr);
-	}
-	if (!lex_library(name))
-	    put_err ("Cannot load library file \"" + name + "\".\n");
+    string path_first (string path)
+    {
+	int	i = String::index (path, ":");
+
+	if (i < 0)
+	    return path;
+	if (i == 0)
+	    return ".";
+	return String::substr (path, 0, i);
     }
 
-    new ("library", do_library);
+    string path_rest (string path)
+    {
+	int	i = String::index (path, ":");
+	if (i < 0)
+	    return "";
+	
+	int	l = String::length (path);
+	if (i == l-1)
+	    return ".";
+	return String::substr (path, i + 1, l - i - 1);
+    }
+    
+    public bool lex_file (string name) {
+	return Command::lex_input (File::open (name, "r"), name, false, false);
+    }
+	
+    public bool lex_library (string name) {
+	for (string path = nickle_library_path;
+	     path != "";
+	     path = path_rest (path))
+	{
+	    try
+		return lex_file (path_first (path) + "/" + name);
+	    catch File::open_error (string name,
+				    File::error_type err,
+				    string msg) {
+		;
+	    }
+	}
+	return false;
+    }
+    
+    public bool lex_string (string s) {
+	return Command::lex_input (File::string_read (s), s, false, false);
+    }
+
+    new ("library", lex_library);
 }
 
 /*
@@ -52,11 +89,97 @@ autoload ARC4;
 autoload PRNG;
 
 /*
- * Finally, if this is a script invocation, add
- * the script base directory to the front of the
- * script, for grins.
+ * Parse the command line
  */
-if (dim(argv) > 0)
-     Command::script_dir(Command::dirname(argv[0]));
-/* XXX The dangling else screws the *#$! parser. */
-/*null statement*/ ;
+
+string[*] start (string[*] argv) 
+{
+    typedef struct {
+	bool	    library;
+	string	    name;
+    } lex_arg;
+    lex_arg[dim(argv)]	files;
+    int			nfiles = 0;
+    bool		lex_stdin = true;
+    bool		done = false;
+    int			i = 0;
+    
+    while (!done && i < dim (argv))
+    {
+	switch (argv[i]) {
+	case "-e":
+	    /*
+	     * -e -- remaining arguments are a single expression
+	     */
+	    string  expr = "";
+	    while (++i < dim(argv))
+	    {
+		expr += argv[i];
+		if (i < dim(argv)-1)
+		    expr += " ";
+		else
+		    expr += "\n";
+	    }
+	    Command::lex_string (expr);
+	    done = true;
+	    lex_stdin = false;
+	    break;
+	case "-f":
+	    /*
+	     * -f -- lex a file
+	     */
+	    i++;
+	    files[nfiles].library = false;
+	    files[nfiles].name = argv[i];
+	    nfiles++;
+	    i++;
+	    break;
+	case "-l":
+	    i++;
+	    files[nfiles].library = true;
+	    files[nfiles].name = argv[i];
+	    nfiles++;
+	    i++;
+	    break;
+	default:
+	    /*
+	     * Add the script base directory to the library
+	     * path
+	     */
+	    Command::script_dir(Command::dirname(argv[0]));
+	    files[nfiles].library = false;
+	    files[nfiles].name = argv[i];
+	    nfiles++;
+	    done = true;
+	    lex_stdin = false;
+	    break;
+	}
+    }
+    if (lex_stdin)
+    {
+    	Command::lex_input (stdin, "<stdin>", false, File::isatty (stdin));
+	try {
+	    Command::lex_file (Environ::get ("HOME") + "/" + ".nicklerc");
+	} catch invalid_argument (msg, int i, poly value) {
+	    ;
+	} catch File::open_error (string name,
+				  File::error_type err,
+				  string msg) {
+	    ;
+	}
+    }
+    
+    while (nfiles-- > 0)
+    {
+	if (files[nfiles].library)
+	    Command::lex_library (files[nfiles].name);
+	else
+	    Command::lex_file (files[nfiles].name);
+    }
+    /*
+     * Reset argv to hold remaining arguments
+     */
+    return (string[dim(argv) - i]) { [j] = argv[i+j] };
+}
+
+argv = start (argv);

@@ -563,8 +563,9 @@ ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *
     *stack = argc ? argc - 1 : 0;
     if (!aborting)
     {
-	complete = True;
 	RaiseException (thread, exception, args, next);
+	if (!aborting)
+	    complete = True;
     }
     RETURN (args);
 }
@@ -1312,7 +1313,6 @@ ThreadsRun (Value thread, Value lex)
 		    }
 		    if (signalProfile)
 			signalProfile = False;
-		    EXIT ();
 		    break;
 		}
 		/* have to do this before the pc is updated */
@@ -1336,8 +1336,7 @@ ThreadsRun (Value thread, Value lex)
 		    ThreadStepped (thread);
 		    if (running != thread)
 		    {
-			EXIT ();
-			break;
+			break; 
 		    }
 		}
 	    }

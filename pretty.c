@@ -348,8 +348,17 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest, ProfileData 
 	FilePuts (f, " }");
 	break;
     case COMP:
-	FilePuts (f, "{ = ");
-	PrettyExpr (f, e->tree.left, selfPrec, level, nest, pd);
+	FilePuts (f, "{ ");
+	FilePuts (f, "[");
+	PrettyExpr (f, e->tree.left->tree.left, selfPrec, level, nest, pd);
+	FilePuts (f, "] ");
+	if (e->tree.right->base.tag == OC)
+	    PrettyStatement (f, e->tree.right, level + 1, level, nest, pd);
+	else
+	{
+	    FilePuts (f, "= ");
+	    PrettyExpr (f, e->tree.right, selfPrec, level, nest, pd);
+	}
 	FilePuts (f, " }");
 	break;
     case STRUCT:

@@ -287,9 +287,12 @@ CompileCheckSymbol (ObjPtr obj, ExprPtr stat, ExprPtr name, CodePtr code,
     s = name->atom.symbol;
     if (!s)
     {
-        CompileError (obj, stat, "No visible symbol \"%A\" in scope%s", 
-		      name->atom.atom,
-		      name->atom.privateFound ? " (found non-public symbol)" : "");
+	if (name->atom.atom == AtomId ("[]"))
+	    CompileError (obj, stat, "Using [] outside of comprehension scope");
+	else
+	    CompileError (obj, stat, "No visible symbol \"%A\" in scope%s", 
+			  name->atom.atom,
+			  name->atom.privateFound ? " (found non-public symbol)" : "");
 	RETURN (0);
     }
     /*
@@ -1183,6 +1186,8 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 	    expr = expr->tree.right;
 	}
     }
+    else if (expr->base.tag == COMP)
+	return False;
     else
     {
 	dim = 1;
@@ -1317,7 +1322,12 @@ CompileComprehension (ObjPtr	obj,
     /*
      * Convert the args
      */
-    args = CompileComprehensionArgs (expr->tree.left);
+    args = CompileComprehensionArgs (expr->tree.left->tree.left);
+    /*
+     * Compile [] symbol
+     */
+    CompileStorage (obj, stat, expr->tree.left->tree.right->atom.symbol,
+		    code);
     /*
      * Build a func expression
      */
@@ -1352,10 +1362,12 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
     if (type->array.dimensions && type->array.dimensions->tree.left)
 	dimensions = type->array.dimensions;
     else if (expr)
+    {
 	dimensions = CompileImplicitArray (obj, stat, expr, ndim);
+	if (!dimensions)
+	    RETURN (obj);
+    }
     else
-	dimensions = 0;
-    if (!dimensions)
     {
 	CompileError (obj, stat, "Non-dimensioned array with no initializers");
 	RETURN(obj);
@@ -1377,6 +1389,10 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 			  sub, expr->base.type);
 	    RETURN(obj);
 	}
+	SetPush (obj);
+	obj = CompileLvalue (obj,
+			     expr->tree.left->tree.right,
+			     stat, code, False, True, True);
 	SetPush (obj);
     }
     obj = CompileBuildArray (obj, expr, type, dimensions, ndim, stat, code);
@@ -1402,6 +1418,8 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 	     *	    BranchFalse	  L2
 	     *	    InitArray	  n (Element)
 	     */
+	    BuildInst (obj, OpAssign, inst, stat);
+	    inst->assign.initialize = True;
 	    BuildInst (obj, OpInitArray, inst, stat);
 	    inst->ainit.mode = AInitModeStart;
 	    inst->ainit.dim = ndim;

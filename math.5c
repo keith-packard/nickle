@@ -870,6 +870,40 @@ extend namespace Math {
 	return arg;
     }
 
+
+    /*
+     * Fast integer logarithm via binary search from below (no division).
+     * Returns floor(log(n)/log(base)) with no rounding error
+     */
+    public int ilog(int base, int n) {
+	if (base <= 1)
+	    raise invalid_argument("ilog of bad base", 0, base);
+	if (n <= 0)
+	    raise invalid_argument("ilog of bad value", 1, n);
+	int below = 0;
+	int above = 1;
+	int k = base;
+	while (k <= n) {
+	    k *= k;
+	    below = above;
+	    above *= 2;
+	}
+	while (true) {
+	    int q = base ** below;
+	    k = base;
+	    int nbelow = 0;
+	    int nabove = 1;
+	    while (q * k <= n) {
+		k *= k;
+		nbelow = nabove;
+		nabove *= 2;
+	    }
+	    if (nbelow == 0)
+		break;
+	    below += nbelow;
+	}
+	return below;
+    }
 }
 
 /* XXX these shouldn't be here, but it was *convenient* */

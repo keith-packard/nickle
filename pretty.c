@@ -160,11 +160,14 @@ PrettyChar (Value f, int c)
 	case '\r':
 	    FilePuts (f, "\\r");
 	    break;
+	case '\b':
+	    FilePuts (f, "\\b");
+	    break;
 	case '\t':
 	    FilePuts (f, "\\t");
 	    break;
-	case '\b':
-	    FilePuts (f, "\\b");
+	case '\f':
+	    FilePuts (f, "\\f");
 	    break;
 	default:
 	    FileOutput (f, '\\');

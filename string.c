@@ -64,6 +64,7 @@ printWidth (char *s)
 	    case '\r':
 	    case '\t':
 	    case '\b':
+	    case '\f':
 		width += 2;
 		break;
 	    default:
@@ -106,11 +107,14 @@ StringPrint (Value f, Value av, char format, int base, int width, int prec, unsi
 		case '\r':
 		    FilePuts (f, "\\r");
 		    break;
+		case '\b':
+		    FilePuts (f, "\\b");
+		    break;
 		case '\t':
 		    FilePuts (f, "\\t");
 		    break;
-		case '\b':
-		    FilePuts (f, "\\b");
+		case '\f':
+		    FilePuts (f, "\\f");
 		    break;
 		default:
 		    FileOutput (f, '\\');

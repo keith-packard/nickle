@@ -41,7 +41,6 @@ NaturalInit (void)
 {
     ENTER ();
 #ifndef LBASE10
-    extern double	log10(double), floor(double);
     int		max_tenpow, i;
 #endif
 

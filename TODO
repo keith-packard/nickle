@@ -1,15 +1,17 @@
 TODO
 
-+ Allow poll() as a substitue for select().
++ Allow poll() as a substitute for select().
 + Allow nick to be built without all the async IO and
   gettimeofday() and the like.
 + Build a small test suite.
 + Finish the manual.
-+ fix output formatting length problems
++ Fix output formatting length problems.
 + Allow multiple instances of ARC4 or PRNG to run simultaneously
   (i.e. encapsulated generators)?
 + Too few array initializers is an error?
-+ tagless GC
++ Tagless GC.
++ Null-safe strings.
++ Array dimension types or something like them?
 
 NOT TODO
 
@@ -24,18 +26,19 @@ DONE
 + Replace nick-in-C code (e.g. gcd.c) with nick library code.
 + "read" file should be "load" file.
 + Make sure all blocks and comments are closed when the
-  reader leaves a file, and before it prints a prompt
+  reader leaves a file, and before it prints a prompt.
 + Finish exception handling.
-+ typedef syntax
-+ : namespace separator
-+ Finish twixt handling
-+ Have '^' call math:pow function
-+ better arctan
-+ shift operators
-+ bitwise operators
-+ add log2 function
-+ xor builtin
-+ deeper typechecking on assignment (of all kinds)
-+ forward declarations of typenames
-+ add file/line numbers to compile errors
-+ Add a PRNG
++ typedef syntax.
++ : namespace separator.
++ Finish twixt handling.
++ Have '^' call math:pow function.
++ Better arctan.
++ Shift operators.
++ Bitwise operators.
++ Add log2 function.
++ XOR builtin.
++ Deeper typechecking on assignment (of all kinds).
++ Forward declarations of typenames.
++ Add file/line numbers to compile errors.
++ Add a PRNG.
++ Rename Strings to String.

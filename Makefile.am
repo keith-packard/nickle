@@ -26,7 +26,7 @@ YFLAGS = -d
 
 CFLAGS = -O -g -Wall -Wpointer-arith -Wstrict-prototypes \
 -Wmissing-prototypes -Wmissing-declarations \
--Wnested-externs-Wall
+-Wnested-externs
 
 builtin.o: builtin.c config.status $(srcdir)/date-sh
 	$(CC) -c -DBUILD=\""`$(srcdir)/date-sh`"\" -I. -I$(srcdir) $(CPPFLAGS) $(CFLAGS) builtin.c

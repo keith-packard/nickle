@@ -26,7 +26,7 @@ terminates statements.  This approach is convenient and does
 not appear to cause problems in normal use.
 .SH SYNTAX
 .PP
-The syntax of \fInickle\fP programs is as follows.
+The syntax of Nickle programs is as follows.
 In this description,
 .B name
 denotes
@@ -38,9 +38,12 @@ expression;
 .B S
 denotes any statement;
 and
-.B array
-denotes any expression which results
-in an array.
+.B T
+denotes any type.
+The syntax
+.B "X,X,...,X"
+denotes one or more comma-separated Xs, unless
+otherwise indicated.
 .\"
 .LP
 C-style comments are enclosed in /* and */,
@@ -49,17 +52,27 @@ denoted by a leading # at the start of a line.
 .\"
 .LP
 Operands:
-.IP
-floating point numbers - can include exponent, need not
+.IP floating point constants
+Can include exponent, need not
 include decimal point or sign.
-.IP
-octal numbers - start with a 0 (e.g., 014 is the same as 12).
-.IP
-hexdecimal numbers - start with "0x" (e.g., 0x1a is the same as 26).
-.IP
-name - a variable reference.
-.IP
-name (E) - a function call.
+Will be treated as exact rationals.
+.IP octal numbers
+Start with a 0 (e.g., 014 is the same as 12).
+.IP hexidecimal numbers
+Start with "0x" (e.g., 0x1a is the same as 26).
+.IP strings
+As in C.  String constants
+are surrounded by double-quotes.  Backslashed
+characters (including double-quotes) stand for themselves, except "\\n"
+stands for newline, "\\r" for carriage return,
+"\\b" for backspace, "\\t" for tab and "\\f" for formfeed.
+.IP name
+A variable reference.
+.IP "name() name(E,E,...,E)"
+A function call with zero or more arguments.
+.PP
+A structured value expression is
+also possible: see VALUES below.
 .\"
 .SH OPERATORS
 Here are the basic Nickle operators, grouped in order
@@ -67,7 +80,7 @@ of increasing precedence:
 .PP
 .IP "(type) E"
 Cast the result of E into this type.
-.IP "array[E] array[E,E,...]"
+.IP "array[E,E,...,E]"
 Refers to the E'th element of this array,
 or the E1'th/E2'th/etc
 element of a multi-dimensional array.
@@ -77,7 +90,7 @@ Structure dereference.
 Structure pointer dereference ala C.
 .PP
 .IP "++ --"
-Increment/Decrement - either postfix or prefix.
+Unary increment/decrement - either postfix or prefix.
 .IP "-"
 Unary negate
 .IP "! E"
@@ -90,15 +103,34 @@ Box dereference.
 Box construction.
 .PP
 .IP "**"
-Exponentiation
+Exponentiation. Both operands may be fractional.
+Left operand must be non-negative unless right
+operand is integral.
 .PP
 .IP "* / // %"
 Times, divide, integer divide, and remainder.
+Right operand of last three must be nonzero.
+Integer division is defined by
+.br
+  x // y == floor(x / y)
+.br
+The sign and value of the remainder is defined
+by
+.br
+  (x // y) * y + (x % y) == x
+.br
 .IP "+ -"
 Addition and subtraction.
 .PP
 .IP "<< >>"
-Bitwise left and right shift.
+Bitwise left and right shift.  Negative
+left operands are considered to be in
+an infinite twos-complement representation
+(i.e., sign-extended to infinity).
+Right shift sign-extends its left operand.
+(What else could it do?)
+Negative right
+operands work as expected.
 .PP
 .IP "<= >= < >"
 Relational operators.
@@ -108,11 +140,16 @@ Equality operators.
 .PP
 Finally, in order of decreasing precedence:
 .IP "&"
-Bitwise AND.
+Bitwise AND.  Negative
+operands are considered to be in
+an infinite twos-complement representation
+(i.e., sign-extended to infinity).
 .IP "^"
-Bitwise XOR.
+Bitwise XOR.  Negative operands
+as in bitwise AND.
 .IP "|"
-Bitwise OR.
+Bitwise OR.  Negative operands
+as in bitwise AND.
 .IP "&&"
 Short-circuit logical AND.
 .IP "||"
@@ -122,40 +159,98 @@ Conditional expression: if first expression
 is logical true, value is second expression,
 else third.
 .IP "= += -= *= /= //= %= **= <<= >>= ^= &= |="
-Assignment operators.  Left-hand side must be
+Assignment operators.  Left-hand-side must be
 assignable.
-.BI x "<op>=" y
+.BI "x " "<op>=" " y"
 is equivalent to
-.BI x "=" x "<op>" y
+.BI "x " "=" " x " "<op>" " y"
 .IP "E , E"
 Returns right-hand expression.
 .\"
-.SH STRUCTURED VALUES
+.SH TYPES
 .PP
-Nickle has several kinds of ``structured value'':
-arrays, structures and disjoint unions.
+The type declaration syntax of Nickle more strongly resembles
+the ``left'' variant of the Java syntax than the C syntax.
+Essentially, a type consists of:
+.IP "poly integer rational real string file semaphore continuation void"
+A base type of the language.  Type void is actually
+only usable in certain contexts, notably function returns.
+Type poly is the supertype of all other types (i.e., it
+can be used to inhibit static type checking), and is the
+default type in most situations where a type need not appear.
+.IP "T[] T[*]"
+A one-dimensional array of type T.  Unlike in C, the dimension of an array
+is never part of its type in Nickle.  Further, arrays and pointers
+are unrelated types in Nickle.  The alternate syntax has the
+same meaning as the standard syntax: see the next paragraph for
+details.
+.IP "T[*,*,...,*]"
+A two or more dimensional array of type T.  The stars ``*'' are not
+optional.  As the previous paragraph
+makes clear, ``T[]'' is not a zero-dimensional array. There
+are no zero-dimensional arrays in Nickle.
+.IP "T0() T0(T,T,...,T)"
+A function returning type T0.  A function accepts 0
+or more arguments.
+.IP "*T"
+A reference (``pointer'') to a location of type T.
+There is no pointer arithmetic in Nickle.  A reference
+may either point to some location or be null (0).  As
+in C, the
+precedence of ``*'' is lower than the precedence of
+``[]'' or ``()'': use parenthesis as needed.
+.IP "struct {T name; T name; ...}"
+A structure with fields of the given name and type.
+The types T are optional: in their absence,
+the type of the field is poly.
+.IP "union {T name; T name; ...}"
+A ``disjoint union'' of the given types.  This
+is more like the variant record type of Pascal
+or the datatype of ML than the C union type: the
+names are tags of the given type, exactly one of
+which applies to a given value at a given time.
+.IP "(T)"
+Parentheses for grouping.
+.PP
+As in C, new type names may be created with the typedef
+statement.  The syntax is
+.br
+  typedef T typename;
+.br
+where T is a Nickle type.  The resulting typename may
+be used anywhere a type is expected.
+.\"
+.SH VALUES
+.PP
+Values of the base types of Nickle are as expected.
+See the syntax for constants above.  Values of
+type file, semaphore, and continuation may currently be
+created only by calls to builtin functions: no Nickle constants
+of these types exist.
+.PP
+As noted in
+TYPES above, Nickle has several kinds of ``structured value'':
+arrays, functions, references, structures and disjoint unions.
 All of these have some common properties.
 When created, all of the component values are
 uninitialized (unless otherwise specified).  Attempts
-to reference an uninitialized value will result
+to use an uninitialized value will result
 in either a compile-time error or a runtime exception.
-An initializer can be specified with any structure
-creation expression.
 .LP
 Arrays:
 .IP "[E]"
 creates a (zero-based) array with E elements.
 E must be non-negative.
-.IP "[E]{V,V,V,...}
+.IP "[E]{V,V,V,...,V}"
 Creates an array with E elements,
 initialized to the Vs.  If there are
 too few initializers, remaining elements
 will remain uninitialized.
-.IP "[*]{V,V,V,...}"
+.IP "[*]{V,V,V,...,V}"
 Creates an initialized array with exactly as
 many elements as initializers.  There
 must be at least one initializer.
-.IP "[E,E,...] [*,*,...]"
+.IP "[E,E,...,E] [*,*,...,*]"
 Creates multidimensional arrays.
 Note that "*" and integer expressions
 cannot be mixed: an array's dimensions
@@ -164,6 +259,46 @@ by the definition.  Array initializers
 for multidimensional arrays are as in C: they
 may either contain extra brackets around each
 dimension, or not, as desired.
+.IP "(T[E]) (T[E,E,...,E]) (T[E]){E,E,...,E}"
+.IP "(T[E,E,...,E]){{E,...},...,{E,...}}"
+Alternate syntax for creating arrays of type T.
+The number of initializers must be less than or equal
+to the given number of elements in each dimension.
+For multidimensional arrays, the extra
+curly brackets per dimension in the initializer
+are required; this is unlike C, where they are
+optional.
+.IP "(T[*]){E,E,...,E} (T[*,*,...,*]){{E,...},...,{E,...}}"
+Creates arrays of type T, with each dimension's size given
+by the maximum number of initializers in any subarray
+in that dimension.
+.LP
+References:
+.IP 0
+The null reference, in contexts where a reference
+is required.
+.IP "&V &A[E,E,...,E] &S.N"
+Creates a reference to given the variable, array element,
+or structure member.  The type of the reference will
+be *T, where T is the type of the referent.
+.IP "*R"
+The value referenced by reference R.  This can
+be viewed or modified as in C.  Unlike in C,
+there is no pointer arithmetic.
+.LP
+Functions:
+.IP "(T func(){S;S;...S;}) (T func(T name,T name,...T name){S;S;...S;})"
+Function expression: denotes a function of zero or more
+formal parameters with the given types and names, returning
+the given result type.  The function body is given by
+the curly-brace-enclosed statement list.  All types are
+optional, and default to poly.
+.IP "T function name(T name,T name,...,T name){S;S;...S;}"
+Defines a function of zero or more arguments.  Syntactic
+sugar for
+.br
+  T(T,T,...T) name = (T func(T name,T name,...T name){S;S;...S;});
+.br
 .LP
 Structures:
 .\"
@@ -223,7 +358,7 @@ implemented as integer numerator and
 natural denominator.
 .IP "double"
 Double precision floating point numbers.  As many computations cannot
-be carried out exactly as rational numbers, \fInickle\fP implements non-precise
+be carried out exactly as rational numbers, Nickle implements non-precise
 arithmetic using normal machine-specific floating point numbers.  A better
 solution would be to compute functional representations of the numbers
 (e.g. sqrt(2) / sin (30) instead of 2.828427).  This is less frequently
@@ -289,42 +424,42 @@ as expected, as does %v to smart-print a value.
 .LP
 There are several other miscelaneous commands availible:
 .IP "quit"
-exit nickle
+Exit Nickle.
 .IP "default <type>"
-specifies a default type for expressions.  With a default type, each
+Specifies a default type for expressions.  With a default type, each
 function that is sumarily created, or each expression typed in at the
 top level will have all computations done with this type.
 .IP "undefine name {,name}"
-removes these names from the system.  If you have accidentally
+Removes these names from the system.  If you have accidentally
 redefined a builtin function, you can "undefine" the new definition and
 recover the old.
 .IP "read \"file\""
-read commands from a file.  
+Read commands from a file.  
 .IP "expr1 # expr2"
-print expr1 in base expr2
+Print expr1 in base expr2 .
 .IP "print name"
 If name is a function, display a formatted version of the function.
 Comments and original formating are lost.  If name is a variable, print the
 current type and value of the variable.
 .IP "edit function or edit file-name"
-Invokes $EDITOR on the named function, or the named file.  In the second
+Invoke $EDITOR on the named function, or the named file.  In the second
 form, any expression with a string value is acceptable.
 .IP "history"
-Displays the 10 most recently printed values.  They can be accessed
+Display the 10 most recently printed values.  They can be accessed
 with \fB$\fP\fIn\fP where \fIn\fP is the number displayed to the
 right of the value in this list.
 .IP "history= \fIboolean-value\fP"
-Specifies whether the history index of printed values should be displayed 
+Specify whether the history index of printed values should be displayed 
 when the value is first printed.
 .IP "history \fIn\fP,\fIm\fP"
-Displays history values n through m.
+Display history values n through m.
 .\"
-.LP
-All function arguments are passed by value except for arrays which
-are always passed by reference. For example (taken from the \fIbc\fP manual:
+.SH EXAMPLES
+.PP
+An example (taken from the \fIbc\fP manual:
 .nf
 
-	function exponent(double x) {
+	double function exponent(double x) {
 		double	a, b, c, i, s;
 
 		a = 1;
@@ -333,7 +468,7 @@ are always passed by reference. For example (taken from the \fIbc\fP manual:
 		for (i = 1;; i++) {
 			a = a * x;
 			b = b * i;
-			c = a/b;
+			c = a / b;
 			if (abs(c) < 1e-6 == 0)
 				return s;
 			s = s + c;

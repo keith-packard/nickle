@@ -57,7 +57,7 @@ public namespace File {
 	    whitespace();
 	    s = "";
 	    while (isnumber (c = File::getc (f)))
-		s = s + Strings::new(c);
+		s = s + String::new(c);
 	    File::ungetc (c, f);
 	    return string_to_real (s);
 	}
@@ -70,7 +70,7 @@ public namespace File {
 	    whitespace();
 	    s = "";
 	    while (!iswhite (c = File::getc(f)))
-		s = s + Strings::new(c);
+		s = s + String::new(c);
 	    File::ungetc (c, f);
 	    return s;
 	}
@@ -79,7 +79,7 @@ public namespace File {
 	int	argc = 0;
 	int	c;
 
-	while (i < Strings::length (format) && !File::end(f) && !File::error(f))
+	while (i < String::length (format) && !File::end(f) && !File::error(f))
 	{
 	    switch (format[i]) {
 	    case ' ':
@@ -142,7 +142,7 @@ public namespace File {
 	    case -1:
 		return s;
 	    default:
-		s = s + Strings::new (c);
+		s = s + String::new (c);
 	    }
 	}
     }

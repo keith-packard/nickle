@@ -429,7 +429,7 @@ static struct nbuiltin nvars[] = {
     { "BSDRandom",  &BSDRandomNamespace },
 #endif
     { "Semaphore",  &SemaphoreNamespace },
-    { "Strings",    &StringNamespace },
+    { "String",    &StringNamespace },
     { "Thread",	    &ThreadNamespace },
     { "Command",    &CommandNamespace },
     { 0,	    0 },

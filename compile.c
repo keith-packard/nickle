@@ -1838,7 +1838,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	break;
     case UNION:
 	if (expr->tree.right)
-	    _CompileExpr (obj, expr->tree.right, True, stat, code);
+	    obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
 	else
 	{
 	    BuildInst (obj, OpConst, inst, stat);

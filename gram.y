@@ -484,6 +484,11 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 		    }
 			OC statements CC
 		    {
+			/*
+			 * close the namespace to non-public lookups
+			 */
+			if (CurrentNamespace != $2)
+			    CurrentNamespace->publish = publish_private;
 			CurrentNamespace = $2;
 			$$ = NewExprTree (NAMESPACE, 
 					  NewExprName (NamespaceFindName (CurrentNamespace, 

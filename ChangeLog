@@ -1,5 +1,10 @@
 2004-06-13  Keith Packard  <keithp@keithp.com>
 
+	* file.5c:
+	Don't open /dev/null until needed for mkchild
+
+2004-06-13  Keith Packard  <keithp@keithp.com>
+
 	* abort.5c:
 	* arc4.5c:
 	* builtin-namespaces.h:

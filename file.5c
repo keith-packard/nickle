@@ -6,7 +6,13 @@
  */
 
 extend namespace File {
-    public stdnull = open("/dev/null", "r+");
+    public file stdnull () { 
+	static bool set = false;
+	static file f;
+	if (!set)
+	    f = open("/dev/null", "r+");
+	return f;
+    }
 
     public typedef union {
 	file input;
@@ -20,7 +26,7 @@ extend namespace File {
 	 * This is what happens when you fork()
 	 */
     {
-	file[3] filter_fds = { stdnull, ... };
+	file[3] filter_fds = { stdnull(), ... };
 	for (int i = 0; i < dim(fds); i++) {
 	    union switch(fds[i]) {
 	    case input f: filter_fds[0] = f; break;

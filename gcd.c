@@ -145,32 +145,103 @@ NaturalGcd (u, v)
     }
     u = NaturalRsl (u, normal);
     v = NaturalRsl (v, normal);
-    if (Odd (v))
+    if (NaturalLength (u) == 1 && NaturalLength (v) == 1)
     {
-	t = u;
-	u = v;
-	v = t;
-    }
-    while (v->length)
-    {
-	vt = NaturalDigits (v);
-	for (i = 0; (match = *vt++) == 0; i += LBASE2)
-	    ;
-	mask = 1;
-	while (!(match & mask))
+	digit	ud = NaturalDigits(u)[0];
+	digit	vd = NaturalDigits(v)[0];
+	digit	td;
+
+	if (vd & 1)
 	{
-	    mask <<= 1;
-	    i++;
+	    td = ud;
+	    ud = vd;
+	    vd = td;
 	}
-	if (i)
-	    gcd_right_shift (v, i);
-	if (NaturalLess (v, u))
+	while (vd)
+	{
+	    while (!(vd&1))
+		vd >>= 1;
+	    if (vd < ud)
+	    {
+		td = ud;
+		ud = vd;
+		vd = td;
+	    }
+	    vd -= ud;
+	}
+	NaturalDigits(u)[0] = ud;
+    }
+    else if (NaturalLength (u) <= 2 && NaturalLength (v) <= 2)
+    {
+	double_digit	ud;
+	double_digit	vd;
+	double_digit	td;
+	
+	ud = NaturalDigits(u)[0];
+	if (NaturalLength (u) == 2)
+	    ud |= ((double_digit) NaturalDigits(u)[1]) << LBASE2;
+	vd = NaturalDigits(v)[0];
+	if (NaturalLength (v) == 2)
+	    vd |= ((double_digit) NaturalDigits(v)[1]) << LBASE2;
+	if (vd & 1)
+	{
+	    td = ud;
+	    ud = vd;
+	    vd = td;
+	}
+	while (vd)
+	{
+	    while (!(vd&1))
+		vd >>= 1;
+	    if (vd < ud)
+	    {
+		td = ud;
+		ud = vd;
+		vd = td;
+	    }
+	    vd -= ud;
+	}
+	td = ud >> LBASE2;
+	if (td)
+	{
+	    if (NaturalLength (u) != 2)
+		u = v;
+	    NaturalDigits(u)[1] = (digit) td;
+	    NaturalLength (u) = 2;
+	}
+	else
+	    NaturalLength (u) = 1;
+	NaturalDigits(u)[0] = (digit) ud;
+    }
+    else
+    {
+	if (Odd (v))
 	{
 	    t = u;
 	    u = v;
 	    v = t;
 	}
-	gcd_subtract (v, u);
+	while (v->length)
+	{
+	    vt = NaturalDigits (v);
+	    for (i = 0; (match = *vt++) == 0; i += LBASE2)
+		;
+	    mask = 1;
+	    while (!(match & mask))
+	    {
+		mask <<= 1;
+		i++;
+	    }
+	    if (i)
+		gcd_right_shift (v, i);
+	    if (NaturalLess (v, u))
+	    {
+		t = u;
+		u = v;
+		v = t;
+	    }
+	    gcd_subtract (v, u);
+	}
     }
     u = NaturalLsl (u, normal);
 #ifdef CHECK

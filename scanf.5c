@@ -226,7 +226,7 @@ extend namespace File {
 
     }
 
-    import FileGlobals;
+    public import FileGlobals;
 }
 
 import File::FileGlobals;

@@ -19,13 +19,17 @@ static Value	NewIntReal (int value);
 Value /* INLINE */
 NewInt (int i)
 {
+    ENTER ();
     unsigned	c = ((unsigned) i) % INT_CACHE_SIZE;
     Value	*ve = &ValueCacheValues(intCache)[c];
     Value	v = *ve;
     
-    if (v && v->ints.value == i)
-	return v;
-    return *ve = NewIntReal (i);
+    if (!v || v->ints.value != i)
+    {
+	v = NewIntReal (i);
+	*ve = v;
+    }
+    RETURN (v);
 }
 
 Value	One, Zero;

@@ -719,8 +719,8 @@ arglist	:	arglist COMMA sexpr
 
 # include	<stdio.h>
 
-ScopePtr    CurrentScope;
-FramePtr    CurrentFrame;
+extern ScopePtr	CurrentScope;
+FramePtr	CurrentFrame;
 
 Value
 lookupVar (char *name)

@@ -120,10 +120,10 @@ void	NaturalCopy (Natural *, Natural *);
 Bool	NaturalZero (Natural *);
 Bool	NaturalEven (Natural *);
 
-Natural	*max_int_natural;
-Natural *max_double_natural;
-Natural	*zero_natural;
-Natural	*one_natural;
+extern Natural	*max_int_natural;
+extern Natural	*max_double_natural;
+extern Natural	*zero_natural;
+extern Natural	*one_natural;
 
 typedef enum _sign { Positive, Negative } Sign;
 

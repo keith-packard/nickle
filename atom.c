@@ -78,7 +78,7 @@ AtomInit (void)
 int
 hash (char *name)
 {
-    register h;
+    int h;
 
     h = 0;
     while (*name)

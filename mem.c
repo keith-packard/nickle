@@ -342,7 +342,7 @@ setReference (void *address)
     register int		dist;
     register int		byte;
     register int		bit;
-    register			index;
+    register int    		index;
     register unsigned char	*map;
     int				old;
 

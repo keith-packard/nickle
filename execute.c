@@ -305,9 +305,9 @@ void
 ThreadCatch (Value thread, Atom exception, int offset)
 {
     ENTER ();
+#if 0
     CatchPtr	catch;
 
-#if 0
     catch = NewCatch (thread->thread.catches, exception, thread->thread.frame,
 		      thread->thread.pc + offset);
     thread->thread.catches = catch;

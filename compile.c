@@ -1654,6 +1654,7 @@ CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
     ENTER ();
     StructType	    *structs = type->structs.structs;
     InstPtr	    inst;
+    ExprPtr	    inits = expr ? expr->tree.left : 0;
     ExprPtr	    init;
     Type	    *mem_type;
     int		    i;
@@ -1664,7 +1665,7 @@ CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
     /*
      * Initialize any elements which were given explicit values
      */
-    for (init = expr->tree.left; init; init = init->tree.right)
+    for (init = inits; init; init = init->tree.right)
     {
         mem_type = StructMemType (structs, init->tree.left->tree.left->atom.atom);
 	if (!mem_type)
@@ -1695,7 +1696,7 @@ CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
     {
 	TypePtr	type = TypeCanon (se[i].type);
 
-	if (!expr->tree.left || !CompileStructInitElementIncluded (expr->tree.left, se[i].name))
+	if (!inits || !CompileStructInitElementIncluded (inits, se[i].name))
 	{
 	    ExprPtr init = CompileImplicitInit (type);
 

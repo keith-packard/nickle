@@ -111,23 +111,23 @@ HistoryDisplay (Value format, Value *from, Value *to)
     {
 	f = IntPart (*from, "bad history value");
 	if (!to)
-	    f = hist->index - f;
+	    f = hist->index + 1 - f;
     }
     if (!to)
-	t = hist->index - 1;
+	t = hist->index;
     else
 	t = IntPart (*to, "bad history value");
     if (!exception)
     {
-	if (f < 0)
-	    f = 0;
-	if (t >= hist->index)
-	    t = hist->index-1;
+	if (f <= 0)
+	    f = 1;
+	if (t > hist->index)
+	    t = hist->index;
 	v[0] = format;
 	while (f <= t) {
-	    fv = NewInt (f + 1);
+	    fv = NewInt (f);
 	    callformat (FileStdout, "$%-4d\t", 1, &fv);
-	    v[1] = hist->array[f];
+	    v[1] = hist->array[f - 1];
 	    doprintf (2, v);
 	    callformat (FileStdout, "\n", 0, 0);
 	    ++f;

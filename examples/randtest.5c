@@ -1,0 +1,14 @@
+/*
+ * Check the PRNG for a balanced low bit
+ * Bart 2001/3
+ */
+
+import PRNG;
+
+int[] function t(int n) {
+  int[] s = (int[2]){0, 0};
+  int i;
+  for (i = 0; i < n; i++)
+    s[randint(2)]++;
+  return s;
+}

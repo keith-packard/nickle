@@ -74,13 +74,10 @@ namespace Miller_Rabin {
   public int function primebits(int n, int d) {
     while (1) {
       int q = PRNG::randbits(n - 1) + 2**(n - 1);
-      while (q < 2**n) {
-        int why = notprime(q, d);
-	if (!why)
-	  return q;
-	q++;
-#	printf("*\n");
-      }
+      int why = notprime(q, d);
+      if (!why)
+        return q;
+#     printf("*\n");
     }
   }
 

@@ -1,0 +1,31 @@
+/*
+ * Demo of RSA implementation
+ * Bart 2001/03
+ */
+
+load "numbers.5c"
+load "rsa.5c"
+load "miller-rabin.5c"
+
+import RSA;
+import Miller_Rabin;
+
+int p = primebits(512, 64);
+printf("p = %d\n", p);
+int q = primebits(512, 64);
+printf("q = %d\n", q);
+int e = primebits(12, 64);
+printf("e = %d\n", e);
+int m = PRNG::randbits(128);
+printf("m = %d\n", m);
+
+set_public_key(p * q, e);
+int c = encrypt(m);
+printf("c = %d\n", c);
+
+set_private_key(p, q, e);
+int m1 = decrypt(c);
+if (m1 == m)
+  printf("decryption successful\n");
+else
+  printf("decryption failed\n");

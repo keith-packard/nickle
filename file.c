@@ -1362,6 +1362,8 @@ FilePutString (Value f, char *string, char format)
 		}
 	    else if (c == '"')
 		FilePuts (f, "\\\"");
+	    else if (c == '\\')
+		FilePuts (f, "\\\\");
 	    else
 	    {
 		char	dest[7];

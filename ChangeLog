@@ -1,5 +1,10 @@
 2004-04-15  Bart Massey  <bart@cs.pdx.edu>
 
+	* file.c: (FilePuts):
+	Handle emitting backslash in quoted string properly.
+	
+2004-04-15  Bart Massey  <bart@cs.pdx.edu>
+
 	* string.5c:
 	Added new string functions _dequote(), dequote(), inchars(),
 	readcsv(), and associated machinery.

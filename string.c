@@ -71,6 +71,8 @@ printWidth (char *s)
 		width += 4;
 		break;
 	    }
+	else if (c == '"')
+	    width += 2;
 	else
 	    width++;
     }
@@ -121,6 +123,8 @@ StringPrint (Value f, Value av, char format, int base, int width, int prec, unsi
 		    Print (f, NewInt (c), 'o', 8, 3, 0, '0');
 		    break;
 		}
+	    else if (c == '"')
+		FilePuts (f, "\\\"");
 	    else
 		FileOutput (f, c);
 	}

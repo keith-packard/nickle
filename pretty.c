@@ -174,6 +174,8 @@ PrettyChar (Value f, int c)
 	    Print (f, NewInt (c), 'o', 8, 3, 0, '0');
 	    break;
 	}
+    else if (c == '\'')
+	FilePuts (f, "\\'");
     else
 	FileOutput (f, c);
     FileOutput (f, '\'');

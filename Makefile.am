@@ -29,6 +29,7 @@ nickle_SOURCES = alarm.c array.c atom.c avl.c box.c \
 	avl.h mem.h memp.h nickle.h opcode.h ref.h stack.h value.h \
 	gram.y lex.l
 nickle_LDADD = -Lbuiltin -lbuiltin
+nickle_DEPENDENCIES = builtin/libbuiltin.a
 
 pkgdata_DATA = builtin.5c $(NICKLEFILES)
 

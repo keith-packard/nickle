@@ -273,6 +273,7 @@ BuiltinInit (void)
     import_Gcd_namespace();
 #endif
     import_Environ_namespace();
+		import_Sockets_namespace();
 
     /* Import builtin strings with predefined values */
     for (s = svars; s->name; s++) {

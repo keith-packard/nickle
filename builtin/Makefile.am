@@ -10,7 +10,7 @@ libbuiltin_a_SOURCES =	builtin.h namespaces.h builtin.c \
 			command.c debug.c environ.c \
 			file.c history.c math.c semaphore.c \
 			string.c thread.c toplevel.c \
-			# bsdrandom.c gcd.c
+			sockets.c # bsdrandom.c gcd.c
 
 builtin.c: ../gram.h
 

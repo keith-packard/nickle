@@ -139,6 +139,13 @@ NewStruct (StructType *type, Bool constant)
 static void
 StructTypeMark (void *object)
 {
+    StructType	    *st = object;
+    StructElement   *se;
+    int		    i;
+
+    se = StructTypeElements (st);
+    for (i = 0; i < nelements; i++)
+	MemReference (st[i].type);
 }
 
 DataType StructTypeType = { StructTypeMark, 0 };

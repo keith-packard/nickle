@@ -61,6 +61,9 @@ extern StackElement StackElt (StackObject *stack, int i);
 			 (STACK_MIN(s) <= STACK_TOP(s) && \
 			  STACK_TOP(s) <= STACK_MAX(s)))
 
+void
+panic (char *, ...);
+
 #define STACK_ASSERT(s)	if (!STACK_VALID(s)) panic ("invalid stack\n");
 #else
 #define STACK_ASSERT(s)

@@ -168,12 +168,12 @@ StackElt (StackObject *stack, int i)
 StackObject *
 StackCopy (StackObject *stack)
 {
-    ENTER ();
     StackObject	*new;
     StackChunk	*chunk, *nchunk, **prev;
 
     STACK_ASSERT (stack);
     new = StackCreate ();
+    REFERENCE (new);
     chunk = stack->current;
     nchunk = new->current;
     prev = &new->current;
@@ -197,11 +197,12 @@ StackCopy (StackObject *stack)
 	 */
 	*prev = nchunk;
 	prev = &nchunk->previous;
+	*prev = 0;
 	chunk = chunk->previous;
 	nchunk = 0;
     }
     STACK_ASSERT (new);
-    RETURN (new);
+    return new;
 }
 
 static void

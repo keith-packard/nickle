@@ -1,3 +1,13 @@
+2004-12-01  Keith Packard  <keithp@keithp.com>
+
+	* stack.c: (StackCopy):
+	Must reference new stack object before allocating chunks
+	lest the collector run and eat our stack.
+	Zero out previous pointer to make sure the stack
+	is valid in case the collector is called.
+	* stack.h:
+	Declare panic when debugging stack problems.
+
 2004-11-30  Keith Packard  <keithp@keithp.com>
 
 	* float.c: (FloatHash):

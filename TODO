@@ -1,10 +1,6 @@
 TODO
 
-+ Finish exception handling.
 + tagless GC
-+ typedef syntax
-+ : namespace separator
-+ Finish twixt handling
 + better arctan
 + Have '^' call math:pow function
 + Allow poll() as a substitue for select().
@@ -29,3 +25,7 @@ DONE
 + "read" file should be "load" file.
 + Make sure all blocks and comments are closed when the
   reader leaves a file, and before it prints a prompt
++ Finish exception handling.
++ typedef syntax
++ : namespace separator
++ Finish twixt handling

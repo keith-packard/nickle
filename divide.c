@@ -384,7 +384,7 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 		}
 		if (carry)
 		{
-#ifdef CHECK
+#ifdef DEBUG
 		    printf ("add back 0x%x\n",
 			    (unsigned int) d);
 		    prs ("a", a);
@@ -393,7 +393,7 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 		    prs ("partial", partial);
 #endif
 		    add (rem, b, offset);
-#ifdef CHECK
+#ifdef DEBUG
 		    prs ("rem", rem);
 #endif
 		    d--;

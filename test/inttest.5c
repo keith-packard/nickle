@@ -1,0 +1,29 @@
+import PRNG;
+
+exception bad_result (int u, int v);
+
+void function int_check (int u, int v)
+{
+    if (v * (u//v) + u%v != u)
+	raise bad_result (u, v);
+}
+
+void function int_random (int ubits, int vbits)
+{
+    int	    u = randbits (ubits);
+    int	    v = randbits (vbits);
+
+    if (!v) v++;
+    int_check (u, v);
+}
+
+void function int_test (int amin, int amax, int bmin, int bmax)
+{
+    int	a, b;
+
+    for (a = amin; a <= amax; a++)
+	for (b = bmin; b <= bmax; b++)
+	    int_random (a, b);
+}
+
+#int_test (2,10000,2,10000);

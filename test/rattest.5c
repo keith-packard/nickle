@@ -1,0 +1,30 @@
+import PRNG;
+
+exception bad_result (int u, rational v);
+
+void function rat_check (int u, int v)
+{
+    if (((u/v) + (v/u)) * ((v*u) / (u**2 + v**2)) != 1)
+	raise bad_result (u, v);
+}
+
+void function rat_random (int ubits, int vbits)
+{
+    int	    u = randbits (ubits);
+    int	    v = randbits (vbits);
+
+    if (!u) u++;
+    if (!v) v++;
+    rat_check (u, v);
+}
+
+void function rat_test (int amin, int amax, int bmin, int bmax)
+{
+    int	a, b;
+
+    for (a = amin; a <= amax; a++)
+	for (b = bmin; b <= bmax; b++)
+	    rat_random (a, b);
+}
+
+#rat_test (2,10000,2,10000);

@@ -343,9 +343,14 @@ Value
 Factorial (Value av)
 {
     ENTER ();
+    Value   tv;
 
-    if (!Zerop (Less (av, One))) RETURN (One);
-    RETURN (Times (av, Factorial (Minus (av, One))));
+    if (exception || !Zerop (Less (av, One))) 
+	RETURN (One);
+    tv = Factorial (Minus (av, One));
+    if (!exception)
+	tv = Times (av, tv);
+    RETURN (tv);
 }
 
 Value

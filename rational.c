@@ -720,6 +720,11 @@ CheckDecimalLength (int prec, Natural *nden, int ibase, int *initial, int *repea
     offset = 0;
     while (!NaturalEqual ((g = NaturalGcd (nden, nbase)), one_natural))
     {
+	if (exception)
+	{
+	    EXIT ();
+	    return;
+	}
 	offset++;
 	nden = NaturalDivide (nden, g, &rem);
     }

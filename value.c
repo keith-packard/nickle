@@ -456,6 +456,36 @@ Pow (Value av, Value bv)
 }
 
 Value
+ShiftL (Value av, Value bv)
+{
+    ENTER ();
+    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    {
+	RaiseError ("non-integer %v << %v\n", av, bv);
+	RETURN (Zero);
+    }
+    if (Negativep (bv))
+	RETURN (ShiftR(av, Negate (bv)));
+    av = Times (av, Pow (NewInt(2), bv));
+    RETURN (av);
+}
+
+Value
+ShiftR (Value av, Value bv)
+{
+    ENTER ();
+    if (!Integralp (av->value.tag) || !Integralp (bv->value.tag))
+    {
+	RaiseError ("non-integer %v >> %v\n", av, bv);
+	RETURN (Zero);
+    }
+    if (Negativep (bv))
+	RETURN (ShiftL(av, Negate (bv)));
+    av = Div (av, Pow (NewInt(2), bv));
+    RETURN (av);
+}
+
+Value
 Gcd (Value av, Value bv)
 {
     ENTER ();

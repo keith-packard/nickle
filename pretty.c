@@ -99,6 +99,8 @@ tokenToPrecedence (int token)
     case ASSIGNMOD:
     case ASSIGNDIV:
     case ASSIGNPOW:
+    case ASSIGNSHIFTL:
+    case ASSIGNSHIFTR:
     case ASSIGNLXOR:
     case ASSIGNLAND:
     case ASSIGNLOR:
@@ -109,32 +111,34 @@ tokenToPrecedence (int token)
 	return 3;
     case AND:
 	return 4;
-    case EQ: case NE:
-	return 5;
-    case LT: case GT: case LE: case GE:
-	return 6;
     case LOR:
-	return 7;
+	return 5;
     case LAND:
-	return 8;
+	return 6;
     case LXOR:
+	return 7;
+    case EQ: case NE:
+	return 8;
+    case LT: case GT: case LE: case GE:
 	return 9;
-    case PLUS: case MINUS:
+    case SHIFTL: case SHIFTR:
 	return 10;
-    case TIMES: case DIVIDE: case MOD: case DIV:
+    case PLUS: case MINUS:
 	return 11;
-    case POW:
+    case TIMES: case DIVIDE: case MOD: case DIV:
 	return 12;
-    case UMINUS: case BANG: case FACT: case LNOT:
+    case POW:
 	return 13;
-    case INC: case DEC:
+    case UMINUS: case BANG: case FACT: case LNOT:
 	return 14;
-    case STAR: case AMPER:
+    case INC: case DEC:
 	return 15;
-    case OS: case CS:
+    case STAR: case AMPER:
 	return 16;
-    default:
+    case OS: case CS:
 	return 17;
+    default:
+	return 18;
     }
 }
 
@@ -245,6 +249,8 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     case MOD:
     case DIV:
     case POW:
+    case SHIFTL:
+    case SHIFTR:
     case LXOR:
     case LAND:
     case LOR:
@@ -263,6 +269,8 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     case ASSIGNDIVIDE:
     case ASSIGNMOD:
     case ASSIGNPOW:
+    case ASSIGNSHIFTL:
+    case ASSIGNSHIFTR:
     case ASSIGNLXOR:
     case ASSIGNLAND:
     case ASSIGNLOR:
@@ -276,6 +284,8 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	case MOD:	FilePuts (f, " % "); break;
 	case DIV:	FilePuts (f, " // "); break;
 	case POW:	FilePuts (f, " ^ "); break;
+	case SHIFTL:	FilePuts (f, " << "); break;
+	case SHIFTR:	FilePuts (f, " >> "); break;
 	case LXOR:	FilePuts (f, " ^^ "); break;
 	case LAND:	FilePuts (f, " & "); break;
 	case LOR:	FilePuts (f, " | "); break;
@@ -295,6 +305,8 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	case ASSIGNMOD:	FilePuts (f, " %= "); break;
 	case ASSIGNDIV:	FilePuts (f, " //= "); break;
 	case ASSIGNPOW:	FilePuts (f, " ^= "); break;
+	case ASSIGNSHIFTL:FilePuts (f, " <<= "); break;
+	case ASSIGNSHIFTR:FilePuts (f, " >>= "); break;
 	case ASSIGNLXOR:FilePuts (f, " ^^= "); break;
 	case ASSIGNLAND:FilePuts (f, " &= "); break;
 	case ASSIGNLOR:	FilePuts (f, " |= "); break;

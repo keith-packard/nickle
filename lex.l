@@ -170,6 +170,8 @@ public		{ yylval.pval = publish_public; return PUBLIC; }
 ">="		{ yylval.ival = GE; return GE; }
 "&&"		{ yylval.ival = AND; return AND; }
 "||"		{ yylval.ival = OR; return OR; }
+"<<"		{ yylval.ival = SHIFTL; return SHIFTL; }
+">>"		{ yylval.ival = SHIFTR; return SHIFTR; }
 "?"		{ yylval.ival = QUEST; return QUEST; }
 ":"		{ yylval.ival = COLON; return COLON; }
 " "		;

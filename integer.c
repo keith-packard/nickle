@@ -199,6 +199,85 @@ IntegerEqual (Value av, Value bv, int expandOk)
     return Zero;
 }
 
+#if 0
+#define DebugN(s,n) { \
+    int	print_width; \
+    FilePuts (FileStdout, s); \
+    FilePuts (FileStdout, " "); \
+    FilePuts (FileStdout, NaturalSprint (0, n, 16, &print_width)); \
+    FilePuts (FileStdout, "\n"); \
+}
+#else
+#define DebugN(s,n)
+#endif
+
+static Value
+IntegerLand (Value av, Value bv, int expandOk)
+{
+    ENTER ();
+    Value	ret;
+    Integer	*a = &av->integer, *b = &bv->integer;
+    Natural	*am = a->mag, *bm = b->mag, *m;
+
+    DebugN("a", am);
+    if (a->sign == Negative)
+    {
+	am = NaturalNegate (am, NaturalLength (bm));
+	DebugN ("-a", am);
+    }
+    DebugN("b", bm);
+    if (b->sign == Negative)
+    {
+	bm = NaturalNegate (bm, NaturalLength (am));
+	DebugN("-b", bm);
+    }
+    m = NaturalLand (am, bm);
+    DebugN("m", m);
+    if (a->sign == Negative && b->sign == Negative)
+    {
+	m = NaturalNegate (m, 0);
+	DebugN("-m", m);
+	ret = NewInteger (Negative, m);
+    }
+    else
+	ret = NewInteger (Positive, m);
+    RETURN (ret);
+}
+
+
+static Value
+IntegerLor (Value av, Value bv, int expandOk)
+{
+    ENTER ();
+    Value	ret;
+    Integer	*a = &av->integer, *b = &bv->integer;
+    Natural	*am = a->mag, *bm = b->mag, *m;
+
+    DebugN("a", am);
+    if (a->sign == Negative)
+    {
+	am = NaturalNegate (am, NaturalLength (bm));
+	DebugN ("-a", am);
+    }
+    DebugN("b", bm);
+    if (b->sign == Negative)
+    {
+	bm = NaturalNegate (bm, NaturalLength (am));
+	DebugN("-b", bm);
+    }
+    m = NaturalLor (am, bm);
+    DebugN("m", m);
+    if (a->sign == Negative || b->sign == Negative)
+    {
+	m = NaturalNegate (m, 0);
+	DebugN("-m", m);
+	ret = NewInteger (Negative, m);
+    }
+    else
+	ret = NewInteger (Positive, m);
+    RETURN (ret);
+}
+
 static Value
 IntegerNegate (Value av, int expandOk)
 {
@@ -296,8 +375,8 @@ ValueType    IntegerType = {
 	IntegerMod,
 	IntegerLess,
 	IntegerEqual,
-	0,
-	0,
+	IntegerLand,
+	IntegerLor,
     },
     {			    /* unary */
 	IntegerNegate,

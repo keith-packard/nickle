@@ -243,6 +243,7 @@ struct fbuiltin_2 funcs_2[] = {
     { do_Thread_set_priority,"set_priority",	    type_integer,   "tn",   &ThreadNamespace },
     { do_File_open,	    "open",		    type_file,	    "ss",   &FileNamespace },
     { do_gcd,		    "gcd",		    type_integer,   "nn"    },
+    { do_xor,		    "xor",		    type_integer,   "ii"    },
     { do_Math_pow,	    "pow",		    type_float,	    "nn",   &MathNamespace },
     { do_Math_assignpow,    "assign_pow",	    type_float,	    "*nn",  &MathNamespace },
     { do_File_putc,	    "putc",		    type_integer,   "nf",   &FileNamespace },
@@ -467,6 +468,7 @@ BuiltinArgTypes (char *format, int *argcp)
 	default:
 	case 'p': t = NewTypesPrim (type_undef); break;
 	case 'n': t = NewTypesPrim (type_float); break;
+	case 'i': t = NewTypesPrim (type_integer); break;
 	case 's': t = NewTypesPrim (type_string); break;
 	case 'f': t = NewTypesPrim (type_file); break;
 	case 't': t = NewTypesPrim (type_thread); break;
@@ -967,6 +969,13 @@ do_gcd (Value a, Value b)
 {
     ENTER ();
     RETURN (Gcd (a, b));
+}
+
+Value
+do_xor (Value a, Value b)
+{
+    ENTER ();
+    RETURN (Lxor (a, b));
 }
 
 Value

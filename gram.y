@@ -62,6 +62,7 @@ void yyerror (char *fmt, ...);
 %type  <eval>	inits arrayinits arrayinit structinits structinit
 
 %token		ASSIGNPLUS ASSIGNMINUS ASSIGNTIMES ASSIGNDIVIDE ASSIGNDIV ASSIGNMOD
+%token		ASSIGNSHIFTL ASSIGNSHIFTR
 %token		ASSIGNPOW ASSIGNLXOR ASSIGNLAND ASSIGNLOR
 %token		VAR EXPR ARRAY STRUCT
 
@@ -90,6 +91,7 @@ void yyerror (char *fmt, ...);
 %left		LAND
 %left		EQ NE
 %left		LT GT LE GE
+%left		SHIFTL SHIFTR
 %left		PLUS MINUS
 %left		TIMES DIVIDE DIV MOD
 %right		POW
@@ -712,6 +714,10 @@ simpleexpr	: primary
 		    { $$ = NewExprTree(MOD, $1, $3); }
 		| simpleexpr POW simpleexpr
 		    { $$ = NewExprTree(POW, $1, $3); }
+		| simpleexpr SHIFTL simpleexpr
+		    { $$ = NewExprTree(SHIFTL, $1, $3); }
+		| simpleexpr SHIFTR simpleexpr
+		    { $$ = NewExprTree(SHIFTR, $1, $3); }
 		| simpleexpr QUEST simpleexpr COLON simpleexpr
 		    { $$ = NewExprTree(QUEST, $1, NewExprTree(COLON, $3, $5)); }
 		| simpleexpr LXOR simpleexpr
@@ -753,6 +759,10 @@ assignop	: PLUS ASSIGN
 		    { $$ = ASSIGNMOD; }
 		| POW ASSIGN
 		    { $$ = ASSIGNPOW; }
+		| SHIFTL ASSIGN
+		    { $$ = ASSIGNSHIFTL; }
+		| SHIFTR ASSIGN
+		    { $$ = ASSIGNSHIFTR; }
 		| LXOR ASSIGN
 		    { $$ = ASSIGNLXOR; }
 		| LAND ASSIGN
@@ -808,6 +818,10 @@ initexpr	: primary
 		    { $$ = NewExprTree(MOD, $1, $3); }
 		| initexpr POW initexpr
 		    { $$ = NewExprTree(POW, $1, $3); }
+		| initexpr SHIFTL initexpr
+		    { $$ = NewExprTree(SHIFTL, $1, $3); }
+		| initexpr SHIFTR initexpr
+		    { $$ = NewExprTree(SHIFTR, $1, $3); }
 		| initexpr QUEST initexpr COLON initexpr
 		    { $$ = NewExprTree(QUEST, $1, NewExprTree(COLON, $3, $5)); }
 		| initexpr LXOR initexpr

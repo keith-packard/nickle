@@ -241,6 +241,21 @@ public namespace Math {
     }
     
     /*
+     * log2(x) = log2(e) * log(x)
+     *
+     * log2(e) = log(e) / log(2) = 1/log(2)
+     */
+    public real function log2 (real a)
+    {
+	static real	loge = 0;
+
+	a = imprecise (a);
+	if (!loge || precision (loge) < precision (a))
+	    loge = 1/log(imprecise (2, precision (a)));
+	return loge * log(a);
+    }
+    
+    /*
      * Calculate pi using the formula:
      *
      *  PI = 24*arctan (1/8) + 8*arctan (1/57) + 4*arctan (1/239);

@@ -1173,11 +1173,15 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	SetPush (obj);
 	obj = _CompileExpr (obj, NewExprTree (COLON, BuildName ("Math"), BuildName ("pow")),
 			    namespace, stat);
-	expr->base.type = NewTypesPrim (type_float);
+	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+					     expr->base.tag,
+					     expr->tree.left->base.type);
 	BuildInst (obj, OpCall, inst, stat);
 	inst->ints.value = 2;
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
+    case SHIFTL:    obj = CompileBinary (obj, expr, namespace, OpShiftL, stat); break;
+    case SHIFTR:    obj = CompileBinary (obj, expr, namespace, OpShiftR, stat); break;
     case QUEST:
 	/*
 	 * a ? b : c
@@ -1269,11 +1273,21 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	SetPush (obj);
 	obj = _CompileExpr (obj, NewExprTree (COLON, BuildName ("Math"), BuildName ("assign_pow")),
 			    namespace, stat);
-	expr->base.type = NewTypesPrim (type_float);
+	expr->base.type = TypeCombineAssign (expr->tree.left->base.type,
+					     expr->base.tag,
+					     expr->tree.right->base.type);
+	if (!expr->base.type)
+	{
+	    CompileError (obj, stat, "Incompatible types in assignment %t = %t",
+			  expr->tree.left->base.type,
+			  expr->tree.right->base.type);
+	}
 	BuildInst (obj, OpCall, inst, stat);
 	inst->ints.value = 2;
 	BuildInst (obj, OpNoop, inst, stat);
 	break;
+    case ASSIGNSHIFTL:	obj = CompileAssign (obj, expr, namespace, OpAssignShiftL, stat); break;
+    case ASSIGNSHIFTR:	obj = CompileAssign (obj, expr, namespace, OpAssignShiftR, stat); break;
     case ASSIGNLXOR:	obj = CompileAssign (obj, expr, namespace, OpAssignLxor, stat); break;
     case ASSIGNLAND:	obj = CompileAssign (obj, expr, namespace, OpAssignLand, stat); break;
     case ASSIGNLOR:	obj = CompileAssign (obj, expr, namespace, OpAssignLor, stat); break;
@@ -1910,6 +1924,8 @@ char *OpNames[] = {
     "Div",
     "Mod",
     "Pow",
+    "ShiftL",
+    "ShiftR",
     "Quest",
     "Colon",
     "Lxor",
@@ -1925,6 +1941,8 @@ char *OpNames[] = {
     "AssignDiv",
     "AssignMod",
     "AssignPow",
+    "AssignShiftL",
+    "AssignShiftR",
     "AssignLxor",
     "AssignLand",
     "AssignLor",

@@ -636,6 +636,12 @@ ThreadStep (Value thread)
     case OpPow: 
 	value = Pow (Stack(stack), value); stack++;
 	break;
+    case OpShiftL:
+	value = ShiftL (Stack(stack), value); stack++;
+	break;
+    case OpShiftR:
+	value = ShiftR (Stack(stack), value); stack++;
+	break;
     case OpLxor: 
 	value = Lxor (Stack(stack), value); stack++;
 	break;
@@ -654,6 +660,8 @@ ThreadStep (Value thread)
     case OpAssignDiv:
     case OpAssignMod:
     case OpAssignPow:
+    case OpAssignShiftL:
+    case OpAssignShiftR:
     case OpAssignLxor:
     case OpAssignLand:
     case OpAssignLor:
@@ -676,6 +684,10 @@ ThreadStep (Value thread)
 	    v = Div (RefValue (value), v); break;
 	case OpAssignMod:
 	    v = Mod (RefValue (value), v); break;
+	case OpAssignShiftL:
+	    v = ShiftL (RefValue (value), v); break;
+	case OpAssignShiftR:
+	    v = ShiftR (RefValue (value), v); break;
 	case OpAssignPow:
 	    v = Pow (RefValue (value), v); break;
 	case OpAssignLxor:

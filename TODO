@@ -29,3 +29,7 @@ DONE
 + Finish twixt handling
 + Have '^' call math:pow function
 + better arctan
++ shift operators
++ bitwise operators
++ add log2 function
++ xor builtin

@@ -309,6 +309,94 @@ NaturalTimes (Natural *a, Natural *b)
 }
 
 Natural *
+NaturalLand (Natural *a, Natural *b)
+{
+    ENTER ();
+    digit	*at, *bt, *rt;
+    Natural	*result;
+    int		resultlen;
+
+    resultlen = length (a);
+    if (resultlen > length(b))
+	resultlen = length(b);
+    at = data(a) + (resultlen-1);
+    bt = data(b) + (resultlen-1);
+    while (resultlen > 0 && (*at & *bt) == 0)
+    {
+	resultlen--;
+	at--;
+	bt--;
+    }
+    if (resultlen == 0)
+	RETURN (zero_natural);
+    result = AllocNatural (resultlen);
+    rt = data(result) + (resultlen-1);
+    while (resultlen-- > 0)
+	*rt-- = *at-- & *bt--;
+    RETURN (result);
+}
+
+Natural *
+NaturalLor (Natural *a, Natural *b)
+{
+    ENTER ();
+    digit	*at, *bt, *rt;
+    Natural	*result;
+    int		resultlen;
+
+    resultlen = length (a);
+    if (resultlen < length(b))
+	resultlen = length(b);
+    if (resultlen == 0)
+	RETURN (zero_natural);
+    result = AllocNatural (resultlen);
+    at = data(a);
+    bt = data(b);
+    rt = data(result);
+    while (resultlen--)
+	*rt++ = *at++ | *bt++;
+    RETURN (result);
+}
+
+Natural *
+NaturalCompliment (Natural *a, int len)
+{
+    ENTER ();
+    digit   *at, *rt;
+    Natural *result;
+    int	    resultlen;
+
+    resultlen = length (a);
+    at = data(a) + (resultlen-1);
+    while (resultlen > 0 && ~*at == 0)
+    {
+	resultlen--;
+	at--;
+    }
+    if (resultlen == 0)
+	RETURN (zero_natural);
+    if (resultlen > len)
+	len = resultlen;
+    result = AllocNatural (len);
+    rt = data(result) + (len-1);
+    while (len > resultlen)
+    {
+	*rt-- = ~0;
+	len--;
+    }
+    while (resultlen-- > 0)
+	*rt-- = ~*at--;
+    RETURN (result);
+}
+
+Natural *
+NaturalNegate (Natural *n, int len)
+{
+    ENTER ();
+    RETURN (NaturalPlus (NaturalCompliment (n, len), one_natural));
+}
+
+Natural *
 NaturalSqrt (Natural *n)
 {
     ENTER ();

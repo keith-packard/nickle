@@ -247,6 +247,16 @@ TypeNumeric (Types *t)
 }
 
 Bool
+TypeIntegral (Types *t)
+{
+    if (t->base.tag != types_prim)
+	return False;
+    if (Integralp (t->prim.prim) || t->prim.prim == type_undef)
+	return True;
+    return False;
+}
+
+Bool
 TypePoly (Types *t)
 {
     if (!t || (t->base.tag == types_prim && t->prim.prim == type_undef))
@@ -362,10 +372,20 @@ TypeCombineAssign (Types *left, int tag, Types *right)
     case ASSIGNDIV:
     case ASSIGNMOD:
     case ASSIGNPOW:
+	if (TypeNumeric (left) && TypeNumeric (right))
+	{
+	    if (left->prim.prim > right->prim.prim)
+		return left;
+	    else
+		return right;
+	}
+	break;
+    case ASSIGNSHIFTL:
+    case ASSIGNSHIFTR:
     case ASSIGNLXOR:
     case ASSIGNLAND:
     case ASSIGNLOR:
-	if (TypeNumeric (left) && TypeNumeric (right))
+	if (TypeIntegral (left) && TypeIntegral (right))
 	{
 	    if (left->prim.prim > right->prim.prim)
 		return left;
@@ -396,14 +416,58 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	if (TypeNumeric (left) && right->base.tag == types_ref)
 	    return right;
     case TIMES:
-    case DIVIDE:
     case DIV:
     case MOD:
+	if (TypeNumeric (left) && TypeNumeric (right))
+	{
+	    if (TypePoly (left) || TypePoly (right))
+		return typesPoly;
+	    if (left->prim.prim > right->prim.prim)
+		return left;
+	    else
+		return right;
+	}
+	break;
     case POW:
+	if (TypeNumeric (left) && TypeNumeric (right))
+	{
+	    if (TypePoly (left) || TypePoly (right))
+		return typesPoly;
+	    if (right->prim.prim >= type_rational)
+	    {
+		if (left->prim.prim < type_float)
+		    return typesPrim[type_float];
+		else
+		    return left;
+	    }
+	    else
+	    {
+		if (left->prim.prim > right->prim.prim)
+		    return left;
+		else
+		    return right;
+	    }
+	}
+	break;
+    case DIVIDE:
+	if (TypeNumeric (left) && TypeNumeric (right))
+	{
+	    if (TypePoly (left) || TypePoly (right))
+		return typesPoly;
+	    if (left->prim.prim > right->prim.prim)
+		right = left;
+	    if (right->prim.prim < type_rational)
+		return typesPrim[type_rational];
+	    else
+		return right;
+	}
+	break;
+    case SHIFTL:
+    case SHIFTR:
     case LXOR:
     case LAND:
     case LOR:
-	if (TypeNumeric (left) && TypeNumeric (right))
+	if (TypeIntegral (left) && TypeIntegral (right))
 	{
 	    if (TypePoly (left) || TypePoly (right))
 		return typesPoly;

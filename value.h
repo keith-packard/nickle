@@ -97,6 +97,10 @@ int	NaturalLess (Natural *, Natural *);
 Natural	*NaturalPlus (Natural *, Natural *);
 Natural *NaturalMinus (Natural *, Natural *);
 Natural *NaturalTimes (Natural *, Natural *);
+Natural *NaturalLand (Natural *, Natural *);
+Natural *NaturalLor (Natural *, Natural *);
+Natural	*NaturalCompliment (Natural *, int len);
+Natural	*NaturalNegate (Natural *, int len);
 Natural	*NaturalDivide (Natural *a, Natural *b, Natural **remp);
 Natural	*NaturalGcd (Natural *a, Natural *b);
 char	*NaturalSprint (char *, Natural *, int base, int *width);
@@ -253,6 +257,7 @@ Bool	TypeEqual (Types *a, Types *b);
 Bool	TypeCompatible (Types *a, Types *b, Bool contains);
 Bool	TypePoly (Types *t);
 Bool	TypeNumeric (Types *t);
+Bool	TypeIntegral (Types *t);
 
 /*
  * storage classes
@@ -611,6 +616,7 @@ Value	Negate (Value), Floor (Value), Ceil (Value);
 Value	Truncate (Value);
 Value	Round (Value);
 Value	Pow (Value, Value), Factorial (Value), Reduce (Value);
+Value	ShiftL (Value, Value), ShiftR (Value, Value);
 Value	Gcd (Value, Value);
 Value	Lxor(Value, Value), Land (Value, Value);
 Value	Lor (Value, Value), Lnot (Value);

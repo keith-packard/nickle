@@ -802,7 +802,7 @@ NaturalMask (Natural *v, int bits)
 	length = v->length;
 	mask = (digit) ~0;
     }
-    while (NaturalDigits(v)[length] == 0)
+    while (NaturalDigits(v)[length - 1] == 0)
     {
 	length--;
 	mask = (digit) ~0;

@@ -1030,6 +1030,7 @@ Value	do_Environ_set (Value, Value);
 Value	do_File_vfprintf (Value, Value, Value);
 Value	do_String_substr (Value, Value, Value);
 Value	do_File_pipe (Value, Value, Value);
+Value	do_File_reopen (Value, Value, Value);
 
 /* four argument builtins */
 Value	do_Command_lex_input (Value file, Value name, Value after, Value interactive);

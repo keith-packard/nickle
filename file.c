@@ -682,6 +682,72 @@ FileFopen (char *name, char *mode, int *errp)
 }
 
 Value
+FileReopen (char *name, char *mode, Value file, int *errp)
+{
+    ENTER ();
+    int	    oflags = 0;
+    int	    flags = 0;
+    int	    fd;
+
+    if (file->file.flags & FileString)
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"Reopen: string file",
+				2, file, Void);
+	RETURN (Void);
+    }
+	
+    switch (mode[0]) {
+    case 'r':
+	if (mode[1] == '+')
+	{
+	    flags |= FileWritable;
+	    oflags = 2;
+	}
+	else
+	    oflags = 0;
+	flags |= FileReadable;
+	break;
+    case 'w':
+	if (mode[1] == '+')
+	{
+	    oflags = 2;
+	    flags |= FileReadable;
+	}
+	else
+	    oflags = 1;
+	oflags |= O_TRUNC|O_CREAT;
+	flags |= FileWritable;
+	break;
+    case 'a':
+	if (mode[1] == '+')
+	{
+	    oflags = 2;
+	    flags |= FileReadable;
+	}
+	else
+	    oflags = 1;
+	oflags |= O_TRUNC|O_CREAT|O_APPEND;
+	flags |= FileWritable;
+	break;
+    }
+    fd = open (name, oflags, 0666);
+    if (fd < 0)
+    {
+	*errp = errno;
+	RETURN (0);
+    }
+    if (dup2 (fd, file->file.fd) < 0)
+    {
+	*errp = errno;
+	close (fd);
+	RETURN (0);
+    }
+    close (fd);
+    RETURN (file);
+}
+
+Value
 FilePopen (char *program, char *argv[], char *mode, int *errp)
 {
     ENTER ();

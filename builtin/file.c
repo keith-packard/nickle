@@ -61,6 +61,7 @@ import_File_namespace()
 
     static const struct fbuiltin_3 funcs_3[] = {
         { do_File_pipe, "pipe", "f", "sA*ss" },
+	{ do_File_reopen, "reopen", "f", "ssf" },
         { 0 }
     };
 
@@ -223,6 +224,30 @@ do_File_pipe (Value file, Value argv, Value mode)
 				FileGetErrorMessage (err),
 				2, FileGetError (err), file);
 	ret = Void;
+    }
+    complete = True;
+    RETURN (ret);
+}
+
+Value
+do_File_reopen (Value name, Value mode, Value file)
+{
+    ENTER ();
+    char	*n, *m;
+    Value	ret;
+    int		err;
+
+    n = StringChars (&name->string);
+    m = StringChars (&mode->string);
+    if (aborting)
+	RETURN (Void);
+    ret = FileReopen (n, m, file, &err);
+    if (!ret)
+    {
+	RaiseStandardException (exception_open_error,
+				FileGetErrorMessage (err),
+				2, FileGetError (err), name);
+	RETURN (Void);
     }
     complete = True;
     RETURN (ret);

@@ -902,6 +902,7 @@ void	FilePutClass (Value f, Class storage, Bool minimal);
 void	FilePutPublish (Value f, Publish publish, Bool minimal);
 void	FilePutType (Value f, Type *t, Bool minimal);
 Value	FileFopen (char *name, char *mode, int *errp);
+Value	FileReopen (char *name, char *mode, Value file, int *errp);
 void	FilePutArgType (Value f, ArgType *at);
 Value	FilePopen (char *program, char *args[], char *mode, int *errp);
 int	FileStatus (Value file);

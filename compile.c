@@ -648,7 +648,17 @@ CompileRaise (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     sym = name->atom.symbol;
 
     if (!sym)
+    {
+	CompileError (obj, stat, "No exception '%A' in scope",
+		      name->atom.atom);
 	RETURN (obj);
+    }
+    if (sym->symbol.class != class_exception)
+    {
+	CompileError (obj, stat, "'%A' is not an exception",
+		      name->atom.atom);
+	RETURN (obj);
+    }
     obj = CompileArgs (obj, &argc, expr->tree.right, stat, code);
     if (!CompileTypecheckArgs (obj, sym->symbol.type, expr->tree.right, argc, stat))
 	RETURN(obj);

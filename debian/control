@@ -1,0 +1,17 @@
+Source: nickle
+Section: interpreters
+Priority: optional
+Maintainer: Jamey Sharp <sharp.one@bigfoot.com>
+Build-Depends: debhelper (>> 3.0.0)
+Standards-Version: 3.5.2
+
+Package: nickle
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Desk calculator language, similar to C.
+ Nickle is a desk calculator language with powerful programming and scripting
+ capabilities.  Nickle supports a variety of datatypes, especially arbitrary
+ precision integers, rationals, and imprecise reals.  The input language
+ vaguely resembles C.  Some things in C which do not translate easily are
+ different, some design choices have been made differently, and a very few
+ features are simply missing.

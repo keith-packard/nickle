@@ -1,0 +1,9 @@
+nickle (1.99.4) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Jamey Sharp <sharp.one@bigfoot.com>  Thu, 26 Jul 2001 22:53:23 -0700
+
+Local variables:
+mode: debian-changelog
+End:

@@ -324,7 +324,12 @@ ThreadArray (Value thread, Bool resizable, int ndim, Type *type)
     dims = AllocateTemp (ndim * sizeof (int));
     for (i = 0; i < ndim; i++)
     {
-	dims[i] = IntPart (Stack(i), "Invalid array dimension");
+	Value	d = Stack(i);
+	dims[i] = IntPart (d, "Invalid array dimension");
+	if (dims[i] < 0)
+	    RaiseStandardException (exception_invalid_argument,
+				    "Negative array dimension", 
+				    2, NewInt (0), d);
 	if (aborting)
 	    RETURN (0);
     }
@@ -343,7 +348,12 @@ ThreadArrayInd (Value thread, Bool resizable, Value dim, Type *type)
     dims = AllocateTemp (ndim * sizeof (int));
     for (i = 0; i < ndim; i++)
     {
-	dims[i] = IntPart (ArrayValueGet(a, i), "Invalid array dimension");
+	Value	d = ArrayValueGet(a, i);
+	dims[i] = IntPart (d, "Invalid array dimension");
+	if (dims[i] < 0)
+	    RaiseStandardException (exception_invalid_argument,
+				    "Negative array dimension", 
+				    2, NewInt (0), d);
 	if (aborting)
 	    RETURN (0);
     }

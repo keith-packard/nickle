@@ -1,3 +1,11 @@
+2004-11-18  Keith Packard  <keithp@keithp.com>
+
+	* examples/sort.5c:
+	Change copyright symbol encoding from Latin-1 to UTF-8
+	* execute.c: (ThreadArray), (ThreadArrayInd):
+	Catch negative array dimensions.
+	Bug discovered by James LaMar
+
 2004-11-15  Keith Packard  <keithp@keithp.com>
 
 	* examples/COPYING:

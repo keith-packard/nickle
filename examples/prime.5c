@@ -117,6 +117,7 @@ namespace Factor {
 	while (i > 1)
 	{
 	    int	factor = one_factor (i);
+	    printf ("%d\n", factor);
 	    result = array_append (result, factor);
 	    i /= factor;
 	}

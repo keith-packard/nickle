@@ -472,6 +472,7 @@ NewThread (FramePtr frame, ObjPtr code)
     ContinuationInit (&ret->thread.continuation);
     ret->thread.continuation.obj = code;
     ret->thread.continuation.pc = ObjCode (code, 0);
+    ret->thread.continuation.frame = frame;
     
     complete = True;
     if (code->error)

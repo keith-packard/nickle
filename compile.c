@@ -1426,7 +1426,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	{
 	    CompileError (obj, stat, "Type '%T' is not a struct or union containing \"%A\"",
 			  expr->tree.left->base.type,
-			  expr->tree.left->atom.atom);
+			  expr->tree.right->atom.atom);
 	    expr->base.type = typesPoly;
 	    break;
 	}
@@ -2304,7 +2304,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 		    code->func.inGlobalInit = True;
 	    }
 	    *initObj = _CompileExpr (*initObj, init, 
-				     True, decls, code);
+				     True, stat, code);
 	    if (code_compile)
 	    {
 		code_compile->func.inStaticInit = False;
@@ -2629,6 +2629,7 @@ ObjDump (ObjPtr obj, int indent)
 {
     int	    i, j;
     InstPtr inst;
+    ExprPtr stat;
     int	    *branch;
     int	    b;
 
@@ -2650,9 +2651,16 @@ ObjDump (ObjPtr obj, int indent)
 	}
     }
     b = 0;
+    stat = 0;
     for (i = 0; i < obj->used; i++)
     {
 	inst = ObjCode(obj, i);
+	if (inst->base.stat != stat)
+	{
+	    FilePrintf (FileStdout, "                                     ");
+	    PrettyStat (FileStdout, inst->base.stat, False);
+	    stat = inst->base.stat;
+	}
 	if (branch[i])
 	    FilePrintf (FileStdout, "L%d:\n", branch[i]);
 	InstDump (inst, indent, i, branch, obj->used);

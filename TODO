@@ -16,6 +16,7 @@ TO THINK ABOUT
   (i.e. encapsulated generators)?
 + Too few array initializers is an error?
 + Array dimension types or something like them?
++ Remove as many 32-bit limits as possible
 + "Better" namespace seperator?
 + Move ellipses to other side of function formal?
 + Add a full scope operator?

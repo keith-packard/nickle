@@ -71,20 +71,12 @@ RETSIGTYPE	stop (int), die (int), segv (int);
 
 static void
 ignoreSignal(int sig) {
-#ifdef HAVE_SIGIGNORE
-    sigignore (sig);
-#else
-    signal (sig, SIG_IGN);
-#endif
+    catchSignal (sig, SIG_IGN);
 }
 
 static void
 releaseSignal(int sig) {
-#ifdef HAVE_SIGRELSE
-    sigrelse (sig);
-#else
-    signal (sig, SIG_DFL);
-#endif
+    catchSignal (sig, SIG_DFL);
 }
 
 /*ARGSUSED*/

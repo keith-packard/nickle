@@ -495,12 +495,15 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 									  $4, True)),
 					  $7);
 		    }
-		| publish IMPORT ignorenl namespacename SEMI
+		| publish IMPORT ignorenl fullname SEMI
 		    {
 			NamePtr	name;
 
-			name = NamespaceFindName (CurrentNamespace, $4, True);
-			if (!name)
+			if ($4->base.tag == COLONCOLON)
+			    name = $4->tree.right->name.name;
+			else
+			    name = $4->name.name;
+			if (!name || !name->symbol)
 			{
 			    yyerror ("non-existant namespace %A", $4);
 			    YYERROR;
@@ -512,7 +515,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			}
 			NamespaceImport (CurrentNamespace, 
 					 name->symbol->namespace.namespace, $1);
-			$$ = NewExprTree (IMPORT, NewExprName (name), 0);
+			$$ = NewExprTree (IMPORT, $4, 0);
 		    }
 		| TRY ignorenl statement catches
 		    { $$ = NewExprTree (CATCH, $3, $4); }

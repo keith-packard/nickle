@@ -126,7 +126,7 @@ ObjPtr	CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
 static Bool
-CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat, Bool complete)
+CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat)
 {
     NamePtr	name;
     SymbolPtr	s;
@@ -136,8 +136,7 @@ CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat, Bool complete)
     
     if (!type)
     {
-	if (complete)
-	    CompileError (obj, stat, "Type missing inside compiler");
+	CompileError (obj, stat, "Type missing inside compiler");
 	return False;
     }
     switch (type->base.tag) {
@@ -162,31 +161,28 @@ CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat, Bool complete)
 	    }
 	    else if (!s->symbol.type)
 	    {
-		if (complete)
-		{
-		    CompileError (obj, stat, "Typedef \"%A\" not defined yet",
-				  name->atom);
-		    ret = False;
-		}
+		CompileError (obj, stat, "Typedef \"%A\" not defined yet",
+			      name->atom);
+		ret = False;
 	    }
 	    else
 	    {
 		type->name.type = s->symbol.type;
-		ret = CompileCanonType (obj, type->name.type, stat, complete);
+		ret = CompileCanonType (obj, type->name.type, stat);
 	    }
 	}
 	break;
     case types_ref:
-    	ret = CompileCanonType (obj, type->ref.ref, stat, complete);
+    	ret = CompileCanonType (obj, type->ref.ref, stat);
 	break;
     case types_func:
 	if (type->func.ret)
-	    ret = CompileCanonType (obj, type->func.ret, stat, complete);
+	    ret = CompileCanonType (obj, type->func.ret, stat);
 	for (arg = type->func.args; arg; arg = arg->next)
-	    ret = ret && CompileCanonType (obj, arg->type, stat, complete);
+	    ret = ret && CompileCanonType (obj, arg->type, stat);
 	break;
     case types_array:
-	ret = CompileCanonType (obj, type->array.type, stat, complete);
+	ret = CompileCanonType (obj, type->array.type, stat);
 	break;
     case types_struct:
     case types_union:
@@ -195,7 +191,7 @@ CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat, Bool complete)
 	    StructElement   *se;
 
 	    se = &StructTypeElements(type->structs.structs)[n];
-	    ret = ret && CompileCanonType (obj, se->type, stat, complete);
+	    ret = ret && CompileCanonType (obj, se->type, stat);
 	}
 	break;
     }
@@ -244,12 +240,12 @@ CompileStorage (SymbolPtr symbol, CodePtr code)
  */
 static SymbolPtr
 CompileNewSymbol (ObjPtr obj, ExprPtr stat, Class class, Types *type, 
-		  NamePtr name, Bool *new)
+		  NamePtr name)
 {
     ENTER ();
     SymbolPtr	s = 0;
     
-    if (CompileCanonType (obj, type, stat, class != class_typedef)) 
+    if (CompileCanonType (obj, type, stat))
     {
 	switch (class) {
 	case class_global:
@@ -262,12 +258,6 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, Class class, Types *type,
 	case class_auto:
 	    s = NewSymbolAuto (name->atom, type);
 	    break;
-	case class_typedef:
-	    s = NewSymbolType (name->atom, type);
-	    break;
-	case class_namespace:
-	    s = NewSymbolNamespace (name->atom);
-	    break;
 	case class_exception:
 	    s = NewSymbolException (name->atom, type);
 	    break;
@@ -275,7 +265,6 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, Class class, Types *type,
 	    break;
 	}
     }
-    *new = s != 0;
     RETURN (s);
 }
 
@@ -289,7 +278,6 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
 {
     ENTER ();
     SymbolPtr   s;
-    Bool	new;
     int		d;
     CodePtr	c;
 
@@ -305,15 +293,12 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
 	if (!s)
 	{
 	    s = CompileNewSymbol (obj, stat, code ? class_auto : class_global,
-				  typesPoly, name, &new);
+				  typesPoly, name);
 	    if (!s)
 		RETURN (0);
-	    if (new)
-	    {
-		CompileStorage (s, code);
-		name->symbol = s;
-		name->publish = publish_private;
-	    }
+	    CompileStorage (s, code);
+	    name->symbol = s;
+	    name->publish = publish_private;
 	}
     }
     /*
@@ -1099,7 +1084,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	}
 
 	catch_type = NewTypesFunc (typesPoly, catch->code.code->base.args);
-	CompileCanonType (obj, catch_type, stat, False);
+	CompileCanonType (obj, catch_type, stat);
 	if (!TypeCompatible (exception->symbol.type, catch_type, True))
 	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in catch",
@@ -1169,7 +1154,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	obj = CompileDecl (obj, expr, evaluate, stat, code);
 	break;
     case NEW:
-	CompileCanonType (obj, expr->base.type, stat, True);
+	CompileCanonType (obj, expr->base.type, stat);
 	t = TypesCanon (expr->base.type);
 	switch (t ? t->base.tag : types_prim) {
 	case types_struct:
@@ -1250,7 +1235,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case UNION:
 	_CompileExpr (obj, expr->tree.right, True, stat, code);
 	SetPush (obj);
-	CompileCanonType (obj, expr->base.type, stat, True);
+	CompileCanonType (obj, expr->base.type, stat);
 	t = TypesCanon (expr->base.type);
 	if (t && t->base.tag == types_union)
 	{
@@ -2076,7 +2061,7 @@ CompileFunc (ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous)
 
     for (args = code->base.args; args; args = args->next)
     {
-        CompileCanonType (obj, args->type, stat, True);
+        CompileCanonType (obj, args->type, stat);
 	if (args->varargs)
 	{
 	    type = NewTypesArray (args->type,
@@ -2126,7 +2111,6 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
     CodePtr	    code_compile = 0;
     ObjPtr	    *initObj;
     Bool	    initialize = False;
-    Bool	    new;
     
     class = decls->decl.class;
     if (class == class_undef)
@@ -2167,9 +2151,12 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
     }
     for (decl = decls->decl.decl; decl; decl = decl->next) {
 	s = CompileNewSymbol (obj, decls, class, decls->decl.type,
-			      decl->name, &new);
+			      decl->name);
 	if (!s)
 	    break;
+	decl->name->symbol = s;
+	decl->name->publish = decls->decl.publish;
+	CompileStorage (s, code);
 	/*
 	 * Compile initializers in two steps
 	 * compile the expression before placing the
@@ -2196,12 +2183,6 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	    }
 	    SetPush (*initObj);
 	    initialize = True;
-	}
-	if (new)
-	{
-	    decl->name->symbol = s;
-	    decl->name->publish = decls->decl.publish;
-	    CompileStorage (s, code);
 	}
 	if (initialize)
 	{

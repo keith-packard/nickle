@@ -528,90 +528,50 @@ NewFactor (Natural *prime, int power, FactorPtr next)
     RETURN (f);
 }
 
-static Natural *
-NaturalMod (Natural *n, Natural *m)
+static FactorPtr 
+GenerateFactors (Natural *n, Natural *max)
 {
     ENTER ();
-    Natural *rem;
+    FactorPtr	f = 0;
+    Natural	*p;
+    Natural	*largest;
+    Natural	*d, *rem;
 
-    (void) NaturalDivide (n, m, &rem);
-    RETURN (rem);
-}
-
-#define evenp(n)    ((NaturalDigits(n)[0] & 1) == 0)
-
-static Bool
-IsPrime (Natural *n)
-{
-    Natural *lim;
-    Natural *v;
-
-    if (evenp (n))
-	return 0;
-    lim = NaturalSqrt (n);
-    for (v = NewNatural (3); 
-	 !NaturalLess (lim, v); 
-	 v = NaturalPlus (v, two_natural))
+    p = 0;
+    largest = NaturalSqrt (n);
+    while (!NaturalEqual (n, one_natural))
     {
-	if (NaturalZero (NaturalMod (n, v)))
-	    return 0;
-    }
-    return 1;
-}
-
-static Natural *
-NextPrime (Natural *n)
-{
-    if (NaturalEqual (n, two_natural))
-	return NewNatural (3);
-    do
-    {
-	n = NaturalPlus (n, two_natural);
-    } while (!IsPrime (n));
-    return n;
-}
-
-static FactorPtr
-GenerateFactors (Natural *n, Natural *p, Natural *max)
-{
-    ENTER ();
-    Natural	*rem, *d;
-    int		power;
-    FactorPtr	factors;
-
-    if (NaturalEqual (n, one_natural))
-	RETURN(0);
-    power = 0;
-    for (;;)
-    {
-	d = NaturalDivide (n, p, &rem);
-	if (aborting)
-	    RETURN (0);
-	if (NaturalZero (rem))
+        int power = 1;
+	for (;;)
 	{
-	    power++;
-	    n = d;
-	}
-	else
-	{
-	    if (power)
-	    {
-		factors = NewFactor (p, power, 
-				     GenerateFactors (n, NextPrime (p), max));
-		break;
-	    }
+	    if (!p)
+		p = two_natural;
+	    else if (NaturalEqual (p, two_natural))
+		p = NewNatural (3);
 	    else
-	    {
-		p = NextPrime (p);
-		if (max && NaturalLess (max, p))
-		{
-		    factors = 0;
-		    break;
-		}
-	    }
+		p = NaturalPlus (p, two_natural);
+	    
+	    d = NaturalDivide (n, p, &rem);
+	    if (NaturalZero (rem))
+		break;
+	    if (max && NaturalLess (max, p))
+		RETURN(f);
+	    if (NaturalLess (largest, p))
+		RETURN (NewFactor (n, 1, f));
 	}
+	n = d;
+	for (;;)
+	{
+	    d = NaturalDivide (n, p, &rem);
+	    if (!NaturalZero (rem))
+		break;
+	    n = d;
+	    power++;
+	}
+	f = NewFactor (p, power, f);
+	largest = NaturalSqrt (n);
     }
-    RETURN (factors);
+    RETURN (f);
 }
 
 static Natural *
@@ -689,7 +649,7 @@ RationalRepeatLength (int prec, Natural *nden, int ibase)
     }
     else
     {
-	factors = GenerateFactors (ndigits, two_natural, max);
+	factors = GenerateFactors (ndigits, max);
 	if (aborting)
 	    return 0;
 	factor = one_natural;

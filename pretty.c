@@ -708,15 +708,19 @@ void
 doPrettyPrint (Value f, NamePtr name, int level, Bool nest);
     
 static void
+PrintNames (Value f, NamePtr name, int level)
+{
+    if (!name)
+	return;
+    PrintNames (f, name->next, level);
+    if (name->symbol && name->publish == publish_public)
+	doPrettyPrint (f, name, level, False);
+}
+
+static void
 PrintNamespace (Value f, NamespacePtr namespace, int level)
 {
-    NamePtr name;
-
-    for (name = namespace->names; name; name = name->next)
-    {
-	if (name->symbol && name->publish == publish_public)
-	    doPrettyPrint (f, name, level, False);
-    }
+    PrintNames (f, namespace->names, level);
 }
 
 void
@@ -741,7 +745,7 @@ doPrettyPrint (Value f, NamePtr name, int level, Bool nest)
 	}
 	else
 	{
-	    FilePrintf (f, "(%T) %v", sym->symbol.type, v);
+	    FilePrintf (f, "%T %A = %v;", sym->symbol.type, name->atom, v);
 	}
 	FilePuts (f, "\n");
 	break;

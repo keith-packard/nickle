@@ -119,19 +119,20 @@ ObjPtr	CompileDecl (ObjPtr obj, ExprPtr decls, Bool evaluate, ExprPtr stat, Code
 ObjPtr	CompileFuncCode (CodePtr code, ExprPtr stat, CodePtr previous);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
-static void
+static Bool
 CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat, Bool complete)
 {
     NamePtr	name;
     SymbolPtr	s;
     ArgType	*arg;
     int		n;
+    Bool	ret = True;
     
     if (!type)
     {
 	if (complete)
 	    CompileError (obj, stat, "Type missing inside compiler");
-	return;
+	return False;
     }
     switch (type->base.tag) {
     case types_prim:
@@ -142,35 +143,44 @@ CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat, Bool complete)
 	    name = TypeNameName (type);
 	    s = name->symbol;
 	    if (!s)
+	    {
 		CompileError (obj, stat, "No typedef \"%A\" in namespace",
 			      name->atom);
+		ret = False;
+	    }
 	    else if (s->symbol.class != class_typedef)
+	    {
 		CompileError (obj, stat, "Symbol \"%A\" not a typedef",
 			      name->atom);
+		ret = False;
+	    }
 	    else if (!s->symbol.type)
 	    {
 		if (complete)
+		{
 		    CompileError (obj, stat, "Typedef \"%A\" not defined yet",
 				  name->atom);
+		    ret = False;
+		}
 	    }
 	    else
 	    {
 		type->name.type = s->symbol.type;
-		CompileCanonType (obj, type->name.type, stat, complete);
+		ret = CompileCanonType (obj, type->name.type, stat, complete);
 	    }
 	}
 	break;
     case types_ref:
-    	CompileCanonType (obj, type->ref.ref, stat, complete);
+    	ret = CompileCanonType (obj, type->ref.ref, stat, complete);
 	break;
     case types_func:
 	if (type->func.ret)
-	    CompileCanonType (obj, type->func.ret, stat, complete);
+	    ret = CompileCanonType (obj, type->func.ret, stat, complete);
 	for (arg = type->func.args; arg; arg = arg->next)
-	    CompileCanonType (obj, arg->type, stat, complete);
+	    ret = ret && CompileCanonType (obj, arg->type, stat, complete);
 	break;
     case types_array:
-	CompileCanonType (obj, type->array.type, stat, complete);
+	ret = CompileCanonType (obj, type->array.type, stat, complete);
 	break;
     case types_struct:
     case types_union:
@@ -179,10 +189,11 @@ CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat, Bool complete)
 	    StructElement   *se;
 
 	    se = &StructTypeElements(type->structs.structs)[n];
-	    CompileCanonType (obj, se->type, stat, complete);
+	    ret = ret && CompileCanonType (obj, se->type, stat, complete);
 	}
 	break;
     }
+    return ret;
 }
 
 /*
@@ -247,34 +258,34 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, Class class, Types *type,
     }
     if (!s)
     {
-	switch (class) {
-	case class_global:
-	    s = NewSymbolGlobal (name->atom, type);
-	    break;
-	case class_static:
-	    s = NewSymbolStatic (name->atom, type);
-	    break;
-	case class_arg:
-	case class_auto:
-	    s = NewSymbolAuto (name->atom, type);
-	    break;
-	case class_typedef:
-	    s = NewSymbolType (name->atom, type);
-	    break;
-	case class_namespace:
-	    s = NewSymbolNamespace (name->atom);
-	    break;
-	case class_exception:
-	    s = NewSymbolException (name->atom, type);
-	    break;
-	default:
-	    s = 0;
-	    break;
+	if (CompileCanonType (obj, type, stat, class != class_typedef)) 
+	{
+	    switch (class) {
+	    case class_global:
+		s = NewSymbolGlobal (name->atom, type);
+		break;
+	    case class_static:
+		s = NewSymbolStatic (name->atom, type);
+		break;
+	    case class_arg:
+	    case class_auto:
+		s = NewSymbolAuto (name->atom, type);
+		break;
+	    case class_typedef:
+		s = NewSymbolType (name->atom, type);
+		break;
+	    case class_namespace:
+		s = NewSymbolNamespace (name->atom);
+		break;
+	    case class_exception:
+		s = NewSymbolException (name->atom, type);
+		break;
+	    default:
+		break;
+	    }
 	}
 	*new = s != 0;
     }
-    if (class != class_namespace)
-	CompileCanonType (obj, type, stat, class != class_typedef);
     RETURN (s);
 }
 
@@ -304,6 +315,8 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
 	{
 	    s = CompileNewSymbol (obj, stat, code ? class_auto : class_global,
 				  typesPoly, name, &new);
+	    if (!s)
+		RETURN (0);
 	    if (new)
 	    {
 		

@@ -15,6 +15,7 @@
 #include	<errno.h>
 #include	"nickle.h"
 #include	"ref.h"
+#include	"gram.h"
 
 #ifdef O_NONBLOCK
 #define NOBLOCK	O_NONBLOCK
@@ -733,6 +734,24 @@ FilePutDimensions (Value f, ExprPtr dims)
     }
 }
 
+static void
+FilePutTypename (Value f, ExprPtr e)
+{
+    switch (e->base.tag) {
+    case COLONCOLON:
+	if (e->tree.left)
+	{
+	    FilePutTypename (f, e->tree.left);
+	    FilePuts (f, "::");
+	}
+	FilePutTypename (f, e->tree.right);
+	break;
+    case NAME:
+	FilePuts (f, AtomName (e->name.name->atom));
+	break;
+    }
+}
+
 void
 FilePutTypes (Value f, Types *t, Bool minimal)
 {
@@ -754,7 +773,7 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	    spaceit = False;
 	break;
     case types_name:
-	FilePuts (f, AtomName (TypeNameName (t)->atom));
+	FilePutTypename (f, t->name.expr);
 	break;
     case types_ref:
 	FilePuts (f, "*");

@@ -147,7 +147,7 @@ CompileCanonType (ObjPtr obj, TypesPtr type, ExprPtr stat, Bool complete)
 	if (!type->name.type)
 	{
 	    name = TypeNameName (type);
-	    s = name->symbol;
+	    s = NameSymbol (name);
 	    if (!s)
 	    {
 		CompileError (obj, stat, "No typedef \"%A\" in namespace",
@@ -249,51 +249,33 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, Class class, Types *type,
     ENTER ();
     SymbolPtr	s = 0;
     
-    if (class == class_typedef)
+    if (CompileCanonType (obj, type, stat, class != class_typedef)) 
     {
-	s = name->symbol;
-	if (s)
-	{
-	    if (s->symbol.class == class_typedef &&
-		s->symbol.type == 0)
-	    {
-		*new = False;
-		s->symbol.type = type;
-	    }
-	    else
-		s = 0;
+	switch (class) {
+	case class_global:
+	    s = NewSymbolGlobal (name->atom, type);
+	    break;
+	case class_static:
+	    s = NewSymbolStatic (name->atom, type);
+	    break;
+	case class_arg:
+	case class_auto:
+	    s = NewSymbolAuto (name->atom, type);
+	    break;
+	case class_typedef:
+	    s = NewSymbolType (name->atom, type);
+	    break;
+	case class_namespace:
+	    s = NewSymbolNamespace (name->atom);
+	    break;
+	case class_exception:
+	    s = NewSymbolException (name->atom, type);
+	    break;
+	default:
+	    break;
 	}
     }
-    if (!s)
-    {
-	if (CompileCanonType (obj, type, stat, class != class_typedef)) 
-	{
-	    switch (class) {
-	    case class_global:
-		s = NewSymbolGlobal (name->atom, type);
-		break;
-	    case class_static:
-		s = NewSymbolStatic (name->atom, type);
-		break;
-	    case class_arg:
-	    case class_auto:
-		s = NewSymbolAuto (name->atom, type);
-		break;
-	    case class_typedef:
-		s = NewSymbolType (name->atom, type);
-		break;
-	    case class_namespace:
-		s = NewSymbolNamespace (name->atom);
-		break;
-	    case class_exception:
-		s = NewSymbolException (name->atom, type);
-		break;
-	    default:
-		break;
-	    }
-	}
-	*new = s != 0;
-    }
+    *new = s != 0;
     RETURN (s);
 }
 
@@ -311,7 +293,7 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamePtr name, CodePtr code,
     int		d;
     CodePtr	c;
 
-    s = name->symbol;
+    s = NameSymbol (name);
     if (!s)
     {
 	if (!createIfNecessary)

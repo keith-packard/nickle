@@ -36,10 +36,11 @@ NewNamespace (NamespacePtr previous)
 static void
 NameMark (void *object)
 {
-    NamePtr   chain = object;
+    NamePtr   name = object;
 
-    MemReference (chain->next);
-    MemReference (chain->symbol);
+    MemReference (name->next);
+    MemReference (name->ref);
+    MemReference (name->symbol);
 }
 
 DataType nameType = { NameMark, 0 };
@@ -53,8 +54,24 @@ NewName (NamePtr next, Atom atom)
     name = ALLOCATE (&nameType, sizeof (Name));
     name->next = next;
     name->atom = atom;
+    name->ref = 0;
     name->symbol = 0;
     RETURN (name);
+}
+
+SymbolPtr
+NameSymbol (NamePtr name)
+{
+    SymbolPtr	s;
+
+    if (!(s = name->symbol))
+    {
+	if (name->ref)
+	    s = NameSymbol (name->ref);
+	if (s)
+	    name->symbol = s;
+    }
+    return s;
 }
 
 NamespacePtr	GlobalNamespace, CurrentNamespace;
@@ -88,7 +105,7 @@ NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search)
 	for (name = namespace->names; name; name = name->next)
 	    if (name->atom == atom &&
 		(namespace->publish == publish_public ||
-		 (name->symbol && name->publish == publish_public)))
+		 (NameSymbol (name) && name->publish == publish_public)))
 		return name;
 	namespace = namespace->previous;
     } while (search && namespace);
@@ -135,10 +152,12 @@ NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish)
 
     for (old = import->names; old; old = old->next)
     {
-	if (old->symbol && old->publish == publish_public)
+	if (old->publish == publish_public)
 	{
 	    new = NamespaceNewName (namespace, old->atom);
-	    new->symbol = old->symbol;
+	    new->symbol = NameSymbol (old);
+	    if (!new->symbol)
+		new->ref = old;
 	    new->publish = publish;
 	}
     }
@@ -231,7 +250,7 @@ NamespaceLocate (Value names, NamespacePtr *namespacep, NamePtr *namep)
 	name = NamespaceFindName (s, AtomId (StringChars (&string->string)),
 				  search);
 	search = False;
-	if (!name || ! (sym = name->symbol))
+	if (!name || ! (sym = NameSymbol (name)))
 	{
 	    FilePrintf (FileStdout, "No symbol \"%s\" in scope\n",
 			StringChars (&string->string));

@@ -66,11 +66,12 @@ extern SymbolPtr    NewSymbolAuto (Atom name, Types *type);
 extern SymbolPtr    NewSymbolNamespace (Atom name);
 
 typedef struct _name {
-    DataType	    *data;
-    struct _name    *next;
-    Atom	    atom;
-    SymbolPtr	    symbol;
-    Publish	    publish;
+    DataType	*data;
+    NamePtr	next;
+    Atom	atom;
+    NamePtr	ref;    /* if true, imported before defined */
+    SymbolPtr	symbol;
+    Publish	publish;
 } Name;
 
 typedef struct _namespace {
@@ -81,6 +82,7 @@ typedef struct _namespace {
 } Namespace;
 
 NamePtr		NewName (NamePtr next, Atom atom);
+SymbolPtr	NameSymbol (NamePtr name);
 NamespacePtr	NewNamespace (NamespacePtr previous);
 NamePtr		NamespaceFindName (NamespacePtr namespace, Atom atom, Bool search);
 NamePtr		NamespaceNewName (NamespacePtr namespace, Atom atom);

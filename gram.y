@@ -312,17 +312,17 @@ namespace	: namespace NAMESPACENAME COLONCOLON
 			    name = e->tree.right->name.name;
 			else
 			    name = e->name.name;
-			if (!name || !name->symbol)
+			if (!name || !NameSymbol (name))
 			{
 			    yyerror ("non-existant namespace \"%A\"", $2);
 			    YYERROR;
 			}
-			else if (name->symbol->symbol.class != class_namespace)
+			else if (NameSymbol (name)->symbol.class != class_namespace)
 			{
 			    yyerror ("%A is not a namespace", $2);
 			    YYERROR;
 			}
-			LexNamespace = name->symbol->namespace.namespace;
+			LexNamespace = NameSymbol (name)->namespace.namespace;
 			$$ = e;
 		    }
 		| NAMESPACENAME COLONCOLON
@@ -335,17 +335,17 @@ namespace	: namespace NAMESPACENAME COLONCOLON
 			    name = e->tree.right->name.name;
 			else
 			    name = e->name.name;
-			if (!name || !name->symbol)
+			if (!name || !NameSymbol (name))
 			{
 			    yyerror ("non-existant namespace \"%A\"", $1);
 			    YYERROR;
 			}
-			else if (name->symbol->symbol.class != class_namespace)
+			else if (NameSymbol (name)->symbol.class != class_namespace)
 			{
 			    yyerror ("%A is not a namespace", $1);
 			    YYERROR;
 			}
-			LexNamespace = name->symbol->namespace.namespace;
+			LexNamespace = NameSymbol (name)->namespace.namespace;
 			$$ = e;
 		    }
 		;
@@ -444,14 +444,14 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 
 			for (decl = $5; decl; decl = decl->next)
 			{
-			    if (decl->name->symbol)
+			    if (NameSymbol (decl->name))
 			    {
-				if (decl->name->symbol->symbol.type)
+				if (NameSymbol (decl->name)->symbol.type)
 				{
 				    yyerror ("redefinition of typedef %A", decl->name->atom);
 				    YYERROR;
 				}
-				decl->name->symbol->symbol.type = $4;
+				NameSymbol (decl->name)->symbol.type = $4;
 			    }
 			    else
 				decl->name->symbol = NewSymbolType (decl->name->atom, $4);
@@ -464,22 +464,27 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			NamePtr	    name = 0;
 			Publish	    publish = $1;
 			
+			/*
+			 * this is a hack - save the current namespace
+			 * on the parser stack to be restored after
+			 * the block is compiled.
+			 */
 			$2 = CurrentNamespace;
 			if (publish == publish_extend)
 			{
 			    name = NamespaceFindName (CurrentNamespace, $4, True);
-			    if (!name || !name->symbol)
+			    if (!name || !NameSymbol (name))
 			    {
 				yyerror ("non-existant namespace %A", $4);
 				YYERROR;
 			    }
-			    else if (name->symbol->symbol.class != class_namespace)
+			    else if (NameSymbol (name)->symbol.class != class_namespace)
 			    {
 				yyerror ("%A is not a namespace", $4);
 				YYERROR;
 			    }
 			    else
-				CurrentNamespace = name->symbol->namespace.namespace;
+				CurrentNamespace = NameSymbol (name)->namespace.namespace;
 			}
 			else
 			{
@@ -489,6 +494,12 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			    name->symbol->namespace.namespace = CurrentNamespace;
 			    name->publish = publish;
 			}
+			/*
+			 * Make all of the symbols visible while compiling within
+			 * the namespace
+			 */
+			if (CurrentNamespace != $2)
+			    CurrentNamespace->publish = publish_public;
 		    }
 			OC statements CC
 		    {
@@ -497,6 +508,10 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			 */
 			if (CurrentNamespace != $2)
 			    CurrentNamespace->publish = publish_private;
+			/*
+			 * Restore to the namespace saved on
+			 * the parser stack
+			 */
 			CurrentNamespace = $2;
 			$$ = NewExprTree (NAMESPACE, 
 					  NewExprName (NamespaceFindName (CurrentNamespace, 
@@ -511,18 +526,18 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			    name = $4->tree.right->name.name;
 			else
 			    name = $4->name.name;
-			if (!name || !name->symbol)
+			if (!name || !NameSymbol (name))
 			{
 			    yyerror ("non-existant namespace %A", $4);
 			    YYERROR;
 			}
-			else if (name->symbol->symbol.class != class_namespace)
+			else if (NameSymbol (name)->symbol.class != class_namespace)
 			{
 			    yyerror ("%A is not a namespace", $4);
 			    YYERROR;
 			}
 			NamespaceImport (CurrentNamespace, 
-					 name->symbol->namespace.namespace, $1);
+					 NameSymbol (name)->namespace.namespace, $1);
 			$$ = NewExprTree (IMPORT, $4, 0);
 		    }
 		| TRY ignorenl statement catches
@@ -600,7 +615,7 @@ newtypename	: TYPENAME
 
 			name = NamespaceFindName (CurrentNamespace, $1, False);
 			if (!name || 
-			    (name->symbol && name->symbol->symbol.type))
+			    (NameSymbol (name) && NameSymbol (name)->symbol.type))
 			    name = NamespaceNewName (CurrentNamespace, $1);
 			$$ = name;
 		    }
@@ -609,7 +624,7 @@ newtypename	: TYPENAME
 			NamePtr	name;
 
 			name = NamespaceFindName (CurrentNamespace, $1, False);
-			if (!name || name->symbol)
+			if (!name || NameSymbol (name))
 			    name = NamespaceNewName (CurrentNamespace, $1); 
 			$$ = name;
 		    }
@@ -1123,8 +1138,8 @@ lookupVar (char *n)
     NamePtr	name;
 
     name = NamespaceFindName (CurrentNamespace, AtomId (n), True);
-    if (name && name->symbol && name->symbol->symbol.class == class_global)
-	v = BoxValue (name->symbol->global.value, 0);
+    if (name && NameSymbol (name) && NameSymbol (name)->symbol.class == class_global)
+	v = BoxValue (NameSymbol (name)->global.value, 0);
     else
 	v = Zero;
     RETURN (v);
@@ -1142,7 +1157,7 @@ setVar (NamespacePtr namespace, char *n, Value v, Types *type)
     name = NamespaceFindName (namespace, atom, True);
     if (!name)
 	name = NamespaceNewName (namespace, atom);
-    if (!name->symbol)
+    if (!NameSymbol (name))
     {
 	name->symbol = NewSymbolGlobal (atom, type);
 	name->publish = publish_private;
@@ -1172,8 +1187,8 @@ BuildName (char *ns, char *n)
     if (ns)
     {
 	ns_name = NamespaceFindName (namespace, AtomId (ns), search);
-	if (ns_name && ns_name->symbol && ns_name->symbol->symbol.class == class_namespace)
-	    namespace = ns_name->symbol->namespace.namespace;
+	if (ns_name && NameSymbol (ns_name) && NameSymbol (ns_name)->symbol.class == class_namespace)
+	    namespace = NameSymbol (ns_name)->namespace.namespace;
 	else
 	    namespace = 0;
 	search = False;
@@ -1234,9 +1249,9 @@ BuildFullname (ExprPtr left, Atom atom)
     if (left)
     {
 	if (left->base.tag == COLONCOLON)
-	    sym = left->tree.right->name.name->symbol;
+	    sym = NameSymbol (left->tree.right->name.name);
 	else
-	    sym = left->name.name->symbol;
+	    sym = NameSymbol (left->name.name);
     }
     else
 	sym = 0;

@@ -117,6 +117,26 @@ ObjPtr	_CompileFuncCode (CodePtr code, ScopePtr scope, ExprPtr stat);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
 SymbolPtr
+AddSymbol (ScopePtr scope, Atom name, Type defType)
+{
+    ENTER ();
+    SymbolPtr	s;
+    switch (scope->type) {
+    case ScopeGlobal:
+	s = NewSymbolGlobal (name, defType);
+	break;
+    case ScopeFrame:
+	s = NewSymbolAuto (name, defType);
+	break;
+    case ScopeStatic:
+	s = NewSymbolStatic (name, defType);
+	break;
+    }
+    ScopeAddSymbol (scope, s);
+    RETURN (s);
+}
+
+SymbolPtr
 FindSymbol (ObjPtr obj, ExprPtr stat, ScopePtr scope, Atom name, int *depth, Type defType, Bool force)
 {
     ENTER ();
@@ -127,19 +147,8 @@ FindSymbol (ObjPtr obj, ExprPtr stat, ScopePtr scope, Atom name, int *depth, Typ
     {
 	if (scope->type != ScopeGlobal && !force)
 	    CompileError (obj, stat, "No symbol \"%A\" in scope", name);
-	switch (scope->type) {
-	case ScopeGlobal:
-	    s = NewSymbolGlobal (name, defType);
-	    break;
-	case ScopeFrame:
-	    s = NewSymbolAuto (name, defType);
-	    break;
-	case ScopeStatic:
-	    s = NewSymbolStatic (name, defType);
-	    break;
-	}
+	s = AddSymbol (scope, name, defType);
 	*depth = 0;
-	ScopeAddSymbol (scope, s);
     }
     RETURN (s);
 }
@@ -163,6 +172,8 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 {
     ENTER ();
     InstPtr inst;
+    SymbolPtr s;
+    int	i;
     
     switch (expr->base.tag) {
     case NAME:
@@ -171,9 +182,23 @@ _CompileLvalue (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 				     &inst->var.staticLink, type_undef, False);
 	break;
     case DOT:
-	obj = _CompileExpr (obj, expr->tree.left, scope, stat);
-	BuildInst (obj, OpDotRef, inst, stat);
-	inst->atom.atom = expr->tree.right->atom.atom;
+	/*
+	 * Yurg -- check for scope reference
+	 */
+	if (expr->tree.left->base.tag == NAME &&
+	    (s = FindSymbol (obj, stat, scope, expr->tree.left->atom.atom,
+			     &i, type_undef, False)) &&
+	    s->symbol.class == class_scope)
+	{
+	    obj = _CompileLvalue (obj, expr->tree.right,
+				  s->scope.scope, stat);
+	}
+	else
+	{
+	    obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+	    BuildInst (obj, OpDotRef, inst, stat);
+	    inst->atom.atom = expr->tree.right->atom.atom;
+	}
 	break;
     case ARROW:
 	obj = _CompileExpr (obj, expr->tree.left, scope, stat);
@@ -424,6 +449,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
     int	    i;
     int	    test_inst, middle_inst;
     InstPtr inst;
+    SymbolPtr	s;
     
     switch (expr->base.tag) {
     case NAME:
@@ -470,9 +496,24 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr stat)
 	obj = _CompileCall (obj, expr, scope, stat);
 	break;
     case DOT:
-	obj = _CompileExpr (obj, expr->tree.left, scope, stat);
-	BuildInst (obj, OpDot, inst, stat);
-	inst->atom.atom = expr->tree.right->atom.atom;
+	/*
+	 * Yurg -- check for scope reference
+	 */
+	if (expr->tree.left->base.tag == NAME &&
+	    (s = FindSymbol (obj, stat, scope, 
+			     expr->tree.left->atom.atom,
+			     &i, type_undef, False)) &&
+	    s->symbol.class == class_scope)
+	{
+	    obj = _CompileExpr (obj, expr->tree.right,
+				s->scope.scope, stat);
+	}
+	else
+	{
+	    obj = _CompileExpr (obj, expr->tree.left, scope, stat);
+	    BuildInst (obj, OpDot, inst, stat);
+	    inst->atom.atom = expr->tree.right->atom.atom;
+	}
 	break;
     case ARROW:
 	obj = _CompileExpr (obj, expr->tree.left, scope, stat);
@@ -844,10 +885,40 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 	 */
 	FindSymbol (obj, expr, scope, expr->tree.left->atom.atom,
 		    &top_inst, type_func, True);
+	/* 
+	 * if declared in some enclosing scope, redeclare here
+	 */
+	if (top_inst != 0)
+	    AddSymbol (scope, expr->tree.left->atom.atom, type_func);
 	obj = _CompileAssign (obj, expr, scope, OpAssign, expr);
 	break;
     case VAR:
 	obj = _CompileDecl (obj, expr, scope);
+	break;
+    case SCOPE:
+	scope = NewScope (scope, scope->type);
+	markGlobal = NewSymbolScope (expr->tree.left->atom.atom,
+				     scope);
+	expr = expr->tree.right;
+	while (expr->tree.left)
+	{
+	    obj = _CompileStat (obj, expr->tree.left, scope);
+	    expr = expr->tree.right;
+	}
+	ScopeAddSymbol (scope->previous, markGlobal);
+	scope->previous = 0;
+	break;
+    case IMPORT:
+	markGlobal = FindSymbol (obj, expr, scope,
+				 expr->tree.left->atom.atom,
+				 &top_inst, type_undef, False);
+	if (markGlobal && markGlobal->symbol.class == class_scope)
+	{
+	    markGlobal->scope.scope->previous = scope;
+	    obj = _CompileStat (obj, expr->tree.right,
+				markGlobal->scope.scope);
+	    markGlobal->scope.scope->previous = 0;
+	}
 	break;
     }
     RETURN (obj);

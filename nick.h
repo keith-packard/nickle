@@ -79,6 +79,11 @@ typedef struct _symbolStruct {
     StructType	*type;
 } SymbolStruct;
 
+typedef struct _symbolScope {
+    SymbolBase	symbol;
+    ScopePtr	scope;
+} SymbolScope;
+
 typedef union _symbol {
     SymbolBase	    symbol;
 #if 0
@@ -87,6 +92,7 @@ typedef union _symbol {
     SymbolGlobal    global;
     SymbolLocal	    local;
     SymbolStruct    structs;
+    SymbolScope	    scope;
 } Symbol;
 
 #if 0
@@ -97,6 +103,7 @@ extern SymbolPtr    NewSymbolArg (Atom name, Type type);
 extern SymbolPtr    NewSymbolStatic (Atom name, Type type);
 extern SymbolPtr    NewSymbolAuto (Atom name, Type type);
 extern SymbolPtr    NewSymbolStruct (Atom name, StructType *type);
+extern SymbolPtr    NewSymbolScope (Atom name, ScopePtr scope);
 
 typedef enum _scopeType {
     ScopeGlobal, ScopeStatic, ScopeFrame,

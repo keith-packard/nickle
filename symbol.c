@@ -59,12 +59,22 @@ SymbolStructMark (void *object)
     MemReference (ss->type);
 }
 
+static void
+SymbolScopeMark (void *object)
+{
+    SymbolScope	    *ss = object;
+
+    MemReference (ss->symbol.next);
+    MemReference (ss->scope);
+}
+
 #if 0
 DataType    SymbolTypeType = { SymbolTypeMark, 0 };
 #endif
 DataType    SymbolGlobalType = { SymbolGlobalMark, 0 };
 DataType    SymbolLocalType = { SymbolLocalMark, 0 };
 DataType    SymbolStructType = { SymbolStructMark, 0 };
+DataType    SymbolScopeType = { SymbolScopeMark, 0 };
 
 SymbolPtr
 NewSymbolGlobal (Atom name, Type type)
@@ -135,6 +145,20 @@ NewSymbolStruct (Atom name, StructType *type)
     s->symbol.class = class_struct;
     s->symbol.type = type_struct;
     s->structs.type = type;
+    RETURN (s);
+}
+
+SymbolPtr
+NewSymbolScope (Atom name, ScopePtr scope)
+{
+    ENTER ();
+    SymbolPtr	s;
+
+    s = ALLOCATE (&SymbolScopeType, sizeof (SymbolScope));
+    s->symbol.name = name;
+    s->symbol.class = class_scope;
+    s->symbol.type = type_undef;
+    s->scope.scope = scope;
     RETURN (s);
 }
 

@@ -164,7 +164,8 @@ typedef enum _type {
  */
 
 typedef enum _class {
-    class_global, class_static, class_arg, class_auto, class_struct, class_undef,
+    class_global, class_static, class_arg, class_auto, 
+    class_struct, class_scope, class_undef,
 } Class;
 
 typedef struct _valueType   ValueType;

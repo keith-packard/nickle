@@ -86,7 +86,7 @@ NewMemList (DeclListPtr names, Type type, MemListPtr next)
 %token <vval>	CONST
 %token <ival>	NL ALL DOWN UP
 %token <ival>	QUIT READ SHELL EDIT DEFAULT UNDEFINE HISTORY PRINT
-%token <ival>	WHILE IF ELSE FOR DO BREAK CONTINUE EXPR RETURNTOK
+%token <ival>	WHILE IF ELSE FOR DO BREAK CONTINUE EXPR RETURNTOK SCOPE IMPORT
 %token <ival>	FORK
 %token <ival>	OP CP OC CC COMMA SEMI DOLLAR
 %token <ival>	VAR
@@ -410,6 +410,18 @@ stat	:	IF ignorenl OP expr CP stat
 			}
 	|	var_def SEMI
 			{ $$ = $1; }
+	|	SCOPE ignorenl NAME OC statlist CC
+			{
+			    $$ = NewExprTree (SCOPE,
+					      NewExprAtom ($3),
+					      $5);
+			}
+	|	IMPORT ignorenl NAME stat
+			{
+			    $$ = NewExprTree (IMPORT,
+					      NewExprAtom ($3),
+					      $4);
+			}
 	;
 ignorenl:	{ ignorenl = 1; }
 fbody	:	o_type OP ofargs CP OC statlist CC

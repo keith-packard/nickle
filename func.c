@@ -37,7 +37,7 @@ HasVarargs (ArgType *args)
 }
 
 CodePtr
-NewFuncCode (Types *type, ArgType *args, ExprPtr code)
+NewFuncCode (Type *type, ArgType *args, ExprPtr code)
 {
     ENTER ();
     CodePtr	fc;
@@ -76,7 +76,7 @@ static void MarkBuiltinCode (void *object)
 DataType BuiltinCodeType = { MarkBuiltinCode, 0 };
 
 CodePtr
-NewBuiltinCode (Types *type, ArgType *args, int argc, 
+NewBuiltinCode (Type *type, ArgType *args, int argc, 
 		BuiltinFunc builtin, Bool needsNext)
 {
     ENTER ();
@@ -115,9 +115,9 @@ FuncPrint (Value f, Value av, char format, int base, int width, int prec, unsign
     return True;
 }
 
-ValueType   FuncType = {
+ValueRep   FuncRep = {
     { FuncMark, 0 },	/* base */
-    type_func,		/* tag */
+    rep_func,		/* tag */
     {			/* binary */
 	0,
 	0,
@@ -147,7 +147,7 @@ NewFunc (CodePtr code, FramePtr staticLink)
     ENTER ();
     Value	    ret;
 
-    ret = ALLOCATE (&FuncType.data, sizeof (Func));
+    ret = ALLOCATE (&FuncRep.data, sizeof (Func));
     ret->func.code = code;
     ret->func.staticLink = staticLink;
     ret->func.statics = 0;

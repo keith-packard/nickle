@@ -175,7 +175,7 @@ FileErrorMap   fileErrorMap[] = {
 
 #define NUM_FILE_ERRORS	(sizeof (fileErrorMap) / sizeof (fileErrorMap[0]))
 
-Types	*typesFileError;
+Type	*typeFileError;
 
 static int
 FileInitErrors (void)
@@ -190,11 +190,11 @@ FileInitErrors (void)
     for (i = 0; i < NUM_FILE_ERRORS; i++)
     {
 	fileErrorMap[i].atom = AtomId (fileErrorMap[i].name);
-	se[i].type = typesEnum;
+	se[i].type = typeEnum;
 	se[i].name = fileErrorMap[i].atom;
     }
-    typesFileError = NewTypesUnion (st, True);
-    MemAddRoot (typesFileError);
+    typeFileError = NewTypeUnion (st, True);
+    MemAddRoot (typeFileError);
     EXIT ();
     return 1;
 }
@@ -222,7 +222,7 @@ FileGetError (int err)
 	    break;
     if (i == NUM_FILE_ERRORS)
 	i = 0;	    /* XXX weird error */
-    ret = NewUnion (typesFileError->structs.structs, True);
+    ret = NewUnion (typeFileError->structs.structs, True);
     ret->unions.tag = fileErrorMap[i].atom;
     BoxValueSet (ret->unions.value,0,Void);
     RETURN (ret);
@@ -258,9 +258,9 @@ FilePrint (Value f, Value av, char format, int base, int width, int prec, unsign
     return True;
 }
 
-ValueType FileType = {
+ValueRep FileRep = {
     { FileMark, FileFree },
-    type_file, 
+    rep_file, 
     {
 	0, 0, 0, 0, 0, 0,
 	0, ValueEqual, 0, 0,
@@ -279,7 +279,7 @@ NewFile (int fd)
     ENTER ();
     Value   ret;
 
-    ret = ALLOCATE (&FileType.data, sizeof (File));
+    ret = ALLOCATE (&FileRep.data, sizeof (File));
     ret->file.next = 0;
     ret->file.fd = fd;
     ret->file.pid = 0;
@@ -922,62 +922,62 @@ FilePutString (Value f, char *string, char format)
 }
 
 void
-FilePutType (Value f, Type tag, Bool minimal)
+FilePutRep (Value f, Rep tag, Bool minimal)
 {
     switch (tag) {
-    case type_undef:
+    case rep_undef:
 	if (!minimal)
 	    FilePuts (f, "poly");
 	break;
-    case type_int:
-    case type_integer:
+    case rep_int:
+    case rep_integer:
 	FilePuts (f, "int");
 	break;
-    case type_rational:
+    case rep_rational:
 	FilePuts (f, "rational");
 	break;
-    case type_float:
+    case rep_float:
 	FilePuts (f, "real");
 	break;
-    case type_string:
+    case rep_string:
 	FilePuts (f, "string");
 	break;
-    case type_file:
+    case rep_file:
 	FilePuts (f, "file");
 	break;
-    case type_thread:
+    case rep_thread:
 	FilePuts (f, "thread");
 	break;
-    case type_semaphore:
+    case rep_semaphore:
 	FilePuts (f, "semaphore");
 	break;
-    case type_continuation:
+    case rep_continuation:
 	FilePuts (f, "continuation");
 	break;
-    case type_bool:
+    case rep_bool:
 	FilePuts (f, "bool");
 	break;
-    case type_void:
+    case rep_void:
 	FilePuts (f, "void");
 	break;
 	
-    case type_array:
+    case rep_array:
 	FilePuts (f, "array");
 	break;
-    case type_ref:
+    case rep_ref:
 	FilePuts (f, "ref");
 	break;
-    case type_struct:
+    case rep_struct:
 	FilePuts (f, "struct");
 	break;
-    case type_func:
+    case rep_func:
 	FilePuts (f, "function");
 	break;
     default:
 	FilePrintf (f, "bad type %d", tag);
 	break;
     }
-    if (minimal && tag != type_undef)
+    if (minimal && tag != rep_undef)
 	FilePuts (f, " ");
 }
 
@@ -1041,13 +1041,13 @@ FilePutPublish (Value f, Publish publish, Bool minimal)
 }
 
 void
-FilePutArgTypes (Value f, ArgType *at)
+FilePutArgType (Value f, ArgType *at)
 {
     FilePuts (f, "(");
     while (at)
     {
 	if (at->type)
-	    FilePutTypes (f, at->type, at->name != 0);
+	    FilePutType (f, at->type, at->name != 0);
 	if (at->name)
 	    FilePuts (f, AtomName (at->name));
 	if (at->varargs)
@@ -1093,7 +1093,7 @@ FilePutTypename (Value f, ExprPtr e)
 }
 
 void
-FilePutTypes (Value f, Types *t, Bool minimal)
+FilePutType (Value f, Type *t, Bool minimal)
 {
     int		    i;
     StructType	    *st;
@@ -1106,31 +1106,31 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	return;
     }
     switch (t->base.tag) {
-    case types_prim:
-	if (t->prim.prim != type_undef || !minimal)
-	    FilePutType (f, t->prim.prim, False);
+    case type_prim:
+	if (t->prim.prim != rep_undef || !minimal)
+	    FilePutRep (f, t->prim.prim, False);
 	else
 	    spaceit = False;
 	break;
-    case types_name:
+    case type_name:
 	FilePutTypename (f, t->name.expr);
 	break;
-    case types_ref:
+    case type_ref:
 	FilePuts (f, "*");
-	FilePutTypes (f, t->ref.ref, False);
+	FilePutType (f, t->ref.ref, False);
 	break;
-    case types_func:
-	FilePutTypes (f, t->func.ret, False);
-	FilePutArgTypes (f, t->func.args);
+    case type_func:
+	FilePutType (f, t->func.ret, False);
+	FilePutArgType (f, t->func.args);
 	break;
-    case types_array:
-	FilePutTypes (f, t->array.type, False);
+    case type_array:
+	FilePutType (f, t->array.type, False);
 	FilePuts (f, "[");
 	FilePutDimensions (f, t->array.dimensions);
 	FilePuts (f, "]");
 	break;
-    case types_struct:
-    case types_union:
+    case type_struct:
+    case type_union:
 	if (t->structs.enumeration)
 	{
 	    FilePuts (f, "enum { ");
@@ -1147,7 +1147,7 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	}
 	else
 	{
-	    if (t->base.tag == types_struct)
+	    if (t->base.tag == type_struct)
 		FilePuts (f, "struct { ");
 	    else
 		FilePuts (f, "union { ");
@@ -1155,10 +1155,10 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	    se = StructTypeElements (st);
 	    for (i = 0; i < st->nelements; i++)
 	    {
-		if (se[i].type == typesEnum)
+		if (se[i].type == typeEnum)
 		    FilePuts (f, "enum ");
 		else
-		    FilePutTypes (f, se[i].type, se[i].name != 0);
+		    FilePutType (f, se[i].type, se[i].name != 0);
 		if (se[i].name)
 		    FilePuts (f, AtomName (se[i].name));
 		FilePuts (f, "; ");
@@ -1277,10 +1277,10 @@ FileVPrintf (Value file, char *fmt, va_list args)
 		(void) FilePuts (file, AtomName (va_arg (args, Atom)));
 		break;
 	    case 't':
-		FilePutTypes (file, va_arg (args, Types *), True);
+		FilePutType (file, va_arg (args, Type *), True);
 		break;
 	    case 'T':
-		FilePutTypes (file, va_arg (args, Types *), False);
+		FilePutType (file, va_arg (args, Type *), False);
 		break;
 	    case 'k':	/* sic */
 		FilePutClass (file, (Class) (va_arg (args, int)), True);

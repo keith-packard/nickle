@@ -25,10 +25,10 @@ typedef enum _CanonTypeResult {
 } CanonTypeResult;
     
 static CanonTypeResult
-ParseCanonType (TypesPtr type, Bool forwardAllowed);
+ParseCanonType (TypePtr type, Bool forwardAllowed);
 
 static SymbolPtr
-ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
+ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 
 %}
 
@@ -36,9 +36,8 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
     int		    ints;
     Value	    value;
     Class	    class;
-    Type	    type;
     ArgType	    *argType;
-    Types	    *types;
+    Type	    *type;
     Publish	    publish;
     ExprPtr	    expr;
     Atom	    atom;
@@ -69,7 +68,7 @@ ParseNewSymbol (Publish publish, Class class, Types *type, Atom name);
 %type  <atom>	    typename
 %type  <expr>	    opt_init
 %type  <fulltype>   decl next_decl
-%type  <types>	    opt_type type opt_type_or_enum
+%type  <type>	    opt_type type opt_type_or_enum
 %type  <expr>	    opt_stars stars
 %type  <type>	    basetype
 %type  <expr>	    dims
@@ -423,8 +422,8 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			SymbolPtr   symbol = decl->symbol;
 			Class	    class = $1.type.class;
 			Publish	    publish = $1.type.publish;
-			TypesPtr    type = $1.type.type;
-			TypesPtr    ret = type->func.ret;
+			TypePtr	    type = $1.type.type;
+			TypePtr	    ret = type->func.ret;
 			ArgType	    *argType = type->func.args;
 
 			if (symbol)
@@ -450,11 +449,11 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			decl = NewDeclList ($4, 0, 0);
 			decl->symbol = ParseNewSymbol ($1, 
 						       class_exception, 
-						       typesPoly, $4);
+						       typePoly, $4);
 			$$ = NewExprDecl (EXCEPTION,
 					  decl,
 					  class_exception,
-					  NewTypesFunc (typesPoly, $6),
+					  NewTypeFunc (typePoly, $6),
 					  $1);
 		    }
 		| RAISE fullname OP opt_exprs CP SEMI
@@ -574,7 +573,7 @@ catches		:   catch catches
 		    { $$ = 0; }
 		;
 catch		: CATCH fullname namespace_start args block namespace_end
-		    { $$ = NewExprCode (NewFuncCode (typesPrim[type_void], $4, $5), $2); }
+		    { $$ = NewExprCode (NewFuncCode (typePrim[rep_void], $4, $5), $2); }
 		;
 func_body    	: { ++funcDepth; } block { --funcDepth; $$ = $2; }
 		| SEMI
@@ -672,7 +671,7 @@ func_decl	: func_name namespace_start opt_argdefines CP
 		    {
 			NamespacePtr	save = CurrentNamespace;
 			SymbolPtr	symbol;
-			Types		*type = NewTypesFunc ($1.type.type, $3);
+			Type		*type = NewTypeFunc ($1.type.type, $3);
 			/*
 			 * namespace_start pushed a new namespace, make sure
 			 * this symbol is placed in the original namespace
@@ -702,16 +701,16 @@ func_decl	: func_name namespace_start opt_argdefines CP
 			$$.type.type = type;
 		    }
 		;
-func_name	: decl NAME OP ignorenl
+func_name	: decl NAME OP
 		    { $$.type = $1; $$.decl = NewDeclList ($2, 0, 0); }
-		| decl FUNCTION NAME OP ignorenl
+		| decl FUNCTION NAME OP
 		    { $$.type = $1; $$.decl = NewDeclList ($3, 0, 0); }
-		| FUNCTION NAME OP ignorenl
+		| FUNCTION ignorenl NAME OP
 		    { 
 			$$.type.publish = publish_private;
 			$$.type.class = class_undef;
-			$$.type.type = typesPoly;
-			$$.decl = NewDeclList ($2, 0, 0); 
+			$$.type.type = typePoly;
+			$$.decl = NewDeclList ($3, 0, 0); 
 		    }
 		;
 opt_init	: ASSIGN simpleexpr
@@ -727,45 +726,35 @@ opt_init	: ASSIGN simpleexpr
 		    { $$ = 0; }
 		;
 /*
-* Full declaration including storage, type and publication
-opt_decl	: decl
-		|
-		    { $$.publish = publish_private; $$.class = class_undef; $$.type = typesPoly; }
-		;
-*/
-decl		: publish class type
+ * Full declaration including storage, type and publication
+ */
+decl		: publish class type ignorenl opt_nl
 		    { $$.publish = $1; $$.class = $2; $$.type = $3; }
-		| class type
+		| class type ignorenl opt_nl
 		    { $$.publish = publish_private; $$.class = $1; $$.type = $2; }
-		| publish type
+		| publish type ignorenl opt_nl
 		    { $$.publish = $1; $$.class = class_undef; $$.type = $2; }
-		| type
+		| type ignorenl opt_nl
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = $1; }
-		| publish class
-		    { $$.publish = $1; $$.class = $2; $$.type = typesPoly; }
-		| class
-		    { $$.publish = publish_private; $$.class = $1; $$.type = typesPoly; }
-		| publish
-		    { $$.publish = $1; $$.class = class_undef; $$.type = typesPoly; }
+		| publish class ignorenl opt_nl
+		    { $$.publish = $1; $$.class = $2; $$.type = typePoly; }
+		| class ignorenl opt_nl
+		    { $$.publish = publish_private; $$.class = $1; $$.type = typePoly; }
+		| publish ignorenl opt_nl
+		    { $$.publish = $1; $$.class = class_undef; $$.type = typePoly; }
 		;
 /*
-* Type declarations
-*/
+ * Type declarations
+ */
 type		: basetype
-		    {
-			if ($1 == type_undef) 
-			    $$ = typesPoly;
-			else
-			    $$ = typesPrim[$1]; 
-		    }
 		| TIMES type			%prec STAR
-		    { $$ = NewTypesRef ($2); }
+		    { $$ = NewTypeRef ($2); }
 		| type opt_argdecls		%prec CALL
-		    { $$ = NewTypesFunc ($1, $2); }
+		    { $$ = NewTypeFunc ($1, $2); }
 		| type OS opt_stars CS
-		    { $$ = NewTypesArray ($1, $3); }
+		    { $$ = NewTypeArray ($1, $3); }
 		| type OS dims CS
-		    { $$ = NewTypesArray ($1, $3); }
+		    { $$ = NewTypeArray ($1, $3); }
 		| STRUCT OC struct_members CC
 		    {
 			AtomListPtr	al;
@@ -792,7 +781,7 @@ type		: basetype
 				nelements++;
 			    }
 			}
-			$$ = NewTypesStruct (st);
+			$$ = NewTypeStruct (st);
 		    }
 		| UNION OC union_members CC
 		    {
@@ -820,7 +809,7 @@ type		: basetype
 				nelements++;
 			    }
 			}
-			$$ = NewTypesUnion (st, False);
+			$$ = NewTypeUnion (st, False);
 		    }
 		| ENUM OC atoms CC
 		    {
@@ -838,21 +827,21 @@ type		: basetype
 			nelements = 0;
 			for (al = $3; al; al = al->next)
 			{
-			    se[nelements].type = typesEnum;
+			    se[nelements].type = typeEnum;
 			    se[nelements].name = al->atom;
 			    nelements++;
 			}
-			$$ = NewTypesUnion (st, True);
+			$$ = NewTypeUnion (st, True);
 		    }
 			    
 		| OP type CP
 		    { $$ = $2; }
 		| fulltype
-		    { $$ = NewTypesName ($1, 0); }
+		    { $$ = NewTypeName ($1, 0); }
 		;
 opt_type	: type
 		|
-		    { $$ = typesPoly; }
+		    { $$ = typePoly; }
 		;
 basetype    	: POLY
 		| INTEGER
@@ -896,9 +885,9 @@ union_members	: opt_type_or_enum atoms SEMI union_members
 		;
 opt_type_or_enum: type
 		| ENUM
-		    { $$ = typesEnum; }
+		    { $$ = typeEnum; }
 		|
-		    { $$ = typesPoly; }
+		    { $$ = typePoly; }
 		;
 /*
 * Declaration modifiers
@@ -957,7 +946,7 @@ args		: OP opt_argdefines CP
 opt_argdefines	: argdefines
 		    {
 			ArgType	*args;
-			Types	*type;
+			Type	*type;
 
 			for (args = $1; args; args = args->next)
 			{
@@ -966,11 +955,11 @@ opt_argdefines	: argdefines
 				break;
 			    if (args->varargs)
 			    {
-				type = NewTypesArray (type,
-						      NewExprTree (COMMA,
-								   NewExprConst (TEN_NUM, 
-										 NewInt (0)),
-								   0));
+				type = NewTypeArray (type,
+						     NewExprTree (COMMA,
+								  NewExprConst (TEN_NUM, 
+										NewInt (0)),
+								  0));
 			    }
 			    args->symbol = ParseNewSymbol (publish_private,
 							   class_arg, 
@@ -1133,7 +1122,7 @@ simpleexpr	: primary
 			    {
 				$1->atom.symbol = ParseNewSymbol (publish_private,
 								  class_undef, 
-								  typesPoly, 
+								  typePoly, 
 								  $1->atom.atom);
 			    }
 			    $$ = NewExprTree($2, $1, $3); 
@@ -1204,13 +1193,13 @@ primary		: fullname
 		| OS stars CS namespace_start arrayinit namespace_end
 		    { 
 			$$ = NewExprTree (NEW, $5, 0); 
-			$$->base.type = NewTypesArray (typesPoly, $2); 
+			$$->base.type = NewTypeArray (typePoly, $2); 
 			ParseCanonType ($$->base.type, False);
 		    }
 		| OS dims CS namespace_start opt_arrayinit namespace_end
 		    { 
 			$$ = NewExprTree (NEW, $5, 0); 
-			$$->base.type = NewTypesArray (typesPoly, $2); 
+			$$->base.type = NewTypeArray (typePoly, $2); 
 		    }
 		| OP type DOT NAME CP primary				%prec UNIONCAST
 		    {
@@ -1356,7 +1345,7 @@ MemListMark (void *object)
 DataType MemListType = { MemListMark, 0 };
 
 MemListPtr
-NewMemList (AtomListPtr atoms, Types *type, MemListPtr next)
+NewMemList (AtomListPtr atoms, Type *type, MemListPtr next)
 {
     ENTER ();
     MemListPtr	ml;
@@ -1403,7 +1392,7 @@ lookupVar (char *ns, char *n)
 }
 
 void
-setVar (NamespacePtr namespace, char *n, Value v, Types *type)
+setVar (NamespacePtr namespace, char *n, Value v, Type *type)
 {
     ENTER ();
     Atom	atom;
@@ -1486,7 +1475,7 @@ BuildRawname (ExprPtr colonnames, Atom name)
     len = 1;
     for (e = colonnames; e; e = e->tree.left)
 	len++;
-    array = NewArray (False, typesPrim[type_string], 1, &len);
+    array = NewArray (False, typePrim[rep_string], 1, &len);
     len--;
     BoxValueSet (array->array.values, len, AtomString (name));
     e = colonnames;
@@ -1572,7 +1561,7 @@ BuildCall (char *scope, char *name, int nargs, ...)
  * Walk a type structure and resolve any type names
  */
 static CanonTypeResult
-ParseCanonType (TypesPtr type, Bool forwardAllowed)
+ParseCanonType (TypePtr type, Bool forwardAllowed)
 {
     SymbolPtr	    symbol;
     ArgType	    *arg;
@@ -1586,9 +1575,9 @@ ParseCanonType (TypesPtr type, Bool forwardAllowed)
 	return False;
     }
     switch (type->base.tag) {
-    case types_prim:
+    case type_prim:
 	break;
-    case types_name:
+    case type_name:
 	if (!type->name.type)
 	{
 	    ExprPtr e;
@@ -1620,12 +1609,12 @@ ParseCanonType (TypesPtr type, Bool forwardAllowed)
 	    }
 	}
 	break;
-    case types_ref:
+    case type_ref:
 	ret = ParseCanonType (type->ref.ref, True);
 	if (ret == CanonTypeForward)
 	    ret = CanonTypeDefined;
 	break;
-    case types_func:
+    case type_func:
 	if (type->func.ret)
 	    ret = ParseCanonType (type->func.ret, forwardAllowed);
 	for (arg = type->func.args; arg; arg = arg->next)
@@ -1635,10 +1624,10 @@ ParseCanonType (TypesPtr type, Bool forwardAllowed)
 		ret = t;
 	}
 	break;
-    case types_array:
+    case type_array:
 	ret = ParseCanonType (type->array.type, forwardAllowed);
 	break;
-    case types_struct:
+    case type_struct:
 	for (n = 0; n < type->structs.structs->nelements; n++)
 	{
 	    StructElement   *se;
@@ -1649,14 +1638,14 @@ ParseCanonType (TypesPtr type, Bool forwardAllowed)
 		ret = t;
 	}
 	break;
-    case types_union:
+    case type_union:
 	anyResolved = False;
 	for (n = 0; n < type->structs.structs->nelements; n++)
 	{
 	    StructElement   *se;
 
 	    se = &StructTypeElements(type->structs.structs)[n];
-	    if (se->type != typesEnum)
+	    if (se->type != typeEnum)
 	    {
 		t = ParseCanonType (se->type, True);
 		if (t < ret)
@@ -1667,7 +1656,7 @@ ParseCanonType (TypesPtr type, Bool forwardAllowed)
 	    else
 		anyResolved = True;
 	}
-	if (t == CanonTypeForward)
+	if (ret == CanonTypeForward)
 	{
 	    if (anyResolved)
 		ret = CanonTypeDefined;
@@ -1680,7 +1669,7 @@ ParseCanonType (TypesPtr type, Bool forwardAllowed)
 }
 
 static SymbolPtr
-ParseNewSymbol (Publish publish, Class class, Types *type, Atom name)
+ParseNewSymbol (Publish publish, Class class, Type *type, Atom name)
 {
     ENTER ();
     SymbolPtr	s = 0;

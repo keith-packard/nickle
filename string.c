@@ -154,9 +154,9 @@ StringCharSize (int c)
     else return 0;
 }
 
-ValueType   StringType = {
+ValueRep   StringRep = {
     { 0, 0 },		/* base */
-    type_string,	/* tag */
+    rep_string,	/* tag */
     {			/* binary */
 	StringPlus,
 	0,
@@ -183,7 +183,7 @@ NewString (int len)
     ENTER ();
     Value   ret;
 
-    ret = ALLOCATE (&StringType.data, sizeof (String) + len + 1);
+    ret = ALLOCATE (&StringRep.data, sizeof (String) + len + 1);
     RETURN (ret);
 }
 

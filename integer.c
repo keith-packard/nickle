@@ -390,9 +390,9 @@ IntegerMark (void *object)
     MemReference (integer->mag);
 }
 
-ValueType    IntegerType = { 
+ValueRep    IntegerRep = { 
     { IntegerMark, 0 },	    /* base */
-    type_integer,	    /* tag */
+    rep_integer,	    /* tag */
     {			    /* binary */
 	IntegerPlus,
 	IntegerMinus,
@@ -421,7 +421,7 @@ NewInteger (Sign sign, Natural *mag)
     ENTER ();
     Value ret;
 
-    ret = ALLOCATE (&IntegerType.data, sizeof (Integer));
+    ret = ALLOCATE (&IntegerRep.data, sizeof (Integer));
     ret->integer.sign = sign;
     ret->integer.mag = mag;
     RETURN (ret);

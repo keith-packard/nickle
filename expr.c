@@ -147,7 +147,7 @@ NewExprCode (CodePtr code, ExprPtr name)
 }
 
 Expr *
-NewExprDecl (int tag, DeclListPtr decl, Class class, Types *type, Publish publish)
+NewExprDecl (int tag, DeclListPtr decl, Class class, Type *type, Publish publish)
 {
     ENTER ();
     Expr    *e;

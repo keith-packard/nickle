@@ -9,7 +9,7 @@
 #include	"nickle.h"
 
 Value
-StructRef (Value sv, Atom name)
+StructMemRef (Value sv, Atom name)
 {
     ENTER ();
     Struct	    *s = &sv->structs;
@@ -24,7 +24,7 @@ StructRef (Value sv, Atom name)
 }
 
 Value
-StructValue (Value sv, Atom name)
+StructMemValue (Value sv, Atom name)
 {
     ENTER ();
     Struct	    *s = &sv->structs;
@@ -38,8 +38,8 @@ StructValue (Value sv, Atom name)
     RETURN (0);
 }
 
-Types *
-StructTypes (StructType *st, Atom name)
+Type *
+StructMemType (StructType *st, Atom name)
 {
     int		    i;
     StructElement   *se = StructTypeElements(st);
@@ -99,15 +99,15 @@ StructEqual (Value a, Value b, int expandOk)
     for (i = 0; i < at->nelements; i++)
     {
 	if (False (Equal (BoxValue (a->structs.values, i),
-			  StructValue (b, ae[i].name))))
+			  StructMemValue (b, ae[i].name))))
 	    return FalseVal;
     }
     return TrueVal;
 }
 
-ValueType    structType = { 
+ValueRep    StructRep = { 
     { StructMark, 0 },	    /* base */
-    type_struct,	    /* tag */
+    rep_struct,	    /* tag */
     {			    /* binary */
 	0,
 	0,
@@ -139,7 +139,7 @@ NewStruct (StructType *type, Bool constant)
     int		    i;
     StructElement   *se;
 
-    ret = ALLOCATE (&structType.data, sizeof (Struct));
+    ret = ALLOCATE (&StructRep.data, sizeof (Struct));
     ret->structs.type = type;
     ret->structs.values = 0;
     ret->structs.values = NewBox (constant, False, type->nelements);
@@ -177,7 +177,7 @@ NewStructType (int nelements)
     se = StructTypeElements (st);
     for (i = 0; i < nelements; i++)
     {
-	se[i].type = typesPoly;
+	se[i].type = typePoly;
 	se[i].name = 0;
     }
     RETURN (st);

@@ -167,15 +167,15 @@ CompileStorage (ObjPtr obj, ExprPtr stat, SymbolPtr symbol, CodePtr code)
     {
 	switch (symbol->symbol.class) {
 	case class_static:
-	    symbol->local.element = AddBoxTypes (&code->func.statics,
-						 symbol->symbol.type);
+	    symbol->local.element = AddBoxType (&code->func.statics,
+						symbol->symbol.type);
 	    symbol->local.staticScope = True;
 	    symbol->local.code = code;
 	    break;
 	case class_arg:
 	case class_auto:
-	    symbol->local.element = AddBoxTypes (&CodeBody (code)->dynamics,
-						 symbol->symbol.type);
+	    symbol->local.element = AddBoxType (&CodeBody (code)->dynamics,
+						symbol->symbol.type);
 	    symbol->local.staticScope = code->func.inStaticInit;
 	    symbol->local.code = code;
 	    break;
@@ -300,7 +300,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 				&depth, createIfNecessary);
 	if (!s)
 	{
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	opCode = OpNoop;
@@ -309,7 +309,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	    if (!initialize) {
 		CompileError (obj, stat, "Attempt to assign to static variable \"%A\"",
 			      expr->atom.atom);
-		expr->base.type = typesPoly;
+		expr->base.type = typePoly;
 		break;
 	    }
 	    /* fall through ... */
@@ -326,7 +326,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	default:
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  s->symbol.class, expr->atom.atom);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	if (opCode == OpNoop)
@@ -351,7 +351,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	{
 	    CompileError (obj, stat, "Object left of '.' is not a struct or union containing \"%A\"",
 			  expr->tree.right->atom.atom);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	if (assign)
@@ -373,7 +373,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	{
 	    CompileError (obj, stat, "Object left of '->' is not a struct or union containing \"%A\"",
 			  expr->tree.right->atom.atom);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	if (assign)
@@ -397,7 +397,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	{
 	    CompileError (obj, stat, "Incompatible type '%T' in array operation",
 			  expr->tree.left->base.type, ndim);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	if (assign)
@@ -417,13 +417,13 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	{
 	    CompileError (obj, stat, "Incompatible type '%T' in unary operation",
 			  expr->tree.left->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	break;
     default:
 	CompileError (obj, stat, "Invalid lvalue");
-        expr->base.type = typesPoly;
+        expr->base.type = typePoly;
 	break;
     }
     assert (expr->base.type);
@@ -453,7 +453,7 @@ CompileBinOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code)
 	CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
-	expr->base.type = typesPoly;
+	expr->base.type = typePoly;
     }
     BuildInst (obj, OpBinOp, inst, stat);
     inst->binop.op = op;
@@ -477,7 +477,7 @@ CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr
 	CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
-	expr->base.type = typesPoly;
+	expr->base.type = typePoly;
     }
     BuildInst (obj, OpBinFunc, inst, stat);
     inst->binfunc.func = func;
@@ -506,7 +506,7 @@ CompileUnOp (ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code)
     {
 	CompileError (obj, stat, "Incompatible type '%T' in unary operation",
 		      down->base.type);
-	expr->base.type = typesPoly;
+	expr->base.type = typePoly;
     }
     BuildInst (obj, OpUnOp, inst, stat);
     inst->unop.op = op;
@@ -530,7 +530,7 @@ CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr c
     {
 	CompileError (obj, stat, "Incompatible type '%T' in unary operation",
 		      down->base.type);
-	expr->base.type = typesPoly;
+	expr->base.type = typePoly;
     }
     BuildInst (obj, OpUnFunc, inst, stat);
     inst->unfunc.func = func;
@@ -558,7 +558,7 @@ CompileAssign (ObjPtr obj, ExprPtr expr, Bool initialize, ExprPtr stat, CodePtr 
 	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
-	expr->base.type = typesPoly;
+	expr->base.type = typePoly;
     }
     BuildInst (obj, OpAssign, inst, stat);
     inst->assign.initialize = initialize;
@@ -584,7 +584,7 @@ CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr co
 	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
-	expr->base.type = typesPoly;
+	expr->base.type = typePoly;
     }
     BuildInst (obj, OpAssignOp, inst, stat);
     inst->binop.op = op;
@@ -610,7 +610,7 @@ CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, Code
 	CompileError (obj, stat, "Incompatible types in assignment '%T' = '%T'",
 		      expr->tree.left->base.type,
 		      expr->tree.right->base.type);
-	expr->base.type = typesPoly;
+	expr->base.type = typePoly;
     }
     BuildInst (obj, OpAssignFunc, inst, stat);
     inst->binfunc.func = func;
@@ -640,7 +640,7 @@ CompileArgs (ObjPtr obj, int *argcp, ExprPtr arg, ExprPtr stat, CodePtr code)
  */
 static Bool
 CompileTypecheckArgs (ObjPtr	obj,
-		      Types	*type,
+		      Type	*type,
 		      ExprPtr	args,
 		      int	argc,
 		      ExprPtr	stat)
@@ -649,7 +649,7 @@ CompileTypecheckArgs (ObjPtr	obj,
     Bool	ret = True;
     ArgType	*argt;
     ExprPtr	arg;
-    Types	*func_type;
+    Type	*func_type;
     int		i;
     
     func_type = TypeCombineFunction (type);
@@ -661,7 +661,7 @@ CompileTypecheckArgs (ObjPtr	obj,
 	return False;
     }
     
-    if (func_type->base.tag == types_func)
+    if (func_type->base.tag == type_func)
     {
 	argt = func_type->func.args;
 	arg = args;
@@ -745,13 +745,13 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
     if (!CompileTypecheckArgs (obj, expr->tree.left->base.type,
 			       expr->tree.right, argc, stat))
     {
-	expr->base.type = typesPoly;
+	expr->base.type = typePoly;
 	RETURN (obj);
     }
     expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
     if (tail == TailAlways || 
 	(tail == TailVoid && 
-	 TypesCanon (expr->base.type) == typesPrim[type_void]))
+	 TypeCanon (expr->base.type) == typePrim[rep_void]))
     {
 	BuildInst (obj, OpTailCall, inst, stat);
 	inst->ints.value = argc;
@@ -804,7 +804,7 @@ CompileRaise (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
     obj = CompileArgs (obj, &argc, expr->tree.right, stat, code);
     if (!CompileTypecheckArgs (obj, sym->symbol.type, expr->tree.right, argc, stat))
 	RETURN(obj);
-    expr->base.type = typesPoly;
+    expr->base.type = typePoly;
     BuildInst (obj, OpRaise, inst, stat);
     inst->raise.argc = argc;
     inst->raise.exception = sym;
@@ -914,7 +914,7 @@ CompileArrayIndex (ObjPtr obj, ExprPtr expr,
     while (expr)
     {
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
-	if (!TypeCompatible (typesPrim[type_integer],
+	if (!TypeCompatible (typePrim[rep_integer],
 			     expr->tree.left->base.type,
 			     True))
 	{
@@ -976,7 +976,7 @@ CompileCountDeclDimensions (ExprPtr expr)
 }
 
 static ObjPtr
-CompileBuildArray (ObjPtr obj, ExprPtr expr, TypesPtr type, 
+CompileBuildArray (ObjPtr obj, ExprPtr expr, TypePtr type, 
 		   ExprPtr dim, int ndim, 
 		   ExprPtr stat, CodePtr code)
 {
@@ -1028,7 +1028,7 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 }
 
 static ObjPtr
-CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
+CompileImplicitArray (ObjPtr obj, ExprPtr array, TypePtr type,
 		      ExprPtr inits, int ndim, 
 		      ExprPtr stat, CodePtr code)
 {
@@ -1056,17 +1056,17 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
 }
 
 static ObjPtr
-CompileArrayInit (ObjPtr obj, ExprPtr expr, Types *type, ExprPtr stat, CodePtr code);
+CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr code);
     
 static ObjPtr
-CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type, 
+CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type, 
 		   int ndim, int *ninits, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     
     if (expr->base.tag == ARRAY)
     {
-	if (ndim == 0 && type->base.tag == types_array)
+	if (ndim == 0 && type->base.tag == type_array)
 	{
 	    obj = CompileArrayInit (obj, expr, type, stat, code);
 	    expr->base.type = type;
@@ -1112,11 +1112,11 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypesPtr type,
 }
 
 static ObjPtr
-CompileArrayInit (ObjPtr obj, ExprPtr expr, Types *type, ExprPtr stat, CodePtr code)
+CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     int	    ndim;
-    Types   *sub = type->array.type;
+    Type   *sub = type->array.type;
     int	    i;
 
     ndim = CompileCountDeclDimensions (type->array.dimensions);
@@ -1136,7 +1136,7 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Types *type, ExprPtr stat, CodePtr c
 	    RETURN (obj);
 	}
 	if (ndim > ninitdim ||
-	    (ndim < ninitdim && sub->base.tag != types_array))
+	    (ndim < ninitdim && sub->base.tag != type_array))
 	{
 	    CompileError (obj, stat, "Array dimension mismatch %d != %d\n",
 			  ndim, ninitdim);
@@ -1169,20 +1169,20 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Types *type, ExprPtr stat, CodePtr c
 }
 
 static ExprPtr
-CompileCompositeImplicitInit (Types *type)
+CompileCompositeImplicitInit (Type *type)
 {
     ENTER ();
     ExprPtr	    init = 0;
-    Types	    *sub;
+    Type	    *sub;
     int		    dim;
     StructTypePtr   structs;
     StructElement   *se;
     int		    i;
     
-    type = TypesCanon (type);
+    type = TypeCanon (type);
     
     switch (type->base.tag) {
-    case types_array:
+    case type_array:
 	if (type->array.dimensions && type->array.dimensions->tree.left)
 	{
 	    sub = type->array.type;
@@ -1203,7 +1203,7 @@ CompileCompositeImplicitInit (Types *type)
 	    init->base.type = type;
 	}
 	break;
-    case types_struct:
+    case type_struct:
 	structs = type->structs.structs;
 	se = StructTypeElements (structs);
 	init = 0;
@@ -1211,7 +1211,7 @@ CompileCompositeImplicitInit (Types *type)
 	{
 	    ExprPtr	member;
 	    
-	    sub = TypesCanon (se[i].type);
+	    sub = TypeCanon (se[i].type);
 
 	    member = CompileCompositeImplicitInit (sub);
 	    if (member)
@@ -1256,7 +1256,7 @@ CompileStructInitUninitialized (ObjPtr obj, ExprPtr expr, StructType *structs,
 
     for (i = 0; i < structs->nelements; i++)
     {
-	TypesPtr	type = TypesCanon (se[i].type);
+	TypePtr	type = TypeCanon (se[i].type);
 
 	if (!expr || !CompileStructInitElementIncluded (expr, se[i].name))
 	{
@@ -1275,18 +1275,18 @@ CompileStructInitUninitialized (ObjPtr obj, ExprPtr expr, StructType *structs,
 }
 
 static ObjPtr
-CompileStructInit (ObjPtr obj, ExprPtr expr, Types *type,
+CompileStructInit (ObjPtr obj, ExprPtr expr, Type *type,
 		   ExprPtr stat, CodePtr code)
 {
     ENTER ();
     StructType	*structs = type->structs.structs;
     InstPtr	inst;
     ExprPtr	init;
-    Types	*mem_type;
+    Type	*mem_type;
     
     for (; expr; expr = expr->tree.right)
     {
-        mem_type = StructTypes (structs, expr->tree.left->tree.left->atom.atom);
+        mem_type = StructMemType (structs, expr->tree.left->tree.left->atom.atom);
 	if (!mem_type)
 	{
 	    CompileError (obj, stat, "Type '%T' is not a struct or union containing \"%A\"",
@@ -1327,7 +1327,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
     ExprPtr	catch;
     ExprPtr	name;
     SymbolPtr	exception;
-    Types	*catch_type;
+    Type	*catch_type;
     
     if (catches)
     {
@@ -1360,7 +1360,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	    RETURN (obj);
 	}
 
-	catch_type = NewTypesFunc (typesPoly, catch->code.code->base.args);
+	catch_type = NewTypeFunc (typePoly, catch->code.code->base.args);
 	if (!TypeCompatible (exception->symbol.type, catch_type, True))
 	{
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in catch",
@@ -1427,7 +1427,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     int	    test_inst, middle_inst;
     InstPtr inst;
     SymbolPtr	s;
-    Types	*t;
+    Type	*t;
     OpCode	opCode;
     int		staticLink;
     
@@ -1436,7 +1436,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	s = CompileCheckSymbol (obj, stat, expr, code, &staticLink, False);
 	if (!s)
 	{
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	switch (s->symbol.class) {
@@ -1454,7 +1454,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	default:
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
 			  s->symbol.class, expr->atom.atom);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    opCode = OpNoop;
 	    break;
 	}
@@ -1469,9 +1469,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	obj = CompileDecl (obj, expr, evaluate, stat, code);
 	break;
     case NEW:
-	t = TypesCanon (expr->base.type);
-	switch (t ? t->base.tag : types_prim) {
-	case types_struct:
+	t = TypeCanon (expr->base.type);
+	switch (t ? t->base.tag : type_prim) {
+	case type_struct:
 	    BuildInst (obj, OpBuildStruct, inst, stat);
 	    inst->structs.structs = t->structs.structs;
 	    if (expr->tree.left)
@@ -1492,7 +1492,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 						  t->structs.structs,
 						  stat, code);
 	    break;
-	case types_array:
+	case type_array:
 	    obj = CompileArrayInit (obj, expr->tree.left, t, stat, code);
 	    expr->base.type = t;
 	    break;
@@ -1511,12 +1511,12 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    inst->constant.constant = Void;
 	}
 	SetPush (obj);
-	t = TypesCanon (expr->base.type);
-	if (t && t->base.tag == types_union)
+	t = TypeCanon (expr->base.type);
+	if (t && t->base.tag == type_union)
 	{
 	    StructType	*st = t->structs.structs;
 	    
-	    expr->tree.left->base.type = StructTypes (st, expr->tree.left->atom.atom);
+	    expr->tree.left->base.type = StructMemType (st, expr->tree.left->atom.atom);
 	    if (!expr->tree.left->base.type)
 	    {
 		CompileError (obj, stat, "Type '%T' is not a union containing \"%A\"",
@@ -1526,7 +1526,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    }
 	    BuildInst (obj, OpBuildUnion, inst, stat);
 	    inst->structs.structs = st;
-	    if (expr->tree.left->base.type == typesEnum)
+	    if (expr->tree.left->base.type == typeEnum)
 	    {
 		if (expr->tree.right)
 		{
@@ -1559,7 +1559,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	else
 	{
 	    CompileError (obj, stat, "Type '%T' is not a union", expr->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	break;
@@ -1577,10 +1577,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	if (ValueIsInt(expr->constant.constant) &&
 	    expr->constant.constant->ints.value == 0)
 	{
-	    expr->base.type = typesNil;
+	    expr->base.type = typeNil;
 	}
 	else
-	    expr->base.type = typesPrim[type_integer];
+	    expr->base.type = typePrim[rep_integer];
 	break;
     case TEN_FLOAT:
     case OCTAL_FLOAT:
@@ -1588,27 +1588,27 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case HEX_FLOAT:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
-	expr->base.type = typesPrim[type_rational];
+	expr->base.type = typePrim[rep_rational];
 	break;
     case STRING_CONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
-	expr->base.type = typesPrim[type_string];
+	expr->base.type = typePrim[rep_string];
 	break;
     case VOIDVAL:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
-	expr->base.type = typesPrim[type_void];
+	expr->base.type = typePrim[rep_void];
 	break;
     case BOOLVAL:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
-	expr->base.type = typesPrim[type_bool];
+	expr->base.type = typePrim[rep_bool];
 	break;
     case POLY_CONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
-	expr->base.type = typesPoly;    /* FIXME composite const types */
+	expr->base.type = typePoly;    /* FIXME composite const type */
 	break;
     case OS:	    
 	obj = CompileArrayIndex (obj, expr->tree.right,
@@ -1621,7 +1621,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	{
 	    CompileError (obj, stat, "Type '%T' is not a %d dimensional array or string",
 			  expr->tree.left->base.type, ndim);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	BuildInst (obj, OpArray, inst, stat);
@@ -1644,7 +1644,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    CompileError (obj, stat, "Type '%T' is not a struct or union containing \"%A\"",
 			  expr->tree.left->base.type,
 			  expr->tree.right->atom.atom);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	BuildInst (obj, OpDot, inst, stat);
@@ -1660,7 +1660,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    CompileError (obj, stat, "Type '%T' is not a struct or union ref containing \"%A\"",
 			  expr->tree.left->base.type,
 			  expr->tree.right->atom.atom);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	BuildInst (obj, OpArrow, inst, stat);
@@ -1668,18 +1668,18 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	break;
     case FUNC:
 	obj = CompileFunc (obj, expr->code.code, stat, code, 0);
-	expr->base.type = NewTypesFunc (expr->code.code->base.type,
+	expr->base.type = NewTypeFunc (expr->code.code->base.type,
 					expr->code.code->base.args);
 	break;
     case STAR:	    obj = CompileUnFunc (obj, expr, Dereference, stat, code); break;
     case AMPER:	    
 	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
-	expr->base.type = NewTypesRef (expr->tree.left->base.type);
+	expr->base.type = NewTypeRef (expr->tree.left->base.type);
 	if (!expr->base.type)
 	{
 	    CompileError (obj, stat, "Type '%T' cannot be an l-value",
 			  expr->tree.left->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	break;
@@ -1693,7 +1693,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNPLUS,
-						 typesPrim[type_int]);
+						 typePrim[rep_int]);
 	    BuildInst (obj, OpPreOp, inst, stat);
 	}
 	else
@@ -1701,7 +1701,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNPLUS,
-						 typesPrim[type_int]);
+						 typePrim[rep_int]);
 	    BuildInst (obj, OpPostOp, inst, stat);
 	}
         inst->binop.op = PlusOp;
@@ -1710,7 +1710,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    CompileError (obj, stat, "Incompatible type '%T' in ++",
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	break;
@@ -1720,7 +1720,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNMINUS,
-						 typesPrim[type_int]);
+						 typePrim[rep_int]);
 	    BuildInst (obj, OpPreOp, inst, stat);
 	}
 	else
@@ -1728,7 +1728,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNMINUS,
-						 typesPrim[type_int]);
+						 typePrim[rep_int]);
 	    BuildInst (obj, OpPostOp, inst, stat);
 	}
 	inst->binop.op = MinusOp;
@@ -1737,7 +1737,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    CompileError (obj, stat, "Incompatible type '%T' in --",
 			  expr->tree.left ? expr->tree.left->base.type :
 			  expr->tree.right->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	break;
@@ -1761,7 +1761,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in binary operation",
 			  expr->tree.right->tree.left->base.type,
 			  expr->tree.right->tree.right->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	BuildInst (obj, OpCall, inst, stat);
@@ -1801,7 +1801,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in ?:",
 			  expr->tree.right->tree.left->base.type,
 			  expr->tree.right->tree.right->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	BuildInst (obj, OpNoop, inst, stat);
@@ -1832,7 +1832,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in &&",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	BuildInst (obj, OpNoop, inst, stat);
@@ -1860,7 +1860,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in ||",
 			  expr->tree.left->base.type,
 			  expr->tree.right->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	BuildInst (obj, OpNoop, inst, stat);
@@ -1886,7 +1886,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    CompileError (obj, stat, "Incompatible types '%T', '%T' in assignment",
 			  expr->tree.right->tree.left->base.type,
 			  expr->tree.right->tree.right->base.type);
-	    expr->base.type = typesPoly;
+	    expr->base.type = typePoly;
 	    break;
 	}
 	BuildInst (obj, OpCall, inst, stat);
@@ -1916,7 +1916,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case FORK:
 	BuildInst (obj, OpFork, inst, stat);
 	inst->obj.obj = CompileExpr (expr->tree.right, code);
-	expr->base.type = typesPrim[type_thread];
+	expr->base.type = typePrim[rep_thread];
 	break;
     case THREAD:
 	obj = CompileCall (obj, NewExprTree (OP,
@@ -1926,7 +1926,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 							  (Expr *) 0)),
 			   TailNever,
 			   stat, code);
-	expr->base.type = typesPrim[type_thread];
+	expr->base.type = typePrim[rep_thread];
 	break;
     case DOLLAR:
 	/* reposition statement reference so top-level errors are nicer*/
@@ -2413,7 +2413,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	else
 	{
 	    obj = _CompileNonLocal (obj, BranchModReturnVoid, expr, code);
-	    expr->base.type = typesPrim[type_void];
+	    expr->base.type = typePrim[rep_void];
 	}
 	if (!TypeCombineBinary (code->base.func->base.type, ASSIGN, expr->base.type))
 	{
@@ -2609,7 +2609,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
     if (ClassFrame (class) && !code)
     {
 	CompileError (obj, decls, "Invalid storage class %C", class);
-	decls->base.type = typesPoly;
+	decls->base.type = typePoly;
 	RETURN (obj);
     }
     for (decl = decls->decl.decl; decl; decl = decl->next) {
@@ -2678,7 +2678,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	    decls->base.type = s->symbol.type;
 	}
 	else
-	    decls->base.type = typesPoly;
+	    decls->base.type = typePoly;
     }
     RETURN (obj);
 }

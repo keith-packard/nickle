@@ -38,7 +38,7 @@ NewBox (Bool constant, Bool array, int nvalues)
     box->nvalues = nvalues;
     for (i = 0; i < nvalues; i++)
     {
-	BoxType(box, i) = typesPoly;
+	BoxType(box, i) = typePoly;
 	BoxValueSet(box, i, 0);
     }
     RETURN (box);
@@ -96,17 +96,17 @@ NewBoxTypes (int size)
     ENTER ();
     BoxTypesPtr    bt;
 
-    bt = ALLOCATE (&BoxTypesType, sizeof (BoxTypes) + size * sizeof (Types *));
+    bt = ALLOCATE (&BoxTypesType, sizeof (BoxTypes) + size * sizeof (Type *));
     bt->size = size;
     bt->count = 0;
     RETURN (bt);
 }
 
 int
-AddBoxTypes (BoxTypesPtr *btp, Types *t)
+AddBoxType (BoxTypesPtr *btp, Type *t)
 {
     ENTER ();
-    BoxTypesPtr  bt, new;
+    BoxTypesPtr bt, new;
     int		count, size;
     int		position;
     
@@ -128,7 +128,7 @@ AddBoxTypes (BoxTypesPtr *btp, Types *t)
 	if (count)
 	{
 	    memcpy (BoxTypesElements (new), BoxTypesElements (bt),
-		    count * sizeof (Types *));
+		    count * sizeof (Type *));
 	}
 	new->size = size;
 	new->count = count;

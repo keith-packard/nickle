@@ -19,7 +19,7 @@ typedef struct _symbolBase {
     SymbolPtr	next;
     Atom	name;
     Class	class;
-    Types	*type;
+    Type	*type;
     Bool	forward;    /* forward declaration of a function */
 } SymbolBase;
 
@@ -57,13 +57,13 @@ typedef union _symbol {
     SymbolException exception;
 } Symbol;
 
-extern SymbolPtr    NewSymbolType (Atom name, Types *type);
-extern SymbolPtr    NewSymbolException (Atom name, Types *type);
-extern SymbolPtr    NewSymbolConst (Atom name, Types *type);
-extern SymbolPtr    NewSymbolGlobal (Atom name, Types *type);
-extern SymbolPtr    NewSymbolArg (Atom name, Types *type);
-extern SymbolPtr    NewSymbolStatic (Atom name, Types *Type);
-extern SymbolPtr    NewSymbolAuto (Atom name, Types *type);
+extern SymbolPtr    NewSymbolType (Atom name, Type *type);
+extern SymbolPtr    NewSymbolException (Atom name, Type *type);
+extern SymbolPtr    NewSymbolConst (Atom name, Type *type);
+extern SymbolPtr    NewSymbolGlobal (Atom name, Type *type);
+extern SymbolPtr    NewSymbolArg (Atom name, Type *type);
+extern SymbolPtr    NewSymbolStatic (Atom name, Type *Rep);
+extern SymbolPtr    NewSymbolAuto (Atom name, Type *type);
 extern SymbolPtr    NewSymbolNamespace (Atom name, NamespacePtr namespace);
 
 typedef struct _namelist	*NamelistPtr;
@@ -122,16 +122,16 @@ typedef struct _MemList    *MemListPtr;
 typedef struct _MemList {
     DataType	*data;
     MemListPtr	next;
-    Types	*type;
+    Type	*type;
     AtomListPtr	atoms;
 } MemList;
 
-extern MemListPtr  NewMemList (AtomListPtr atoms, Types *type, MemListPtr next);
+extern MemListPtr  NewMemList (AtomListPtr atoms, Type *type, MemListPtr next);
 
 typedef struct _Fulltype {
     Publish publish;
     Class   class;
-    Types   *type;
+    Type   *type;
 } Fulltype;
     
 typedef struct _funcDecl {
@@ -187,7 +187,7 @@ typedef struct _exprBase {
     Atom	    file;
     int		    line;
     NamespacePtr    namespace;
-    Types	    *type;
+    Type	    *type;
     unsigned long   ticks;
     unsigned long   sub_ticks;
 } ExprBase;
@@ -219,7 +219,7 @@ typedef struct _exprDecls {
     ExprBase	expr;
     DeclListPtr	decl;
     Class	class;
-    Types	*type;
+    Type	*type;
     Publish	publish;
 } ExprDecl;
 
@@ -236,7 +236,7 @@ Expr	*NewExprTree (int tag, Expr *left, Expr *right);
 Expr	*NewExprConst (int tag, Value val);
 Expr	*NewExprAtom (Atom atom, SymbolPtr symbol, Bool privateFound);
 Expr	*NewExprCode (CodePtr code, ExprPtr name);
-Expr	*NewExprDecl (int tag, DeclListPtr decl, Class class, Types *type, Publish publish);
+Expr	*NewExprDecl (int tag, DeclListPtr decl, Class class, Type *type, Publish publish);
 
 Expr	*ExprRehang (Expr *expr, Expr *right);
 
@@ -244,7 +244,7 @@ Expr	*ExprRehang (Expr *expr, Expr *right);
 typedef struct _codeBase {
     DataType	*data;
     Bool	builtin;
-    Types	*type;
+    Type	*type;
     int		argc;
     Bool	varargs;
     ArgType	*args;
@@ -338,8 +338,8 @@ typedef union _code {
     BuiltinCode	builtin;
 } Code;
 
-CodePtr	NewFuncCode (Types *type, ArgType *args, ExprPtr code);
-CodePtr	NewBuiltinCode (Types *type, ArgType *args, int argc, 
+CodePtr	NewFuncCode (Type *type, ArgType *args, ExprPtr code);
+CodePtr	NewBuiltinCode (Type *type, ArgType *args, int argc, 
 			BuiltinFunc func, Bool needsNext);
 Value	NewFunc (CodePtr, FramePtr);
 
@@ -389,7 +389,7 @@ typedef struct _instStruct {
 typedef struct _instArray {
     InstBase	inst;
     int		ndim;
-    TypesPtr	type;
+    TypePtr	type;
 } InstArray;
 
 typedef struct _instCode {
@@ -577,9 +577,6 @@ extern int	runnable;   /* number of non-broken threads */
 void	    InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch);
 void	    ObjDump (ObjPtr obj, int indent);
 
-Symbol	*checkSym(Symbol *, Class, Type);
-Symbol	*extractSym (Symbol *);
-Symbol	*insertSym (char *);
 void	SymbolInit (void);
 
 extern NamespacePtr    DebugNamespace;
@@ -636,7 +633,7 @@ void	EditFunction (SymbolPtr name, Publish publish);
 void	EditFile (Value file_name);
 
 Value	lookupVar (char *ns, char *n);
-void	setVar (NamespacePtr, char *, Value, Types *type);
+void	setVar (NamespacePtr, char *, Value, Type *type);
 void	GetNamespace (NamespacePtr *, FramePtr *);
 Bool	NamespaceLocate (Value names, NamespacePtr  *s, SymbolPtr *symbol, Publish *publish);
 ExprPtr	BuildName (char *ns_name, char *name);

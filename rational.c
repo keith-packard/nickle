@@ -272,10 +272,10 @@ RationalPromote (Value av, Value bv)
     ENTER ();
 
     switch (ValueTag(av)) {
-    case type_int:
+    case rep_int:
 	av = NewIntRational (av->ints.value);
 	break;
-    case type_integer:
+    case rep_integer:
 	av = NewIntegerRational (&av->integer);
 	break;
     default:
@@ -295,7 +295,7 @@ RationalReduce (Value av)
     RETURN (av);
 }
 
-extern ValueType    IntegerType;
+extern ValueRep    IntegerRep;
 
 extern Natural	*NaturalFactor (Natural *, Natural *);
 extern Natural	*NaturalSqrt (Natural *);
@@ -1104,9 +1104,9 @@ RationalMark (void *object)
     MemReference (rational->den);
 }
 
-ValueType    RationalType = { 
+ValueRep    RationalRep = { 
     { RationalMark, 0 },    /* base */
-    type_rational,	    /* tag */
+    rep_rational,	    /* tag */
     {			    /* binary */
 	RationalPlus,
 	RationalMinus,
@@ -1151,7 +1151,7 @@ NewRational (Sign sign, Natural *num, Natural *den)
 	    }
 	}
     }
-    ret = ALLOCATE (&RationalType.data, sizeof (Rational));
+    ret = ALLOCATE (&RationalRep.data, sizeof (Rational));
     ret->rational.sign = sign;
     ret->rational.num = num;
     ret->rational.den = den;

@@ -52,7 +52,7 @@ DataType    SymbolLocalType = { SymbolLocalMark, 0 };
 DataType    SymbolNamespaceType = { SymbolNamespaceMark, 0 };
 
 SymbolPtr
-NewSymbolType (Atom name, Types *type)
+NewSymbolType (Atom name, Type *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -67,7 +67,7 @@ NewSymbolType (Atom name, Types *type)
 }
 
 SymbolPtr
-NewSymbolException (Atom name, Types *type)
+NewSymbolException (Atom name, Type *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -82,7 +82,7 @@ NewSymbolException (Atom name, Types *type)
 }
 
 SymbolPtr
-NewSymbolConst (Atom name, Types *type)
+NewSymbolConst (Atom name, Type *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -99,7 +99,7 @@ NewSymbolConst (Atom name, Types *type)
 }
 
 SymbolPtr
-NewSymbolGlobal (Atom name, Types *type)
+NewSymbolGlobal (Atom name, Type *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -116,7 +116,7 @@ NewSymbolGlobal (Atom name, Types *type)
 }
 
 SymbolPtr
-NewSymbolArg (Atom name, Types *type)
+NewSymbolArg (Atom name, Type *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -132,7 +132,7 @@ NewSymbolArg (Atom name, Types *type)
 }
 
 SymbolPtr
-NewSymbolAuto (Atom name, Types *type)
+NewSymbolAuto (Atom name, Type *type)
 {
     ENTER ();
     SymbolPtr	s;
@@ -148,7 +148,7 @@ NewSymbolAuto (Atom name, Types *type)
 }
 
 SymbolPtr
-NewSymbolStatic (Atom name, Types *type)
+NewSymbolStatic (Atom name, Type *type)
 {
     ENTER ();
     SymbolPtr	s;

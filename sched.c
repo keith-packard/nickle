@@ -392,8 +392,8 @@ do_Thread_trace (int n, Value *p)
     else
 	v = *p;
     switch (ValueTag(v)) {
-    case type_thread:
-    case type_continuation:
+    case rep_thread:
+    case rep_continuation:
 	frame = v->continuation.frame;
 	pc = v->continuation.pc;
 	break;
@@ -426,9 +426,9 @@ ThreadPrint (Value f, Value av, char format, int base, int width, int prec, unsi
     return True;
 }
 
-ValueType    ThreadType = {
+ValueRep    ThreadRep = {
     { ThreadMark, 0 },	/* base */
-    type_thread,	/* tag */
+    rep_thread,	/* tag */
     {			/* binary */
 	0,
 	0,
@@ -460,7 +460,7 @@ NewThread (FramePtr frame, ObjPtr code)
     ENTER ();
     Value ret;
 
-    ret = ALLOCATE (&ThreadType.data, sizeof (Thread));
+    ret = ALLOCATE (&ThreadRep.data, sizeof (Thread));
     
     ret->thread.jump = 0;
     ret->thread.state = ThreadRunning;
@@ -601,9 +601,9 @@ ContinuationPrint (Value f, Value av, char format, int base, int width, int prec
     return True;
 }
 
-ValueType    ContinuationType = {
+ValueRep    ContinuationRep = {
     { ContinuationMark, 0 },	/* base */
-    type_continuation,		/* tag */
+    rep_continuation,		/* tag */
     {				/* binary */
 	0,
 	0,
@@ -633,7 +633,7 @@ NewContinuation (ContinuationPtr continuation, InstPtr pc)
     ENTER ();
     Value   ret;
 
-    ret = ALLOCATE (&ContinuationType.data, sizeof (Continuation));
+    ret = ALLOCATE (&ContinuationRep.data, sizeof (Continuation));
     ret->continuation.pc = pc;
     ContinuationSet (&ret->continuation, continuation);
     RETURN (ret);
@@ -1044,7 +1044,7 @@ RaiseStandardException (StandardException   se,
     
     va_start (va, argc);
     i = argc + 1;
-    args = NewArray (False, typesPoly, 1, &i);
+    args = NewArray (False, typePoly, 1, &i);
     BoxValueSet (args->array.values, argc, NewStrString (string));
     if (argc)
 	for (i = 0; i < argc; i++)

@@ -46,9 +46,9 @@ UnionPrint (Value f, Value av, char format, int base, int width, int prec, unsig
 	FileOutput (f, '{');
     if (u->tag)
     {
-	Types	*t = StructTypes (u->type, u->tag);
+	Type	*t = StructMemType (u->type, u->tag);
         FilePuts (f, AtomName (u->tag));
-	if (t != (Types*) 1)
+	if (t != (Type*) 1)
 	{
 	    FilePuts (f, " = ");
 	    if (!Print (f, BoxValue (u->value, 0), format, base, width, prec, fill))
@@ -85,9 +85,9 @@ UnionEqual (Value av, Value bv, int expandOk)
     return Equal (BoxValue (a->value, 0), BoxValue (b->value, 0));
 }
 
-ValueType    unionType = { 
+ValueRep    UnionRep = { 
     { UnionMark, 0 },	    /* base */
-    type_union,		    /* tag */
+    rep_union,		    /* tag */
     {			    /* binary */
 	0,
 	0,
@@ -117,7 +117,7 @@ NewUnion (StructType *type, Bool constant)
     ENTER ();
     Value	    ret;
 
-    ret = ALLOCATE (&unionType.data, sizeof (Union));
+    ret = ALLOCATE (&UnionRep.data, sizeof (Union));
     ret->unions.type = type;
     ret->unions.tag = 0;
     ret->unions.value = 0;

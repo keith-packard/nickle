@@ -48,7 +48,7 @@ BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,
 	int	extra = argc - nformal;
 	Value	array;
 	
-	array = NewArray (True, typesPoly, 1, &extra);
+	array = NewArray (True, typePoly, 1, &extra);
 	BoxValueSet (frame->frame, fe, array);
 	for (; fe < argc; fe++)
 	    BoxValueSet (array->array.values, fe-nformal, Copy (Arg(fe)));
@@ -272,7 +272,7 @@ ThreadAssign (Value ref, Value v, Bool initialize)
 }
 
 static Value
-ThreadArray (Value thread, int ndim, Types *type)
+ThreadArray (Value thread, int ndim, Type *type)
 {
     ENTER ();
     int	    i;
@@ -418,10 +418,11 @@ ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
      * Build and array to hold the arguments, this will end up
      * in the thread's value on entry to the catch block
      */
-    args = NewArray (False, typesPoly, 1, &argc);
+    args = NewArray (False, typePoly, 1, &argc);
     for (i = 0; i < argc; i++)
         BoxValueSet (args->array.values, i, STACK_POP (thread->thread.continuation.stack));
-    RaiseException (thread, exception, args, next);
+    if (!aborting)
+	RaiseException (thread, exception, args, next);
     RETURN (args);
 }
 
@@ -496,15 +497,15 @@ ThreadFarJump (Value thread, Value ret, FarJumpPtr farJump, InstPtr *next)
 
 typedef struct _TypeChain {
     struct _TypeChain	*prev;
-    Types   *type;
+    Type   *type;
 } TypeChain;
 
 static void
-ThreadBoxSetDefault (BoxPtr box, int i, Types *type, TypeChain *chain)
+ThreadBoxSetDefault (BoxPtr box, int i, Type *type, TypeChain *chain)
 {
     if (BoxValueGet (box, i) == 0)
     {
-	Types	    *ctype = TypesCanon (type);
+	Type	    *ctype = TypeCanon (type);
 	StructType  *st = ctype->structs.structs;
 	TypeChain   link, *c;
 
@@ -519,10 +520,10 @@ ThreadBoxSetDefault (BoxPtr box, int i, Types *type, TypeChain *chain)
 	link.type = ctype;
 	
 	switch (ctype->base.tag) {
-	case types_union:
+	case type_union:
 	    BoxValueSet (box, i, NewUnion (st, False));
 	    break;
-	case types_struct:
+	case type_struct:
 	    BoxValueSet (box, i, NewStruct (st, False));
 	    box = BoxValueGet (box, i)->structs.values;
 	    for (i = 0; i < st->nelements; i++)
@@ -729,7 +730,7 @@ ThreadsRun (Value thread, Value lex)
 		break;
 	    case OpInitStruct:
 		w = Stack(stack); stack++;
-		v = StructRef (w, inst->atom.atom);
+		v = StructMemRef (w, inst->atom.atom);
 		if (!v)
 		{
 		    RaiseStandardException (exception_invalid_struct_member,
@@ -762,7 +763,7 @@ ThreadsRun (Value thread, Value lex)
 	    case OpArrayRefStore:
 		switch (ValueTag(value)) {
 		    char    *s;
-		case type_string:
+		case rep_string:
 		    if (inst->base.opCode != OpArray)
 		    {
 			RaiseStandardException (exception_invalid_unop_value,
@@ -792,7 +793,7 @@ ThreadsRun (Value thread, Value lex)
 		    }
 		    value = NewInt (StringGet (s, i));
 		    break;
-		case type_array:
+		case rep_array:
 		    if (inst->ints.value != value->array.ndim)
 		    {
 			RaiseStandardException (exception_invalid_binop_values,
@@ -853,11 +854,11 @@ ThreadsRun (Value thread, Value lex)
 					    "Not a struct/union",
 					    1, value);
 		    break;
-		case type_struct:
+		case rep_struct:
 		    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
-			v = StructValue (value, inst->atom.atom);
+			v = StructMemValue (value, inst->atom.atom);
 		    else
-			v = StructRef (value, inst->atom.atom);
+			v = StructMemRef (value, inst->atom.atom);
 		    if (!v)
 		    {
 			RaiseStandardException (exception_invalid_struct_member,
@@ -868,7 +869,7 @@ ThreadsRun (Value thread, Value lex)
 		    }
 		    value = v;
 		    break;
-		case type_union:
+		case rep_union:
 		    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
 			v = UnionValue (value, inst->atom.atom);
 		    else
@@ -877,7 +878,7 @@ ThreadsRun (Value thread, Value lex)
 		    }
 		    if (!v)
 		    {
-			if (StructTypes (value->unions.type, inst->atom.atom))
+			if (StructMemType (value->unions.type, inst->atom.atom))
 			    RaiseStandardException (exception_invalid_struct_member,
 						    "requested union tag not current",
 						    2, value,
@@ -970,7 +971,6 @@ ThreadsRun (Value thread, Value lex)
 	    case OpRaise:
 		if (aborting)
 		    break;
-		complete = True;
 		value = ThreadRaise (thread, inst->raise.argc, inst->raise.exception, &next);
 		break;
 	    case OpExceptionCall:

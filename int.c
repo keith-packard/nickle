@@ -380,9 +380,9 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, unsigne
     return True;
 }
 
-ValueType IntType = {
+ValueRep IntRep = {
     { 0, 0 },	    /* data */
-    type_int,	    /* tag */
+    rep_int,	    /* tag */
     {		    /* binary */
 	IntPlus,
 	IntMinus,
@@ -409,7 +409,7 @@ NewIntReal (int value)
 {
     ENTER ();
     Value	ret;
-    ret = ALLOCATE (&IntType.data, sizeof (Int));
+    ret = ALLOCATE (&IntRep.data, sizeof (Int));
     ret->ints.value = value;
     RETURN (ret);
 }

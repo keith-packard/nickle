@@ -26,7 +26,7 @@
 
 typedef enum { False = 0, True = 1 }  	Bool;
 typedef char		*Atom;
-typedef struct _valueType   ValueType;
+typedef struct _valueType   ValueRep;
 typedef struct _box	*BoxPtr;
 typedef union _code	*CodePtr;
 typedef struct _frame	*FramePtr;
@@ -42,7 +42,7 @@ extern Atom AtomId (char *name);
 extern int  AtomInit (void);
 
 typedef struct _AtomList    *AtomListPtr;
-typedef union _types	    *TypesPtr;
+typedef union _type	    *TypePtr;
 typedef struct _structType  *StructTypePtr;
 typedef union _expr	    *ExprPtr;
 typedef struct _catch	    *CatchPtr;
@@ -171,8 +171,8 @@ typedef struct _natural {
 
 Natural	*NewNatural (unsigned value);
 Natural	*AllocNatural (int size);
-int	NaturalEqual (Natural *, Natural *);
-int	NaturalLess (Natural *, Natural *);
+Bool	NaturalEqual (Natural *, Natural *);
+Bool	NaturalLess (Natural *, Natural *);
 Natural	*NaturalPlus (Natural *, Natural *);
 Natural *NaturalMinus (Natural *, Natural *);
 Natural *NaturalTimes (Natural *, Natural *);
@@ -236,126 +236,134 @@ typedef enum _unaryOp {
     NegateOp, FloorOp, CeilOp, NumUnaryOp
 } UnaryOp;
 
-typedef enum _type {
-	type_undef = -1,
- 	type_int = 0,
-	type_integer = 1,
- 	type_rational = 2,
- 	type_float = 3,
- 	type_string = 4,
-	type_file = 5,
-	type_thread = 6,
-	type_semaphore = 7,
-	type_continuation = 8,
-	type_bool = 9,
-	type_void = 10,
-	type_ref = 11,
-	type_func = 12,
+/*
+ * Value representations.
+ *
+ * Values are represented by one of several data structures,
+ * the first element of each value is a pointer back to a
+ * data structure which contains the representation tag along
+ * with functions that operate on the value
+ */
+typedef enum _rep {
+	rep_undef = -1,
+ 	rep_int = 0,
+	rep_integer = 1,
+ 	rep_rational = 2,
+ 	rep_float = 3,
+ 	rep_string = 4,
+	rep_file = 5,
+	rep_thread = 6,
+	rep_semaphore = 7,
+	rep_continuation = 8,
+	rep_bool = 9,
+	rep_void = 10,
+	rep_ref = 11,
+	rep_func = 12,
     
-	/* mutable types */
- 	type_array = 13,
-	type_struct = 14,
-	type_union = 15
-} Type;
+	/* mutable type */
+ 	rep_array = 13,
+	rep_struct = 14,
+	rep_union = 15
+} Rep;
 
-/* because type_undef is -1, using (unsigned) makes these a single compare */
-#define Numericp(t)	((unsigned) (t) <= (unsigned) type_float)
-#define Integralp(t)	((unsigned) (t) <= (unsigned) type_integer)
-#define Mutablep(t)	((t) >= type_array)
+/* because rep_undef is -1, using (unsigned) makes these a single compare */
+#define Numericp(t)	((unsigned) (t) <= (unsigned) rep_float)
+#define Integralp(t)	((unsigned) (t) <= (unsigned) rep_integer)
+#define Mutablep(t)	((t) >= rep_array)
 
-extern ValueType    IntType, IntegerType, RationalType, FloatType;
-extern ValueType    StringType, ArrayType, FileType;
-extern ValueType    RefType, structType, unionType, FuncType, ThreadType;
-extern ValueType    SemaphoreType, ContinuationType, UnitType, BoolType;
+extern ValueRep    IntRep, IntegerRep, RationalRep, FloatRep;
+extern ValueRep    StringRep, ArrayRep, FileRep;
+extern ValueRep    RefRep, StructRep, UnionRep, FuncRep, ThreadRep;
+extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 
-#define ValueIsInt(v) ((v)->value.type == &IntType)
-#define ValueIsInteger(v) ((v)->value.type == &IntegerType)
-#define ValueIsRational(v) ((v)->value.type == &RationalType)
-#define ValueIsFloat(v) ((v)->value.type == &FloatType)
-#define ValueIsString(v) ((v)->value.type == &StringType)
-#define ValueIsArray(v) ((v)->value.type == &ArrayType)
-#define ValueIsFile(v) ((v)->value.type == &FileType)
-#define ValueIsRef(v) ((v)->value.type == &RefType)
-#define ValueIsStruct(v) ((v)->value.type == &structType)
-#define ValueIsUnion(v) ((v)->value.type == &unionType)
-#define ValueIsFunc(v) ((v)->value.type == &FuncType)
-#define ValueIsThread(v) ((v)->value.type == &ThreadType)
-#define ValueIsSemaphore(v) ((v)->value.type == &SemaphoreType)
-#define ValueIsContinuation(v) ((v)->value.type == &ContinuationType)
-#define ValueIsUnit(v) ((v)->value.type == &UnitType)
-#define ValueIsBool(v) ((v)->value.type == &BoolType)
+#define ValueIsInt(v) ((v)->value.type == &IntRep)
+#define ValueIsInteger(v) ((v)->value.type == &IntegerRep)
+#define ValueIsRational(v) ((v)->value.type == &RationalRep)
+#define ValueIsFloat(v) ((v)->value.type == &FloatRep)
+#define ValueIsString(v) ((v)->value.type == &StringRep)
+#define ValueIsArray(v) ((v)->value.type == &ArrayRep)
+#define ValueIsFile(v) ((v)->value.type == &FileRep)
+#define ValueIsRef(v) ((v)->value.type == &RefRep)
+#define ValueIsStruct(v) ((v)->value.type == &StructRep)
+#define ValueIsUnion(v) ((v)->value.type == &UnionRep)
+#define ValueIsFunc(v) ((v)->value.type == &FuncRep)
+#define ValueIsThread(v) ((v)->value.type == &ThreadRep)
+#define ValueIsSemaphore(v) ((v)->value.type == &SemaphoreRep)
+#define ValueIsContinuation(v) ((v)->value.type == &ContinuationRep)
+#define ValueIsUnit(v) ((v)->value.type == &UnitRep)
+#define ValueIsBool(v) ((v)->value.type == &BoolRep)
 
 /*
  * Aggregate types
  */
 typedef struct _argType {
     DataType	*data;
-    TypesPtr	type;
+    TypePtr	type;
     Bool	varargs;
     Atom	name;
     SymbolPtr	symbol;
     struct _argType *next;
 } ArgType;
 
-ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name,
+ArgType *NewArgType (TypePtr type, Bool varargs, Atom name,
 		     SymbolPtr symbol, ArgType *next);
 
-typedef enum _typesTag {
-    types_prim, types_name, types_ref, types_func, types_array, 
-    types_struct, types_union
-} TypesTag;
+typedef enum _typeTag {
+    type_prim, type_name, type_ref, type_func, type_array, 
+    type_struct, type_union
+} TypeTag;
     
-typedef struct _typesBase {
+typedef struct _typeBase {
     DataType	*data;
-    TypesTag	tag;
-} TypesBase;
+    TypeTag	tag;
+} TypeBase;
 
-typedef struct _typesPrim {
-    TypesBase	base;
-    Type	prim;
-} TypesPrim;
+typedef struct _typePrim {
+    TypeBase	base;
+    Rep	prim;
+} TypePrim;
 
-typedef struct _typesName {
-    TypesBase	base;
+typedef struct _typeName {
+    TypeBase	base;
     ExprPtr	expr;
-    TypesPtr	type;
-} TypesName;
+    TypePtr	type;
+} TypeName;
 
-typedef struct _typesRef {
-    TypesBase	base;
-    TypesPtr	ref;
-} TypesRef;
+typedef struct _typeRef {
+    TypeBase	base;
+    TypePtr	ref;
+} TypeRef;
 
-typedef struct _typesFunc {
-    TypesBase	base;
-    TypesPtr	ret;
+typedef struct _typeFunc {
+    TypeBase	base;
+    TypePtr	ret;
     ArgType	*args;
-} TypesFunc;
+} TypeFunc;
 
-typedef struct _typesArray {
-    TypesBase	base;
-    TypesPtr	type;
+typedef struct _typeArray {
+    TypeBase	base;
+    TypePtr	type;
     ExprPtr	dimensions;
-} TypesArray;
+} TypeArray;
 
-typedef struct _typesStruct {
-    TypesBase	    base;
+typedef struct _typeStruct {
+    TypeBase	    base;
     StructTypePtr   structs;
     Bool	    enumeration;
-} TypesStruct;    
+} TypeStruct;    
 
-typedef union _types {
-    TypesBase	base;
-    TypesPrim	prim;
-    TypesName	name;
-    TypesRef	ref;
-    TypesFunc	func;
-    TypesArray	array;
-    TypesStruct	structs;
-} Types;
+typedef union _type {
+    TypeBase	base;
+    TypePrim	prim;
+    TypeName	name;
+    TypeRef	ref;
+    TypeFunc	func;
+    TypeArray	array;
+    TypeStruct	structs;
+} Type;
 
 typedef struct _argDecl {
-    Types   *type;
+    Type   *type;
     Atom    name;
 } ArgDecl;
 
@@ -364,47 +372,42 @@ typedef struct _argList {
     Bool    varargs;
 } ArgList;
 
-extern Types	    *typesPoly;
-extern Types	    *typesGroup;
-extern Types	    *typesField;
-extern Types	    *typesRefPoly;
-extern Types	    *typesNil;
-extern Types	    *typesFileError;
-extern Types	    *typesPrim[type_void - type_int + 1];
+extern Type	    *typePoly;
+extern Type	    *typeGroup;
+extern Type	    *typeField;
+extern Type	    *typeRefPoly;
+extern Type	    *typeNil;
+extern Type	    *typeFileError;
+extern Type	    *typePrim[rep_void + 1];
 
-#define typesEnum   ((Types *) 1)
+#define typeEnum   ((Type *) 1)
 
-#define TypePoly(t) ((t)->base.tag == types_prim && (t)->prim.prim == type_undef)
-#define TypeBool(t) ((t)->base.tag == types_prim && (t)->prim.prim == type_bool)
+#define TypePoly(t) ((t)->base.tag == type_prim && (t)->prim.prim == rep_undef)
+#define TypeBool(t) ((t)->base.tag == type_prim && (t)->prim.prim == rep_bool)
 
-Types	*NewTypesName (ExprPtr expr, Types *type);
-Types	*NewTypesRef (Types *ref);
-Types	*NewTypesFunc (Types *ret, ArgType *args);
-Types	*NewTypesArray (Types *type, ExprPtr dimensions);
-Types	*NewTypesStruct (StructTypePtr structs);
-Types	*NewTypesUnion (StructTypePtr structs, Bool enumeration);
-Types	*TypesCanon (Types *type);
-Type	BaseType (Types *type);
-int	TypesInit (void);
-SymbolPtr   TypeNameName (Types *t);
+Type	*NewTypeName (ExprPtr expr, Type *type);
+Type	*NewTypeRef (Type *ref);
+Type	*NewTypeFunc (Type *ret, ArgType *args);
+Type	*NewTypeArray (Type *type, ExprPtr dimensions);
+Type	*NewTypeStruct (StructTypePtr structs);
+Type	*NewTypeUnion (StructTypePtr structs, Bool enumeration);
+Type	*TypeCanon (Type *type);
+int	TypeInit (void);
+SymbolPtr   TypeNameName (Type *t);
 
-#define TypesUnionElements(t) ((Types **) (&t->unions + 1))
+#define TypeUnionElements(t) ((Type **) (&t->unions + 1))
 
-Types	*TypeCombineBinary (Types *left, int tag, Types *right);
-Types	*TypeCombineUnary (Types *down, int tag);
-Types	*TypeCombineStruct (Types *type, int tag, Atom atom);
-Types	*TypeCombineReturn (Types *type);
-Types	*TypeCombineFunction (Types *type);
-Types	*TypeCombineArray (Types *array, int ndim, Bool lvalue);
-Bool	TypeCompatibleAssign (Types *dest, Value v);
-/* Bool	TypeEqual (Types *a, Types *b); unused */
-Bool	TypeCompatible (Types *a, Types *b, Bool contains);
-#ifndef TypePoly
-Bool	TypePoly (Types *t);
-#endif
-Bool	TypeNumeric (Types *t);
-Bool	TypeIntegral (Types *t);
-Bool	TypeString (Types *t);
+Type	*TypeCombineBinary (Type *left, int tag, Type *right);
+Type	*TypeCombineUnary (Type *down, int tag);
+Type	*TypeCombineStruct (Type *type, int tag, Atom atom);
+Type	*TypeCombineReturn (Type *type);
+Type	*TypeCombineFunction (Type *type);
+Type	*TypeCombineArray (Type *array, int ndim, Bool lvalue);
+Bool	TypeCompatibleAssign (Type *dest, Value v);
+Bool	TypeCompatible (Type *a, Type *b, Bool contains);
+Bool	TypeNumeric (Type *t);
+Bool	TypeIntegral (Type *t);
+Bool	TypeString (Type *t);
 int	TypeCountDimensions (ExprPtr dims);
 
 /*
@@ -428,7 +431,7 @@ typedef enum _publish {
 #define ValueTag(v) ((v)->value.type->tag)
 
 typedef struct _baseValue {
-    ValueType	*type;
+    ValueRep	*type;
 } BaseValue;
 
 typedef struct _int {
@@ -470,7 +473,7 @@ typedef struct _string {
 
 typedef struct _array {
     BaseValue	base;
-    Types	*type;
+    Type	*type;
     int		ndim;
     int		ents;
     int		*dim;
@@ -525,14 +528,14 @@ typedef struct _ref {
     int		element;
 } Ref;
 
-#define RefValueSet(r,v) BoxValueSet((r)->ref.box, (r)->ref.element, (v))
-#define RefValue(r)	BoxValue((r)->ref.box, (r)->ref.element)
-#define RefValueGet(r)	BoxValueGet((r)->ref.box, (r)->ref.element)
-#define RefType(r)	BoxType((r)->ref.box, (r)->ref.element)
-#define RefConstant(r)    BoxConstant((r)->ref.box, (r)->ref.element)
+#define RefValueSet(r,v)    BoxValueSet((r)->ref.box, (r)->ref.element, (v))
+#define RefValue(r)	    BoxValue((r)->ref.box, (r)->ref.element)
+#define RefValueGet(r)	    BoxValueGet((r)->ref.box, (r)->ref.element)
+#define RefType(r)	    BoxType((r)->ref.box, (r)->ref.element)
+#define RefConstant(r)	    BoxConstant((r)->ref.box, (r)->ref.element)
 
 typedef struct _structElement {
-    TypesPtr	type;
+    TypePtr	type;
     Atom	name;
 } StructElement;
 
@@ -682,11 +685,11 @@ typedef Value	(*Coerce) (Value);
 
 typedef	Bool	(*Output) (Value, Value, char format, int base, int width, int prec, unsigned char fill);
 
-typedef ValueType   *(*TypeCheck) (BinaryOp, Value, Value, int);
+typedef ValueRep   *(*TypeCheck) (BinaryOp, Value, Value, int);
 
 struct _valueType {
     DataType	data;
-    Type	tag;
+    Rep	tag;
     Binary	binary[NumBinaryOp];
     Unary	unary[NumUnaryOp];
     Promote	promote;
@@ -697,7 +700,7 @@ struct _valueType {
 
 typedef struct _boxElement {
     Value	value;
-    Types	*type;
+    Type	*type;
 } BoxElement;
 
 typedef struct _box {
@@ -721,14 +724,14 @@ typedef struct _boxTypes {
     int		size;
 } BoxTypes, *BoxTypesPtr;
 
-#define BoxTypesElements(bt)	((TypesPtr *) ((bt) + 1))
+#define BoxTypesElements(bt)	((TypePtr *) ((bt) + 1))
 #define BoxTypesValue(bt,e)	(BoxTypesElements(bt)[e])
 
 extern BoxTypesPtr NewBoxTypes (int size);
 
-extern int	AddBoxTypes (BoxTypesPtr *btp, TypesPtr t);
+extern int	AddBoxType (BoxTypesPtr *btp, TypePtr t);
 
-extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr types);
+extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr type);
 			     
 typedef struct {
     DataType	data;
@@ -762,7 +765,7 @@ extern ValueCachePtr	refCache;
 
 Value	NewString (int);
 Value	NewStrString (char *);
-Value	NewArray (Bool constant, TypesPtr type, int ndim, int *dims);
+Value	NewArray (Bool constant, TypePtr type, int ndim, int *dims);
 Value	NewFile (int fd);
 Value	NewRefReal (BoxPtr box, int element, Value *re);
 char	*StringNextChar (char *src, int *dst);
@@ -788,9 +791,9 @@ Value	NewRef (BoxPtr box, int element);
 #endif
 Value	NewStruct (StructType *type, Bool constant);
 StructType  *NewStructType (int nelements);
-Types	*StructTypes (StructType *st, Atom name);
-Value	StructRef (Value sv, Atom name);
-Value	StructValue (Value sv, Atom name);
+Type	*StructMemType (StructType *st, Atom name);
+Value	StructMemRef (Value sv, Atom name);
+Value	StructMemValue (Value sv, Atom name);
 Value	NewUnion (StructType *type, Bool constant);
 Value	UnionValue (Value uv, Atom name);
 Value	UnionRef (Value uv, Atom name);
@@ -823,12 +826,12 @@ void	FilePutIntBase (Value file, int a, int base);
 void	FilePutInt (Value, int);
 int	FileStringWidth (char *string, char format);
 void	FilePutString (Value f, char *string, char format);
-void	FilePutType (Value f, Type tag, Bool minimal);
+void	FilePutRep (Value f, Rep tag, Bool minimal);
 void	FilePutClass (Value f, Class storage, Bool minimal);
 void	FilePutPublish (Value f, Publish publish, Bool minimal);
-void	FilePutTypes (Value f, Types *t, Bool minimal);
+void	FilePutType (Value f, Type *t, Bool minimal);
 Value	FileFopen (char *name, char *mode, int *errp);
-void	FilePutArgTypes (Value f, ArgType *at);
+void	FilePutArgType (Value f, ArgType *at);
 Value	FilePopen (char *program, char *args[], char *mode, int *errp);
 int	FileStatus (Value file);
 void	FileCheckBlocked (void);
@@ -936,10 +939,10 @@ int	IntegerToInt (Integer *);
 int	IntPart (Value, char *error);
 
 #ifndef Numericp
-Bool	Numericp (Type);
+Bool	Numericp (Rep);
 #endif
 #ifndef Integralp
-Bool	Integralp (Type);
+Bool	Integralp (Rep);
 #endif
 Bool	Zerop (Value);
 Bool	Negativep (Value);

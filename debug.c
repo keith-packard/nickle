@@ -9,7 +9,7 @@
 #include	"nickle.h"
 
 static void
-DebugAddVar (NamespacePtr namespace, char *string, Value v, Types *type)
+DebugAddVar (NamespacePtr namespace, char *string, Value v, Type *type)
 {
     ENTER ();
     SymbolPtr	symbol;
@@ -102,8 +102,8 @@ DebugSetFrame (Value continuation, int offset)
 	TopNamespace = CurrentNamespace = NewNamespace (namespace);
 	CurrentFrame = frame;
 	NamespaceImport (CurrentNamespace, DebugNamespace, publish_public);
-	DebugAddVar (CurrentNamespace, "cont", continuation, typesPrim[type_continuation]);
-	DebugAddVar (CurrentNamespace, "frame", NewInt (offset), typesPrim[type_integer]);
+	DebugAddVar (CurrentNamespace, "cont", continuation, typePrim[rep_continuation]);
+	DebugAddVar (CurrentNamespace, "frame", NewInt (offset), typePrim[rep_integer]);
     }
     EXIT ();
     return ret;

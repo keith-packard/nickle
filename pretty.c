@@ -245,17 +245,17 @@ PrettyDecl (Value f, Expr *e, int level, Bool nest)
     case class_const:
 	FilePuts (f, "const");
 	if (e->decl.type)
-	    FilePutTypes (f, e->decl.type, False);
+	    FilePutType (f, e->decl.type, False);
 	break;
     case class_global:
 	if (e->decl.type)
-	    FilePutTypes (f, e->decl.type, False);
+	    FilePutType (f, e->decl.type, False);
 	else
 	    FilePuts (f, "global");
 	break;
     case class_auto:
 	if (e->decl.type)
-	    FilePutTypes (f, e->decl.type, False);
+	    FilePutType (f, e->decl.type, False);
 	else
 	    FilePuts (f, "auto");
 	break;
@@ -264,11 +264,11 @@ PrettyDecl (Value f, Expr *e, int level, Bool nest)
     case class_namespace:
 	FilePutClass (f, e->decl.class, !TypePoly (e->decl.type));
 	if (!TypePoly (e->decl.type))
-	    FilePutTypes (f, e->decl.type, False);
+	    FilePutType (f, e->decl.type, False);
 	break;
     case class_undef:
     case class_arg:
-	FilePutTypes (f, e->decl.type, False);
+	FilePutType (f, e->decl.type, False);
 	break;
     case class_exception:
 	FilePutClass (f, e->decl.class, False);
@@ -288,7 +288,7 @@ PrettyDecl (Value f, Expr *e, int level, Bool nest)
     }
     if (e->decl.class == class_exception)
     {
-	FilePutArgTypes (f, e->decl.type->func.args);
+	FilePutArgType (f, e->decl.type->func.args);
     }
 }
 
@@ -743,7 +743,7 @@ PrintArgs (Value f, ArgType *args)
     FilePuts (f, "(");
     for (; args; args = args->next)
     {
-        FilePutTypes (f, args->type, args->name != 0);
+        FilePutType (f, args->type, args->name != 0);
 	if (args->name)
 	    FilePuts (f, AtomName (args->name));
 	if (args->varargs)

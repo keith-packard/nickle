@@ -116,7 +116,7 @@ RefEqual (Value av, Value bv, int expandOk)
     return TrueVal;
 }
 
-static ValueType *
+static ValueRep *
 RefTypeCheck (BinaryOp op, Value av, Value bv, int expandOk)
 {
     switch (op) {
@@ -156,9 +156,9 @@ RefMark (void *object)
     MemReference (ref->box);
 }
 
-ValueType RefType = { 
+ValueRep RefRep = { 
     { RefMark, 0 },	/* data */
-    type_ref,		/* tag */
+    rep_ref,		/* tag */
     {			/* binary */
 	RefPlus,
 	RefMinus,
@@ -188,7 +188,7 @@ Value
 NewRefReal (BoxPtr box, int element, Value *re)
 {
     ENTER ();
-    Value   ret = ALLOCATE (&RefType.data, sizeof (Ref));
+    Value   ret = ALLOCATE (&RefRep.data, sizeof (Ref));
     ret->ref.box = box;
     ret->ref.element = element;
     *re = ret;

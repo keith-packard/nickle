@@ -20,13 +20,13 @@ volatile Bool	signaling;
 
 #ifndef Numericp
 Bool
-Numericp (Type t)
+Numericp (Rep t)
 {
     switch (t) {
-    case type_int:
-    case type_integer:
-    case type_rational:
-    case type_float:
+    case rep_int:
+    case rep_integer:
+    case rep_rational:
+    case rep_float:
 	return True;
     default:;
     }
@@ -36,11 +36,11 @@ Numericp (Type t)
 
 #ifndef Integralp
 Bool
-Integralp (Type t)
+Integralp (Rep t)
 {
     switch (t) {
-    case type_int:
-    case type_integer:
+    case rep_int:
+    case rep_integer:
 	return True;
     default:;
     }
@@ -52,13 +52,13 @@ Bool
 Zerop (Value av)
 {
     switch (ValueTag(av)) {
-    case type_int:
+    case rep_int:
 	return av->ints.value == 0;
-    case type_integer:
+    case rep_integer:
 	return av->integer.mag->length == 0;
-    case type_rational:
+    case rep_rational:
 	return av->rational.num->length == 0;
-    case type_float:
+    case rep_float:
 	return av->floats.mant->mag->length == 0;
     default:;
     }
@@ -69,13 +69,13 @@ Bool
 Negativep (Value av)
 {
     switch (ValueTag(av)) {
-    case type_int:
+    case rep_int:
 	return av->ints.value < 0;
-    case type_integer:
+    case rep_integer:
 	return av->integer.sign == Negative;
-    case type_rational:
+    case rep_rational:
 	return av->rational.sign == Negative;
-    case type_float:
+    case rep_float:
 	return av->floats.mant->sign == Negative;
     default:;
     }
@@ -86,9 +86,9 @@ Bool
 Evenp (Value av)
 {
     switch (ValueTag(av)) {
-    case type_int:
+    case rep_int:
 	return (av->ints.value & 1) == 0;
-    case type_integer:
+    case rep_integer:
 	return NaturalEven (av->integer.mag);
     default:;
     }
@@ -112,7 +112,7 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 {
     ENTER ();
     Value	ret;
-    ValueType	*type = 0;
+    ValueRep	*type = 0;
 
     if (av->value.type->typecheck)
 	type = (*av->value.type->typecheck) (operator, av, bv, 1);
@@ -134,11 +134,12 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	type = bv->value.type;
     if (!type || !type->binary[operator])
     {
-	if (operator != EqualOp)
-	    RaiseStandardException (exception_invalid_binop_values,
-				    "invalid operands",
-				    2,
-				    av, bv);
+	if (operator == EqualOp)
+	    RETURN (FalseVal);
+	RaiseStandardException (exception_invalid_binop_values,
+				"invalid operands",
+				2,
+				av, bv);
 	RETURN (Void);
     }
     if (aborting)
@@ -397,7 +398,7 @@ Pow (Value av, Value bv)
 	RETURN (Void);
     }
     switch (ValueTag(bv)) {
-    case type_int:
+    case rep_int:
 	{
 	    Value	p;
 	    int		i;
@@ -424,7 +425,7 @@ Pow (Value av, Value bv)
 		result = Divide (One, result);
 	}
 	break;
-    case type_integer:
+    case rep_integer:
 	{
 	    Value   p;
 	    Natural *i;
@@ -478,7 +479,7 @@ ShiftL (Value av, Value bv)
 	if (Negativep (av))
 	    sign = Negative;
 	av = Reduce (NewInteger (sign,
-				 NaturalLsl (IntegerType.promote (av,0)->integer.mag,
+				 NaturalLsl (IntegerRep.promote (av,0)->integer.mag,
 					     bv->ints.value)));
     }
     else
@@ -510,7 +511,7 @@ ShiftR (Value av, Value bv)
 	    sign = Negative;
 	}
 	av = Reduce (NewInteger (sign,
-				 NaturalRsl (IntegerType.promote (av,0)->integer.mag,
+				 NaturalRsl (IntegerRep.promote (av,0)->integer.mag,
 					     bv->ints.value)));
     }
     else
@@ -534,8 +535,8 @@ Gcd (Value av, Value bv)
 	RETURN (Void);
     }
     RETURN (Reduce (NewInteger (Positive, 
-				NaturalGcd (IntegerType.promote (av, 0)->integer.mag,
-					    IntegerType.promote (bv, 0)->integer.mag))));
+				NaturalGcd (IntegerRep.promote (av, 0)->integer.mag,
+					    IntegerRep.promote (bv, 0)->integer.mag))));
 }
 
 #ifdef GCD_DEBUG
@@ -553,8 +554,8 @@ Bdivmod (Value av, Value bv)
 	RETURN (Void);
     }
     RETURN (Reduce (NewInteger (Positive,
-				NaturalBdivmod (IntegerType.promote (av, 0)->integer.mag,
-						IntegerType.promote (bv, 0)->integer.mag))));
+				NaturalBdivmod (IntegerRep.promote (av, 0)->integer.mag,
+						IntegerRep.promote (bv, 0)->integer.mag))));
 }
 
 Value
@@ -571,8 +572,8 @@ KaryReduction (Value av, Value bv)
 	RETURN (Void);
     }
     RETURN (Reduce (NewInteger (Positive,
-				NaturalKaryReduction (IntegerType.promote (av, 0)->integer.mag,
-						      IntegerType.promote (bv, 0)->integer.mag))));
+				NaturalKaryReduction (IntegerRep.promote (av, 0)->integer.mag,
+						      IntegerRep.promote (bv, 0)->integer.mag))));
 }
 #endif
 
@@ -621,7 +622,7 @@ CopyMutable (Value v)
     int	    n;
     
     switch (ValueTag(v)) {
-    case type_array:
+    case rep_array:
 	if (v->array.values->constant)
 	    RETURN (v);
 	nv = NewArray (False, v->array.type, v->array.ndim, v->array.dim);
@@ -629,7 +630,7 @@ CopyMutable (Value v)
 	nbox = nv->array.values;
 	n = v->array.ents;
 	break;
-    case type_struct:
+    case rep_struct:
 	if (v->structs.values->constant)
 	    RETURN (v);
 	nv = NewStruct (v->structs.type, False);
@@ -637,7 +638,7 @@ CopyMutable (Value v)
 	nbox = nv->structs.values;
 	n = v->structs.type->nelements;
 	break;
-    case type_union:
+    case rep_union:
 	if (v->unions.value->constant)
 	    RETURN (v);
 	nv = NewUnion (v->unions.type, False);
@@ -697,9 +698,9 @@ UnitPrint (Value f, Value av, char format, int base, int width, int prec, unsign
     return True;
 }
 
-ValueType UnitType = {
+ValueRep UnitRep = {
     { 0, 0 },	    /* data */
-    type_void,	    /* tag */
+    rep_void,	    /* tag */
     { 
 	0,	    /* Plus */
 	0,	    /* Minus */
@@ -723,7 +724,7 @@ NewVoid (void)
     ENTER ();
     Value   ret;
 
-    ret = ALLOCATE (&UnitType.data, sizeof (BaseValue));
+    ret = ALLOCATE (&UnitRep.data, sizeof (BaseValue));
     RETURN (ret);
 }
 
@@ -740,9 +741,9 @@ BoolPrint (Value f, Value av, char format, int base, int width, int prec, unsign
     return True;
 }
 
-ValueType BoolType = {
+ValueRep BoolRep = {
     { 0, 0 },	    /* data */
-    type_bool,	    /* tag */
+    rep_bool,	    /* tag */
     { 
 	0,	    /* Plus */
 	0,	    /* Minus */
@@ -766,7 +767,7 @@ NewBool (void)
     ENTER ();
     Value   ret;
 
-    ret = ALLOCATE (&BoolType.data, sizeof (BaseValue));
+    ret = ALLOCATE (&BoolRep.data, sizeof (BaseValue));
     RETURN (ret);
 }
 

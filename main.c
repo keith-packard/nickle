@@ -14,7 +14,7 @@
 
 #include	<setjmp.h>
 #define __USE_UNIX98 /* Get sigignore() and sigrelse()
-			prototypes for Linux */
+			prototype for Linux */
 #include	<signal.h>
 #include	<stdio.h>
 #include	"nickle.h"
@@ -29,11 +29,11 @@ setArgv (int argc, char **argv)
     Value   args;
     int	    i;
 
-    args = NewArray (True, typesPrim[type_string], 1, &argc);
+    args = NewArray (True, typePrim[rep_string], 1, &argc);
     for (i = 0; i < argc; i++)
 	BoxValueSet (args->array.values, i, NewStrString (argv[i]));
     setVar (GlobalNamespace, "argv", args, 
-	    NewTypesArray (typesPrim[type_string],
+	    NewTypeArray (typePrim[rep_string],
 			   NewExprTree (COMMA, 0, 0)));
     EXIT ();
 }
@@ -185,7 +185,7 @@ void
 init (void)
 {
     MemInitialize ();
-    TypesInit ();
+    TypeInit ();
     ValueInit ();
     IoInit ();
     LexInit ();

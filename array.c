@@ -14,7 +14,7 @@ int
 ArrayInit (void)
 {
     ENTER ();
-    Empty = NewArray (True, typesPoly, 0, 0);
+    Empty = NewArray (True, typePoly, 0, 0);
     MemAddRoot (Empty);
     EXIT ();
     return 1;
@@ -108,9 +108,9 @@ ArrayMark (void *object)
     MemReference (array->values);
 }
 
-ValueType    ArrayType = { 
+ValueRep    ArrayRep = { 
     { ArrayMark, 0 },
-    type_array,
+    rep_array,
     {
 	0, 0, 0, 0, 0, 0,
 	0, ArrayEqual, 0, 0,
@@ -124,7 +124,7 @@ ValueType    ArrayType = {
 };
 
 Value
-NewArray (Bool constant, TypesPtr type, int ndim, int *dims)
+NewArray (Bool constant, TypePtr type, int ndim, int *dims)
 {
     ENTER ();
     Value   ret;
@@ -141,7 +141,7 @@ NewArray (Bool constant, TypesPtr type, int ndim, int *dims)
     }
     else
 	ents = 0;
-    ret = ALLOCATE (&ArrayType.data, sizeof (Array) + ndim * sizeof (int));
+    ret = ALLOCATE (&ArrayRep.data, sizeof (Array) + ndim * sizeof (int));
     ret->array.type = type;
     ret->array.ndim = ndim;
     ret->array.ents = ents;

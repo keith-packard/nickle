@@ -79,10 +79,10 @@ NewValueFpart (Value v)
     ENTER ();
     Fpart   *ret;
     switch (ValueTag(v)) {
-    case type_int:
+    case rep_int:
 	ret = NewIntFpart (v->ints.value);
 	break;
-    case type_integer:
+    case rep_integer:
 	ret = NewFpart (v->integer.sign, v->integer.mag);
 	break;
     default:
@@ -958,9 +958,9 @@ FloatMark (void *object)
     MemReference (f->exp);
 }
 
-ValueType   FloatType = {
+ValueRep   FloatRep = {
     { FloatMark, 0 },	/* base */
-    type_float,		/* tag */
+    rep_float,		/* tag */
     {			/* binary */
 	FloatPlus,
 	FloatMinus,
@@ -1016,7 +1016,7 @@ NewFloat (Fpart *mant, Fpart *exp, unsigned prec)
 	exp = mant = zero_fpart;
     DebugFp ("Can mant", mant);
     DebugFp ("Can exp ", exp);
-    ret = ALLOCATE (&FloatType.data, sizeof (Float));
+    ret = ALLOCATE (&FloatRep.data, sizeof (Float));
     ret->floats.mant = mant;
     ret->floats.exp = exp;
     ret->floats.prec = prec;
@@ -1067,16 +1067,16 @@ NewValueFloat (Value av, unsigned prec)
     ENTER ();
 
     switch (ValueTag(av)) {
-    case type_int:
+    case rep_int:
 	av = NewIntFloat (av->ints.value, prec);
 	break;
-    case type_integer:
+    case rep_integer:
 	av = NewIntegerFloat (&av->integer, prec);
 	break;
-    case type_rational:
+    case rep_rational:
 	av = NewRationalFloat (&av->rational, prec);
 	break;
-    case type_float:
+    case rep_float:
         av = NewFloat (av->floats.mant, av->floats.exp, prec);
 	break;
     default:

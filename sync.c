@@ -60,9 +60,9 @@ SemaphorePrint (Value f, Value av, char format, int base, int width, int prec, u
     return True;
 }
 
-ValueType   SemaphoreType = {
+ValueRep   SemaphoreRep = {
     { 0, 0 },   /* base */
-    type_semaphore,	    /* tag */
+    rep_semaphore,	    /* tag */
     {			    /* binary */
 	0,
 	0,
@@ -109,7 +109,7 @@ do_Semaphore_new (int n, Value *value)
 				NewInt (n));
 	RETURN(Void);
     }
-    ret = ALLOCATE (&SemaphoreType.data, sizeof (Semaphore));
+    ret = ALLOCATE (&SemaphoreRep.data, sizeof (Semaphore));
     ret->semaphore.count = count;
     ret->semaphore.id = ++id;
     RETURN (ret);

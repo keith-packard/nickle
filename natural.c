@@ -127,31 +127,31 @@ NaturalOne (Natural *n)
 }
 #endif
     
-int
+Bool
 NaturalLess (Natural *a, Natural *b)
 {
     int	    index;
     digit   *at, *bt;
 
     if (length (a) < length (b))
-	return 1;
+	return True;
     else if (length (b) < length (a))
-	return 0;
+	return False;
     else {
 	at = data(a) + length(a) - 1;
 	bt = data(b) + length(b) - 1;
 	for (index = 0; index < length(a); index++) {
 	    if (*at < *bt)
-		return 1;
+		return True;
 	    else if (*bt < *at)
-		return 0;
+		return False;
 	    at--; bt--;
 	}
-	return 0;
+	return False;
     }
 }
 
-int
+Bool
 NaturalEqual (Natural *a, Natural *b)
 {
     int	    index;
@@ -160,16 +160,12 @@ NaturalEqual (Natural *a, Natural *b)
     if (length (a) == length (b)) {
 	at = data(a);
 	bt = data(b);
-	for (index = 0; index < length(a); index++) {
-	    if (*at < *bt)
-		return 0;
-	    else if (*bt < *at)
-		return 0;
-	    at++; bt++;
-	}
-	return 1;
+	for (index = 0; index < length(a); index++)
+	    if (*at++ != *bt++)
+		return False;
+	return True;
     }
-    return 0;
+    return False;
 }
 
 /*

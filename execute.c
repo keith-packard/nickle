@@ -314,7 +314,8 @@ ThreadArray (Value thread, int ndim, Type *type)
 }
 
 static int
-ThreadArrayIndex (Value array, Value thread, int ndim, Value last, int off)
+ThreadArrayIndex (Value array, Value thread, int ndim, 
+		  Value last, int off, Bool except)
 {
     int	    i;
     int	    dim;
@@ -329,8 +330,8 @@ ThreadArrayIndex (Value array, Value thread, int ndim, Value last, int off)
 	else
 	    d = Stack(dim + off - 1);
 	if (!ValueIsInt(d) || 
-	    (part = d->ints.value) < 0 || 
-	    array->array.dim[dim] <= part)
+	    (((part = d->ints.value) < 0 || 
+	      array->array.dim[dim] <= part) && except))
 	{
 	    RaiseStandardException (exception_invalid_array_bounds,
 				    "Array index out of bounds",
@@ -406,6 +407,12 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	    STACK_PUSH (thread->thread.continuation.stack, Zero);
 	STACK_PUSH (thread->thread.continuation.stack, NewInt(dim));
 	break;
+    case AInitModeRepeat:
+        ndim = Stack(0)->ints.value;
+	array = Stack(ndim+1);
+	if (Stack(dim+1)->ints.value == array->array.dim[dim])
+	    break;
+	/* fall through ... */
     case AInitModeElement:
         ndim = Stack(0)->ints.value;
 	array = Stack(ndim+1);
@@ -430,7 +437,7 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 				2, array, value);
 		break;
 	    }
-	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2);
+	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2, True);
 	    if (aborting)
 		break;
 	    complete=True;
@@ -447,9 +454,14 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	/*
 	 * Reset remaining indices to zero
 	 */
-	while (--dim >= 0)
+	for (i = 0; i < dim; i++)
 	    STACK_PUSH (thread->thread.continuation.stack, Zero);
 	STACK_PUSH (thread->thread.continuation.stack, NewInt (ndim));
+	if (mode == AInitModeRepeat)
+	{
+	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2, False);
+	    ThreadArrayReplicate (thread, array, dim, i);
+	}
 	break;
     case AInitModeFunc:
 	if (aborting)
@@ -507,15 +519,6 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	    while (--dim >= 0)
 		STACK_PUSH (thread->thread.continuation.stack, Zero);
 	    STACK_PUSH (thread->thread.continuation.stack, NewInt (ndim));
-	}
-	break;
-    case AInitModeRepeat:
-        ndim = Stack(0)->ints.value;
-	array = Stack(ndim+1);
-	if (Stack(dim+1)->ints.value < array->array.dim[dim])
-	{
-	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2);
-	    ThreadArrayReplicate (thread, array, dim, i);
 	}
 	break;
     }
@@ -984,7 +987,7 @@ ThreadsRun (Value thread, Value lex)
 			break;
 		    }
 		    stack = inst->ints.value;
-		    i = ThreadArrayIndex (v, thread, stack, value, 0);
+		    i = ThreadArrayIndex (v, thread, stack, value, 0, True);
 		    if (!aborting)
 		    {
 			if (inst->base.opCode != OpArrayRefStore)

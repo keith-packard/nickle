@@ -504,7 +504,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
 	expr->base.type = TypeCombineUnary (expr->tree.left->base.type, expr->base.tag);
 	if (!expr->base.type)
 	{
-	    CompileError (obj, stat, "Incompatible type, value '%T', for unary operation",
+	    CompileError (obj, stat, "Incompatible type, value '%T', for * operation",
 			  expr->tree.left->base.type);
 	    expr->base.type = typePoly;
 	    break;
@@ -685,7 +685,7 @@ CompileUnFunc (ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr c
     if (!expr->base.type)
     {
 	CompileError (obj, stat, "Incompatible type, value '%T', for %s operation",
-		      down->base.type);
+		      down->base.type, name);
 	expr->base.type = typePoly;
     }
     else if (obj->used == d + 1 &&
@@ -779,7 +779,8 @@ CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, Code
     {
 	CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for %s= operation",
 		      expr->tree.left->base.type,
-		      expr->tree.right->base.type);
+		      expr->tree.right->base.type,
+		      name);
 	expr->base.type = typePoly;
     }
     BuildInst (obj, OpAssignFunc, inst, stat);
@@ -1241,11 +1242,11 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type,
     
 static ObjPtr
 CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type, 
-		   int ndim, ExprPtr stat, CodePtr code)
+		   int ndim, ExprPtr stat, CodePtr code,
+		   AInitMode mode)
 {
     ENTER ();
     InstPtr	inst;
-    AInitMode	mode = AInitModeElement;
     ExprPtr	e;
     
     switch (expr->base.tag) {
@@ -1257,15 +1258,22 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
 	}
 	else
 	{
-	    for (e = expr->tree.left; e; e = e->tree.right)
+	    ExprPtr next;
+	    
+	    for (e = expr->tree.left; e; e = next)
 	    {
-		obj = CompileArrayInits (obj, e->tree.left,
-					 type, ndim-1, stat, code);
+		AInitMode   subMode = AInitModeElement;
+		
+		next = e->tree.right;
+		if (next && next->tree.left->base.tag == DOTS)
+		{
+		    subMode = AInitModeRepeat;
+		    next = next->tree.right;
+		}
+		obj = CompileArrayInits (obj, e->tree.left, type,
+					 ndim-1, stat, code, subMode);
 	    }
 	}
-	break;
-    case DOTS:
-	mode = AInitModeRepeat;
 	break;
     default:
 	obj = _CompileExpr (obj, expr, True, stat, code);
@@ -1485,7 +1493,8 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 	    BuildInst (obj, OpInitArray, inst, stat);
 	    inst->ainit.mode = AInitModeStart;
 	    inst->ainit.dim = ndim;
-	    obj = CompileArrayInits (obj, expr, sub, ndim, stat, code);
+	    obj = CompileArrayInits (obj, expr, sub, ndim, stat, code,
+				     AInitModeElement);
 	}
     }
     RETURN (obj);

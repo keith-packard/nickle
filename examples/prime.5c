@@ -25,30 +25,33 @@ namespace Factor {
     }
 
     typedef int_list_struct;
-
+    
+    typedef union {
+	*int_list_struct    ref;
+	void		    end;
+    } int_list;
+    
     typedef struct {
-	*int_list_struct    next;
-	int			v;
+	int_list	    next;
+	int		    v;
     } int_list_struct;
-
-    typedef *int_list_struct int_list;
 
     public int_list function primes (int i)
     {
 	bool function prime_wrt (int_list l, int i)
 	{
-	    if (l == 0) return true;
-	    if (i % l->v == 0) return false;
-	    return prime_wrt (l->next, i);
+	    if (l == int_list.end) return true;
+	    if (i % l.ref->v == 0) return false;
+	    return prime_wrt (l.ref->next, i);
 	}
 
 	if (i < 3) 
-	    return reference ((int_list_struct) { next = 0, v = 2 });
+	    return (int_list.ref) reference ((int_list_struct) { next = int_list.end, v = 2 });
 
 	int_list    l = primes (i-1);
 
 	if (prime_wrt (l, i))
-	    return reference ((int_list_struct) { next = l, v = i });
+	    return (int_list.ref) reference ((int_list_struct) { next = l, v = i });
 	return l;
     }
 
@@ -56,15 +59,15 @@ namespace Factor {
     {
 	int function list_length (int_list l)
 	{
-	    return l != 0 ? 1+list_length(l->next) : 0;
+	    return l != int_list.end ? 1+list_length(l.ref->next) : 0;
 	}
 
 	int[*]  a = (int [list_length (l)]) {};
 	int	i = 0;
-	while (l != 0)
+	while (l != int_list.end)
 	{
-	    a[i] = l->v;
-	    l = l->next;
+	    a[i] = l.ref->v;
+	    l = l.ref->next;
 	    i++;
 	}
 	return a;
@@ -87,10 +90,10 @@ namespace Factor {
 		for (i = 0; i < dim(a.array); i++)
 		    n[i] = a.array[i];
 		n[i] = v;
-		return array_or_none.array (n);
+		return (array_or_none.array) n;
 	    case none:
 		int[*]	n = (int [1]) { v };
-		return array_or_none.array (n);
+		return (array_or_none.array) n;
 	    }
 	}
 

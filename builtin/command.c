@@ -29,6 +29,7 @@ import_Command_namespace()
         { do_Command_lex_file, "lex_file", "b", "s" },
         { do_Command_lex_library, "lex_library", "b", "s" },
         { do_Command_lex_string, "lex_string", "b", "s" },
+	{ do_Command_display, "display", "v", "p" },
         { 0 }
     };
 
@@ -185,5 +186,13 @@ do_Command_edit (Value names)
 
     if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
 	EditFunction (symbol, publish); 
+    RETURN (Void);
+}
+
+Value
+do_Command_display (Value v)
+{
+    ENTER ();
+    FilePrintf (FileStdout, "%v\n", v);
     RETURN (Void);
 }

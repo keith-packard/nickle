@@ -843,6 +843,7 @@ Value	do_Command_lex_file (Value);
 Value	do_Command_lex_library (Value);
 Value	do_Command_lex_string (Value);
 Value	do_Command_edit (Value);
+Value	do_Command_display (Value);
 Value	do_Environ_check (Value);
 Value	do_Environ_get (Value);
 Value	do_Environ_unset (Value);

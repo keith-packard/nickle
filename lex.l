@@ -264,7 +264,7 @@ LexGetInteractiveChar (void)
 	    p = "??? ";
 	for (;;)
 	{
-	    FileFlush (FileStdout);
+	    FileFlush (FileStdout, False);
 	    if (FileStdout->file.flags & FileOutputBlocked)
 		ThreadsRun (0, FileStdout);
 	    else

@@ -149,7 +149,7 @@ do_File_open (Value name, Value mode)
 Value 
 do_File_flush (Value f)
 {
-    switch (FileFlush (f)) {
+    switch (FileFlush (f, False)) {
     case FileBlocked:
 	ThreadSleep (running, f, PriorityIo);
 	break;
@@ -167,7 +167,7 @@ do_File_close (Value f)
 {
     if (aborting)
 	return Void;
-    switch (FileFlush (f)) {
+    switch (FileFlush (f, False)) {
     case FileBlocked:
 	ThreadSleep (running, f, PriorityIo);
 	break;

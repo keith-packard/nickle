@@ -482,7 +482,7 @@ int
 FileClose (Value file)
 {
     file->file.flags |= FileClosed;
-    return FileFlush (file);
+    return FileFlush (file, False);
 }
 
 Value
@@ -663,7 +663,7 @@ FileWaitForWriteable (Value file)
 }
 
 static int
-FileFlushChain (Value file, FileChainPtr ic)
+FileFlushChain (Value file, FileChainPtr ic, Bool block)
 {
     int	    n;
     int	    err;
@@ -682,7 +682,7 @@ FileFlushChain (Value file, FileChainPtr ic)
 		file->file.output_errno = err;
 		return FileError;
 	    }
-	    if (!(file->file.flags & FileBlockWrites))
+	    if (!(file->file.flags & FileBlockWrites) && !block)
 	    {
 		FileSetBlocked (file, FileOutputBlocked);
 		return FileBlocked;
@@ -694,7 +694,7 @@ FileFlushChain (Value file, FileChainPtr ic)
 }
 
 int
-FileFlush (Value file)
+FileFlush (Value file, Bool block)
 {
     ENTER ();
     FileChainPtr    ic, *prev;
@@ -707,7 +707,7 @@ FileFlush (Value file)
 	    for (;;)
 	    {
 		for (prev = &file->file.output; (ic = *prev)->next; prev = &ic->next);
-		n = FileFlushChain (file, ic);
+		n = FileFlushChain (file, ic, block);
 		if (n)
 		    break;
 		/*
@@ -768,7 +768,7 @@ FileOutput (Value file, char c)
     if (!ic)
 	ic = file->file.output = NewFileChain (0, FileBufferSize);
     if (ic->used == ic->size)
-	if (FileFlush (file) == FileError)
+	if (FileFlush (file, False) == FileError)
 	{
 	    EXIT ();
 	    return FileError;
@@ -778,7 +778,7 @@ FileOutput (Value file, char c)
     if ((c == '\n' && file->file.flags & FileLineBuf) ||
 	file->file.flags & FileUnBuf)
     {
-	if (FileFlush (file) == FileError)
+	if (FileFlush (file, False) == FileError)
 	{
 	    EXIT ();
 	    return FileError;
@@ -1376,7 +1376,7 @@ FileCheckBlocked (void)
 	    }
 	    if (FD_ISSET (fd, &writable))
 	    {
-		if (FileFlush (blocked) != FileBlocked)
+		if (FileFlush (blocked, False) != FileBlocked)
 		{
 		    blocked->file.flags &= ~FileOutputBlocked;
 		    ready = True;

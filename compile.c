@@ -769,7 +769,7 @@ CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, Code
 }
 
 static ObjPtr
-CompileArgs (ObjPtr obj, int *argcp, Bool *varactualp, ExprPtr arg, ExprPtr stat, CodePtr code)
+CompileArgs (ObjPtr obj, int *argcp, Bool *varactualp, ExprPtr arg, Bool pushValue, ExprPtr stat, CodePtr code)
 {
     ENTER ();
     int	argc;
@@ -778,6 +778,8 @@ CompileArgs (ObjPtr obj, int *argcp, Bool *varactualp, ExprPtr arg, ExprPtr stat
     *varactualp = False;
     while (arg)
     {
+	if (pushValue)
+	    SetPush (obj);
 	if (arg->tree.left->base.tag == DOTS)
 	{
 	    InstPtr inst;
@@ -789,8 +791,8 @@ CompileArgs (ObjPtr obj, int *argcp, Bool *varactualp, ExprPtr arg, ExprPtr stat
 	{
 	    obj = _CompileExpr (obj, arg->tree.left, True, stat, code);
 	}
-        SetPush (obj);
 	arg = arg->tree.right;
+	pushValue = True;
 	argc++;
     }
     *argcp = argc;
@@ -893,8 +895,8 @@ NewNonLocal (NonLocal *prev, NonLocalKind kind, int target)
 /*
  * Compile a function call --
  * 
- * + compile the args, pushing on the stack
  * + compile the code that generates a function object
+ * + compile the args, pushing value on the stack
  * + Typecheck the arguments.  Must be done here so that
  *   the type of the function is available
  * + Add the OpCall
@@ -910,8 +912,8 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
     int	    argc;
     Bool    varactual;
 
-    obj = CompileArgs (obj, &argc, &varactual, expr->tree.right, stat, code);
     obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+    obj = CompileArgs (obj, &argc, &varactual, expr->tree.right, True, stat, code);
     if (!CompileTypecheckArgs (obj, expr->tree.left->base.type,
 			       expr->tree.right, argc, stat))
     {
@@ -972,7 +974,7 @@ CompileRaise (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 		      name->atom.atom);
 	RETURN (obj);
     }
-    obj = CompileArgs (obj, &argc, &varactual, expr->tree.right, stat, code);
+    obj = CompileArgs (obj, &argc, &varactual, expr->tree.right, False, stat, code);
     if (!CompileTypecheckArgs (obj, sym->symbol.type, expr->tree.right, argc, stat))
 	RETURN(obj);
     expr->base.type = typePoly;
@@ -1589,7 +1591,7 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	 * Compile the exception handler and the
 	 * call to get to it.
 	 */
-	catch->code.code->base.func = code->base.func;
+	catch->code.code->base.func = code ? code->base.func : 0;
 	obj = CompileFunc (obj, catch->code.code, stat, code,
 			   NewNonLocal (obj->nonLocal, 
 					NonLocalCatch, 
@@ -1948,11 +1950,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case DIV:	    obj = CompileBinOp (obj, expr, DivOp, stat, code); break;
     case MOD:	    obj = CompileBinOp (obj, expr, ModOp, stat, code); break;
     case POW:
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.right->tree.left, True, stat, code);
 	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
-	SetPush (obj);
-	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
 					     expr->base.tag,
 					     expr->tree.right->tree.right->base.type);
@@ -2148,11 +2150,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case ASSIGNDIV:	obj = CompileAssignOp (obj, expr, DivOp, stat, code); break;
     case ASSIGNMOD:	obj = CompileAssignOp (obj, expr, ModOp, stat, code); break;
     case ASSIGNPOW:
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
 	SetPush (obj);
 	obj = CompileLvalue (obj, expr->tree.right->tree.left, stat, code, False, False, False);
-	SetPush (obj);
-	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
 					     expr->base.tag,
 					     expr->tree.right->tree.right->base.type);
@@ -2990,9 +2992,9 @@ CompileFuncCode (CodePtr	code,
 	 * flag an error for non-void functions,
 	 * don't complain about void functions or catch blocks
 	 */
-	if (!TypeCombineBinary (code->base.func->base.type, ASSIGN,
-				typePrim[rep_void]) &&
-	    !nonLocal)
+	if (!nonLocal &&
+	    !TypeCombineBinary (code->base.func->base.type, ASSIGN,
+				typePrim[rep_void]))
 	{
 	    CompileError (obj, stat, "Control reaches end of function with type '%T'",
 			  code->base.func->base.type);
@@ -3355,7 +3357,7 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
     ObjIndent (indent);
     FilePrintf (FileStdout, "%s%s %c ",
 		OpNames[inst->base.opCode],
-		"             " + strlen(OpNames[inst->base.opCode]),
+		"              " + strlen(OpNames[inst->base.opCode]),
 		inst->base.flags & InstPush ? '^' : ' ');
     switch (inst->base.opCode) {
     case OpTagCase:

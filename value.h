@@ -828,7 +828,7 @@ int	FileInput (Value);
 int	FileOutput (Value, char);
 void	FileUnput (Value, unsigned char);
 Value   FileCreate (int fd, int flags);
-int	FileFlush (Value);
+int	FileFlush (Value, Bool block);
 int	FileClose (Value);
 Value	FileStringRead (char *string, int len);
 Value	FileStringWrite (void);

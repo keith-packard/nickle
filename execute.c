@@ -21,10 +21,10 @@ Bool	complete;
 Bool	signalFinished;	    /* current thread is finished */
 Bool	signalSuspend;	    /* current thread is suspending */
 
-#define Arg(n)	Stack(base - (n))
+#define Arg(n)	((n) < argc-1 ? Stack(base - (n)) : value)
 
 static FramePtr
-BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,
+BuildFrame (Value thread, Value func, Value value, Bool staticInit, Bool tail,
 	    Bool varargs, int nformal,
 	    int base, int argc, InstPtr savePc, ObjPtr saveObj)
 {
@@ -34,6 +34,11 @@ BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,
     int		    fe;
     FramePtr	    frame;
     
+#ifdef DEBUG_FRAME
+    FilePrintf (FileStdout, "BuildFrame func %v value %v\n", func, value);
+    ThreadStackDump (thread);
+    FileFlush (FileStdout, True);
+#endif
     frame = thread->thread.continuation.frame;
     if (tail)
 	frame = frame->previous;
@@ -70,9 +75,10 @@ static Value
 ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 {
     ENTER ();
-    Value	value = thread->thread.continuation.value;
-    CodePtr	code = value->func.code;
     int		argc = *stack;
+    Value	value = thread->thread.continuation.value;
+    Value	func = argc ? Stack(argc - 1) : value;
+    CodePtr	code = func->func.code;
     FramePtr	frame;
     ArgType	*argt;
     int		fe;
@@ -83,17 +89,17 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
      * Typecheck actuals
      */
     fe = 0;
-    base = argc - 1;
+    base = argc - 2;
     if (argc < 0)
     {
-	Value	numvar = Stack(0);
+	Value	numvar = Arg(0);
 	
 	if (!ValueIsInt (numvar))
 	{
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Incompatible argument",
-				    2, NewInt(-1), Stack(0));
-	    RETURN (value);
+				    2, NewInt(-1), Arg(0));
+	    RETURN (Void);
 	}
 	argc = -argc - 1 + numvar->ints.value;
 	base = argc;
@@ -106,21 +112,21 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Too many parameters",
 				    2, NewInt (argc), NewInt(code->base.argc));
-	    RETURN (value);
+	    RETURN (Void);
 	}
 	if (fe == argc)
 	{
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Too few arguments",
 				    2, NewInt (argc), NewInt(code->base.argc));
-	    RETURN (value);
+	    RETURN (Void);
 	}
 	if (!TypeCompatibleAssign (argt->type, Arg(fe)))
 	{
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Incompatible argument",
 				    2, NewInt (fe), Arg(fe));
-	    RETURN (value);
+	    RETURN (Void);
 	}
 	fe++;
 	if (!argt->varargs)
@@ -130,7 +136,6 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
     if (code->base.builtin)
     {
 	Value	*values = 0;
-	int	arg;
 	int	formal;
 
 	formal = code->base.argc;
@@ -138,8 +143,8 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 	{
 	    formal = -1;
 	    values = AllocateTemp (argc * sizeof (Value));
-	    for (arg = 0; arg < argc; arg++)
-		values[arg] = Arg(arg);
+	    for (fe = 0; fe < argc; fe++)
+		values[fe] = Arg(fe);
 	}
 
 	if (code->builtin.needsNext) 
@@ -203,7 +208,6 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 		break;
 	    }
 	}
-#undef Arg
 	if (tail && !aborting)
 	{
 	    complete = True;
@@ -214,7 +218,7 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
     }
     else
     {
-	frame = BuildFrame (thread, value, False, tail, code->base.varargs,
+	frame = BuildFrame (thread, func, value, False, tail, code->base.varargs,
 			    code->base.argc, base, argc, *next, thread->thread.continuation.obj);
 	if (aborting)
 	    RETURN (value);
@@ -237,7 +241,7 @@ ThreadStaticInit (Value thread, InstPtr *next)
     CodePtr	code = value->func.code;
     FramePtr	frame;
     
-    frame = BuildFrame (thread, value, True, False, False, 0, 0, 0,
+    frame = BuildFrame (thread, value, Void, True, False, False, 0, 0, 0,
 			*next, thread->thread.continuation.obj);
     if (aborting)
 	return;
@@ -459,8 +463,8 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	i = dim;
 	while (--dim >= 0)
 	{
-	    STACK_PUSH (thread->thread.continuation.stack,
-			Stack(i));
+	    STACK_PUSH(thread->thread.continuation.stack, value);
+	    value = Stack(i);
 	}
 	break;
     case AInitModeFuncDone:
@@ -524,11 +528,12 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 
 
 static Value
-ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
+ThreadRaise (Value thread, Value value, int argc, SymbolPtr exception, InstPtr *next, int *stack)
 {
     ENTER ();
     Value   args;
     int i;
+    int base = argc - 2;
 
 #ifdef DEBUG_JUMP
     FilePrintf (FileStdout, "    Raise: %A\n", exception->symbol.name);
@@ -539,9 +544,13 @@ ThreadRaise (Value thread, int argc, SymbolPtr exception, InstPtr *next)
      */
     args = NewArray (False, typePoly, 1, &argc);
     for (i = 0; i < argc; i++)
-        BoxValueSet (args->array.values, i, STACK_POP (thread->thread.continuation.stack));
+        BoxValueSet (args->array.values, i, Arg(i));
+    *stack = argc ? argc - 1 : 0;
     if (!aborting)
+    {
+	complete = True;
 	RaiseException (thread, exception, args, next);
+    }
     RETURN (args);
 }
 
@@ -579,7 +588,11 @@ ThreadExceptionCall (Value thread, InstPtr *next, int *stack)
     argc = args->array.ents;
     i = argc;
     while (--i >= 0)
-	STACK_PUSH (thread->thread.continuation.stack, BoxValue(args->array.values, i));
+    {
+	STACK_PUSH (thread->thread.continuation.stack,
+		    thread->thread.continuation.value);
+	thread->thread.continuation.value = BoxValue(args->array.values, i);
+    }
     /*
      * Call the function
      */
@@ -731,7 +744,10 @@ ThreadsRun (Value thread, Value lex)
 	    value = thread->thread.continuation.value;
 	    next = inst + 1;
 	    complete = False;
-	    /*    InstDump (inst, 1, 0, 0, 0); */
+#ifdef DEBUG_INST
+	    InstDump (inst, 1, 0, 0, 0);
+	    FileFlush (FileStdout, True);
+#endif
 	    switch (inst->base.opCode) {
 	    case OpNoop:
 		break;
@@ -1023,14 +1039,16 @@ ThreadsRun (Value thread, Value lex)
 		break;
 	    case OpCall:
 	    case OpTailCall:
-		if (!ValueIsFunc(value))
+		stack = inst->ints.value;
+		v = stack ? Stack(stack - 1) : value;
+		if (!ValueIsFunc(v))
 		{
+		    ThreadStackDump (thread);
 		    RaiseStandardException (exception_invalid_unop_value,
 					    "Not a function",
-					    1, value);
+					    1, v);
 		    break;
 		}
-		stack = inst->ints.value;
 		value = ThreadCall (thread, inst->base.opCode == OpTailCall,
 				    &next, &stack);
 		break;
@@ -1172,7 +1190,8 @@ ThreadsRun (Value thread, Value lex)
 	    case OpRaise:
 		if (aborting)
 		    break;
-		value = ThreadRaise (thread, inst->raise.argc, inst->raise.exception, &next);
+		stack = 0;
+		value = ThreadRaise (thread, value, inst->raise.argc, inst->raise.exception, &next, &stack);
 		break;
 	    case OpExceptionCall:
 		ThreadExceptionCall (thread, &next, &stack);

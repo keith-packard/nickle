@@ -274,8 +274,8 @@ PrettyDecl (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
     case class_static:
     case class_typedef:
     case class_namespace:
-	FilePutClass (f, e->decl.class, !TypePoly (e->decl.type));
-	if (!TypePoly (e->decl.type))
+	FilePutClass (f, e->decl.class, e->decl.type && !TypePoly (e->decl.type));
+	if (e->decl.type && !TypePoly (e->decl.type))
 	    FilePutType (f, e->decl.type, False);
 	break;
     case class_undef:

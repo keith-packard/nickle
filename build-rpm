@@ -1,0 +1,5 @@
+#!/bin/sh
+cvs export -D now -d nickle-current nickle
+(cd nickle-current && sh ./autoconfigure.sh)
+tar cIf /usr/src/packages/SOURCES/nickle-current.tar.bz2 nickle-current
+rpm -bb nickle-current/nickle.spec

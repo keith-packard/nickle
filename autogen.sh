@@ -44,6 +44,12 @@ test -n "${BASH_VERSION+set}" && set_option='set'
 
 $set_option -x
 
+if autoconf --version | awk 'NR==1{if($NF >= 2.5) exit(1);}'
+then
+    echo "need autoconf version >= 2.5" >&2
+    exit 1
+fi
+
 $aclocal $ACLOCAL_FLAGS                  || exit 1
 libtoolize --force --copy                || exit 1
 autoheader                               || exit 1

@@ -751,10 +751,11 @@ Value
 FilePopen (char *program, char *argv[], char *mode, int *errp)
 {
     ENTER ();
-    int	    fd, fds[2];
+    int	    fd, fds[2], errfds[2];
     int	    pid;
     Value   file;
     int	    flags = 0;
+    int     errcode, nread;
 
     switch (mode[0]) {
     case 'r':
@@ -774,10 +775,16 @@ FilePopen (char *program, char *argv[], char *mode, int *errp)
 	*errp = errno;
 	RETURN(0);
     }
+    if (pipe(errfds) < 0) {
+	*errp = errno;
+	RETURN(0);
+    }
     switch ((pid = fork ())) {
     case -1:
 	close (fds[0]);
 	close (fds[1]);
+	close (errfds[0]);
+	close (errfds[1]);
 	*errp = errno;
 	fd = -1;
 	break;
@@ -792,10 +799,23 @@ FilePopen (char *program, char *argv[], char *mode, int *errp)
 	    shutdown (fds[1], SHUT_RD);
 	close (fds[0]);
 	close (fds[1]);
+	close (errfds[0]);
+	fcntl (errfds[1], F_SETFD, FD_CLOEXEC);
 	execvp (program, argv);
+	errcode = errno & 0xff;
+	write(errfds[1], &errcode, 1);
+	close(errfds[1]);
 	exit (1);
     default:
-	fd = fds[0];
+	close(errfds[1]);
+	nread = read(errfds[0], &errcode, 1);
+	if (nread != 0) {
+	    if (nread == 1)
+		*errp = errcode;
+	    close(errfds[0]);
+	    RETURN(0);
+	}
+	close(errfds[0]);
         if (!(flags & FileReadable))
 	    shutdown (fds[0], SHUT_RD);
 	if (!(flags & FileWritable))

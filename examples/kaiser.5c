@@ -1,6 +1,9 @@
 /*
  * Kaiser Window digital filter
- * Keith Packard 2001
+ *
+ * Copyright © 2001, Keith Packard
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
 real function i0(real x)

@@ -1,3 +1,17 @@
+2004-11-15  Keith Packard  <keithp@keithp.com>
+
+	* examples/Makefile.am:
+	* examples/apsp.5c:
+	* examples/comb.5c:
+	* examples/cribbage.5c:
+	* examples/erat.5c:
+	* examples/google-puzzle.5c:
+	* examples/initializer.5c:
+	* examples/is-prime.5c:
+	* examples/kaiser.5c:
+	* examples/menace2.5c:
+	Add licensing information to some of the examples
+
 2004-11-8  Bart Massey <bart@cs.pdx.edu>
 
 	* string.5c:

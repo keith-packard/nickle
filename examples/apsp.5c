@@ -2,7 +2,9 @@
  * All-Pairs Shortest Path Computation
  * using Floyd-Warshall O(n**3) method
  *  CLR 2nd ed p. 632
- * Bart Massey 2004/06
+ * Copyright © 2004 Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 namespace APSP {
     public typedef real distance;

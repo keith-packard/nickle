@@ -6,6 +6,11 @@
 # Uses Miller-Rabin to check candidates drawn
 # from the first 10K digits of e as printed at
 #   http://sources.wikipedia.org/wiki/E_to_10%2C000_places
+#
+# Copyright © 2004 Bart Massey.
+# All Rights Reserved.  See the file COPYING in this directory
+# for licensing information.
+#
 
 import String;
 

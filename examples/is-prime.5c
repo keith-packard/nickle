@@ -3,6 +3,10 @@
  * Agrawal, Kayal, and Saxena's
  * deterministic polytime primality test
  *
+ * Copyright © 2002  Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ *
  * Bart Massey 2002/8/16
  */
 

@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2002  Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
 bool[*] make_sieve(int size) {
   bool[size] sieve = {true ...};
   for (int k = 2; k < size; k++) {

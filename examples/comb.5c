@@ -1,6 +1,8 @@
 /*
  * Basic combinatorics
- * Bart Massey 1995..2001
+ * Copyright © 1995-2001 Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
 namespace Comb {

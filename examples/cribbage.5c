@@ -1,7 +1,10 @@
 /*
  * Cribbage scoring aid
  * Counts only runs and 15s
- * Bart Massey (1997?)
+ *
+ * Copyright © 1997 Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
  */
 
 namespace Cribbage {

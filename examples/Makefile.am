@@ -27,6 +27,6 @@ NICKLEFILES=\
 
 exampledir=$(pkgdatadir)/examples
 
-example_DATA=$(NICKLEFILES)
+example_DATA=$(NICKLEFILES) COPYING
 
 EXTRA_DIST=$(NICKLEFILES)

@@ -179,14 +179,18 @@ ThreadAssign (Value ref, Value v)
     ENTER ();
     if (RefConstant(ref))
     {
-	RaiseError ("Attempted assignment to constant box (%T) %v", 
-		RefType (ref), v);
+	RaiseError ("Attempted assignment to constant box (%t) %v", 
+		    RefType (ref), v);
     }
-    else
-    if (!AssignTypeCompatiblep (RefType (ref), v))
+    else if (ref->ref.element >= ref->ref.box->nvalues)
     {
-	RaiseError ("Incompatible types in assignment %T = (%T) %v", 
-		RefType (ref), v->value.tag, v);
+	RaiseError ("Attempted assignment beyond box bounds %v",
+		    v);
+    }
+    else if (!AssignTypeCompatiblep (RefType (ref), v))
+    {
+	RaiseError ("Incompatible types in assignment %t = (%T) %v", 
+		    RefType (ref), v->value.tag, v);
     }
     else
     {

@@ -296,6 +296,7 @@ FloatAdd (Value av, Value bv, int expandOk, Bool negate)
 	alen = FpartLength (amant);
 	blen = FpartLength (bmant);
 	prec = 0;
+	exp = 0;
 	if (d >= 0)
 	{
 	    if (alen + d <= blen + a->prec)
@@ -457,85 +458,9 @@ FloatNegate (Value av, int expandOk)
 }
 
 static Value
-FloatFloor (Value av, int expandOk)
+FloatInteger (Value av)
 {
     ENTER ();
-    Float   *a = &av->floats;
-    Fpart   *mant;
-    Fpart   *exp;
-    int	    d;
-
-    if (a->exp->sign == Positive)
-	RETURN (av);
-    if (NaturalLess (NewNatural (a->prec), a->exp->mag))
-	RETURN (Zero);
-    d = NaturalToInt (a->exp->mag);
-    if (a->mant->sign == Positive)
-    {
-	mant = FpartRsl (a->mant, d);
-    }
-    else
-    {
-	mant = FpartRsl (a->mant, d - 1);
-	if (!NaturalEven (a->mant->mag))
-	    mant = FpartAdd (mant, one_fpart, True);
-	mant = FpartRsl (mant, 1);
-    }
-    exp = zero_fpart;
-    RETURN (NewFloat (mant, exp, a->prec - d));
-}
-   
-static Value
-FloatCeil (Value av, int expandOk)
-{
-    ENTER ();
-    Float   *a = &av->floats;
-    Fpart   *mant;
-    Fpart   *exp;
-    int	    d;
-
-    if (a->exp->sign == Positive)
-	RETURN (av);
-    if (NaturalLess (NewNatural (a->prec), a->exp->mag))
-	RETURN (Zero);
-    d = -NaturalToInt (a->exp->mag);
-    if (a->mant->sign == Negative)
-    {
-	mant = FpartRsl (a->mant, d);
-    }
-    else
-    {
-	mant = FpartRsl (a->mant, d - 1);
-	if (!NaturalEven (a->mant->mag))
-	    mant = FpartAdd (mant, one_fpart, False);
-	mant = FpartRsl (mant, 1);
-    }
-    exp = zero_fpart;
-    RETURN (NewFloat (mant, exp, a->prec - d));
-}
-    
-static Value
-FloatPromote (Value av, Value bv)
-{
-    ENTER ();
-    int	prec;
-
-    if (av->value.tag != type_float)
-    {
-	if (bv && bv->value.tag == type_float)
-	    prec = bv->floats.prec;
-	else
-	    prec = DEFAULT_FLOAT_PREC;
-	av = NewValueFloat (av, prec);
-    }
-    RETURN (av);
-}
-
-static Value
-FloatReduce (Value av)
-{
-    ENTER ();
-#if 0
     Float	*a = &av->floats;
     Natural	*mag;
     int		dist;
@@ -564,8 +489,88 @@ FloatReduce (Value av)
 	    mag = NaturalLsl (mag, dist);
 	av = Reduce (NewInteger (a->mant->sign, mag));
     }
-#endif
     RETURN (av);
+}
+
+static Value
+FloatFloor (Value av, int expandOk)
+{
+    ENTER ();
+    Float   *a = &av->floats;
+    Fpart   *mant;
+    Fpart   *exp;
+    int	    d;
+
+    if (a->exp->sign == Positive)
+	RETURN (av);
+    if (NaturalLess (NewNatural (a->prec), a->exp->mag))
+	RETURN (Zero);
+    d = NaturalToInt (a->exp->mag);
+    if (a->mant->sign == Positive)
+    {
+	mant = FpartRsl (a->mant, d);
+    }
+    else
+    {
+	mant = FpartRsl (a->mant, d - 1);
+	if (!NaturalEven (a->mant->mag))
+	    mant = FpartAdd (mant, one_fpart, True);
+	mant = FpartRsl (mant, 1);
+    }
+    exp = zero_fpart;
+    RETURN (FloatInteger (NewFloat (mant, exp, a->prec - d)));
+}
+   
+static Value
+FloatCeil (Value av, int expandOk)
+{
+    ENTER ();
+    Float   *a = &av->floats;
+    Fpart   *mant;
+    Fpart   *exp;
+    int	    d;
+
+    if (a->exp->sign == Positive)
+	RETURN (av);
+    if (NaturalLess (NewNatural (a->prec), a->exp->mag))
+	RETURN (Zero);
+    d = -NaturalToInt (a->exp->mag);
+    if (a->mant->sign == Negative)
+    {
+	mant = FpartRsl (a->mant, d);
+    }
+    else
+    {
+	mant = FpartRsl (a->mant, d - 1);
+	if (!NaturalEven (a->mant->mag))
+	    mant = FpartAdd (mant, one_fpart, False);
+	mant = FpartRsl (mant, 1);
+    }
+    exp = zero_fpart;
+    RETURN (FloatInteger (NewFloat (mant, exp, a->prec - d)));
+}
+    
+static Value
+FloatPromote (Value av, Value bv)
+{
+    ENTER ();
+    int	prec;
+
+    if (av->value.tag != type_float)
+    {
+	if (bv && bv->value.tag == type_float)
+	    prec = bv->floats.prec;
+	else
+	    prec = DEFAULT_FLOAT_PREC;
+	av = NewValueFloat (av, prec);
+    }
+    RETURN (av);
+}
+
+static Value
+FloatReduce (Value av)
+{
+    return av;
 }
 
 #if 0
@@ -713,7 +718,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
     char	*int_string;
     char	*frac_buffer;
     char	*frac_string;
-    char	*exp_string;
+    char	*exp_string = 0;
     
     if (base <= 0)
 	base = 10;

@@ -411,6 +411,7 @@ BuiltinArgTypes (char *format, int *argcp)
     Types	*t;
     Bool	ref;
     
+    args = 0;
     last = &args;
     argc = 0;
     while (*format)

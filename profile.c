@@ -8,6 +8,7 @@
 
 #include	"nickle.h"
 #include	<sys/time.h>
+#include	<assert.h>
 
 volatile static unsigned long	currentTick;
 volatile Bool			signalProfile;
@@ -40,7 +41,6 @@ ProfileInterrupt (Value thread)
 	if (stat)
 	{
 	    stat->base.ticks += ticks;
-	    stat->base.sub_ticks += ticks;
 	}
     }
     for (frame = thread->thread.continuation.frame; frame; frame = frame->previous)

@@ -19,6 +19,7 @@ FrameMark (void *object)
 	MemReference (frame->function);
 	MemReference (frame->frame);
 	MemReference (frame->statics);
+	MemReference (frame->saveObj);
 	frame = frame->previous;
     } while (MemReferenceNoRecurse (frame) == 0);
 }

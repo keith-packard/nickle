@@ -2292,7 +2292,7 @@ _CompileNonLocal (ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
 static Bool
 _CompileCanTailCall (ObjPtr obj, CodePtr code)
 {
-    return obj->nonLocal == 0 && (!code || code->base.func == code);
+    return !profiling && obj->nonLocal == 0 && (!code || code->base.func == code);
 }
 
 ObjPtr

@@ -1,7 +1,7 @@
-Command::lex_file ("@datadir@/command.5c");
-load "@datadir@/math.5c"
+Command::lex_library ("command.5c");
+library "math.5c"
 import Math;
-load "@datadir@/scanf.5c"
-load "@datadir@/mutex.5c"
-load "@datadir@/arc4.5c"
-load "@datadir@/prng.5c"
+library "scanf.5c"
+library "mutex.5c"
+library "arc4.5c"
+library "prng.5c"

@@ -1,0 +1,78 @@
+The Naming Of Nickle
+
+Keith Packard's original calculator language of 15 years ago
+was called "ic", for "interpreted C", based on his earlier
+"ec" inline compiler and runtime for arbitrary-precision
+rationals integrable with C code.  At some point, the
+language name was upgraded to "Nick" (whether for "New IC of
+Keith's" or just because he liked the name, we cannot
+recall).
+
+That name was retained throughout our ongoing work, until
+our upcoming first public release.  At that point, we
+decided we needed a name which was more descriptive of the
+nature of the current language.  Nickle is designed to
+support one more major upgrade (to handle parametric type
+inference).  The name nickle, for "nick <=", was chosen
+partly to denote this state.
+
+In addition (in no particular order), we note that:
+
+  + The progression to longer names built around the same
+  core is inline with the evolution of program naming in
+  UNIX generally.  ic -> nick -> nickle is two characters
+  per iteration, which we believe to be about right.
+
+  + There is a weak tradition of "materials based" names
+  for scripting languages, most notably the "PERL" family
+  of languages and successors like "Ruby".
+
+  + There is a tradition of "materials-man" standards draft
+  names as well.  Our language standard is currently much more
+  than a "strawman," but a little less than an "iron man":
+  "nickle man" appears to be about right.
+
+  + The term "nickle" (with this spelling) was apparently
+  a common abbreviation among the Mattel Intellivision processor
+  team for a 5-bit field.  (The term may have a longer and
+  broader history.)  We figure the language is worth about
+  5 bits (i.e. $1.25 US).
+
+  + The word "nickle" probably actually originates from the
+  Germanic name "Nicholas", i.e. "Nick", as a short form of
+  the German "Kupfernickel" or "copper demon", for the
+  deceptive copper color of nickle ore.  (Note that this is
+  also the origin of the term "Old Nick" to denote the
+  Christian Satan.  Sources tell us that the cute little BSD
+  daemon is named "Chuck".  We think "Nick" would be a better
+  choice.)
+
+  + Recall the famous joke about little-language designer
+  Nickle's Worth.  ("Europeans call him by name, but Americans
+  call him by value.")  Niklaus Wirth was easily the single
+  biggest influence on my development of interest in and
+  understanding of programming languages and language design.
+
+  + Several programming language researchers are named
+  "Nickle" or "Nickel".  Hopefully, they will feel flattered
+  and supportive.
+
+  + Remember the famous Dilbertian "condescending UNIX
+  computer user" from Scott Adams' "Computer Holy Wars"
+  series? "Here's a nickle, kid: buy yourself a better
+  computer."
+
+Finally, a note about the spelling.  "Nickel" appears to be
+the preferred spelling for both the metal and the
+U.S. coin. The New American Heritage Dictionary does not
+allow the variant "nickle", although the Merriam Webster
+Collegiate Dictionary does.  A Google search reveals a vast
+predominance of the former spelling over the latter.
+However, for a variety of reasons, some noted above, we have
+chosen the more problematic variant.  As the old gag goes,
+you can call it anything you like.  Just call it.
+
+---
+Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+All Rights Reserved.  See the file COPYING in this directory
+for licensing information.

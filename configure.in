@@ -1,0 +1,48 @@
+dnl Process this file with autoconf to produce a configure script.
+
+dnl Copyright (C) 1988-2001 Keith Packard and Bart Massey.
+dnl All Rights Reserved.  See the file COPYING in this directory
+dnl for licensing information.
+
+AC_INIT(nickle.h)
+AM_INIT_AUTOMAKE(nickle,1.99.0)
+AM_CONFIG_HEADER(config.h)
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AM_PROG_LEX
+dnl AC_PROG_YACC
+AC_CHECK_PROGS([YACC], byacc yacc bison, yacc)
+case "$YACC" in
+*bison)	YACC="$YACC -y"	;;
+esac
+AC_PROG_AWK
+AC_CHECK_PROGS([DATE], date)
+
+dnl Checks for libraries.
+AC_CHECK_LIB(m, sin)
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(fcntl.h strings.h time.h sys/time.h unistd.h)
+AC_CHECK_HEADERS(ieeefp.h fpu_control.h stropts.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_INLINE
+case "$ac_cv_c_inline" in
+  no) ;;
+  *) AC_DEFINE([HAVE_C_INLINE], 1, [C compiler has some form of inline.]) ;;
+esac
+AC_CHECK_SIZEOF([long long], 0)
+
+dnl Checks for library functions.
+AC_TYPE_SIGNAL
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS(gettimeofday select)
+AC_CHECK_FUNCS(finite __setfpucw)
+
+AC_FUNC_GETPGRP
+
+AC_OUTPUT(Makefile date-sh nickle.1, , [chmod +x ${srcdir}/date-sh])

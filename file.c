@@ -660,7 +660,7 @@ FilePutString (Value f, char *string, char format)
 		    break;
 		default:
 		    FileOutput (f, '\\');
-		    Print (f, NewInt (c), 'o', 8, 3, 0, '0');
+		    Print (f, NewInt (c), 'o', 8, 3, -1, '0');
 		    break;
 		}
 	    else if (c == '"')

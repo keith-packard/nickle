@@ -70,7 +70,7 @@ extend namespace File {
 
 	    whitespace();
 	    s = "";
-	    while (!iswhite (c = File::getc(f)))
+	    while (!iswhite (c = File::getc(f)) && !File::end(f))
 		s = s + String::new(c);
 	    File::ungetc (c, f);
 	    return s;

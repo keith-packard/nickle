@@ -1,3 +1,16 @@
+2004-05-13  Bart Massey  <bart@cs.pdx.edu>
+
+	* builtin-toplevel.c:
+	* nickle.h:
+	Rename is_defined() to is_uninit().
+
+2004-05-12  Bart Massey  <bart@cs.pdx.edu>
+
+	* builtin-toplevel.c:
+	* nickle.h:
+	Add a predicate is_defined() to test whether a reference
+	is to a <uninit> value.
+
 2004-04-23  Keith Packard  <keithp@keithp.com>
 
 	* test/optest.5c:

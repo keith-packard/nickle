@@ -985,7 +985,7 @@ Value	do_is_struct (Value);
 Value	do_is_func (Value);
 Value	do_is_bool (Value);
 Value	do_is_void (Value);
-Value	do_is_defined (Value);
+Value	do_is_uninit (Value);
 Value	do_hash (Value);
 Value	do_Thread_get_priority (Value);
 Value	do_Thread_id_to_thread (Value);

@@ -85,6 +85,7 @@ extern SymbolPtr    NamespaceFindSymbol (NamespacePtr namespace, Atom name, int 
 extern SymbolPtr    NamespaceAddSymbol (NamespacePtr namespace, SymbolPtr symbol);
 extern Bool	    NamespaceRemoveSymbol (NamespacePtr namespace, SymbolPtr symbol);
 extern SymbolPtr    NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish);
+extern Class	    NamespaceDefaultClass (NamespacePtr namespace);
 extern NamespacePtr GlobalNamespace, CurrentNamespace, DebugNamespace;
 extern FramePtr	    CurrentFrame;
 extern void	    NamespaceInit (void);

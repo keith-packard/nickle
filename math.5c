@@ -42,7 +42,7 @@ public real function sqrt (real v)
 	v = imprecise (v);
 	err = 1/(2^(precision (v)+3));
 	prev = imprecise (1 / (0.75 * 2^(floor (exponent(v)/2))), precision(v));
-	iter = log2(precision(v)) + 15;
+	iter = precision (v) + 15;
 	while (iter--)
 	{
 	    cur = 0.5 * prev * (3 - v * prev^2);
@@ -178,9 +178,9 @@ public namespace Math {
 	real	v, next;
 	real	err;
 
+	a = imprecise (a);
 	if (a == 1)
 	    return 0;
-	a = imprecise (a);
 	if (abs (a-1) < 1e-4)
 	    return log_near_1 (a-1);
 	maxiter = log2 (precision (a)) + 15;
@@ -220,6 +220,7 @@ public namespace Math {
     {
 	static real	loge = 0;
 
+	a = imprecise (a);
 	if (!loge || precision (loge) < precision (a))
 	    loge = 1/log(imprecise (10, precision (a)));
 	return loge * log(a);
@@ -323,7 +324,7 @@ public namespace Math {
 	return imprecise (value, prec);
     }
     
-    public real function get_pi (integer prec)
+    public real function pi_value (integer prec)
     {
 	static real local_pi = pi;
     
@@ -337,7 +338,7 @@ public namespace Math {
 	real	my_pi;
 
 	aa = imprecise (aa);
-	my_pi = get_pi (precision (aa));
+	my_pi = pi_value (precision (aa));
 	if (aa > my_pi)
 	    aa = aa - 2 * my_pi;
 	return aa % (2 * my_pi);
@@ -345,28 +346,34 @@ public namespace Math {
     
     public real function sin (real a)
     {
-	/* sin(x) = x - x^3/3! + x^5/5! ... */
+	/*
+	 * sin(x) = x - x^3/3! + x^5/5! ... 
+	 */
 	real function raw_sin (real a)
 	{
 	    real	err;
 	    real	v, term;
+	    real	a4, aj, ai;
 	    integer	i, j;
 	    integer	iter;
 
 	    err = errbounds (a);
 	    i = 1;
 	    j = 3;
-	    iter = floor (log (precision (v) + 8)) + 8;
+	    a4 = a^4;
+	    ai = a^i;
+	    aj = a^j;
+	    iter = precision (a) + 8;
 	    if (iter < 5)
 		iter = 5;
 	    while (iter--)
 	    {
-		term = a^i/i! - a^j/j!;
-		/* printf ("v %g term %g term * err %g\n", 
-			   v, term, term * err); */
+		term = ai/i! - aj/j!;
 		v += term;
 		if (abs (v) > abs(term) * err)
 		    break;
+		ai *= a4;
+		aj *= a4;
 		i += 4;
 		j += 4;
 	    }
@@ -374,39 +381,53 @@ public namespace Math {
 	}
 
 	/* sin(5x) = 16 * sin^5(x) - 20 * sin^3(x) + 5 * sin(x) */
-	real function do_5x (a)
+	real function do_5x (real a)
 	{
 	    return 16 * a^5 - 20 * a^3 + 5 * a;
 	}
 	
-	return do_5x (do_5x (do_5x (raw_sin (limit_angle_to_pi (a)/125))));
+	real function big_sin (real a)
+	{
+	    if (a > .01)
+		return do_5x (big_sin (a/5));
+	    return raw_sin (a);
+	}
+	
+	a = limit_angle_to_pi (a);
+	if (a == 0)
+	    return 0;
+	
+	return big_sin (a);
     }
 
     public real function cos (real a)
     {
-	/* cos(x) = 1 - x^2/2! + x^4/4! - x^6/6! ... */
-	
+	/*
+	 * cos(x) = 1 - x^2/2! + x^4/4! - x^6/6! ... 
+	 */
+
 	real function raw_cos (real a)
 	{
-	    real	err;
+	    real	err = errbounds (a);
 	    real	v, term;
+	    real	ai, aj, a4;
 	    integer	i, j;
 	    integer	iter;
 
-	    err = errbounds (a);
 	    i = 0;
 	    j = 2;
-	    iter = floor (log (precision (v) + 8)) + 8;
-	    if (iter < 5)
-		iter = 5;
+	    ai = 1;
+	    aj = a^2;
+	    a4 = a^4;
+	    iter = precision (v) + 8;
 	    while (iter--)
 	    {
-		term = a^i/i! - a^j/j!;
-		/* printf ("v %g term %g term * err %g\n", 
-			   v, term, term * err); */
+		term = ai/i! - aj/j!;
 		v += term;
 		if (abs (v) > abs(term) * err)
 		    break;
+		ai *= a4;
+		aj *= a4;
 		i += 4;
 		j += 4;
 	    }
@@ -419,23 +440,17 @@ public namespace Math {
 	    return 8 * (c^4 - c^2) + 1;
 	}
 	 
-	real	v;
+	real function big_cos (real a)
+	{
+	    if (a > .01)
+		return do_4x (big_cos (a/4));
+	    return raw_cos (a);
+	}
 	
-	/*
-	 * Get a value near zero so that the
-	 * series converges quickly, then use the 1/4 angle formula
-	 * to compute the real value
-	 */
 	a = limit_angle_to_pi (a);
-	if (a >= 1)
-	{
-	    return do_4x (do_4x (do_4x (do_4x (raw_cos (a/256)))));
-	}
-	else
-	{
-	    return do_4x (do_4x (do_4x (raw_cos (a/64))));
-	}
-	return v;
+	if (a == 0)
+	    return 1;
+	return big_cos (limit_angle_to_pi (a));
     }
     
     real function cos_to_sin (real v)
@@ -449,7 +464,7 @@ public namespace Math {
 
 	a = limit_angle_to_pi (a);
 	c = cos (a);
-	s = sign (a) * abs (cos_to_sin (a));
+	s = sign(a) * abs (cos_to_sin(c));
 	*cosp = c;
 	*sinp = s;
     }
@@ -458,143 +473,130 @@ public namespace Math {
     {
 	real	c, s;
 
-	sin_cos (a, &c, &s);
+	a = imprecise (a);
+	sin_cos (a, &s, &c);
 	return s/c;
     }
     
-    public real(real v) arcsin, arccos, arctan;
-    
-    /* 
-     * arctan(x) = x - x^3/3 + x^5/5 - ...
-     */
-    real function arctan_near_0 (real v)
+    public real function arctan (real v)
     {
-	real    err = errbounds (v);
-	real    term, a;
-	integer i, j;
-
-	i = 1;
-	j = 3;
-	a = 0;
-	for (;;)
+	/* 
+	 * arctan(x) = x - x^3/3 + x^5/5 - ...
+	 */
+	real function raw_arctan (real v)
 	{
-	    term = v^i/i - v^j/j;
-	    a += term;
-	    if (abs (a) > abs (term) * err)
-		break;
-	    i += 4;
-	    j += 4;
+	    real    err = errbounds (v);
+	    real    a, term;
+	    real	vi, vj, v4;
+	    integer i, j;
+	    integer	iter;
+
+	    i = 1;
+	    j = 3;
+	    vi = v^i;
+	    vj = v^j;
+	    v4 = v^4;
+	    a = 0;
+	    iter = precision (v) + 8;
+	    while (iter--)
+	    {
+		term = vi/i - vj/j;
+		a += term;
+		if (abs (a) > abs (term) * err)
+		    break;
+		vi *= v4;
+		vj *= v4;
+		i += 4;
+		j += 4;
+	    }
+	    return a;
 	}
-	return a;
-    }
 
-    function arcsin_near_0 (v)
-    {
-	return arctan_near_0 (v / sqrt (1 - v^2));
+	v = imprecise (v);
+	/*
+	 * arctan(v) = -arctan(-v) 
+	 */
+	if (v < 0)
+	    return -arctan (-v);
+	/* 
+	 * arctan(v) = pi/2 - arctan(1/v)
+	 */
+	if (v > 1)
+	    return pi_value (precision(v))/2 - arctan (1/v);
+	/*
+	 * arctan(v) = pi/6 + arctan((v*sqrt(3) - 1) / (sqrt(3) + v))
+	 */
+	if (v > .268)
+	    return (pi_value (precision(v)) / 6 + 
+		    raw_arctan ((v * sqrt(3) - 1) / (sqrt(3) + v)));
+	return raw_arctan (v);
     }
-
-    function arccos_near_0 (v)
-    {
-	return get_pi (precision (v)) / 2 - arcsin (v);
-    }
+    
+    /*
+     *	arctan(v) = arcsin(v/sqrt(1+v^2))
+     *
+     *	q = v/sqrt(1+v^2)
+     *	q*sqrt(1+v^2) = v
+     *  q^2*(1+v^2) = v^2
+     *  q^2 + q^2v^2 = v^2
+     *	q^2 = v^2 - q^2v^2
+     *  q^2 = v^2 * (1 - q^2)
+     *  v^2 = q^2/(1-q^2)
+     *  v = q/sqrt(1-q^2)
+     *
+     *  arcsin(q) = arctan(q/sqrt(1-q^2))
+     */
     
     public real function arcsin (real v)
     {
+	v = imprecise (v);
 	if (abs (v) > 1)
 	    return 1/0;
 	if (v == 1)
-	    return get_pi (precision (v));
+	    return pi_value (precision (v))/2;
 	if (v == -1)
-	    return -get_pi (precision (v));
-	if (abs (v) > 0.85)
-	    return arccos (cos_to_sin (v));
-	if (v == 0)
-	    return 0;
-
-	if (abs (v) < 1e-4)
-	{
-	    return arcsin_near_0 (v);
-	}
-
-	real	a = 0.5;
-	real	err = errbounds (v);
-	integer	iter;
-
-	iter = floor (log (precision (v) + 8)) + 8;
-	if (iter < 5)
-	    iter = 5;
-	while (iter--)
-	{
-	    term = (sin (a) - v) / cos (a);
-	    a = limit_angle_to_pi (a - term);
-	    if (abs (a) > abs (term) * err)
-		break;
-	}
-	return a;
+	    return -pi_value (precision (v))/2;
+	return arctan (v/sqrt(1-v^2));
     }
 
+    /*
+     * arccos(v) = arcsin (sqrt (1 - v^2))
+     *		= arctan (sqrt(1-v^2) / sqrt (1-(sqrt (1-v^2))^2))
+     *		= arctan (sqrt(1-v^2) / sqrt (1-(1-v^2)))
+     *		= arctan (sqrt(1-v^2) / v)
+     */
     public real function arccos (real v)
     {
-	v = imprecise (v);
+	v = imprecise(v);
 	if (abs (v) > 1)
 	    return 1/0;
 	if (v == 1)
 	    return 0;
 	if (v == -1)
-	    return get_pi (precision (v));
-	if (abs (v) > 0.85)
-	    return arcsin (cos_to_sin (v));
+	    return pi_value(precision(v));
 	if (v == 0)
-	    return get_pi(precision (v)) / 2;
-	if (abs (v) < 1e-4)
-	    return arccos_near_0 (v);
-
-	real	err = errbounds (v);
-	real	a, term;
-	integer	iter;
-
-	iter = floor (log (precision (v) + 8)) + 8;
-	if (iter < 5)
-	    iter = 5;
-	a = 0.5;
-	while (iter--)
-	{
-	    term = (cos(a) - v) / sin(a);
-	    a = limit_angle_to_pi (a + term);
-	    /* printf ("a %g term %g term * err %g\n", a, term ,term*err); */
-	    if (abs (a) > abs (term) * err)
-		break;
-	}
-	return a;
+	    return pi_value(precision(v))/2;
+	return arctan (sqrt (1-v^2)/v);
     }
-
-    public real function arctan (real v)
-    {
-	v = imprecise (v);
-	if (v == 0)
-	    return 0;
-	if (abs (v) < 1e-4)
-	    return arctan_near_0 (v);
-
-	return arcsin (v / sqrt (1 + v^2));
-    }
-    
+	
     /*
      * arctan (x/y)
      */
     public real function arctan2 (real x, real y)
     {
+	x = imprecise (x);
+	y = imprecise (y);
 	if (y == 0)
 	{
 	    if (x == 0)
 		return 0;
-	    return sign(x) * get_pi (precision (x))/2;
+	    return sign(x) * pi_value (precision (x))/2;
 	}
 	if (x == 0)
 	{
 	    if (y > 0)
 		return 0;
-	    return get_pi (precision (y));
+	    return pi_value (precision (y));
 	}
 
 	real	a;
@@ -603,13 +605,16 @@ public namespace Math {
 	if (x < 0)
 	{
 	    if (y > 0)
-		a += get_pi (precision (a));
+		a += pi_value (precision (a));
 	    else
-		a -= get_pi (precision (a));
+		a -= pi_value (precision (a));
 	}
 	return a;
     }
 
+    /*
+     * These two are used for the '^' and '^=' operators
+     */
     public real function pow (real a, real b)
     {
 	real    result;
@@ -618,7 +623,10 @@ public namespace Math {
 	    integer flip = 0;
 
 	    if (b < 0)
+	    {
 		flip = 1;
+		b = -b;
+	    }
 	    result = 1;
 	    while (b)
 	    {
@@ -632,7 +640,7 @@ public namespace Math {
 	}
 	else
 	{
-	    result = Math.exp (b * Math.log(a));
+	    result = exp (b * log(a));
 	}
 	return result;
     }
@@ -642,4 +650,3 @@ public namespace Math {
 	return *a = pow (*a, b);
     }
 }
-

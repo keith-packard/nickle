@@ -16,7 +16,7 @@
 
 #include	"value.h"
 
-#undef CHECK
+#define CHECK
 #undef DEBUG
 
 #if defined(DEBUG) || defined(CHECK)
@@ -284,13 +284,14 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 	     index--)
 	{
 #ifdef DEBUG
-	    prs ("rem", rem);
+	    prs ("rem:    ", rem);
+	    prs ("b:      ", b);
 #endif
 	    /*
 	     * estimate this digit
 	     */
 #ifdef DEBUG
-	    printf ("digit1: %u digit2: %u divisorc: %u divisorc2\n",
+	    printf ("digit1: %u digit2: %u divisorc: %u divisorc2: %u\n",
 		    (unsigned int) NaturalDigits(rem)[index],
 		    (unsigned int) NaturalDigits(rem)[index-1],
 		    (unsigned int) divisorc,
@@ -334,7 +335,15 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 	    {
 		temp = (temp << normal) | (dividend3 >> (LBASE2 - normal));
 	    }
-	    d = temp / divisorc;
+	    if ((digit) (temp >> LBASE2) == divisorc)
+		d = 0xffffffff;
+	    else
+		d = temp / divisorc;
+#ifdef DEBUG	    
+	    printf ("temp 0x%08x%08x divisorc 0x%08x d 0x%08x\n", 
+		    (unsigned int) (temp >> 32), (unsigned int) temp,
+		    divisorc, d);
+#endif
 	    offset = index - b->length;
 	    if (d)
 	    {

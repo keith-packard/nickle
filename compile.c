@@ -114,16 +114,6 @@ ObjPtr	CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace);
 ObjPtr	CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
-static Class
-DefaultClass (NamespacePtr namespace)
-{
-    while (namespace && !namespace->code && !namespace->debugger)
-	namespace = namespace->previous;
-    if (namespace && !namespace->debugger)
-	return class_auto;
-    return class_global;
-}
-
 static void
 CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr stat)
 {
@@ -219,12 +209,13 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
     SymbolPtr	s;
     
     CompileCanonType (obj, namespace, type, stat);
+#if 0
     /*
      * A bit of a special case here --
      * redefining in the global scope is ignored, as long
      * as the types match.
      */
-    if (DefaultClass (namespace) == class_global)
+    if (NamespaceDefaultClass (namespace) == class_global)
     {
 	s = NamespaceLookupSymbol (namespace, name);
 	if (s)
@@ -243,6 +234,7 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
 	    RETURN (s);
 	}
     }
+#endif
 
     switch (class) {
     case class_global:
@@ -296,7 +288,7 @@ CompileFindSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace, Atom name,
 	if (!s)
 	{
 	    s = CompileNewSymbol (obj, stat, namespace,
-				   publish_private, DefaultClass (namespace),
+				   publish_private, NamespaceDefaultClass (namespace),
 				   type, name, &new);
 	    if (new)
 		CompileAddSymbol (namespace, s);
@@ -1503,7 +1495,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
     case FUNCTION:
 	sym = CompileNewSymbol (obj, expr, namespace,
 				 expr->tree.left->decl.publish,
-				 DefaultClass (namespace),
+				 NamespaceDefaultClass (namespace),
 				 expr->tree.left->decl.type,
 				 expr->tree.left->decl.decl->name,
 				 &new);
@@ -1652,7 +1644,7 @@ CompileDecl (ObjPtr obj, ExprPtr decls, NamespacePtr namespace)
     decls->base.namespace = namespace;
     class = decls->decl.class;
     if (class == class_undef)
-	class = DefaultClass (namespace);
+	class = NamespaceDefaultClass (namespace);
     publish = decls->decl.publish;
     compile_namespace = 0;
     switch (class) {

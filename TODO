@@ -1,7 +1,6 @@
 TODO
 
 + tagless GC
-+ better arctan
 + Allow poll() as a substitue for select().
 + Allow nick to be built without all the async IO and
   gettimeofday() and the like.
@@ -29,3 +28,4 @@ DONE
 + : namespace separator
 + Finish twixt handling
 + Have '^' call math:pow function
++ better arctan

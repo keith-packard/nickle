@@ -145,6 +145,16 @@ NamespaceRemoveSymbol (NamespacePtr namespace, SymbolPtr symbol)
     return False;
 }
 
+Class
+NamespaceDefaultClass (NamespacePtr namespace)
+{
+    while (namespace && !namespace->code && !namespace->debugger)
+	namespace = namespace->previous;
+    if (namespace && !namespace->debugger)
+	return class_auto;
+    return class_global;
+}
+
 SymbolPtr
 NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish)
 {
@@ -156,9 +166,8 @@ NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish)
 	if (chain->publish == publish_public)
 	{
 	    symbol = chain->symbol;
-	    if (NamespaceLookupSymbol (namespace, symbol->symbol.name))
-		return symbol;
-	    namespace->symbols = NewNamespaceChain (namespace->symbols, symbol, publish);
+	    namespace->symbols = NewNamespaceChain (namespace->symbols, 
+						    symbol, publish);
 	}
     }
     return 0;

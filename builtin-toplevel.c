@@ -264,6 +264,7 @@ do_exit (Value av)
     code = IntPart (av, "Illegal exit code");
     if (aborting)
 	RETURN (Zero);
+    IoFini ();
     exit (code);
     RETURN (Zero);
 }

@@ -477,18 +477,6 @@ CompileAssign (ObjPtr obj, ExprPtr expr, OpCode opCode, ExprPtr stat, CodePtr co
     RETURN (obj);
 }
 
-/*
- * For typechecking, access arguments from left to right
- */
-
-static ExprPtr
-CompileGetArg (ExprPtr arg, int i)
-{
-    while (arg && --i)
-	arg = arg->tree.right;
-    return arg;
-}
-
 static ObjPtr
 CompileArgs (ObjPtr obj, int *argcp, ExprPtr arg, ExprPtr stat, CodePtr code)
 {
@@ -536,9 +524,9 @@ CompileTypecheckArgs (ObjPtr	obj,
     if (func_type->base.tag == types_func)
     {
 	argt = func_type->func.args;
+	arg = args;
 	i = 0;
-	while ((arg = CompileGetArg (args, argc - i)) || 
-	       (argt && !argt->varargs))
+	while (arg || (argt && !argt->varargs))
 	{
 	    if (!argt)
 	    {
@@ -558,7 +546,8 @@ CompileTypecheckArgs (ObjPtr	obj,
 			      argt->type, arg->tree.left->base.type, i);
 		ret = False;
 	    }
-	    i++;
+	    if (arg)
+		arg = arg->tree.right;
 	    if (!argt->varargs)
 		argt = argt->next;
 	}
@@ -1529,9 +1518,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case DIV:	    obj = CompileBinary (obj, expr, OpDiv, stat, code); break;
     case MOD:	    obj = CompileBinary (obj, expr, OpMod, stat, code); break;
     case POW:
-	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
-	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.right->tree.left, True, stat, code);
+	SetPush (obj);
+	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
 	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,

@@ -22,10 +22,12 @@ Bool	signalSuspend;	    /* current thread is suspending */
 
 static ThreadState ThreadStep (Value thread);
 
+#define Arg(n)  Stack((argc - 1) - ((n)+off))
+
 static FramePtr
 BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,
 	    Bool varargs, int nformal, int off,
-	    int nargs, InstPtr savePc)
+	    int argc, InstPtr savePc)
 {
     ENTER ();
     CodePtr	    code = func->func.code;
@@ -41,16 +43,16 @@ BuildFrame (Value thread, Value func, Bool staticInit, Bool tail,
 		      body->dynamics,
 		      func->func.statics);
     for (fe = 0; fe < nformal; fe++)
-	BoxValueSet (frame->frame, fe, Copy (Stack(fe+off)));
+	BoxValueSet (frame->frame, fe, Copy (Arg(fe)));
     if (varargs)
     {
-	int	extra = nargs - nformal;
+	int	extra = argc - nformal;
 	Value	array;
 	
 	array = NewArray (True, typesPoly, 1, &extra);
 	BoxValueSet (frame->frame, fe, array);
-	for (; fe < nargs; fe++)
-	    BoxValueSet (array->array.values, fe-nformal, Stack(fe+off));
+	for (; fe < argc; fe++)
+	    BoxValueSet (array->array.values, fe-nformal, Copy (Arg(fe)));
     }
     if (tail)
     {
@@ -102,11 +104,11 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 				    2, NewInt (argc), NewInt(code->base.argc));
 	    RETURN (value);
 	}
-	if (!TypeCompatibleAssign (argt->type, Stack(fe+off)))
+	if (!TypeCompatibleAssign (argt->type, Arg(fe)))
 	{
 	    RaiseStandardException (exception_invalid_argument, 
 				    "Incompatible argument",
-				    2, NewInt (fe), Stack(fe+off));
+				    2, NewInt (fe), Arg(fe));
 	    RETURN (value);
 	}
 	fe++;
@@ -123,8 +125,6 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 	formal = code->base.argc;
 	if (code->base.varargs)
 	    formal = -1;
-
-#define Arg(n)  Stack((n)+off)
 
 	if (code->builtin.needsNext) 
 	{
@@ -1150,6 +1150,11 @@ ThreadsRun (Value thread, Value lex)
 	    {
 		signalIo = False;
 		IoInterrupt ();
+	    }
+	    if (signalProfile)
+	    {
+		signalProfile = False;
+		ProfileInterrupt (running);
 	    }
 	    if (lex && !(lex->file.flags & (FileInputBlocked|FileOutputBlocked)))
 		break;

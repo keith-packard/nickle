@@ -198,6 +198,7 @@ typedef struct _exprBase {
     int		    line;
     NamespacePtr    namespace;
     Types	    *type;
+    unsigned long   ticks;
 } ExprBase;
 
 typedef struct _exprTree {
@@ -573,6 +574,8 @@ void	HistoryDisplay (Value, Value *, Value *);
 void	HistoryInsert (Value);
 void	HistoryInit (void);
 
+void	ProfileInterrupt (Value thread);
+
 typedef Bool	(*TimerFunc) (void *closure);
 
 unsigned long	TimeInMs (void);
@@ -769,6 +772,7 @@ Value	do_Command_edit (Value);
 Value	do_Environ_check (Value);
 Value	do_Environ_get (Value);
 Value	do_Environ_unset (Value);
+Value	do_profile (Value);
 
 /* two argument builtins */
 Value	do_Thread_set_priority (Value, Value);

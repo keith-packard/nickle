@@ -919,8 +919,8 @@ opt_exprs	: exprs
 		|
 		    { $$ = 0; }
 		;
-exprs		: exprs COMMA lambdaexpr
-		    { $$ = NewExprTree (COMMA, $3, $1); }
+exprs		: lambdaexpr COMMA exprs
+		    { $$ = NewExprTree (COMMA, $1, $3); }
 		| lambdaexpr
 		    { $$ = NewExprTree (COMMA, $1, 0); }
 		;
@@ -1392,15 +1392,17 @@ BuildCall (char *scope, char *name, int nargs, ...)
 {
     ENTER ();
     va_list	    alist;
-    ExprPtr	    args;
+    ExprPtr	    args, *prev;
     ExprPtr	    f;
     ExprPtr	    e;
 
     va_start (alist, nargs);
+    prev = &args;
     args = 0;
     while (nargs--)
     {
-	args = NewExprTree (COMMA, va_arg (alist, ExprPtr), args);
+	*prev = NewExprTree (COMMA, va_arg (alist, ExprPtr), 0);
+	prev = &(*prev)->tree.right;
     }
     va_end (alist);
     f = BuildName (scope, name);

@@ -16,6 +16,33 @@
 #include	"nickle.h"
 #include	"gram.h"
 
+extern Bool profiling;
+
+static void
+PrettyProf (Value f, Expr *e)
+{
+    if (profiling)
+    {
+	unsigned long t;
+	int	i,n;
+
+	t = 1;
+	i = 1;
+	while (t < e->base.ticks)
+	{
+	    t *= 10;
+	    i++;
+	}
+	n = 6 - i;
+	if (n < 0)
+	    n = 0;
+	while (n--)
+	    FilePuts (f, " ");
+	FilePrintf (f, "%d: ", e->base.ticks);
+	e->base.ticks = 0;
+    }
+}
+	    
 static void PrettyParameters (Value f, Expr *e, Bool nest);
 static void PrettyArrayInit (Value f, Expr *e, int level, Bool nest);
 static void PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest);
@@ -196,6 +223,7 @@ PrettyDecl (Value f, Expr *e, int level, Bool nest)
 {
     DeclListPtr	decl;
 
+/*    PrettyProf (f, e);*/
     FilePutPublish (f, e->decl.publish, True);
     switch (e->decl.class) {
     case class_global:
@@ -250,6 +278,7 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 
     if (!e)
 	return;
+/*    PrettyProf (f, e); */
     selfPrec = tokenToPrecedence (e->base.tag);
     if (selfPrec < parentPrec)
 	FilePuts (f, "(");
@@ -447,6 +476,7 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 void
 PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 {
+    PrettyProf (f, e);
     switch (e->base.tag) {
     case EXPR:
 	PrettyIndent (f, level);

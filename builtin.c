@@ -266,6 +266,7 @@ static struct fbuiltin_1 funcs_1[] = {
     { do_Environ_get,	    "get",		    "s",    "s",    &EnvironNamespace },
     { do_Environ_check,	    "check",		    "i",    "s",    &EnvironNamespace },
     { do_Environ_unset,	    "unset",		    "i",    "s",    &EnvironNamespace },
+    { do_profile,	    "profile",		    "i",    "i",    0 },
     { 0,		    0 },
 };
 

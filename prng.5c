@@ -18,8 +18,8 @@ namespace PRNG {
     int q = n // 8;
     int r = n % 8;
     if (!setkey)
-      srandom(floor(pi * (10**16)));
-    int acc = 0;
+      srandom(0);
+    int acc = ARC4::streambyte() // (2 ** (8 - r));
     while (q > 0) {
       --q;
       acc += (2 ** (8 * q + r)) * ARC4::streambyte();

@@ -1,6 +1,6 @@
-public namespace Math_helper 
+public namespace Math
 {
-    public real function errbounds (real v)
+    real function errbounds (real v)
     {
 	int	prec;
 
@@ -10,7 +10,7 @@ public namespace Math_helper
 	return 2**(prec+3);
     }
 
-    public int function bits (int i)
+    int function bits (int i)
     {
 	int	min, max, cur;
 
@@ -27,99 +27,90 @@ public namespace Math_helper
 	}
 	return min;
     }
-}
 
-public real function sqrt (real v)
-{
-    import  Math_helper;
-    
-    
-    real function real_sqrt(real v)
+    public real function sqrt(real v)
     {
-	real	err;
-	real	prev, cur;
-	int	n, iter;
-    
-	v = imprecise (v);
-	err = 1/(2**(precision (v)+3));
-	prev = imprecise (1 / (0.75 * 2**(floor (exponent(v)/2))), precision(v));
-	iter = precision (v) + 15;
-	while (iter--)
+	real function real_sqrt(real v)
 	{
-	    cur = 0.5 * prev * (3 - v * prev**2);
-	    if (abs (cur - prev) < err)
-		break;
-	    prev = cur;
+	    real	err;
+	    real	prev, cur;
+	    int	n, iter;
+
+	    v = imprecise (v);
+	    err = 1/(2**(precision (v)+3));
+	    prev = imprecise (1 / (0.75 * 2**(floor (exponent(v)/2))), precision(v));
+	    iter = precision (v) + 15;
+	    while (iter--)
+	    {
+		cur = 0.5 * prev * (3 - v * prev**2);
+		if (abs (cur - prev) < err)
+		    break;
+		prev = cur;
+	    }
+	    return abs (1/cur);
 	}
-	return abs (1/cur);
+
+	if (is_rational (v))
+	{
+	    int	num, den;
+	    real	num_s, den_s;
+
+	    num = numerator (v);
+	    den = denominator (v);
+	    num_s = real_sqrt (imprecise (num, bits(num) + 128));
+	    den_s = real_sqrt (imprecise (den, bits(den) + 128));
+	    num = floor (num_s + 0.5);
+	    den = floor (den_s + 0.5);
+	    if (num * num == numerator (v) && den * den == denominator (v))
+	    {
+		return num/den;
+	    }
+	}
+	return real_sqrt (v);
     }
 
-    if (is_rational (v))
+    public real function cbrt (real v)
     {
-	int	num, den;
-	real	num_s, den_s;
-
-	num = numerator (v);
-	den = denominator (v);
-	num_s = real_sqrt (imprecise (num, bits(num) + 128));
-	den_s = real_sqrt (imprecise (den, bits(den) + 128));
-	num = floor (num_s + 0.5);
-	den = floor (den_s + 0.5);
-	if (num * num == numerator (v) && den * den == denominator (v))
+	real function real_cbrt(real v)
 	{
-	    return num/den;
-	}
-    }
-    return real_sqrt (v);
-}
+	    real	err;
+	    real	prev, cur;
+	    int	n;
+	    int	s;
 
-public real function cbrt (real v)
-{
-    import  Math_helper;
-    
-    real function real_cbrt(real v)
-    {
-	real	err;
-	real	prev, cur;
-	int	n;
-	int	s;
-    
-	s = sign (v);
-	v = imprecise (abs (v));
-	err = 1/(2**(precision (v)+3));
-	prev = imprecise (1 / (0.75 * 2**(floor (exponent(v)/3))), precision(v));
-	for (;;)
+	    s = sign (v);
+	    v = imprecise (abs (v));
+	    err = 1/(2**(precision (v)+3));
+	    prev = imprecise (1 / (0.75 * 2**(floor (exponent(v)/3))), precision(v));
+	    for (;;)
+	    {
+		cur = 1/3 * (2 * prev + v / prev**2);
+		if (abs (cur - prev) < err)
+		    break;
+		prev = cur;
+	    }
+	    return s * abs (cur);
+	}
+
+	if (is_rational (v))
 	{
-	    cur = 1/3 * (2 * prev + v / prev**2);
-	    if (abs (cur - prev) < err)
-		break;
-	    prev = cur;
+	    int	num, den;
+	    real	num_s, den_s;
+
+	    num = numerator (v);
+	    den = denominator (v);
+	    num_s = real_cbrt (imprecise (num, bits(num) + 128));
+	    den_s = real_cbrt (imprecise (den, bits(den) + 128));
+	    num = floor (num_s + 0.5);
+	    den = floor (den_s + 0.5);
+	    /* printf ("num %g den %g\n", num, den); */
+	    if (num ** 3 == numerator (v) && den ** 3 == denominator (v))
+	    {
+		return num/den;
+	    }
 	}
-	return s * abs (cur);
+	return real_cbrt (v);
     }
-
-    if (is_rational (v))
-    {
-	int	num, den;
-	real	num_s, den_s;
-
-	num = numerator (v);
-	den = denominator (v);
-	num_s = real_cbrt (imprecise (num, bits(num) + 128));
-	den_s = real_cbrt (imprecise (den, bits(den) + 128));
-	num = floor (num_s + 0.5);
-	den = floor (den_s + 0.5);
-	/* printf ("num %g den %g\n", num, den); */
-	if (num ** 3 == numerator (v) && den ** 3 == denominator (v))
-	{
-	    return num/den;
-	}
-    }
-    return real_cbrt (v);
-}
-
-public namespace Math {
-    import  Math_helper;
 
     public real function exp (real v)
     {
@@ -241,12 +232,13 @@ public namespace Math {
 	return loge * log(a);
     }
     
+
     /*
-     * bits(x) = bits(e) * log(x)
+     * log2(x) = log2(e) * log(x)
      *
-     * bits(e) = log(e) / log(2) = 1/log(2)
+     * log2(e) = log(e) / log(2) = 1/log(2)
      */
-    public real function bits (real a)
+    public real function log2 (real a)
     {
 	static real	loge = 0;
 
@@ -256,9 +248,9 @@ public namespace Math {
 	return loge * log(a);
     }
     
-    /* Number of bits required to represent x. */
-    public int function bits(real x) {
-	return ceil(bits(x));
+    /* Number of bits required to represent ceil(a). */
+    public int function lg (real a) {
+        return ceil(log2(a));
     }
 
     /*
@@ -266,7 +258,6 @@ public namespace Math {
      *
      *  PI = 24*atan (1/8) + 8*atan (1/57) + 4*atan (1/239);
      */
-    
     real function calculate_pi (int prec)
     {
 	/*
@@ -593,7 +584,6 @@ public namespace Math {
      *
      *  asin(q) = atan(q/sqrt(1-q**2))
      */
-    
     public real function asin (real v)
     {
 	v = imprecise (v);

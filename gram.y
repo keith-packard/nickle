@@ -441,6 +441,8 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			    argType = type->func.args;
 			    if (!$2)
 				symbol->symbol.forward = True;
+			    else
+				symbol->symbol.forward = False;
 			}
 			else
 			{
@@ -687,7 +689,7 @@ func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start opt_argdefines
 			if (symbol && symbol->symbol.forward)
 			{
 			    if (!TypeCompatible (symbol->symbol.type, type, 
-						 False))
+						 True))
 			    {
 				ParseError ("%A redefinition with different type",
 					    $4);

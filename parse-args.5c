@@ -1,0 +1,195 @@
+import File;
+import String;
+
+namespace ParseArgs {
+
+    public typedef union {
+	&bool arg_flag;
+	&string arg_string;
+	&int arg_int;
+	&real arg_real;
+	&(string[*]) arg_list;
+    } arg_var;
+
+    public typedef struct {
+	arg_var var;
+        int abbr;
+	string name;
+	string expr_name;
+	string desc;
+    } arg;
+
+    public typedef struct {
+	string prog_name;
+	arg[*] args;
+	&(string[*]) rest;
+	&int unknown;
+    } argdesc;
+
+    string arg_string(arg a) {
+	string stdarg() {
+	    if (is_uninit(&a.name))
+		return a.expr_name;
+	    string s = "";
+	    if (!is_uninit(&a.abbr))
+		s += sprintf("-%c,", a.abbr);
+	    s += sprintf("--%s", a.name);
+	    return s;
+	}
+	union switch (a.var) {
+	case arg_list:
+	    return sprintf("%s ...", a.expr_name);
+	case arg_flag:
+	    return stdarg();
+	default:
+	    return sprintf("%s <%s>", stdarg(), a.expr_name);
+	}
+	abort("internal error");
+    }
+
+    void print_options(&(arg[*]) a) {
+    }
+
+    public string basename(string path) {
+	int p = rindex(path, "/");
+	if (p == -1)
+	    return path;
+	return substr(path, p + 1, length(path) - p - 1);
+    }
+
+    public void parseargs(&argdesc argd, &(string[*]) argv) {
+	argd.prog_name = basename(argv[0]);
+
+	arg[int] arg_abbr_hash = {};
+	arg[string] arg_name_hash = {};
+	for (int i = 0; i < dim(argd.args); i++) {
+	    &arg d = &argd.args[i];
+	    if (!is_uninit(&d.abbr))
+		arg_abbr_hash[d.abbr] = d;
+	    if (!is_uninit(&d.name))
+		arg_name_hash[d.name] = d;
+	}
+
+	void usage() {
+	    fprintf(stderr, "%s: usage: ", argd.prog_name);
+	    fprintf(stderr, "%s <options>", argd.prog_name);
+	    for (int i = 0; i < dim(argd.args); i++)
+		if (is_uninit(&argd.args[i].name))
+		    fprintf(stderr, " %s", arg_string(argd.args[i]));
+	    fprintf(stderr, "\n");
+	    for (int i = 0; i < dim(argd.args); i++)
+		if (is_uninit(&argd.args[i].name))
+		    fprintf(stderr, "    %s   %s\n",
+			    argd.args[i].expr_name,
+			    argd.args[i].desc);
+	    for (int i = 0; i < dim(argd.args); i++)
+		if (!is_uninit(&argd.args[i].name))
+		    fprintf(stderr, "    %s   %s\n",
+			    arg_string(argd.args[i]),
+			    argd.args[i].desc);
+	    exit(1);
+	}
+
+	int argi = 1;
+
+	void save_value(&arg a, string value) {
+	    union switch(a.var) {
+	    case arg_flag var:
+		var = true;
+		break;
+	    case arg_string var:
+		var = value;
+		break;
+	    case arg_int var:
+		var = atoi(value);
+		break;
+	    case arg_real var:
+		var = atof(value);
+		break;
+	    case arg_list:
+		abort("flagged list in argument description");
+	    }
+	}
+
+	void process_flag(&arg a) {
+	    if (argi >= dim(argv)) {
+		fprintf(stderr, "%s: missing value for --%s\n",
+			argd.prog_name, a.name);
+		usage();
+	    }
+	    save_value(&a, argv[argi]);
+	    argi++;
+	}
+
+	while(argi < dim(argv)) {
+	    string a = argv[argi];
+	    if (a == "" || a == "-" || a == "--") {
+		if (is_uninit(&argd.unknown)) {
+		    fprintf(stderr,
+			    "%s: don't know what to do with arg \"%s\"\n",
+			    argd.prog_name,
+			    a);
+			usage();
+		}
+		argd.unknown = argi + 1;
+		return;
+	    }
+	    if (a[0] == '-' && a[1] != '-') {
+		argi++;
+		for (int i = 1; i < length(a); i++) {
+		    if (!hash_test(arg_abbr_hash, a[i])) {
+			fprintf(stderr, "%s: unknown flag char '-%c'\n",
+				argd.prog_name,
+				a[i]);
+			usage();
+		    }
+		    process_flag(&arg_abbr_hash[a[i]]);
+		}
+		continue;
+	    }
+	    if (a[0] == '-' && a[1] == '-') {
+		string argname = substr(a, 2, length(a) - 2);
+		if (!hash_test(arg_name_hash, argname)) {
+			fprintf(stderr, "%s: unknown flag \"--%s\"\n",
+				argd.prog_name,
+				argname);
+			usage();
+		}
+		argi++;
+		process_flag(&arg_name_hash[argname]);
+		continue;
+	    }
+	    break;
+	}
+	for (int i = 0; i < dim(argd.args); i++) {
+	    if (!is_uninit(&argd.args[i].name))
+		continue;
+	    if (argi >= dim(argv)) {
+		fprintf(stderr, "%s: missing required argument %s\n",
+			argd.prog_name, argd.args[i].expr_name);
+		usage();
+	    }
+	    union switch (argd.args[i].var) {
+	    case arg_list v:
+		string[...] rest = {};
+		v = rest;
+		while(argi < dim(argv)) {
+		    rest[argi] = argv[argi];
+		    argi++;
+		}
+		return;
+	    case arg_flag:
+		abort("fixed flag in argument description");
+	    default:
+		save_value(&argd.args[i], argv[argi]);
+		argi++;
+	    }
+	}
+	if (argi < dim(argv)) {
+	    fprintf(stderr, "%s: unknown or extra argument \"%s\"\n",
+		    argv[argi],
+		    argd.prog_name);
+	    usage();
+	}
+    }
+}

@@ -3,12 +3,9 @@
  * Bart 2001/03
  */
 
-load "numbers.5c"
-load "rsa.5c"
-load "miller-rabin.5c"
-
-import RSA;
-import Miller_Rabin;
+autoload Numbers;
+autoimport RSA;
+autoimport MillerRabin;
 
 nbits = 512;   /* number of bits in each prime of key: >= 65 */
 prec = 64;     /* lg probability that some prime is not */

@@ -10,15 +10,13 @@
  * Bart Massey 1999/1
  */
 
-namespace Miller_Rabin {
+namespace MillerRabin {
 
-  import Numbers;
-
-  global int nprimes = 10;
-  global int[nprimes] primes = {
+  int[*] primes = {
     2, 3, 5, 7, 11,
     13, 17, 19, 23, 29
   };
+  int nprimes = dim(primes);
 
   typedef struct { int pow, wit; } witness_result;
 
@@ -28,10 +26,12 @@ namespace Miller_Rabin {
    * as suggested by Cormen/Leiserson/Rivest.
    */
   witness_result function witnessexp(int b, int e, int m) {
-    if (e == 0)
+    switch (e) {
+    case 0:
       return (witness_result){pow = 0, wit = 1};
-    if (e == 1)
+    case 1:
       return (witness_result){pow = b % m, wit = 0};
+    }
     witness_result tmp = witnessexp(b, e // 2, m);
     if (tmp.wit != 0)
       return tmp;

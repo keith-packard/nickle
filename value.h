@@ -606,7 +606,7 @@ Bool	Print (Value, Value, char format, int base, int width, int prec, unsigned c
 void	RaiseError (char *s, ...);
 void	PrintError (char *s, ...);
 void	vPrintError (char *s, va_list args);
-Value	Copy (Value, TypesPtr);
+Value	Copy (Value);
 Value	Default (TypesPtr);
 
 /*

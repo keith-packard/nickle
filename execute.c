@@ -50,7 +50,7 @@ BuildFrame (Value thread, Value func, int nargs, InstPtr savePc)
 	}
 	if (!Stack(fe))
 	    abort ();
-	BoxValue (frame->frame, fe) = Copy (Stack(fe), type);
+	BoxValue (frame->frame, fe) = Copy (Stack(fe));
     }
     frame->function = func;
     frame->savePc = savePc;
@@ -196,7 +196,7 @@ ThreadAssign (Value ref, Value v)
     {
 	if (!v)
 	    abort ();
-	v = Copy (v, RefType (ref));
+	v = Copy (v);
 	if (!exception)
 	{
 	    complete = True;
@@ -254,7 +254,7 @@ ThreadInitArray (Value thread, Value a, int ninit)
 	    i = 0;
 	    while (j--)
 	    {
-		BoxValue (a->array.values, i) = Copy (Stack(j), a->array.type);
+		BoxValue (a->array.values, i) = Copy (Stack(j));
 		i++;
 	    }
 	}

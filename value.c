@@ -505,10 +505,10 @@ Print (Value f, Value v, char format, int base, int width, int prec, unsigned ch
 }
 
 /*
- * Make a deep copy of 'v' and cooerce to type 't'
+ * Make a deep copy of 'v'
  */
 Value
-Copy (Value v, TypesPtr t)
+Copy (Value v)
 {
     ENTER ();
     Value   nv;
@@ -520,8 +520,7 @@ Copy (Value v, TypesPtr t)
 	{
 	    nv = NewArray (False, v->array.type, v->array.ndim, v->array.dim);
 	    for (i = 0; i < v->array.ents; i++)
-		BoxValue (nv->array.values, i) = Copy (BoxValue (v->array.values, i),
-						       BoxType (v->array.values, i));
+		BoxValue (nv->array.values, i) = Copy (BoxValue (v->array.values, i));
 	    v = nv;
 	}
 	break;
@@ -530,16 +529,13 @@ Copy (Value v, TypesPtr t)
 	{
 	    nv = NewStruct (v->structs.type, False);
 	    for (i = 0; i < v->structs.type->nelements; i++)
-		BoxValue (nv->structs.values, i) = Copy (BoxValue (v->structs.values, i),
-							 BoxType (v->structs.values, i));
+		BoxValue (nv->structs.values, i) = Copy (BoxValue (v->structs.values, i));
 	    v = nv;
 	}
 	break;
     default:
 	break;
     }
-    if (BaseType(t) == type_float)
-	v = valueTypes[BaseType(t)]->promote(v, 0);
     RETURN (v);
 }
 

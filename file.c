@@ -1869,6 +1869,7 @@ FileCheckBlocked (Bool block)
 	    *prev = blocked->file.next;
 	    continue;
 	}
+	prev = &blocked->file.next;
 	if (fd < 3 && !ownTty[fd])
 	    continue;
 	if (blocked->file.flags & FileInputBlocked)
@@ -1877,7 +1878,6 @@ FileCheckBlocked (Bool block)
 	    FD_SET (fd, &writable);
 	if (fd >= n)
 	    n = fd + 1;
-	prev = &blocked->file.next;
     }
     if (n > 0)
     {

@@ -914,12 +914,13 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	frac_width = 0;
     frac_buffer = 0;
     frac_string = 0;
+    if (frac_width)
+	frac_part = Floor (Times (frac_part, Pow (NewInt (base), 
+						  NewInt (frac_width - 1))));
     if (frac_width && (!Zerop (frac_part) || orig_prec > 0))
     {
 	int	frac_wrote;
 	
-	frac_part = Floor (Times (frac_part, Pow (NewInt (base), 
-						  NewInt (frac_width - 1))));
 	if (ValueIsInteger(frac_part))
 	    frac_n = IntegerMag(frac_part);
 	else

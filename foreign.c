@@ -41,7 +41,7 @@ ForeignFree (void *object)
 
     if (foreign->free)
 	(*foreign->free) (foreign->data);
-    return 0;
+    return 1;
 }
 
 ValueRep ForeignRep = {

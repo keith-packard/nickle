@@ -1026,8 +1026,11 @@ Type	*StructMemType (StructType *st, Atom name);
 Value	StructMemRef (Value sv, Atom name);
 Value	StructMemValue (Value sv, Atom name);
 Value	NewUnion (StructType *type, Bool constant);
+Type	*BuildUnionType (int nelements, ...);
+Type	*BuildEnumType (int nelements, ...);
 Value	UnionValue (Value uv, Atom name);
 Value	UnionRef (Value uv, Atom name);
+Type	*BuildArrayType (Type *type, int ndim, ...);
 
 Value	BinaryOperate (Value av, Value bv, BinaryOp operator);
 Value	UnaryOperate (Value v, UnaryOp operator);

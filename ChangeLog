@@ -1,3 +1,28 @@
+2004-12-16  Keith Packard  <keithp@keithp.com>
+
+	* builtin.c: (BuiltinSetUserdefType), (BuiltinType):
+	* builtin.h:
+	Add support for up to 100 user-defined types for builtin functions
+	
+	* file.c: (FileCheckBlocked):
+	Fixed an execution ordering bug which should have caused
+	an infinite loop in some weird file blocking cases.
+	
+	* float.c: (FloatPrint):
+	Don't print fractional part if it rounds to zero. Still
+	need to trim trailing zeros from fractions.
+	
+	* foreign.c: (ForeignFree):
+	Best return 1 or the object will not actually be freed.
+	
+	* pretty.c: (PrettyDoc):
+	Doc strings with multi-byte chars were broken.
+	
+	* array.c: (BuildArrayType):
+	* union.c: (BuildUnionType), (BuildEnumType):
+	* value.h:
+	Add type construction helpers for foreign libraries
+	
 2004-12-11  Keith Packard  <keithp@keithp.com>
 
 	* builtin-foreign.c: (do_Foreign_load), (import_Foreign_namespace):

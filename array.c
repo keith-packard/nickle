@@ -7,6 +7,7 @@
  */
 
 #include	"nickle.h"
+#include    	"gram.h"
 
 int
 ArrayInit (void)
@@ -420,4 +421,24 @@ ArraySetDimensions (Value av, int *dims)
 
     for (i = 0; i < a->ndim; i++)
 	ArrayResize (av, i, dims[i]);
+}
+
+Type *
+BuildArrayType (Type *type, int ndim, ...)
+{
+    ENTER ();
+    Expr    *dims = 0;
+    int	    i;
+    int	    dim;
+    va_list ap;
+
+    va_start (ap, ndim);
+    for (i = 0; i < ndim; i++)
+    {
+	dim = va_arg (ap, int);
+	dims = NewExprTree (COMMA, NewExprConst (TEN_FLOAT, NewInt (dim)),
+			    dims);
+    }
+    va_end (ap);
+    RETURN (NewTypeArray (type, dims, False));
 }

@@ -123,3 +123,47 @@ NewUnion (StructType *type, Bool constant)
     ret->unions.value = NewBox (constant, False, 1, 0);
     RETURN (ret);
 }
+
+Type *
+BuildUnionType (int nelements, ...)
+{
+    ENTER ();
+    StructType	*st;
+    int		i;
+    char	*name;
+    Type	*type;
+    va_list	ap;
+
+    st = NewStructType (nelements);
+    va_start (ap, nelements);
+    for (i = 0; i < nelements; i++)
+    {
+	type = va_arg (ap, Type *);
+	name = va_arg (ap, char *);
+	AddBoxType (&st->types, type);
+	StructTypeAtoms (st)[i] = AtomId (name);
+    }
+    va_end (ap);
+    RETURN (NewTypeUnion (st, False));
+}
+
+Type *
+BuildEnumType (int nelements, ...)
+{
+    ENTER ();
+    StructType	*st;
+    int		i;
+    char	*name;
+    va_list	ap;
+
+    st = NewStructType (nelements);
+    va_start (ap, nelements);
+    for (i = 0; i < nelements; i++)
+    {
+	name = va_arg (ap, char *);
+	AddBoxType (&st->types, typePrim[rep_void]);
+	StructTypeAtoms (st)[i] = AtomId (name);
+    }
+    va_end (ap);
+    RETURN (NewTypeUnion (st, True));
+}

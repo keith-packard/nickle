@@ -120,12 +120,12 @@ BuiltinSymbol (NamespacePtr *namespacep,
 					     type)));
 }
 
-static Type *typeUserdef;
+static Type *typeUserdef[100];
 
 void
-BuiltinSetUserdefType (Type *type)
+BuiltinSetUserdefType (Type *type, int n)
 {
-    typeUserdef = type;
+    typeUserdef[n] = type;
 }
 
 static char *
@@ -138,6 +138,8 @@ BuiltinType (char *format, Type **type)
     Bool    resizable = False;
     Expr    *dims = 0;
     Type    *k;
+    char    f;
+    int	    i;
     
     ref = False;
     if (*format == '*')
@@ -162,7 +164,7 @@ BuiltinType (char *format, Type **type)
 	hash = True;
 	format = BuiltinType (format + 1, &k);
     }
-    switch (*format++) {
+    switch (f = *format++) {
     case 'p': t = typePoly; break;
     case 'n': t = typePrim[rep_float]; break;
     case 'N': t = typePrim[rep_float]; break;
@@ -179,7 +181,12 @@ BuiltinType (char *format, Type **type)
     case 'v': t = typePrim[rep_void]; break;
     case 'F': t = typePrim[rep_foreign]; break;
     case 'a': t = typeSockaddr; break;
-    case 'u': t = typeUserdef; break;
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+	i = (f - '0') * 10 + (*format++) - '0';
+	t = typeUserdef[i];
+	if (t)
+	    break;
     default: 
 	t = 0;
 	write (2, "Invalid builtin argument type\n", 30);

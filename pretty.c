@@ -835,7 +835,7 @@ PrettyDoc (Value f, int level, Value doc, ProfileData *pd)
 	    FilePuts (f, " *");
 	    newline = False;
 	}
-	FileOutput (f, c);
+	FileOutchar (f, c);
 	if (c == '\n')
 	    newline = True;
     }

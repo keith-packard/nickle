@@ -32,7 +32,7 @@ BuiltinNamespace (NamespacePtr  *namespacep,
 		  char		*string);
 
 void
-BuiltinSetUserdefType (Type *type);
+BuiltinSetUserdefType (Type *type, int n);
 
 SymbolPtr
 BuiltinException (NamespacePtr  *namespacep,

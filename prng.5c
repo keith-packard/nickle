@@ -48,4 +48,14 @@ namespace PRNG {
     return randbits(32 + bit_width (n)) % n;
   }
 
+  public void shuffle(&poly[*] a) {
+    int na = dim(a);
+    for (int i = 0; i < na - 1; i++) {
+      int j = randint(na - i) + i;
+      int tmp = a[i];
+      a[i] = a[j];
+      a[j] = tmp;
+    }
+  }
+
 }

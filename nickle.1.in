@@ -1120,6 +1120,31 @@ for a total of l characters.  If l is negative,
 the substring will consist of characters preceding
 rather than succeeding i.
 .PP
+.IP PRNG
+The PRNG namespace provides pseudo-random number generation
+and manipulation.  The core generator is the RC4 stream
+cipher generator, properly bootstrapped.  This provide a stream of
+cryptographically-secure pseudo-random bits at reasonable amortized cost.
+(But beware, initialization is somewhat expensive.)
+.IP "void function srandom(int s)"
+Initialize the generator, using the (arbitrarily-large) integer as
+a seed.
+.IP "void function dev_srandom(int nbits)"
+Initialize the generator, using nbits bits of entropy obtained
+from some reasonable entropy source.  On UNIX systems, this
+source is /dev/urandom.  Asking for more initial entropy than
+the system has may lead either to bootstrapping (as on UNIX) or to
+hanging, so use cautiously.
+.IP "int function randbits(int n)"
+Returns an n-\fBbit\fP pseudo-random number, in
+the range \fI0..(2**n)-1\fP.  Useful for things
+like RSA.
+.IP "int function randint(int n)"
+Returns a pseudo-random number in the range \fI0..n-1\fP.
+.IP "void function shuffle(*(poly[*]) a)"
+Performs an efficient in-place true shuffle (c.f. Knuth) of
+the array a.
+.PP
 .IP Command
 The Command namespace is used by the top-level commands
 as described below.  It is also occasionally useful in

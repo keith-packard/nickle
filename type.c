@@ -502,6 +502,24 @@ TypeBinaryField (Types *left, Types *right)
 }
 
 /*
+ * Return the type resuting from an div operator,
+ * integral for numeric types
+ */
+static Types *
+TypeBinaryDiv (Types *left, Types *right)
+{
+    if (TypePoly (left))
+	left = typesPrim[type_float];
+    if (TypePoly (right))
+	right = typesPrim[type_float];
+    if (TypeNumeric (left) && TypeNumeric (right))
+    {
+	return typesPrim[type_integer];
+    }
+    return 0;
+}
+
+/*
  * Return the type resuting from an exponentiation operator,
  * 'left' for integral 'right', float otherwise
  */
@@ -720,9 +738,6 @@ TypeCombineBinary (Types *left, int tag, Types *right)
     int	    sret = NUM_TYPE_STACK;
     int	    n;
 
-    if (left == right)
-	RETURN(left);
-    
     if (!left || !right)
 	RETURN(0);
     
@@ -786,12 +801,15 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	}
 	/* fall through ... */
     case TIMES:
-    case DIV:
     case MOD:
     case ASSIGNTIMES:
-    case ASSIGNDIV:
     case ASSIGNMOD:
 	if ((ret = TypeBinaryGroup (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    case DIV:
+    case ASSIGNDIV:
+	if ((ret = TypeBinaryDiv (left, right)))
 	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
     case POW:

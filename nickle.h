@@ -521,7 +521,7 @@ void	EditFunction (SymbolPtr name);
 void	EditFile (Value file_name);
 
 Value	lookupVar (char *);
-void	setVar (char *, Value);
+void	setVar (char *, Value, Types *type);
 void	GetNamespace (NamespacePtr *, FramePtr *);
 Bool	NamespaceLocate (Value names, NamespacePtr  *s, SymbolPtr *sym);
 ExprPtr	BuildName (char *);
@@ -695,7 +695,7 @@ Value	do_File_putc (Value, Value);
 Value	do_File_ungetc (Value, Value);
 Value	do_File_setbuf (Value, Value);
 Value	do_String_index (Value, Value);
-Value	do_set_jump (Value, Value);
+Value	do_setjmp (Value, Value);
 Value	do_Command_new (Value, Value);
 Value	do_Command_new_names (Value, Value);
 Value	do_Command_pretty_print (Value, Value);
@@ -714,5 +714,5 @@ Value	do_File_pipe (Value, Value, Value);
 Value	do_File_print (Value, Value, Value, Value, Value, Value, Value);
 
 /* two argument non-local builtins */
-Value	do_long_jump (InstPtr *, Value, Value);
+Value	do_longjmp (InstPtr *, Value, Value);
 

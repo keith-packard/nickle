@@ -286,12 +286,15 @@ RationalPromote (Value av, Value bv)
 static Value
 RationalReduce (Value av)
 {
+    return av;
+#if 0
     ENTER ();
     Rational	*a = &av->rational;
 
     if (NaturalEqual (a->den, one_natural))
 	av = Reduce (NewInteger (a->sign, a->num));
     RETURN (av);
+#endif
 }
 
 extern ValueType    IntegerType;

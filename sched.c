@@ -680,7 +680,7 @@ ContinuationArgs (Value thread, BoxPtr args)
 }
 
 /*
- * Figure out where to go next in a long_jump through twixts
+ * Figure out where to go next in a longjmp through twixts
  */
 Value
 JumpContinuation (JumpPtr jump, InstPtr *next)
@@ -758,7 +758,7 @@ JumpBuild (TwixtPtr leave, TwixtPtr enter,
  * created here should be adjusted to account for this difference
  */
 Value
-do_set_jump (Value continuation_ref, Value ret)
+do_setjmp (Value continuation_ref, Value ret)
 {
     ENTER ();
     Value	continuation;
@@ -781,13 +781,13 @@ do_set_jump (Value continuation_ref, Value ret)
 				    running->thread.twixts);
     RefValueSet (continuation_ref, continuation);
 #ifdef DEBUG_JUMP
-    ContinuationTrace ("do_set_jump", continuation);
+    ContinuationTrace ("do_setjmp", continuation);
 #endif
     RETURN (ret);
 }
 
 Value
-do_long_jump (InstPtr *next, Value continuation, Value ret)
+do_longjmp (InstPtr *next, Value continuation, Value ret)
 {
     ENTER ();
     TwixtPtr	leave, enter;
@@ -800,14 +800,14 @@ do_long_jump (InstPtr *next, Value continuation, Value ret)
 	RETURN (Zero);
     }
 #ifdef DEBUG_JUMP
-    TraceContinuation ("do_long_jump from",
+    TraceContinuation ("do_longjmp from",
 		       running->thread.frame,
 		       running->thread.stack,
 		       running->thread.catches,
 		       running->thread.twixts,
 		       running->thread.pc,
 		       1);
-    ContinuationTrace ("do_long_jump to", continuation);
+    ContinuationTrace ("do_longjmp to", continuation);
 #endif      
     /*
      * Check for intervening twixts
@@ -943,7 +943,7 @@ RaiseException (Value thread, SymbolPtr except, BoxPtr args, InstPtr *next)
     for (catch = thread->thread.catches; catch; catch = catch->previous)
 	if (catch->exception == except)
 	{
-	    do_long_jump (next, catch->continuation, Zero);
+	    do_longjmp (next, catch->continuation, Zero);
 	    if (args)
 		ContinuationArgs (thread, args);
 	    caught = True;

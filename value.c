@@ -224,8 +224,7 @@ Value
 NumericDiv (Value av, Value bv, int expandOk)
 {
     ENTER ();
-    av = Minus (av, Mod (av, bv));
-    RETURN (Divide (av, bv));
+    RETURN (Floor (Divide (av, bv)));
 }
 
 Value

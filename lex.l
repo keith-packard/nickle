@@ -12,7 +12,7 @@
 #include	"ref.h"
 #include	<strings.h>
 #include	<errno.h>
-#ifdef HAVE_READLINE
+#ifdef HAVE_LIBREADLINE
 #include	<readline/readline.h>
 #include	<readline/history.h>
 #endif
@@ -166,7 +166,7 @@ LexGetChar (void)
     }
 }
 
-#ifdef HAVE_READLINE
+#ifdef HAVE_LIBREADLINE
 static int
 ReadlineGetChar (FILE *f)
 {
@@ -191,7 +191,7 @@ prompt (void)
 static int
 LexGetInteractiveChar (void)
 {
-#ifdef HAVE_READLINE
+#ifdef HAVE_LIBREADLINE
     static char	*line, *line_base;
     int	    c;
 
@@ -615,7 +615,7 @@ aetov (char *s)
     } else if (frac_len < 0 && frac_part)
 	frac_len = strlen(frac_part);
     v = atov (int_part, 10);
-    if (frac_part && frac_len)
+    if (frac_part)
     {
 	v = Plus (v, Divide (atov (frac_part, 10),
 				 Pow (NewInt (10),

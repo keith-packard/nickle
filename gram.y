@@ -940,7 +940,7 @@ lookupVar (char *name)
 }
 
 void
-setVar (char *name, Value v)
+setVar (char *name, Value v, Types *type)
 {
     ENTER ();
     Atom	n;
@@ -950,7 +950,7 @@ setVar (char *name, Value v)
     n = AtomId (name);
     s = NamespaceFindSymbol (CurrentNamespace, n, &depth);
     if (!s)
-	s = NamespaceAddSymbol (CurrentNamespace, NewSymbolGlobal (n, 0,
+	s = NamespaceAddSymbol (CurrentNamespace, NewSymbolGlobal (n, type,
 							  publish_private));
     if (s->symbol.class == class_global)
 	BoxValueSet (s->global.value, 0, v);

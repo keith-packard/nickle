@@ -272,7 +272,7 @@ static struct fbuiltin_2 funcs_2[] = {
     { do_File_ungetc,	    "ungetc",		    "i",    "if",   &FileNamespace },
     { do_File_setbuf,	    "setbuffer",	    "i",    "fi",   &FileNamespace },
     { do_String_index,      "index",		    "i",    "ss",   &StringNamespace },
-    { do_set_jump,	    "set_jump",		    "p",    "*cp"   },
+    { do_setjmp,	    "setjmp",		    "p",    "*cp"   },
     { do_Command_new,	    "new",		    "i",    "sp",   &CommandNamespace },
     { do_Command_new_names, "new_names",    	    "i",    "sp",   &CommandNamespace },
     { do_Command_pretty_print,"pretty_print",	    "i",    "fA*s", &CommandNamespace },
@@ -297,7 +297,7 @@ static struct fbuiltin_7 funcs_7[] = {
 };
 
 static struct fbuiltin_2j funcs_2j[] = {
-    { do_long_jump,	    "long_jump",	    "p",    "cp"    },
+    { do_longjmp,	    "longjmp",		    "p",    "cp"    },
     { 0,		0 },
 };
 

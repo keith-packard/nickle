@@ -16,6 +16,7 @@
 #include	<signal.h>
 #include	<stdio.h>
 #include	"nickle.h"
+#include	"gram.h"
 
 int	stdin_interactive;
 
@@ -29,7 +30,8 @@ setArgv (int argc, char **argv)
     args = NewArray (True, typesPrim[type_string], 1, &argc);
     for (i = 0; i < argc; i++)
 	BoxValueSet (args->array.values, i, NewStrString (argv[i]));
-    setVar ("argv", args);
+    setVar ("argv", args, NewTypesArray (typesPrim[type_string],
+					 NewExprTree (COMMA, 0, 0)));
     EXIT ();
 }
 

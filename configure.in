@@ -24,6 +24,17 @@ AC_CHECK_PROGS([DATE], date)
 dnl Checks for libraries.
 AC_CHECK_LIB(m, log)
 
+dnl Check for readline and get termcap lib as well
+AC_CHECK_LIB(ncurses,tparm,TERMLIB=-lncurses,
+AC_CHECK_LIB(termcap,tgetent,TERMLIB=-ltermcap))
+saved_LIBS="$LIBS"
+LIBS="$LIBS $TERMLIB"
+AC_CHECK_LIB(readline,readline,
+   [AC_CHECK_HEADER(readline/readline.h,
+   LIBS="$saved_LIBS -lreadline $TERMLIB";
+   AC_DEFINE(HAVE_LIBREADLINE,1,[Define to use the readline library.]))],
+   LIBS="$saved_LIBS")
+
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h strings.h time.h sys/time.h unistd.h)

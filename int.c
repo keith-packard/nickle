@@ -126,7 +126,7 @@ IntDivide (Value av, Value bv, int expandOk)
 				2, av, bv);
 	RETURN (Zero);
     }
-    if (expandOk && a % b != 0)
+    if (expandOk)
 	ret = Divide (NewIntRational (a), NewIntRational (b));
     else
 	ret = NewInt (a/b);

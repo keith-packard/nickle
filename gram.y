@@ -130,7 +130,7 @@ lines		: lines pcommand
 		|
 		;
 pcommand	: command
-		| error attendnl eend
+		| error reset eend
 		;
 eend		: NL
 		    { yyerrok; }
@@ -143,10 +143,11 @@ eend		: NL
  * and not reporting newlines
  */
 ignorenl	:
-		    { ignorenl = 1; }
+		    { ignorenl++; }
 		;
-
 attendnl	:
+		    { ignorenl--; }
+reset		:
 		    { 
 			ignorenl = 0; 
 			LexNamespace = 0; 
@@ -166,7 +167,7 @@ opt_comma	: COMMA
 /*
  * Interpreter command level
  */
-command		: expr attendnl NL
+command		: expr reset NL
 		    {
 			ENTER ();
 			ExprPtr	e;
@@ -184,7 +185,7 @@ command		: expr attendnl NL
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
-		| expr POUND expr attendnl NL
+		| expr POUND expr reset NL
 		    {
 			ENTER ();
 			ExprPtr	e;
@@ -212,7 +213,7 @@ command		: expr attendnl NL
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
-		| statement attendnl opt_nl
+		| statement reset opt_nl
 		    { 
 			ENTER ();
 			NamespacePtr    s;
@@ -224,7 +225,7 @@ command		: expr attendnl NL
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
-		| COMMAND opt_exprs attendnl opt_semi NL
+		| COMMAND opt_exprs reset opt_semi NL
 		    {
 			ENTER();
 			ExprPtr	e;
@@ -247,7 +248,7 @@ command		: expr attendnl NL
 			}
 			EXIT ();
 		    }
-		| NAMECOMMAND opt_rawnames attendnl opt_semi NL
+		| NAMECOMMAND opt_rawnames reset opt_semi NL
 		    {
 			ENTER ();
 			ExprPtr e;
@@ -659,6 +660,8 @@ func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start OP opt_argdefines CP
 		;
 opt_init	: ASSIGN simpleexpr
 		    { $$ = $2; }
+		| ASSIGN init
+		    { $$ = $2; }
 		|
 		    { $$ = 0; }
 		;
@@ -703,6 +706,8 @@ type		: basetype
 		| type opt_argdecls	%prec CALL
 		    { $$ = NewTypesFunc ($1, $2); }
 		| type OS opt_stars CS
+		    { $$ = NewTypesArray ($1, $3); }
+		| type OS exprs CS
 		    { $$ = NewTypesArray ($1, $3); }
 		| struct_or_union OC struct_members CC
 		    {
@@ -877,9 +882,20 @@ expr		: comma_expr
 			DeclList    *decl;
 
 			for (decl = $2; decl; decl = decl->next)
+			{
 			    decl->symbol = ParseNewSymbol ($1.publish,
 							   $1.class, 
 							   $1.type, decl->name);
+			    if (decl->init)
+			    {
+				if (decl->init->base.tag == STRUCT ||
+				    decl->init->base.tag == ARRAY)
+				{
+				    decl->init = NewExprTree (NEW, decl->init, 0);
+				    decl->init->base.type = $1.type;
+				}
+			    }
+			}
 
 			$$ = NewExprDecl ($2, $1.class, $1.type, $1.publish); 
 		    }
@@ -1048,27 +1064,27 @@ primary		: fullname
 		    { $$ = NewExprConst(STRING_CONST, $1); }
 		| VOIDVAL
 		    { $$ = NewExprConst(VOIDVAL, $1); }
-		| OP type CP ignorenl namespace_start init namespace_end
+		| OP type CP namespace_start init namespace_end
 		    { 
 			ParseCanonType ($2);
-			$$ = NewExprTree (NEW, $6, 0); 
+			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = $2;
 		    }
-		| OP type OS exprs CS CP ignorenl namespace_start opt_arrayinit namespace_end
+		| OP type OS exprs CS CP namespace_start opt_arrayinit namespace_end
 		    { 
 			ParseCanonType ($2);
-			$$ = NewExprTree (NEW, $9, 0); 
+			$$ = NewExprTree (NEW, $8, 0); 
 			$$->base.type = NewTypesArray ($2, $4); 
 		    }
-		| OS stars CS ignorenl namespace_start arrayinit namespace_end
+		| OS stars CS namespace_start arrayinit namespace_end
 		    { 
-			$$ = NewExprTree (NEW, $6, 0); 
+			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 			ParseCanonType ($$->base.type);
 		    }
-		| OS exprs CS ignorenl namespace_start opt_arrayinit namespace_end
+		| OS exprs CS namespace_start opt_arrayinit namespace_end
 		    { 
-			$$ = NewExprTree (NEW, $6, 0); 
+			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 		    }
 		| OP type DOT NAME CP primary			%prec UNIONCAST
@@ -1109,15 +1125,15 @@ integer		: TEN_CONST
  * Array initializers
  */
 opt_arrayinit	: arrayinit
-		| OC CC
+		| ignorenl OC attendnl CC
 		    { $$ = 0; }
 		|
 		    { $$ = 0; }
 		;
-arrayinit    	: OC arrayelts opt_comma opt_dots CC
+arrayinit    	: ignorenl OC arrayelts opt_comma opt_dots attendnl CC
 		    { 
-			ExprPtr	elts = ExprRehang ($2, 0);
-			if ($4)
+			ExprPtr	elts = ExprRehang ($3, 0);
+			if ($5)
 			{
 			    ExprPtr i = elts;
 			    while (i->tree.right)
@@ -1141,9 +1157,9 @@ arrayelt	: lambdaexpr
 /* 
 * Structure initializers
 */
-structinit    	: OC structelts opt_comma CC
-		    { $$ = NewExprTree (STRUCT, ExprRehang ($2, 0), 0); }
-		| OC CC
+structinit    	: ignorenl OC structelts opt_comma attendnl CC
+		    { $$ = NewExprTree (STRUCT, ExprRehang ($3, 0), 0); }
+		| ignorenl OC CC
 		    { $$ = NewExprTree (STRUCT, 0, 0); }
 		;
 structelts	: structelts COMMA structelt

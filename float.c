@@ -634,7 +634,7 @@ NaturalBitSet (Natural *n, int i)
 
 
 static Value
-FloatExp (Value exp2, Value *ratio, int ibase)
+FloatExp (Value exp2, Value *ratio, int ibase, unsigned prec)
 {
     ENTER ();
     double  dscale;
@@ -643,12 +643,16 @@ FloatExp (Value exp2, Value *ratio, int ibase)
     Value   min, max, mean, nmean;
     Value   pow2;
     Value   base;
+    Value   base_f;
     Value   two;
+    Value   two_f;
     Bool    done;
 
     DebugV ("exp2", exp2);
     two = NewInt (2);
+    two_f = NewIntFloat (2, prec + 32);
     base = NewInt (ibase);
+    base_f = NewIntFloat (ibase, prec + 32);
     /*
      * Compute expbase, this is a bit tricky as log is only
      * available in floats
@@ -656,13 +660,19 @@ FloatExp (Value exp2, Value *ratio, int ibase)
     dscale = log(2) / log(ibase) * MAXINT;
     scale = Divide (NewInt ((int) dscale),
 		    NewInt (MAXINT));
+    /*
+     * min = floor (((exp2 - 1) * scale) + 1);
+     */
     min = Floor (Plus (Times (Minus (exp2,  One), scale), One));
     if (Negativep (min))
-	max = Divide (min, two);
+	max = Div (min, two);
     else
 	max = Times (min, two);
     
-    pow2 = Pow (two, Minus (exp2, One));
+    /*
+     * pow2 = 2 ** (exp2-1)
+     */
+    pow2 = Pow (two_f, Minus (exp2, One));
     
     mean = 0;
     done = False;
@@ -684,7 +694,10 @@ FloatExp (Value exp2, Value *ratio, int ibase)
 	DebugV ("min ", min);
 	DebugV ("mean", mean);
 	DebugV ("max ", max);
-	r = Divide (pow2, Pow (base, Minus (mean, One)));
+	/*
+	 * r = 2 ** (exp2-1) / (base ** (mean - 1))
+	 */
+	r = Divide (pow2, Pow (base_f, Minus (mean, One)));
 	if (done)
 	    break;
 	if (True (Less (One, r)))
@@ -694,7 +707,7 @@ FloatExp (Value exp2, Value *ratio, int ibase)
     } while (False (Equal (max, min)));
     mean = Minus (mean, One);
 /*    r = Divide (pow2, Pow (base, Minus (mean, One)));*/
-    r = Divide (Pow (two, exp2), Pow (base, mean));
+    r = Divide (Pow (two_f, exp2), Pow (base_f, mean));
 /*    r = Divide (pow2, Pow (base, mean)); */
     EXIT ();
     REFERENCE (mean);
@@ -749,7 +762,13 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
 			      NewInteger (a->exp->sign,
 					  a->exp->mag)),
 			&ratio,
-			base);
+			base,
+			a->prec);
+    if (aborting)
+    {
+	EXIT ();
+	return False;
+    }
     DebugV ("expbase", expbase);
     DebugV ("ratio  ", ratio);
     down = Pow (NewInt (2),
@@ -762,10 +781,18 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, unsig
     if (FpartLength (a->mant) == a->prec)
 	m = Plus (m, One);
     m = Times (m, fratio);
+    if (prec > 0)
+    {
+    }
     if (True (Less (m, One)))
     {
 	m = Times (m, NewInt (base));
 	expbase = Minus (expbase, One);
+    }
+    else if (False (Less (m, NewInt (base))))
+    {
+	m = Divide (m, NewInt (base));
+	expbase = Plus (expbase, One);
     }
     exp = NewValueFpart (expbase);
     switch (format) {

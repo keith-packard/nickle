@@ -203,7 +203,7 @@ CompileCheckSymbol (ObjPtr obj, ExprPtr stat, ExprPtr name, CodePtr code,
 	if (c)
 	{
 	    CompileError (obj, stat, "\"%A\" not in global initializer scope",
-			  name->atom);
+			  name->atom.atom);
 	    break;
 	}
 
@@ -220,7 +220,7 @@ CompileCheckSymbol (ObjPtr obj, ExprPtr stat, ExprPtr name, CodePtr code,
 	if (c->func.inStaticInit && !s->local.staticScope)
         {
 	    CompileError (obj, stat, "\"%A\" not in static initializer scope",
-			  name->atom);
+			  name->atom.atom);
 	    break;
 	}
 	

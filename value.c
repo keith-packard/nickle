@@ -150,6 +150,8 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 				    av, bv);
 	RETURN (Zero);
     }
+    if (aborting)
+	RETURN (Zero);
     ret = (*type->binary[operator]) (av, bv, 1);
     if (ret->value.type->reduce)
 	ret = (*ret->value.type->reduce) (ret);
@@ -169,6 +171,8 @@ UnaryOperate (Value v, UnaryOp operator)
 				1, v);
 	RETURN (Zero);
     }
+    if (aborting)
+	RETURN (Zero);
     ret = (*v->value.type->unary[operator])(v, 1);
     if (ret->value.type->reduce)
 	ret = (*ret->value.type->reduce) (ret);

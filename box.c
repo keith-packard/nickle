@@ -65,7 +65,11 @@ NewTypedBox (Bool constant, BoxTypesPtr bt)
 
 static void MarkBoxTypes (void *object)
 {
-    /* No referenced objects */
+    BoxTypesPtr	bt = object;
+    int		i;
+
+    for (i = 0; i < bt->count; i++)
+	MemReference (BoxTypesValue(bt,i));
 }
 
 DataType    BoxTypesType = { MarkBoxTypes, 0 };
@@ -110,7 +114,7 @@ AddBoxTypes (BoxTypesPtr *btp, Types *t)
 	if (count)
 	{
 	    memcpy (BoxTypesElements (new), BoxTypesElements (bt),
-		    count * sizeof (Type));
+		    count * sizeof (Types *));
 	}
 	new->size = size;
 	new->count = count;

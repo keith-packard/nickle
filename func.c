@@ -16,10 +16,10 @@ static void MarkFuncCode (void *object)
 
     MemReference (fc->base.type);
     MemReference (fc->base.args);
-    MemReference (fc->dynamics);
-    MemReference (fc->statics);
     MemReference (fc->code);
     MemReference (fc->obj);
+    MemReference (fc->dynamics);
+    MemReference (fc->statics);
     MemReference (fc->staticInit);
 }
 

@@ -25,6 +25,7 @@ ObjMark (void *object)
     inst = ObjCode (obj, 0);
     for (i = 0; i < obj->used; i++, inst++)
     {
+	MemReference (inst->base.stat);
 	switch (inst->base.opCode) {
 	case OpName:
 	case OpNameRef:
@@ -42,10 +43,15 @@ ObjMark (void *object)
 	case OpFork:
 	    MemReference (inst->obj.obj);
 	    break;
+	case OpCatch:
+	    MemReference (inst->catch.exception);
+	    break;
+	case OpRaise:
+	    MemReference (inst->raise.exception);
+	    break;
 	default:
 	    break;
 	}
-	MemReference (inst->base.stat);
     }
 }
 

@@ -144,8 +144,8 @@ StructTypeMark (void *object)
     int		    i;
 
     se = StructTypeElements (st);
-    for (i = 0; i < nelements; i++)
-	MemReference (st[i].type);
+    for (i = 0; i < st->nelements; i++)
+	MemReference (se[i].type);
 }
 
 DataType StructTypeType = { StructTypeMark, 0 };

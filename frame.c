@@ -19,6 +19,7 @@ FrameMark (void *object)
     MemReference (frame->staticLink);
     MemReference (frame->function);
     MemReference (frame->frame);
+    MemReference (frame->statics);
     MemReference (frame->saveCode);
 }
 

@@ -112,8 +112,10 @@ extend namespace File {
 		 * width
 		 */
 		
-		int width = 0;
 		string fill = " ";
+		if (fmt::match('0'))
+		    fill = "0";
+		int width = 0;
 		if (fmt::match('*'))
 		    width = arg::next ();
 		else
@@ -121,8 +123,6 @@ extend namespace File {
 		    int sign = 1;
 		    if (fmt::match('-'))
 			sign = -1;
-		    if (fmt::match('0'))
-			fill = "0";
 		    width = fmt::number () * sign;
 		}
 		

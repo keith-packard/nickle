@@ -85,8 +85,14 @@ extend namespace Command {
      */
     void do_load (string f)
     {
-	if (!lex_file (f))
-	    File::fprintf (stderr, "Cannot load file \"%s\"\n", f);
+	try {
+	    lex_file (f);
+	} catch File::open_error (string msg,
+				  File::error_type err,
+				  string name) {
+	    File::fprintf (stderr, "Cannot load \"%s\": %s\n",
+			   name, msg);
+	}
     }
 
     new ("load", do_load);
@@ -148,7 +154,7 @@ extend namespace Command {
 		    if (!lex_library (f)) 
 		    {
 			File::fprintf (stderr,
-				       "Cannot load %s " +
+				       "Cannot load \"%s\" " +
 				       "file \"%s\", giving up.\n",
 				       autotype,
 				       f);
@@ -279,19 +285,34 @@ extend namespace Command {
 		lex_file (Environ::get ("HOME") + "/.nicklerc");
 	    } catch invalid_argument (msg, int i, poly value) {
 		/* do nothing */;
-	    } catch File::open_error (string name,
+	    } catch File::open_error (string msg,
 				      File::error_type err,
-				      string msg) {
+				      string name) {
 		/* do nothing */;
 	    }
 	}
 
 	while (nfiles-- > 0)
 	{
-	    if (files[nfiles].library)
-		lex_library (files[nfiles].name);
-	    else
-		lex_file (files[nfiles].name);
+	    exception load_fail (string msg);
+	    try {
+		if (files[nfiles].library) {
+		    if (!lex_library (files[nfiles].name))
+			raise load_fail ("no such library");
+		} else {
+		    try {
+			lex_file (files[nfiles].name);
+		    } catch File::open_error (string msg,
+					      File::error_type err,
+					      string name) {
+			raise load_fail (msg);
+		    }
+		}
+	    } catch load_fail (string msg) {
+		File::fprintf (stderr, "Cannot load \"%s\": %s\n",
+			       files[nfiles].name, msg);
+		exit (1);
+	    }
 	}
 	/*
 	 * Reset argv to hold remaining arguments

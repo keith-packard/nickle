@@ -1,3 +1,13 @@
+2004-04-01  Keith Packard  <keithp@keithp.com>
+
+	Debian bug 241417
+
+	* command.5c:
+	Catch File::open_error when loading files and print
+	reasonable message.
+	exit(1) immediately if an file or library from the
+	command line fails load.
+
 2004-03-02  Keith Packard  <keithp@keithp.com>
 
 	* debian/changelog:

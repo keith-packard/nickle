@@ -1,3 +1,10 @@
+2004-05-27  Keith Packard  <keithp@keithp.com>
+version 2.37
+
+	* natural.c: (NaturalCompliment):
+	Bogus effort to truncate compliment answers resulted in
+	broken IntegerLand operation
+
 2004-05-26  Keith Packard  <keithp@keithp.com>
 version 2.36
 

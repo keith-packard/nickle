@@ -666,7 +666,7 @@ NaturalCompliment (Natural *a, int len)
 
     resultlen = length (a);
     at = data(a) + (resultlen-1);
-    while (resultlen > 0 && ~*at == 0)
+    while (resultlen > len && ~*at == 0)
     {
 	resultlen--;
 	at--;

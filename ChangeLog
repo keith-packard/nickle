@@ -1,6 +1,12 @@
 2004-05-26  Keith Packard  <keithp@keithp.com>
 version 2.35
 
+	* examples/menace2.5c:
+	* examples/turtle/snowflake.5c:
+	Clean up examples to not try and run themselves as scripts
+
+2004-05-26  Keith Packard  <keithp@keithp.com>
+
 	* compile.c: (CompileArrayDimValue):
 	Array dimension values are always local in static initializers
 	

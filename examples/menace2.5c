@@ -1,5 +1,3 @@
-#!/usr/bin/env nickle
-
 /*
  * MENACE was a 1960 construction by Michie which
  * learned to play Tic-Tac-Toe.  Remarkably, it did this

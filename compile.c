@@ -761,6 +761,11 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     /* Compile enter expression */
     if (expr->tree.left->tree.left)
 	obj = _CompileExpr (obj, expr->tree.left->tree.left, namespace, True, stat);
+    else
+    {
+	BuildInst (obj, OpConst, inst, stat);
+	inst->constant.constant = One;
+    }
     NewInst (enter_done_inst, obj);
     
     /* here's where the twixt instruction goes */

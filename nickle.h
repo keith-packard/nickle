@@ -358,11 +358,11 @@ typedef struct _instTwixt {
     int		leave;
 } InstTwixt;
 
-typedef struct _instTypeCase {
+typedef struct _instTagCase {
     InstBase	inst;
     int		offset;
-    Types	*type;
-} InstTypeCase;
+    Atom	tag;
+} InstTagCase;
 
 typedef union _inst {
     InstBase	base;
@@ -377,7 +377,7 @@ typedef union _inst {
     InstCatch	catch;
     InstRaise	raise;
     InstTwixt	twixt;
-    InstTypeCase	typecase;
+    InstTagCase	tagcase;
 } Inst;
 
 #define OBJ_STATE_ERROR	    1
@@ -612,7 +612,6 @@ Value	do_is_number (Value);
 Value	do_is_string (Value);
 Value	do_is_file (Value);
 Value	do_is_thread (Value);
-Value	do_is_mutex (Value);
 Value	do_is_semaphore (Value);
 Value	do_is_continuation (Value);
 Value	do_is_array (Value);

@@ -40,15 +40,16 @@ void yyerror (char *fmt, ...);
 %type  <eval>	history
 %type  <eval>	block func_body statements statement catches catch
 %type  <eval>	case_block cases case
-%type  <eval>	typecase_block typecases typecase
+%type  <eval>	union_case_block union_cases union_case
 %type  <dval>	enames names opt_initnames initnames
-%type  <aval>	typename ename
+%type  <aval>	typename name
 %type  <eval>	opt_init
 %type  <ftval>	decl opt_decl
 %type  <tsval>	opt_type type
 %type  <eval>   opt_stars stars
 %type  <tval>	basetype
-%type  <mval>	struct_members union_members
+%type  <tval>	struct_or_union
+%type  <mval>	struct_members
 %type  <cval>	class
 %type  <pval>	publish publish_extend
 
@@ -66,7 +67,7 @@ void yyerror (char *fmt, ...);
 
 %token		VAR EXPR ARRAY STRUCT UNION
 
-%token		NL SEMI MOD OC CC DOLLAR DOTS COLONCOLON
+%token		NL SEMI MOD OC CC DOLLAR DOTS
 %token		UNDEFINE LOAD HISTORY PRINT EDIT QUIT
 %token <cval>	GLOBAL AUTO STATIC
 %token <tval>	POLY INTEGER NATURAL RATIONAL REAL STRING
@@ -74,7 +75,7 @@ void yyerror (char *fmt, ...);
 %token		FUNCTION FUNC EXCEPTION RAISE
 %token		TYPEDEF IMPORT NAMESPACE NEW
 %token <pval>	PUBLIC EXTEND
-%token		IF ELSE WHILE DO FOR SWITCH TYPESWITCH
+%token		IF ELSE WHILE DO FOR SWITCH
 %token		BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		TRY CATCH TWIXT
 %token <aval>	NAME TYPENAME
@@ -100,9 +101,10 @@ void yyerror (char *fmt, ...);
 %left		PLUS MINUS
 %left		TIMES DIVIDE DIV MOD
 %right		POW
+%left		UNIONCAST
 %right		UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
 %left		OS CS DOT ARROW REFARRAY CALL OP CP
-
+%right		COLONCOLON
 %%
 lines		: lines pcommand
 		|
@@ -247,7 +249,7 @@ command		: QUIT NL
 			t = NewThread (0, CompileExpr ($2, GlobalNamespace));
 			ThreadsRun (t, 0);
 		    }
-		| PRINT colonnames ename NL
+		| PRINT colonnames name NL
 		    { 
 			SymbolPtr	sym;
 			int		depth;
@@ -266,7 +268,7 @@ command		: QUIT NL
 		| EDIT edit
 		| NL
 		;
-colonnames	: colonnames ename COLONCOLON
+colonnames	: colonnames name COLONCOLON
 		    {
 			SymbolPtr   sym;
 			int	    depth;
@@ -309,7 +311,7 @@ history		:
 			$$ = BuildCall ("History", "show", 3, BuildName ("format"), $1, $3);
 		    }
 		;
-edit		: ename NL
+edit		: name NL
 		    {
 			SymbolPtr	s;
 			int		depth;
@@ -363,8 +365,8 @@ statement	: IF ignorenl OP expr CP statement
 		    }
 		| SWITCH ignorenl OP expr CP case_block
 		    { $$ = NewExprTree (SWITCH, $4, $6); }
-		| TYPESWITCH ignorenl OP expr CP typecase_block
-		    { $$ = NewExprTree (TYPESWITCH, $4, $6); }
+		| UNION SWITCH ignorenl OP expr CP union_case_block
+		    { $$ = NewExprTree (UNION, $5, $7); }
 		| BREAK ignorenl SEMI
 		    { $$ = NewExprTree(BREAK, (Expr *) 0, (Expr *) 0); }
 		| CONTINUE ignorenl SEMI
@@ -405,7 +407,7 @@ statement	: IF ignorenl OP expr CP statement
 		    { $$ = NewExprTree (RAISE, NewExprAtom ($2), $4); }
 		| decl ignorenl opt_initnames SEMI
 		    { $$ = NewExprDecl ($3, $1.class, $1.type, $1.publish); }
-		| publish TYPEDEF ignorenl names SEMI
+		| publish TYPEDEF ignorenl enames SEMI
 		    { 
 			DeclListPtr dl;
 			
@@ -482,34 +484,28 @@ case		: CASE expr COLON statements
 		| DEFAULT COLON statements
 		    { $$ = NewExprTree (CASE, 0, $3); }
 		;
-typecase_block: block_start typecases block_end
+union_case_block: block_start union_cases block_end
 		    { $$ = $2; }
 		;
-typecases	: typecase typecases
+union_cases	: union_case union_cases
 		    { $$ = NewExprTree (CASE, $1, $2); }    
 		|
 		    { $$ = 0; }
 		;
-typecase	: CASE type COLON statements
-		    { 
-			$$ = NewExprTree (CASE, NewExprDecl (0, 
-							     class_undef,
-							     $2,
-							     publish_private),
-					  $4); 
-		    }
+union_case	: CASE NAME COLON statements
+		    { $$ = NewExprTree (CASE, NewExprAtom ($2), $4); }
 		| DEFAULT COLON statements
 		    { $$ = NewExprTree (CASE, 0, $3); }
 		;
 /*
 * Identifiers
 */
-enames		: ename COMMA enames
+enames		: name COMMA enames
 		    { $$ = NewDeclList ($1, 0, $3); }
-		| ename
+		| name
 		    { $$ = NewDeclList ($1, 0, 0); }
 		;
-ename		: NAME
+name		: NAME
 		| TYPENAME
 		;
 names		: NAME COMMA names
@@ -523,9 +519,9 @@ opt_initnames	: initnames
 		|
 		    { $$ = 0; }
 		;
-initnames	: NAME opt_init COMMA initnames
+initnames	: name opt_init COMMA initnames
 		    { $$ = NewDeclList ($1, $2, $4); }
-		| NAME opt_init
+		| name opt_init
 		    { $$ = NewDeclList ($1, $2, 0); }
 		;
 opt_init	: ASSIGN simpleexpr
@@ -582,7 +578,7 @@ type		: basetype
 		    { $$ = NewTypesFunc ($1, $3); }
 		| type OS opt_stars CS
 		    { $$ = NewTypesArray ($1, $3); }
-		| STRUCT OC struct_members CC
+		| struct_or_union OC struct_members CC
 		    {
 			DeclListPtr	dl;
 			StructType	*st;
@@ -608,27 +604,10 @@ type		: basetype
 				nelements++;
 			    }
 			}
-			$$ = NewTypesStruct (st);
-		    }
-		| UNION OC union_members CC
-		    {
-			Types		*ut;
-			TypesPtr	*ue;
-			MemListPtr	ml;
-			int		nelements;
-
-			nelements = 0;
-			for (ml = $3; ml; ml = ml->next)
-			    nelements++;
-			ut = NewTypesUnion (nelements);
-			ue = TypesUnionElements (ut);
-			nelements = 0;
-			for (ml = $3; ml; ml = ml->next)
-			{
-			    ue[nelements] = ml->type;
-			    nelements++;
-			}
-			$$ = ut;
+			if ($1 == type_struct)
+			    $$ = NewTypesStruct (st);
+			else
+			    $$ = NewTypesUnion (st);
 		    }
 		| OP type CP
 		    { $$ = $2; }
@@ -655,19 +634,16 @@ stars		: stars COMMA TIMES
 		| TIMES
 		    { $$ = NewExprTree (COMMA, 0, 0); }
 		;
+struct_or_union	: STRUCT
+		    { $$ = type_struct; }
+		| UNION
+		    { $$ = type_union; }
+		;
 /*
 * Structure member declarations
 */
 struct_members	: opt_type names SEMI struct_members
 		    { $$ = NewMemList ($2, $1, $4); }
-		|
-		    { $$ = 0; }
-		;
-/*
- * union member declaraions
- */
-union_members	: opt_type SEMI union_members
-		    { $$ = NewMemList (0, $1, $3); }
 		|
 		    { $$ = 0; }
 		;
@@ -960,6 +936,11 @@ primary		: NAME
 			$$ = NewExprTree (NEW, $4, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $4); 
 		    }
+		| OP type DOT NAME CP primary			%prec UNIONCAST
+		    { 
+			$$ = NewExprTree (UNION, NewExprAtom ($4), $6); 
+			$$->base.type = $2;
+		    }
 		| DOLLAR opt_const
 		    { $$ = NewExprConst(History (0, $2)); }
 		| DOT
@@ -992,7 +973,7 @@ opt_inits	: inits
 		|
 		    { $$ = 0; };
 		;
-inits		: OC arrayinits CC
+inits		: OC arrayinits  CC
 		    { $$ = NewExprTree (ARRAY, $2, 0); }
 		| OC structinits CC
 		    { $$ = NewExprTree (STRUCT, $2, 0); }

@@ -406,7 +406,6 @@ ThreadTwixt (Value thread, int enterOffset, int leaveOffset)
     EXIT ();
 }
 
-#if 0
 static void
 ThreadBoxCheck (BoxPtr box, int i, Types *type)
 {
@@ -416,6 +415,9 @@ ThreadBoxCheck (BoxPtr box, int i, Types *type)
 	StructType  *st = ctype->structs.structs;
 	
 	switch (ctype->base.tag) {
+	case types_union:
+	    BoxValueSet (box, i, NewUnion (st, False));
+	    break;
 	case types_struct:
 	    BoxValueSet (box, i, NewStruct (st, False));
 	    box = BoxValueGet (box, i)->structs.values;
@@ -427,9 +429,6 @@ ThreadBoxCheck (BoxPtr box, int i, Types *type)
 	}
     }
 }
-#else
-#define ThreadBoxCheck(b,i,t)
-#endif
 
 static inline ThreadState
 ThreadStep (Value thread)
@@ -483,15 +482,23 @@ ThreadStep (Value thread)
 	    stack++;
 	}
 	break;
-    case OpTypeCase:
-	if (TypeCompatibleAssign (inst->typecase.type, value, False))
-	    next = inst + inst->typecase.offset;
+    case OpTagCase:
+	if (value->value.tag != type_union)
+	{
+	    RaiseStandardException (exception_invalid_argument,
+				    "union switch expression not union",
+				    2,
+				    Zero, value);
+	    break;
+	}
+	if (value->unions.tag == inst->tagcase.tag)
+	    next = inst + inst->tagcase.offset;
 	break;
     case OpDefault:
         next = inst + inst->branch.offset;
 	stack++;
 	break;
-    case OpTypeDefault:
+    case OpTagDefault:
         next = inst + inst->branch.offset;
 	break;
     case OpEnd:
@@ -575,6 +582,22 @@ ThreadStep (Value thread)
 	w = Stack(stack); stack++;
 	ThreadAssign (v, w);
 	break;
+    case OpBuildUnion:
+	value = NewUnion (inst->structs.structs, False);
+	break;
+    case OpInitUnion:
+	v = UnionRef (value, inst->atom.atom);
+	if (!v)
+	{
+	    RaiseStandardException (exception_invalid_struct_member,
+				    "Invalid union member",
+				    2, value, 
+				    NewStrString (AtomName (inst->atom.atom)));
+	    break;
+	}
+	w = Stack(stack); stack++;
+	ThreadAssign (v, w);
+	break;
     case OpArray:
     case OpArrayRef:
     case OpArrayRefStore:
@@ -641,7 +664,8 @@ ThreadStep (Value thread)
     case OpArrowRef:
     case OpArrowRefStore:
 	if (value->value.tag != type_ref ||
-	    RefValue (value)->value.tag != type_struct)
+	    (RefValue (value)->value.tag != type_struct &&
+	     RefValue (value)->value.tag != type_union))
 	{
 	    RaiseError ("%v not a structure reference", value);
 	    break;
@@ -665,6 +689,29 @@ ThreadStep (Value thread)
 					"no such struct member",
 					2, value, 
 					NewStrString (AtomName (inst->atom.atom)));
+		break;
+	    }
+	    value = v;
+	    break;
+	case type_union:
+	    if (inst->base.opCode == OpDot || inst->base.opCode == OpArrow)
+		v = UnionValue (value, inst->atom.atom);
+	    else
+	    {
+		v = UnionRef (value, inst->atom.atom);
+	    }
+	    if (!v)
+	    {
+		if (StructTypes (value->unions.type, inst->atom.atom))
+		    RaiseStandardException (exception_invalid_struct_member,
+					    "requested union tag not current",
+					    2, value,
+					    NewStrString (AtomName (inst->atom.atom)));
+		else
+		    RaiseStandardException (exception_invalid_struct_member,
+					    "no such union tag",
+					    2, value, 
+					    NewStrString (AtomName (inst->atom.atom)));
 		break;
 	    }
 	    value = v;

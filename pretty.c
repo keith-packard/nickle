@@ -441,12 +441,12 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	    PrettyStatement (f, e->tree.right->tree.right, level+1, level, nest);
 	break;
     case SWITCH:
-    case TYPESWITCH:
+    case UNION:
 	PrettyIndent (f, level);
 	if (e->base.tag == SWITCH)
 	    FilePuts (f, "switch (");
 	else
-	    FilePuts (f, "typeswitch (");
+	    FilePuts (f, "union switch (");
 	PrettyExpr (f, e->tree.left, -1, level, nest);
 	FilePuts (f, ")");
 	if (nest)

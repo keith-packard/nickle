@@ -116,7 +116,7 @@ ObjPtr	CompileFuncCode (CodePtr code, NamespacePtr namespace, ExprPtr stat);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
 
 static void
-CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr stat)
+CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr stat, Bool complete)
 {
     SymbolPtr	s;
     int		depth;
@@ -139,38 +139,38 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 		CompileError (obj, stat, "Symbol \"%A\" not a typedef",
 			      type->name.name);
 	    else if (!s->symbol.type)
-		CompileError (obj, stat, "Typedef \"%A\" not defined yet",
-			      type->name.name);
+	    {
+		if (complete)
+		    CompileError (obj, stat, "Typedef \"%A\" not defined yet",
+				  type->name.name);
+	    }
 	    else
 	    {
 		type->name.type = s->symbol.type;
-/*		CompileCanonType (obj, namespace, type->name.type, stat); */
+		CompileCanonType (obj, namespace, type->name.type, stat, complete);
 	    }
 	}
 	break;
     case types_ref:
-    	CompileCanonType (obj, namespace, type->ref.ref, stat);
+    	CompileCanonType (obj, namespace, type->ref.ref, stat, complete);
 	break;
     case types_func:
-	CompileCanonType (obj, namespace, type->func.ret, stat);
+	CompileCanonType (obj, namespace, type->func.ret, stat, complete);
 	for (arg = type->func.args; arg; arg = arg->next)
-	    CompileCanonType (obj, namespace, arg->type, stat);
+	    CompileCanonType (obj, namespace, arg->type, stat, complete);
 	break;
     case types_array:
-	CompileCanonType (obj, namespace, type->array.type, stat);
+	CompileCanonType (obj, namespace, type->array.type, stat, complete);
 	break;
     case types_struct:
+    case types_union:
 	for (n = 0; n < type->structs.structs->nelements; n++)
 	{
 	    StructElement   *se;
 
 	    se = &StructTypeElements(type->structs.structs)[n];
-	    CompileCanonType (obj, namespace, se->type, stat);
+	    CompileCanonType (obj, namespace, se->type, stat, complete);
 	}
-	break;
-    case types_union:
-	for (n = 0; n < type->unions.nelements; n++)
-	    CompileCanonType (obj, namespace, TypesUnionElements(type)[n], stat);
 	break;
     }
 }
@@ -278,7 +278,7 @@ CompileNewSymbol (ObjPtr obj, ExprPtr stat, NamespacePtr namespace,
 	}
 	*new = s != 0;
     }
-    CompileCanonType (obj, namespace, type, stat);
+    CompileCanonType (obj, namespace, type, stat, class != class_typedef);
     RETURN (s);
 }
 
@@ -403,7 +403,8 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Object left of '.' is not a struct");
+	    CompileError (obj, stat, "Object left of '.' is not a struct or union containing \"%A\"",
+			  expr->tree.right->atom.atom);
 	if (assign)
 	{
 	    BuildInst (obj, OpDotRefStore, inst, stat);
@@ -416,6 +417,12 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	break;
     case ARROW:
 	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
+	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
+					     expr->base.tag,
+					     expr->tree.right->atom.atom);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Object left of '.' is not a struct or union containing \"%A\"",
+			  expr->tree.right->atom.atom);
 	if (assign)
 	{
 	    BuildInst (obj, OpArrowRefStore, inst, stat);
@@ -424,12 +431,6 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	{
 	    BuildInst (obj, OpArrowRef, inst, stat);
 	}
-	expr->base.type = TypeCombineStruct (expr->tree.left->base.type,
-					     expr->base.tag,
-					     expr->tree.right->atom.atom);
-	if (!expr->base.type)
-	    CompileError (obj, stat, "Incompatible type '%T' in struct operation",
-			  expr->tree.left->base.type, ndim);
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case OS:
@@ -1062,7 +1063,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	expr->base.type = s->symbol.type;
 	break;
     case NEW:
-	CompileCanonType (obj, namespace, expr->base.type, stat);
+	CompileCanonType (obj, namespace, expr->base.type, stat, True);
 	t = TypesCanon (expr->base.type);
 	switch (t->base.tag) {
 	case types_struct:
@@ -1125,6 +1126,43 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	    break;
 	}
 	break;
+    case UNION:
+	_CompileExpr (obj, expr->tree.right, namespace, stat);
+	SetPush (obj);
+	CompileCanonType (obj, namespace, expr->base.type, stat, True);
+	t = TypesCanon (expr->base.type);
+	if (t->base.tag == types_union)
+	{
+	    StructType	*st = t->structs.structs;
+	    
+	    expr->tree.left->base.type = StructTypes (st, expr->tree.left->atom.atom);
+	    if (!expr->tree.left->base.type)
+	    {
+		CompileError (obj, stat, "Type '%T' is not a union containing \"%A\"",
+			      expr->base.type,
+			      expr->tree.left->atom.atom);
+		break;
+	    }
+	    BuildInst (obj, OpBuildUnion, inst, stat);
+	    inst->structs.structs = st;
+	    if (!TypeCombineBinary (expr->tree.left->base.type,
+				    ASSIGN,
+				    expr->tree.right->base.type))
+	    {
+		CompileError (obj, stat, "Incompatible types '%T', '%T' in union constructor",
+			      expr->tree.left->base.type,
+			      expr->tree.right->base.type);
+		break;
+	    }
+	    BuildInst (obj, OpInitUnion, inst, stat);
+	    inst->atom.atom = expr->tree.left->atom.atom;
+	}
+	else
+	{
+	    CompileError (obj, stat, "Type '%T' is not a union", expr->tree.left->base.type);
+	    break;
+	}
+	break;
     case CONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
@@ -1175,9 +1213,9 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 					     expr->base.tag,
 					     expr->tree.right->atom.atom);
 	if (!expr->base.type)
-	    CompileError (obj, stat, "Type '%T' is not a struct ref containing \"%A\"",
+	    CompileError (obj, stat, "Type '%T' is not a struct or union ref containing \"%A\"",
 			  expr->tree.left->base.type,
-			  expr->tree.left->atom.atom);
+			  expr->tree.right->atom.atom);
 	BuildInst (obj, OpArrow, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
@@ -1570,7 +1608,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	CompilePatchLoop (obj, top_inst, continue_inst);
 	break;
     case SWITCH:
-    case TYPESWITCH:
+    case UNION:
 	/*
 	 * switch (a) { case b: c; case d: e; }
 	 *
@@ -1641,9 +1679,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 		}
 		else
 		{
-		    inst->base.opCode = OpTypeCase;
-		    inst->typecase.offset = obj->used - case_inst[icase];
-		    inst->typecase.type = c->tree.left->tree.left->decl.type;
+		    inst->base.opCode = OpTagCase;
+		    inst->tagcase.offset = obj->used - case_inst[icase];
+		    inst->tagcase.tag = c->tree.left->tree.left->atom.atom;
 		}
 		inst->base.stat = expr;
 		icase++;
@@ -1654,7 +1692,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 		if (expr->base.tag == SWITCH)
 		    inst->base.opCode = OpDefault;
 		else
-		    inst->base.opCode = OpTypeDefault;
+		    inst->base.opCode = OpTagDefault;
 		inst->base.stat = expr;
 		inst->branch.offset = obj->used - test_inst;
 	    }
@@ -1672,7 +1710,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace)
 	    if (expr->base.tag == SWITCH)
 		inst->base.opCode = OpDefault;
 	    else
-		inst->base.opCode = OpTypeDefault;
+		inst->base.opCode = OpTagDefault;
 	    inst->base.stat = expr;
 	    inst->branch.offset = obj->used - test_inst;
 	}
@@ -1817,9 +1855,9 @@ CompileIsBranch (InstPtr inst)
     case OpFor:
     case OpEndFor:
     case OpCase:
-    case OpTypeCase:
+    case OpTagCase:
     case OpDefault:
-    case OpTypeDefault:
+    case OpTagDefault:
     case OpBreak:
     case OpContinue:
     case OpQuest:
@@ -1883,7 +1921,7 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
     namespace->code = code;
     for (args = code->base.args; args; args = args->next)
     {
-        CompileCanonType (obj, namespace, args->type, stat);
+        CompileCanonType (obj, namespace, args->type, stat, True);
 	if (args->varargs)
 	{
 	    local = NewSymbolArg (args->name, 
@@ -2105,9 +2143,9 @@ char *OpNames[] = {
     "For",
     "EndFor",
     "Case",
-    "TypeCase",
+    "TagCase",
     "Default",
-    "TypeDefault",
+    "TagDefault",
     "Break",
     "Continue",
     "Return",
@@ -2126,22 +2164,20 @@ char *OpNames[] = {
      */
     "Name",
     "NameRef",
-    "NameRefStore",
     "Const",
     "BuildArray",
     "InitArray",
     "BuildStruct",
     "InitStruct",
+    "BuildUnion",
+    "InitUnion",
     "Array",
     "ArrayRef",
-    "ArrayRefStore",
     "Call",
     "Dot",
     "DotRef",
-    "DotRefStore",
     "Arrow",
     "ArrowRef",
-    "ArrowRefStore",
     "Obj",
     "StaticInit",
     "StaticDone",
@@ -2237,8 +2273,8 @@ ObjDump (ObjPtr obj, int indent)
 		    "             " + strlen(OpNames[inst->base.opCode]),
 		    inst->base.push ? '^' : ' ');
 	switch (inst->base.opCode) {
-	case OpTypeCase:
-	    FilePrintf (FileStdout, "(%T)", inst->typecase.type);
+	case OpTagCase:
+	    FilePrintf (FileStdout, "(%T)", inst->tagcase.tag);
 	    goto branch;
 	case OpCatch:
 	    FilePrintf (FileStdout, "\"%A\" ", 
@@ -2253,7 +2289,7 @@ ObjDump (ObjPtr obj, int indent)
 	case OpEndFor:
 	case OpCase:
 	case OpDefault:
-	case OpTypeDefault:
+	case OpTagDefault:
 	case OpBreak:
 	case OpContinue:
 	case OpQuest:
@@ -2305,6 +2341,8 @@ ObjDump (ObjPtr obj, int indent)
 	case OpArrow:
 	case OpArrowRef:
 	case OpArrowRefStore:
+	case OpInitStruct:
+	case OpInitUnion:
 	    FilePrintf (FileStdout, "%s", AtomName (inst->atom.atom));
 	    break;
 	case OpObj:

@@ -15,7 +15,7 @@
 extern ValueType    IntType, IntegerType, RationalType, FloatType;
 extern ValueType    StringType, ArrayType, FileType;
 extern ValueType    RefType, structType, FuncType, ThreadType;
-extern ValueType    MutexType, SemaphoreType, ContinuationType;
+extern ValueType    SemaphoreType, ContinuationType;
 
 volatile Bool	aborting;
 volatile Bool	signaling;
@@ -24,7 +24,7 @@ volatile Bool	signaling;
 ValueType   *valueTypes[] = {
     &IntType, &IntegerType, &RationalType, &FloatType,
     &StringType, &FileType,
-    &ThreadType, &MutexType, &SemaphoreType, &ContinuationType,
+    &ThreadType, &SemaphoreType, &ContinuationType,
     &ArrayType, &RefType, &structType, &FuncType,
 };
 
@@ -135,6 +135,10 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	    bv = (*av->value.type->promote) (bv, av);
 	type = av->value.type;
     }
+    else if (av->value.tag == type_union)
+	type = av->value.type;
+    else if (bv->value.tag == type_union)
+	type = bv->value.type;
     if (!type || !type->binary[operator])
     {
 	if (operator != EqualOp)
@@ -535,6 +539,15 @@ Copy (Value v)
 	    nv = NewStruct (v->structs.type, False);
 	    for (i = 0; i < v->structs.type->nelements; i++)
 		BoxValueSet (nv->structs.values, i, Copy (BoxValueGet (v->structs.values, i)));
+	    v = nv;
+	}
+	break;
+    case type_union:
+	if (!v->unions.value->constant)
+	{
+	    nv = NewUnion (v->unions.type, False);
+	    nv->unions.tag = v->unions.tag;
+	    BoxValueSet (nv->unions.value, 0, Copy (BoxValueGet (v->unions.value, 0)));
 	    v = nv;
 	}
 	break;

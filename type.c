@@ -77,17 +77,6 @@ TypesStructMark (void *object)
     MemReference (ts->structs);
 }
 
-static void
-TypesUnionMark (void *object)
-{
-    Types	*t = object;
-    TypesUnion	*tu = object;
-    int		n;
-
-    for (n = 0; n < tu->nelements; n++)
-	MemReference (TypesUnionElements(t)[n]);
-}
-
 DataType    TypesPrimType = { TypesPrimMark, 0 };
 DataType    TypesNameType = { TypesNameMark, 0 };
 DataType    TypesRefType = { TypesRefMark, 0 };
@@ -95,7 +84,6 @@ DataType    ArgTypeType = { ArgTypeMark, 0 };
 DataType    TypesFuncType = { TypesFuncMark, 0 };
 DataType    TypesArrayType = { TypesArrayMark, 0 };
 DataType    TypesStructType = { TypesStructMark, 0 };
-DataType    TypesUnionType = { TypesUnionMark, 0 };
 
 Types *
 NewTypesPrim (Type prim)
@@ -192,15 +180,14 @@ NewTypesStruct (StructType *structs)
 }
 
 Types *
-NewTypesUnion (int nelements)
+NewTypesUnion (StructType *structs)
 {
     ENTER ();
     Types   *t;
 
-    t = ALLOCATE (&TypesUnionType, sizeof (TypesUnion) + 
-		  nelements * sizeof (Types *));
+    t = ALLOCATE (&TypesStructType, sizeof (TypesStruct));
     t->base.tag = types_union;
-    t->unions.nelements = nelements;
+    t->structs.structs = structs;
     RETURN (t);
 }
 
@@ -223,7 +210,7 @@ BaseType (Types *t)
 	case types_struct:
 	    return type_struct;
 	case types_union:
-	    return type_undef;
+	    return type_union;
 	}
     }
     return type_undef;
@@ -352,22 +339,25 @@ TypeCompatible (Types *a, Types *b, Bool contains)
         return TypeCompatible (a->name.type, b, contains);
     if (b->base.tag == types_name)
 	return TypeCompatible (a, b->name.type, contains);
+    
     if (a->base.tag == types_union)
     {
-	Types	**ut = TypesUnionElements (a);
-	for (n = 0; n < a->unions.nelements; n++)
-	    if (TypeCompatible (ut[n], b, contains))
-	        return True;
-	return False;
-    }
-    if (b->base.tag == types_union)
-    {
-	Types	**ut = TypesUnionElements (a);
-	for (n = 0; n < b->unions.nelements; n++)
-	    if (TypeCompatible (a, ut[n], contains))
+	StructType  *st = a->structs.structs;
+	for (n = 0; n < st->nelements; n++)
+	    if (TypeCompatible (StructTypeElements(st)[n].type, b, contains))
 		return True;
 	return False;
     }
+
+    if (b->base.tag == types_union)
+    {
+	StructType  *st = b->structs.structs;
+	for (n = 0; n < st->nelements; n++)
+	    if (TypeCompatible (a, StructTypeElements(st)[n].type, contains))
+		return True;
+	return False;
+    }
+    
     if (a->base.tag != b->base.tag)
 	return False;
     switch (a->base.tag) {
@@ -416,6 +406,7 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	    return TypeCompatible (a->array.type, b->array.type, contains);
 	break;
     case types_struct:
+    case types_union:
 	if (!contains && a->structs.structs->nelements != b->structs.structs->nelements)
 	    break;
 	for (n = 0; n < a->structs.structs->nelements; n++)
@@ -648,8 +639,9 @@ static Types *
 TypeCombineFlatten (Types **rets, int nret, int sret)
 {
     ENTER ();
-    Types   *ret;
-    int	    n, m;
+    Types	*ret;
+    StructType	*st;
+    int		n, m;
 
     /*
      * Flatten unions
@@ -661,9 +653,11 @@ TypeCombineFlatten (Types **rets, int nret, int sret)
 	ut = rets[n];
 	if (ut->base.tag == types_union)
 	{
+	    st = ut->structs.structs;
+	    
 	    TypeRemove (rets, n, &nret);
-	    for (m = 0; m < ut->unions.nelements; m++)
-		rets = TypeAdd (rets, TypesUnionElements(ut)[m], &nret, &sret);
+	    for (m = 0; m < st->nelements; m++)
+		rets = TypeAdd (rets, StructTypeElements(st)[m].type, &nret, &sret);
 	}
     }
 
@@ -691,9 +685,10 @@ TypeCombineFlatten (Types **rets, int nret, int sret)
     if (nret == 1)
 	RETURN (rets[0]);
     
-    ret = NewTypesUnion (nret);
-    for (nret = 0; nret < ret->unions.nelements; nret++)
-	TypesUnionElements(ret)[nret] = rets[nret];
+    ret = NewTypesUnion (NewStructType (nret));
+    st = ret->structs.structs;
+    for (nret = 0; nret < st->nelements; nret++)
+	StructTypeElements(st)[nret].type = rets[nret];
     RETURN(ret);
 }
 
@@ -709,8 +704,9 @@ TypeCombineBinary (Types *left, int tag, Types *right)
     int	    sret = NUM_TYPE_STACK;
     int	    n;
 
+    /* Avoid error cascade */
     if (!left || !right)
-	RETURN(0);
+	RETURN(typesPoly);
     if (left->base.tag == types_name)
 	RETURN (TypeCombineBinary (left->name.type, tag, right));
     if (right->base.tag == types_name)
@@ -718,24 +714,20 @@ TypeCombineBinary (Types *left, int tag, Types *right)
     
     if (left->base.tag == types_union)
     {
-	Types	    **ut;
-
-	ut = TypesUnionElements (left);
-	for (n = 0; n < left->unions.nelements; n++)
+        StructType  *st = left->structs.structs;
+	for (n = 0; n < st->nelements; n++)
 	{
-	    ret = TypeCombineBinary (ut[n], tag, right);
+	    ret = TypeCombineBinary (StructTypeElements(st)[n].type, tag, right);
 	    if (ret)
 		rets = TypeAdd (rets, ret, &nret, &sret);
 	}
     }
     else if (right->base.tag == types_union)
     {
-	Types	    **ut;
-
-	ut = TypesUnionElements (right);
-	for (n = 0; n < right->unions.nelements; n++)
+        StructType  *st = right->structs.structs;
+	for (n = 0; n < st->nelements; n++)
 	{
-	    ret = TypeCombineBinary (left, tag, ut[n]);
+	    ret = TypeCombineBinary (left, tag, StructTypeElements(st)[n].type);
 	    if (ret)
 		rets = TypeAdd (rets, ret, &nret, &sret);
 	}
@@ -843,20 +835,19 @@ TypeCombineUnary (Types *type, int tag)
     int	    sret = NUM_TYPE_STACK;
     int	    n;
 
+    /* Avoid error cascade */
     if (!type)
-	RETURN(0);
+	RETURN(typesPoly);
 
     if (type->base.tag == types_name)
 	RETURN(TypeCombineUnary (type->name.type, tag));
     
     if (type->base.tag == types_union)
     {
-	Types	    **ut;
-
-	ut = TypesUnionElements (type);
-	for (n = 0; n < type->unions.nelements; n++)
+	StructType  *st = type->structs.structs;
+	for (n = 0; n < st->nelements; n++)
 	{
-	    ret = TypeCombineUnary (ut[n], tag);
+	    ret = TypeCombineUnary (StructTypeElements(st)[n].type, tag);
 	    if (ret)
 		rets = TypeAdd (rets, ret, &nret, &sret);
 	}
@@ -911,20 +902,19 @@ TypeCombineArray (Types *type, int ndim, Bool lvalue)
     int	    sret = NUM_TYPE_STACK;
     int	    n;
 
+    /* Avoid error cascade */
     if (!type)
-	RETURN(0);
+	RETURN(typesPoly);
 
     if (type->base.tag == types_name)
 	RETURN(TypeCombineArray (type->name.type, ndim, lvalue));
     
     if (type->base.tag == types_union)
     {
-	Types	    **ut;
-
-	ut = TypesUnionElements (type);
-	for (n = 0; n < type->unions.nelements; n++)
+	StructType  *st = type->structs.structs;
+	for (n = 0; n < st->nelements; n++)
 	{
-	    ret = TypeCombineArray (ut[n], ndim, lvalue);
+	    ret = TypeCombineArray (StructTypeElements(st)[n].type, ndim, lvalue);
 	    if (ret)
 		rets = TypeAdd (rets, ret, &nret, &sret);
 	}
@@ -960,7 +950,7 @@ TypeCombineStruct (Types *type, int tag, Atom atom)
 	
     switch (tag) {
     case DOT:
-	if (type->base.tag == types_struct)
+	if (type->base.tag == types_struct || type->base.tag == types_union)
 	{
 	    return StructTypes (type->structs.structs, atom);
 	}
@@ -1073,6 +1063,7 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 	    return TypeCompatible (a->array.type, b->array.type, True);
 	break;
     case types_struct:
+    case types_union:
 	for (n = 0; n < a->structs.structs->nelements; n++)
 	{
 	    StructElement   *ae;
@@ -1087,12 +1078,6 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 	}
 	if (n == a->structs.structs->nelements)
 	    return True;
-	break;
-    case types_union:
-	for (n = 0; n < a->unions.nelements; n++)
-	    if (TypeCompatibleAssign (TypesUnionElements(a)[n], 
-				      b, False))
-		return True;
 	break;
     default:	
     }
@@ -1111,7 +1096,8 @@ int
 TypesInit (void)
 {
     ENTER ();
-    Type    t;
+    Type	t;
+    StructType	*st;
 
     for (t = type_int; t <= type_continuation; t++)
     {
@@ -1122,15 +1108,20 @@ TypesInit (void)
     MemAddRoot (typesPoly);
     typesRefPoly = NewTypesRef (typesPoly);
     MemAddRoot (typesRefPoly);
-    typesGroup = NewTypesUnion (3);
-    TypesUnionElements(typesGroup)[0] = typesPrim[type_integer];
-    TypesUnionElements(typesGroup)[1] = typesPrim[type_rational];
-    TypesUnionElements(typesGroup)[2] = typesPrim[type_float];
+    
+    st = NewStructType (3);
+    StructTypeElements(st)[0].type = typesPrim[type_integer];
+    StructTypeElements(st)[1].type = typesPrim[type_rational];
+    StructTypeElements(st)[2].type = typesPrim[type_float];
+    typesGroup = NewTypesUnion (st);
     MemAddRoot (typesGroup);
-    typesField = NewTypesUnion (2);
-    TypesUnionElements(typesField)[0] = typesPrim[type_rational];
-    TypesUnionElements(typesField)[1] = typesPrim[type_float];
+    
+    st = NewStructType (2);
+    StructTypeElements(st)[0].type = typesPrim[type_rational];
+    StructTypeElements(st)[1].type = typesPrim[type_float];
+    typesField = NewTypesUnion (st);
     MemAddRoot (typesField);
+    
     TypeCheckStack = StackCreate ();
     MemAddRoot (TypeCheckStack);
     TypeCheckLevel = 0;

@@ -682,6 +682,10 @@ BuiltinInit (void)
 	sym = BuiltinSymbol (i->namespace, i->name, NewTypesPrim (type_file));
 	BoxValueSet (sym->global.value, 0, f);
     }
+    
+    sym = BuiltinSymbol (0, "null", typesPoly);
+    BoxValueSet (sym->global.value, 0, Zero);
+    
     for (e = excepts; e->name; e++)
 	BuiltinAddException (e->namespace, e->exception, e->name, e->args);
     EXIT ();
@@ -1605,21 +1609,6 @@ do_is_thread (Value av)
     ENTER ();
     switch (av->value.tag) {
     case type_thread:
-	av = One;
-	break;
-    default:
-	av = Zero;
-	break;
-    }
-    RETURN (av);
-}
-
-Value
-do_is_mutex (Value av)
-{
-    ENTER ();
-    switch (av->value.tag) {
-    case type_mutex:
 	av = One;
 	break;
     default:

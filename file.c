@@ -488,9 +488,6 @@ FilePutType (Value f, Type tag, Bool minimal)
     case type_thread:
 	FilePuts (f, "thread");
 	break;
-    case type_mutex:
-	FilePuts (f, "mutex");
-	break;
     case type_semaphore:
 	FilePuts (f, "semaphore");
 	break;
@@ -644,22 +641,18 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	    FilePuts (f, "]");
 	    break;
 	case types_struct:
-	    FilePuts (f, "struct { ");
+	case types_union:
+	    if (t->base.tag == types_struct)
+		FilePuts (f, "struct { ");
+	    else
+		FilePuts (f, "union { ");
 	    st = t->structs.structs;
 	    se = StructTypeElements (st);
 	    for (i = 0; i < st->nelements; i++)
 	    {
-		FilePutTypes (f, se[i].type, True);
-		FilePuts (f, AtomName (se[i].name));
-		FilePuts (f, "; ");
-	    }
-	    FilePuts (f, "}");
-	    break;
-	case types_union:
-	    FilePuts (f, "union { ");
-	    for (i = 0; i < t->unions.nelements; i++)
-	    {
-		FilePutTypes (f, TypesUnionElements(t)[i], False);
+		FilePutTypes (f, se[i].type, se[i].name != 0);
+		if (se[i].name)
+		    FilePuts (f, AtomName (se[i].name));
 		FilePuts (f, "; ");
 	    }
 	    FilePuts (f, "}");

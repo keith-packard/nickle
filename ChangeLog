@@ -1,3 +1,12 @@
+2003-12-13  Keith Packard  <keithp@keithp.com>
+
+	* compile.c: (CompileBuildArray), (CompileArrayInit),
+	(CompileImplicitInit):
+	Use canonical type to see if ANONINIT is an array.
+	Don't need to call TypeCanon before recursive CompileImplicitInit
+	call.
+	* version.m4:
+
 2003-10-25  Keith Packard  <keithp@keithp.com>
 
 	* Makefile.am:

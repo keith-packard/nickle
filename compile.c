@@ -1319,7 +1319,7 @@ CompileBuildArray (ObjPtr obj, ExprPtr expr, TypePtr type,
     }
     else
     {
-	CompileArrayDimValue (obj, type, False, stat, code);
+	obj = CompileArrayDimValue (obj, type, False, stat, code);
 	BuildInst (obj, OpBuildArrayInd, inst, stat);
     }
     inst->array.ndim = ndim;
@@ -1742,7 +1742,7 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 		RETURN (obj);
 	    }
 	    if (ndim > ninitdim ||
-		(ndim < ninitdim && sub->base.tag != type_array))
+		(ndim < ninitdim && TypeCanon(sub)->base.tag != type_array))
 	    {
 		CompileError (obj, stat, "Array dimension mismatch %d != %d\n",
 			      ndim, ninitdim);
@@ -1813,6 +1813,9 @@ CompileHashInit (ObjPtr obj, ExprPtr expr, Type *type,
 }
 
 		    
+/*
+ * Construct an implicit initializer expression for the specified type
+ */
 static ExprPtr
 CompileImplicitInit (Type *type)
 {
@@ -1863,7 +1866,7 @@ CompileImplicitInit (Type *type)
 	{
 	    ExprPtr	member;
 	    
-	    sub = TypeCanon (types[i]);
+	    sub = types[i];
 
 	    member = CompileImplicitInit (sub);
 	    if (member)

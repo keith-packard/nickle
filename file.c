@@ -609,6 +609,7 @@ FilePutTypes (Value f, Types *t, Bool minimal)
     int		    i;
     StructType	    *st;
     StructElement   *se;
+    Bool	    spaceit = minimal;
     
     if (!t)
     {
@@ -618,7 +619,10 @@ FilePutTypes (Value f, Types *t, Bool minimal)
     {
 	switch (t->base.tag) {
 	case types_prim:
-	    FilePutType (f, t->prim.prim, minimal);
+	    if (t->prim.prim != type_undef || !minimal)
+		FilePutType (f, t->prim.prim, False);
+	    else
+		spaceit = False;
 	    break;
 	case types_name:
 	    FilePuts (f, AtomName (t->name.name));
@@ -646,7 +650,6 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	    for (i = 0; i < st->nelements; i++)
 	    {
 		FilePutTypes (f, se[i].type, True);
-		FilePuts (f, " ");
 		FilePuts (f, AtomName (se[i].name));
 		FilePuts (f, "; ");
 	    }
@@ -663,6 +666,8 @@ FilePutTypes (Value f, Types *t, Bool minimal)
 	    break;
 	}
     }
+    if (spaceit)
+	FilePuts (f, " ");
 }
 
 static void

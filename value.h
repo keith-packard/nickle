@@ -272,7 +272,6 @@ int	TypesInit (void);
 
 #define TypesUnionElements(t) ((Types **) (&t->unions + 1))
 
-Types	*TypeCombineAssign (Types *lvalue, int tag, Types *rvalue);
 Types	*TypeCombineBinary (Types *left, int tag, Types *right);
 Types	*TypeCombineUnary (Types *down, int tag);
 Types	*TypeCombineStruct (Types *type, int tag, Atom atom);

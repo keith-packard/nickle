@@ -418,7 +418,7 @@ static struct ebuiltin excepts[] = {
     {"divide_by_zero",		exception_divide_by_zero,	"snn" },
     {"invalid_struct_member",	exception_invalid_struct_member,"sps" },
     {"invalid_binop_types",	exception_invalid_binop_types,	"spp" },
-    {"invalid_unop_types",	exception_invalid_unop_types,	"sp" },
+    {"invalid_unop_type",	exception_invalid_unop_type,	"sp" },
     {0,				0 },
 };
 

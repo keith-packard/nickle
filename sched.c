@@ -960,11 +960,11 @@ RaiseException (Value thread, SymbolPtr except, BoxPtr args, InstPtr *next)
     {
 	int	i;
 	
-	PrintError ("Unhandled exception \"%A\"", except->symbol.name);
+	PrintError ("Unhandled exception \"%A\"\n", except->symbol.name);
 	if (args)
 	{
 	    for (i = 0; i < args->nvalues; i++)
-		PrintError ("\t%v", BoxValueGet (args, i));
+		PrintError ("\t%v\n", BoxValueGet (args, i));
 	}
 	SetSignalError ();
     }

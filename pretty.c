@@ -680,10 +680,10 @@ doPrettyPrint (Value f, Symbol *name, int level, Bool nest)
 	FilePuts (f, ";\n");
 	break;
     default:
-	FilePrintf (f, "%p%c%t",
+	FilePrintf (f, "%p%k%t",
 		    name->symbol.publish, name->symbol.class,
 		    name->symbol.type);
-	FilePrintf (f, "%a;\n", name->symbol.name);
+	FilePrintf (f, "%A;\n", name->symbol.name);
 	break;
     }
 }

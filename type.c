@@ -440,38 +440,11 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 }
 
 /*
- * Return a type representing the union of two other types, or zero
- * if no such non-union type exists
- */
-
-static Types *
-TypeUnify (Types *a, Types *b, Bool shallow)
-{
-    if (a->base.tag == types_name)
-    {
-	if (shallow)
-	    return 0;
-	return TypeUnify (a->name.type, b, True);
-    }
-    if (b->base.tag == types_name)
-    {
-	if (shallow)
-	    return 0;
-	return TypeUnify (a, b->name.type, True);
-    }
-    if (a->base.tag == types_union)
-	return 0;
-    if (b->base.tag == types_union)
-	return 0;
-    return 0;
-}
-
-/*
  * return the combined type for an operation
- * on a set closed under addition
+ * on a numeric type which is a group
  */
 static Types *
-TypeCombineGroup (Types *left, Types *right)
+TypeBinaryGroup (Types *left, Types *right)
 {
     if (TypePoly (left))
     {
@@ -496,7 +469,7 @@ TypeCombineGroup (Types *left, Types *right)
  * Return the least-upper bound for an integral computation
  */
 static Types *
-TypeCombineIntegral (Types *left, Types *right)
+TypeBinaryIntegral (Types *left, Types *right)
 {
     if (TypePoly (left))
 	left = typesPrim[type_integer];
@@ -516,7 +489,7 @@ TypeCombineIntegral (Types *left, Types *right)
  * on a set closed under addition and multiplication
  */
 static Types *
-TypeCombineField (Types *left, Types *right)
+TypeBinaryField (Types *left, Types *right)
 {
     if (TypePoly (left))
     {
@@ -544,7 +517,7 @@ TypeCombineField (Types *left, Types *right)
  * 'left' for integral 'right', float otherwise
  */
 static Types *
-TypeCombinePow (Types *left, Types *right)
+TypeBinaryPow (Types *left, Types *right)
 {
     if (TypePoly (left))
 	left = typesPrim[type_float];
@@ -563,7 +536,7 @@ TypeCombinePow (Types *left, Types *right)
  * Return string if both left and right are strings
  */
 static Types *
-TypeCombineString (Types *left, Types *right)
+TypeBinaryString (Types *left, Types *right)
 {
     if (TypePoly (left))
 	left = typesPrim[type_string];
@@ -575,10 +548,10 @@ TypeCombineString (Types *left, Types *right)
 }
 		
 /*
- * Return reference type
+ * Return reference type resulting from addition/subtraction
  */
 static Types *
-TypeCombineRef (Types *ref, Types *off)
+TypeBinaryRefOff (Types *ref, Types *off)
 {
     if (TypePoly (ref))
 	ref = typesRefPoly;
@@ -589,6 +562,65 @@ TypeCombineRef (Types *ref, Types *off)
     return 0;
 }
 		
+/*
+ * Return type referenced by ref
+ */
+static Types *
+TypeUnaryRef (Types *ref)
+{
+    if (TypePoly (ref))
+	ref = typesRefPoly;
+    if (ref->base.tag == types_ref)
+	return ref->ref.ref;
+    return 0;
+}
+		
+static Types *
+TypeUnaryGroup (Types *type)
+{
+    if (TypePoly)
+	return typesGroup;
+    else if (TypeNumeric (type))
+	return type;
+    return 0;
+}
+
+static Types *
+TypeUnaryIntegral (Types *type)
+{
+    if (TypePoly)
+	return typesPrim[type_integer];
+    if (TypeIntegral (type))
+	return type;
+    return 0;
+}
+
+/*
+ * Indexing a string returns this type
+ */
+static Types *
+TypeUnaryString (Types *type)
+{
+    if (TypePoly (type))
+	type = typesPrim[type_string];
+    if (TypeString (type))
+	return typesPrim[type_integer];
+    return 0;
+}
+		
+/*
+ * Type of an array reference
+ */
+static Types *
+TypeUnaryArray (Types *type)
+{
+    if (TypePoly (type))
+	return typesPoly;
+    if (type->base.tag == types_array)
+	return type->array.type;
+    return 0;
+}
+
 static void
 TypeRemove (Types **ts, int i, int *n)
 {
@@ -612,138 +644,13 @@ TypeAdd (Types **ts, Types *t, int *n, int *size)
     return ts;
 }
 
-Types *
-TypeCombineBinary (Types *left, int tag, Types *right)
+static Types *
+TypeCombineFlatten (Types **rets, int nret, int sret)
 {
     ENTER ();
-#define NUM_TYPE_STACK	100
-    Types   *retsStack[NUM_TYPE_STACK];
-    Types   **rets = retsStack;
     Types   *ret;
-    int	    nret = 0;
-    int	    sret = NUM_TYPE_STACK;
     int	    n, m;
 
-    if (!left || !right)
-	return 0;
-    if (left->base.tag == types_name)
-	RETURN (TypeCombineBinary (left->name.type, tag, right));
-    if (right->base.tag == types_name)
-	RETURN (TypeCombineBinary (left, tag, right->name.type));
-    
-    if (left->base.tag == types_union)
-    {
-	Types	    **ut;
-
-	ut = TypesUnionElements (left);
-	for (n = 0; n < left->unions.nelements; n++)
-	{
-	    ret = TypeCombineBinary (ut[n], tag, right);
-	    if (ret)
-		rets = TypeAdd (rets, ret, &nret, &sret);
-	}
-    }
-    else if (right->base.tag == types_union)
-    {
-	Types	    **ut;
-
-	ut = TypesUnionElements (right);
-	for (n = 0; n < right->unions.nelements; n++)
-	{
-	    ret = TypeCombineBinary (left, tag, ut[n]);
-	    if (ret)
-		rets = TypeAdd (rets, ret, &nret, &sret);
-	}
-    } else switch (tag) {
-    case ASSIGN:
-	if (TypeCompatible (left, right, True))
-	{
-	    if (TypePoly (left))
-		rets = TypeAdd (rets, right, &nret, &sret);
-	    else
-		rets = TypeAdd (rets, left, &nret, &sret);
-	}
-	break;
-    case PLUS:
-    case ASSIGNPLUS:
-	if ((ret = TypeCombineString (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
-	/* fall through ... */
-    case MINUS:
-    case ASSIGNMINUS:
-	if ((ret = TypeCombineRef (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
-	if (tag == MINUS || tag == PLUS)
-	{
-	    if ((ret = TypeCombineRef (right, left)))
-		rets = TypeAdd (rets, ret, &nret, &sret);
-	}
-	/* fall through ... */
-    case TIMES:
-    case DIV:
-    case MOD:
-    case ASSIGNTIMES:
-    case ASSIGNDIV:
-    case ASSIGNMOD:
-	if ((ret = TypeCombineGroup (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
-	break;
-    case POW:
-    case ASSIGNPOW:
-	if ((ret = TypeCombinePow (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
-	break;
-    case DIVIDE:
-    case ASSIGNDIVIDE:
-	if ((ret = TypeCombineField (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
-	break;
-    case SHIFTL:
-    case SHIFTR:
-    case LXOR:
-    case LAND:
-    case LOR:
-    case ASSIGNSHIFTL:
-    case ASSIGNSHIFTR:
-    case ASSIGNLXOR:
-    case ASSIGNLAND:
-    case ASSIGNLOR:
-	if ((ret = TypeCombineIntegral (left, right)))
-	    rets = TypeAdd (rets, ret, &nret, &sret);
-	break;
-    case COLON:
-    case AND:
-    case OR:
-	if (TypePoly (left))
-	{
-	    rets = TypeAdd (rets, typesPoly, &nret, &sret);
-	}
-	else if (TypePoly (right))
-	{
-	    rets = TypeAdd (rets, typesPoly, &nret, &sret);
-	}
-	else if (TypeCompatible (left, right, False))
-	{
-	    if (TypeNumeric (left) && TypeNumeric (right) &&
-		left->prim.prim < right->prim.prim)
-		rets = TypeAdd (rets, right, &nret, &sret);
-	    else
-		rets = TypeAdd (rets, left, &nret, &sret);
-	}
-	break;
-    case EQ:
-    	rets = TypeAdd (rets, typesPrim[type_integer], &nret, &sret);
-	break;
-    case NE:
-    case LT:
-    case GT:
-    case LE:
-    case GE:
-	if (TypeCompatible (left, right, False))
-	    rets = TypeAdd (rets, typesPrim[type_integer], &nret, &sret);
-	break;
-    }
-    
     /*
      * Flatten unions
      */
@@ -791,70 +698,260 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 }
 
 Types *
-TypeCombineUnary (Types *type, int tag)
+TypeCombineBinary (Types *left, int tag, Types *right)
 {
-    if (!type)
-	return 0;
+    ENTER ();
+#define NUM_TYPE_STACK	100
+    Types   *retsStack[NUM_TYPE_STACK];
+    Types   **rets = retsStack;
+    Types   *ret;
+    int	    nret = 0;
+    int	    sret = NUM_TYPE_STACK;
+    int	    n;
 
-    if (TypePoly (type))
-	return typesPoly;
+    if (!left || !right)
+	RETURN(0);
+    if (left->base.tag == types_name)
+	RETURN (TypeCombineBinary (left->name.type, tag, right));
+    if (right->base.tag == types_name)
+	RETURN (TypeCombineBinary (left, tag, right->name.type));
     
-    if (type->base.tag == types_name)
-	return TypeCombineUnary (type->name.type, tag);
-    
-    switch (tag) {
-    case STAR:
-	if (type->base.tag == types_ref)
-	    return type->ref.ref;
+    if (left->base.tag == types_union)
+    {
+	Types	    **ut;
+
+	ut = TypesUnionElements (left);
+	for (n = 0; n < left->unions.nelements; n++)
+	{
+	    ret = TypeCombineBinary (ut[n], tag, right);
+	    if (ret)
+		rets = TypeAdd (rets, ret, &nret, &sret);
+	}
+    }
+    else if (right->base.tag == types_union)
+    {
+	Types	    **ut;
+
+	ut = TypesUnionElements (right);
+	for (n = 0; n < right->unions.nelements; n++)
+	{
+	    ret = TypeCombineBinary (left, tag, ut[n]);
+	    if (ret)
+		rets = TypeAdd (rets, ret, &nret, &sret);
+	}
+    } else switch (tag) {
+    case ASSIGN:
+	if (TypeCompatible (left, right, True))
+	{
+	    if (TypePoly (left))
+		rets = TypeAdd (rets, right, &nret, &sret);
+	    else
+		rets = TypeAdd (rets, left, &nret, &sret);
+	}
 	break;
-    case UMINUS:
-    case LNOT:
-    case BANG:
-    case FACT:
-	if (type->base.tag == types_prim && Numericp (type->prim.prim))
-	    return type;
+    case PLUS:
+    case ASSIGNPLUS:
+	if ((ret = TypeBinaryString (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	/* fall through ... */
+    case MINUS:
+    case ASSIGNMINUS:
+	if ((ret = TypeBinaryRefOff (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	if (tag == MINUS || tag == PLUS)
+	{
+	    if ((ret = TypeBinaryRefOff (right, left)))
+		rets = TypeAdd (rets, ret, &nret, &sret);
+	}
+	/* fall through ... */
+    case TIMES:
+    case DIV:
+    case MOD:
+    case ASSIGNTIMES:
+    case ASSIGNDIV:
+    case ASSIGNMOD:
+	if ((ret = TypeBinaryGroup (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
 	break;
-    case OS:
-	if (type->base.tag == types_array)
-	    return type->array.type;
-	if (type->base.tag == types_prim && type->prim.prim == type_string)
-	    return typesPrim[type_integer];
+    case POW:
+    case ASSIGNPOW:
+	if ((ret = TypeBinaryPow (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    case DIVIDE:
+    case ASSIGNDIVIDE:
+	if ((ret = TypeBinaryField (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    case SHIFTL:
+    case SHIFTR:
+    case LXOR:
+    case LAND:
+    case LOR:
+    case ASSIGNSHIFTL:
+    case ASSIGNSHIFTR:
+    case ASSIGNLXOR:
+    case ASSIGNLAND:
+    case ASSIGNLOR:
+	if ((ret = TypeBinaryIntegral (left, right)))
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    case COLON:
+    case AND:
+    case OR:
+	if (TypePoly (left))
+	{
+	    rets = TypeAdd (rets, typesPoly, &nret, &sret);
+	}
+	else if (TypePoly (right))
+	{
+	    rets = TypeAdd (rets, typesPoly, &nret, &sret);
+	}
+	else if (TypeCompatible (left, right, False))
+	{
+	    if (TypeNumeric (left) && TypeNumeric (right) &&
+		left->prim.prim < right->prim.prim)
+		rets = TypeAdd (rets, right, &nret, &sret);
+	    else
+		rets = TypeAdd (rets, left, &nret, &sret);
+	}
+	break;
+    case EQ:
+    	rets = TypeAdd (rets, typesPrim[type_integer], &nret, &sret);
+	break;
+    case NE:
+    case LT:
+    case GT:
+    case LE:
+    case GE:
+	if (TypeCompatible (left, right, False))
+	    rets = TypeAdd (rets, typesPrim[type_integer], &nret, &sret);
 	break;
     }
-    return 0;
+    RETURN (TypeCombineFlatten (rets, nret, sret));
+}
+
+Types *
+TypeCombineUnary (Types *type, int tag)
+{
+    ENTER ();
+#define NUM_TYPE_STACK	100
+    Types   *retsStack[NUM_TYPE_STACK];
+    Types   **rets = retsStack;
+    Types   *ret;
+    int	    nret = 0;
+    int	    sret = NUM_TYPE_STACK;
+    int	    n;
+
+    if (!type)
+	RETURN(0);
+
+    if (type->base.tag == types_name)
+	RETURN(TypeCombineUnary (type->name.type, tag));
+    
+    if (type->base.tag == types_union)
+    {
+	Types	    **ut;
+
+	ut = TypesUnionElements (type);
+	for (n = 0; n < type->unions.nelements; n++)
+	{
+	    ret = TypeCombineUnary (ut[n], tag);
+	    if (ret)
+		rets = TypeAdd (rets, ret, &nret, &sret);
+	}
+    }
+    else switch (tag) {
+    case STAR:
+	ret = TypeUnaryRef (type);
+	if (ret)
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    case LNOT:
+	ret = TypeUnaryIntegral (type);
+	if (ret)
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    case UMINUS:
+	ret = TypeUnaryGroup (type);
+	if (ret)
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    case BANG:
+	ret = TypeCombineBinary (type, EQ, typesPrim[type_integer]);
+	if (ret)
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    case FACT:
+	ret = TypeUnaryIntegral (type);
+	if (ret)
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    case OS:
+	ret = TypeUnaryString (type);
+	if (ret)
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	ret = TypeUnaryArray (type);
+	if (ret)
+	    rets = TypeAdd (rets, ret, &nret, &sret);
+	break;
+    }
+    RETURN (TypeCombineFlatten (rets, nret, sret));
 }
 
 Types *
 TypeCombineArray (Types *type, int ndim, Bool lvalue)
 {
-    int	adim;
-    if (TypePoly (type))
-	return typesPoly;
-    
-    if (type->base.tag == types_name)
-	return TypeCombineArray (type->name.type, ndim, lvalue);
+    ENTER ();
+#define NUM_TYPE_STACK	100
+    Types   *retsStack[NUM_TYPE_STACK];
+    Types   **rets = retsStack;
+    Types   *ret;
+    int	    nret = 0;
+    int	    sret = NUM_TYPE_STACK;
+    int	    n;
 
-    switch (type->base.tag) {
-    case types_array:
-	adim = TypeCountDimensions (type->array.dimensions);
-	if (adim == 0 || adim == ndim)
-	    return type->array.type;
-	break;
-    case types_prim:
-	if (type->prim.prim == type_string)
+    if (!type)
+	RETURN(0);
+
+    if (type->base.tag == types_name)
+	RETURN(TypeCombineArray (type->name.type, ndim, lvalue));
+    
+    if (type->base.tag == types_union)
+    {
+	Types	    **ut;
+
+	ut = TypesUnionElements (type);
+	for (n = 0; n < type->unions.nelements; n++)
 	{
-	    if (!lvalue && ndim == 1)
-		return typesPrim[type_integer];
+	    ret = TypeCombineArray (ut[n], ndim, lvalue);
+	    if (ret)
+		rets = TypeAdd (rets, ret, &nret, &sret);
 	}
-	break;
-    default:
     }
-    return 0;
+
+    ret = TypeUnaryString (type);
+    if (ret)
+        rets = TypeAdd (rets, ret, &nret, &sret);
+
+    if (TypePoly (type))
+	rets = TypeAdd (rets, typesPoly, &nret, &sret);
+
+    if (type->base.tag == types_array)
+    {
+	n = TypeCountDimensions (type->array.dimensions);
+	if (n == 0 || n == ndim)
+	    rets = TypeAdd (rets, type->array.type, &nret, &sret);
+    }
+    RETURN (TypeCombineFlatten (rets, nret, sret));
 }
 
 Types *
 TypeCombineStruct (Types *type, int tag, Atom atom)
 {
+    if (!type)
+	return 0;
+
     if (TypePoly (type))
 	return typesPoly;
 	

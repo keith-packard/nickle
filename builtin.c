@@ -120,6 +120,14 @@ BuiltinSymbol (NamespacePtr *namespacep,
 					     type)));
 }
 
+static Type *typeUserdef;
+
+void
+BuiltinSetUserdefType (Type *type)
+{
+    typeUserdef = type;
+}
+
 static char *
 BuiltinType (char *format, Type **type)
 {
@@ -171,6 +179,7 @@ BuiltinType (char *format, Type **type)
     case 'v': t = typePrim[rep_void]; break;
     case 'F': t = typePrim[rep_foreign]; break;
     case 'a': t = typeSockaddr; break;
+    case 'u': t = typeUserdef; break;
     default: 
 	t = 0;
 	write (2, "Invalid builtin argument type\n", 30);

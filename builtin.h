@@ -31,6 +31,9 @@ SymbolPtr
 BuiltinNamespace (NamespacePtr  *namespacep,
 		  char		*string);
 
+void
+BuiltinSetUserdefType (Type *type);
+
 SymbolPtr
 BuiltinException (NamespacePtr  *namespacep,
 		  char		*string,

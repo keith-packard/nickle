@@ -1,5 +1,11 @@
 2004-12-10  Keith Packard  <keithp@keithp.com>
 
+	* builtin.c: (BuiltinSetUserdefType), (BuiltinType):
+	* builtin.h:
+	Expose mechanism for using user-defined types in builtin functions
+
+2004-12-10  Keith Packard  <keithp@keithp.com>
+
 	* Makefile.am:
 	* builtin-namespaces.h:
 	* builtin-sockets.c: (import_Socket_namespace):

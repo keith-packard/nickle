@@ -1,5 +1,10 @@
 2004-04-01  Keith Packard  <keithp@keithp.com>
 
+	* value.h:
+	Add casts to avoid warnings where sizeof (int) != sizeof (void *)
+
+2004-04-01  Keith Packard  <keithp@keithp.com>
+
 	Debian bug 241417
 
 	* command.5c:

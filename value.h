@@ -71,6 +71,12 @@ AtomListPtr  NewAtomList (AtomListPtr next, Atom atom);
 #if HAVE_STDINT_H
 
 # include <stdint.h>
+
+#define PtrToInt(p)	((int) (intptr_t) (p))
+#define PtrToUInt(p)	((unsigned) (uintptr_t) (p))
+#define IntToPtr(i)	((void *) (intptr_t) (i))
+#define UIntToPtr(u)	((void *) (uintptr_t) (u))
+
 # if HAVE_UINT64_T
 
 /*
@@ -93,6 +99,11 @@ typedef int32_t	    signed_digit;
 # endif
 
 #else
+
+#define PtrToInt(p)	((int) (p))
+#define PtrToUInt(p)	((unsigned) (p))
+#define IntToPtr(i)	((void *) (i))
+#define UIntToPtr(u)	((void *) (u))
 
 # if SIZEOF_UNSIGNED_LONG_LONG == 8 || SIZEOF_UNSIGNED_LONG == 8
 #  define DIGITBITS 32
@@ -289,7 +300,7 @@ extern ValueRep    RefRep, StructRep, UnionRep, HashRep;
 extern ValueRep	   FuncRep, ThreadRep;
 extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 
-#define NewInt(i)	((Value) (((i) << 1) | 1))
+#define NewInt(i)	((Value) IntToPtr ((((i) << 1) | 1)))
 #define IntSign(i)	((i) < 0 ? Negative : Positive)
 
 #define NICKLE_INT_BITS	    ((sizeof (int) * 8) - 1)
@@ -301,10 +312,10 @@ extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 #define One NewInt(1)
 #define Zero NewInt(0)
 
-#define ValueIsPtr(v)	((((int) (v)) & 1) == 0)
-#define ValueIsInt(v)	((((int) (v)) & 1) != 0)
-#define ValueInt(v)	(((int) (v)) >> 1)
-#define ValueUInt(v)	(((unsigned int) (v)) >> 1)
+#define ValueIsPtr(v)	((PtrToInt(v) & 1) == 0)
+#define ValueIsInt(v)	(!ValueIsPtr(v))
+#define ValueInt(v)	(PtrToInt (v) >> 1)
+#define ValueUInt(v)	(PtrToUInt (v) >> 1)
 
 #define ValueRep(v) (ValueIsInt(v) ? &IntRep : (v)->value.type)
 #define ValueIsInteger(v) (ValueRep(v) == &IntegerRep)
@@ -929,7 +940,7 @@ unsigned    StringGet (char *src, int i);
 static inline Value
 NewRef (BoxPtr box, int element)
 {
-    int	    c = ((unsigned) (&BoxElements(box)[element])) % REF_CACHE_SIZE;
+    int	    c = (PtrToUInt (&BoxElements(box)[element])) % REF_CACHE_SIZE;
     Value   *re = (Value *) (DataCacheValues(refCache)) + c;
     Value   ret = *re;
 

@@ -847,17 +847,20 @@ extend namespace Math {
 	return *a = pow (*a, b);
     }
 
-    public real max(real a, real b) {
-        if (b > a)
-            return b;
-        return a;
+    public real max(real arg, real args ...) {
+	for (int i = 0; i < dim(args); i++)
+	    if (arg < args[i])
+		arg = args[i];
+	return arg;
     }
 
-    public real min(real a, real b) {
-        if (b < a)
-            return b;
-        return a;
+    public real min(real arg, real args ...) {
+	for (int i = 0; i < dim(args); i++)
+	    if (arg > args[i])
+		arg = args[i];
+	return arg;
     }
+
 }
 
 import Math;

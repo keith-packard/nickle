@@ -1,10 +1,10 @@
 noinst_LIBRARIES = libbuiltin.a
 
-DEFINES = -DBUILD=\""`$(top_srcdir)/date-sh`"\"
+DEFINES = -DBUILD=\""`sh $(top_srcdir)/date-sh`"\"
 
 CDEBUGFLAGS = -O -g
 
-CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
+AM_CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
 	-Wnested-externs $(DEFINES)
 

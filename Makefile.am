@@ -39,11 +39,11 @@ pkgdata_DATA = $(NICKLEFILES)
 
 man_MANS = nickle.1
 
-YFLAGS = -d
+AM_YFLAGS = -d
 
 CDEBUGFLAGS = -O -g
 
-CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
+AM_CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
 	-Wnested-externs
 

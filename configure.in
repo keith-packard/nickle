@@ -79,10 +79,12 @@ AC_SUBST(nicklelibdir)
 
 AC_DEFINE_UNQUOTED([NICKLELIBDIR], "$nicklelibdir", [Nickle data directory])
 
-AC_OUTPUT(Makefile
-	  builtin/Makefile
-	  test/Makefile
-	  bench/Makefile
-	  date-sh
-	  nickle.1
-	  , , [chmod +x ${srcdir}/date-sh])
+AC_CONFIG_FILES(
+ Makefile
+ builtin/Makefile
+ test/Makefile
+ bench/Makefile
+ date-sh
+ nickle.1)
+
+AC_OUTPUT

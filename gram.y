@@ -282,37 +282,24 @@ rawnamespace	: rawnamespace NAMESPACENAME COLONCOLON
                 ;
 fulltype	: namespace TYPENAME
 		    { 
-			ExprPtr	e;
-			NamePtr	name;
-			e = BuildFullname ($1, $2);
-			if (e->base.tag == COLONCOLON)
-			    name = e->tree.right->name.name;
-			else
-			    name = e->name.name;
-			if (!name)
-			{
-			    yyerror ("undefined \"%A\"", $2);
-			    YYERROR;
-			}
+			$$ = BuildFullname ($1, $2);
 			LexNamespace = 0;
-			$$ = e;
 		    }
+		| TYPENAME
+		    { 
+			$$ = BuildFullname (0, $1);
+			LexNamespace = 0;
+		    }
+		;
 fullname	: namespace namespacename
 		    { 
-			ExprPtr	e;
-			NamePtr	name;
-			e = BuildFullname ($1, $2);
-			if (e->base.tag == COLONCOLON)
-			    name = e->tree.right->name.name;
-			else
-			    name = e->name.name;
-			if (!name)
-			{
-			    yyerror ("undefined \"%A\"", $2);
-			    YYERROR;
-			}
+			$$ = BuildFullname ($1, $2);
 			LexNamespace = 0;
-			$$ = e;
+		    }
+		| namespacename
+		    {
+			$$ = BuildFullname (0, $1);
+			LexNamespace = 0;
 		    }
 		;
 namespace	: namespace NAMESPACENAME COLONCOLON
@@ -338,8 +325,29 @@ namespace	: namespace NAMESPACENAME COLONCOLON
 			LexNamespace = name->symbol->namespace.namespace;
 			$$ = e;
 		    }
-		|
-		    { $$ = 0; }
+		| NAMESPACENAME COLONCOLON
+		    { 
+			ExprPtr	    e;
+			NamePtr	name;
+
+			e = BuildFullname (0, $1);
+			if (e->base.tag == COLONCOLON)
+			    name = e->tree.right->name.name;
+			else
+			    name = e->name.name;
+			if (!name || !name->symbol)
+			{
+			    yyerror ("non-existant namespace \"%A\"", $1);
+			    YYERROR;
+			}
+			else if (name->symbol->symbol.class != class_namespace)
+			{
+			    yyerror ("%A is not a namespace", $1);
+			    YYERROR;
+			}
+			LexNamespace = name->symbol->namespace.namespace;
+			$$ = e;
+		    }
 		;
 namespacename	:   NAME
 		|   NAMESPACENAME

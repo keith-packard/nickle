@@ -164,6 +164,20 @@ opt_semi	: SEMI
 opt_comma	: COMMA
 		|
 		;
+Op		: OP ignorenl
+		;
+Cp		: attendnl CP
+		;
+Os		: OS ignorenl
+		;
+Cs		: attendnl CS
+		;
+StarOs		: REFARRAY ignorenl
+		;
+Oc		: ignorenl OC
+		;
+Cc		: attendnl CC
+		;
 /*
  * Interpreter command level
  */
@@ -376,33 +390,33 @@ namespace_start	:
 namespace_end	:
 		    { CurrentNamespace = CurrentNamespace->previous; }
 		;
-block		: block_start ignorenl statements block_end
-		    { $$ = $3; }
+block		: block_start statements block_end
+		    { $$ = $2; }
 		;
-block_start	: OC namespace_start
+block_start	: Oc namespace_start
 		;
-block_end	: namespace_end CC
+block_end	: namespace_end Cc
 		;
 statements	: statement statements
 		    { $$ = NewExprTree(OC, $1, $2); }
 		|
 		    { $$ = NewExprTree(OC, 0, 0); }
 		;
-statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
+statement	: IF ignorenl namespace_start Op expr Cp statement namespace_end
 		    { $$ = NewExprTree(IF, $5, $7); }
-		| IF ignorenl namespace_start OP expr CP statement ELSE statement namespace_end
+		| IF ignorenl namespace_start Op expr Cp statement ELSE statement namespace_end
 		    { $$ = NewExprTree(ELSE, $5, NewExprTree(ELSE, $7, $9)); }
-		| WHILE ignorenl namespace_start OP expr CP statement namespace_end
+		| WHILE ignorenl namespace_start Op expr Cp statement namespace_end
 		    { $$ = NewExprTree(WHILE, $5, $7); }
-		| DO ignorenl namespace_start statement WHILE OP expr CP namespace_end
+		| DO ignorenl namespace_start statement WHILE Op expr Cp namespace_end
 		    { $$ = NewExprTree(DO, $4, $7); }
-		| FOR ignorenl namespace_start OP opt_expr SEMI opt_expr SEMI opt_expr CP statement namespace_end
+		| FOR ignorenl namespace_start Op opt_expr SEMI opt_expr SEMI opt_expr Cp statement namespace_end
 		    { $$ = NewExprTree(FOR, NewExprTree(FOR, $5, $7),
 				       NewExprTree(FOR, $9, $11));
 		    }
-		| SWITCH ignorenl namespace_start OP expr CP case_block namespace_end
+		| SWITCH ignorenl namespace_start Op expr Cp case_block namespace_end
 		    { $$ = NewExprTree (SWITCH, $5, $7); }
-		| UNION SWITCH ignorenl namespace_start OP expr CP union_case_block namespace_end
+		| UNION SWITCH ignorenl namespace_start Op expr Cp union_case_block namespace_end
 		    { $$ = NewExprTree (UNION, $6, $8); }
 		| BREAK ignorenl SEMI
 		    { $$ = NewExprTree(BREAK, (Expr *) 0, (Expr *) 0); }
@@ -465,7 +479,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 					  NewTypesFunc (typesPoly, $6),
 					  $1);
 		    }
-		| RAISE fullname OP opt_exprs CP SEMI
+		| RAISE fullname Op opt_exprs Cp SEMI
 		    { $$ = NewExprTree (RAISE, $2, $4); }
 		| publish TYPEDEF ignorenl typenames SEMI
 		    { 
@@ -526,7 +540,7 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 			if (CurrentNamespace != $2)
 			    CurrentNamespace->publish = publish_public;
 		    }
-			OC statements CC
+			Oc statements Cc
 		    {
 			/*
 			 * close the namespace to non-public lookups
@@ -565,12 +579,12 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end
 		    }
 		| TRY ignorenl statement catches
 		    { $$ = NewExprTree (CATCH, $3, $4); }
-		| TWIXT ignorenl namespace_start OP opt_expr SEMI opt_expr CP statement namespace_end
+		| TWIXT ignorenl namespace_start Op opt_expr SEMI opt_expr Cp statement namespace_end
 		    { $$ = NewExprTree (TWIXT, 
 					NewExprTree (TWIXT, $5, $7),
 					NewExprTree (TWIXT, $9, 0));
 		    }
-		| TWIXT ignorenl namespace_start OP opt_expr SEMI opt_expr CP statement ELSE statement namespace_end
+		| TWIXT ignorenl namespace_start Op opt_expr SEMI opt_expr Cp statement ELSE statement namespace_end
 		    { $$ = NewExprTree (TWIXT, 
 					NewExprTree (TWIXT, $5, $7),
 					NewExprTree (TWIXT, $9, $11));
@@ -581,8 +595,8 @@ catches		:   catch catches
 		|   
 		    { $$ = 0; }
 		;
-catch		: CATCH fullname namespace_start OP opt_argdefines CP block namespace_end
-		    { $$ = NewExprCode (NewFuncCode (typesPoly, $5, $7), $2); }
+catch		: CATCH fullname namespace_start opt_argdefines block namespace_end
+		    { $$ = NewExprCode (NewFuncCode (typesPoly, $4, $5), $2); }
 func_body    	: { ++funcDepth; } block { --funcDepth; }
 		    { $$ = $2; }
 		| SEMI
@@ -638,7 +652,7 @@ initnames	: NAME opt_init COMMA initnames
 /*
  * Declaration of a function
  */
-func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start OP opt_argdefines CP
+func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start opt_argdefines
 		    {
 			DeclList    *decl = NewDeclList ($4, 0, 0);
 			
@@ -650,7 +664,7 @@ func_decl	: opt_decl FUNCTION ignorenl NAME namespace_start OP opt_argdefines CP
 			CurrentNamespace = save->previous;
 			decl->symbol = ParseNewSymbol ($1.publish,
 						       $1.class, 
-						       NewTypesFunc ($1.type, $7),
+						       NewTypesFunc ($1.type, $6),
 						       $4);
 			CurrentNamespace = save;
 			$$.publish = $1.publish;
@@ -710,11 +724,11 @@ type		: basetype
 		    { $$ = NewTypesRef ($2); }
 		| type opt_argdecls	%prec CALL
 		    { $$ = NewTypesFunc ($1, $2); }
-		| type OS opt_stars CS
+		| type Os opt_stars Cs
 		    { $$ = NewTypesArray ($1, $3); }
-		| type OS exprs CS
+		| type Os exprs Cs
 		    { $$ = NewTypesArray ($1, $3); }
-		| struct_or_union OC struct_members CC
+		| struct_or_union Oc struct_members Cc
 		    {
 			AtomListPtr	al;
 			StructType	*st;
@@ -745,7 +759,7 @@ type		: basetype
 			else
 			    $$ = NewTypesUnion (st);
 		    }
-		| OP type CP
+		| Op type Cp
 		    { $$ = $2; }
 		| fulltype
 		    { $$ = NewTypesName ($1, 0); }
@@ -806,9 +820,9 @@ publish_extend	: PUBLIC
 /*
 * Arguments in function declarations
 */
-opt_argdecls	: OP argdecls CP
+opt_argdecls	: Op argdecls Cp
 		    { $$ = $2; }
-		| OP CP
+		| Op Cp
 		    { $$ = 0; }
 		;
 argdecls	: argdecl COMMA argdecls
@@ -834,12 +848,12 @@ argdecl		: type NAME
 /*
 * Arguments in function definitions
 */
-opt_argdefines	: argdefines
+opt_argdefines	: Op argdefines Cp
 		    {
 			ArgType	*args;
 			Types	*type;
 
-			for (args = $1; args; args = args->next)
+			for (args = $2; args; args = args->next)
 			{
 			    type = args->type;
 			    if (!ParseCanonType (type))
@@ -856,8 +870,9 @@ opt_argdefines	: argdefines
 							   class_arg, 
 							   type, args->name);
 			}
+			$$ = $2;
 		    }
-		|
+		| Op Cp
 		    { $$ = 0; }
 		;
 argdefines	: argdefine COMMA argdefines
@@ -927,8 +942,8 @@ exprs		: exprs COMMA lambdaexpr
 * This expression level includes lambdas which can't be in simpleexpr
 * because of grammar ambiguities
 */
-lambdaexpr	: opt_type FUNC namespace_start OP opt_argdefines CP block namespace_end
-		    { $$ = NewExprCode (NewFuncCode ($1, $5, $7), 0); }
+lambdaexpr	: opt_type FUNC namespace_start opt_argdefines block namespace_end
+		    { $$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); }
 		| simpleexpr
 		;
 /*
@@ -1070,24 +1085,24 @@ primary		: fullname
 		    { $$ = NewExprConst(STRING_CONST, $1); }
 		| VOIDVAL
 		    { $$ = NewExprConst(VOIDVAL, $1); }
-		| OP type CP namespace_start init namespace_end
+		| Op type Cp namespace_start init namespace_end
 		    { 
 			ParseCanonType ($2);
 			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = $2;
 		    }
-		| OS stars CS namespace_start arrayinit namespace_end
+		| Os stars Cs namespace_start arrayinit namespace_end
 		    { 
 			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 			ParseCanonType ($$->base.type);
 		    }
-		| OS exprs CS namespace_start opt_arrayinit namespace_end
+		| Os exprs Cs namespace_start opt_arrayinit namespace_end
 		    { 
 			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 		    }
-		| OP type DOT NAME CP primary			%prec UNIONCAST
+		| Op type DOT NAME Cp primary				%prec UNIONCAST
 		    {
 			ParseCanonType ($2);
 			$$ = NewExprTree (UNION, NewExprAtom ($4, 0), $6); 
@@ -1097,15 +1112,15 @@ primary		: fullname
 		    { $$ = NewExprConst(POLY_CONST, History (0, $2)); }
 		| DOT
 		    { $$ = NewExprConst(POLY_CONST, History (0, Zero)); }
-		| OP expr CP
+		| Op expr Cp
 		    { $$ = $2; }
-		| primary REFARRAY exprs CS
+		| primary StarOs exprs Cs
 		    { $$ = NewExprTree (OS, NewExprTree (STAR, $1, (Expr *) 0), $3); }
-		| primary OS exprs CS
+		| primary Os exprs Cs
 		    { $$ = NewExprTree(OS, $1, $3); }
-		| primary OP opt_exprs CP				%prec CALL
+		| primary Op opt_exprs Cp				%prec CALL
 		    { $$ = NewExprTree (OP, $1, $3); }
-		| FORK OP expr CP					%prec CALL
+		| FORK Op expr Cp					%prec CALL
 		    { $$ = NewExprTree (FORK, (Expr *) 0, $3); }
 		| primary DOT NAME
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0)); }
@@ -1125,15 +1140,15 @@ integer		: TEN_CONST
  * Array initializers
  */
 opt_arrayinit	: arrayinit
-		| ignorenl OC attendnl CC
+		| Oc Cc
 		    { $$ = 0; }
 		|
 		    { $$ = 0; }
 		;
-arrayinit    	: ignorenl OC arrayelts opt_comma opt_dots attendnl CC
+arrayinit    	: Oc arrayelts opt_comma opt_dots Cc
 		    { 
-			ExprPtr	elts = ExprRehang ($3, 0);
-			if ($5)
+			ExprPtr	elts = ExprRehang ($2, 0);
+			if ($4)
 			{
 			    ExprPtr i = elts;
 			    while (i->tree.right)
@@ -1157,8 +1172,8 @@ arrayelt	: lambdaexpr
 /* 
 * Structure initializers
 */
-structinit    	: ignorenl OC structelts opt_comma attendnl CC
-		    { $$ = NewExprTree (STRUCT, ExprRehang ($3, 0), 0); }
+structinit    	: Oc structelts opt_comma Cc
+		    { $$ = NewExprTree (STRUCT, ExprRehang ($2, 0), 0); }
 		;
 structelts	: structelts COMMA structelt
 		    { $$ = NewExprTree (COMMA, $1, $3); }
@@ -1171,7 +1186,7 @@ structelt	: NAME ASSIGN lambdaexpr
 
 init		: arrayinit
 		| structinit
-		| ignorenl OC attendnl CC
+		| Oc Cc
 		    { $$ = 0; }
 		;
 %%

@@ -43,7 +43,7 @@ public namespace Rijndael {
      Administration Regulations (EAR), 15 C.F.R. Parts 730-774.
      */
 
-    int[*] Logtable = (int[256]) {
+    int[256] Logtable = {
 	0,   0,  25,   1,  50,   2,  26, 198,  75, 199,  27, 104,  51, 238, 223,   3, 
 	100,   4, 224,  14,  52, 141, 129, 239,  76, 113,   8, 200, 248, 105,  28, 193, 
 	125, 194,  29, 181, 249, 185,  39, 106,  77, 228, 166, 114, 154, 201,   9, 120, 
@@ -62,7 +62,7 @@ public namespace Rijndael {
 	103,  74, 237, 222, 197,  49, 254,  24,  13,  99, 140, 128, 192, 247, 112,   7, 
     };
 
-    int[*] Alogtable = (int[256]) {
+    int[256] Alogtable = {
 	1,   3,   5,  15,  17,  51,  85, 255,  26,  46, 114, 150, 161, 248,  19,  53, 
 	95, 225,  56,  72, 216, 115, 149, 164, 247,   2,   6,  10,  30,  34, 102, 170, 
 	229,  52,  92, 228,  55,  89, 235,  38, 106, 190, 217, 112, 144, 171, 230,  49, 
@@ -81,7 +81,7 @@ public namespace Rijndael {
 	57,  75, 221, 124, 132, 151, 162, 253,  28,  36, 108, 180, 199,  82, 246,   1, 
     };
 
-    int[*] S = (int[256]) {
+    int[256] S = {
 	99, 124, 119, 123, 242, 107, 111, 197,  48,   1, 103,  43, 254, 215, 171, 118, 
 	202, 130, 201, 125, 250,  89,  71, 240, 173, 212, 162, 175, 156, 164, 114, 192, 
 	183, 253, 147,  38,  54,  63, 247, 204,  52, 165, 229, 241, 113, 216,  49,  21, 
@@ -100,7 +100,7 @@ public namespace Rijndael {
 	140, 161, 137,  13, 191, 230,  66, 104,  65, 153,  45,  15, 176,  84, 187,  22, 
     };
 
-    int[*] Si = (int[256]) {
+    int[256] Si = {
 	82,   9, 106, 213,  48,  54, 165,  56, 191,  64, 163, 158, 129, 243, 215, 251, 
 	124, 227,  57, 130, 155,  47, 255, 135,  52, 142,  67,  68, 196, 222, 233, 203, 
 	84, 123, 148,  50, 166, 194,  35,  61, 238,  76, 149,  11,  66, 250, 195,  78, 
@@ -205,7 +205,7 @@ public namespace Rijndael {
 
 	    for(i = 0; i < 4; i++)
 		for(j = 0; j < BC; j++) 
-		    (*a)[i,j] ^= (*rk)[r,i,j];
+		    a*[i,j] ^= rk*[r,i,j];
 	}
 
 	void function ShiftRow(*int[*,*]    a, 
@@ -221,9 +221,9 @@ public namespace Rijndael {
 	    for(i = 1; i < 4; i++) 
 	    {
 		for(j = 0; j < BC; j++) 
-		    tmp[j] = (*a)[i,(j + shifts[SC(BC),i,d]) % BC];
+		    tmp[j] = a*[i,(j + shifts[SC(BC),i,d]) % BC];
 		for(j = 0; j < BC; j++) 
-		    (*a)[i,j] = tmp[j];
+		    a*[i,j] = tmp[j];
 	    }
 	}
 
@@ -238,7 +238,7 @@ public namespace Rijndael {
 
 	    for(i = 0; i < 4; i++)
 		for(j = 0; j < BC; j++) 
-		    (*a)[i,j] = (*box)[(*a)[i,j]];
+		    a*[i,j] = box*[a*[i,j]];
 	}
 
 	void function MixColumn(*int[*,*]   a,
@@ -251,13 +251,13 @@ public namespace Rijndael {
 
 	    for(j = 0; j < BC; j++)
 		for(i = 0; i < 4; i++)
-		    b[i,j] = (mul(2,(*a)[i,j])
-			      ^ mul(3,(*a)[(i + 1) % 4,j])
-			      ^ (*a)[(i + 2) % 4,j]
-			      ^ (*a)[(i + 3) % 4,j]);
+		    b[i,j] = (mul(2,a*[i,j])
+			      ^ mul(3,a*[(i + 1) % 4,j])
+			      ^ a*[(i + 2) % 4,j]
+			      ^ a*[(i + 3) % 4,j]);
 	    for(i = 0; i < 4; i++)
 		for(j = 0; j < BC; j++) 
-		    (*a)[i,j] = b[i,j];
+		    a*[i,j] = b[i,j];
 	}
 
 	void function InvMixColumn(*int[*,*]	a,
@@ -271,13 +271,13 @@ public namespace Rijndael {
 
 	    for(j = 0; j < BC; j++)
 		for(i = 0; i < 4; i++)             
-		    b[i,j] = (mul(0xe,(*a)[i,j])
-			      ^ mul(0xb,(*a)[(i + 1) % 4,j])
-			      ^ mul(0xd,(*a)[(i + 2) % 4,j])
-			      ^ mul(0x9,(*a)[(i + 3) % 4,j]));
+		    b[i,j] = (mul(0xe,a*[i,j])
+			      ^ mul(0xb,a*[(i + 1) % 4,j])
+			      ^ mul(0xd,a*[(i + 2) % 4,j])
+			      ^ mul(0x9,a*[(i + 3) % 4,j]));
 	    for(i = 0; i < 4; i++)
 		for(j = 0; j < BC; j++) 
-		    (*a)[i,j] = b[i,j];
+		    a*[i,j] = b[i,j];
 	}
 
 	public int function rijndaelKeySched (int[*,*]	    k,
@@ -314,7 +314,7 @@ public namespace Rijndael {
 	    default : raise internal_error (); /* this cannot happen */
 	    }
 
-	    (*W) = (int[ROUNDS+1,4,BC]) {};
+	    *W = (int[ROUNDS+1,4,BC]) {};
 
 	    for(j = 0; j < KC; j++)
 		for(i = 0; i < 4; i++)
@@ -323,7 +323,7 @@ public namespace Rijndael {
 	    /* copy values into round key array */
 	    for(j = 0; (j < KC) && (t < (ROUNDS+1)*BC); j++, t++)
 		for(i = 0; i < 4; i++) 
-		    (*W)[t // BC,i,t % BC] = tk[i,j];
+		    W*[t // BC,i,t % BC] = tk[i,j];
 
 	    while (t < (ROUNDS+1)*BC) { /* while not enough round key material calculated */
 		/* calculate new values */
@@ -348,7 +348,7 @@ public namespace Rijndael {
 		/* copy values into round key array */
 		for(j = 0; (j < KC) && (t < (ROUNDS+1)*BC); j++, t++)
 		    for(i = 0; i < 4; i++) 
-			(*W)[t // BC,i,t % BC] = tk[i,j];
+			W*[t // BC,i,t % BC] = tk[i,j];
 	    }		
 
 	    return 0;
@@ -691,14 +691,14 @@ public namespace Rijndael {
 		{
 		    /* parse input stream into rectangular array */
 		    for(t = 0; t < 4; t++)
-			block[t,j] = (*input)[4*j+t] & 0xFF;
+			block[t,j] = input*[4*j+t] & 0xFF;
 		}
 		rijndaelEncrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
 		for (j = 0; j < cipher->blockLen/32; j++) 
 		{
 		    /* parse rectangular array into output ciphertext bytes */
 		    for(t = 0; t < 4; t++)
-			(*outBuffer)[4*j+t] = block[t,j];
+			outBuffer*[4*j+t] = block[t,j];
 		}
 	    }
 	    break;
@@ -717,14 +717,14 @@ public namespace Rijndael {
 		    /* parse input stream into rectangular array and exor with 
 		     IV or the previous ciphertext */
 		    for(t = 0; t < 4; t++)
-			block[t,j] ^= (*input)[4*j+t] & 0xFF;
+			block[t,j] ^= input*[4*j+t] & 0xFF;
 		}
 		rijndaelEncrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
 		for (j = 0; j < cipher->blockLen/32; j++) 
 		{
 		    /* parse rectangular array into output ciphertext bytes */
 		    for(t = 0; t < 4; t++)
-			(*outBuffer)[4*j+t] = block[t,j] & 0xFF;
+			outBuffer*[4*j+t] = block[t,j] & 0xFF;
 		}
 	    }
 	    break;
@@ -779,14 +779,14 @@ public namespace Rijndael {
 		{
 		    /* parse input stream into rectangular array */
 		    for(t = 0; t < 4; t++)
-			block[t,j] = (*input)[4*j+t] & 0xFF;
+			block[t,j] = input*[4*j+t] & 0xFF;
 		}
 		rijndaelDecrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
 		for (j = 0; j < cipher->blockLen/32; j++) 
 		{
 		    /* parse rectangular array into output ciphertext bytes */
 		    for(t = 0; t < 4; t++)
-			(*outBuffer)[4*j+t] = block[t,j];
+			outBuffer*[4*j+t] = block[t,j];
 		}
 	    }
 	    break;
@@ -797,7 +797,7 @@ public namespace Rijndael {
 	    {
 		/* parse input stream into rectangular array */
 		for(t = 0; t < 4; t++)
-		    block[t,j] = (*input)[4*j+t] & 0xFF;
+		    block[t,j] = input*[4*j+t] & 0xFF;
 	    }
 	    rijndaelDecrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
 
@@ -805,7 +805,7 @@ public namespace Rijndael {
 	    {
 		/* exor the IV and parse rectangular array into output ciphertext bytes */
 		for(t = 0; t < 4; t++)
-		    (*outBuffer)[4*j+t] = (block[t,j] ^ cipher->IV[t+4*j]);
+		    outBuffer*[4*j+t] = (block[t,j] ^ cipher->IV[t+4*j]);
 	    }
 
 	    /* next blocks */
@@ -815,7 +815,7 @@ public namespace Rijndael {
 		{
 		    /* parse input stream into rectangular array */
 		    for(t = 0; t < 4; t++)
-			block[t,j] = (*input)[cipher->blockLen//8+4*j+t] & 0xFF;
+			block[t,j] = input*[cipher->blockLen//8+4*j+t] & 0xFF;
 		}
 		rijndaelDecrypt (&block, key->keyLen, cipher->blockLen, &key->keySched);
 
@@ -824,8 +824,8 @@ public namespace Rijndael {
 		    /* exor previous ciphertext block and parse rectangular array 
 		     into output ciphertext bytes */
 		    for(t = 0; t < 4; t++)
-			(*outBuffer)[cipher->blockLen//8+4*j+t] = ((block[t,j] ^ 
-								   (*input)[4*j+t-4*cipher->blockLen//32]));
+			outBuffer*[cipher->blockLen//8+4*j+t] = ((block[t,j] ^ 
+								   input*[4*j+t-4*cipher->blockLen//32]));
 		}
 	    }
 	    break;
@@ -869,7 +869,7 @@ public namespace Rijndael {
 	{
 	    /* parse input stream into rectangular array */
 	    for(t = 0; t < 4; t++)
-		block[t,j] = (*input)[4*j+t] & 0xFF;
+		block[t,j] = input*[4*j+t] & 0xFF;
 	}
 	switch (key->direction) {
 	case DIR_ENCRYPT:
@@ -889,7 +889,7 @@ public namespace Rijndael {
 	{
 	    /* parse rectangular array into output ciphertext bytes */
 	    for(t = 0; t < 4; t++)
-		(*outBuffer)[4*j+t] = block[t,j];
+		outBuffer*[4*j+t] = block[t,j];
 	}
 
 	return TRUE;
@@ -923,29 +923,54 @@ public namespace Rijndael {
 
 import Rijndael;
 
-string	secret = "000102030405060708090a0b0c0d0e0f";
-string	data = "Hello, world.";
+void function main ()
+{
+    string	secret = "000102030405060708090a0b0c0d0e0f";
+    string	original = "Hello, world.";
+    
+    /*
+     * Create an encryption key and encryption instance
+     */
+    keyInstance encKeyInst = (keyInstance) { blockLen = 128 };
+    makeKey (&encKeyInst, DIR_ENCRYPT, 128, secret);
+    
+    cipherInstance	encCipherInst = (cipherInstance) { blockLen = 128 };
+    cipherInit (&encCipherInst, MODE_ECB, "");
+    
+    /*
+     * Convert the message to integers and encrypt
+     */
+    int[*]	orig_text = string_to_array (original, &encCipherInst);
+    int[*]	cipher_text = (int[dim(orig_text)]) {};
+    
+    blockEncrypt (&encCipherInst, &encKeyInst, &orig_text, 
+		  dim(orig_text) * 8, &cipher_text);
+    
+    /*
+     * Create a decryption key and decryption instance
+     */
+    keyInstance decKeyInst = (keyInstance) { blockLen = 128 };
+    makeKey (&decKeyInst, DIR_DECRYPT, 128, secret);
+    
+    cipherInstance	decCipherInst = (cipherInstance) { blockLen = 128 };
+    cipherInit (&decCipherInst, MODE_ECB, "");
+    
+    /*
+     * Allocate some space for the recovered plaintext and decrypt
+     */
+     
+    int[*]	recover_text = (int[dim(cipher_text)]) {};
+    
+    blockDecrypt (&decCipherInst, &decKeyInst, 
+		  &cipher_text, dim(cipher_text) * 8, &recover_text);
+    
+    /*
+     * Convert the recovered data back to a string and present the results
+     */
+    string	recover = array_to_string (recover_text);
+    printf ("original:  %g\n", original);
+    printf ("cipher:    %g\n", cipher_text);
+    printf ("recovered: %g\n", recover);
+}
 
-keyInstance encKeyInst = (keyInstance) { blockLen = 128 };
-makeKey (&encKeyInst, DIR_ENCRYPT, 128, secret);
-
-cipherInstance	encCipherInst = (cipherInstance) { blockLen = 128 };
-cipherInit (&encCipherInst, MODE_ECB, "");
-
-int[*]	orig_text = string_to_array (data, &encCipherInst);
-int[*]	cipher_text = (int[dim(orig_text)]) {};
-
-blockEncrypt (&encCipherInst, &encKeyInst, &orig_text, dim(orig_text) * 8, &cipher_text);
-
-keyInstance decKeyInst = (keyInstance) { blockLen = 128 };
-makeKey (&decKeyInst, DIR_DECRYPT, 128, secret);
-
-cipherInstance	decCipherInst = (cipherInstance) { blockLen = 128 };
-cipherInit (&decCipherInst, MODE_ECB, "");
-
-int[*]	recover_text = (int[dim(cipher_text)]) {};
-
-blockDecrypt (&decCipherInst, &decKeyInst, &cipher_text, dim(cipher_text) * 8, &recover_text);
-
-string	text = array_to_string (recover_text);
-printf ("original: %g recovered: %g\n", data, text);
+main ();

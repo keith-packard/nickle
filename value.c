@@ -534,13 +534,14 @@ Print (Value f, Value v, char format, int base, int width, int prec, int fill)
 {
     int		i;
     Bool	ret;
-    ValueRep	*rep = ValueRep(v);
+    ValueRep	*rep;
     
     if (!v)
     {
 	FilePuts (f, "<uninit>");
 	return True;
     }
+    rep = ValueRep(v);
     if (!rep->print)
 	return True;
     for (i = 0; i < ValuePrintLevel; i++)

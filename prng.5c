@@ -2,15 +2,31 @@
  * Use ARC4 to generate large random numbers
  *
  * Bart 1999/2
+ *
+ * Modified 2003/4 to support /dev/random
  */
 
 namespace PRNG {
+  import File;
 
   global bool setkey = false;
 
   public void srandom(int s) {
     ARC4::nsetkey(10, s);
     setkey = true;
+  }
+
+  public void dev_srandom(int nbits) {
+    twixt(file f = open("/dev/random", "r"); close(f)) {
+      int seed = 0;
+      while (nbits >= 8) {
+	seed = (seed << 8) | getb(f);
+	nbits -= 8;
+      }
+      if (nbits > 0)
+	seed = (seed << nbits) | (getb(f) & ((1 << nbits) - 1));
+      srandom(seed);
+    }
   }
 
   /* returns an n-*bit* random number in 0..(2**n)-1 */

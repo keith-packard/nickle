@@ -229,6 +229,25 @@ Expr	*NewExprAtom (Atom atom);
 Expr	*NewExprCode (CodePtr code, Atom name);
 Expr	*NewExprDecl (DeclListPtr decl, Class class, Type type, Publish publish);
 
+typedef struct _catch {
+    DataType	*data;
+    CatchPtr	previous;
+    Atom	exception;
+    FramePtr	frame;
+    InstPtr	pc;
+} Catch;
+
+Catch	*NewCatch (CatchPtr previous, Atom exception, FramePtr frame, InstPtr pc);
+InstPtr	*CatchThrow (Value thread, ExceptPtr except);
+
+typedef struct _except {
+    DataType	*data;
+    Atom	exception;
+    BoxPtr	args;
+} Except;
+
+Except	*NewExcept (Atom exception, int nargs, Value *args);
+
 typedef struct _codeBase {
     DataType	*data;
     Bool	builtin;
@@ -325,6 +344,12 @@ typedef struct _instObj {
     ObjPtr	obj;
 } InstObj;
 
+typedef struct _instCatch {
+    InstBase	inst;
+    Atom	exception;
+    int		offset;
+} InstCatch;
+
 typedef union _inst {
     InstBase	base;
     InstVar	var;
@@ -334,6 +359,7 @@ typedef union _inst {
     InstCode	code;
     InstBranch	branch;
     InstObj	obj;
+    InstCatch	catch;
 } Inst;
 
 typedef struct _obj {

@@ -296,6 +296,8 @@ typedef struct _continuation	*ContinuationPtr;
 typedef union _value	*Value;
 typedef struct _obj	*ObjPtr;
 typedef union _inst	*InstPtr;
+typedef struct _catch   *CatchPtr;
+typedef struct _except	*ExceptPtr;
 
 typedef struct _func {
     BaseValue	base;
@@ -323,6 +325,8 @@ typedef struct _thread {
     InstPtr	pc;
     FramePtr	frame;
     ObjPtr	code;
+    CatchPtr	catches;
+    ExceptPtr	exception;
     /*
      * Thread status
      */
@@ -356,6 +360,7 @@ typedef struct _continuation {
     BaseValue	value;
     FramePtr	frame;
     InstPtr	pc;
+    StackObject	*stack;
 } Continuation;
 
 typedef union _value {

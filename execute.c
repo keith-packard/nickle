@@ -301,6 +301,20 @@ ThreadArrayIndex (Value thread, int ndim)
     return i;
 }
 
+void
+ThreadCatch (Value thread, Atom exception, int offset)
+{
+    ENTER ();
+    CatchPtr	catch;
+
+#if 0
+    catch = NewCatch (thread->thread.catches, exception, thread->thread.frame,
+		      thread->thread.pc + offset);
+    thread->thread.catches = catch;
+#endif
+    EXIT ();
+}
+
 static INLINE ThreadState
 ThreadStep (Value thread)
 {
@@ -638,6 +652,19 @@ ThreadStep (Value thread)
 	value = GreaterEqual (Stack(stack), value); stack++; break;
     case OpFork:
 	value = NewThread (thread->thread.frame, inst->obj.obj); break;
+    case OpTry:
+	ThreadCatch (thread, inst->catch.exception, inst->catch.offset);
+	break;
+    case OpEndTry:
+#if 0
+	thread->thread.catches = thread->thread.catches->previous;
+#endif
+	next = inst + inst->branch.offset;
+	break;
+    case OpRaise:
+	break;
+    case OpReRaise:
+	break;
     }
     if (!exception || complete)
     {

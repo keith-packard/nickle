@@ -502,6 +502,48 @@ _CompileStructInitAssigns (ObjPtr obj, ExprPtr expr, ScopePtr scope, ExprPtr sta
     RETURN (obj);
 }
 
+ObjPtr
+_CompileTry (ObjPtr obj, ExprPtr catches, ExprPtr body, ScopePtr scope, ExprPtr stat)
+{
+    ENTER ();
+    int	    catch_inst, end_inst;
+    InstPtr inst;
+    ExprPtr catch;
+    Bool    finally;
+    
+    if (catches)
+    {
+	catch = catches->tree.left;
+	/*
+	 * try a catch b
+	 *
+	 * CATCH a ENDCATCH b
+	 *             +------+
+	 */
+	finally = catch->tree.left->atom.atom == 0;
+	
+	NewInst (catch_inst, obj);
+	
+	obj = _CompileTry (obj, catches->tree.right, body, scope, stat);
+	
+	NewInst (end_inst, obj);
+	
+	inst = ObjCode (obj, catch_inst);
+	inst->base.opCode = OpTry;
+	inst->catch.exception = catch->tree.left->atom.atom;
+	inst->catch.offset = obj->used - catch_inst;
+	
+	obj = _CompileStat (obj, catch->tree.right, scope);
+	
+	inst = ObjCode (obj, end_inst);
+	inst->base.opCode = OpEndTry;
+	inst->branch.offset = obj->used - end_inst;
+    }
+    else
+	obj = _CompileStat (obj, body, scope);
+    RETURN (obj);
+}
+
 SymbolPtr
 CompileScope (ExprPtr expr, ScopePtr scope)
 {
@@ -971,6 +1013,9 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 			      expr->tree.left->decl.decl->name,
 			      sym->symbol.name);
 	}
+	break;
+    case TRY:
+	obj = _CompileTry (obj, expr->tree.right, expr->tree.left, scope, expr);
 	break;
     }
     RETURN (obj);

@@ -44,6 +44,7 @@ typedef struct _Stack {
 } StackObject;
 
 extern StackObject  *StackCreate (void);
+extern StackObject  *StackCopy (StackObject *stack);
 extern StackElement StackPush (StackObject *stack, StackElement object);
 extern StackElement StackPop (StackObject *stack);
 extern void	    StackDrop (StackObject *stack, int i);

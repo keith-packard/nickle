@@ -88,6 +88,7 @@ NewMemList (DeclListPtr names, Type type, MemListPtr next)
 %token <ival>	NL ALL DOWN UP
 %token <ival>	QUIT READ SHELL EDIT DEFAULT UNDEFINE HISTORY PRINT
 %token <ival>	WHILE IF ELSE FOR DO BREAK CONTINUE EXPR RETURNTOK SCOPE IMPORT
+%token <ival>	TRY CATCH
 %token <ival>	FORK
 %token <ival>	OP CP OC CC COMMA SEMI DOLLAR
 %token <ival>	VAR
@@ -96,11 +97,12 @@ NewMemList (DeclListPtr names, Type type, MemListPtr next)
 %token <aval>	NAME 
 %token <cval>	AUTO GLOBAL STATIC
 %token <pval>	PUBLIC
-%token <tval>	INT NATURAL INTEGER RATIONAL DOUBLE ARRAY FUNC
+%token <tval>	INT NATURAL INTEGER RATIONAL DOUBLE ARRAY FUNC EXCEPTION
 %token <tval>	STRING POLYMORPH REF STRUCT TYPE FUNCTION
 %token <ival>	AINIT
 %type <eval>	expr primary stat optexpr statlist arglist oarglist
 %type <eval>	history sexpr array oainits ainits aelem sinit sinits
+%type <eval>	catch catches
 %type <dval>	o_names names uninit_names
 %type <mval>	memlist
 %type <ftval>	type_def
@@ -472,6 +474,22 @@ stat	:	IF ignorenl OP expr CP stat
 							   $2),
 					      0);
 			}
+	|	TRY ignorenl stat catches
+			{ $$ = NewExprTree (TRY, $3, $4); }
+	;
+catch	:	CATCH NAME OP ofargs CP stat
+			{
+			    $$ = NewExprTree (CATCH, 
+					      NewExprTree (EXCEPTION,
+							   NewExprAtom ($2),
+							   $4),
+					      $6); 
+			}
+	;
+catches	:	catch catches
+			{ $$ = NewExprTree (TRY, $1, $2); }
+	|	catch
+			{ $$ = NewExprTree (TRY, $1, 0); }
 	;
 ignorenl:	{ ignorenl = 1; }
 fbody	:	o_type OP ofargs CP OC statlist CC

@@ -535,7 +535,7 @@ ValueType    ContinuationType = {
 };
 
 Value
-NewContinuation (FramePtr frame, InstPtr pc)
+NewContinuation (FramePtr frame, InstPtr pc, StackObject *stack)
 {
     ENTER ();
     Value   ret;
@@ -544,9 +544,16 @@ NewContinuation (FramePtr frame, InstPtr pc)
     ret->value.tag = type_continuation;
     ret->continuation.frame = frame;
     ret->continuation.pc = pc;
+    ret->continuation.stack = stack;
     RETURN (ret);
 }
 
+/*
+ * It is necessary that SetJump and LongJump have the same number
+ * of arguments -- the arguments pushed by SetJump will have to be
+ * popped when LongJump executes.  If this is not so, the stack copy
+ * created here should be adjusted to account for this difference
+ */
 Value
 SetJump (InstPtr *next, Value continuation_ref, Value ret)
 {
@@ -558,7 +565,8 @@ SetJump (InstPtr *next, Value continuation_ref, Value ret)
 	RaiseError ("setjump: not a reference %v", continuation_ref);
 	RETURN (Zero);
     }
-    continuation = NewContinuation (running->thread.frame, *next);
+    continuation = NewContinuation (running->thread.frame, *next,
+				    StackCopy (running->thread.stack));
     RefValue (continuation_ref) = continuation;
     RETURN (ret);
 }
@@ -576,6 +584,7 @@ LongJump (InstPtr *next, Value continuation, Value ret)
 	RETURN (Zero);
     }
     running->thread.frame = continuation->continuation.frame;
+    running->thread.stack = StackCopy (continuation->continuation.stack);
     *next = continuation->continuation.pc;
     RETURN (ret);
 }

@@ -214,6 +214,38 @@ StackCheck (StackObject *stack, StackElement object)
     return 0;
 }
 
+StackObject *
+StackCopy (StackObject *stack)
+{
+    ENTER ();
+    StackObject	*new;
+    StackChunk	*chunk, *nchunk, **prev;
+
+    new = StackCreate ();
+    chunk = stack->current;
+    nchunk = new->current;
+    prev = &new->current;
+    while (chunk)
+    {
+	if (!nchunk)
+	    nchunk = MemAllocate (&stackChunkType, sizeof (StackChunk));
+	/*
+	 * Copy stack data and fix stack pointer
+	 */
+	*nchunk = *chunk;
+	nchunk->stackPointer = nchunk->elements + (chunk->stackPointer - chunk->elements);
+	
+	/*
+	 * Link into chain
+	 */
+	*prev = nchunk;
+	prev = &nchunk->previous;
+	chunk = chunk->previous;
+	nchunk = 0;
+    }
+    RETURN (new);
+}
+
 static void
 stackMark (void *object)
 {

@@ -102,7 +102,7 @@ extend namespace File {
 
 	    whitespace();
 	    s = "";
-	    while (Ctype::isprint (c = File::getc(f)) && !File::end(f))
+	    while (Ctype::isgraph (c = File::getc(f)) && !File::end(f))
 		s = s + String::new(c);
 	    File::ungetc (c, f);
 	    return s;

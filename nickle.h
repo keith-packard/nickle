@@ -853,6 +853,7 @@ IntBinaryOperate (Value av, Value bv, BinaryOp operator) {
     case LorOp:
 	return NewInt (ValueInt(av) | ValueInt(bv));
     case NumBinaryOp:
+    	;
     }
     return Void;
 }

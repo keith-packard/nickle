@@ -2457,6 +2457,7 @@ CompilePatchLoop (ObjPtr    obj,
 			inst->branch.offset = continue_offset - start;
 		    break;
 		default:
+		    break;
 		}
 	    }
 	    break;

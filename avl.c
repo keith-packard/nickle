@@ -14,6 +14,7 @@
 
 #include	<config.h>
 
+#include	<stdlib.h>
 #include	"avl.h"
 
 static int	rebalance_right (tree **), rebalance_left (tree **);

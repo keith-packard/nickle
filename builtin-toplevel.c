@@ -450,9 +450,9 @@ do_dims(Value av)
     int ndim = av->array.ndim;
 
     ret = NewArray(True, False, typePrim[rep_int], 1, &ndim);
-    for (i = 0; i < av->array.ndim; i++) {
+    for (i = 0; i < ndim; i++) {
 	Value d = NewInt(ArrayLimits(&av->array)[i]);
-	ArrayValueSet(&ret->array, i, d);
+	ArrayValueSet(&ret->array, ndim - i - 1, d);
     }
     RETURN (ret);
 }

@@ -304,7 +304,7 @@ do_dim(Value av)
 				2, NewInt (0), av);
 	RETURN (Void);
     }
-    ret = NewInt(ArrayDims(&av->array)[0]);
+    ret = NewInt(ArrayLimits(&av->array)[0]);
     RETURN (ret);
 }
 
@@ -317,7 +317,7 @@ do_dims(Value av)
 
     ret = NewArray(True, typePrim[rep_int], 1, &av->array.ndim);
     for (i = 0; i < av->array.ndim; i++) {
-      Value d = NewInt(ArrayDims(&av->array)[i]);
+      Value d = NewInt(ArrayLimits(&av->array)[i]);
       BoxValueSet(ret->array.values, i, d);
     }
     RETURN (ret);

@@ -166,6 +166,10 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 	    CompileCanonType (obj, namespace, se->type, stat);
 	}
 	break;
+    case types_union:
+	for (n = 0; n < type->unions.nelements; n++)
+	    CompileCanonType (obj, namespace, TypesUnionElements(type)[n], stat);
+	break;
     }
 }
 

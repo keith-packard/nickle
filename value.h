@@ -188,7 +188,8 @@ typedef struct _argType {
 ArgType *NewArgType (TypesPtr type, Bool varargs, Atom name, ArgType *next);
 
 typedef enum _typesTag {
-    types_prim, types_name, types_ref, types_func, types_array, types_struct
+    types_prim, types_name, types_ref, types_func, types_array, 
+    types_struct, types_union,
 } TypesTag;
     
 typedef struct _typesBase {
@@ -229,6 +230,11 @@ typedef struct _typesStruct {
     StructTypePtr   structs;
 } TypesStruct;    
 
+typedef struct _typesUnion {
+    TypesBase	    base;
+    int		    nelements;
+} TypesUnion;
+
 typedef union _types {
     TypesBase	base;
     TypesPrim	prim;
@@ -237,6 +243,7 @@ typedef union _types {
     TypesFunc	func;
     TypesArray	array;
     TypesStruct	structs;
+    TypesUnion	unions;
 } Types;
 
 typedef struct _argDecl {
@@ -257,9 +264,12 @@ Types	*NewTypesRef (Types *ref);
 Types	*NewTypesFunc (Types *ret, ArgType *args);
 Types	*NewTypesArray (Types *type, ExprPtr dimensions);
 Types	*NewTypesStruct (StructTypePtr structs);
+Types	*NewTypesUnion (int nelements);
 Types	*TypesCanon (Types *type);
 Type	BaseType (Types *type);
 int	TypesInit (void);
+
+#define TypesUnionElements(t) ((Types **) (&t->unions + 1))
 
 Types	*TypeCombineAssign (Types *lvalue, int tag, Types *rvalue);
 Types	*TypeCombineBinary (Types *left, int tag, Types *right);

@@ -49,7 +49,7 @@ void yyerror (char *fmt, ...);
 %type  <tsval>	opt_type type
 %type  <eval>   opt_stars stars
 %type  <tval>	basetype
-%type  <mval>	members
+%type  <mval>	struct_members union_members
 %type  <cval>	class
 %type  <pval>	publish publish_extend
 
@@ -68,7 +68,7 @@ void yyerror (char *fmt, ...);
 %token		ASSIGNPLUS ASSIGNMINUS ASSIGNTIMES ASSIGNDIVIDE ASSIGNDIV ASSIGNMOD
 %token		ASSIGNSHIFTL ASSIGNSHIFTR
 %token		ASSIGNPOW ASSIGNLXOR ASSIGNLAND ASSIGNLOR
-%token		VAR EXPR ARRAY STRUCT
+%token		VAR EXPR ARRAY STRUCT UNION
 
 %token		NL SEMI MOD OC CC DOLLAR DOTS COLONCOLON
 %token		UNDEFINE LOAD HISTORY PRINT EDIT QUIT
@@ -560,7 +560,7 @@ type		: basetype
 		    { $$ = NewTypesFunc ($1, $3); }
 		| type OS opt_stars CS
 		    { $$ = NewTypesArray ($1, $3); }
-		| STRUCT OC members CC
+		| STRUCT OC struct_members CC
 		    {
 			DeclListPtr	dl;
 			StructType	*st;
@@ -587,6 +587,26 @@ type		: basetype
 			    }
 			}
 			$$ = NewTypesStruct (st);
+		    }
+		| UNION OC union_members CC
+		    {
+			Types		*ut;
+			TypesPtr	*ue;
+			MemListPtr	ml;
+			int		nelements;
+
+			nelements = 0;
+			for (ml = $3; ml; ml = ml->next)
+			    nelements++;
+			ut = NewTypesUnion (nelements);
+			ue = TypesUnionElements (ut);
+			nelements = 0;
+			for (ml = $3; ml; ml = ml->next)
+			{
+			    ue[nelements] = ml->type;
+			    nelements++;
+			}
+			$$ = ut;
 		    }
 		| OP type CP
 		    { $$ = $2; }
@@ -615,12 +635,19 @@ stars		: stars COMMA TIMES
 /*
 * Structure member declarations
 */
-members		: opt_type names SEMI members
+struct_members	: opt_type names SEMI struct_members
 		    { $$ = NewMemList ($2, $1, $4); }
 		|
 		    { $$ = 0; }
 		;
-
+/*
+ * union member declaraions
+ */
+union_members	: opt_type SEMI union_members
+		    { $$ = NewMemList (0, $1, $3); }
+		|
+		    { $$ = 0; }
+		;
 /*
 * Declaration modifiers
 */

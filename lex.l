@@ -125,6 +125,7 @@ mutex		{ yylval.tval = type_mutex; return MUTEX; }
 semaphore	{ yylval.tval = type_semaphore; return SEMAPHORE; }
 continuation	{ yylval.tval = type_continuation; return CONTINUATION; }
 struct		{ yylval.ival = STRUCT; return STRUCT; }
+union		{ yylval.ival = UNION; return UNION; }
 
 typedef		{ yylval.ival = TYPEDEF; return TYPEDEF; }
 func		{ yylval.ival = FUNC; return FUNC; }

@@ -189,6 +189,15 @@ fprintTypes (Value f, Types *t)
 	    fprintDimensions (f, t->array.dimensions);
 	    FilePuts (f, "]");
 	    break;
+	case types_union:
+	    FilePuts (f, "union { ");
+	    for (i = 0; i < t->unions.nelements; i++)
+	    {
+		fprintTypes (f, TypesUnionElements(t)[i]);
+		FilePuts (f, "; ");
+	    }
+	    FilePuts (f, "}");
+	    break;
 	case types_struct:
 	    FilePuts (f, "struct { ");
 	    st = t->structs.structs;

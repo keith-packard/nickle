@@ -218,7 +218,7 @@ ResetInst (ObjPtr obj, int i)
 
 typedef enum _tail { TailNever, TailVoid, TailAlways } Tail;
 
-ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createIfNecessary, Bool assign, Bool initialize, Bool amper);
+ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createIfNecessary, Bool assign, Bool initialize, Bool amper, Bool auto_reference);
 ObjPtr	CompileBinOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code);
 ObjPtr	CompileBinFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code, char *name);
 ObjPtr	CompileUnOp (ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code);
@@ -455,10 +455,11 @@ CompileIndexType (ExprPtr expr)
  */
 ObjPtr
 CompileLvalue (ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code,
-	       Bool createIfNecessary, Bool assign, Bool initialize, Bool amper)
+	       Bool createIfNecessary, Bool assign, Bool initialize, 
+	       Bool amper, Bool auto_reference)
 {
     ENTER ();
-    InstPtr	inst;
+    InstPtr	inst = 0;
     SymbolPtr	s;
     int		depth;
     int		ndim;
@@ -524,11 +525,13 @@ isName:
 	break;
     case AMPER:
 	obj = CompileLvalue (obj, expr->tree.left, stat, code,
-			     createIfNecessary, assign, initialize, True);
+			     createIfNecessary, assign, initialize, 
+			     True, False);
 	expr->base.type = expr->tree.left->base.type;
 	break;
     case COLONCOLON:
-	obj = CompileLvalue (obj, expr->tree.right, stat, code, False, assign, initialize, amper);
+	obj = CompileLvalue (obj, expr->tree.right, stat, code, False, assign, initialize, 
+			     amper, auto_reference);
 	expr->base.type = expr->tree.right->base.type;
         break;
     case DOT:
@@ -601,8 +604,17 @@ isName:
 	}
 	break;
     default:
-	CompileError (obj, stat, "Invalid lvalue");
-        expr->base.type = typePoly;
+	if (auto_reference)
+	{
+	    obj = _CompileExpr (obj, expr, True, stat, code);
+	    BuildInst (obj, OpUnFunc, inst, stat);
+	    inst->unfunc.func = do_reference;
+	}
+	else
+	{
+	    CompileError (obj, stat, "Invalid lvalue");
+	    expr->base.type = typePoly;
+	}
 	break;
     }
     if (flipTypes)
@@ -855,7 +867,8 @@ CompileAssign (ObjPtr obj, ExprPtr expr, Bool initialize, ExprPtr stat, CodePtr 
     ENTER ();
     InstPtr inst;
     
-    obj = CompileLvalue (obj, expr->tree.left, stat, code, True, True, initialize, False);
+    obj = CompileLvalue (obj, expr->tree.left, stat, code, True, True, initialize, 
+			 False, False);
     SetPush (obj);
     obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
     expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
@@ -879,7 +892,8 @@ CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr co
     ENTER ();
     InstPtr inst;
     
-    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, False);
+    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, 
+			 False, False);
     SetPush (obj);
     BuildInst (obj, OpFetch, inst, stat);
     SetPush (obj);
@@ -906,7 +920,8 @@ CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, Code
     ENTER ();
     InstPtr inst;
     
-    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, False);
+    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, 
+			 False, False);
     SetPush (obj);
     BuildInst (obj, OpFetch, inst, stat);
     SetPush (obj);
@@ -1674,7 +1689,7 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 	SetPush (obj);
 	obj = CompileLvalue (obj,
 			     expr->tree.left->tree.right,
-			     stat, code, False, True, True, False);
+			     stat, code, False, True, True, False, False);
 	SetPush (obj);
     }
     obj = CompileBuildArray (obj, expr, type, dimensions, ndim, stat, code);
@@ -2401,7 +2416,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	break;
     case STAR:	    obj = CompileUnFunc (obj, expr, Dereference, stat, code,"*"); break;
     case AMPER:	    
-	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, False);
+	obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, 
+			     False, True);
 	t = CompileRefType (expr->tree.left->base.type);
 	if (!t)
 	    t = expr->tree.left->base.type;
@@ -2421,7 +2437,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case INC:	    
 	if (expr->tree.left)
 	{
-	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, False);
+	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, 
+				 False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNPLUS,
 						 typePrim[rep_int]);
@@ -2429,7 +2446,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	else
 	{
-	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False, False, False);
+	    obj = CompileLvalue (obj, expr->tree.right, stat, code, 
+				 False, False, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNPLUS,
 						 typePrim[rep_int]);
@@ -2448,7 +2466,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case DEC:
 	if (expr->tree.left)
 	{
-	    obj = CompileLvalue (obj, expr->tree.left, stat, code, False, False, False, False);
+	    obj = CompileLvalue (obj, expr->tree.left, stat, code, 
+				 False, False, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
 						 ASSIGNMINUS,
 						 typePrim[rep_int]);
@@ -2456,7 +2475,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	else
 	{
-	    obj = CompileLvalue (obj, expr->tree.right, stat, code, False, False, False, False);
+	    obj = CompileLvalue (obj, expr->tree.right, stat, code, 
+				 False, False, False, False, False);
 	    expr->base.type = TypeCombineBinary (expr->tree.right->base.type,
 						 ASSIGNMINUS,
 						 typePrim[rep_int]);
@@ -2681,7 +2701,8 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case ASSIGNPOW:
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
 	SetPush (obj);
-	obj = CompileLvalue (obj, expr->tree.right->tree.left, stat, code, False, False, False, False);
+	obj = CompileLvalue (obj, expr->tree.right->tree.left, stat, code,
+			     False, False, False, False, False);
 	SetPush (obj);
 	obj = _CompileExpr (obj, expr->tree.right->tree.right, True, stat, code);
 	expr->base.type = TypeCombineBinary (expr->tree.right->tree.left->base.type,
@@ -4008,7 +4029,8 @@ CompileDecl (ObjPtr obj, ExprPtr decls,
 	    lvalue = NewExprAtom (decl->name, decl->symbol, False);
 	    *initObj = CompileLvalue (*initObj, lvalue,
 				       decls, code, False, True, True, 
-				      CompileRefType (s->symbol.type) != 0);
+				      CompileRefType (s->symbol.type) != 0,
+				      False);
 	    SetPush (*initObj);
 	    *initObj = CompileInit (*initObj, init, s->symbol.type, stat, code);
 	    CompileDeclInitObjFinish (&obj, initObj, code, code_compile);

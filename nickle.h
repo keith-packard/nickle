@@ -470,6 +470,7 @@ Value	do_time (void);
 Value	do_Debug_up (void);
 Value	do_Debug_down (void);
 Value	do_Debug_done (void);
+Value	do_Debug_collect (void);
 
 /* one argument builtins */
 Value	do_putchar (Value);

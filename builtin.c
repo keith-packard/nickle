@@ -189,6 +189,7 @@ struct fbuiltin_0 funcs_0[] = {
     { do_Debug_up,	    "up",		    type_integer,   "",	    &DebugNamespace, },
     { do_Debug_down,	    "down",		    type_integer,   "",	    &DebugNamespace },
     { do_Debug_done,	    "done",		    type_integer,   "",	    &DebugNamespace },
+    { do_Debug_collect,	    "collect",		    type_integer,   "",	    &DebugNamespace },
     { 0,		    0 },
 };
 struct fbuiltin_1 funcs_1[] = {
@@ -1607,4 +1608,12 @@ do_is_func (Value av)
 	break;
     }
     RETURN (av);
+}
+
+Value
+do_Debug_collect (void)
+{
+    ENTER ();
+    MemCollect ();
+    RETURN (One);
 }

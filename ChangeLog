@@ -1,4 +1,9 @@
 2004-05-25  Keith Packard  <keithp@keithp.com>
+
+	* debian/changelog:
+	Add comments for version 2.35
+
+2004-05-25  Keith Packard  <keithp@keithp.com>
 version 2.35
 
 	* compile.c: (CompileLvalue), (CompileAssign), (CompileAssignOp),

@@ -1,5 +1,26 @@
 2004-04-01  Keith Packard  <keithp@keithp.com>
 
+	reviewed by: Mike Harris <mharris@redhat.com>
+
+	* .cvsignore:
+	* Makefile.am:
+	* build-rpm:
+	* configure.in:
+	* debian/.cvsignore:
+	* nickle.spec:
+	* nickle.spec.in:
+	* version.m4:
+	Mike Harris provided a new .spec file.
+	
+	Move .spec file to .spec.in so that version can be
+	set automatically.
+
+	Add 'rpm' target in the Makefile
+
+	Bump version (now 2.29)
+
+2004-04-01  Keith Packard  <keithp@keithp.com>
+
 	* value.h:
 	Add casts to avoid warnings where sizeof (int) != sizeof (void *)
 

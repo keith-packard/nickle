@@ -20,7 +20,8 @@ DEBIAN = debian/nickle.install debian/changelog debian/compat \
 	 debian/control debian/copyright debian/rules
 	 
 EXTRA_DIST = README.name autogen.sh update-version.sh make-version.sh \
-	$(NICKLEFILES) gram.h $(EXAMPLES) $(TEST) $(DEBIAN) version.m4
+	$(NICKLEFILES) gram.h $(EXAMPLES) $(TEST) $(DEBIAN) version.m4 \
+	nickle.spec.in
 
 bin_PROGRAMS = nickle
 
@@ -81,4 +82,14 @@ debuild-dirs: distdir
 	cp -a $(distdir) $(distdir).orig
 	rm -rf $(distdir).orig/debian
 
-.PHONY: debuild debuild-signed debuild-unsigned debuild-dirs
+#
+# This assumes you've got Mike Harris's rpmbuild-nonroot stuff installed
+# using the defaults
+#
+rpm: dist-gzip
+	mkdir -p $(HOME)/rpmbuild/$(PACKAGE)-$(VERSION)
+	cp $(PACKAGE)-$(VERSION).tar.gz $(HOME)/rpmbuild/$(PACKAGE)-$(VERSION)
+	rpm -ba nickle.spec
+
+.PHONY: debuild debuild-signed debuild-unsigned debuild-dirs rpm
+

@@ -1,15 +1,14 @@
 #!/bin/sh
-VERSION=`egrep AM_INIT_AUTOMAKE configure.in | sed -e 's/^.*,//' -e 's/).*$//'`
+VERSION=`egrep BUILD_VERSION version.h | sed -e 's/^[^"]*"//' -e 's/".*$//'`
 echo "Building nickle $VERSION RPM..." >&2
-cvs -r export -D now -d nickle-$VERSION nickle
-(cd nickle-$VERSION && sh ./autoconfigure.sh)
-chmod +w nickle-$VERSION/nickle.spec
-ed nickle-$VERSION/nickle.spec << EOF
-g/VERSION/s/VERSION/$VERSION/
+RPMBUILD=$HOME/rpmbuild
+echo mkdir -p $RPMBUILD/nickle-$VERSION
+make nickle-$VERSION.tar.gz
+cp nickle-$VERSION.tar.gz $RPMBUILD/nickle-$VERSION
+cp nickle.spec nickle-$VERSION.spec
+ed nickle-$VERSION.spec << EOF
+/VERSION/s//$VERSION/
 w
 q
 EOF
-chmod -w nickle-$VERSION/nickle.spec
-tar cf - nickle-$VERSION | bzip2 > nickle-$VERSION.tar.bz2
-rm -rf nickle-$VERSION
-rpm -ta --clean nickle-$VERSION.tar.bz2
+rpm -ba nickle-$VERSION.spec

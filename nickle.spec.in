@@ -1,0 +1,49 @@
+Summary: Desk calculator language, similar to C.
+Name: nickle
+Version: @VERSION@
+Release: 1
+Group: Development/Languages
+License: MIT
+URL: http://nickle.org
+
+Source: http://nickle.keithp.com/nickle-%{version}.tar.gz
+Buildroot: %{_tmppath}/%{name}-%{version}-root
+
+%description
+Nickle is a desk calculator language with powerful programming and scripting
+capabilities.  Nickle supports a variety of datatypes, especially arbitrary
+precision integers, rationals, and imprecise reals.  The input language
+vaguely resembles C.  Some things in C which do not translate easily are
+different, some design choices have been made differently, and a very few
+features are simply missing. 
+
+%prep
+
+%setup -q
+
+%build
+export CFLAGS="$RPM_OPT_FLAGS"
+%configure
+make
+
+%install
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+#mkdir -p $RPM_BUILD_ROOT%{prefix}
+%makeinstall
+#make prefix=$RPM_BUILD_ROOT%{prefix} install
+cp -R examples $RPM_BUILD_ROOT%{_datadir}/nickle/
+
+%files
+%defattr(-,root,root)
+%doc README README.name COPYING AUTHORS ChangeLog INSTALL NEWS TODO
+%attr(755,root,root) %{_bindir}/nickle
+%dir %{_datadir}/nickle
+%{_mandir}/man1/nickle.1*
+%{_datadir}/nickle/*
+
+%clean
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+
+%changelog
+* Thu Mar  1 2004 Mike A. Harris <mharris@www.linux.org.uk> 2.29-2
+- Initial rpm spec file

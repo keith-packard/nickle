@@ -89,6 +89,7 @@ AC_CONFIG_FILES(
  test/Makefile
  bench/Makefile
  date-sh
- nickle.1)
+ nickle.1
+ nickle.spec)
 
 AC_OUTPUT

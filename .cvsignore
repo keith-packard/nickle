@@ -1,3 +1,4 @@
+.deps
 Makefile
 Makefile.in
 aclocal.m4
@@ -20,8 +21,11 @@ missing
 mkinstalldirs
 nickle
 nickle.1
+nickle.spec
 stamp-h
+stamp-h1
 stamp-h.in
+version.h
 build-stamp
 configure-stamp
 *.tar.gz

@@ -1,0 +1,85 @@
+/*
+ * ctype routines
+ * Bart 2002/8
+ * XXX: ASCII-only; should be extended into Unicode terror-land.
+ */
+
+namespace Ctype {
+    public bool isupper(int ch) {
+	return ch >= 'A' && ch <= 'Z';
+    }
+
+    public bool islower(int ch) {
+	return ch >= 'a' && ch <= 'z';
+    }
+
+    public bool isdigit(int ch) {
+	return ch >= '0' && ch <= '9';
+    }
+
+    public bool isblank(int ch) {
+	return ch == ' ' || ch == '\t';
+    }
+
+    public bool isascii(int ch) {
+	return ch >= 0 && ch <= 127;
+    }
+    
+    public bool iscntrl(int ch) {
+	return ch >= 0 && ch <= 31;
+    }
+
+    public bool isgraph(int ch) {
+	return ch > ' ' && ch < 127;
+    }
+
+    public bool isprint(int ch) {
+	return ch >= ' ' && ch < 127;
+    }
+	
+    public bool isspace(int ch) {
+	global bool[*] checktab = 
+	   (bool[*] func () {
+	       bool[128] ct;
+	       for (int i = 0; i < dim(ct); i++)
+	           ct[i] = false;
+	       int[*] sc = {' ', '\f', '\n', '\r', '\t', '\v'};
+	       for (int i = 0; i < dim(sc); i++)
+	           ct[sc[i]] = true;
+	       return ct;
+	   })();
+	return checktab[ch];
+    }
+
+    public bool isalpha(int ch) {
+	return islower(ch) || isupper(ch);
+    }
+
+    public bool isalnum(int ch) {
+	return isalpha(ch) || isdigit(ch);
+    }
+    
+    public bool ispunct(int ch) {
+	return isgraph(ch) && !isalnum(ch);
+    }
+
+    public int tolower(int ch) {
+	if (isupper(ch))
+	    return ch - 'A' + 'a';
+	return ch;
+    }
+
+    public int toupper(int ch) {
+	if (islower(ch))
+	    return ch - 'a' + 'A';
+	return ch;
+    }
+
+    public bool isxdigit(int ch) {
+	if (isdigit(ch))
+	    return true;
+	int chl = tolower(ch);
+	return chl >= 'a' && chl <= 'f';
+    }
+}
+

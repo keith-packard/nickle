@@ -846,6 +846,18 @@ extend namespace Math {
     {
 	return *a = pow (*a, b);
     }
+
+    public real max(real a, real b) {
+        if (b > a)
+            return b;
+        return a;
+    }
+
+    public real min(real a, real b) {
+        if (b < a)
+            return b;
+        return a;
+    }
 }
 
 import Math;

@@ -1,5 +1,122 @@
 extend namespace String {
 
+    public string chomp(string s) {
+	if (s == "")
+	    return s;
+	int l = length(s);
+	int i = 0;
+	while(i < l && Ctype::isspace(s[i]))
+	    i++;
+	int j = l - 1;
+	while(j >= 0 && Ctype::isspace(s[j]))
+	    --j;
+	return substr(s, i, j - i + 1);
+    }
+
+    typedef enum {normal, openq, xq} qstate;
+
+    public bool inchars(int c, string s) {
+	return index(String::new(c), s) >= 0;
+    }
+
+    public typedef struct { 
+	string oq, cq, qq;
+    } quote_context;
+
+    public string _dequote(string s, quote_context q) {
+	string result = "";
+	qstate t = qstate.normal;
+	for (int cur = 0; cur < length(s); cur++) {
+	    int c = s[cur];
+	    switch(t) {
+	    case qstate.normal:
+		if (inchars(c, q.oq)) {
+		    t = qstate.openq;
+		    continue;
+		}
+		raise invalid_argument("_dequote: leading garbage", 0, s);
+		break;
+	    case qstate.openq:
+		if (inchars(c, q.qq)) {
+		    t = qstate.xq;
+		    continue;
+		}
+		if (inchars(c, q.cq)) {
+		    if (cur != length(s) - 1)
+			raise invalid_argument("_dequote: trailing garbage", 0, s);
+		    continue;
+		}
+		break;
+	    case qstate.xq:
+		t = qstate.openq;
+		break;
+	    }
+	    result = result + String::new(c);
+	}
+	if (q.qq == q.cq && t == qstate.xq)
+	    return result;
+	raise invalid_argument("_dequote: unexpected end of string", 0, s);
+    }
+
+    public quote_context default_quotes = {
+	oq = "\"", cq = "\"", qq = "\\"
+    };
+
+    public string dequote(string s) {
+	return _dequote(s, default_quotes);
+    }
+
+    public string[*] readcsv(string s) {
+	string[...] ss = {};
+	if (s == "" || s == "\n" || s == "\r\n")
+	    return ss;
+	quote_context q = default_quotes;
+	q.qq = "\"";
+	string curs = "";
+	qstate t = qstate.normal;
+	int cur = 0;
+	while (cur < length(s)) {
+	    int c = s[cur];
+#	    printf("%d: %c %v\n", cur, c, t);
+	    switch(t) {
+	    case qstate.normal:
+		if (c == ',') {
+		    string t = chomp(curs);
+		    if (t != "" && t[0] == '"')
+			t = _dequote(t, q);
+		    ss[dim(ss)] = t;
+		    curs = "";
+		    cur++;
+		    continue;
+		}
+		if (c == '"')
+		    t = qstate.openq;
+		break;
+	    case qstate.openq:
+		if (c == '"')
+		    t = qstate.xq;
+		break;
+	    case qstate.xq:
+		if (c == '"') {
+		    t = qstate.openq;
+		    break;
+		}
+		if (c == ',') {
+		    t = qstate.normal;
+		    continue;
+		}
+		t = qstate.normal;
+		break;
+	    }
+	    curs = curs + String::new(c);
+	    cur++;
+	}
+	if (t != qstate.normal)
+	    raise invalid_argument("readcsv: unexpected end of csv line", 0, s);
+	ss[dim(ss)] = curs;
+	return ss;
+    }
+
     public int rindex(string target, string pattern) {
 	int pl = length(pattern);
 	for (int i = length(target) - pl; i >= 0; --i) {
@@ -37,6 +154,123 @@ extend namespace String {
 	    ss[dim(ss)] = "";
 	else
 	    ss[dim(ss)] = substr(s, i + 1, j - i - 1);
+	return ss;
+    }
+
+    public string chomp(string s) {
+	if (s == "")
+	    return s;
+	int l = length(s);
+	int i = 0;
+	while(i < l && Ctype::isspace(s[i]))
+	    i++;
+	int j = l - 1;
+	while(j >= 0 && Ctype::isspace(s[j]))
+	    --j;
+	return substr(s, i, j - i + 1);
+    }
+
+    public bool inchars(int c, string s) {
+	return index(String::new(c), s) >= 0;
+    }
+
+    public typedef struct { 
+	string oq, cq, qq;
+    } quote_context;
+
+    typedef enum {normal, openq, xq} qstate;
+
+    public string _dequote(string s, quote_context q) {
+	string result = "";
+	qstate t = qstate.normal;
+	for (int cur = 0; cur < length(s); cur++) {
+	    int c = s[cur];
+	    switch(t) {
+	    case qstate.normal:
+		if (inchars(c, q.oq)) {
+		    t = qstate.openq;
+		    continue;
+		}
+		raise invalid_argument("_dequote: leading garbage", 0, s);
+		break;
+	    case qstate.openq:
+		if (inchars(c, q.qq)) {
+		    t = qstate.xq;
+		    continue;
+		}
+		if (inchars(c, q.cq)) {
+		    if (cur != length(s) - 1)
+			raise invalid_argument("_dequote: trailing garbage", 0, s);
+		    continue;
+		}
+		break;
+	    case qstate.xq:
+		t = qstate.openq;
+		break;
+	    }
+	    result = result + String::new(c);
+	}
+	if (q.qq == q.cq && t == qstate.xq)
+	    return result;
+	raise invalid_argument("_dequote: unexpected end of string", 0, s);
+    }
+
+    public quote_context default_quotes = {
+	oq = "\"", cq = "\"", qq = "\\"
+    };
+
+    public string dequote(string s) {
+	return _dequote(s, default_quotes);
+    }
+
+    public string[*] readcsv(string s) {
+	string[...] ss = {};
+	if (s == "" || s == "\n" || s == "\r\n")
+	    return ss;
+	quote_context q = default_quotes;
+	q.qq = "\"";
+	string curs = "";
+	qstate t = qstate.normal;
+	int cur = 0;
+	while (cur < length(s)) {
+	    int c = s[cur];
+#	    printf("%d: %c %v\n", cur, c, t);
+	    switch(t) {
+	    case qstate.normal:
+		if (c == ',') {
+		    string t = chomp(curs);
+		    if (t != "" && t[0] == '"')
+			t = _dequote(t, q);
+		    ss[dim(ss)] = t;
+		    curs = "";
+		    cur++;
+		    continue;
+		}
+		if (c == '"')
+		    t = qstate.openq;
+		break;
+	    case qstate.openq:
+		if (c == '"')
+		    t = qstate.xq;
+		break;
+	    case qstate.xq:
+		if (c == '"') {
+		    t = qstate.openq;
+		    break;
+		}
+		if (c == ',') {
+		    t = qstate.normal;
+		    continue;
+		}
+		t = qstate.normal;
+		break;
+	    }
+	    curs = curs + String::new(c);
+	    cur++;
+	}
+	if (t != qstate.normal)
+	    raise invalid_argument("readcsv: unexpected end of csv line", 0, s);
+	ss[dim(ss)] = curs;
 	return ss;
     }
 

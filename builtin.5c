@@ -77,8 +77,8 @@ extend namespace Command {
 }
 
 # Load the prerequisites for the extra commands.
-library "string.5c";
 library "ctype.5c";
+library "string.5c";
 library "file.5c";
 library "printf.5c";
 library "history.5c";

@@ -129,7 +129,7 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 
     if (code->base.builtin)
     {
-	Value	*values;
+	Value	*values = 0;
 	int	arg;
 	int	formal;
 

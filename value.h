@@ -763,9 +763,8 @@ typedef const struct _HashSet {
  *  v	    v		    valid entry
  *
  *  So:
- *	key != 0		-> count includes
+ *	key != 0		-> hash table includes
  *	value != 0		-> hash chain includes
- *	value != 0 && key != 0	-> hash table includes
  */
 
 #define HashEltHash(e)	    ((e)[0])
@@ -776,9 +775,8 @@ typedef const struct _HashSet {
 #define HashEltCopy(d,s)    (((d)[0] = (s)[0]), \
 			     ((d)[1] = (s)[1]), \
 			     ((d)[2] = (s)[2]))
-#define HashEltCounted(e)   (HashEltKey(e) != 0)
+#define HashEltValid(e)	    (HashEltKey(e) != 0)
 #define HashEltChained(e)   (HashEltValue(e) != 0)
-#define HashEltValid(e)	    (HashEltKey(e) != 0 && HashEltValue(e) != 0)
 
 typedef struct _hashTable {
     BaseValue	base;

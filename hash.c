@@ -111,7 +111,7 @@ Rehash (BoxPtr old, HashTablePtr ht)
     ht->count = 0;
     for (h = old->nvalues / HashEltSize; h > 0; h--)
     {
-	if (HashEltCounted (o))
+	if (HashEltValid (o))
 	{
 	    /* XXX must rewrite references */
 	    n = Find (ht, HashEltHash(o), HashEltKey(o));
@@ -320,7 +320,7 @@ HashSet (Value hv, Value key, Value value)
 	Resize (ht, ht->hashSet + 1);
     }
     he = Find (ht, hash, key);
-    if (!HashEltCounted (he))
+    if (!HashEltValid (he))
 	ht->count++;
     HashEltHash (he) = hash;
     HashEltKey (he) = key;
@@ -341,7 +341,7 @@ HashRef (Value hv, Value key)
 	Resize (ht, ht->hashSet + 1);
     }
     he = Find (ht, hash, key);
-    if (!HashEltCounted (he))
+    if (!HashEltValid (he))
     {
 	ht->count++;
 	HashEltHash (he) = hash;
@@ -370,18 +370,13 @@ HashDelete (Value hv, Value key)
     Value	    hash = ValueHash (key);
 
     he = Find (ht, hash, key);
-    if (HashEltCounted (he))
+    if (HashEltValid (he))
     {
 	/* mark this entry as deleted -- value Void, key NULL */
-	HashEltValue (he) = Void;
-	HashEltKey (he) = 0;
 	HashEltHash (he) = 0;
+	HashEltKey (he) = 0;
+	HashEltValue (he) = Void;
 	--ht->count;
-	if (ht->count < ht->hashSet->entries / 4 &&
-	    ht->hashSet != &hashSets[0])
-	{
-	    Resize (ht, ht->hashSet - 1);
-	}
     }
 }
 

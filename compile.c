@@ -3782,7 +3782,7 @@ static ObjPtr
 CompileArrayDimValue (ObjPtr obj, TypePtr type, Bool lvalue, ExprPtr stat, CodePtr code)
 {
     ENTER ();
-    InstPtr inst;
+    InstPtr inst = 0;
     int	    d;
     CodePtr c;
     
@@ -3815,6 +3815,22 @@ CompileArrayDimValue (ObjPtr obj, TypePtr type, Bool lvalue, ExprPtr stat, CodeP
     RETURN (obj);
 }
 
+static ObjPtr
+CompileArrayDims (ObjPtr obj, ExprPtr dim, ExprPtr stat, CodePtr code)
+{
+    ENTER ();
+    if (dim)
+    {
+	InstPtr	inst;
+	obj = CompileArrayDims (obj, dim->tree.right, stat, code);
+	obj = _CompileExpr (obj, dim->tree.left, True, stat, code);
+	BuildInst (obj, OpInitArray, inst, stat);
+	inst->ainit.dim = 0;
+	inst->ainit.mode = AInitModeElement;
+    }
+    RETURN (obj);
+}
+		  
 static ObjPtr
 CompileArrayType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code)
 {
@@ -3851,14 +3867,9 @@ CompileArrayType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr
 	BuildInst (*initObj, OpInitArray, inst, stat);
 	inst->ainit.mode = AInitModeStart;
 	inst->ainit.dim = 1;
-	while (dim)
-	{
-	    *initObj = _CompileExpr (*initObj, dim->tree.left, True, stat, code);
-	    BuildInst (*initObj, OpInitArray, inst, stat);
-	    inst->ainit.dim = 0;
-	    inst->ainit.mode = AInitModeElement;
-	    dim = dim->tree.right;
-	}
+	
+	*initObj = CompileArrayDims (*initObj, dim, stat, code);
+	
 	BuildInst (*initObj, OpInitArray, inst, stat);
 	inst->ainit.dim = 1;
 	inst->ainit.mode = AInitModeElement;

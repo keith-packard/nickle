@@ -20,3 +20,4 @@ $(libbuiltin_a_OBJECTS): builtin.h namespaces.h ../gram.h
 version.h: ../version.m4
 	( cd .. && sh update-version.sh )
 
+builtin.o: version.h

@@ -74,7 +74,7 @@ version.h: $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
 debuild debuild-signed: distdir
 	cp -a $(PACKAGE)-$(VERSION) $(PACKAGE)-$(VERSION).orig
 	rm -rf $(PACKAGE)-$(VERSION).orig/debian
-	(cd $(PACKAGE)-$(VERSION)/debian && debuild -us -uc)
+	(cd $(PACKAGE)-$(VERSION)/debian && debuild)
 
 debuild-unsigned: distdir
 	cp -a $(PACKAGE)-$(VERSION) $(PACKAGE)-$(VERSION).orig

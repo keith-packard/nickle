@@ -251,6 +251,7 @@ Expr	*NewExprConst (int tag, Value val);
 Expr	*NewExprAtom (Atom atom);
 Expr	*NewExprCode (CodePtr code, Atom name);
 Expr	*NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish);
+Expr	*ExprRehang (Expr *expr, Expr *right);
 
 typedef struct _codeBase {
     DataType	*data;

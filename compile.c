@@ -966,7 +966,7 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
     for (n = 0; n < ndim; n++)
     {
 	sub = NewExprTree (COMMA,
-			   NewExprConst (CONST, NewInt (*dims++)),
+			   NewExprConst (TEN_CONST, NewInt (*dims++)),
 			   sub);
     }
     type->array.dimensions = sub;
@@ -1291,8 +1291,11 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	    break;
 	}
 	break;
-    case CONST:
-    case CCONST:
+    case TEN_CONST:
+    case OCTAL_CONST:
+    case BINARY_CONST:
+    case HEX_CONST:
+    case CHAR_CONST:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
 	/*
@@ -1303,10 +1306,28 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	{
 	    expr->base.type = typesNil;
 	}
-	else if (expr->constant.constant->value.tag <= type_void)
-	    expr->base.type = typesPrim[expr->constant.constant->value.tag];
 	else
-	    expr->base.type = typesPoly;    /* FIXME composite const types */
+	    expr->base.type = typesPrim[type_integer];
+	break;
+    case FLOAT_CONST:
+	BuildInst (obj, OpConst, inst, stat);
+	inst->constant.constant = expr->constant.constant;
+	expr->base.type = typesPrim[type_rational];
+	break;
+    case STRING_CONST:
+	BuildInst (obj, OpConst, inst, stat);
+	inst->constant.constant = expr->constant.constant;
+	expr->base.type = typesPrim[type_string];
+	break;
+    case VOIDVAL:
+	BuildInst (obj, OpConst, inst, stat);
+	inst->constant.constant = expr->constant.constant;
+	expr->base.type = typesPrim[type_void];
+	break;
+    case POLY_CONST:
+	BuildInst (obj, OpConst, inst, stat);
+	inst->constant.constant = expr->constant.constant;
+	expr->base.type = typesPoly;    /* FIXME composite const types */
 	break;
     case OS:	    
 	obj = CompileArrayIndex (obj, expr->tree.right,
@@ -2158,7 +2179,7 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
 	    local = NewSymbolArg (args->name, 
 				  NewTypesArray (args->type,
 						 NewExprTree (COMMA,
-							      NewExprConst (CONST, NewInt (0)),
+							      NewExprConst (TEN_CONST, NewInt (0)),
 							      0)));
 	    local->local.element = AddBoxTypes (&namespace->code->func.dynamics,
 						local->symbol.type);

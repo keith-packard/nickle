@@ -399,7 +399,7 @@ extend		{ yylval.pval = publish_extend; return EXTEND; }
 		    yylval.vval = NewInt (i);
 		    EXIT ();
 		    REFERENCE (yylval.vval);
-		    return CCONST;
+		    return CHAR_CONST;
 		}
 \"([^\n\"]|\\\")*\"	{
 			ENTER ();
@@ -418,35 +418,35 @@ extend		{ yylval.pval = publish_extend; return EXTEND; }
 			*c = '\0';
 			EXIT ();
 			REFERENCE (yylval.vval);
-			return CONST;
+			return STRING_CONST;
 		}
 0[0-7]*		{
 		yylval.vval = atov(yytext+1, 8);
-		return CONST;
+		return OCTAL_CONST;
 		}
 0b[01]+		{
 		yylval.vval = atov(yytext+2, 2);
-		return CONST;
+		return BINARY_CONST;
 		}
 0x[0-9a-fA-F]+	{
 		yylval.vval = atov(yytext+2, 16);
-		return CONST;
+		return HEX_CONST;
 		}
 [0-9]+		{
 		yylval.vval = atov(yytext, 10);
-		return CONST;
+		return TEN_CONST;
 		}
 [0-9]+\./\.\.\.	{
 		yylval.vval = aetov(yytext);
-		return CONST;
+		return FLOAT_CONST;
 		}
 [0-9]+/\.\.	{
 		yylval.vval = atov(yytext, 10);
-		return CONST;
+		return TEN_CONST;
 		}
 (([0-9]+((\.[0-9]*(\{[0-9]+\})?)?))|(\.[0-9]+)|(\.[0-9]*\{[0-9]+\}))(([Ee][-+]?[0-9]+)?) {
 		yylval.vval = aetov (yytext);
-		return CONST;
+		return FLOAT_CONST;
 		}
 [a-zA-Z][0-9a-zA-Z_]* {
 	        CommandPtr	c;

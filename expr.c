@@ -153,3 +153,28 @@ NewExprDecl (DeclListPtr decl, Class class, Types *type, Publish publish)
     e->decl.publish = publish;
     RETURN (e);
 }
+
+/*
+ * LALR grammars like to build things right to left, but
+ * sometimes we like the resulting data structure to be left to right
+ */
+Expr*
+ExprRehang (Expr *e, Expr *right)
+{
+    if (e->tree.left)
+    {
+	Expr	*t, *left;
+
+	left = e->tree.right;
+	t = ExprRehang (e->tree.left, e);
+	e->tree.left = left;
+	e->tree.right = right;
+	return t;
+    }
+    else
+    {
+	e->tree.left = e->tree.right;
+	e->tree.right = right;
+	return e;
+    }
+}

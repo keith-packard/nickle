@@ -282,10 +282,17 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePrintf (f, "(%T.%A) ", e->base.type, e->tree.left->atom.atom);
 	PrettyExpr (f, e->tree.right, selfPrec, level, nest);
 	break;
-    case CONST:
+    case TEN_CONST:
+    case OCTAL_CONST:
+    case BINARY_CONST:
+    case HEX_CONST:
+    case FLOAT_CONST:
+    case STRING_CONST:
+    case POLY_CONST:
+    case THREAD_CONST:
 	FilePrintf (f, "%v", e->constant.constant);
 	break;
-    case CCONST:
+    case CHAR_CONST:
 	PrettyChar (f, IntPart (e->constant.constant, "malformed character constant"));
 	break;
     case FUNCTION:

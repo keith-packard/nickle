@@ -60,7 +60,7 @@ void yyerror (char *fmt, ...);
 %type  <eval>	opt_expr expr opt_exprs exprs lambdaexpr simpleexpr primary
 %type  <eval>	comma_expr
 %type  <ival>	assignop
-%type  <vval>	opt_const const
+%type  <vval>	opt_integer integer
 %type  <eval>	opt_arrayinit arrayinit arrayelts  arrayelt
 %type  <eval>	structinit structelts structelt
 %type  <eval>	init
@@ -78,7 +78,9 @@ void yyerror (char *fmt, ...);
 %token		BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		TRY CATCH TWIXT
 %token <aval>	NAME TYPENAME COMMAND NAMECOMMAND
-%token <vval>	CONST CCONST VOIDVAL
+%token <vval>	TEN_CONST OCTAL_CONST BINARY_CONST HEX_CONST FLOAT_CONST
+%token <vval>	CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
+%token <vval>	VOIDVAL
 
 %nonassoc 	POUND
 %right		COMMA
@@ -133,10 +135,13 @@ opt_nl		: NL
 opt_semi	: SEMI
 		|
 		;
+opt_comma	: COMMA
+		|
+		;
 /*
  * Interpreter command level
  */
-command		: expr NL
+command		: expr attendnl NL
 		    {
 			ENTER ();
 			ExprPtr	e;
@@ -154,7 +159,7 @@ command		: expr NL
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
-		| expr POUND expr NL
+		| expr POUND expr attendnl NL
 		    {
 			ENTER ();
 			ExprPtr	e;
@@ -167,16 +172,16 @@ command		: expr NL
 				       BuildName ("stdout"),
 				       BuildCall ("History", "insert",
 						  1, $1),
-				       NewExprConst (CONST, NewStrString ("g")),
+				       NewExprConst (STRING_CONST, NewStrString ("g")),
 				       $3,
-				       NewExprConst (CONST, Zero),
-				       NewExprConst (CONST, NewInt (-1)),
-				       NewExprConst (CONST, NewStrString (" ")));
+				       NewExprConst (TEN_CONST, Zero),
+				       NewExprConst (TEN_CONST, NewInt (-1)),
+				       NewExprConst (STRING_CONST, NewStrString (" ")));
 			e = NewExprTree (COMMA,
 					 e,
 					 BuildCall (0, "putchar",
 						    1,
-						    NewExprConst (CCONST, NewInt ('\n'))));
+						    NewExprConst (CHAR_CONST, NewInt ('\n'))));
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, s));
 			ThreadsRun (t, 0);
@@ -194,7 +199,7 @@ command		: expr NL
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
-		| COMMAND opt_exprs opt_semi NL
+		| COMMAND opt_exprs attendnl opt_semi NL
 		    {
 			ENTER();
 			ExprPtr	e;
@@ -209,7 +214,7 @@ command		: expr NL
 			else
 			{
 			    e = NewExprTree (OP, 
-					     NewExprConst (CONST, c->func),
+					     NewExprConst (POLY_CONST, c->func),
 					     $2);
 			    GetNamespace (&s, &f);
 			    t = NewThread (f, CompileExpr (e, s));
@@ -217,7 +222,7 @@ command		: expr NL
 			}
 			EXIT ();
 		    }
-		| NAMECOMMAND opt_fullnames opt_semi NL
+		| NAMECOMMAND opt_fullnames attendnl opt_semi NL
 		    {
 			ENTER ();
 			ExprPtr e;
@@ -233,7 +238,7 @@ command		: expr NL
 			else
 			{
 			    e = NewExprTree (OP, 
-					     NewExprConst (CONST, c->func),
+					     NewExprConst (POLY_CONST, c->func),
 					     $2);
 			    GetNamespace (&s, &f);
 			    t = NewThread (f, CompileExpr (e, s));
@@ -667,7 +672,7 @@ lambdaexpr	: opt_type FUNC OP opt_argdefines CP block
 * Fundemental expression production
 */
 simpleexpr	: primary
-		| MOD const						%prec THREADID
+		| MOD integer						%prec THREADID
 		    {   Value	t;
 			t = do_Thread_id_to_thread ($2);
 			if (Zerop (t))
@@ -676,7 +681,7 @@ simpleexpr	: primary
 			    YYERROR;
 			}
 			else
-			    $$ = NewExprConst(CONST, t); 
+			    $$ = NewExprConst(THREAD_CONST, t); 
 		    }
 		| TIMES simpleexpr					%prec STAR
 		    { $$ = NewExprTree(STAR, $2, (Expr *) 0); }
@@ -759,41 +764,51 @@ assignop	: ASSIGNPLUS
 		;
 primary		: NAME
 		    { $$ = NewExprAtom ($1); }
-		| CONST
-		    { $$ = NewExprConst(CONST, $1); }
-		| CCONST
-		    { $$ = NewExprConst(CCONST, $1); }
+		| TEN_CONST
+		    { $$ = NewExprConst(TEN_CONST, $1); }
+		| OCTAL_CONST
+		    { $$ = NewExprConst(OCTAL_CONST, $1); }
+		| BINARY_CONST
+		    { $$ = NewExprConst(BINARY_CONST, $1); }
+		| HEX_CONST
+		    { $$ = NewExprConst(HEX_CONST, $1); }
+		| FLOAT_CONST
+		    { $$ = NewExprConst(FLOAT_CONST, $1); }
+		| CHAR_CONST
+		    { $$ = NewExprConst(CHAR_CONST, $1); }
+		| STRING_CONST
+		    { $$ = NewExprConst(STRING_CONST, $1); }
 		| VOIDVAL
-		    { $$ = NewExprConst(CONST, $1); }
-		| OP type CP init
+		    { $$ = NewExprConst(VOIDVAL, $1); }
+		| OP type CP ignorenl init
 		    { 
-			$$ = NewExprTree (NEW, $4, 0); 
+			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = $2;
 		    }
-		| OP type OS exprs CS CP opt_arrayinit
+		| OP type OS exprs CS CP ignorenl opt_arrayinit
 		    { 
-			$$ = NewExprTree (NEW, $7, 0); 
+			$$ = NewExprTree (NEW, $8, 0); 
 			$$->base.type = NewTypesArray ($2, $4); 
 		    }
-		| OS stars CS arrayinit
+		| OS stars CS ignorenl arrayinit
 		    { 
-			$$ = NewExprTree (NEW, $4, 0); 
+			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 		    }
-		| OS exprs CS opt_arrayinit
+		| OS exprs CS ignorenl opt_arrayinit
 		    { 
-			$$ = NewExprTree (NEW, $4, 0); 
+			$$ = NewExprTree (NEW, $5, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 		    }
 		| OP type DOT NAME CP primary			%prec UNIONCAST
-		    { 
+		    {
 			$$ = NewExprTree (UNION, NewExprAtom ($4), $6); 
 			$$->base.type = $2;
 		    }
-		| DOLLAR opt_const
-		    { $$ = NewExprConst(CONST, History (0, $2)); }
+		| DOLLAR opt_integer
+		    { $$ = NewExprConst(POLY_CONST, History (0, $2)); }
 		| DOT
-		    { $$ = NewExprConst(CONST, History (0, Zero)); }
+		    { $$ = NewExprConst(POLY_CONST, History (0, Zero)); }
 		| OP expr CP
 		    { $$ = $2; }
 		| primary REFARRAY exprs CS
@@ -811,12 +826,14 @@ primary		: NAME
 		| primary ARROW NAME
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3)); }
 		;
-opt_const	: const
+opt_integer	: integer
 		|
 		    { $$ = Zero; }
 		;
-const		: CONST
-		| CCONST
+integer		: TEN_CONST
+		| OCTAL_CONST
+		| BINARY_CONST
+		| HEX_CONST
 		;
 /*
  * Array initializers
@@ -825,24 +842,25 @@ opt_arrayinit	: arrayinit
 		|
 		    { $$ = 0; }
 		;
-arrayinit    	: OC arrayelts opt_dots CC
+arrayinit    	: OC arrayelts opt_comma opt_dots CC
 		    { 
-			ExprPtr	i = $2;
-			if ($3)
+			ExprPtr	elts = ExprRehang ($2, 0);
+			if ($4)
 			{
+			    ExprPtr i = elts;
 			    while (i->tree.right)
 				i = i->tree.right;
 			    i->tree.right = NewExprTree (COMMA, 
 							 NewExprTree (DOTS, 0, 0),
 							 0);
 			}
-			$$ = NewExprTree (ARRAY, $2, 0); 
+			$$ = NewExprTree (ARRAY, elts, 0); 
 		    }
 		;
-arrayelts	: arrayelt COMMA arrayelts
+arrayelts	: arrayelts COMMA arrayelt
 		    { $$ = NewExprTree (COMMA, $1, $3); }
 		| arrayelt
-		    { $$ = NewExprTree (COMMA, $1, 0); }
+		    { $$ = NewExprTree (COMMA, 0, $1); }
 		;
 arrayelt	: lambdaexpr
 		| arrayinit
@@ -851,15 +869,15 @@ arrayelt	: lambdaexpr
 /* 
 * Structure initializers
 */
-structinit    	: OC structelts CC
-		    { $$ = NewExprTree (STRUCT, $2, 0); }
+structinit    	: OC structelts opt_comma CC
+		    { $$ = NewExprTree (STRUCT, ExprRehang ($2, 0), 0); }
 		| OC CC
 		    { $$ = NewExprTree (STRUCT, 0, 0); }
 		;
-structelts	: structelt COMMA structelts
+structelts	: structelts COMMA structelt
 		    { $$ = NewExprTree (COMMA, $1, $3); }
 		| structelt
-		    { $$ = NewExprTree (COMMA, $1, 0); }
+		    { $$ = NewExprTree (COMMA, 0, $1); }
 		;
 structelt	: NAME ASSIGN lambdaexpr
 		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1), $3); }
@@ -1025,7 +1043,7 @@ BuildFullname (ExprPtr colonnames, Atom name)
 	BoxValueSet (array->array.values, len, AtomString (e->tree.right->atom.atom));
 	e = e->tree.left;
     }
-    e = NewExprConst (CONST, array);
+    e = NewExprConst (POLY_CONST, array);
     RETURN (e);
 }
 

@@ -354,7 +354,7 @@ ThreadArrayIndex (Value thread, int ndim)
 	{
 	    RaiseStandardException (exception_invalid_array_bounds,
 				    "Array index out of bounds",
-				    2, a, dim);
+				    2, a, NewInt (dim));
 	    break;
 	}
 	i = i * a->array.dim[dim] + part;

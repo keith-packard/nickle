@@ -1990,7 +1990,10 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case HEX_FLOAT:
 	BuildInst (obj, OpConst, inst, stat);
 	inst->constant.constant = expr->constant.constant;
-	expr->base.type = typePrim[rep_rational];
+	if (ValueRep(expr->constant.constant) == &IntRep)
+	    expr->base.type = typePrim[rep_integer];
+	else
+	    expr->base.type = typePrim[ValueTag(expr->constant.constant)];
 	break;
     case STRING_CONST:
 	BuildInst (obj, OpConst, inst, stat);

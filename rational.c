@@ -990,7 +990,7 @@ RationalPrint (Value f, Value rv, char format, int base, int width, int prec, un
 	    ret = False;
 	    break;
 	}
-	print_width = num_width + 1 + den_width;
+	print_width = 1 + num_width + 1 + den_width + 1;
 	if (r->sign == Negative)
 	    print_width++;
 	while (width > print_width)
@@ -998,11 +998,13 @@ RationalPrint (Value f, Value rv, char format, int base, int width, int prec, un
 	    FileOutput (f, fill);
 	    width--;
 	}
+	FileOutput (f, '(');
 	if (r->sign == Negative)
 	    FileOutput (f, '-');
 	FilePuts (f, num);
 	FileOutput (f, '/');
 	FilePuts (f, den);
+	FileOutput (f, ')');
 	free (num_base);
 	free (den_base);
 	while (-width > print_width)

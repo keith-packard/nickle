@@ -132,14 +132,15 @@ namespace math {
 	err = errbounds (v);
 	loop = 0;
 	e = 0;
-	printf ("Precision e %g\n", precision (v));
+	/* printf ("Precision e %g\n", precision (v)); */
 	for (loop = 0; ; loop++)
 	{
 	    term = v^loop/loop!;
 	    e = e + term;
-	    printf ("Precision e %g term %g\n",
-		    precision (v), precision (term));
-	    printf ("e %g term %g term*err %g\n", e, term, term*err);
+	    /* printf ("Precision e %g term %g\n",
+		       precision (v), precision (term));
+	     printf ("e %g term %g term*err %g\n", e, term, term*err);
+	     */
 	    if (abs (e) >= abs (term * err))
 		break;
 	}

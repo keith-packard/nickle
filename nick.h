@@ -56,6 +56,7 @@ typedef struct _symbolBase {
     Atom	name;
     Class	class;
     Type	type;
+    Publish	publish;
 } SymbolBase;
 
 #if 0
@@ -98,17 +99,18 @@ typedef union _symbol {
 #if 0
 extern SymbolPtr    NewSymbolType (Atom name, Type type);
 #endif
-extern SymbolPtr    NewSymbolGlobal (Atom name, Type type);
+extern SymbolPtr    NewSymbolGlobal (Atom name, Type type, Publish publish);
 extern SymbolPtr    NewSymbolArg (Atom name, Type type);
 extern SymbolPtr    NewSymbolStatic (Atom name, Type type);
 extern SymbolPtr    NewSymbolAuto (Atom name, Type type);
-extern SymbolPtr    NewSymbolStruct (Atom name, StructType *type);
-extern SymbolPtr    NewSymbolScope (Atom name, ScopePtr scope);
+extern SymbolPtr    NewSymbolStruct (Atom name, StructType *type, Publish publish);
+extern SymbolPtr    NewSymbolScope (Atom name, ScopePtr scope, Publish publish);
 
 typedef struct _scopeChain {
     DataType	*data;
     struct _scopeChain	*next;
     SymbolPtr	symbol;
+    Publish	publish;
 } ScopeChain, *ScopeChainPtr;
 
 typedef struct _scope {
@@ -123,6 +125,7 @@ extern SymbolPtr    ScopeLookupSymbol (ScopePtr scope, Atom name);
 extern SymbolPtr    ScopeFindSymbol (ScopePtr scope, Atom name, int *depth);
 extern SymbolPtr    ScopeAddSymbol (ScopePtr scope, SymbolPtr symbol);
 extern Bool	    ScopeRemoveSymbol (ScopePtr scope, SymbolPtr symbol);
+extern SymbolPtr    ScopeImport (ScopePtr scope, ScopePtr import, Publish publish);
 extern ScopePtr	    GlobalScope;
 extern void	    ScopeInit (void);
 
@@ -146,10 +149,11 @@ typedef struct _MemList {
 
 extern MemListPtr  NewMemList (DeclListPtr names, Type type, MemListPtr next);
 
-typedef struct _classAndType {
+typedef struct _Fulltype {
     Class   class;
     Type    type;
-} ClassAndType;
+    Publish publish;
+} Fulltype;
     
 typedef struct _frame {
     DataType	    *data;
@@ -204,6 +208,7 @@ typedef struct _exprDecls {
     DeclListPtr	decl;
     Class	class;
     Type	type;
+    Publish	publish;
 } ExprDecl;
 
 typedef union _expr {
@@ -219,7 +224,7 @@ Expr	*NewExprTree (int tag, Expr *left, Expr *right);
 Expr	*NewExprConst (Value val);
 Expr	*NewExprAtom (Atom atom);
 Expr	*NewExprCode (CodePtr code, Atom name);
-Expr	*NewExprDecl (DeclListPtr decl, Class class, Type type);
+Expr	*NewExprDecl (DeclListPtr decl, Class class, Type type, Publish publish);
 
 typedef struct _codeBase {
     DataType	*data;
@@ -400,7 +405,7 @@ void	IoInterrupt (void);
 void	*AllocateTemp (int size);
 
 void	PrettyPrint (Value f, SymbolPtr name);
-void	PrintCode (Value f, CodePtr code, char *name, int level, Bool nest);
+void	PrintCode (Value f, CodePtr code, char *name, Publish publish, int level, Bool nest);
 void	PrintStat (Value F, Expr *e, Bool nest);
 void	EditFunction (SymbolPtr name);
 void	EditFile (Value file_name);

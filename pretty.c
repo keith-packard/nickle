@@ -235,7 +235,7 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	print (f, e->constant.constant);
 	break;
     case FUNCTION:
-	PrintCode (f, e->code.code, 0, level + 1, nest);
+	PrintCode (f, e->code.code, 0, publish_private, level + 1, nest);
 	break;
     case PLUS:
     case MINUS:
@@ -353,10 +353,23 @@ printExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 }
 
 void
+printPublish (Value f, Publish publish)
+{
+    switch (publish) {
+    case publish_public:
+	FilePuts (f, "public ");
+	break;
+    case publish_private:
+	break;
+    }
+}
+
+void
 printDecl (Value f, Expr *e, int level, Bool nest)
 {
     DeclListPtr	decl;
 
+    printPublish (f, e->decl.publish);
     switch (e->decl.class) {
     case class_global:
 	if (e->decl.type != type_undef)
@@ -487,7 +500,8 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
     case FUNCTION:
 	printindent (f, level);
 	PrintCode (f, e->tree.right->code.code, 
-		   AtomName (e->tree.left->atom.atom),
+		   AtomName (e->tree.left->decl.decl->name),
+		   e->tree.left->decl.publish,
 		   level, nest);
 	FilePuts (f, "\n");
 	break;
@@ -505,15 +519,15 @@ printStatement (Value f, Expr *e, int level, int blevel, Bool nest)
     case IMPORT:
 	printindent (f, level);
 	FilePuts (f, "import ");
-	printExpr (f, e->tree.left, -1, level, nest);
-	FilePuts (f, "\n");
-	printStatement (f, e->tree.right, level + 1, level, nest);
+	printPublish (f, e->tree.left->decl.publish);
+	FilePuts (f, AtomName (e->tree.left->decl.decl->name));
+	FilePuts (f, ";\n");
 	break;
     }
 }
 
 void
-PrintCode (Value f, CodePtr code, char *name, int level, Bool nest)
+PrintCode (Value f, CodePtr code, char *name, Publish publish, int level, Bool nest)
 {
     ExprPtr	args;
     DeclListPtr	argd;
@@ -526,6 +540,7 @@ PrintCode (Value f, CodePtr code, char *name, int level, Bool nest)
     }
     if (name)
     {
+	printPublish (f, publish);
 	FilePuts (f, name);
 	FileOutput (f, ' ');
     }
@@ -613,7 +628,8 @@ PrettyPrint (Value f, Symbol *name)
 	if (BoxValue (name->global.value, 0)->value.tag == type_func)
 	{
 	    PrintCode (f, BoxValue (name->global.value, 0)->func.code,
-		       AtomName (name->symbol.name), 0, True);
+		       AtomName (name->symbol.name), 
+		       name->symbol.publish, 0, True);
 	}
 	else
 	{

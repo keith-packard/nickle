@@ -127,7 +127,7 @@ DefaultClass (ScopePtr scope)
 }
 
 SymbolPtr
-AddSymbol (ScopePtr scope, Atom name, Type defType)
+AddSymbol (ScopePtr scope, Atom name, Type defType, Publish publish)
 {
     ENTER ();
     SymbolPtr	s;
@@ -135,7 +135,7 @@ AddSymbol (ScopePtr scope, Atom name, Type defType)
     if (DefaultClass (scope) == class_auto)
 	s = NewSymbolAuto (name, defType);
     else
-	s = NewSymbolGlobal (name, defType);
+	s = NewSymbolGlobal (name, defType, publish);
     ScopeAddSymbol (scope, s);
     RETURN (s);
 }
@@ -151,8 +151,13 @@ FindSymbol (ObjPtr obj, ExprPtr stat, ScopePtr scope, Atom name,
     if (!s)
     {
 	if (!createIfNecessary)
+	{
 	    CompileError (obj, stat, "No symbol \"%A\" in scope", name);
-	s = AddSymbol (scope, name, defType);
+	    if (DefaultClass (scope) == class_global)
+		s = NewSymbolGlobal (name, defType, publish_private);
+	}
+	if (!s)
+	    s = AddSymbol (scope, name, defType, publish_private);
 	*depth = 0;
     }
     /*
@@ -871,21 +876,24 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 	/*
 	 * Make sure the symbol is defined in the current scope
 	 */
-	sym = ScopeLookupSymbol (scope, expr->tree.left->atom.atom);
+	sym = ScopeLookupSymbol (scope, expr->tree.left->decl.decl->name);
 	/* 
 	 * if declared in some enclosing scope, redeclare here
 	 */
 	if (!sym)
-	    AddSymbol (scope, expr->tree.left->atom.atom, type_func);
-	obj = _CompileAssign (obj, expr, scope, OpAssign, expr);
+	    AddSymbol (scope, expr->tree.left->decl.decl->name, type_func,
+		       expr->tree.left->decl.publish);
+	obj = _CompileAssign (obj, expr, scope, OpAssign, 
+			      expr->tree.right);
 	break;
     case VAR:
 	obj = _CompileDecl (obj, expr, scope);
 	break;
     case SCOPE:
 	scope = NewScope (scope);
-	sym = NewSymbolScope (expr->tree.left->atom.atom,
-			      scope);
+	sym = NewSymbolScope (expr->tree.left->decl.decl->name,
+			      scope,
+			      expr->tree.left->decl.publish);
 	expr = expr->tree.right;
 	while (expr->tree.left)
 	{
@@ -897,14 +905,17 @@ _CompileStat (ObjPtr obj, ExprPtr expr, ScopePtr scope)
 	break;
     case IMPORT:
 	sym = FindSymbol (obj, expr, scope,
-			  expr->tree.left->atom.atom,
+			  expr->tree.left->decl.decl->name,
 			  &top_inst, type_undef, False);
 	if (sym && sym->symbol.class == class_scope)
 	{
-	    sym->scope.scope->previous = scope;
-	    obj = _CompileStat (obj, expr->tree.right,
-				sym->scope.scope);
-	    sym->scope.scope->previous = 0;
+	    sym = ScopeImport (scope,
+			       sym->scope.scope,
+			       expr->tree.left->decl.publish);
+	    if (sym)
+		CompileError (obj, expr, "Import \"%A\" causes redefinition of \"%A\"",
+			      expr->tree.left->decl.decl->name,
+			      sym->symbol.name);
 	}
 	break;
     }
@@ -976,6 +987,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
     SymbolPtr	    s;
     DeclListPtr	    decl;
     Class	    class;
+    Publish	    publish;
     ScopePtr	    code_scope;
     ScopePtr	    compile_scope;
     ObjPtr	    *initObj;
@@ -983,6 +995,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
     class = decls->decl.class;
     if (class == class_undef)
 	class = DefaultClass (scope);
+    publish = decls->decl.publish;
     compile_scope = 0;
     switch (class) {
     case class_global:
@@ -1025,7 +1038,7 @@ _CompileDecl (ObjPtr obj, ExprPtr decls, ScopePtr scope)
     for (decl = decls->decl.decl; decl; decl = decl->next) {
 	switch (class) {
 	case class_global:
-	    s = NewSymbolGlobal (decl->name, decls->decl.type);
+	    s = NewSymbolGlobal (decl->name, decls->decl.type, decls->decl.publish);
 	    break;
 	case class_static:
 	    s = NewSymbolStatic (decl->name, decls->decl.type);

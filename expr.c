@@ -110,7 +110,7 @@ NewExprCode (CodePtr code, Atom name)
 }
 
 Expr *
-NewExprDecl (DeclListPtr decl, Class class, Type type)
+NewExprDecl (DeclListPtr decl, Class class, Type type, Publish publish)
 {
     ENTER ();
     Expr    *e;
@@ -120,5 +120,6 @@ NewExprDecl (DeclListPtr decl, Class class, Type type)
     e->decl.decl = decl;
     e->decl.class = class;
     e->decl.type = type;
+    e->decl.publish = publish;
     RETURN (e);
 }

@@ -245,7 +245,8 @@ BuiltinInit (void)
 
     for (f_v = funcs_v; f_v->bf_name; f_v++) {
 	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_v->bf_name), type_func));
+			      NewSymbolGlobal (AtomId (f_v->bf_name), 
+					       type_func, publish_private));
 	f.builtinN = f_v->bf_func;
 	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
 								   -1,
@@ -254,7 +255,8 @@ BuiltinInit (void)
     }
     for (f_0 = funcs_0; f_0->bf_name; f_0++) {
 	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_0->bf_name), type_func));
+			      NewSymbolGlobal (AtomId (f_0->bf_name), 
+					       type_func, publish_private));
 	f.builtin0 = f_0->bf_func;
 	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
 								   0, f),
@@ -262,7 +264,8 @@ BuiltinInit (void)
     }
     for (f_1 = funcs_1; f_1->bf_name; f_1++) {
 	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_1->bf_name), type_func));
+			      NewSymbolGlobal (AtomId (f_1->bf_name), 
+					       type_func, publish_private));
 	f.builtin1 = f_1->bf_func;
 	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
 								   1, f),
@@ -270,7 +273,8 @@ BuiltinInit (void)
     }
     for (f_2 = funcs_2; f_2->bf_name; f_2++) {
 	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_2->bf_name), type_func));
+			      NewSymbolGlobal (AtomId (f_2->bf_name), 
+					       type_func, publish_private));
 	f.builtin2 = f_2->bf_func;
 	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
 								   2, f),
@@ -278,7 +282,8 @@ BuiltinInit (void)
     }
     for (f_7 = funcs_7; f_7->bf_name; f_7++) {
 	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (f_7->bf_name), type_func));
+			      NewSymbolGlobal (AtomId (f_7->bf_name), 
+					       type_func, publish_private));
 	f.builtin7 = f_7->bf_func;
 	BoxValue (sym->global.value, 0) = NewFunc (NewBuiltinCode (type_undef,
 								   7, f),
@@ -286,13 +291,15 @@ BuiltinInit (void)
     }
     for (d = dvars; d->bd_name; d++) {
 	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (d->bd_name), type_double));
+			      NewSymbolGlobal (AtomId (d->bd_name), 
+					       type_double, publish_private));
 	sym->global.value->constant = True;
 	BoxValue (sym->global.value, 0) = NewDouble (d->bd_value);
     }
     for (s = svars; s->bs_name; s++) {
 	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (s->bs_name), type_string));
+			      NewSymbolGlobal (AtomId (s->bs_name),
+					       type_string, publish_private));
 	BoxValue (sym->global.value, 0) = NewStrString (s->bs_value);
     }
     for (i = ivars; i->is_name; i++) {
@@ -304,11 +311,13 @@ BuiltinInit (void)
 	default: f = FileStderr;  break;
 	}
 	sym = ScopeAddSymbol (GlobalScope, 
-			    NewSymbolGlobal (AtomId (i->is_name), type_file));
+			    NewSymbolGlobal (AtomId (i->is_name), 
+					     type_file, publish_private));
 	BoxValue (sym->global.value, 0) = f;
     }
     (void) ScopeAddSymbol (GlobalScope,
-			   NewSymbolGlobal (AtomId ("thread"), type_thread));
+			   NewSymbolGlobal (AtomId ("thread"), 
+					    type_thread, publish_private));
     EXIT ();
 }
 

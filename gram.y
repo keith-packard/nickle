@@ -74,11 +74,12 @@ NewMemList (DeclListPtr names, Type type, MemListPtr next)
     Value	    vval;
     Class	    cval;
     Type	    tval;
+    Publish	    pval;
     ExprPtr	    eval;
     Atom	    aval;
     DeclListPtr	    dval;
     MemListPtr	    mval;
-    ClassAndType    ctval;
+    Fulltype	    ftval;
     ScopePtr	    sval;
     CodePtr	    fval;
 }
@@ -94,17 +95,18 @@ NewMemList (DeclListPtr names, Type type, MemListPtr next)
 %token <ival>	ASSIGNPOW ASSIGNLXOR ASSIGNLAND ASSIGNLOR
 %token <aval>	NAME 
 %token <cval>	AUTO GLOBAL STATIC
+%token <pval>	PUBLIC
 %token <tval>	INT NATURAL INTEGER RATIONAL DOUBLE ARRAY FUNC
 %token <tval>	STRING POLYMORPH REF STRUCT TYPE FUNCTION
 %token <ival>	AINIT
 %type <eval>	expr primary stat optexpr statlist arglist oarglist
 %type <eval>	history sexpr array oainits ainits aelem sinit sinits
-%type <dval>	names uninit_names
-%type <aval>	fname
+%type <dval>	o_names names uninit_names
 %type <mval>	memlist
-%type <ctval>	type_def
+%type <ftval>	type_def
 %type <cval>	class
 %type <tval>	type o_type
+%type <pval>	publish o_publish
 %type <vval>	opt_const
 %type <fval>	fbody
 %type <eval>	var_def ofargs fargs farg
@@ -271,42 +273,14 @@ command	:	QUIT NL
 opt_nl	:	NL {}
 	|
 	;
-var_def	:	type_def ignorenl names
+var_def	:	type_def ignorenl o_names
 		    { 
-			$$ = NewExprDecl ($3, $1.class, $1.type);
+			$$ = NewExprDecl ($3, $1.class, $1.type, $1.publish);
 		    }
-	|	STRUCT NAME ignorenl OC memlist CC
-		    {
-			ENTER ();
-			DeclListPtr	dl;
-			SymbolPtr	s;
-			StructType	*st;
-			StructElement	*se;
-			MemListPtr	ml;
-			int		nelements;
-
-			nelements = 0;
-			for (ml = $5; ml; ml = ml->next)
-			{
-			    for (dl = ml->names; dl; dl = dl->next)
-				nelements++;
-			}
-			st = NewStructType (nelements);
-			se = StructTypeElements (st);
-			nelements = 0;
-			for (ml = $5; ml; ml = ml->next)
-			{
-			    for (dl = ml->names; dl; dl = dl->next)
-			    {
-				se[nelements].type = ml->type;
-				se[nelements].name = dl->name;
-				nelements++;
-			    }
-			}
-			s = NewSymbolStruct ($2, st);
-			ScopeAddSymbol (GlobalScope, s);
-			EXIT ();
-		    }
+	;
+o_names	:	names
+	|
+		    { $$ = 0; }
 	;
 names	:	NAME op_init COMMA names
 		    { $$ = NewDeclList ($1, $2, $4); }
@@ -324,13 +298,35 @@ memlist	:	type uninit_names SEMI memlist
 		{ $$ = 0; }
 	;
 type_def:	class
-		    { $$.class = $1; $$.type = type_undef; }
+		    { $$.class = $1; $$.type = type_undef; $$.publish = publish_private; }
 	|	type
-		    { $$.class = class_undef; $$.type = $1; }
-	|	class type
-		    { $$.class = $1; $$.type = $2; }
-	|	type class
-		    { $$.class = $2; $$.type = $1; }
+		    { $$.class = class_undef; $$.type = $1; $$.publish = publish_private; }
+	|	publish
+		    { $$.class = class_undef; $$.type = type_undef; $$.publish = $1; }
+	|	type_def class
+		    {
+			$$ = $1;
+			if ($1.class != class_undef)
+			    yyerror ("Multiple class definitions \"%C\" \"%C\"",
+				     $1.class, $2);
+			$$.class = $2;
+		    }
+	|	type_def type
+		    {
+			$$ = $1;
+			if ($1.type != type_undef)
+			    yyerror ("Multiple type definitions \"%T\" \"%T\"",
+				     $1.type, $2);
+			$$.type = $2;
+		    }
+	|	type_def publish
+		    {
+			$$ = $1;    
+			if ($1.publish != publish_private)
+			    yyerror ("Multiple publish definitions \"%P\" \"%P\"",
+				     $1.publish, $2);
+			$$.publish = $2;
+		    }
 	;
 o_type	:	type
 		    { $$ = $1; }
@@ -348,10 +344,49 @@ type	:	INT
 	|	STRUCT NAME
 	|	FUNC
 	|	POLYMORPH
+	|	STRUCT OC memlist CC o_publish NAME
+		    {
+			ENTER ();
+			DeclListPtr	dl;
+			SymbolPtr	s;
+			StructType	*st;
+			StructElement	*se;
+			MemListPtr	ml;
+			int		nelements;
+
+			nelements = 0;
+			for (ml = $3; ml; ml = ml->next)
+			{
+			    for (dl = ml->names; dl; dl = dl->next)
+				nelements++;
+			}
+			st = NewStructType (nelements);
+			se = StructTypeElements (st);
+			nelements = 0;
+			for (ml = $3; ml; ml = ml->next)
+			{
+			    for (dl = ml->names; dl; dl = dl->next)
+			    {
+				se[nelements].type = ml->type;
+				se[nelements].name = dl->name;
+				nelements++;
+			    }
+			}
+			s = NewSymbolStruct ($6, st, $5);
+			ScopeAddSymbol (GlobalScope, s);
+			EXIT ();
+		    }
 	;
 class	:	GLOBAL
 	|	AUTO
 	|	STATIC
+	;
+o_publish:	publish
+		    { $$ = $1; }
+	|
+		    { $$ = publish_private; }
+	;
+publish	:	PUBLIC
 	;
 op_init	:	ASSIGN sexpr
 		    { $$ = $2; }
@@ -370,7 +405,7 @@ fargs	:	farg COMMA fargs
 	;
 farg	:	o_type NAME
 		    { $$ = NewExprDecl (NewDeclList ($2, NULL, NULL),
-					class_arg, $1);
+					class_arg, $1, publish_private);
 		    }
 	;
 stat	:	IF ignorenl OP expr CP stat
@@ -402,33 +437,45 @@ stat	:	IF ignorenl OP expr CP stat
 	|	SEMI ignorenl
 			{ $$ = NewExprTree(SEMI, (Expr *) 0, (Expr *) 0); }
 		/* This is just convenient shorthand for foo = function ... */
-	|	FUNCTION ignorenl fname fbody
+	|	FUNCTION ignorenl o_publish NAME fbody
 			{ 
 			    $$ = NewExprTree (FUNCTION,
-					      NewExprAtom ($3),
-					      NewExprCode ($4, $3));
+					      NewExprDecl (NewDeclList ($4,
+									0, 0),
+							   class_undef,
+							   type_func,
+							   $3),
+					      NewExprTree (ASSIGN,
+							   NewExprAtom ($4),
+							   NewExprCode ($5, 
+									$4)));
 			}
 	|	var_def SEMI
 			{ $$ = $1; }
-	|	SCOPE ignorenl NAME OC statlist CC
+	|	SCOPE ignorenl o_publish NAME OC statlist CC
 			{
 			    $$ = NewExprTree (SCOPE,
-					      NewExprAtom ($3),
-					      $5);
+					      NewExprDecl (NewDeclList ($4, 
+									0, 0),
+							   class_undef,
+							   type_undef,
+							   $3),
+					      $6);
 			}
-	|	IMPORT ignorenl NAME stat
+	|	IMPORT o_publish NAME SEMI
 			{
 			    $$ = NewExprTree (IMPORT,
-					      NewExprAtom ($3),
-					      $4);
+					      NewExprDecl (NewDeclList ($3,
+									0, 0),
+							   class_undef,
+							   type_undef,
+							   $2),
+					      0);
 			}
 	;
 ignorenl:	{ ignorenl = 1; }
 fbody	:	o_type OP ofargs CP OC statlist CC
 		    { $$ = NewFuncCode ($1, $3, $6);}
-	;
-fname	:	NAME
-		    { $$ = $1; }
 	;
 history	:	
 		{ $$ = BuildCall ("HistoryShow", 1,
@@ -681,7 +728,8 @@ setVar (char *name, Value v)
     n = AtomId (name);
     s = ScopeFindSymbol (GlobalScope, n, &depth);
     if (!s)
-	s = ScopeAddSymbol (GlobalScope, NewSymbolGlobal (n, type_undef));
+	s = ScopeAddSymbol (GlobalScope, NewSymbolGlobal (n, type_undef,
+							  publish_private));
     if (s->symbol.class == class_global)
 	BoxValue (s->global.value, 0) = v;
     EXIT ();

@@ -171,6 +171,10 @@ typedef enum _class {
 #define ClassLocal(c)	((c) == class_arg || (c) == class_auto)
 #define ClassFrame(c)	((c) == class_static || ClassLocal(c))
 
+typedef enum _publish {
+    publish_public, publish_private
+} Publish;
+
 typedef struct _valueType   ValueType;
 
 typedef struct _box	*BoxPtr;

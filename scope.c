@@ -61,7 +61,7 @@ ScopeChainMark (void *object)
 DataType scopeChainType = { ScopeChainMark, 0 };
 
 ScopeChainPtr
-NewScopeChain (ScopeChainPtr next, SymbolPtr symbol)
+NewScopeChain (ScopeChainPtr next, SymbolPtr symbol, Publish publish)
 {
     ENTER ();
     ScopeChainPtr   chain;
@@ -69,6 +69,7 @@ NewScopeChain (ScopeChainPtr next, SymbolPtr symbol)
     chain = ALLOCATE (&scopeChainType, sizeof (ScopeChain));
     chain->next = next;
     chain->symbol = symbol;
+    chain->publish = publish;
     RETURN (chain);
 }
 
@@ -123,7 +124,7 @@ ScopeAddSymbol (ScopePtr scope, SymbolPtr symbol)
     ENTER ();
     ScopeChainPtr   chain;
 
-    chain = NewScopeChain (scope->symbols, symbol);
+    chain = NewScopeChain (scope->symbols, symbol, symbol->symbol.publish);
     scope->symbols = chain;
     /*
      * For symbols hanging from a frame (statics, locals and args),
@@ -164,4 +165,23 @@ ScopeRemoveSymbol (ScopePtr scope, SymbolPtr symbol)
 	}
     }
     return False;
+}
+
+SymbolPtr
+ScopeImport (ScopePtr scope, ScopePtr import, Publish publish)
+{
+    ScopeChainPtr   chain;
+    SymbolPtr	    symbol;
+
+    for (chain = import->symbols; chain; chain = chain->next)
+    {
+	if (chain->publish == publish_public)
+	{
+	    symbol = chain->symbol;
+	    if (ScopeLookupSymbol (scope, symbol->symbol.name))
+		return symbol;
+	    scope->symbols = NewScopeChain (scope->symbols, symbol, publish);
+	}
+    }
+    return 0;
 }

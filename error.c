@@ -95,6 +95,19 @@ fprintClass (Value f, Class storage)
 }
 
 void
+fprintPublish (Value f, Publish publish)
+{
+    switch (publish) {
+    case publish_private:
+	FilePuts (f, "private");
+	break;
+    case publish_public:
+	FilePuts (f, "public");
+	break;
+    }
+}
+
+void
 fprintBinOp (Value f, BinaryOp o)
 {
     switch (o) {
@@ -157,6 +170,7 @@ vPrintError (char *s, va_list args)
     Type	tag;
     Value	v;
     Class	storage;
+    Publish	publish;
 
     for (;*s;) {
 	switch (*s) {
@@ -189,6 +203,10 @@ vPrintError (char *s, va_list args)
 	    case 'C':
 		storage = (Class) (va_arg (args, int));
 		fprintClass (FileStderr, storage);
+		break;
+	    case 'P':
+		publish = (Publish) (va_arg (args, int));
+		fprintPublish (FileStderr, publish);
 		break;
 	    case 'O':
 		fprintBinOp (FileStderr, va_arg (args, BinaryOp));

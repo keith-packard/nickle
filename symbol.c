@@ -77,7 +77,7 @@ DataType    SymbolStructType = { SymbolStructMark, 0 };
 DataType    SymbolScopeType = { SymbolScopeMark, 0 };
 
 SymbolPtr
-NewSymbolGlobal (Atom name, Type type)
+NewSymbolGlobal (Atom name, Type type, Publish publish)
 {
     ENTER ();
     SymbolPtr	s;
@@ -86,6 +86,7 @@ NewSymbolGlobal (Atom name, Type type)
     s->symbol.name = name;
     s->symbol.class = class_global;
     s->symbol.type = type;
+    s->symbol.publish = publish;
     s->global.value = NewBox (False, 1);
     BoxType (s->global.value, 0) = type;
     BoxValue (s->global.value, 0) = Default (type);
@@ -102,6 +103,7 @@ NewSymbolArg (Atom name, Type type)
     s->symbol.name = name;
     s->symbol.class = class_arg;
     s->symbol.type = type;
+    s->symbol.publish = publish_private;
     s->local.element = 0;
     RETURN (s);
 }
@@ -116,6 +118,7 @@ NewSymbolAuto (Atom name, Type type)
     s->symbol.name = name;
     s->symbol.class = class_auto;
     s->symbol.type = type;
+    s->symbol.publish = publish_private;
     s->local.element = -1;
     RETURN (s);
 }
@@ -130,12 +133,13 @@ NewSymbolStatic (Atom name, Type type)
     s->symbol.name = name;
     s->symbol.class = class_static;
     s->symbol.type = type;
+    s->symbol.publish = publish_private;
     s->local.element = -1;
     RETURN (s);
 }
 
 SymbolPtr
-NewSymbolStruct (Atom name, StructType *type)
+NewSymbolStruct (Atom name, StructType *type, Publish publish)
 {
     ENTER ();
     SymbolPtr	s;
@@ -144,12 +148,13 @@ NewSymbolStruct (Atom name, StructType *type)
     s->symbol.name = name;
     s->symbol.class = class_struct;
     s->symbol.type = type_struct;
+    s->symbol.publish = publish;
     s->structs.type = type;
     RETURN (s);
 }
 
 SymbolPtr
-NewSymbolScope (Atom name, ScopePtr scope)
+NewSymbolScope (Atom name, ScopePtr scope, Publish publish)
 {
     ENTER ();
     SymbolPtr	s;
@@ -158,6 +163,7 @@ NewSymbolScope (Atom name, ScopePtr scope)
     s->symbol.name = name;
     s->symbol.class = class_scope;
     s->symbol.type = type_undef;
+    s->symbol.publish = publish;
     s->scope.scope = scope;
     RETURN (s);
 }

@@ -555,6 +555,8 @@ ValueInit (void)
 	return 0;
     if (!StringInit ())
 	return 0;
+    if (!StructInit ())
+	return 0;
     ValuePrintStack = StackCreate ();
     MemAddRoot (ValuePrintStack);
     ValuePrintLevel = 0;

@@ -110,6 +110,7 @@ polymorph	{ yylval.tval = type_undef; return POLYMORPH; }
 fork		{ yylval.ival = FORK; return FORK; }
 scope		{ yylval.ival = SCOPE; return SCOPE; }
 import		{ yylval.ival = IMPORT; return IMPORT; }
+public		{ yylval.pval = publish_public; return PUBLIC; }
 ";"		{ yylval.ival = SEMI; return SEMI; }
 ","		{ yylval.ival = COMMA; return COMMA; }
 "$"		{ yylval.ival = DOLLAR; return DOLLAR; }

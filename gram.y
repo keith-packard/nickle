@@ -418,7 +418,6 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 		| func_decl func_body namespace_end
 		    { 
 			DeclList    *decl = $1.decl;
-			ExprPtr	    expr, nameExpr;
 			SymbolPtr   symbol = decl->symbol;
 			Class	    class = $1.class;
 			Publish	    publish = $1.publish;
@@ -438,19 +437,14 @@ statement	: IF ignorenl namespace_start OP expr CP statement namespace_end atten
 			    argType = 0;
 			}
 
-			expr = NewExprDecl (decl, class, type, publish);
 			if ($2)
 			{
-			    nameExpr = NewExprAtom (symbol->symbol.name, symbol);
-			    expr = NewExprTree (FUNCTION, expr,
-						NewExprTree (ASSIGN,
-							     nameExpr,
-							     NewExprCode (NewFuncCode (ret,
-										       argType,
-										       $2),
-									  nameExpr)));
+			    decl->init = NewExprCode (NewFuncCode (ret,
+								   argType,
+								   $2),
+						      NewExprAtom (symbol->symbol.name, symbol));
 			}
-			$$ = expr;
+			$$ = NewExprDecl (decl, class, type, publish);
 		    }
 		| publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end SEMI attendnl
 		    { 

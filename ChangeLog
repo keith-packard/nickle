@@ -1,3 +1,8 @@
+2004-08-22  Keith Packard  <keithp@keithp.com>
+
+	* builtin-file.c: (do_File_print):
+	Base is allowed to be zero (in which case it uses 10).
+
 2004-08-22  Bart Massey <bart@cs.pdx.edu>
 
 	* builtin-file.c:

@@ -7,7 +7,7 @@
 
 namespace Factor {
 
-    int function is_prime (int i)
+    public int function is_prime (int i)
     {
 	if (i == 1) return 0;
 	if ((i & 1) == 0) return 0;
@@ -32,7 +32,7 @@ namespace Factor {
 
     typedef *int_list_struct int_list;
 
-    int_list function primes (int i)
+    public int_list function primes (int i)
     {
 	int function prime_wrt (int_list l, int i)
 	{
@@ -58,8 +58,8 @@ namespace Factor {
 	    return l ? 1+list_length(l->next) : 0;
 	}
 
-	int[*]  a = (int) [list_length (l)];
-	int	    i = 0;
+	int[*]  a = (int [list_length (l)]);
+	int	i = 0;
 	while (l)
 	{
 	    a[i] = l->v;
@@ -80,7 +80,7 @@ namespace Factor {
 	{
 	    union switch (a) {
 	    case array:
-		int[*]  n = (int) [dim(a.array)+1];
+		int[*]  n = (int [dim(a.array)+1]);
 		int	i;
 
 		for (i = 0; i < dim(a.array); i++)
@@ -88,7 +88,7 @@ namespace Factor {
 		n[i] = v;
 		return (array_or_none.array) n;
 	    case none:
-		int[*]	n = (int) [1] { v };
+		int[*]	n = (int [1]) { v };
 		return (array_or_none.array) n;
 	    }
 	}

@@ -48,21 +48,15 @@ typedef struct _AtomList {
  * still work correctly.
  */
 
-#ifdef BASE10BASE
-# define BASE		10000
-# define LBASE10	4
-# define DIGITBITS	16
+#if SIZEOF_LONG_LONG == 8
+# define BASE		((double_digit) 65536 * (double_digit) 65536)
+# define LBASE2	32
+# define LLBASE2	5
+# define DIGITBITS	32
 #else
-# if SIZEOF_LONG_LONG == 8
-#  define BASE		((double_digit) 65536 * (double_digit) 65536)
-#  define LBASE2	32
-#  define LLBASE2	5
-#  define DIGITBITS	32
-# else
-#  define BASE		((double_digit) 65536)
-#  define LBASE2	16
-#  define DIGITBITS	16
-# endif
+# define BASE		((double_digit) 65536)
+# define LBASE2	16
+# define DIGITBITS	16
 #endif
 
 #define MAXDIGIT	((digit) (BASE - 1))
@@ -81,17 +75,10 @@ typedef unsigned long long  double_digit;
 typedef signed long long    signed_digit;
 #endif
 
-#ifdef LBASE2
 #define TwoDigits(n,i)	((double_digit) NaturalDigits(n)[i-1] | \
 			 ((double_digit) NaturalDigits(n)[i] << LBASE2))
 #define ModBase(t)  ((t) & (((double_digit) 1 << LBASE2) - 1))
 #define DivBase(t)  ((t) >> LBASE2)
-#else
-#define TwoDigits(n,i)	((double_digit) NaturalDigits(n)[i-1] + \
-			 (double_digit) NaturalDigits(n)[i] * BASE)
-#define ModBase(t)  ((t) % BASE)
-#define DivBase(t)  ((t) / BASE)
-#endif
     
 typedef struct _natural {
     DataType	*type;
@@ -102,7 +89,6 @@ typedef struct _natural {
 #define NaturalDigits(n)    ((digit *) ((n) + 1))
 
 Natural	*NewNatural (unsigned value);
-Natural *NewDoubleNatural (double value);
 Natural	*AllocNatural (int size);
 int	NaturalEqual (Natural *, Natural *);
 int	NaturalLess (Natural *, Natural *);
@@ -114,23 +100,22 @@ Natural	*NaturalGcd (Natural *a, Natural *b);
 char	*NaturalSprint (char *, Natural *, int base, int *width);
 Natural	*NaturalSqrt (Natural *);
 Natural *NaturalFactor (Natural *n, Natural *max);
-Natural *NaturalPow (Natural *n, int p);
+Natural *NaturalIntPow (Natural *n, int p);
+Natural *NaturalPow (Natural *n, Natural *);
 Natural *NaturalPowMod (Natural *n, Natural *p, Natural *m);
-#ifdef LBASE2
 Natural	*NaturalRsl (Natural *v, int shift);
 Natural	*NaturalLsl (Natural *v, int shift);
 Natural	*NaturalMask (Natural *v, int bits);
 int	NaturalPowerOfTwo (Natural *v);
-#endif
 int	NaturalEstimateLength (Natural *, int base);
 void	NaturalCopy (Natural *, Natural *);
 Bool	NaturalZero (Natural *);
 Bool	NaturalEven (Natural *);
 
 extern Natural	*max_int_natural;
-extern Natural	*max_double_natural;
 extern Natural	*zero_natural;
 extern Natural	*one_natural;
+extern Natural	*two_natural;
 
 typedef enum _sign { Positive, Negative } Sign;
 
@@ -160,7 +145,7 @@ typedef enum _type {
  	type_int = 0,
 	type_integer = 1,
  	type_rational = 2,
- 	type_double = 3,
+ 	type_float = 3,
  	type_string = 4,
 	type_file = 5,
 	type_thread = 6,
@@ -171,7 +156,7 @@ typedef enum _type {
  	type_array = 10,
 	type_ref = 11,
 	type_struct = 12,
-	type_func = 13
+	type_func = 14
 } Type;
 
 /*
@@ -308,10 +293,18 @@ typedef struct _rational {
     Natural	*den;
 } Rational;
 
-typedef struct _double {
+typedef struct _fpart {
+    DataType	data;
+    Natural	*mag;
+    Sign	sign;
+} Fpart;
+
+typedef struct _float {
     BaseValue	base;
-    double	value;
-} Double;
+    Fpart	*mant;
+    Fpart	*exp;
+    unsigned	prec;
+} Float;
 
 typedef struct _string {
     BaseValue	base;
@@ -468,7 +461,7 @@ typedef union _value {
     Int		ints;
     Integer	integer;
     Rational	rational;
-    Double	doubles;
+    Float	floats;
     String	string;
     Array	array;
     File	file;
@@ -485,7 +478,9 @@ typedef Value	(*Binary) (Value, Value, int);
 
 typedef Value	(*Unary) (Value, int);
 
-typedef Value	(*Cooerce) (Value);
+typedef Value	(*Promote) (Value, Value);
+
+typedef Value	(*Coerce) (Value);
 
 #define DEFAULT_OUTPUT_PRECISION    -1
 #define INFINITE_OUTPUT_PRECISION   -2
@@ -498,8 +493,8 @@ struct _valueType {
     DataType	data;
     Binary	binary[NumBinaryOp];
     Unary	unary[NumUnaryOp];
-    Cooerce	promote;
-    Cooerce	reduce;
+    Promote	promote;
+    Coerce	reduce;
     Output	print;
     TypeCheck	typecheck;
 };
@@ -540,14 +535,18 @@ extern BoxPtr	NewTypedBox (Bool constant, BoxTypesPtr types);
 Value	NewInt (int value);
 Value	NewInteger (Sign sign, Natural *mag);
 Value	NewIntInteger (int value);
-Value	NewDoubleInteger (double value);
 Value	NewRational (Sign sign, Natural *num, Natural *den);
 Value	NewIntRational (int value);
 Value	NewIntegerRational (Integer *);
-Value	NewDoubleRational (double value);
-Value	NewDouble (double value);
-Value	NewIntegerDouble (Integer *);
-Value	NewRationalDouble (Rational *);
+Value	NewFloat (Fpart *mant, Fpart *exp, unsigned prec);
+Value	NewIntFloat (int i, unsigned prec);
+Value	NewIntegerFloat (Integer *i, unsigned prec);
+Value	NewNaturalFloat (Sign sign, Natural *n, unsigned prec);
+Value	NewRationalFloat (Rational *r, unsigned prec);
+Value	NewValueFloat (Value av, unsigned prec);
+
+#define DEFAULT_FLOAT_PREC	256
+
 Value	NewString (int);
 Value	NewStrString (char *);
 Value	NewArray (Bool constant, TypesPtr type, int ndim, int *dims);
@@ -598,6 +597,7 @@ Value	GreaterEqual (Value, Value), NotEqual (Value, Value);
 Value	Not (Value);
 Value	Negate (Value), Floor (Value), Ceil (Value);
 Value	Truncate (Value);
+Value	Round (Value);
 Value	Pow (Value, Value), Factorial (Value), Reduce (Value);
 Value	Gcd (Value, Value);
 Value	Lxor(Value, Value), Land (Value, Value);
@@ -636,7 +636,6 @@ extern volatile Bool abortException;	/* current thread floating point exception 
 int	NaturalToInt (Natural *);
 int	IntegerToInt (Integer *);
 int	IntPart (Value, char *error);
-double	DoublePart (Value);
 
 Bool	Numericp (Type);
 Bool	Integralp (Type);
@@ -651,6 +650,7 @@ int	FileInit (void);
 int	IntInit (void);
 int	NaturalInit (void);
 int	RationalInit (void);
+int	FpartInit (void);
 int	StringInit (void);
 int	StructInit (void);
 int	ValueInit (void);

@@ -27,10 +27,10 @@ fprintType (Value f, Type tag)
 	FilePuts (f, "integer");
 	break;
     case type_rational:
-	FilePuts (f, "ratio");
+	FilePuts (f, "rational");
 	break;
-    case type_double:
-	FilePuts (f, "double");
+    case type_float:
+	FilePuts (f, "real");
 	break;
     case type_string:
 	FilePuts (f, "string");

@@ -264,7 +264,7 @@ RationalCeil (Value av, int expandOk)
 }
 
 static Value
-RationalPromote (Value av)
+RationalPromote (Value av, Value bv)
 {
     ENTER ();
 
@@ -296,7 +296,8 @@ extern ValueType    IntegerType;
 
 extern Natural	*NaturalFactor (Natural *, Natural *);
 extern Natural	*NaturalSqrt (Natural *);
-extern Natural	*NaturalPow (Natural *, int);
+extern Natural	*NaturalIntPow (Natural *, int);
+extern Natural	*NaturalPow (Natural *, Natural *);
 extern Natural	*NaturalPowMod (Natural *, Natural *, Natural *);
 extern Natural	*two_natural;
 
@@ -330,7 +331,7 @@ NaturalPsi(Natural *a, Natural *max)
 	    a = next;
 	    n++;
 	}
-	pow = NaturalPow (p, n-1);
+	pow = NaturalIntPow (p, n-1);
 	fact = NaturalMinus (NaturalTimes (pow, p), pow);
 	ret = NaturalTimes (ret, fact);
 	if (max && NaturalLess (max, fact))
@@ -822,7 +823,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 	if (initial_width < 0)
 	{
 	    initial_width = -initial_width;
-	    half_digit = NaturalTimes (NaturalPow (dig, initial_width),
+	    half_digit = NaturalTimes (NaturalIntPow (dig, initial_width),
 				       two_natural);
 	    rv = RationalPlusHelper (r->sign,
 				     r,
@@ -848,7 +849,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     if (initial_width)
     {
 	init = NaturalDivide (NaturalTimes (partial,
-					    NaturalPow (dig, initial_width)),
+					    NaturalIntPow (dig, initial_width)),
 			      r->den,
 			      &partial);
 	if (exception)
@@ -888,7 +889,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 	    rep_width >>= 1;
 	}
 	rep = NaturalDivide (NaturalTimes (partial, 
-					   NaturalPow (dig, rep_width)),
+					   NaturalIntPow (dig, rep_width)),
 			     r->den, 
 			     &partial);
 	if (exception)
@@ -1094,25 +1095,3 @@ NewIntegerRational (Integer *i)
     ENTER ();
     RETURN (NewRational (i->sign, i->mag, one_natural));
 }
-
-Value
-NewDoubleRational (double d)
-{
-    ENTER ();
-    double	num, den;
-    Sign	s;
-
-    s = Positive;
-    if (d < 0.0) {
-	s = Negative;
-	d = -d;
-    }
-    num = d;
-    den = 1;
-    while (num != floor (num)) {
-	den *= 10;
-	num *= 10;
-    }
-    RETURN (NewRational (s, NewDoubleNatural (num), NewDoubleNatural (den)));
-}
-

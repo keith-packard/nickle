@@ -20,10 +20,6 @@
 #include	<time.h>
 #include	"nickle.h"
 
-#ifndef PI
-# define PI	3.14159265358979323846
-#endif
-
 ScopePtr    PrimitiveScope;
 ScopePtr    DebugScope;
 ScopePtr    ThreadScope;
@@ -136,10 +132,11 @@ struct fbuiltin_2j {
     ScopePtr	*scope;
 };
 
-struct dbuiltin {
-    double	bd_value;
-    char	*bd_name;
-    ScopePtr	*bd_scope;
+struct rbuiltin {
+    char	*br_value;
+    int		br_prec;
+    char	*br_name;
+    ScopePtr	*br_scope;
 };
 
 struct sbuiltin {
@@ -163,6 +160,7 @@ struct fbuiltin_v funcs_v[] = {
     { doprintf,		"printf",	type_int,   "s." },
     { doscanf,		"scanf",	type_int,   "s." },
     { dofprintf,	"fprintf",	type_int,   "fs." },
+    { Imprecise,	"imprecise",	type_float, "n." },
     { Kill,		"kill",		type_int,   ".", &ThreadScope },
     { Trace,		"trace",	type_int,   ".", &ThreadScope },
     { Trace,		"trace",	type_int,   ".", &DebugScope },
@@ -183,7 +181,7 @@ struct fbuiltin_0 funcs_0[] = {
     { 0,		0 },
 };
 struct fbuiltin_1 funcs_1[] = {
-    { Atof,		"atof",		type_double,	"s" },
+    { Atof,		"atof",		type_float,	"s" },
     { Atoi,		"atoi",		type_integer,	"s" },
     { GetPriority,	"getPriority",	type_int,	"t", &ThreadScope },
     { MutexAcquire,	"acquire",	type_int,	"m", &MutexScope },
@@ -195,34 +193,17 @@ struct fbuiltin_1 funcs_1[] = {
     { Sleep,		"sleep",	type_int,	"n" },
     { ThreadFromId,	"threadFromId", type_thread,	"n", &ThreadScope },
     { ThreadJoin,	"join",		type_undef,	"t", &ThreadScope },
-    { acosD,		"acos",		type_double,	"n", &MathScope },
-    { asinD,		"asin",		type_double,	"n", &MathScope },
-    { atanD,		"atan",		type_double,	"n", &MathScope },
-    { ceilD,		"ceil", 	type_double,	"n" },
-    { cosD,		"cos",		type_double,	"n", &MathScope },
-    { coshD,		"cosh",		type_double,	"n", &MathScope },
     { dim,		"dim",		type_int,	"a" },
     { dims,		"dims",		type_array,	"a" },
+    { precision,	"precision",	type_integer,	"n" },
     { doHistoryInsert,	"HistoryInsert",type_undef,	"p" },
     { dofclose,		"fclose",	type_int,	"f" },
     { dofflush,		"fflush",	type_int,	"f" },
     { dogetc,		"getc",		type_int,	"f" },
     { doputchar,	"putchar",	type_int,	"n" },
-    { expD,		"exp",		type_double,	"n", &MathScope },
-    { fabsD,		"abs",		type_double,	"n" },
+    { absD,		"abs",		type_float,	"n" },
     { floorD,		"floor",	type_integer,	"n" },
-    { j0D,		"j0",		type_double,	"n", &MathScope },
-    { j1D,		"j1",		type_double,	"n", &MathScope },
     { lengthS,          "length",	type_int,	"s", &StringScope },
-    { log10D,		"log10",	type_double,	"n", &MathScope },
-    { logD,		"log",		type_double,	"n", &MathScope },
-    { sinD,		"sin",		type_double,	"n", &MathScope },
-    { sinhD,		"sinh",		type_double,	"n", &MathScope },
-    { sqrtD,		"sqrt",		type_double,	"n" },
-    { tanD,		"tan",		type_double,	"n", &MathScope },
-    { tanhD,		"tanh",		type_double,	"n", &MathScope },
-    { y0D,		"y0",		type_double,	"n", &MathScope },
-    { y1D,		"y1",		type_double,	"n", &MathScope },
     { _random,		"random",	type_int,	"n", &PrimitiveScope },
     { _srandom,		"srandom",	type_int,	"n", &PrimitiveScope },
     { 0,		0 },
@@ -230,22 +211,18 @@ struct fbuiltin_1 funcs_1[] = {
 struct fbuiltin_2 funcs_2[] = {
     { SetPriority,	"setPriority",	type_int,	"tn", &ThreadScope },
     { Strtol,		"strtol",	type_integer,	"sn" },
-    { atan2D,		"atan2",	type_double,	"nn", &MathScope },
     { dofopen,		"fopen",	type_file,	"ss" },
     { dogcd,		"gcd",		type_integer,	"nn" },
     { doputc,		"putc",		type_int,	"nf" },
     { dosetbuf,		"setbuffer",	type_int,	"fn" },
-    { hypotD,		"hypot",	type_double,	"nn", &MathScope },
     { indexS,           "index",	type_int,	"ss", &StringScope },
-    { jnD,		"jn",		type_double,	"nn", &MathScope },
-    { ynD,		"yn",		type_double,	"nn", &MathScope },
     { 0,		0 },
 };
 struct fbuiltin_3 funcs_3[] = {
     { substrS,          "substr",	type_string,	"snn", &StringScope },
 };
 struct fbuiltin_7 funcs_7[] = {
-    { doprint,		"Print",	type_int,	"fpnnnns" },
+    { doprint,		"Print",	type_int,	"fpsnnns" },
     { 0,		0 },
 };
 
@@ -255,10 +232,108 @@ struct fbuiltin_2j funcs_2j[] = {
     { 0,		0 },
 };
 
-struct dbuiltin dvars[] = {
-    { 3.1415926535897932384626433,  "pi" },
-    { 2.7182818284590452353602874,  "e" },
-    { 0.0,			    0 },
+struct rbuiltin rvars[] = {
+    { "3."
+	"14159265358979323846264338327950288419716939937510"
+	"58209749445923078164062862089986280348253421170679"
+	"82148086513282306647093844609550582231725359408128"
+	"48111745028410270193852110555964462294895493038196"
+	"44288109756659334461284756482337867831652712019091"
+
+	"45648566923460348610454326648213393607260249141273"
+	"72458700660631558817488152092096282925409171536436"
+	"78925903600113305305488204665213841469519415116094"
+	"33057270365759591953092186117381932611793105118548"
+	"07446237996274956735188575272489122793818301194912"
+
+	"98336733624406566430860213949463952247371907021798"
+	"60943702770539217176293176752384674818467669405132"
+	"00056812714526356082778577134275778960917363717872"
+	"14684409012249534301465495853710507922796892589235"
+	"42019956112129021960864034418159813629774771309960"
+
+	"51870721134999999837297804995105973173281609631859"
+	"50244594553469083026425223082533446850352619311881"
+	"71010003137838752886587533208381420617177669147303"
+	"59825349042875546873115956286388235378759375195778"
+	"18577805321712268066130019278766111959092164201989"
+
+	"38095257201065485863278865936153381827968230301952"
+	"03530185296899577362259941389124972177528347913151"
+	"55748572424541506959508295331168617278558890750983"
+	"81754637464939319255060400927701671139009848824012"
+	"85836160356370766010471018194295559619894676783744"
+
+	"94482553797747268471040475346462080466842590694912"
+	"93313677028989152104752162056966024058038150193511"
+	"25338243003558764024749647326391419927260426992279"
+	"67823547816360093417216412199245863150302861829745"
+	"55706749838505494588586926995690927210797509302955",
+	4096, "pi"
+    },
+    { "2."
+	"71828182845904523536028747135266249775724709369995"
+	"95749669676277240766303535475945713821785251664274"
+	"27466391932003059921817413596629043572900334295260"
+	"59563073813232862794349076323382988075319525101901"
+	"15738341879307021540891499348841675092447614606680"
+	
+	"82264800168477411853742345442437107539077744992069"
+	"55170276183860626133138458300075204493382656029760"
+	"67371132007093287091274437470472306969772093101416"
+	"92836819025515108657463772111252389784425056953696"
+	"77078544996996794686445490598793163688923009879312"
+	
+	"77361782154249992295763514822082698951936680331825"
+	"28869398496465105820939239829488793320362509443117"
+	"30123819706841614039701983767932068328237646480429"
+	"53118023287825098194558153017567173613320698112509"
+	"96181881593041690351598888519345807273866738589422"
+	
+	"87922849989208680582574927961048419844436346324496"
+	"84875602336248270419786232090021609902353043699418"
+	"49146314093431738143640546253152096183690888707016"
+	"76839642437814059271456354906130310720851038375051"
+	"01157477041718986106873969655212671546889570350354"
+	
+	"02123407849819334321068170121005627880235193033224"
+	"74501585390473041995777709350366041699732972508868"
+	"76966403555707162268447162560798826517871341951246"
+	"65201030592123667719432527867539855894489697096409"
+	"75459185695638023637016211204774272283648961342251"
+	
+	"64450781824423529486363721417402388934412479635743"
+	"70263755294448337998016125492278509257782562092622"
+	"64832627793338656648162772516401910590049164499828"
+	"93150566047258027786318641551956532442586982946959"
+	"30801915298721172556347546396447910145904090586298"
+	
+	"49679128740687050489585867174798546677575732056812"
+	"88459205413340539220001137863009455606881667400169"
+	"84205580403363795376452030402432256613527836951177"
+	"88386387443966253224985065499588623428189970773327"
+	"61717839280349465014345588970719425863987727547109"
+	
+	"62953741521115136835062752602326484728703920764310"
+	"05958411661205452970302364725492966693811513732275"
+	"36450988890313602057248176585118063036442812314965"
+	"50704751025446501172721155519486685080036853228183"
+	"15219600373562527944951582841882947876108526398139"
+	
+	"55990067376482922443752871846245780361929819713991"
+	"47564488262603903381441823262515097482798777996437"
+	"30899703888677822713836057729788241256119071766394"
+	"65070633045279546618550966661856647097113444740160"
+	"70462621568071748187784437143698821855967095910259"
+	
+	"68620023537185887485696522000503117343920732113908"
+	"03293634479727355955277349071783793421637012050054"
+	"51326383544000186323991490705479778056697853358048"
+	"96690629511943247309958765523681285904138324116072"
+	"26029983305335",
+	4096, "e" 
+    },
+    { 0,			    0, 0 },
 };
 
 struct sbuiltin svars[] = {
@@ -352,8 +427,9 @@ BuiltinArgTypes (char *format, int *argcp)
 	    format++;
 	}
 	switch (*format++) {
+	default:
 	case 'p': t = NewTypesPrim (type_undef); break;
-	case 'n': t = NewTypesPrim (type_double); break;
+	case 'n': t = NewTypesPrim (type_float); break;
 	case 's': t = NewTypesPrim (type_string); break;
 	case 'f': t = NewTypesPrim (type_file); break;
 	case 't': t = NewTypesPrim (type_thread); break;
@@ -418,7 +494,7 @@ BuiltinInit (void)
     struct fbuiltin_3	*f_3;
     struct fbuiltin_7	*f_7;
     struct fbuiltin_2j	*f_2j;
-    struct dbuiltin	*d;
+    struct rbuiltin	*r;
     struct sbuiltin	*s;
     struct ibuiltin	*i;
     struct nbuiltin	*n;
@@ -459,13 +535,14 @@ BuiltinInit (void)
 	BuiltinAddJumpingFunction (f_2j->scope, f_2j->name, f_2j->ret, f_2j->args, f);
     }
     
-    for (d = dvars; d->bd_name; d++) {
+    for (r = rvars; r->br_name; r++) {
 	sym = ScopeAddSymbol (GlobalScope, 
-			      NewSymbolGlobal (AtomId (d->bd_name), 
-					       NewTypesPrim (type_double), 
+			      NewSymbolGlobal (AtomId (r->br_name), 
+					       NewTypesPrim (type_float), 
 					       publish_private));
 	sym->global.value->constant = True;
-	BoxValue (sym->global.value, 0) = NewDouble (d->bd_value);
+	BoxValue (sym->global.value, 0) = NewValueFloat (aetov (r->br_value),
+							 r->br_prec);
     }
     for (s = svars; s->bs_name; s++) {
 	sym = BuiltinSymbol (s->bs_scope, s->bs_name, NewTypesPrim (type_string));
@@ -994,39 +1071,35 @@ Atof (Value str)
     RETURN (aetov (StringChars (&str->string)));
 }
 
-Value 
-expD (Value a)
+
+Value
+Imprecise (int n, Value *p)
 {
-    ENTER ();
-    RETURN (NewDouble (exp (DoublePart (a))));
+    ENTER();
+    Value   v;
+    int	    prec;
+
+    if (n == 0)
+    {
+	RaiseError ("imprecise: takes at least one argument");
+	RETURN(Zero);
+    }
+    v = p[0];
+    if (n > 1)
+	prec = IntPart (p[1], "imprecise: invalid precision");
+    else
+	prec = DEFAULT_FLOAT_PREC;
+
+    RETURN (NewValueFloat (v, prec));
 }
 
 Value 
-logD (Value a)
+absD (Value a)
 {
     ENTER ();
-    RETURN (NewDouble (log (DoublePart (a))));
-}
-
-Value 
-log10D (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (log10 (DoublePart (a))));
-}
-
-Value 
-sqrtD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (sqrt (DoublePart (a))));
-}
-
-Value 
-fabsD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (fabs (DoublePart (a))));
+    if (Negativep (a))
+	a = Negate (a);
+    RETURN (a);
 }
 
 Value 
@@ -1039,125 +1112,6 @@ Value
 ceilD (Value a)
 {
     return Ceil (a);
-}
-
-Value 
-hypotD (Value a, Value b)
-{
-    ENTER ();
-    RETURN (NewDouble (hypot (DoublePart (a), DoublePart (b))));
-}
-
-Value 
-j0D (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (j0 (DoublePart (a))));
-}
-
-Value 
-j1D (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (j1 (DoublePart (a))));
-}
-
-Value 
-jnD (Value a, Value b)
-{
-    ENTER ();
-    RETURN (NewDouble (jn (DoublePart (a), IntPart (b, "Non-integer to jn"))));
-}
-
-Value 
-y0D (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (y0 (DoublePart (a))));
-}
-
-Value 
-y1D (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (y1 (DoublePart (a))));
-}
-
-Value 
-ynD (Value a, Value b)
-{
-    ENTER ();
-    RETURN (NewDouble (yn (DoublePart (a), IntPart (b, "Non-integer to yn"))));
-}
-
-Value 
-sinD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (sin (DoublePart (a))));
-}
-
-Value 
-cosD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (cos (DoublePart (a))));
-}
-
-Value 
-tanD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (tan (DoublePart (a))));
-}
-
-Value 
-asinD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (asin (DoublePart (a))));
-}
-
-Value 
-acosD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (acos (DoublePart (a))));
-}
-
-Value 
-atanD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (atan (DoublePart (a))));
-}
-
-Value 
-atan2D (Value a, Value b)
-{
-    ENTER ();
-    RETURN (NewDouble (atan2 (DoublePart (a), DoublePart (b))));
-}
-
-Value 
-sinhD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (sinh (DoublePart (a))));
-}
-
-Value 
-coshD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (cosh (DoublePart (a))));
-}
-
-Value 
-tanhD (Value a)
-{
-    ENTER ();
-    RETURN (NewDouble (tanh (DoublePart (a))));
 }
 
 Value
@@ -1292,3 +1246,20 @@ dims(Value av) {
     RETURN (ret);
 }
 
+Value
+precision (Value av)
+{
+    ENTER ();
+    unsigned	prec;
+
+    if (!Numericp (av->value.tag))
+    {
+	RaiseError ("precision: argument non-numeric %v", av);
+	RETURN (Zero);
+    }
+    if (av->value.tag == type_float)
+	prec = av->floats.prec;
+    else
+	prec = 0;
+    RETURN (NewInt (prec));
+}

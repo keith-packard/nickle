@@ -59,7 +59,6 @@ RETSIGTYPE	stop (int), die (int), segv (int);
 int
 main (int argc, char **argv)
 {
-    ignore_ferr ();
     (void) signal (SIGHUP, die);
     (void) signal (SIGINT, intr);
     (void) signal (SIGQUIT, die);

@@ -221,7 +221,7 @@ IntegerCeil (Value av, int expandOk)
 }
 
 static Value
-IntegerPromote (Value av)
+IntegerPromote (Value av, Value bv)
 {
     ENTER ();
     
@@ -337,20 +337,4 @@ NewIntInteger (int i)
     else
 	mag = i;
     RETURN (NewInteger (sign, NewNatural (mag)));
-}
-	
-Value
-NewDoubleInteger (double d)
-{
-    ENTER ();
-    Sign	sign;
-
-    if (d < 0)
-    {
-	sign = Negative;
-	d = -d;
-    }
-    else
-	sign = Positive;
-    RETURN (NewInteger (sign, NewDoubleNatural (d)));
 }

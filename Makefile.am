@@ -9,8 +9,8 @@ EXTRA_DIST = README.name gram.h
 bin_PROGRAMS = nickle
 
 nickle_SOURCES = alarm.c array.c atom.c avl.c box.c builtin.c \
-	compile.c debug.c divide.c double.c edit.c \
-	error.c execute.c expr.c file.c frame.c func.c \
+	compile.c debug.c divide.c edit.c \
+	error.c execute.c expr.c file.c float.c frame.c func.c \
 	gcd.c history.c int.c integer.c io.c main.c mem.c \
 	natural.c pretty.c rational.c ref.c refer.c \
 	sched.c scope.c stack.c string.c struct.c \
@@ -21,6 +21,10 @@ nickle_SOURCES = alarm.c array.c atom.c avl.c box.c builtin.c \
 man_MANS = nickle.1
 
 YFLAGS = -d
+
+CFLAGS = -O -g -Wall -Wpointer-arith -Wstrict-prototypes \
+-Wmissing-prototypes -Wmissing-declarations \
+-Wnested-externs-Wall
 
 builtin.o: builtin.c config.status $(srcdir)/date-sh
 	$(CC) -c -DBUILD=\""`$(srcdir)/date-sh`"\" -I. -I$(srcdir) $(CPPFLAGS) $(CFLAGS) builtin.c

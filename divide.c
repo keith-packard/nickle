@@ -44,7 +44,6 @@ static void multiply (Natural *, digit, Natural *);
 static Bool greaterequal (Natural *, Natural *, int);
 #endif
 
-#ifdef LBASE2
 /*
  * Return shift amount needed to normalize d (MSB (d << shift) == 1)
  */
@@ -62,7 +61,6 @@ static int normalize (digit d)
     }
     return n;
 }
-#endif
 
 
 /* 
@@ -81,11 +79,7 @@ subtract (Natural *a, Natural *b, int offset)
     int		    index;
     digit	    carry;
     digit	    *at, *bt;
-#ifdef LBASE2
     digit	    av, bv;
-#else
-    signed_digit    temp;
-#endif
     int		    len;
 
     carry = 0;
@@ -96,7 +90,6 @@ subtract (Natural *a, Natural *b, int offset)
 	index = b->length;
     while (index--)
     {
-#ifdef LBASE2
 	av = *at;
 	bv = *bt++ + carry;
 	if (bv)
@@ -106,15 +99,6 @@ subtract (Natural *a, Natural *b, int offset)
 		carry = 1;
 	}
 	at++;
-#else
-	temp = (signed_digit) *at - (signed_digit) *bt++ - carry;
-	carry = 0;
-	if (temp < 0) {
-	    temp += BASE;
-	    carry = 1;
-	}
-	*at++ = temp;
-#endif
     }
     if (carry && a->length > b->length + offset)
     {
@@ -239,11 +223,7 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
     digit	    divisorc2;	/* combination of digits 2 and 3 */
     digit	    d;
     digit	    carry;
-#ifdef LBASE2
     int		    normal;
-#else
-    digit	    scale;	/* scale factor for combined divisor */
-#endif
     
     if (NaturalLess (a, b)) {
 	quo = zero_natural;
@@ -251,11 +231,9 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
     } else if (oneNp (b)) {
 	quo = a;
 	rem = zero_natural;
-#ifdef LBASE2
     } else if ((offset = NaturalPowerOfTwo (b)) >= 0) {
 	quo = NaturalRsl (a, offset);
 	rem = NaturalMask (a, offset);
-#endif
     } else {
 	quolen = a->length - b->length + 1;
 	quo = AllocNatural (quolen);
@@ -283,7 +261,6 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 	 * first and second digit of the divisor by that
 	 * scale factor
 	 */
-#ifdef LBASE2
 	normal = normalize (divisor1);
 	divisorc = divisor1 << normal;
 	if (normal)
@@ -291,15 +268,6 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 	divisorc2 = divisor2 << normal;
 	if (normal)
 	    divisorc2 |= divisor3 >> (LBASE2 - normal);
-#else
-        scale = BASE / (divisor1 + 1);
-	divisorc = scale * divisor1;
-	if (divisor2)
-	{
-	    temp = (double_digit) scale * (double_digit) divisor2;
-	    divisorc += temp / BASE;
-	}
-#endif
 #ifdef DEBUG
 	printf ("divisor 1 %u divisor2 %u divisorc %u\n",
 		(unsigned int) divisor1, (unsigned int) divisor2,
@@ -366,11 +334,7 @@ NaturalDivide (Natural *a, Natural *b, Natural **remp)
 	    {
 		temp = (temp << normal) | (dividend3 >> (LBASE2 - normal));
 	    }
-#ifdef LBASE2
 	    d = temp / divisorc;
-#else
-	    d = (temp * scale) / divisorc;
-#endif
 	    offset = index - b->length;
 	    if (d)
 	    {

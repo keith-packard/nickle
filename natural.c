@@ -33,7 +33,6 @@ Natural	*zero_natural;
 Natural	*one_natural;
 Natural *two_natural;
 Natural *max_int_natural;
-Natural	*max_double_natural;
 #ifndef LBASE10
 static Natural *max_tenpow_natural;
 static int	tenpow_digits;
@@ -56,8 +55,6 @@ NaturalInit (void)
     MemAddRoot (two_natural);
     max_int_natural = NewNatural (MAXINT);
     MemAddRoot (max_int_natural);
-    max_double_natural = NewDoubleNatural ((double) BIGDOUBLE);
-    MemAddRoot (max_double_natural);
 #ifndef LBASE10
     tenpow_digits = (int) floor (log10 ((double) MAXINT));
     max_tenpow = 1;
@@ -358,7 +355,7 @@ NaturalFactor (Natural *n, Natural *max)
 }
 
 Natural *
-NaturalPow (Natural *n, int p)
+NaturalIntPow (Natural *n, int p)
 {
     ENTER ();
     Natural *result;
@@ -370,6 +367,26 @@ NaturalPow (Natural *n, int p)
 	    result = NaturalTimes (result, n);
 	p >>= 1;
 	if (p)
+	    n = NaturalTimes (n, n);
+	if (exception)
+	    break;
+    }
+    RETURN (result);
+}
+
+Natural *
+NaturalPow (Natural *n, Natural *p)
+{
+    ENTER ();
+    Natural *result;
+
+    result = one_natural;
+    while (!zerop (p))
+    {
+	if (data(p)[0] & 1)
+	    result = NaturalTimes (result, n);
+	p = NaturalRsl(p, 1);
+	if (!zerop (p))
 	    n = NaturalTimes (n, n);
 	if (exception)
 	    break;
@@ -630,56 +647,6 @@ NewNatural (unsigned value)
     RETURN(result);
 }
 
-static double
-logBASE (double d)
-{
-    return log (d) / log ((double) BASE);
-}
-
-static double
-expBASE (int i)
-{
-    double	result;
-
-    if (!i)
-	return 1.0;
-    result = 1.0;
-    while (--i > 0)
-	result *= BASE;
-    return result * BASE;
-}
-
-Natural *
-NewDoubleNatural (double d)
-{
-    ENTER ();
-    Natural	    *new;
-    double	    l, exp;
-    int		    digits, i;
-    digit	    dig;
-
-    if (d < 1.0)
-	RETURN (zero_natural);
-    l = logBASE (d);
-    digits = ceil (l);
-    exp = expBASE (digits - 1);
-    d /= exp;
-    new = AllocNatural (digits);
-    i = digits;
-    while (i) {
-	dig = ((double_digit) d) % BASE;
-	--i;
-	data(new)[i] = dig;
-	d -= dig;
-	if (i)
-	    d *= (double) BASE;
-    }
-    if (data(new)[digits-1] == 0)
-	length(new)--;
-    RETURN(new);
-}
-
-#ifdef LBASE2
 Natural *
 NaturalRsl (Natural *v, int shift)
 {
@@ -691,6 +658,8 @@ NaturalRsl (Natural *v, int shift)
     int	    dshift;
     int	    index, last;
 
+    if (v->length == 0)
+	RETURN (zero_natural);
 #ifdef LLBASE2
     dshift = (shift >> LLBASE2);
     shift = (shift & (LBASE2 - 1));
@@ -706,6 +675,8 @@ NaturalRsl (Natural *v, int shift)
 	length--;
 	last = 0;
     }
+    if (length <= 0)
+	RETURN (zero_natural);
     r = AllocNatural (length);
     rt = NaturalDigits (r);
     vt = NaturalDigits (v) + dshift;
@@ -743,6 +714,8 @@ NaturalLsl (Natural *v, int shift)
     int	    index;
     int	    last;
 
+    if (v->length == 0)
+	RETURN (zero_natural);
 #ifdef LLBASE2
     dshift = (shift >> LLBASE2);
     shift = (shift & (LBASE2 - 1));
@@ -854,5 +827,3 @@ NaturalPowerOfTwo (Natural *v)
     }
     return bit;
 }
-
-#endif

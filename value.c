@@ -14,7 +14,7 @@
 
 #include	"value.h"
 
-extern ValueType    IntType, IntegerType, RationalType, DoubleType;
+extern ValueType    IntType, IntegerType, RationalType, FloatType;
 extern ValueType    StringType, ArrayType, FileType;
 extern ValueType    RefType, structType, FuncType, ThreadType;
 extern ValueType    MutexType, SemaphoreType, ContinuationType;
@@ -24,7 +24,7 @@ volatile Bool	exception;
 
 /* must be synchronized with Type enum */
 ValueType   *valueTypes[] = {
-    &IntType, &IntegerType, &RationalType, &DoubleType,
+    &IntType, &IntegerType, &RationalType, &FloatType,
     &StringType, &FileType,
     &ThreadType, &MutexType, &SemaphoreType, &ContinuationType,
     &ArrayType, &RefType, &structType, &FuncType,
@@ -37,7 +37,7 @@ Numericp (Type t)
     case type_int:
     case type_integer:
     case type_rational:
-    case type_double:
+    case type_float:
 	return True;
     default:;
     }
@@ -66,8 +66,8 @@ Zerop (Value av)
 	return av->integer.mag->length == 0;
     case type_rational:
 	return av->rational.num->length == 0;
-    case type_double:
-	return av->doubles.value == 0;
+    case type_float:
+	return av->floats.mant->mag->length == 0;
     default:;
     }
     return False;
@@ -83,8 +83,8 @@ Negativep (Value av)
 	return av->integer.sign == Negative;
     case type_rational:
 	return av->rational.sign == Negative;
-    case type_double:
-	return av->doubles.value < 0.0;
+    case type_float:
+	return av->floats.mant->sign == Negative;
     default:;
     }
     return False;
@@ -146,14 +146,6 @@ IntPart (Value av, char *error)
     return av->ints.value;
 }
 
-double
-DoublePart (Value av)
-{
-    if (!Numericp (av->value.tag))
-	return 0.0;
-    return DoubleType.promote (av)->doubles.value;
-}
-
 Value
 BinaryOperate (Value av, Value bv, BinaryOp operator)
 {
@@ -170,9 +162,9 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
     else if (Numericp (av->value.tag) && Numericp (bv->value.tag))
     {
 	if (av->value.tag < bv->value.tag)
-	    av = (*bv->value.type->promote) (av);
+	    av = (*bv->value.type->promote) (av, bv);
 	else
-	    bv = (*av->value.type->promote) (bv);
+	    bv = (*av->value.type->promote) (bv, av);
 	type = av->value.type;
     }
     if (!type || !type->binary[operator])
@@ -382,6 +374,13 @@ Truncate (Value av)
 }
 
 Value
+Round (Value av)
+{
+    ENTER ();
+    RETURN (Floor (Plus (av, NewRational (Positive, one_natural, two_natural))));
+}
+
+Value
 Pow (Value av, Value bv)
 {
     ENTER ();
@@ -449,11 +448,15 @@ Pow (Value av, Value bv)
 	}
 	break;
     default:
+#if 0
 	{
 	    av = DoubleType.promote (av);
 	    bv = DoubleType.promote (bv);
 	    result = NewDouble (pow (av->doubles.value, bv->doubles.value));
 	}
+#endif
+	result = av;
+	break;
     }
     RETURN (result);
 }
@@ -470,8 +473,8 @@ Gcd (Value av, Value bv)
 	RETURN (Zero);
     }
     RETURN (Reduce (NewInteger (Positive, 
-				NaturalGcd (IntegerType.promote (av)->integer.mag,
-								 IntegerType.promote (bv)->integer.mag))));
+				NaturalGcd (IntegerType.promote (av, 0)->integer.mag,
+					    IntegerType.promote (bv, 0)->integer.mag))));
 }
 
 StackObject *ValuePrintStack;
@@ -535,8 +538,8 @@ Copy (Value v, TypesPtr t)
     default:
 	break;
     }
-    if (BaseType(t) == type_double)
-	v = valueTypes[BaseType(t)]->promote(v);
+    if (BaseType(t) == type_float)
+	v = valueTypes[BaseType(t)]->promote(v, 0);
     RETURN (v);
 }
 
@@ -569,6 +572,8 @@ ValueInit (void)
     if (!NaturalInit ())
 	return 0;
     if (!RationalInit ())
+	return 0;
+    if (!FpartInit ())
 	return 0;
     if (!StringInit ())
 	return 0;

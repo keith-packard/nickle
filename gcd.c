@@ -16,13 +16,6 @@
 
 #include	"value.h"
 
-#ifdef LBASE2
-#define BINARY_GCD
-#undef CHECK
-#endif
-
-#ifdef BINARY_GCD
-
 static void
 gcd_right_shift (Natural *v, int shift)
 {
@@ -127,14 +120,11 @@ RegularGcd (Natural *u, Natural *v)
 
 #define Odd(n)	(NaturalDigits(n)[0] & 1)
 
-#endif
-
 Natural *
 NaturalGcd (u, v)
     Natural	*u, *v;
 {
     ENTER ();
-#ifdef BINARY_GCD
 #ifdef CHECK
     Natural	*true = RegularGcd (u, v);
 #endif
@@ -188,16 +178,6 @@ NaturalGcd (u, v)
 #ifdef CHECK
     if (!NaturalEqual (u, true))
 	printf ("bad gcd\n");
-#endif
-#else
-    Natural	*quo, *rem;
-
-    while (v->length) 
-    {
-	quo = NaturalDivide (u, v, &rem);
-	u = v;
-	v = rem;
-    }
 #endif
     RETURN (u);
 }

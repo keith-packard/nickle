@@ -1,0 +1,190 @@
+# XXX Here there be dragons.
+# Top-level bootstrap of Nickle builtins in Nickle.
+# As you might expect, ordering and details are crucial.
+
+# Set up the library path correctly and
+# provide the "library" command.
+extend namespace Command {
+    /* actually controls library loading */
+    public string nickle_path = nickle_libdir + ":.";
+    if (Environ::check("NICKLEPATH"))
+	nickle_path = Environ::get("NICKLEPATH");
+
+    public bool lex_file (string name) {
+	return Command::lex_input (File::open (name, "r"), name, false, false);
+    }
+	
+    /* currently just does ~ expansion */
+    public string glob(string filename) {
+	if (filename[0] == '~' && filename[1] == '/') {
+	    exception bad_glob();
+	    if (!Environ::check("HOME"))
+		raise bad_glob();
+	    return Environ::get("HOME") + 
+		String::substr(filename, 1, String::length(filename) - 1);
+	}
+	return filename;
+    }
+
+    string path_first (string path)
+    {
+	int	i = String::index (path, ":");
+
+	if (i < 0)
+	    return glob(path);
+	if (i == 0)
+	    return ".";
+	return glob(String::substr (path, 0, i));
+    }
+
+    string path_rest (string path)
+    {
+	int	i = String::index (path, ":");
+	if (i < 0)
+	    return "";
+	
+	int	l = String::length (path);
+	if (i == l-1)
+	    return ".";
+	return String::substr (path, i + 1, l - i - 1);
+    }
+    
+    public bool lex_library (string name) {
+	for (string path = nickle_path;
+	     path != "";
+	     path = path_rest (path))
+	{
+	    try
+		return lex_file (path_first (path) + "/" + name);
+	    catch File::open_error (string name,
+				    File::error_type err,
+				    string msg) {
+		;
+	    }
+	}
+	return false;
+    }
+    
+    public bool lex_string (string s) {
+	return Command::lex_input (File::string_read (s), s, false, false);
+    }
+
+    new ("library", lex_library);
+}
+
+# Load the prerequisites for the extra commands.
+library "string.5c";
+library "ctype.5c";
+library "printf.5c";
+library "history.5c";
+# Now load the extra commands.
+library "command.5c";
+# Note that some libraries extend namespaces, and
+# thus aren't autoload/autoimport candidates.
+library "math.5c";
+import Math;
+library "scanf.5c";
+# Now autoload/autoimport the bonus stuff
+autoimport Abort;
+autoload Mutex;
+autoload ARC4;
+autoload PRNG;
+
+# parse the command line
+extend namespace Command {
+    public string[*] process_args(string[*] argv) 
+    {
+	typedef struct {
+	    bool	    library;
+	    string	    name;
+	} lex_arg;
+	lex_arg[dim(argv)]	files;
+	int			nfiles = 0;
+	bool		lex_stdin = true;
+	bool		done = false;
+	int			i = 0;
+
+	while (!done && i < dim (argv))
+	{
+	    switch (argv[i]) {
+	    case "-e":
+		/*
+		 * -e -- remaining arguments are a single expression
+		 */
+		string  expr = "";
+		while (++i < dim(argv))
+		{
+		    expr += argv[i];
+		    if (i < dim(argv)-1)
+			expr += " ";
+		    else
+			expr += "\n";
+		}
+		Command::lex_string (expr);
+		done = true;
+		lex_stdin = false;
+		break;
+	    case "-f":
+		/*
+		 * -f -- lex a file
+		 */
+		i++;
+		files[nfiles].library = false;
+		files[nfiles].name = argv[i];
+		nfiles++;
+		i++;
+		break;
+	    case "-l":
+		i++;
+		files[nfiles].library = true;
+		files[nfiles].name = argv[i];
+		nfiles++;
+		i++;
+		break;
+	    default:
+		/*
+		 * Add the script base directory to the library
+		 * path
+		 */
+		if (!Environ::check("NICKLEPATH")) {
+		    Command::nickle_path =
+			Command::nickle_libdir +
+			":" +
+			Command::dirname(argv[0]);
+		}
+		files[nfiles].library = false;
+		files[nfiles].name = argv[i];
+		nfiles++;
+		done = true;
+		lex_stdin = false;
+		break;
+	    }
+	}
+	if (lex_stdin)
+	{
+	    Command::lex_input (stdin, "<stdin>", false, File::isatty (stdin));
+	    try {
+		Command::lex_file (Environ::get ("HOME") + "/" + ".nicklerc");
+	    } catch invalid_argument (msg, int i, poly value) {
+		;
+	    } catch File::open_error (string name,
+				      File::error_type err,
+				      string msg) {
+		;
+	    }
+	}
+
+	while (nfiles-- > 0)
+	{
+	    if (files[nfiles].library)
+		Command::lex_library (files[nfiles].name);
+	    else
+		Command::lex_file (files[nfiles].name);
+	}
+	/*
+	 * Reset argv to hold remaining arguments
+	 */
+	return (string[dim(argv) - i]) { [j] = argv[i+j] };
+    }
+}
+argv = Command::process_args (argv);

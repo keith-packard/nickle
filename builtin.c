@@ -21,7 +21,9 @@ struct sbuiltin {
 };
 
 struct envbuiltin {
+#ifdef CENVIRON
     char	    *var;
+#endif
     char	    *def;
     char	    *name;
     NamespacePtr    *namespace;
@@ -56,12 +58,14 @@ static const struct sbuiltin svars[] = {
 
 extern NamespacePtr CommandNamespace;
 
-#ifdef CENVIRONMENT
 static const struct envbuiltin envvars[] = {
-    { "NICKLELIB",  NICKLELIB,	"library_path",	&CommandNamespace },
+#ifdef CENVIRON
+    { "NICKLEPATH",  NICKLEPATH,	"nickle_path",	&CommandNamespace },
+#else
+    { NICKLELIBDIR,	"nickle_libdir",	&CommandNamespace },
+#endif
     { 0,    0 },
 };
-#endif
 
 static const struct filebuiltin fvars[] = {
     { "stdin",	&FileStdin },
@@ -256,8 +260,8 @@ BuiltinInit (void)
     const struct filebuiltin	*f;
     const struct ebuiltin	*e;
     SymbolPtr			sym;
-#ifdef CENVIRONMENT
     const struct envbuiltin	*env;
+#ifdef CENVIRON
     char			*home;
     Value			home_val;
 #endif
@@ -286,7 +290,7 @@ BuiltinInit (void)
 	BoxValueSet (sym->global.value, 0, NewStrString (s->value));
     }
 
-#ifdef CENVIRONMENT
+#ifdef CENVIRON
     /* Get the user's home directory in case it's referenced in the
      * environment */
     home = getenv ("HOME");
@@ -308,6 +312,14 @@ BuiltinInit (void)
 	    val = Plus (home_val, NewStrString (v + 1));
 	else
 	    val = NewStrString (v);
+	BoxValueSet (sym->global.value, 0, val);
+    }
+#else
+    /* export builtin strings */
+    for (env = envvars; env->name; env++) {
+	Value	val;
+	sym = BuiltinSymbol (env->namespace, env->name, typePrim[rep_string]);
+	val = NewStrString (env->def);
 	BoxValueSet (sym->global.value, 0, val);
     }
 #endif

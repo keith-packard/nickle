@@ -1,0 +1,39 @@
+/*
+ * Demonstrates using continuations to
+ * restart execution after correcting
+ * an exceptional condition.
+ *
+ * Bart 2001/06/03
+ */
+
+exception div0_attempt(continuation c);
+
+rational function f(int x) {
+    continuation c;
+    int y;
+    if (y = setjmp(&c, 0)) {
+	printf("restarted after exception\n");
+	x = y;
+    } else {
+	if (x == 0) {
+	  printf("raising exception\n");
+          raise div0_attempt(c);
+	}
+    }
+    printf("returning value\n");
+    return 1 / x;
+}
+
+rational function protected_f(int x) {
+    try {
+	return f(x);
+    } catch div0_attempt(c) {
+	printf("restarting after exception\n");
+	longjmp(c, 1);
+    }
+    printf("internal error\n");
+    return 0;
+}
+
+printf("%g\n", protected_f(2));
+printf("%g\n", protected_f(0));

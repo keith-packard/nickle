@@ -19,7 +19,7 @@ TEST = test/gcdtest.5c test/inttest.5c test/rattest.5c
 DEBIAN = debian/changelog  debian/control debian/copyright \
 	debian/docs debian/files debian/rules
 
-EXTRA_DIST = README.name autogen.sh update-version.sh make-version.sh \
+EXTRA_DIST = README.name autogen.sh update-version.sh \
 	$(NICKLEFILES) gram.h $(EXAMPLES) $(TEST) $(DEBIAN) version.m4
 
 bin_PROGRAMS = nickle
@@ -66,7 +66,7 @@ USES_GRAM_H = \
 
 $(USES_GRAM_H): gram.h
 
-builtin.o: version.h
+builtin.o: builtin/version.h
 
-version.h: $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
-	sh $(top_srcdir)/make-version.sh $(top_srcdir)/version.m4
+builtin/version.h: $(top_srcdir)/update-version.sh $(top_srcdir)/version.m4
+	sh $(top_srcdir)/update-version.sh $(top_srcdir)/version.m4

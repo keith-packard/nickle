@@ -13,7 +13,7 @@
  */
 
 #include	"builtin.h"
-#include	"version.h"
+#include	"builtin/version.h"
 
 struct sbuiltin {
     char	    *value;

@@ -1618,7 +1618,6 @@ FileCheckBlocked (Bool block)
     ENTER ();
     fd_set	    readable, writable;
     int		    n, fd;
-    struct timeval  tv, *tvp;
     Value	    blocked, *prev;
     Bool	    ready;
     Bool	    writeBlocked;
@@ -1627,9 +1626,14 @@ FileCheckBlocked (Bool block)
     FD_ZERO (&readable);
     FD_ZERO (&writable);
     n = 0;
-    for (blocked = fileBlocked; blocked; blocked = blocked->file.next)
+    for (prev = &fileBlocked; (blocked = *prev); )
     {
 	fd = blocked->file.fd;
+	if (fd < 0)
+	{
+	    *prev = blocked->file.next;
+	    continue;
+	}
 	if (fd < 3 && !ownTty[fd])
 	    continue;
 	if (blocked->file.flags & FileInputBlocked)
@@ -1638,17 +1642,26 @@ FileCheckBlocked (Bool block)
 	    FD_SET (fd, &writable);
 	if (fd >= n)
 	    n = fd + 1;
-    }
-    if (block)
-	tvp = 0;
-    else
-    {
-	tv.tv_usec = 0;
-	tv.tv_sec = 0;
-	tvp = &tv;
+	prev = &blocked->file.next;
     }
     if (n > 0)
+    {
+	struct timeval  tv, *tvp;
+	if (block)
+	    tvp = 0;
+	else
+	{
+	    tv.tv_usec = 0;
+	    tv.tv_sec = 0;
+	    tvp = &tv;
+	}
 	n = select (n, &readable, &writable, 0, tvp);
+    }
+    else
+    {
+	anyFileWriteBlocked = False;
+	anyFileReadBlocked = False;
+    }
     if (n > 0)
     {
 	writeBlocked = False;

@@ -29,7 +29,7 @@ typedef struct _lexInput {
 } LexInput;
 
 LexInput    *lexInput;
-
+extern int  ignorenl;
 #define	    FILE_END_CHAR	-2
     
 static void lexInputMark (void *object)
@@ -354,16 +354,16 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 "."		{ yylval.ints = DOT; return DOT; }
 "->"		{ yylval.ints = ARROW; return ARROW; }
 "<>"		{ yylval.value = Void; return VOIDVAL; }
-"*["		{ yylval.ints = REFARRAY; return REFARRAY; }
 \n		{ 
 		    if (!ignorenl) { yylval.ints = NL; return NL; } 
 		}
-"("		{ yylval.ints = OP; return OP; }
-")"		{ yylval.ints = CP; return CP; }
-"["		{ yylval.ints = OS; return OS; }
-"]"		{ yylval.ints = CS; return CS; }
-"{"		{ yylval.ints = OC; return OC; }
-"}"		{ yylval.ints = CC; return CC; }
+"("		{ yylval.ints = OP; ++ignorenl; return OP; }
+")"		{ yylval.ints = CP; --ignorenl; return CP; }
+"*["		{ yylval.ints = STAROS; ++ignorenl; return STAROS; }
+"["		{ yylval.ints = OS; ++ignorenl; return OS; }
+"]"		{ yylval.ints = CS; --ignorenl; return CS; }
+"{"		{ yylval.ints = OC; ++ignorenl; return OC; }
+"}"		{ yylval.ints = CC; --ignorenl; return CC; }
 "+="		{ yylval.ints = ASSIGNPLUS; return ASSIGNPLUS; }
 "-="		{ yylval.ints = ASSIGNMINUS; return ASSIGNMINUS; }
 "*="		{ yylval.ints = ASSIGNTIMES; return ASSIGNTIMES; }

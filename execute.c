@@ -306,6 +306,24 @@ ThreadCatch (Value thread, SymbolPtr exception, int offset)
     EXIT ();
 }
 
+static Bool
+ThreadRaise (Value thread, SymbolPtr exception, InstPtr *next)
+{
+    ENTER ();
+    CatchPtr	catch;
+    Bool	ret = False;;
+
+    for (catch = thread->thread.catches; catch; catch = catch->previous)
+	if (catch->exception == exception)
+	{
+	    do_long_jump (next, catch->continuation, Zero);
+	    ret = True;
+	    break;
+	}
+    EXIT ();
+    return ret;
+}
+
 static inline ThreadState
 ThreadStep (Value thread)
 {
@@ -315,7 +333,6 @@ ThreadStep (Value thread)
     int		i;
     int		stack = 0;
     Value	value, v, w;
-    CatchPtr	catch;
     
     inst = thread->thread.pc;
     value = thread->thread.v;
@@ -651,13 +668,7 @@ ThreadStep (Value thread)
 	thread->thread.catches = thread->thread.catches->previous;
 	break;
     case OpRaise:
-	for (catch = thread->thread.catches; catch; catch = catch->previous)
-	    if (catch->exception == inst->raise.exception)
-	    {
-		do_long_jump (&next, catch->continuation, Zero);
-		break;
-	    }
-	if (!catch)
+	if (!ThreadRaise (thread, inst->raise.exception, &next))
 	    RaiseError ("Unhandled exception \"%A\"",
 			inst->raise.exception->symbol.name);
 	break;
@@ -697,8 +708,12 @@ ThreadStep (Value thread)
 	if (abortError)
 	{
 	    abortError = False;
-	    ThreadSetState (thread, ThreadError);
-	    DebugSetFrame (thread, 0);
+	    DebugSetFrame (NewContinuation (thread->thread.frame,
+					    inst,
+					    thread->thread.stack,
+					    thread->thread.catches),
+			   0);
+	    ThreadFinish (thread);
 	}
     }
     EXIT ();

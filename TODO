@@ -1,17 +1,31 @@
+TODO
+
 + Finish exception handling.
-+ Move std math functions out of math, or import math.
-+ Implement library autoload mechanism.
-+ Write fixed position (scale=n) math library in nickle ala bc/dc.
-+ Replace nick-in-C code (e.g. gcd.c) with nick library code.
-+ "read" file should be "load" file.
++ tagless GC
++ typedef syntax
++ : namespace separator
++ Finish twixt handling
++ better arctan
++ Have '^' call math:pow function
 + Allow poll() as a substitue for select().
 + Allow nick to be built without all the async IO and
   gettimeofday() and the like.
 + Build a small test suite.
 + Add a PRNG
 + "scope public" has a somewhat non-intuitive meaning.  Fix?
-+ Make sure all blocks and comments are closed when the
-  reader leaves a file, and before it prints a prompt
-+ Comments should not be allowed in interactive mode?
 + Finish the manual.
 + fix output formatting length problems
+
+NOT TODO
+
++ Comments should not be allowed in interactive mode?
+
+DONE
+
++ Move std math functions out of math, or import math.
++ Implement library autoload mechanism.
++ Write fixed position (scale=n) math library in nickle ala bc/dc.
++ Replace nick-in-C code (e.g. gcd.c) with nick library code.
++ "read" file should be "load" file.
++ Make sure all blocks and comments are closed when the
+  reader leaves a file, and before it prints a prompt

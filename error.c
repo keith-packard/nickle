@@ -337,3 +337,14 @@ RaiseError (char *s, ...)
     exception = True;
     abortError = True;
 }
+
+/*
+void
+RaiseException (ThreadPtr   thread,
+		SymbolPtr   exception,
+		char	    *string,
+		Value	    value)
+{
+    
+}
+*/

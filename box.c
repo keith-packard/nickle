@@ -63,17 +63,6 @@ NewTypedBox (Bool constant, BoxTypesPtr bt)
     RETURN (box);
 }
 
-#ifdef DEBUG
-void
-BoxDump (BoxPtr box)
-{
-    int	    i;
-
-    for (i = 0; i < box->nvalues; i++)
-	RaiseError ("%d: (%T) %v\n", i, BoxType(box, i), BoxValue (box, i));
-}
-#endif
-
 static void MarkBoxTypes (void *object)
 {
     /* No referenced objects */

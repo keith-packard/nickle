@@ -200,8 +200,6 @@ ThreadListState (Value thread)
 	    FilePuts (FileStdout, " interrupted");
 	if (state & ThreadFinished)
 	    FilePuts (FileStdout, " finished");
-	if (state & ThreadError)
-	    FilePuts (FileStdout, " error");
     }
 }
 
@@ -348,7 +346,7 @@ do_Thread_kill (int n, Value *p)
 }
 
 static void
-TraceFunction (Value thread, FramePtr frame, CodePtr code, Atom name)
+TraceFunction (FramePtr frame, CodePtr code, Atom name)
 {
     int		    fe;
     
@@ -367,29 +365,38 @@ Value
 do_Thread_trace (int n, Value *p)
 {
     ENTER ();
-    FramePtr	f;
     int		max;
     CodePtr	code;
-    Value	thread;
+    Value	v;
+    FramePtr	frame;
+    InstPtr	pc;
     
     if (n == 0)
-	thread = lookupVar ("thread");
+	v = lookupVar ("cont");
     else
-	thread = *p;
-    if (thread->value.tag != type_thread)
-    {
+	v = *p;
+    switch (v->value.tag) {
+    case type_thread:
+	frame = v->thread.frame;
+	pc = v->thread.pc;
+	break;
+    case type_continuation:
+	frame = v->continuation.frame;
+	pc = v->continuation.pc;
+	break;
+    default:
 	if (n == 0)
-	    RaiseError ("Trace: no default thread");
+	    RaiseError ("trace: no default continuation");
 	else
-	    RaiseError ("Trace: %v not a thread", thread);
+	    RaiseError ("trace: %v neither continuation nor thread", v);
 	RETURN (Zero);
     }
-    PrintStat (FileStdout, thread->thread.pc->base.stat, False);
-    for (f = thread->thread.frame, max = 20; f && max--; f = f->previous)
+    PrintStat (FileStdout, pc->base.stat, False);
+    for (max = 20; frame && max--; frame = frame->previous)
     {
-	code = f->function->func.code;
-	TraceFunction (thread, f, code, code->base.name);
-	PrintStat (FileStdout, f->savePc->base.stat, False);
+	code = frame->function->func.code;
+	TraceFunction (frame, code, code->base.name);
+	PrintStat (FileStdout, frame->savePc->base.stat, False);
     }
     RETURN(One);
 }
@@ -462,7 +469,7 @@ NewThread (FramePtr frame, ObjPtr code)
     ret->thread.partial = 0;
     complete = True;
     if (code->errors)
-	ret->thread.state = ThreadError;
+	ret->thread.state = ThreadFinished;
     _ThreadInsert (ret);
     RETURN (ret);
 }

@@ -407,7 +407,6 @@ typedef enum _ThreadState {
     ThreadSuspended = 1,
     ThreadInterrupted = 2,
     ThreadFinished = 4,
-    ThreadError = 8
 } ThreadState;
 
 typedef struct _thread {
@@ -592,6 +591,7 @@ void	FilePrintf (Value, char *, ...);
 void	FileSetBuffer (Value file, int buf);
 
 extern Bool	anyFileWriteBlocked;
+extern Bool	anyFileReadBlocked;
 
 extern Value    FileStdin, FileStdout, FileStderr;
 

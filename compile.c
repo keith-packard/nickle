@@ -77,6 +77,7 @@ AddInst (ObjPtr obj)
 	nobj = NewObj (obj->size + OBJ_INCR);
 	memcpy (ObjCode (nobj, 0), ObjCode (obj, 0), obj->used * sizeof (Inst));
 	nobj->used = obj->used;
+	nobj->errors = obj->errors;
 	obj = nobj;
     }
     obj->used++;
@@ -640,6 +641,56 @@ CompileRaise (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
     inst->raise.exception = sym;
     RETURN (obj);
 }
+
+
+/*
+ * Compile a  twixt --
+ *
+ *  twixt (a; b) c else d
+ *
+ */
+#if 0
+{
+    {
+	integer		value;
+	continuation	c_a;
+	continuation	c_b;
+
+	integer function f_a (continuation c_a, integer *value)
+	{ 
+	    *value = (a);
+	    long_jump (c_a, 1)
+	}
+
+	integer function f_b (continuation c_b)
+	{
+	    (b);
+	    long_jump (c_b, 1);
+	}
+
+    
+	if (set_jump (&c_a, 0) == 0)
+	{
+	    f_a (c_a);
+	}
+	else
+	{
+	    if (value)
+	    {
+		if (set_jump (&c_b, 0) == 0)
+		{
+		    (c);
+		    f_b (c_b);
+		}
+	    }
+	    else
+	    {
+		(d);
+	    }
+	}
+    }
+}
+#endif
 
 ObjPtr
 CompileArray (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat)
@@ -1520,6 +1571,7 @@ CompileFunc (ObjPtr obj, CodePtr code, NamespacePtr namespace, ExprPtr stat)
 	CompileAddSymbol (namespace, local);
     }
     code->func.obj = CompileFuncCode (code, namespace, stat);
+    obj->errors += code->func.obj->errors;
     BuildInst (obj, OpObj, inst, stat);
     inst->code.code = code;
     if ((staticInit = code->func.staticInit))

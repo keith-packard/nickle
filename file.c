@@ -36,6 +36,7 @@
 ReferencePtr	fileBlockedReference;
 Value		fileBlocked;
 Bool		anyFileWriteBlocked;
+Bool		anyFileReadBlocked;
 extern Bool	ownTty[3];
 
 int
@@ -506,6 +507,7 @@ FileCheckBlocked (void)
     Value	    blocked, *prev;
     Bool	    ready;
     Bool	    writeBlocked;
+    Bool	    readBlocked;
     
     FD_ZERO (&readable);
     FD_ZERO (&writable);
@@ -529,6 +531,7 @@ FileCheckBlocked (void)
     if (n > 0)
     {
 	writeBlocked = False;
+	readBlocked = False;
 	for (prev = &fileBlocked; (blocked = *prev); )
 	{
 	    fd = blocked->file.fd;
@@ -548,6 +551,8 @@ FileCheckBlocked (void)
 	    }
 	    if (blocked->file.flags & FileOutputBlocked)
 		writeBlocked = True;
+	    if (blocked->file.flags & FileInputBlocked)
+		readBlocked = True;
 	    if (ready)
 		ThreadsWakeup (blocked);
 	    if ((blocked->file.flags & (FileOutputBlocked|FileInputBlocked)) == 0)
@@ -556,6 +561,7 @@ FileCheckBlocked (void)
 		prev = &blocked->file.next;
 	}
 	anyFileWriteBlocked = writeBlocked;
+	anyFileReadBlocked = readBlocked;
     }
     EXIT ();
 }
@@ -567,6 +573,11 @@ FileSetBlocked (Value file, int flag)
     {
 	anyFileWriteBlocked = True;
 	IoNoticeWriteBlocked ();
+    }
+    if (flag == FileInputBlocked && !anyFileReadBlocked)
+    {
+	anyFileReadBlocked = True;
+	IoNoticeReadBlocked ();
     }
     if (file->file.flags & (FileOutputBlocked|FileInputBlocked))
     {

@@ -23,17 +23,17 @@ DebugAddVar (NamespacePtr namespace, char *name, Value v)
 }
 
 Bool
-DebugSetFrame (Value thread, int offset)
+DebugSetFrame (Value continuation, int offset)
 {
     ENTER ();
-    FramePtr	frame;
-    NamespacePtr	namespace;
-    int		n = offset;
-    Bool	ret;
-    ExprPtr	stat;
+    FramePtr	    frame;
+    NamespacePtr    namespace;
+    int		    n = offset;
+    Bool	    ret;
+    ExprPtr	    stat;
     
-    frame = thread->thread.frame;
-    stat = thread->thread.pc->base.stat;
+    frame = continuation->continuation.frame;
+    stat = continuation->continuation.pc->base.stat;
     while (frame && frame->function->func.code->base.builtin)
     {
 	stat = frame->savePc->base.stat;
@@ -56,7 +56,7 @@ DebugSetFrame (Value thread, int offset)
 	CurrentNamespace->debugger = True;
 	CurrentFrame = frame;
 	NamespaceImport (CurrentNamespace, DebugNamespace, publish_public);
-	DebugAddVar (CurrentNamespace, "thread", thread);
+	DebugAddVar (CurrentNamespace, "cont", continuation);
 	DebugAddVar (CurrentNamespace, "frame", NewInt (offset));
     }
     EXIT ();
@@ -77,13 +77,13 @@ do_Debug_up (void)
 {
     ENTER ();
     Value   frame;
-    Value   thread;
+    Value   continuation;
     
-    thread = lookupVar ("thread");
+    continuation = lookupVar ("cont");
     frame = lookupVar ("frame");
-    if (thread->value.tag == type_thread && frame->value.tag == type_int)
+    if (continuation->continuation.value.tag == type_continuation && frame->value.tag == type_int)
     {
-	if (DebugSetFrame (thread, frame->ints.value + 1))
+	if (DebugSetFrame (continuation, frame->ints.value + 1))
 	    RETURN (One);
     }
     RETURN (Zero);
@@ -94,14 +94,14 @@ do_Debug_down (void)
 {
     ENTER ();
     Value   frame;
-    Value   thread;
+    Value   continuation;
     
-    thread = lookupVar ("thread");
+    continuation = lookupVar ("cont");
     frame = lookupVar ("frame");
-    if (thread->value.tag == type_thread && frame->value.tag == type_int &&
+    if (continuation->value.tag == type_continuation && frame->value.tag == type_int &&
 	frame->ints.value > 0)
     {
-	if (DebugSetFrame (thread, frame->ints.value - 1))
+	if (DebugSetFrame (continuation, frame->ints.value - 1))
 	    RETURN (One);
     }
     RETURN (Zero);

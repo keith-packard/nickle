@@ -12,6 +12,7 @@
 typedef union _symbol	    *SymbolPtr;
 typedef struct _func	    *FuncPtr;
 typedef struct _namespace   *NamespacePtr;
+typedef struct _typespace   *TypespacePtr;
 
 typedef struct _symbolBase {
     DataType	*data;
@@ -87,6 +88,18 @@ extern SymbolPtr    NamespaceImport (NamespacePtr namespace, NamespacePtr import
 extern NamespacePtr GlobalNamespace, CurrentNamespace, DebugNamespace;
 extern FramePtr	    CurrentFrame;
 extern void	    NamespaceInit (void);
+
+typedef struct _typespace {
+    TypespacePtr	previous;
+    Atom		name;
+    Bool		mask;
+} Typespace;
+
+extern TypespacePtr NewTypespace (TypespacePtr previous, Atom name, Bool mask);
+extern TypespacePtr TypespaceFind (TypespacePtr typespace, Atom name);
+extern TypespacePtr TypespaceRemove (TypespacePtr typespace, Atom name);
+
+extern TypespacePtr CurrentTypespace;
 
 typedef struct _DeclList    *DeclListPtr;
 typedef struct _DeclList {
@@ -387,6 +400,7 @@ void	IoStop (void);
 void	IoFini (void);
 Bool	IoTimeout (void *);
 void	IoNoticeWriteBlocked (void);
+void	IoNoticeReadBlocked (void);
 void	IoNoticeTtyUnowned (void);
 void	IoInterrupt (void);
 

@@ -227,7 +227,10 @@ public		{ yylval.pval = publish_public; return PUBLIC; }
 		}
 [a-zA-Z][0-9a-zA-Z_]* {
 		yylval.aval = AtomId (yytext);
-		return NAME;
+		if (TypespaceFind (CurrentTypespace, yylval.aval))
+		    return TYPENAME;
+		else
+		    return NAME;
 		}
 .		FilePrintf (FileStderr, "character \\%o ignored\n", *yytext & 0xff);
 %%

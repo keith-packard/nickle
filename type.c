@@ -527,7 +527,7 @@ TypeCombineFunction (Types *type)
 Types *
 TypesCanon (Types *type)
 {
-    if (type->base.tag == types_name)
+    if (type && type->base.tag == types_name)
 	return TypesCanon (type->name.type);
     return type;
 }

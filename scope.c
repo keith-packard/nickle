@@ -64,6 +64,8 @@ NewNamespaceChain (NamespaceChainPtr next, SymbolPtr symbol, Publish publish)
 
 NamespacePtr	GlobalNamespace, CurrentNamespace;
 ReferencePtr	CurrentNamespaceReference;
+TypespacePtr	CurrentTypespace;
+ReferencePtr	CurrentTypespaceReference;
 
 void
 NamespaceInit (void)
@@ -75,6 +77,9 @@ NamespaceInit (void)
     CurrentNamespace = GlobalNamespace;
     CurrentNamespaceReference = NewReference ((void **) &CurrentNamespace);
     MemAddRoot (CurrentNamespaceReference);
+    CurrentTypespace = 0;
+    CurrentTypespaceReference = NewReference ((void **) &CurrentTypespace);
+    MemAddRoot (CurrentTypespaceReference);
     EXIT ();
 }
 
@@ -157,4 +162,55 @@ NamespaceImport (NamespacePtr namespace, NamespacePtr import, Publish publish)
 	}
     }
     return 0;
+}
+
+static void
+TypespaceMark (void *object)
+{
+    TypespacePtr    typespace = object;
+
+    MemReference (typespace->previous);
+}
+
+DataType typespaceType = { TypespaceMark, 0 };
+
+TypespacePtr
+NewTypespace (TypespacePtr previous, Atom name, Bool mask)
+{
+    ENTER ();
+    TypespacePtr    typespace;
+
+    typespace = ALLOCATE (&typespaceType, sizeof (Typespace));
+    typespace->previous = previous;
+    typespace->name = name;
+    typespace->mask = mask;
+    RETURN (typespace);
+}
+
+TypespacePtr
+TypespaceFind (TypespacePtr typespace, Atom name)
+{
+    for(; typespace; typespace = typespace->previous)
+	if (typespace->name == name)
+	{
+	    if (typespace->mask)
+		break;
+	    return typespace;
+	}
+    return 0;
+}
+
+TypespacePtr
+TypespaceRemove (TypespacePtr typespace, Atom name)
+{
+    ENTER ();
+    TypespacePtr    *prev;
+
+    for (prev = &typespace; *prev; prev = &(*prev)->previous)
+	if ((*prev)->name == name)
+	{
+	    *prev = (*prev)->previous;
+	    break;
+	}
+    RETURN (typespace);
 }

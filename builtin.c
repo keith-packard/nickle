@@ -158,6 +158,14 @@ struct nbuiltin {
     NamespacePtr    *value;
     NamespacePtr    *namespace;
 };
+
+struct ebuiltin {
+    char	    *name;
+    SymbolPtr	    **exception;
+    NamespacePtr    *namespace;
+};
+
+
 struct fbuiltin_v funcs_v[] = {
     { do_printf,	    "printf",		    type_integer,   "s."    },
     { do_scanf,		    "scanf",		    type_integer,   "s."    },

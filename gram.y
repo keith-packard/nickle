@@ -41,8 +41,8 @@ void yyerror (char *fmt, ...);
 %type  <nsval>	dotnames
 %type  <eval>	history
 %type  <eval>	block func_body statements statement catches catch
-%type  <dval>	names opt_initnames initnames
-%type  <aval>	typename
+%type  <dval>	enames names opt_initnames initnames
+%type  <aval>	typename name
 %type  <eval>	opt_init
 %type  <ftval>	decl opt_decl
 %type  <tsval>	opt_type type
@@ -76,7 +76,7 @@ void yyerror (char *fmt, ...);
 %token <pval>	PUBLIC
 %token		IF ELSE WHILE DO FOR BREAK CONTINUE RETURNTOK FORK
 %token		TRY CATCH TWIXT
-%token <aval>	NAME
+%token <aval>	NAME TYPENAME
 %token <vval>	CONST
 %token		NEW
 
@@ -190,7 +190,7 @@ command		: QUIT NL
 			t = NewThread (f, CompileStat ($1, s));
 			ThreadsRun (t, 0);
 		    }
-		| UNDEFINE names NL
+		| UNDEFINE enames NL
 		    {
 			ENTER ();
 			DeclListPtr	dl;
@@ -199,8 +199,8 @@ command		: QUIT NL
 
 			for (dl = $2; dl; dl = dl->next) {
 			    s = NamespaceFindSymbol (GlobalNamespace,
-						  dl->name,
-						  &depth);
+						     dl->name,
+						     &depth);
 			    if (!s)
 			    {
 				RaiseError (0, "Undefined symbol %A", dl->name);
@@ -211,6 +211,8 @@ command		: QUIT NL
 			    }
 			    else
 			    {
+				CurrentTypespace = TypespaceRemove (CurrentTypespace,
+								    dl->name);
 				NamespaceRemoveSymbol (GlobalNamespace, s);
 			    }
 			}
@@ -238,7 +240,7 @@ command		: QUIT NL
 			t = NewThread (0, CompileExpr ($2, GlobalNamespace));
 			ThreadsRun (t, 0);
 		    }
-		| PRINT dotnames NAME NL
+		| PRINT dotnames name NL
 		    { 
 			SymbolPtr	sym;
 			int		depth;
@@ -257,7 +259,7 @@ command		: QUIT NL
 		| EDIT edit
 		| NL
 		;
-dotnames	: dotnames NAME DOT
+dotnames	: dotnames name DOT
 		    {
 			SymbolPtr   sym;
 			int	    depth;
@@ -300,7 +302,7 @@ history		:
 			$$ = BuildCall ("History", "show", 3, BuildName ("format"), $1, $3);
 		    }
 		;
-edit		: NAME NL
+edit		: name NL
 		    {
 			SymbolPtr	s;
 			int		depth;
@@ -321,9 +323,20 @@ edit		: NAME NL
 /*
 * Statements
 */
-block		: OC ignorenl statements CC
+block		: block_start ignorenl statements block_end
 		    { $$ = $3; }
 		;
+block_start	: OC
+		    { 
+			CurrentTypespace = NewTypespace (CurrentTypespace, 
+							 0, False); 
+		    }
+		;
+block_end	: CC
+		    { 
+			CurrentTypespace = TypespaceFind (CurrentTypespace, 
+							  0)->previous; 
+		    }
 statements	: statement statements
 		    { $$ = NewExprTree(OC, $1, $2); }
 		|
@@ -382,7 +395,15 @@ statement	: IF ignorenl OP expr CP statement
 		| decl ignorenl opt_initnames SEMI
 		    { $$ = NewExprDecl ($3, $1.class, $1.type, $1.publish); }
 		| publish TYPEDEF ignorenl opt_type names SEMI
-		    { $$ = NewExprDecl ($5, class_typedef, $4, $1); }
+		    { 
+			DeclListPtr dl;
+			
+			$$ = NewExprDecl ($5, class_typedef, $4, $1);
+			for (dl = $5; dl; dl = dl->next)
+			    CurrentTypespace = NewTypespace (CurrentTypespace,
+							     dl->name,
+							     False);
+		    }
 		| publish NAMESPACE ignorenl NAME block
 		    {
 			$$ = NewExprTree (NAMESPACE,
@@ -431,21 +452,28 @@ func_body    	: block
 /*
 * Identifiers
 */
+enames		: name COMMA enames
+		    { $$ = NewDeclList ($1, 0, $3); }
+		| name
+		    { $$ = NewDeclList ($1, 0, 0); }
+		;
+name		: NAME
+		| TYPENAME
+		;
 names		: NAME COMMA names
 		    { $$ = NewDeclList ($1, 0, $3); }
 		| NAME
 		    { $$ = NewDeclList ($1, 0, 0); }
 		;
-typename	: COLON NAME
-		    { $$ = $2; }
+typename	: TYPENAME
 		;
 opt_initnames	: initnames
 		|
 		    { $$ = 0; }
 		;
-initnames	: NAME opt_init COMMA initnames
+initnames	: name opt_init COMMA initnames
 		    { $$ = NewDeclList ($1, $2, $4); }
-		| NAME opt_init
+		| name opt_init
 		    { $$ = NewDeclList ($1, $2, 0); }
 		;
 opt_init	: ASSIGN simpleexpr

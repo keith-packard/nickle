@@ -73,19 +73,15 @@ IoStart (void)
     anyTtyUnowned = False;
     for (fd = 0; fd < 3; fd++)
     {
-	if (!ownTty[fd])
-	{
-	    ownTty[fd] = IoOwnTty (fd);
-	    if (ownTty[fd])
-		FileSetFd (fd);
-	    else
-		anyTtyUnowned = True;
-	}
-	else
+        ownTty[fd] = IoOwnTty (fd);
+        if (!ownTty[fd])
 	    anyTtyUnowned = True;
     }
     if (anyTtyUnowned)
 	IoNoticeTtyUnowned ();
+    else if (stdin_interactive)
+	for (fd = 0; fd < 3; fd++)
+	    FileSetFd (fd);
 }
 
 void
@@ -107,7 +103,7 @@ IoTimeout (void *closure)
     if (anyTtyUnowned)
 	IoStart ();
     FileCheckBlocked ();
-    if (anyFileWriteBlocked || anyTtyUnowned)
+    if (anyFileWriteBlocked || anyFileReadBlocked || anyTtyUnowned)
 	return True;
     ioTimeoutQueued = False;
     return False;
@@ -131,6 +127,12 @@ IoNoticeTtyUnowned (void)
 
 void
 IoNoticeWriteBlocked (void)
+{
+    IoSetupTimeout ();
+}
+
+void
+IoNoticeReadBlocked (void)
 {
     IoSetupTimeout ();
 }

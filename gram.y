@@ -1875,6 +1875,11 @@ yywrap (void)
 {
     if (LexInteractive())
 	printf ("\n");
+    if (CurrentFrame)
+    {
+	do_Debug_done ();
+	return 0;
+    }
     return 1;
 }
 

@@ -25,6 +25,13 @@ dnl Checks for libraries.
 AC_CHECK_LIB(m, log)
 
 dnl Check for readline and get termcap lib as well
+doit=yes
+AC_ARG_WITH(readline,
+[  --without-readline      do not use the readline library],doit=$with_readline)
+case $doit in
+no)
+	;;
+*)
 AC_CHECK_LIB(ncurses,tparm,TERMLIB=-lncurses,
 AC_CHECK_LIB(termcap,tgetent,TERMLIB=-ltermcap))
 saved_LIBS="$LIBS"
@@ -32,8 +39,10 @@ LIBS="$LIBS $TERMLIB"
 AC_CHECK_LIB(readline,readline,
    [AC_CHECK_HEADER(readline/readline.h,
    LIBS="$saved_LIBS -lreadline $TERMLIB";
-   AC_DEFINE(HAVE_LIBREADLINE,1,[Define to use the readline library.]))],
+   AC_DEFINE(HAVE_LIBREADLINE,1,[support fancy command line editing]))],
    LIBS="$saved_LIBS")
+   ;;
+  esac
 
 dnl Checks for header files.
 AC_HEADER_STDC

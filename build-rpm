@@ -10,6 +10,6 @@ w
 q
 EOF
 chmod -w nickle-$VERSION/nickle.spec
-tar cf - nickle-$VERSION | bzip2 > nickle-$VERSION.tar.gz 
+tar cf - nickle-$VERSION | bzip2 > nickle-$VERSION.tar.bz2
 rm -rf nickle-$VERSION
 rpm -ta --clean nickle-$VERSION.tar.bz2

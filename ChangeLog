@@ -1,5 +1,34 @@
 2004-04-10  Keith Packard  <keithp@keithp.com>
 
+	* array.c: (ArrayPrint), (ArrayResize):
+	* builtin-toplevel.c: (do_setdims), (do_setdim):
+	* builtin.c: (BuiltinType):
+	* compile.c: (CompileArgs), (CompileTypecheckArgs),
+	(CompileCountInitDimensions), (CompileBuildArray),
+	(CompileSizeDimensions), (CompileImplicitArray),
+	(CompileArrayInits), (CompileImplicitInit), (CompileArrayType),
+	(InstDump):
+	* execute.c: (ThreadArrayIndex), (ThreadsRun):
+	* file.c: (FilePutDimensions), (FilePutSubscriptType):
+	* gram.y:
+	* hash.c: (HashGet), (HashSetDef), (HashRef):
+	* lex.l:
+	* main.c: (setArgv):
+	* nickle.h:
+	* pretty.c: (PrettyParameters), (PrettyArrayInits),
+	(PrettyArrayInit):
+	* type.c: (NewTypeArray), (TypeInit):
+	* value.h:
+	Make value distinction between resizable and unresizable
+	arrays.  Types now use '...' for resizable arrays and '*'
+	for unresizable arrays of unspecified size.
+	
+	Also fixed a bug in the implicit array dimension
+	computation for multi-dimensional arrays -- the
+	dimensions were compiled in the reverse order.
+
+2004-04-10  Keith Packard  <keithp@keithp.com>
+
 	reviewed by: <delete if not using a buddy>
 
 	* compile.c: (CompileHashInit):

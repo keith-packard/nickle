@@ -356,6 +356,13 @@ do_setdims (Value av, Value dv)
 				2, NewInt (a->ndim), dv);
 	RETURN (Void);
     }
+    if (!av->array.resizable)
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"setdims: array must be resizable",
+				1, av, Void);
+	RETURN (Void);
+    }
     for (i = 0; i < a->ndim; i++)
     {
 	dims[i] = IntPart (BoxValueGet (db,i), "setdims: invalid dimension");
@@ -384,7 +391,14 @@ do_setdim (Value av, Value dv)
     {
 	RaiseStandardException (exception_invalid_argument,
 				"setdim: dimension must be non-negative",
-				2, NewInt (d), Void);
+				2, dv, Void);
+	RETURN (Void);
+    }
+    if (!av->array.resizable)
+    {
+	RaiseStandardException (exception_invalid_argument,
+				"setdim: array must be resizable",
+				1, av, Void);
 	RETURN (Void);
     }
     ArrayResize (av, 0, d);

@@ -179,7 +179,7 @@ NewTypeFunc (Type *ret, ArgType *args)
 }
 
 Type *
-NewTypeArray (Type *type, Expr *dimensions)
+NewTypeArray (Type *type, Expr *dimensions, Bool resizable)
 {
     ENTER ();
     Type   *t;
@@ -189,6 +189,7 @@ NewTypeArray (Type *type, Expr *dimensions)
     t->array.type = type;
     t->array.dimensions = dimensions;
     t->array.storage = DimStorageNone;
+    t->array.resizable = resizable;
     RETURN (t);
 }
 
@@ -1203,7 +1204,7 @@ TypeInit (void)
 					  NewTypeElt (typePrim[rep_float], 0)));
     MemAddRoot (typeField);
     
-    typeArrayInt = NewTypeArray (typePrim[rep_integer], 0);
+    typeArrayInt = NewTypeArray (typePrim[rep_integer], 0, False);
     MemAddRoot (typeArrayInt);
 
     TypeCheckStack = StackCreate ();

@@ -34,7 +34,7 @@ setArgv (int argc, char **argv)
 	BoxValueSet (args->array.values, i, NewStrString (argv[i]));
     setVar (GlobalNamespace, "argv", args, 
 	    NewTypeArray (typePrim[rep_string],
-			   NewExprTree (COMMA, 0, 0)));
+			   NewExprTree (COMMA, 0, 0), False));
     EXIT ();
 }
 

@@ -396,7 +396,8 @@ typedef struct _instStruct {
 
 typedef struct _instArray {
     InstBase	inst;
-    int		ndim;
+    short    	ndim;
+    short	resizable;
     TypePtr	type;
 } InstArray;
 

@@ -172,7 +172,7 @@ BuiltinType (char *format, Type **type)
     if (ref)
 	t = NewTypeRef (t, False);
     if (array)
-	t = NewTypeArray (t, dims);
+	t = NewTypeArray (t, dims, False);
     if (hash)
 	t = NewTypeHash (t, k);
     *type = t;

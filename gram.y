@@ -116,7 +116,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    opt_init
 %type  <fulltype>   decl next_decl
 %type  <type>	    opt_type type subscripts subtype
-%type  <expr>	    opt_stars stars
+%type  <expr>	    opt_stars stars dotdotdots
 %type  <type>	    basetype
 %type  <expr>	    dims
 %type  <memList>    struct_members union_members
@@ -128,7 +128,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <argDecl>    argdecl
 %type  <argType>    opt_argdefines argdefines args
 %type  <argDecl>    argdefine
-%type  <bool>	    opt_dots
+%type  <bool>	    opt_dotdotdot
 
 %type  <expr>	    opt_expr expr opt_exprs exprs simpleexpr primary
 %type  <expr>	    opt_actuals actuals
@@ -142,7 +142,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 
 %token		    VAR EXPR ARRAY STRUCT UNION ENUM COMP HASH
 
-%token		    NL SEMI MOD OC CC DOLLAR DOTS
+%token		    NL SEMI MOD OC CC DOLLAR DOTDOTDOT
 %token <class>	    GLOBAL AUTO STATIC CONST
 %token <type>	    POLY INTEGER NATURAL RATIONAL REAL STRING
 %token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID BOOL
@@ -826,9 +826,11 @@ decl		: publish class type ignorenl opt_nl
 subscripts	: opt_argdecls subscripts	    %prec CALL
 		    { $$ = NewTypeFunc ($2, $1); }
 		| OS opt_stars CS subscripts    
-		    { $$ = NewTypeArray ($4, $2); }
+		    { $$ = NewTypeArray ($4, $2, False); }
+		| OS dotdotdots CS subscripts    
+		    { $$ = NewTypeArray ($4, $2, True); }
 		| OS dims CS subscripts
-		    { $$ = NewTypeArray ($4, $2); }
+		    { $$ = NewTypeArray ($4, $2, False); }
 		| OS type CS subscripts
 		    { $$ = NewTypeHash ($4, $2); }
 		|
@@ -972,6 +974,11 @@ stars		: stars COMMA TIMES
 		| TIMES
 		    { $$ = NewExprTree (COMMA, 0, 0); }
 		;
+dotdotdots	: dotdotdots COMMA DOTDOTDOT
+		    { $$ = NewExprTree (COMMA, 0, $1); }
+		| DOTDOTDOT
+		    { $$ = NewExprTree (COMMA, 0, 0); }
+		;
 dims		: simpleexpr COMMA dims
 		    { $$ = NewExprTree (COMMA, $1, $3); }
 		| simpleexpr
@@ -1021,7 +1028,7 @@ opt_argdecls	: OP argdecls CP
 		;
 argdecls	: argdecl COMMA argdecls
 		    { $$ = NewArgType ($1.type, False, $1.name, 0, $3); }
-		| argdecl opt_dots
+		| argdecl opt_dotdotdot
 		    { $$ = NewArgType ($1.type, $2, $1.name, 0, 0); }
 		;
 argdecl		: type NAME
@@ -1060,7 +1067,8 @@ opt_argdefines	: argdefines
 						     NewExprTree (COMMA,
 								  NewExprConst (TEN_NUM, 
 										NewInt (0)),
-								  0));
+								  0),
+						     False);
 			    }
 			    args->symbol = ParseNewSymbol (publish_private,
 							   class_arg, 
@@ -1073,7 +1081,7 @@ opt_argdefines	: argdefines
 		;
 argdefines	: argdefine COMMA argdefines
 		    { $$ = NewArgType ($1.type, False, $1.name, 0, $3); }
-		| argdefine opt_dots
+		| argdefine opt_dotdotdot
 		    { $$ = NewArgType ($1.type, $2, $1.name, 0, 0); }
 		;
 argdefine	: opt_type NAME
@@ -1081,7 +1089,7 @@ argdefine	: opt_type NAME
 		| type
 		    { $$.type = $1; $$.name = 0; }
 		;
-opt_dots	: DOTS
+opt_dotdotdot	: DOTDOTDOT
 		    { $$ = True; }
 		|
 		    { $$ = False; }
@@ -1133,9 +1141,9 @@ opt_actuals	: actuals
 		;
 actuals		: simpleexpr COMMA actuals
 		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| simpleexpr opt_dots
+		| simpleexpr opt_dotdotdot
 		    {	
-			ExprPtr	arg = $2 ? NewExprTree (DOTS, $1, 0) : $1;
+			ExprPtr	arg = $2 ? NewExprTree (DOTDOTDOT, $1, 0) : $1;
 			$$ = NewExprTree (COMMA, arg, 0); 
 		    }
 		;
@@ -1306,14 +1314,14 @@ primary		: fullname
 		    }
 		| OP OS stars CS CP namespace_start arrayinit namespace_end
 		    { 
-			$7->base.type = NewTypeArray (typePoly, $3); 
+			$7->base.type = NewTypeArray (typePoly, $3, True); 
 			ParseCanonType ($7->base.type, False);
 			$$ = NewExprTree (NEW, $7, 0); 
 			$$->base.type = $7->base.type;
 		    }
 		| OP OS dims CS CP namespace_start opt_arrayinit namespace_end
 		    { 
-			$7->base.type = NewTypeArray (typePoly, $3);
+			$7->base.type = NewTypeArray (typePoly, $3, False);
 			ParseCanonType ($7->base.type, False);
 			$$ = NewExprTree (NEW, $7, 0); 
 			$$->base.type = $7->base.type;
@@ -1380,7 +1388,7 @@ opt_arrayinit	: arrayinit
 		|
 		    { $$ = 0; }
 		;
-arrayinit    	: OC arrayelts opt_comma opt_dots CC
+arrayinit    	: OC arrayelts opt_comma opt_dotdotdot CC
 		    { 
 			ExprPtr	elts = $2 ? ExprRehang ($2, 0) : 0;
 			if ($4)
@@ -1389,7 +1397,7 @@ arrayinit    	: OC arrayelts opt_comma opt_dots CC
 			    while (i->tree.right)
 				i = i->tree.right;
 			    i->tree.right = NewExprTree (COMMA, 
-							 NewExprTree (DOTS, 0, 0),
+							 NewExprTree (DOTDOTDOT, 0, 0),
 							 0);
 			}
 			$$ = NewExprTree (ARRAY, elts, 0); 

@@ -374,7 +374,7 @@ ThreadArrayIndex (Value array, Value thread, int ndim,
 	}
 	if (limits[dim] <= part)
 	{
-	    if (resize)
+	    if (resize && array->array.resizable)
 	    {
 		if (dims[dim] > part)
 		    limits[dim] = part + 1;
@@ -1105,12 +1105,12 @@ ThreadsRun (Value thread, Value lex)
 		    break;
 		case OpBuildArray:
 		    stack = inst->array.ndim;
-		    /* XXX resizable? */
-		    value = ThreadArray (thread, True, stack, inst->array.type);
+		    value = ThreadArray (thread, inst->array.resizable,
+					 stack, inst->array.type);
 		    break;
 		case OpBuildArrayInd:
-		    /* XXX resizable? */
-		    value = ThreadArrayInd (thread, True, value, inst->array.type);
+		    value = ThreadArrayInd (thread, inst->array.resizable,
+					    value, inst->array.type);
 		    break;
 		case OpInitArray:
 		    stack = 0;

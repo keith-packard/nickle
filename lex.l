@@ -344,7 +344,7 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 ";"		{ yylval.ints = SEMI; return SEMI; }
 ","		{ yylval.ints = COMMA; return COMMA; }
 "$"		{ yylval.ints = DOLLAR; return DOLLAR; }
-"..."		{ yylval.ints = DOTS; return DOTS; }
+"..."		{ yylval.ints = DOTDOTDOT; return DOTDOTDOT; }
 "."		{ yylval.ints = DOT; return DOT; }
 "->"		{ yylval.ints = ARROW; return ARROW; }
 "=>"		{ yylval.ints = DARROW; return DARROW; }

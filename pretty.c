@@ -146,7 +146,7 @@ PrettyParameters (Value f, Expr *e, Bool nest, ProfileData *pd)
 {
     while (e) 
     {
-	if (e->tree.left->base.tag == DOTS)
+	if (e->tree.left->base.tag == DOTDOTDOT)
 	{
 	    PrettyExpr (f, e->tree.left->tree.left, -1, 0, nest, pd);
 	    FilePuts (f, "...");
@@ -174,7 +174,7 @@ PrettyArrayInits (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
 	e = e->tree.right;
 	if (e)
 	{
-	    if (e->tree.left->base.tag == DOTS)
+	    if (e->tree.left->base.tag == DOTDOTDOT)
 		FilePuts (f, " ");
 	    else
 		FilePuts (f, ", ");
@@ -191,7 +191,7 @@ PrettyArrayInit (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
 	PrettyArrayInits (f, e->tree.left, level, nest, pd);
 	FilePuts (f, " }");
 	break;
-    case DOTS:
+    case DOTDOTDOT:
 	FilePuts (f, "...");
 	break;
     default:

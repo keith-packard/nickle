@@ -310,11 +310,16 @@ HashGet (Value hv, Value key)
     he = Find (ht, hash, key);
     if (!HashEltValid (he))
     {
-	if (ht->def)
-	    return ht->def;
-	RaiseStandardException (exception_uninitialized_value,
-				"uninitialized hash element", 0);
-	return (Void);
+	if (!ht->def)
+	{
+	    RaiseStandardException (exception_uninitialized_value,
+				    "uninitialized hash element", 0);
+	    return (Void);
+	}
+	ht->count++;
+	HashEltHash(he) = hash;
+	HashEltKey(he) = key;
+	HashEltValue(he) = Copy(ht->def);
     }
     return HashEltValue (he);
 }
@@ -344,7 +349,7 @@ HashSetDef (Value hv, Value def)
 {
     HashTablePtr    ht = &hv->hash;
 
-    ht->def = def;
+    ht->def = Copy(def);
 }
 
 Value
@@ -367,7 +372,7 @@ HashRef (Value hv, Value key)
 	HashEltHash (he) = hash;
 	HashEltKey (he) = key;
 	if (ht->def)
-	    HashEltValue (he) = ht->def;
+	    HashEltValue (he) = Copy(ht->def);
     }
     RETURN (NewRef (ht->elts, 
 		    &HashEltValue(he) - BoxElements (ht->elts)));

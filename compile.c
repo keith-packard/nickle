@@ -928,7 +928,7 @@ CompileArgs (ObjPtr obj, int *argcp, Bool *varactualp, ExprPtr arg, Bool pushVal
     {
 	if (pushValue)
 	    SetPush (obj);
-	if (arg->tree.left->base.tag == DOTS)
+	if (arg->tree.left->base.tag == DOTDOTDOT)
 	{
 	    InstPtr inst;
 	    obj = _CompileExpr (obj, arg->tree.left->tree.left, True, stat, code);
@@ -995,7 +995,7 @@ CompileTypecheckArgs (ObjPtr	obj,
 		ret = False;
 		break;
 	    }
-	    varactual = arg->tree.left->base.tag == DOTS;
+	    varactual = arg->tree.left->base.tag == DOTDOTDOT;
 	    if (varactual)
 		actual_type = TypeCombineArray (arg->tree.left->tree.left->base.type, 1, False);
 	    else
@@ -1250,7 +1250,7 @@ CompileCountInitDimensions (TypePtr type, ExprPtr expr)
 	ndimMax = 0;
 	while (expr)
 	{
-	    if (expr->tree.left && expr->tree.left->base.tag != DOTS)
+	    if (expr->tree.left && expr->tree.left->base.tag != DOTDOTDOT)
 	    {
 		ndimSub = CompileCountInitDimensions (type, expr->tree.left);
 		if (ndimSub < 0)
@@ -1324,6 +1324,7 @@ CompileBuildArray (ObjPtr obj, ExprPtr expr, TypePtr type,
     }
     inst->array.ndim = ndim;
     inst->array.type = type->array.type;
+    inst->array.resizable = type->array.resizable;
     RETURN (obj);
 }
 
@@ -1340,7 +1341,7 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 	expr = expr->tree.left;
 	while (expr)
 	{
-	    if (expr->tree.left->base.tag == DOTS)
+	    if (expr->tree.left->base.tag == DOTDOTDOT)
 		return False;
 	    if (ndims != 1)
 	    {
@@ -1360,7 +1361,7 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 	break;
     default:
 	dim = 1;
-	if (expr->tree.left->base.tag == DOTS)
+	if (expr->tree.left->base.tag == DOTDOTDOT)
 	    return False;
 	if (ndims != 1)
 	    CompileSizeDimensions (expr, dims + 1, ndims - 1);
@@ -1387,10 +1388,10 @@ CompileImplicitArray (ObjPtr obj, ExprPtr stat, ExprPtr inits, int ndim)
 	RETURN (0);
     }
     sub = 0;
-    for (n = 0; n < ndim; n++)
+    for (n = ndim - 1; n >= 0; n--)
     {
 	sub = NewExprTree (COMMA,
-			   NewExprConst (TEN_NUM, NewInt (*dims++)),
+			   NewExprConst (TEN_NUM, NewInt (dims[n])),
 			   sub);
     }
     RETURN(sub);
@@ -1493,7 +1494,7 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
 		AInitMode   subMode = AInitModeElement;
 		
 		next = e->tree.right;
-		if (next && next->tree.left->base.tag == DOTS)
+		if (next && next->tree.left->base.tag == DOTDOTDOT)
 		{
 		    subMode = AInitModeRepeat;
 		    next = next->tree.right;
@@ -1601,12 +1602,12 @@ CompileComprehension (ObjPtr	obj,
  *                       COMMA     0
  *                      /     \
  *                   ARRAY     COMMA
- *                  /     \    |    \
- *               COMMA     0  DOTS   0
+ *                  /     \    |      \
+ *               COMMA     0 DOTDOTDOT  0
  *              /     \
  *          STRUCT     COMMA
- *         /      \    |    \
- *      COMMA      0   DOTS  0
+ *         /      \    |      \
+ *      COMMA      0 DOTDOTDOT  0
  *     /     \
  *  ASSIGN    0
  *  |     \
@@ -1848,7 +1849,7 @@ CompileImplicitInit (Type *type)
 					NewExprTree (COMMA,
 						     init,
 						     NewExprTree (COMMA,
-								  NewExprTree (DOTS, 0, 0),
+								  NewExprTree (DOTDOTDOT, 0, 0),
 								  0)),
 					0);
 		}
@@ -3876,6 +3877,7 @@ CompileArrayType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr
 	SetPush (*initObj);
 	BuildInst (*initObj, OpBuildArray, inst, stat);
 	inst->array.ndim = 1;
+	inst->array.resizable = False;
 	inst->array.type = typePrim[rep_integer];
 	/*
 	 * Initialize the dimension array
@@ -4324,7 +4326,9 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	FilePrintf (FileStdout, "%d args", inst->ints.value);
 	break;
     case OpBuildArray:
-	FilePrintf (FileStdout, "%d dims", inst->ints.value);
+	FilePrintf (FileStdout, "%d dims %sresizable",
+		    inst->array.ndim,
+		    inst->array.resizable ? "" : "un");
 	break;
     case OpInitArray:
 	FilePrintf (FileStdout, "%d %s",

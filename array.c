@@ -99,9 +99,12 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 	FilePuts (f, "[");
 	for (i = a->ndim - 1; i >= 0; i--)
 	{
-	    FilePutInt (f, limits[i]);
+	    if (a->resizable)
+		FilePuts (f, "...");
+	    else
+		FilePutInt (f, limits[i]);
 	    if (i)
-		FilePuts (f, ",");
+		FilePuts (f, ", ");
 	}
 	FilePuts (f, "]");
 	if (!TypePoly (ArrayType(a)))
@@ -232,6 +235,7 @@ ArrayResize (Value av, int dim, int size)
     int	    *dims = ArrayDims(a);
     int	    *limits = ArrayLimits(a);
 
+    assert (av->array.resizable);
     if (dims[dim] < size || dims[dim] > size * 2)
     {
 	ENTER ();

@@ -1513,12 +1513,14 @@ FilePutArgType (Value f, ArgType *at)
 }
 
 static void
-FilePutDimensions (Value f, ExprPtr dims)
+FilePutDimensions (Value f, ExprPtr dims, Bool resizable)
 {
     while (dims)
     {
 	if (dims->tree.left)
 	    PrettyExpr (f, dims->tree.left, -1, 0, False, 0);
+	else if (resizable)
+	    FilePuts (f, "...");
 	else
 	    FilePuts (f, "*");
 	if (dims->tree.right)
@@ -1574,7 +1576,7 @@ FilePutSubscriptType (Value f, Type *t, Bool minimal)
 	break;
     case type_array:
 	FilePuts (f, "[");
-	FilePutDimensions (f, t->array.dimensions);
+	FilePutDimensions (f, t->array.dimensions, t->array.resizable);
 	FilePuts (f, "]");
 	FilePutSubscriptType (f, t->array.type, minimal);
 	break;

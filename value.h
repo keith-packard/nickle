@@ -395,6 +395,7 @@ typedef struct _typeArray {
     ExprPtr	dimensions;
     int		dims;
     DimStorage	storage;
+    Bool	resizable;
     union {
 	BoxPtr	global;
 	struct {
@@ -462,7 +463,7 @@ Type	*NewTypeName (ExprPtr expr, SymbolPtr name);
 Type	*NewTypeRef (Type *ref, Bool pointer);
 Type	*NewTypePointer (Type *ref);
 Type	*NewTypeFunc (Type *ret, ArgType *args);
-Type	*NewTypeArray (Type *type, ExprPtr dimensions);
+Type	*NewTypeArray (Type *type, ExprPtr dimensions, Bool resizable);
 Type	*NewTypeHash (Type *type, Type *keyType);
 Type	*NewTypeStruct (StructTypePtr structs);
 Type	*NewTypeUnion (StructTypePtr structs, Bool enumeration);

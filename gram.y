@@ -21,6 +21,14 @@
  *	The grammar is ordered to make this a type modifier since
  *	the other way is less common.  Use parens when you want this.
  *
+ *  reduce/reduce conflict on:
+ *
+ *	   &int . func
+ *
+ *	Is the '&' a reference operator or a reference type modifier?
+ *	The grammar is ordered to make this a type modifier since
+ *	the other way is less common.  Use parens when you want this.
+ *
  *  shift/reduce conflict on NL:
  *
  *	    opt_nl : .
@@ -110,7 +118,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <type>	    opt_type type subscripts subtype
 %type  <expr>	    opt_stars stars
 %type  <type>	    basetype
-%type  <expr>	    dims
+%type  <expr>	    dims types
 %type  <memList>    struct_members union_members
 %type  <class>	    class
 %type  <publish>    opt_publish publish publish_extend
@@ -820,6 +828,8 @@ subscripts	: opt_argdecls subscripts	    %prec CALL
 		    { $$ = NewTypeArray ($4, $2); }
 		| OS dims CS subscripts
 		    { $$ = NewTypeArray ($4, $2); }
+		| OS types CS subscripts
+		    { $$ = NewTypeArray ($4, $2); }
 		|
 		    { $$ = 0; }
 		;
@@ -849,7 +859,9 @@ type		: subtype subscripts	    %prec CALL
 			$$ = top;
 		    }
 		| TIMES type			%prec POINTER
-		    { $$ = NewTypeRef ($2); }
+		    { $$ = NewTypeRef ($2, True); }
+		| LAND type			%prec POINTER
+		    { $$ = NewTypeRef ($2, False); }
 		;
 subtype		: basetype
 		| STRUCT OC struct_members CC
@@ -960,6 +972,11 @@ dims		: simpleexpr COMMA dims
 		    { $$ = NewExprTree (COMMA, $1, $3); }
 		| simpleexpr
 		    { $$ = NewExprTree (COMMA, $1, 0); }
+		;
+types		: type COMMA types
+		    { $$ = 0; }
+		| type
+		    { $$ = 0; }
 		;
 /*
 * Structure member declarations

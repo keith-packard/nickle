@@ -1371,7 +1371,10 @@ FilePutType (Value f, Type *t, Bool minimal)
 	FilePutTypename (f, t->name.expr);
 	break;
     case type_ref:
-	FilePuts (f, "*");
+	if (t->ref.pointer)
+	    FilePuts (f, "*");
+	else
+	    FilePuts (f, "&");
 	FilePutType (f, t->ref.ref, False);
 	break;
     case type_func:

@@ -357,6 +357,7 @@ typedef struct _typeName {
 typedef struct _typeRef {
     TypeBase	base;
     TypePtr	ref;
+    Bool	pointer;
 } TypeRef;
 
 typedef struct _typeFunc {
@@ -417,7 +418,8 @@ extern Type	    *typeFileError;
 extern Type	    *typePrim[rep_void + 1];
 
 Type	*NewTypeName (ExprPtr expr, SymbolPtr name);
-Type	*NewTypeRef (Type *ref);
+Type	*NewTypeRef (Type *ref, Bool pointer);
+Type	*NewTypePointer (Type *ref);
 Type	*NewTypeFunc (Type *ret, ArgType *args);
 Type	*NewTypeArray (Type *type, ExprPtr dimensions);
 Type	*NewTypeStruct (StructTypePtr structs);

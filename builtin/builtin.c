@@ -156,7 +156,7 @@ BuiltinType (char *format, Type **type)
 	break;
     }
     if (ref)
-	t = NewTypeRef (t);
+	t = NewTypeRef (t, False);
     if (array)
 	t = NewTypeArray (t, dims);
     *type = t;

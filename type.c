@@ -115,7 +115,7 @@ NewTypeName (ExprPtr expr, Symbol *name)
 }
 
 Type *
-NewTypeRef (Type *ref)
+NewTypeRef (Type *ref, Bool pointer)
 {
     ENTER ();
     Type   *t;
@@ -125,6 +125,7 @@ NewTypeRef (Type *ref)
     t = ALLOCATE (&TypeRefType, sizeof (TypeRef));
     t->base.tag = type_ref;
     t->ref.ref = ref;
+    t->ref.pointer = pointer;
     RETURN (t);
 }
 
@@ -559,7 +560,7 @@ static Type *
 TypeUnaryRef (Type *ref)
 {
     if (TypePoly (ref))
-	ref = typeRefPoly;
+	ref = typePoly;
     if (ref->base.tag == type_ref)
 	return ref->ref.ref;
     return 0;
@@ -1119,7 +1120,7 @@ TypeInit (void)
     }
     typePoly = NewTypePrim(rep_undef);
     MemAddRoot (typePoly);
-    typeRefPoly = NewTypeRef (typePoly);
+    typeRefPoly = NewTypeRef (typePoly, True);
     MemAddRoot (typeRefPoly);
     
     typeGroup = NewTypeTypes (NewTypeElt (typePrim[rep_integer],

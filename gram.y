@@ -954,24 +954,24 @@ primary		: fullname
 		    { $$ = NewExprConst(STRING_CONST, $1); }
 		| VOIDVAL
 		    { $$ = NewExprConst(VOIDVAL, $1); }
-		| OP type CP ignorenl init
+		| OP type CP ignorenl namespace_start init namespace_end
 		    { 
-			$$ = NewExprTree (NEW, $5, 0); 
+			$$ = NewExprTree (NEW, $6, 0); 
 			$$->base.type = $2;
 		    }
-		| OP type OS exprs CS CP ignorenl opt_arrayinit
+		| OP type OS exprs CS CP ignorenl namespace_start opt_arrayinit namespace_end
 		    { 
-			$$ = NewExprTree (NEW, $8, 0); 
+			$$ = NewExprTree (NEW, $9, 0); 
 			$$->base.type = NewTypesArray ($2, $4); 
 		    }
-		| OS stars CS ignorenl arrayinit
+		| OS stars CS ignorenl namespace_start arrayinit namespace_end
 		    { 
-			$$ = NewExprTree (NEW, $5, 0); 
+			$$ = NewExprTree (NEW, $6, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 		    }
-		| OS exprs CS ignorenl opt_arrayinit
+		| OS exprs CS ignorenl namespace_start opt_arrayinit namespace_end
 		    { 
-			$$ = NewExprTree (NEW, $5, 0); 
+			$$ = NewExprTree (NEW, $6, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 		    }
 		| OP type DOT NAME CP primary			%prec UNIONCAST

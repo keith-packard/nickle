@@ -728,6 +728,9 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
     if (TypePoly (a))
 	return True;
     
+    if (!b)
+	return True;
+
     switch (a->base.tag) {
     case types_prim:
 	if (a->prim.prim == b->value.tag)
@@ -746,7 +749,7 @@ TypeCompatibleAssign (TypesPtr a, Value b, Bool shallow)
 	    /* avoid looping through data structures */
 	    if (shallow)
 		return True;
-	    return TypeCompatibleAssign (a->ref.ref, RefValue (b), True);
+	    return TypeCompatibleAssign (a->ref.ref, RefValueGet (b), True);
 	}
 	if (b->value.tag == type_int && b->ints.value == 0)
 	    return True;

@@ -7,6 +7,7 @@
  */
 
 #include	"nickle.h"
+#include	<assert.h>
 
 #define Stack(i) ((Value) STACK_ELT(thread->thread.continuation.stack, i))
 
@@ -187,6 +188,7 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 	if (tail && !aborting)
 	{
 	    complete = True;
+	    thread->thread.continuation.obj = thread->thread.continuation.frame->saveObj;
 	    *next = thread->thread.continuation.frame->savePc;
 	    thread->thread.continuation.frame = thread->thread.continuation.frame->previous;
 	}
@@ -1012,6 +1014,12 @@ ThreadsRun (Value thread, Value lex)
 	    default:
 		break;
 	    }
+#if 0
+	    assert (!next || 
+		    (ObjCode (thread->thread.continuation.obj, 0) <= next &&
+		     next <= ObjCode (thread->thread.continuation.obj,
+				      thread->thread.continuation.obj->used)));
+#endif
 	    if (!aborting || complete)
 	    {
 		/* this instruction has been completely executed */
@@ -1043,7 +1051,7 @@ ThreadsRun (Value thread, Value lex)
 		if (signalException)
 		{
 		    signalException = False;
-		    JumpStandardException (thread, &next);
+		    thread->thread.continuation.value = JumpStandardException (thread, &next);
 		    thread->thread.continuation.pc = next;
 		}
 		if (signalError)

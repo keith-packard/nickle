@@ -39,14 +39,193 @@ Bool		anyFileWriteBlocked;
 Bool		anyFileReadBlocked;
 extern Bool	ownTty[3];
 
+typedef struct _FileErrorMap {
+    int		value;
+    char	*name;
+    char	*message;
+    Atom	atom;
+} FileErrorMap;
+
+FileErrorMap   fileErrorMap[] = {
+    { EPERM, "PERM", "Operation not permitted", 0 },
+    { ENOENT, "NOENT", "No such file or directory", 0 },
+    { ESRCH, "SRCH", "No such process", 0 },
+    { EINTR, "INTR", "Interrupted system call", 0 },
+    { EIO, "IO", "I/O error", 0 },
+    { ENXIO, "NXIO", "No such device or address", 0 },
+    { E2BIG, "2BIG", "Arg list too long", 0 },
+    { ENOEXEC, "NOEXEC", "Exec format error", 0 },
+    { EBADF, "BADF", "Bad file number", 0 },
+    { ECHILD, "CHILD", "No child processes", 0 },
+    { EAGAIN, "AGAIN", "Try again", 0 },
+    { ENOMEM, "NOMEM", "Out of memory", 0 },
+    { EACCES, "ACCES", "Permission denied", 0 },
+    { EFAULT, "FAULT", "Bad address", 0 },
+    { ENOTBLK, "NOTBLK", "Block device required", 0 },
+    { EBUSY, "BUSY", "Device or resource busy", 0 },
+    { EEXIST, "EXIST", "File exists", 0 },
+    { EXDEV, "XDEV", "Cross-device link", 0 },
+    { ENODEV, "NODEV", "No such device", 0 },
+    { ENOTDIR, "NOTDIR", "Not a directory", 0 },
+    { EISDIR, "ISDIR", "Is a directory", 0 },
+    { EINVAL, "INVAL", "Invalid argument", 0 },
+    { ENFILE, "NFILE", "File table overflow", 0 },
+    { EMFILE, "MFILE", "Too many open files", 0 },
+    { ENOTTY, "NOTTY", "Not a typewriter", 0 },
+    { ETXTBSY, "TXTBSY", "Text file busy", 0 },
+    { EFBIG, "FBIG", "File too large", 0 },
+    { ENOSPC, "NOSPC", "No space left on device", 0 },
+    { ESPIPE, "SPIPE", "Illegal seek", 0 },
+    { EROFS, "ROFS", "Read-only file system", 0 },
+    { EMLINK, "MLINK", "Too many links", 0 },
+    { EPIPE, "PIPE", "Broken pipe", 0 },
+    { EDOM, "DOM", "Math argument out of domain of func", 0 },
+    { ERANGE, "RANGE", "Math result not representable", 0 },
+    { EDEADLK, "DEADLK", "Resource deadlock would occur", 0 },
+    { ENAMETOOLONG, "NAMETOOLONG", "File name too long", 0 },
+    { ENOLCK, "NOLCK", "No record locks available", 0 },
+    { ENOSYS, "NOSYS", "Function not implemented", 0 },
+    { ENOTEMPTY, "NOTEMPTY", "Directory not empty", 0 },
+    { ELOOP, "LOOP", "Too many symbolic links encountered", 0 },
+    { EWOULDBLOCK, "WOULDBLOCK", "Operation would block", 0 },
+    { ENOMSG, "NOMSG", "No message of desired type", 0 },
+    { EIDRM, "IDRM", "Identifier removed", 0 },
+    { ECHRNG, "CHRNG", "Channel number out of range", 0 },
+    { EL2NSYNC, "L2NSYNC", "Level 2 not synchronized", 0 },
+    { EL3HLT, "L3HLT", "Level 3 halted", 0 },
+    { EL3RST, "L3RST", "Level 3 reset", 0 },
+    { ELNRNG, "LNRNG", "Link number out of range", 0 },
+    { EUNATCH, "UNATCH", "Protocol driver not attached", 0 },
+    { ENOCSI, "NOCSI", "No CSI structure available", 0 },
+    { EL2HLT, "L2HLT", "Level 2 halted", 0 },
+    { EBADE, "BADE", "Invalid exchange", 0 },
+    { EBADR, "BADR", "Invalid request descriptor", 0 },
+    { EXFULL, "XFULL", "Exchange full", 0 },
+    { ENOANO, "NOANO", "No anode", 0 },
+    { EBADRQC, "BADRQC", "Invalid request code", 0 },
+    { EBADSLT, "BADSLT", "Invalid slot", 0 },
+    { EDEADLOCK, "DEADLOCK", "Resource deadlock would occur", 0 },
+    { EBFONT, "BFONT", "Bad font file format", 0 },
+    { ENOSTR, "NOSTR", "Device not a stream", 0 },
+    { ENODATA, "NODATA", "No data available", 0 },
+    { ETIME, "TIME", "Timer expired", 0 },
+    { ENOSR, "NOSR", "Out of streams resources", 0 },
+    { ENONET, "NONET", "Machine is not on the network", 0 },
+    { ENOPKG, "NOPKG", "Package not installed", 0 },
+    { EREMOTE, "REMOTE", "Object is remote", 0 },
+    { ENOLINK, "NOLINK", "Link has been severed", 0 },
+    { EADV, "ADV", "Advertise error", 0 },
+    { ESRMNT, "SRMNT", "Srmount error", 0 },
+    { ECOMM, "COMM", "Communication error on send", 0 },
+    { EPROTO, "PROTO", "Protocol error", 0 },
+    { EMULTIHOP, "MULTIHOP", "Multihop attempted", 0 },
+    { EDOTDOT, "DOTDOT", "RFS specific error", 0 },
+    { EBADMSG, "BADMSG", "Not a data message", 0 },
+    { EOVERFLOW, "OVERFLOW", "Value too large for defined data type", 0 },
+    { ENOTUNIQ, "NOTUNIQ", "Name not unique on network", 0 },
+    { EBADFD, "BADFD", "File descriptor in bad state", 0 },
+    { EREMCHG, "REMCHG", "Remote address changed", 0 },
+    { ELIBACC, "LIBACC", "Can not access a needed shared library", 0 },
+    { ELIBBAD, "LIBBAD", "Accessing a corrupted shared library", 0 },
+    { ELIBSCN, "LIBSCN", ".lib section in a.out corrupted", 0 },
+    { ELIBMAX, "LIBMAX", "Attempting to link in too many shared libraries", 0 },
+    { ELIBEXEC, "LIBEXEC", "Cannot exec a shared library directly", 0 },
+    { EILSEQ, "ILSEQ", "Illegal byte sequence", 0 },
+    { ERESTART, "RESTART", "Interrupted system call should be restarted", 0 },
+    { ESTRPIPE, "STRPIPE", "Streams pipe error", 0 },
+    { EUSERS, "USERS", "Too many users", 0 },
+    { ENOTSOCK, "NOTSOCK", "Socket operation on non-socket", 0 },
+    { EDESTADDRREQ, "DESTADDRREQ", "Destination address required", 0 },
+    { EMSGSIZE, "MSGSIZE", "Message too long", 0 },
+    { EPROTOTYPE, "PROTOTYPE", "Protocol wrong type for socket", 0 },
+    { ENOPROTOOPT, "NOPROTOOPT", "Protocol not available", 0 },
+    { EPROTONOSUPPORT, "PROTONOSUPPORT", "Protocol not supported", 0 },
+    { ESOCKTNOSUPPORT, "SOCKTNOSUPPORT", "Socket type not supported", 0 },
+    { EOPNOTSUPP, "OPNOTSUPP", "Operation not supported on transport endpoint", 0 },
+    { EPFNOSUPPORT, "PFNOSUPPORT", "Protocol family not supported", 0 },
+    { EAFNOSUPPORT, "AFNOSUPPORT", "Address family not supported by protocol", 0 },
+    { EADDRINUSE, "ADDRINUSE", "Address already in use", 0 },
+    { EADDRNOTAVAIL, "ADDRNOTAVAIL", "Cannot assign requested address", 0 },
+    { ENETDOWN, "NETDOWN", "Network is down", 0 },
+    { ENETUNREACH, "NETUNREACH", "Network is unreachable", 0 },
+    { ENETRESET, "NETRESET", "Network dropped connection because of reset", 0 },
+    { ECONNABORTED, "CONNABORTED", "Software caused connection abort", 0 },
+    { ECONNRESET, "CONNRESET", "Connection reset by peer", 0 },
+    { ENOBUFS, "NOBUFS", "No buffer space available", 0 },
+    { EISCONN, "ISCONN", "Transport endpoint is already connected", 0 },
+    { ENOTCONN, "NOTCONN", "Transport endpoint is not connected", 0 },
+    { ESHUTDOWN, "SHUTDOWN", "Cannot send after transport endpoint shutdown", 0 },
+    { ETOOMANYREFS, "TOOMANYREFS", "Too many references: cannot splice", 0 },
+    { ETIMEDOUT, "TIMEDOUT", "Connection timed out", 0 },
+    { ECONNREFUSED, "CONNREFUSED", "Connection refused", 0 },
+    { EHOSTDOWN, "HOSTDOWN", "Host is down", 0 },
+    { EHOSTUNREACH, "HOSTUNREACH", "No route to host", 0 },
+    { EALREADY, "ALREADY", "Operation already in progress", 0 },
+    { EINPROGRESS, "INPROGRESS", "Operation now in progress", 0 },
+    { ESTALE, "STALE", "Stale NFS file handle", 0 },
+    { EUCLEAN, "UCLEAN", "Structure needs cleaning", 0 },
+    { ENOTNAM, "NOTNAM", "Not a XENIX named type file", 0 },
+    { ENAVAIL, "NAVAIL", "No XENIX semaphores available", 0 },
+    { EISNAM, "ISNAM", "Is a named type file", 0 },
+    { EREMOTEIO, "REMOTEIO", "Remote I/O error", 0 },
+    { EDQUOT, "DQUOT", "Quota exceeded", 0 },
+    { ENOMEDIUM, "NOMEDIUM", "No medium found", 0 },
+    { EMEDIUMTYPE, "MEDIUMTYPE", "Wrong medium type", 0 },
+};
+
+#define NUM_FILE_ERRORS	(sizeof (fileErrorMap) / sizeof (fileErrorMap[0]))
+
+Types	*typesFileError;
+
+static int
+FileInitErrors (void)
+{
+    ENTER ();
+    StructType	    *st;
+    StructElement   *se;
+    int		    i;
+
+    st = NewStructType (NUM_FILE_ERRORS);
+    se = StructTypeElements (st);
+    for (i = 0; i < NUM_FILE_ERRORS; i++)
+    {
+	fileErrorMap[i].atom = AtomId (fileErrorMap[i].name);
+	se[i].type = typesEnum;
+	se[i].name = fileErrorMap[i].atom;
+    }
+    typesFileError = NewTypesUnion (st, True);
+    MemAddRoot (typesFileError);
+    EXIT ();
+    return 1;
+}
+
 int
 FileInit (void)
 {
     ENTER ();
     fileBlockedReference = NewReference ((void **) &fileBlocked);
     MemAddRoot (fileBlockedReference);
+    FileInitErrors ();
     EXIT ();
     return 1;
+}
+
+Value
+FileGetError (int err)
+{
+    ENTER();
+    Value   ret;
+    int	    i;
+
+    for (i = 0; i < NUM_FILE_ERRORS; i++)
+	if (fileErrorMap[i].value == err)
+	    break;
+    if (i == NUM_FILE_ERRORS)
+	i = 0;	    /* XXX weird error */
+    ret = NewUnion (typesFileError->structs.structs, True);
+    ret->unions.tag = fileErrorMap[i].atom;
+    BoxValueSet (ret->unions.value,0,Void);
+    RETURN (ret);
 }
 
 static void
@@ -165,12 +344,13 @@ NewFileChain (FileChainPtr next, int size)
 }
 
 Value
-FileCreate (int fd)
+FileCreate (int fd, int flags)
 {
     ENTER ();
     Value   file;
 
     file = NewFile (fd);
+    file->file.flags |= flags;
     if (isatty (fd))
 	file->file.flags |= FileLineBuf;
     if (fd >= 3)
@@ -179,42 +359,58 @@ FileCreate (int fd)
 }
 
 Value
-FileFopen (char *name, char *mode)
+FileFopen (char *name, char *mode, int *errp)
 {
     ENTER ();
+    int	    oflags = 0;
     int	    flags = 0;
     int	    fd;
     
     switch (mode[0]) {
     case 'r':
 	if (mode[1] == '+')
-	    flags = 2;
+	{
+	    flags |= FileWritable;
+	    oflags = 2;
+	}
 	else
-	    flags = 0;
+	    oflags = 0;
+	flags |= FileReadable;
 	break;
     case 'w':
 	if (mode[1] == '+')
-	    flags = 2;
+	{
+	    oflags = 2;
+	    flags |= FileReadable;
+	}
 	else
-	    flags = 1;
-	flags |= O_TRUNC|O_CREAT;
+	    oflags = 1;
+	oflags |= O_TRUNC|O_CREAT;
+	flags |= FileWritable;
 	break;
     case 'a':
 	if (mode[1] == '+')
-	    flags = 2;
+	{
+	    oflags = 2;
+	    flags |= FileReadable;
+	}
 	else
-	    flags = 1;
-	flags |= O_TRUNC|O_CREAT|O_APPEND;
+	    oflags = 1;
+	oflags |= O_TRUNC|O_CREAT|O_APPEND;
+	flags |= FileWritable;
 	break;
     }
-    fd = open (name, flags, 0666);
+    fd = open (name, oflags, 0666);
     if (fd < 0)
+    {
+	*errp = errno;
 	RETURN (0);
-    RETURN (FileCreate (fd));
+    }
+    RETURN (FileCreate (fd, flags));
 }
 
 Value
-FilePopen (char *program, char *argv[], char *mode)
+FilePopen (char *program, char *argv[], char *mode, int *errp)
 {
     ENTER ();
     int	    fd, fds[2];
@@ -231,6 +427,7 @@ FilePopen (char *program, char *argv[], char *mode)
     case -1:
 	close (fds[0]);
 	close (fds[1]);
+	*errp = errno;
 	fd = -1;
 	break;
     case 0:
@@ -263,12 +460,15 @@ FilePopen (char *program, char *argv[], char *mode)
     }
     if (fd >= 0)
     {
-	file = FileCreate (fd);
+	file = FileCreate (fd, reading ? FileReadable : FileWritable);
 	file->file.flags |= FilePipe;
 	file->file.pid = pid;
     }
     else
+    {
+	*errp = errno;
 	file = 0;
+    }
     RETURN (file);
 }
 
@@ -292,7 +492,7 @@ FileStringRead (char *string, int len)
     Value   file;
 
     file = NewFile (-1);
-    file->file.flags |= FileString;
+    file->file.flags |= FileString|FileReadable;
     file->file.input = NewFileChain (0, len);
     memcpy (FileBuffer (file->file.input), string, len);
     file->file.input->used = len;
@@ -306,7 +506,7 @@ FileStringWrite (void)
     Value   file;
 
     file = NewFile (-1);
-    file->file.flags |= FileString;
+    file->file.flags |= FileString|FileWritable;
     RETURN (file);
 }
 
@@ -353,69 +553,77 @@ FileInput (Value file)
     int		    err;
 
     if (file->file.flags & FileClosed)
-	c = FileError;
-    else
     {
-	if (!file->file.input)
+	EXIT ();
+	return FileError;
+    }
+    if (!file->file.input)
+    {
+	if (!(file->file.flags & FileReadable))
 	{
-	    if (file->file.flags & FileString)
-	    {
-		EXIT ();
-		return FileEnd;
-	    }
-	    file->file.input = NewFileChain (0, FileBufferSize);
+	    file->file.flags |= FileInputError;
+	    file->file.input_errno = EBADF;
+	    EXIT ();
+	    return FileError;
 	}
-	ic = file->file.input;
-	for (;;)
+	if (file->file.flags & FileString)
 	{
-	    if (ic->ptr < ic->used)
-	    {
-		c = FileBuffer (ic)[ic->ptr++];
-		break;
-	    }
+	    EXIT ();
+	    return FileEnd;
+	}
+	file->file.input = NewFileChain (0, FileBufferSize);
+    }
+    ic = file->file.input;
+    for (;;)
+    {
+	if (ic->ptr < ic->used)
+	{
+	    c = FileBuffer (ic)[ic->ptr++];
+	    break;
+	}
+	else
+	{
+	    if (ic->next)
+		ic = ic->next;
 	    else
 	    {
-		if (ic->next)
-		    ic = ic->next;
+		buf = FileBuffer (ic);
+		if (file->file.fd < 3 && !ownTty[file->file.fd])
+		{
+		    n = -1;
+		    err = EWOULDBLOCK;
+		}
 		else
 		{
-		    buf = FileBuffer (ic);
-		    if (file->file.fd < 3 && !ownTty[file->file.fd])
+		    n = ic->size;
+		    if (file->file.flags & FileUnBuf)
+			n = 1;
+		    n = read (file->file.fd, buf, n);
+		    err = errno;
+		    file->file.flags &= ~FileEnd;
+		}
+		if (n <= 0)
+		{
+		    if (n == 0)
 		    {
-			n = -1;
-			err = EWOULDBLOCK;
+			file->file.flags |= FileEnd;
+			c = FileEOF;
+		    }
+		    else if (err == EWOULDBLOCK)
+		    {
+			FileSetBlocked (file, FileInputBlocked);
+			c = FileBlocked;
 		    }
 		    else
 		    {
-			n = ic->size;
-			if (file->file.flags & FileUnBuf)
-			    n = 1;
-			n = read (file->file.fd, buf, n);
-			err = errno;
-			file->file.flags &= ~FileEnd;
+			file->file.flags |= FileInputError;
+			file->file.input_errno = err;
+			c = FileError;
 		    }
-		    if (n <= 0)
-		    {
-			if (n == 0)
-			{
-			    file->file.flags |= FileEnd;
-			    c = FileEOF;
-			}
-			else if (err == EWOULDBLOCK)
-			{
-			    FileSetBlocked (file, FileInputBlocked);
-			    c = FileBlocked;
-			}
-			else
-			{
-			    file->file.flags |= FileInputError;
-			    c = FileError;
-			}
-			break;
-		    }
-		    ic->ptr = 0;
-		    ic->used = n;
+		    break;
 		}
+		ic->ptr = 0;
+		ic->used = n;
 	    }
 	}
     }
@@ -470,7 +678,11 @@ FileFlushChain (Value file, FileChainPtr ic)
 	else
 	{
 	    if (n < 0 && err != EWOULDBLOCK)
+	    {
+		file->file.flags |= FileOutputError;
+		file->file.output_errno = err;
 		return FileError;
+	    }
 	    if (!(file->file.flags & FileBlockWrites))
 	    {
 		FileSetBlocked (file, FileOutputBlocked);
@@ -533,25 +745,48 @@ FileFlush (Value file)
     return n;
 }
 
-void
+int
 FileOutput (Value file, char c)
 {
     ENTER ();
     FileChainPtr	ic;
 
     if (file->file.flags & FileClosed)
-	return;
+    {
+	file->file.flags |= FileOutputError;
+	file->file.output_errno = EBADF;
+	EXIT ();
+	return FileError;
+    }
+    if (!(file->file.flags & FileWritable))
+    {
+	file->file.flags |= FileOutputError;
+	file->file.output_errno = EBADF;
+	EXIT ();
+	return FileError;
+    }
     ic = file->file.output;
     if (!ic)
 	ic = file->file.output = NewFileChain (0, FileBufferSize);
     if (ic->used == ic->size)
-	FileFlush (file);
+	if (FileFlush (file) == FileError)
+	{
+	    EXIT ();
+	    return FileError;
+	}
     ic = file->file.output;
     FileBuffer(ic)[ic->used++] = c;
     if ((c == '\n' && file->file.flags & FileLineBuf) ||
 	file->file.flags & FileUnBuf)
-	FileFlush (file);
+    {
+	if (FileFlush (file) == FileError)
+	{
+	    EXIT ();
+	    return FileError;
+	}
+    }
     EXIT ();
+    return 0;
 }
 
 void

@@ -132,11 +132,13 @@ Bool
 LexFile (char *s, Bool complain, Bool after)
 {
     Value	f;
+    int		err;
 
-    f = FileFopen (s, "r");
+    f = FileFopen (s, "r", &err);
     if (f == 0) {
 	if (complain)
-	    (void) FilePrintf (FileStderr, "cannot open file %s\n", s);
+	    (void) FilePrintf (FileStderr, "%s: %s\n",
+			       s, strerror (err));
 	return False;
     }
     (void) NewLexInput(f, AtomId (s), after, False);

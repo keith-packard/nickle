@@ -96,7 +96,7 @@ do_Sockets_create (Value type)
     s = socket (PF_INET, itype, 0);
     if (s == -1)
 	RETURN (Zero);
-    RETURN (FileCreate (s));
+    RETURN (FileCreate (s, FileReadable|FileWritable));
 }
 
 static Bool address_lookup (Value hostname, Value portname,
@@ -226,11 +226,15 @@ do_Sockets_accept (Value s)
 	    FileSetBlocked (s, FileInputBlocked);
 	    ThreadSleep (running, s, PriorityIo);
 	}
+	RaiseStandardException (exception_io_error,
+				strerror (errno),
+				2, FileGetError (errno),
+				s);
         RETURN (Zero); /* FIXME: more here? */
     }
 
     complete = True;
-    RETURN (FileCreate (f));
+    RETURN (FileCreate (f, FileReadable|FileWritable));
 }
 
 /* void do_Sockets_shutdown (File::file s, {SHUT_RD,SHUT_WR,SHUT_RDWR} how); */

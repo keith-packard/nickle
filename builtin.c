@@ -133,6 +133,7 @@ BuiltinType (char *format, Types **type)
     case 'p': t = typesPoly; break;
     case 'n': t = typesGroup; break;
     case 'N': t = typesField; break;
+    case 'E': t = typesFileError; break;
     case 'R': t = typesPrim[type_float]; break;
     case 'r': t = typesPrim[type_rational]; break;
     case 'i': t = typesPrim[type_integer]; break;

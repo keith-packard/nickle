@@ -919,7 +919,7 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 			except->symbol.name);
 	if (args)
 	{
-	    for (i = args->array.ents - 1; i >= 0; i--)
+	    for (i = 0; i < args->array.ents; i++)
 		PrintError ("\t%v\n", BoxValueGet (args->array.values, i));
 	}
 	SetSignalError ();
@@ -971,16 +971,17 @@ RaiseStandardException (StandardException   se,
     EXIT ();
 }
 
-void
+Value
 JumpStandardException (Value thread, InstPtr *next)
 {
     ENTER ();
     SymbolPtr		except = standardExceptions[standardException];
+    Value		args = standardExceptionArgs;
     
     aborting = False;
     if (except)
-	RaiseException (thread, except, standardExceptionArgs, next);
+	RaiseException (thread, except, args, next);
     standardException = exception_none;
     standardExceptionArgs = 0;
-    EXIT ();
+    RETURN (args);
 }

@@ -368,6 +368,7 @@ extern Types	    *typesGroup;
 extern Types	    *typesField;
 extern Types	    *typesRefPoly;
 extern Types	    *typesNil;
+extern Types	    *typesFileError;
 extern Types	    *typesPrim[type_void - type_int + 1];
 
 #define typesEnum   ((Types *) 1)
@@ -484,10 +485,12 @@ typedef struct _io_chain {
 
 typedef struct _file {
     BaseValue	    base;
-    union _value    *next;	/* used to chain blocked files together */
+    union _value    *next;	    /* used to chain blocked files together */
     int		    fd;
-    int		    pid;	/* for pipes, process id */
-    int		    status;	/* from wait */
+    int		    pid;	    /* for pipes, process id */
+    int		    status;	    /* from wait */
+    int		    input_errno;    /* last input errno */
+    int		    output_errno;   /* last output errno */
     int		    flags;
     int		    error;
     FileChainPtr    input;
@@ -500,17 +503,19 @@ typedef struct _file {
 #define FileError	-3
 #define FileBuffer(ic)	((unsigned char *) ((ic) + 1))
 
-#define FileOutputBlocked   0x01
-#define FileInputBlocked    0x02
-#define FileLineBuf	    0x04
-#define FileUnBuf	    0x08
-#define FileInputError      0x10
-#define FileOutputError	    0x20
-#define FileClosed	    0x40
-#define FileBlockWrites	    0x80
-#define FileEnd		    0x100
-#define FileString	    0x200
-#define FilePipe	    0x400
+#define FileReadable	    0x0001
+#define FileWritable	    0x0002
+#define FileOutputBlocked   0x0004
+#define FileInputBlocked    0x0008
+#define FileLineBuf	    0x0010
+#define FileUnBuf	    0x0020
+#define FileInputError      0x0040
+#define FileOutputError	    0x0080
+#define FileClosed	    0x0100
+#define FileBlockWrites	    0x0200
+#define FileEnd		    0x0400
+#define FileString	    0x0800
+#define FilePipe	    0x1000
 
 typedef struct _ref {
     BaseValue	base;
@@ -794,10 +799,11 @@ extern Value	Zero, One, Blank, Empty, Elementless, Void;
 # define True(v)	(!Zerop(v))
 # define False(v)	(Zerop(v))
 
+Value	FileGetError (int err);
 int	FileInput (Value);
-void	FileOutput (Value, char);
+int	FileOutput (Value, char);
 void	FileUnput (Value, unsigned char);
-Value   FileCreate (int fd);
+Value   FileCreate (int fd, int flags);
 int	FileFlush (Value);
 int	FileClose (Value);
 Value	FileStringRead (char *string, int len);
@@ -814,9 +820,9 @@ void	FilePutType (Value f, Type tag, Bool minimal);
 void	FilePutClass (Value f, Class storage, Bool minimal);
 void	FilePutPublish (Value f, Publish publish, Bool minimal);
 void	FilePutTypes (Value f, Types *t, Bool minimal);
-Value	FileFopen (char *name, char *mode);
+Value	FileFopen (char *name, char *mode, int *errp);
 void	FilePutArgTypes (Value f, ArgType *at);
-Value	FilePopen (char *program, char *args[], char *mode);
+Value	FilePopen (char *program, char *args[], char *mode, int *errp);
 int	FileStatus (Value file);
 void	FileCheckBlocked (void);
 void	FileSetBlocked (Value file, int flag);

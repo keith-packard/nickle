@@ -19,6 +19,13 @@
 
 NamespacePtr FileNamespace;
 
+struct ebuiltin {
+    char		*name;
+    StandardException	exception;
+    char		*args;
+};
+
+
 void
 import_File_namespace()
 {
@@ -58,6 +65,15 @@ import_File_namespace()
         { 0 }
     };
 
+    static struct ebuiltin excepts[] = {
+	{"open_error",		exception_open_error,		"sEs" },
+	{"io_error",		exception_io_error,		"sEf" },
+	{0,			0 },
+    };
+
+    struct ebuiltin *e;
+    SymbolPtr	    s;
+
     FileNamespace = BuiltinNamespace (/*parent*/ 0, "File")->namespace.namespace;
 
     BuiltinFuncs0 (&FileNamespace, funcs_0);
@@ -65,6 +81,13 @@ import_File_namespace()
     BuiltinFuncs2 (&FileNamespace, funcs_2);
     BuiltinFuncs3 (&FileNamespace, funcs_3);
     BuiltinFuncs7 (&FileNamespace, funcs_7);
+
+    for (e = excepts; e->name; e++)
+	BuiltinAddException (&FileNamespace, e->exception, e->name, e->args);
+
+    s = NewSymbolType (AtomId("errorType"), typesFileError);
+    NamespaceAddName (FileNamespace, s, publish_public);
+    
     EXIT ();
 }
 
@@ -86,8 +109,16 @@ do_File_print (Value file, Value value, Value format,
     if (file->file.flags & FileOutputBlocked)
 	ThreadSleep (running, file, PriorityIo);
     else
+    {
 	Print (file, value, *StringChars(&format->string), ibase, iwidth,
 	       iprec, *StringChars(&fill->string));
+	if (file->file.flags & FileOutputError)
+	{
+	    RaiseStandardException (exception_io_error, 
+				    strerror (file->file.output_errno), 
+				    2, FileGetError (file->file.output_errno), file);
+	}
+    }
     return Zero;
 }
 
@@ -97,23 +128,37 @@ do_File_open (Value name, Value mode)
     ENTER ();
     char	*n, *m;
     Value	ret;
+    int		err;
 
     n = StringChars (&name->string);
     m = StringChars (&mode->string);
     if (aborting)
 	RETURN (Zero);
-    complete = True;
-    ret = FileFopen (n, m);
+    ret = FileFopen (n, m, &err);
     if (!ret)
+    {
+	RaiseStandardException (exception_open_error,
+				strerror (err),
+				2, FileGetError (err), name);
 	RETURN (Zero);
+    }
+    complete = True;
     RETURN (ret);
 }
 
 Value 
 do_File_flush (Value f)
 {
-    if (FileFlush (f) == FileBlocked)
+    switch (FileFlush (f)) {
+    case FileBlocked:
 	ThreadSleep (running, f, PriorityIo);
+	break;
+    case FileError:
+	RaiseStandardException (exception_io_error, 
+				strerror (f->file.output_errno), 
+				2, FileGetError (f->file.output_errno), f);
+	break;
+    }
     return One;
 }
 
@@ -122,12 +167,24 @@ do_File_close (Value f)
 {
     if (aborting)
 	return Zero;
-    if (FileFlush (f) == FileBlocked)
+    switch (FileFlush (f)) {
+    case FileBlocked:
 	ThreadSleep (running, f, PriorityIo);
-    else
-    {
-	complete = True;
-	(void) FileClose (f);
+	break;
+    case FileError:
+	RaiseStandardException (exception_io_error, 
+				strerror (f->file.output_errno), 
+				2, FileGetError (f->file.output_errno), f);
+	break;
+    default:
+	if (FileClose (f) == FileError)
+	{
+	    RaiseStandardException (exception_io_error, 
+				    strerror (f->file.output_errno), 
+				    2, FileGetError (f->file.output_errno), f);
+	}
+	else
+	    complete = True;
     }
     return One;
 }
@@ -139,6 +196,8 @@ do_File_pipe (Value file, Value argv, Value mode)
     char    **args;
     int	    argc;
     Value   arg;
+    Value   ret;
+    int	    err;
 
     args = AllocateTemp ((argv->array.dim[0] + 1) * sizeof (char *));
     for (argc = 0; argc < argv->array.dim[0]; argc++)
@@ -147,8 +206,19 @@ do_File_pipe (Value file, Value argv, Value mode)
 	args[argc] = StringChars (&arg->string);
     }
     args[argc] = 0;
-    RETURN (FilePopen (StringChars (&file->string), args, 
-		      StringChars (&mode->string)));
+    if (aborting)
+	RETURN(Zero);
+    ret = FilePopen (StringChars (&file->string), args, 
+		     StringChars (&mode->string), &err);
+    if (!ret)
+    {
+	RaiseStandardException (exception_open_error,
+				strerror (err),
+				2, FileGetError (err), file);
+	ret = Zero;
+    }
+    complete = True;
+    RETURN (ret);
 }
 
 Value
@@ -184,13 +254,16 @@ do_File_getc (Value f)
     if (!aborting)
     {
 	c = FileInput (f);
-	if (c == FileBlocked)
-	{
+	switch (c) {
+	case FileBlocked:
 	    ThreadSleep (running, f, PriorityIo);
 	    RETURN (Zero);
-	}
-	else
-	{
+	case FileError:
+	    RaiseStandardException (exception_io_error,
+				    strerror (f->file.input_errno),
+				    2, FileGetError (f->file.input_errno), f);
+	    RETURN (Zero);
+	default:
 	    complete = True;
 	    RETURN (NewInt (c));
 	}
@@ -237,8 +310,14 @@ do_File_putc (Value v, Value f)
     {
 	if (!aborting)
 	{
-	    complete = True;
-	    FileOutput (f, IntPart (v, "putc non integer"));
+	    if (FileOutput (f, IntPart (v, "putc non integer")) == FileError)
+	    {
+		RaiseStandardException (exception_io_error,
+					strerror (f->file.output_errno),
+					2, FileGetError (f->file.output_errno), f);
+	    }
+	    else
+		complete = True;
 	}
     }
     RETURN (v);

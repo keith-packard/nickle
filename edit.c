@@ -60,7 +60,7 @@ EditFunction (SymbolPtr symbol, Publish publish)
 	unlink (tmpName);
 	return;
     }
-    tmp = FileCreate (fd);
+    tmp = FileCreate (fd, FileWritable);
     if (tmp)
     {
 	PrettyPrint (tmp, publish, symbol);

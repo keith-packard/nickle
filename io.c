@@ -145,9 +145,9 @@ IoInit (void)
 {
     ENTER ();
     catchSignal (SIGIO, sigio);
-    FileStdin = FileCreate (0);
-    FileStdout = FileCreate (1);
-    FileStderr = FileCreate (2);
+    FileStdin = FileCreate (0, FileReadable);
+    FileStdout = FileCreate (1, FileWritable);
+    FileStderr = FileCreate (2, FileWritable);
     MemAddRoot (FileStdin);
     MemAddRoot (FileStdout);
     MemAddRoot (FileStderr);

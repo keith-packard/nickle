@@ -1335,7 +1335,11 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	exception = name->atom.symbol;
 
 	if (!exception)
+	{
+	    CompileError (obj, stat, "No exception '%A' in scope",
+			  name->atom.atom);
 	    RETURN(obj);
+	}
 	if (exception->symbol.class != class_exception)
 	{
 	    CompileError (obj, stat, "Invalid use of %C \"%A\" as exception",

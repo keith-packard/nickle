@@ -667,8 +667,10 @@ typedef enum _standardException {
     exception_invalid_array_bounds, /* string poly poly */
     exception_divide_by_zero,	    /* string number number */
     exception_invalid_struct_member,/* string poly string */
-    exception_invalid_binop_values,  /* string poly poly */
-    exception_invalid_unop_value,    /* string poly */
+    exception_invalid_binop_values, /* string poly poly */
+    exception_invalid_unop_value,   /* string poly */
+    exception_open_error,	    /* string integer string */
+    exception_io_error,		    /* string integer file */
     _num_standard_exceptions
 } StandardException;
 
@@ -685,7 +687,7 @@ RaiseStandardException (StandardException   se,
 			int		    argc,
 			...);
 
-void
+Value
 JumpStandardException (Value thread, InstPtr *next);
 
 #ifdef HAVE_C_INLINE

@@ -29,27 +29,49 @@ setArgv (int argc, char **argv)
     Value   args;
     int	    i;
 
-    argc = argc + 1;
-    args = NewArray (False, NewTypesPrim (type_string), 1, &argc);
-    for (i = 0; i < argc - 1; i++)
+    args = NewArray (True, NewTypesPrim (type_string), 1, &argc);
+    for (i = 0; i < argc; i++)
 	BoxValue (args->array.values, i) = NewStrString (argv[i]);
-    BoxValue (args->array.values, i) = Zero;
     setVar ("argv", args);
     EXIT ();
 }
 
 static void
-try_nickrc (void)
+try_nicklerc (void)
 {
-    char    nickrc[1024];
+    char    nicklerc[2048];
     char    *home;
 
+    home = getenv ("NICKLERC");
+    if (home) {
+	pushinput (nicklerc, True);
+	return;
+    }
     home = getenv ("HOME");
     if (!home)
 	return;
-    strcpy (nickrc, home);
-    strcat (nickrc, "/.nickrc");
-    pushinput (nickrc, False);
+    if (strlen(home) > 1024) {
+	fprintf(stderr, "warning: $HOME too large, giving up on .nicklerc\n");
+	return;
+    }
+    strcpy (nicklerc, home);
+    strcat (nicklerc, "/.nicklerc");
+    pushinput (nicklerc, False);
+}
+
+#ifndef NICKLELIB
+#define NICKLELIB "/usr/local/share/nickle/builtin.5c"
+#endif
+
+static void
+try_nicklelib (void)
+{
+    char    *lib;
+
+    lib = getenv ("NICKLELIB");
+    if (!lib)
+	lib = NICKLELIB;
+    pushinput (lib, True);
 }
 
 RETSIGTYPE	intr(int), ferr(int);
@@ -73,6 +95,7 @@ main (int argc, char **argv)
     interactive = stdin_interactive = isatty(0);
     init ();
     yyinput = FileStdin;
+    try_nicklelib();
     if (argc > 1)
     {
 	setArgv (argc - 1, argv + 1);
@@ -83,7 +106,7 @@ main (int argc, char **argv)
 	}
     }
     else
-	try_nickrc();
+	try_nicklerc();
     (void) yyparse ();
     IoFini ();
     return 0;

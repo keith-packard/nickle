@@ -1,0 +1,103 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:556: checking for a BSD compatible install
+configure:609: checking whether build environment is sane
+configure:666: checking whether make sets ${MAKE}
+configure:712: checking for working aclocal
+configure:725: checking for working autoconf
+configure:738: checking for working automake
+configure:751: checking for working autoheader
+configure:764: checking for working makeinfo
+configure:784: checking for gcc
+configure:897: checking whether the C compiler (gcc  ) works
+configure:913: gcc -o conftest    conftest.c  1>&5
+configure:939: checking whether the C compiler (gcc  ) is a cross-compiler
+configure:944: checking whether we are using GNU C
+configure:953: gcc -E conftest.c
+configure:972: checking whether gcc accepts -g
+configure:1015: checking for a BSD compatible install
+configure:1068: checking whether ln -s works
+configure:1089: checking how to run the C preprocessor
+configure:1110: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1174: checking for flex
+configure:1207: checking for flex
+configure:1241: checking for yywrap in -lfl
+configure:1260: gcc -o conftest -g -O2   conftest.c -lfl   1>&5
+configure:1283: checking lex output file root
+configure:1304: checking whether yytext is a pointer
+configure:1323: gcc -o conftest -g -O2   conftest.c  -lfl 1>&5
+configure:1349: checking for byacc
+configure:1387: checking for gawk
+configure:1421: checking for date
+configure:1452: checking for sin in -lm
+configure:1471: gcc -o conftest -g -O2   conftest.c -lm   1>&5
+configure:1464: warning: conflicting types for built-in function `sin'
+configure:1500: checking for ANSI C header files
+configure:1513: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1580: gcc -o conftest -g -O2   conftest.c -lm  1>&5
+configure:1607: checking for fcntl.h
+configure:1617: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1607: checking for strings.h
+configure:1617: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1607: checking for time.h
+configure:1617: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1607: checking for sys/time.h
+configure:1617: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1607: checking for unistd.h
+configure:1617: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1647: checking for ieeefp.h
+configure:1657: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1653: ieeefp.h: No such file or directory
+configure: failed program was:
+#line 1652 "configure"
+#include "confdefs.h"
+#include <ieeefp.h>
+configure:1647: checking for fpu_control.h
+configure:1657: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1647: checking for stropts.h
+configure:1657: gcc -E  conftest.c >/dev/null 2>conftest.out
+configure:1685: checking for inline
+configure:1699: gcc -c -g -O2  conftest.c 1>&5
+configure:1732: checking size of long long
+configure:1751: gcc -o conftest -g -O2   conftest.c -lm  1>&5
+configure:1772: checking return type of signal handlers
+configure:1794: gcc -c -g -O2  conftest.c 1>&5
+configure:1813: checking for vprintf
+configure:1841: gcc -o conftest -g -O2   conftest.c -lm  1>&5
+configure:1920: checking for gettimeofday
+configure:1948: gcc -o conftest -g -O2   conftest.c -lm  1>&5
+configure:1920: checking for select
+configure:1948: gcc -o conftest -g -O2   conftest.c -lm  1>&5
+configure:1975: checking for finite
+configure:2003: gcc -o conftest -g -O2   conftest.c -lm  1>&5
+configure:1975: checking for __setfpucw
+configure:2003: gcc -o conftest -g -O2   conftest.c -lm  1>&5
+/tmp/ccb8QNA3.o: In function `main':
+/raid/local/src/nickle/configure:1997: undefined reference to `__setfpucw'
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 1980 "configure"
+#include "confdefs.h"
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char __setfpucw(); below.  */
+#include <assert.h>
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char __setfpucw();
+
+int main() {
+
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined (__stub___setfpucw) || defined (__stub_____setfpucw)
+choke me
+#else
+__setfpucw();
+#endif
+
+; return 0; }
+configure:2029: checking whether getpgrp takes no argument
+configure:2092: gcc -o conftest -g -O2   conftest.c -lm  1>&5

@@ -1012,20 +1012,18 @@ do_string_to_integer (int n, Value *p)
     int	    ibase;
     int	    negative = 0;
     Value   ret = Zero;
-    Value   str, base;
+    Value   str = p[0];
+    Value   base = Zero;
     
-    if (n == 1)
-    {
-	str = p[0];
-	base = Zero;
-    }
-    else if (n == 2)
-    {
-	str = p[0];
+    switch(n) {
+    case 1:
+	break;
+    case 2:
 	base = p[1];
-    }
-    else
+	break;
+    default:
 	RaiseError ("string_to_integer: wrong number of arguments %d", n);
+    }
     
     if (str->value.tag != type_string)
     {

@@ -18,6 +18,8 @@ nickle_SOURCES = alarm.c array.c atom.c avl.c box.c builtin.c \
 	avl.h mem.h memp.h nickle.h opcode.h ref.h stack.h value.h \
 	gram.y lex.l
 
+data_DATA = builtin.5c math.5c
+
 man_MANS = nickle.1
 
 YFLAGS = -d
@@ -28,5 +30,8 @@ CFLAGS = -O -g -Wall -Wpointer-arith -Wstrict-prototypes \
 
 builtin.o: builtin.c config.status $(srcdir)/date-sh
 	$(CC) -c -DBUILD=\""`$(srcdir)/date-sh`"\" -I. -I$(srcdir) $(CPPFLAGS) $(CFLAGS) builtin.c
+
+main.o: main.c
+	$(CC) -c -DNICKLELIB=\""$(datadir)/builtin.5c"\" -I. -I$(srcdir) $(CPPFLAGS) $(CFLAGS) main.c
 
 lex.o compile.o expr.o pretty.o: gram.h

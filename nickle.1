@@ -1,48 +1,66 @@
+.TH NICKLE 1 "5 Feb 2001"
 .\" $Header$
-.TH IC 1 "3 May 1988"
 .SH NAME
-ic \- a polymorphic desk calculator
+nickle \- a polymorphic desk calculator
 .SH SYNOPSIS
-ic [ file ... ]
+nickle [ file ... ]
 .SH DESCRIPTION
-\fIIc\fP is an interpreter for a simple language which is quite easy to use
-as a desk calculator.  \fIIc\fP supports several datatypes, int, natural,
-integer, ratio, double, string and array.  natural, integer and ratio are
-implemented with arbitrary precision.  \fIIc\fP can automatically convert
+\fINickle\fP is a
+desk calculator language
+with powerful programming and scripting capabilities.
+\fINickle\fP supports several datatypes: int, natural,
+integer, ratio, double, string and array.  The
+natural, integer and ratio datatypes are
+implemented with arbitrary precision.  \fINickle\fP can automatically convert
 between types when appropriate.
 .PP
-The input language vaguely resembles C.  Some things in C which don't
-translate easily are different, and some features are simply missing
-(like \fIop\fP\fB=\fP constructions).  To make the input language more
+The input language vaguely resembles C.  Some things in C
+which do not
+translate easily are different, and some features are simply
+missing.
+To make the input language more
 useful in an interactive setting, \fBnewline\fP only terminates
 statements at ``reasonable'' times.  \fBNewline\fP terminates either
-expressions or single statements typed by the user, inside compound
-statements or function definitions, only a \fB;\fP terminates.  This should
-not cause any problems, it usually stays out of the way.
+expressions or single statements typed by the user. Inside compound
+statements or function definitions, only a \fB;\fP
+terminates statements.  This approach is convenient and does
+not appear to cause problems in normal use.
 .PP
-The syntax for \fIic\fP programs is as follows; name means
-a sequence of letters, digits and _ not starting with a digit; E means
-expression; S means statement.  arrays are any expression which results
+The syntax of \fInickle\fP programs is as follows.
+In this description,
+.B name
+denotes
+any sequence of letters, digits and _ characters
+not starting with a digit;
+.B E
+denotes any
+expression;
+.B S
+denotes any statement;
+and
+.B array
+denotes any expression which results
 in an array.
-
+.\"
 .LP
 Comments are enclosed in /* and */
-
+.\"
 .LP
-operands
+Operands:
 .IP
 floating point numbers - can include exponent, need not
 include decimal point nor sign.
 .IP
-octal numbers - start with a 0, eg 014 is the same as 12.
+octal numbers - start with a 0 (e.g., 014 is the same as 12).
 .IP
-hexdecimal numbers - start with "0x", eg 0x1a is the same as 26.
+hexdecimal numbers - start with "0x" (e.g., 0x1a is the same as 26).
 .IP
 name
 .IP
 name (E) - a function call.
+.\"
 .LP
-Operators.  These are in order of decreasing precedence.
+Operators (in order of decreasing precedence):
 .IP "(type) E"
 cast the result of E into this type
 .IP "array [E]"
@@ -68,13 +86,14 @@ Equality operators.
 .IP "|| &&"
 Logical OR and AND.
 .IP "E ? E : E"
-.IP "="
+.IP "= <op>="
 Assignment
 .IP "[E1]([E2]...)"
 creates an array with E1 elements (each containing an array of E2 elements ...).
 For example, to make "a" reference a 10x10 array, "a = [10][10]".
+.\"
 .LP
-Statement forms.
+Statement Forms:
 .IP "E;"
 Evaluates the expression.
 .IP "{S ... S}"
@@ -92,12 +111,13 @@ Discontinue execution of the nearest enclosing for/do/while statement.
 Branch directly to the conditional test of the nearest enclosing
 for/do/while statement.
 .IP "return E;"
+.\"
 .LP
-\fIIc\fP supports polymorphic data -- as an expresion is evaluated, the
-resultant data type is picked to fit the data.  Variables and arrays can be
-typed so that data which will not fit in them will be flagged as an error.
-Polymorphic variables/functions do not place restrictions on the assigned
-data type and is the default type for all objects.  The different types are
+\fINickle\fP supports polymorphic data: As an expresion is evaluated, a
+data type is chosen to fit the result.  Variables and arrays can be
+typed, in which case bounds violations will be flagged as errors.
+Polymorphic variables and functions do not place restrictions on the assigned
+data type; this is the default type for all objects.  The different types are
 described below
 .IP "polymorph"
 This describes the union of all datatypes.  A variable with this type
@@ -107,27 +127,35 @@ can contain any data value.
 .IP "natural"
 Arbitrary precision natural numbers (i.e. non-negative integers).
 .IP "integer"
-Arbitrary precision integers.  Simply natural numbers with a sign
+Arbitrary precision integers, currently
+implemented as natural numbers with a sign
 flag.
 .IP "ratio"
-Arbitrary precision rational numbers.  Simply an integer numerator and a
+Arbitrary precision rational numbers, currently
+implemented as integer numerator and
 natural denominator.
 .IP "double"
 Double precision floating point numbers.  As many computations cannot
-be carried out exactly as rational numbers, \fIic\fP implements non-precise
+be carried out exactly as rational numbers, \fInickle\fP implements non-precise
 arithmetic using normal machine-specific floating point numbers.  A better
 solution would be to compute functional representations of the numbers
-(e.g. sqrt(2) / sin (30) instead of 2.828427).  But this is less frequently
+(e.g. sqrt(2) / sin (30) instead of 2.828427).  This is less frequently
 useful than the speed offered by the hardware solution.
+Ideally, both representations would be possible, but
+allowing them to coexist gracefully appears difficult.
 .IP "string"
-A regular array of characters.  The \fB+\fP operator concatenates strings
-together.
+A regular array of characters.  The \fB+\fP operator 
+concatenates strings.
 .IP "array"
-A collection of any data.  Arrays have a type associated with them.  When
-data is stored into the array, it is first coerced into the associated type.
+A collection of data elements of equivalent type. In
+other words, each array has an overall
+associated type (which may be polymorph).  When
+data is stored into the array, it is first coerced to this
+type as necessary.
 .IP "file"
-A file is a stdio file pointer.  You can't do much with it except pass it
-to builtin functions.
+A file encapsulates a stdio FILE pointer.  It is opaque, and thus
+useful only with builtin functions.
+.\"
 .LP
 Variables also have scope.  Global variables are persistant and can be
 referenced by any function in the system.  Auto variables are transitory,
@@ -140,6 +168,7 @@ variables is "auto".
 	static
 	auto
 .fi
+.\"
 .LP
 Functions are defined like the following:
 .nf
@@ -151,12 +180,14 @@ Functions are defined like the following:
 		S ...
 	}
 .fi
+.\"
 .LP
 The type of the function is optional, by default it is "polymorph".  The
 variables declared inside the function body can be either "auto" or
 "static".  Auto is the default.
+.\"
 .LP
-\fIIc\fP has a collection of standard functions built in.  The math functions
+\fINickle\fP has a collection of standard functions built in.  The math functions
 are implemented with routines from the C library, for their behaviour,
 please consult the appropriate manuals.
 .IP
@@ -164,16 +195,14 @@ abs, acos, asin, atan, atan2, ceil, cos, cosh, exp, fclose, fflush, floor,
 fopen, fprintf, hypot, j0, j1, jn, log, log10, printf, scanf, sin, sinh,
 sqrt, tan, tanh, y0, y1, yn
 .IP	
-Note: trig functions take and return arguments in
-degrees - not radians!
-.IP	
 Fprintf and Printf accept a reasonable sub-set of the stdio
 library version:  %d, %e, %c, %g, %f, %s, %o work
-as expected.
+as expected, as does %v to smart-print a value.
+.\"
 .LP
 There are several other miscelaneous commands availible:
 .IP "quit"
-exit ic
+exit nickle
 .IP "default <type>"
 specifies a default type for expressions.  With a default type, each
 function that is sumarily created, or each expression typed in at the
@@ -202,49 +231,84 @@ Specifies whether the history index of printed values should be displayed
 when the value is first printed.
 .IP "history \fIn\fP,\fIm\fP"
 Displays history values n through m.
+.\"
 .LP
 All function arguments are passed by value except for arrays which
-are always passed by reference.
-
-For example (taken from the \fIbc\fP manual:
-
+are always passed by reference. For example (taken from the \fIbc\fP manual:
 .nf
-function exponent(double x)
-{
-	double	a, b, c, i, s;
-	
-	a = 1;
-	b = 1;
-	s = 1;
-	for (i = 1;; i++) {
-		a = a * x;
-		b = b * i;
-		c = a/b;
-		if (abs(c) < 1e-6 == 0)
-			return s;
-		s = s + c;
+
+	function exponent(double x) {
+		double	a, b, c, i, s;
+
+		a = 1;
+		b = 1;
+		s = 1;
+		for (i = 1;; i++) {
+			a = a * x;
+			b = b * i;
+			c = a/b;
+			if (abs(c) < 1e-6 == 0)
+				return s;
+			s = s + c;
+		}
 	}
-}
+
 .fi
 defines a function to compute an approximate value of the exponential
 function and
-
 .nf
+
 	for (i = 1; i < 10; i++)
 		printf ("%g\\n", exponent (i));
-.fi
 
+.fi
 prints approximate values of the exponential function of the first
 ten integers.
+.\"
+.SH VERSION
+.PP
+This document describes version 1.99.0 of nickle.  This document
+was distributed with version 1.99.1 of nickle.
 .SH BUGS
 .PP
 Conversion between ratio and double types is effected by converting both the
 numerator and denominator to double and simply dividing.  This can lead to
 problems when neither is expressable as a double.
+.\"
 .SH AUTHOR
-\fIIc\fP was written by Keith Packard; keith@expo.lcs.mit.edu.
+\fINickle\fP was written by Keith Packard <keithp@keithp.com>
+and Bart Massey <bart_massey@iname.com>.
+.\"
 .PP
-This file is Copyright (C) 1988 by Keith Packard.  IC is provided to
-you without charge, and with no warranty.  You may give away copies of
-IC, including source, provided that this notice is included in all the
-files.
+Nickle is
+.br
+Copyright (C) 1988-2001 Keith Packard and Bart Massey.  All
+Rights Reserved. 
+.PP
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+.PP
+The above copyright notice and this permission notice shall
+be included in all copies or substantial portions of the
+Software.
+.PP
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+.PP
+Except as contained in this notice, the names of the authors
+or their institutions shall not be used in advertising or
+otherwise to promote the sale, use or other dealings in this
+Software without prior written authorization from the
+authors.

@@ -5,7 +5,7 @@ dnl All Rights Reserved.  See the file COPYING in this directory
 dnl for licensing information.
 
 AC_INIT(nickle.h)
-AM_INIT_AUTOMAKE(nickle,1.99.0)
+AM_INIT_AUTOMAKE(nickle,1.99.1)
 AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs.
@@ -45,4 +45,9 @@ AC_CHECK_FUNCS(finite __setfpucw)
 
 AC_FUNC_GETPGRP
 
-AC_OUTPUT(Makefile date-sh nickle.1, , [chmod +x ${srcdir}/date-sh])
+if test "x$prefix" = xNONE; then
+    prefix="$ac_default_prefix"
+fi
+datadir=`eval echo ${datadir}`/nickle
+
+AC_OUTPUT(Makefile date-sh nickle.1 builtin.5c, , [chmod +x ${srcdir}/date-sh])

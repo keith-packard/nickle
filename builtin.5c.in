@@ -1,0 +1,2 @@
+load "@datadir@/math.5c"
+import math;

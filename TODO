@@ -14,3 +14,4 @@
   reader leaves a file, and before it prints a prompt
 + Comments should not be allowed in interactive mode?
 + Finish the manual.
++ fix output formatting length problems

@@ -21,6 +21,7 @@
 #include	<memory.h>
 #include	<string.h>
 #include	"mem.h"
+#include	"opcode.h"
 
 typedef enum _Bool { False = 0, True = 1 }  	Bool;
 typedef unsigned long	Atom;
@@ -277,6 +278,7 @@ Types	*TypeCombineUnary (Types *down, int tag);
 Types	*TypeCombineStruct (Types *type, int tag, Atom atom);
 Types	*TypeCombineReturn (Types *type);
 Types	*TypeCombineFunction (Types *type);
+Types	*TypeCombineArray (Types *array, int ndim, Bool lvalue);
 Bool	TypeCompatibleAssign (Types *dest, Value v, Bool shallow);
 /* Bool	TypeEqual (Types *a, Types *b); unused */
 Bool	TypeCompatible (Types *a, Types *b, Bool contains);

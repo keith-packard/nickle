@@ -105,8 +105,8 @@ ObjPtr	CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr 
 ObjPtr	CompileBinary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat);
 ObjPtr	CompileUnary (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat);
 ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat);
+ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat, int *ndimp);
 ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat);
-ObjPtr	CompileArray (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat);
 ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat);
 void	CompilePatchLoop (ObjPtr obj, int start, int continue_offset);
 ObjPtr	_CompileStat (ObjPtr obj, ExprPtr expr, NamespacePtr namespace);
@@ -137,6 +137,9 @@ CompileCanonType (ObjPtr obj, NamespacePtr namespace, TypesPtr type, ExprPtr sta
 			      type->name.name);
 	    else if (s->symbol.class != class_typedef)
 		CompileError (obj, stat, "Symbol \"%A\" not a typedef",
+			      type->name.name);
+	    else if (!s->symbol.type)
+		CompileError (obj, stat, "Typedef \"%A\" not defined yet",
 			      type->name.name);
 	    else
 	    {
@@ -354,6 +357,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
     InstPtr	inst;
     SymbolPtr	s;
     int		depth;
+    int		ndim;
     
     expr->base.namespace = namespace;
     switch (expr->base.tag) {
@@ -427,7 +431,24 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	inst->atom.atom = expr->tree.right->atom.atom;
 	break;
     case OS:
-	obj = CompileArray (obj, expr, namespace, assign ? OpArrayRefStore : OpArrayRef, stat);
+	obj = CompileArrayIndex (obj, expr->tree.right,
+				 namespace, stat, &ndim);
+	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
+	expr->base.type = TypeCombineArray (expr->tree.left->base.type,
+					    ndim,
+					    True);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Type %t is not a %d dimensional array",
+			  expr->tree.left->base.type, ndim);
+	if (assign)
+	{
+	    BuildInst (obj, OpArrayRefStore, inst, stat);
+	}
+	else
+	{
+	    BuildInst (obj, OpArrayRef, inst, stat);
+	}
+	inst->ints.value = ndim;
 	break;
     case STAR:
 	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
@@ -749,37 +770,29 @@ CompileTwixt (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 }
 
 ObjPtr
-CompileArray (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, OpCode opCode, ExprPtr stat)
+CompileArrayIndex (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, 
+		   ExprPtr stat, int *ndimp)
 {
     ENTER ();
-    ExprPtr	sub;
-    InstPtr	inst;
     int		ndim;
-
-    sub = expr->tree.right;
+    
     ndim = 0;
-    while (sub)
+    while (expr)
     {
-	obj = _CompileExpr (obj, sub->tree.left, namespace, stat);
+	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
 	if (!TypeCompatible (NewTypesPrim (type_integer),
-			     sub->tree.left->base.type,
+			     expr->tree.left->base.type,
 			     True))
 	{
 	    CompileError (obj, stat, "Index type %t is not integer",
-			  sub->tree.left->base.type);
+			  expr->tree.left->base.type);
 	    break;
 	}
 	SetPush (obj);
-	sub = sub->tree.right;
+	expr = expr->tree.right;
 	ndim++;
     }
-    obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
-    expr->base.type = TypeCombineUnary (expr->tree.left->base.type, OS);
-    if (!expr->base.type)
-	CompileError (obj, stat, "Type %t is not array or string",
-		      expr->tree.left->base.type);
-    BuildInst (obj, opCode, inst, stat);
-    inst->ints.value = ndim;
+    *ndimp = ndim;
     RETURN (obj);
 }
 
@@ -1022,6 +1035,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 {
     ENTER ();
     int	    i;
+    int	    ndim;
     int	    test_inst, middle_inst;
     InstPtr inst;
     SymbolPtr	s;
@@ -1115,7 +1129,17 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat)
 	expr->base.type = NewTypesPrim (expr->constant.constant->value.tag);
 	break;
     case OS:	    
-	obj = CompileArray (obj, expr, namespace, OpArray, stat);
+	obj = CompileArrayIndex (obj, expr->tree.right,
+				 namespace, stat, &ndim);
+	obj = _CompileExpr (obj, expr->tree.left, namespace, stat);
+	expr->base.type = TypeCombineArray (expr->tree.left->base.type,
+					    ndim,
+					    False);
+	if (!expr->base.type)
+	    CompileError (obj, stat, "Type %t is not a %d dimensional array or string",
+			  expr->tree.left->base.type, ndim);
+	BuildInst (obj, OpArray, inst, stat);
+	inst->ints.value = ndim;
 	break;
     case OP:	    /* function call */
 	obj = CompileCall (obj, expr, namespace, stat);
@@ -2206,7 +2230,7 @@ ObjDump (ObjPtr obj, int indent)
 	ObjIndent (indent);
 	FilePrintf (FileStdout, "%s%s %c ",
 		    OpNames[inst->base.opCode],
-		    "            " + strlen(OpNames[inst->base.opCode]),
+		    "             " + strlen(OpNames[inst->base.opCode]),
 		    inst->base.push ? '^' : ' ');
 	switch (inst->base.opCode) {
 	case OpTypeCase:

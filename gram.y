@@ -947,20 +947,30 @@ primary		: NAME
 		    { $$ = NewExprAtom ($1); }
 		| CONST
 		    { $$ = NewExprConst($1); }
-		| type inits
+		| OP type CP inits
 		    { 
-			$$ = NewExprTree (NEW, $2, 0); 
-			$$->base.type = $1; 
+			$$ = NewExprTree (NEW, $4, 0); 
+			$$->base.type = $2; 
+		    }
+		| OP type CP OS exprs CS opt_inits
+		    { 
+			$$ = NewExprTree (NEW, $7, 0); 
+			$$->base.type = NewTypesArray ($2, $5); 
 		    }
 		| OS exprs CS opt_inits
 		    { 
 			$$ = NewExprTree (NEW, $4, 0); 
 			$$->base.type = NewTypesArray (typesPoly, $2); 
 		    }
+		| OP type CP OS stars CS inits
+		    { 
+			$$ = NewExprTree (NEW, $7, 0); 
+			$$->base.type = NewTypesArray ($2, $5); 
+		    }
 		| OS stars CS inits
 		    { 
 			$$ = NewExprTree (NEW, $4, 0); 
-			$$->base.type = NewTypesArray (typesPoly, $2); 
+			$$->base.type = NewTypesArray (typesPoly, $4); 
 		    }
 		| DOLLAR opt_const
 		    { $$ = NewExprConst(History (0, $2)); }

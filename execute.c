@@ -422,7 +422,7 @@ ThreadBoxCheck (BoxPtr box, int i, Types *type)
 #define ThreadBoxCheck(b,i,t)
 #endif
 
-static inline ThreadState
+static /* inline */ ThreadState
 ThreadStep (Value thread)
 {
     ENTER ();
@@ -831,23 +831,39 @@ ThreadStep (Value thread)
     case OpFork:
 	value = NewThread (thread->thread.frame, inst->obj.obj); break;
     case OpCatch:
+	if (exception)
+	    break;
 	ThreadCatch (thread, inst->catch.exception, inst->catch.offset);
+	complete = True;
 	next = inst + inst->catch.offset;
 	break;
     case OpException:
 	next = inst + inst->branch.offset;
 	break;
     case OpEndCatch:
+	if (exception)
+	    break;
 	thread->thread.catches = thread->thread.catches->previous;
+	complete = True;
 	break;
     case OpRaise:
+	if (exception)
+	    break;
 	ThreadRaise (thread, inst->raise.argc, inst->raise.exception, &next);
+	if (!exception)
+	    complete = True;
 	break;
     case OpTwixt:
+	if (exception)
+	    break;
 	ThreadTwixt (thread, inst->twixt.enter, inst->twixt.leave);
+	complete = True;
 	break;
     case OpTwixtDone:
+	if (exception)
+	    break;
 	thread->thread.twixts = thread->thread.twixts->previous;
+	complete = True;
 	break;
     case OpEnterDone:
 	if (!True (value))
@@ -857,13 +873,23 @@ ThreadStep (Value thread)
 	}
 	else
 	{
+	    if (exception)
+		break;
 	    if (thread->thread.jump)
+	    {
 		value = JumpContinuation (thread->thread.jump, &next);
+		complete = True;
+	    }
 	}
 	break;
     case OpLeaveDone:
 	if (thread->thread.jump)
+	{
+	    if (exception)
+		break;
 	    value = JumpContinuation (thread->thread.jump, &next);
+	    complete = True;
+	}
 	else
 	    next = inst + inst->branch.offset;
 	break;

@@ -474,6 +474,9 @@ ThreadMark (void *object)
     MemReference (thread->stack);
     MemReference (thread->frame);
     MemReference (thread->code);
+    MemReference (thread->catches);
+    MemReference (thread->twixts);
+    MemReference (thread->jump);
     MemReference (thread->sleep);
     MemReference (thread->next);
 }

@@ -713,6 +713,34 @@ TypeCombineUnary (Types *type, int tag)
 }
 
 Types *
+TypeCombineArray (Types *type, int ndim, Bool lvalue)
+{
+    int	adim;
+    if (TypePoly (type))
+	return typesPoly;
+    
+    if (type->base.tag == types_name)
+	return TypeCombineArray (type->name.type, ndim, lvalue);
+
+    switch (type->base.tag) {
+    case types_array:
+	adim = TypeCountDimensions (type->array.dimensions);
+	if (adim == 0 || adim == ndim)
+	    return type->array.type;
+	break;
+    case types_prim:
+	if (type->prim.prim == type_string)
+	{
+	    if (!lvalue && ndim == 1)
+		return typesPrim[type_integer];
+	}
+	break;
+    default:
+    }
+    return 0;
+}
+
+Types *
 TypeCombineStruct (Types *type, int tag, Atom atom)
 {
     if (TypePoly (type))

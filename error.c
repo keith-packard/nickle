@@ -166,7 +166,6 @@ fprintTypes (Value f, Types *t)
 	    fprintType (f, t->prim.prim);
 	    break;
 	case types_name:
-	    FilePuts (f, "type ");
 	    FilePuts (f, AtomName (t->name.name));
 	    break;
 	case types_ref:

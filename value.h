@@ -782,11 +782,11 @@ Value	NewStrString (char *);
 Value	NewArray (Bool constant, TypePtr type, int ndim, int *dims);
 Value	NewFile (int fd);
 Value	NewRefReal (BoxPtr box, int element, Value *re);
-char	*StringNextChar (char *src, int *dst);
-int	StringPutChar (int c, char *dest);
+char	*StringNextChar (char *src, unsigned *dst);
+int	StringPutChar (unsigned c, char *dest);
 int	StringLength (char *src);
-int	StringCharSize (int c);
-int	StringGet (char *src, int i);
+int	StringCharSize (unsigned c);
+unsigned    StringGet (char *src, int i);
 
 #ifdef HAVE_C_INLINE
 static inline Value

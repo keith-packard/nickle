@@ -659,7 +659,7 @@ CopyMutable (Value v)
 Value
 Copy (Value v)
 {
-    if (Mutablep (ValueTag(v)))
+    if (v && Mutablep (ValueTag(v)))
 	return CopyMutable (v);
     return v;
 }

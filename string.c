@@ -74,9 +74,9 @@ StringPrint (Value f, Value av, char format, int base, int width, int prec, unsi
 }
 
 char *
-StringNextChar (char *src, int *dst)
+StringNextChar (char *src, unsigned *dst)
 {
-    int		result = *src++;
+    unsigned	result = *src++;
     
     if (!result)
 	return 0;
@@ -92,16 +92,26 @@ StringNextChar (char *src, int *dst)
 	}
 	result &= (m - 1);
 	while (extra--)
+	{
+	    char c = *src++;
+
+	    if ((c & 0x80) == 0)
+	    {
+		src--;
+		result = 0;
+		break;
+	    }
 	    result = (result << 6) | (*src++ & 0x3f);
+	}
     }
     *dst = result;
     return src;
 }
 
-int
+unsigned
 StringGet (char *src, int i)
 {
-    int c;
+    unsigned c;
 
     do
     {
@@ -115,16 +125,16 @@ StringGet (char *src, int i)
 int
 StringLength (char *src)
 {
-    int	len = 0, c;
+    int	len = 0;
+    unsigned c;
     while ((src = StringNextChar (src, &c)))
 	len++;
     return len;
 }
 
 int
-StringPutChar (int ch, char *dest)
+StringPutChar (unsigned c, char *dest)
 {
-    unsigned int    c = ch;
     int	bits;
     char *d = dest;
     
@@ -143,7 +153,7 @@ StringPutChar (int ch, char *dest)
 }
 
 int
-StringCharSize (int c)
+StringCharSize (unsigned c)
 {
          if (c <       0x80) return 1;
     else if (c <      0x800) return 2;

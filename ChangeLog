@@ -1,3 +1,15 @@
+2004-06-17  Keith Packard  <keithp@keithp.com>
+
+	* compile.c: (CompileLvalue):
+	Handle nested & in Lvalues with auto_reference so that &&7 works.
+	* gram.y:
+	* lex.l:
+	* nickle.h:
+	* scope.c: (NamespaceLocate):
+	Make ** and && work as unary operators.
+	Get CodePtr out of CurrentFrame so that execution can
+	refer to frame contents up the static link.
+
 2004-06-13  Keith Packard  <keithp@keithp.com>
 
 	* file.5c:

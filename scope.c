@@ -226,6 +226,7 @@ NamespaceLocate (Value		names,
     int		    i;
     NamespacePtr    namespace;
     FramePtr	    f;
+    CodePtr	    c;
     Value	    string;
     NamelistPtr	    namelist = 0;
     SymbolPtr	    symbol;
@@ -240,7 +241,7 @@ NamespaceLocate (Value		names,
 				NewInt (0), names);
 	return False;
     }
-    GetNamespace (&namespace, &f);
+    GetNamespace (&namespace, &f, &c);
     for (i = 0; i < ArrayLimits(&names->array)[0]; i++)
     {
 	string = ArrayValue (&names->array, i);

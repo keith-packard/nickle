@@ -188,7 +188,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %left		TIMES DIVIDE DIV MOD
 %right		POW
 %left		UNIONCAST
-%right		UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
+%right		UMINUS BANG FACT LNOT INC DEC STAR STARSTAR AMPER THREADID
 %left		OS CS DOT ARROW STAROS CALL OP CP
 %right		POINTER
 %right		COLONCOLON
@@ -257,11 +257,12 @@ command		: not_command expr reset NL
 			Value	t;
 			NamespacePtr	s;
 			FramePtr	f;
+			CodePtr		c;
 			
 			e = BuildCall ("Command", "display",
 				       1,NewExprTree (EXPR, $2, 0));
-			GetNamespace (&s, &f);
-			t = NewThread (f, CompileExpr (e, 0));
+			GetNamespace (&s, &f, &c);
+			t = NewThread (f, CompileExpr (e, c));
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
@@ -272,11 +273,12 @@ command		: not_command expr reset NL
 			Value	t;
 			NamespacePtr	s;
 			FramePtr	f;
+			CodePtr		c;
 
 			e = BuildCall("Command", "display_base",
 				      2, NewExprTree (EXPR, $2, 0), $4);
-			GetNamespace (&s, &f);
-			t = NewThread (f, CompileExpr (e, 0));
+			GetNamespace (&s, &f, &c);
+			t = NewThread (f, CompileExpr (e, c));
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
@@ -284,11 +286,12 @@ command		: not_command expr reset NL
 		    { 
 			ENTER ();
 			NamespacePtr    s;
-			FramePtr    f;
-			Value	    t;
+			FramePtr	f;
+			CodePtr		c;
+			Value		t;
 			
-			GetNamespace (&s, &f);
-			t = NewThread (f, CompileStat ($2, 0));
+			GetNamespace (&s, &f, &c);
+			t = NewThread (f, CompileStat ($2, c));
 			ThreadsRun (t, 0);
 			EXIT ();
 		    }
@@ -299,18 +302,19 @@ command		: not_command expr reset NL
 			Value	t;
 			NamespacePtr	s;
 			FramePtr	f;
-			CommandPtr	c;
+			CodePtr		c;
+			CommandPtr	cmd;
 
-			c = CommandFind (CurrentCommands, $2);
-			if (!c)
+			cmd = CommandFind (CurrentCommands, $2);
+			if (!cmd)
 			    ParseError ("Undefined command \"%s\"", AtomName ($2));
 			else
 			{
 			    e = NewExprTree (OP, 
-					     NewExprConst (POLY_CONST, c->func),
+					     NewExprConst (POLY_CONST, cmd->func),
 					     $3);
-			    GetNamespace (&s, &f);
-			    t = NewThread (f, CompileExpr (e, 0));
+			    GetNamespace (&s, &f, &c);
+			    t = NewThread (f, CompileExpr (e, c));
 			    ThreadsRun (t, 0);
 			}
 			EXIT ();
@@ -323,18 +327,19 @@ command		: not_command expr reset NL
 			Value	t;
 			NamespacePtr	s;
 			FramePtr	f;
-			CommandPtr	c;
+			CodePtr		c;
+			CommandPtr	cmd;
 
-			c = CommandFind (CurrentCommands, $2);
-			if (!c)
+			cmd = CommandFind (CurrentCommands, $2);
+			if (!cmd)
 			    ParseError ("Undefined command \"%s\"", AtomName ($2));
 			else
 			{
 			    e = NewExprTree (OP, 
-					     NewExprConst (POLY_CONST, c->func),
+					     NewExprConst (POLY_CONST, cmd->func),
 					     $3);
-			    GetNamespace (&s, &f);
-			    t = NewThread (f, CompileExpr (e, 0));
+			    GetNamespace (&s, &f, &c);
+			    t = NewThread (f, CompileExpr (e, c));
 			    ThreadsRun (t, 0);
 			}
 			EXIT ();
@@ -904,6 +909,10 @@ type		: subtype subscripts	    %prec CALL
 		    }
 		| TIMES type			%prec POINTER
 		    { $$ = NewTypeRef ($2, True); }
+		| STARSTAR type			%prec POINTER
+		    { $$ = NewTypeRef (NewTypeRef ($2, True), True); }
+		| AND type			%prec POINTER
+		    { $$ = NewTypeRef (NewTypeRef ($2, False), False); }
 		| LAND type			%prec POINTER
 		    { $$ = NewTypeRef ($2, False); }
 		;
@@ -1240,8 +1249,14 @@ simpleexpr	: simpleexpr assignop simpleexpr    		%prec ASSIGN
 		    }
 		| TIMES simpleexpr					%prec STAR
 		    { $$ = NewExprTree(STAR, $2, (Expr *) 0); }
+		| STARSTAR simpleexpr					%prec STAR
+		    { $$ = NewExprTree(STAR, NewExprTree (STAR, $2, 0), 0); }
 		| LAND simpleexpr					%prec AMPER
 		    { $$ = NewExprTree(AMPER, $2, (Expr *) 0); }
+		| AND simpleexpr					%prec AMPER
+		    { $$ = NewExprTree(AMPER, 
+				       NewExprTree (AMPER, $2, (Expr *) 0), 
+				       (Expr *) 0); }
 		| MINUS simpleexpr					%prec UMINUS
 		    { $$ = NewExprTree(UMINUS, $2, (Expr *) 0); }
 		| LNOT simpleexpr
@@ -1272,7 +1287,7 @@ simpleexpr	: simpleexpr assignop simpleexpr    		%prec ASSIGN
 		    { $$ = NewExprTree(DIV, $1, $3); }
 		| simpleexpr MOD simpleexpr
 		    { $$ = NewExprTree(MOD, $1, $3); }
-		| simpleexpr POW simpleexpr
+		| simpleexpr STARSTAR simpleexpr			%prec POW
 		    { 
 			$$ = NewExprTree(POW, 
 					 BuildName ("Math", "pow"), 
@@ -1644,10 +1659,14 @@ setVar (NamespacePtr namespace, char *n, Value v, Type *type)
 }
 
 void
-GetNamespace (NamespacePtr *scope, FramePtr *fp)
+GetNamespace (NamespacePtr *scope, FramePtr *fp, CodePtr *cp)
 {
     *scope = CurrentNamespace;
     *fp = CurrentFrame;
+    if (CurrentFrame)
+	*cp = CurrentFrame->function->func.code;
+    else
+	*cp = 0;
 }
 
 ExprPtr

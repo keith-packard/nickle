@@ -526,13 +526,14 @@ isName:
     case AMPER:
 	obj = CompileLvalue (obj, expr->tree.left, stat, code,
 			     createIfNecessary, assign, initialize, 
-			     True, False);
+			     True, auto_reference);
 	expr->base.type = expr->tree.left->base.type;
 	break;
     case COLONCOLON:
 	obj = CompileLvalue (obj, expr->tree.right, stat, code, False, assign, initialize, 
 			     amper, auto_reference);
 	expr->base.type = expr->tree.right->base.type;
+	amper = False;	/* has been dealt with in nested call */
         break;
     case DOT:
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
@@ -664,6 +665,15 @@ isName:
 		if (assign)
 		    inst->base.opCode++;
 	    }
+	}
+    }
+    else
+    {
+	if (amper && auto_reference)
+	{
+	    BuildInst (obj, OpUnFunc, inst, stat);
+	    inst->unfunc.func = do_reference;
+	    expr->base.type = NewTypeRef (expr->base.type, True);
 	}
     }
     assert (expr->base.type);

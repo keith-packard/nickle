@@ -2005,7 +2005,8 @@ _CompileNonLocal (ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
     case BranchModContinue:	target = NON_LOCAL_CONTINUE; break;
     case BranchModReturn:
     case BranchModReturnVoid:	target = NON_LOCAL_RETURN; break;
-    case BranchModNone:		RETURN(obj);
+    case BranchModNone:		
+    default:			RETURN(obj);
     }
     for (nl = obj->nonLocal; nl; nl = nl->prev)
     {
@@ -2365,7 +2366,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	obj = _CompileNonLocal (obj, BranchModContinue, expr, code);
 	break;
     case RETURNTOK:
-	if (!code->base.func)
+	if (!code || !code->base.func)
 	{
 	    CompileError (obj, expr, "return not in function");
 	    break;

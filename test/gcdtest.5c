@@ -15,14 +15,22 @@ int function gcd_euclid (int u, int v)
 
 import PRNG;
 
+int gcd_verify = 1;
+
 exception bad_gcd (int u, int v);
 
 void function gcd_check (int u, int v)
 {
     int	weber = gcd (u,v);
-    int euclid = gcd_euclid (u,v);
-    if (weber != euclid)
-	raise bad_gcd (u,v);
+    if (gcd_verify)
+    {
+	int euclid = gcd_euclid (u,v);
+	if (weber != euclid)
+	    raise bad_gcd (u,v);
+    }
+    else
+	for (int i = 0; i < 100; i++)
+	    int	weber = gcd (u,v);
 }
 
 void function gcd_random (int ubits, int vbits)

@@ -8,6 +8,7 @@
 
 #include	"nickle.h"
 #include	"gram.h"
+#include	<assert.h>
 
 #undef DEBUG
 
@@ -377,7 +378,10 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
 	s = CompileFindSymbol (obj, stat, namespace, expr->atom.atom, 
 			       &depth, createIfNecessary);
 	if (!s)
+	{
+	    expr->base.type = typesPoly;
 	    break;
+	}
 	if (!ClassStorage (s->symbol.class))
 	{
 	    CompileError (obj, stat, "Invalid use of %C \"%A\"",
@@ -494,6 +498,7 @@ CompileLvalue (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, ExprPtr stat,
         expr->base.type = typesPoly;
 	break;
     }
+    assert (expr->base.type);
     RETURN (obj);
 }
 
@@ -1610,6 +1615,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, NamespacePtr namespace, Bool evaluate, E
 	expr->base.type = expr->tree.left->base.type;
 	break;
     }
+    assert (!evaluate || expr->base.type);
     RETURN (obj);
 }
 

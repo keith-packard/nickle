@@ -24,8 +24,8 @@ namespace ARC4 {
     key[0] = 13;
     key[1] = 17;
     for (n = 2; n < 64 && k > 0; n++) {
-      key[n] = k % 256;
-      k = k // 256;
+      key[n] = k & 0xff;
+      k = k >> 8;
     }
 
     for (i = 0; i < 256; i++)
@@ -34,7 +34,7 @@ namespace ARC4 {
     for (ii = 0; ii < nn; ii++) {
       j = 0;
       for (i = 0; i < 256; i++) {
-        j = (j + state[i] + key[i % n]) % 256;
+        j = (j + state[i] + key[i % n]) & 0xff;
 	tmp = state[i];
 	state[i] = state[j];
 	state[j] = tmp;
@@ -45,12 +45,12 @@ namespace ARC4 {
 
   /* Get the next byte from the stream */
   public int function streambyte() {
-    p1 = (p1 + 1) % 256;
-    p2 = (p2 + state[p1]) % 256;
+    p1 = (p1 + 1) & 0xff;
+    p2 = (p2 + state[p1]) & 0xff;
     int tmp = state[p1];
     state[p1] = state[p2];
     state[p2] = tmp;
-    int n = (state[p1] + state[p2]) % 256;
+    int n = (state[p1] + state[p2]) & 0xff;
     return state[n];
   }
   

@@ -15,14 +15,14 @@ namespace PRNG {
 
   /* returns an n-*bit* random number in 0..(2**n)-1 */
   public int function randbits(int n) {
-    int q = n // 8;
-    int r = n % 8;
+    int q = n >> 3;
+    int r = n & 7;
     if (!setkey)
       srandom(0);
-    int acc = ARC4::streambyte() // (2 ** (8 - r));
+    int acc = ARC4::streambyte() >> (8 - r);
     while (q > 0) {
       --q;
-      acc += (2 ** (8 * q + r)) * ARC4::streambyte();
+      acc += ARC4::streambyte() << (8 * q + r);
     }
     return acc;
   }

@@ -135,23 +135,42 @@ DigitBmod (digit u, digit v, int s)
     return m;
 }
 
+static int
+DigitWidth (digit i)
+{
+    int	    w;
+
+    w = 0;
+    if (i & 0xffff0000)
+	w += 16;
+    else
+	i <<= 16;
+    if (i & 0xff000000)
+	w += 8;
+    else
+	i <<= 8;
+    if (i & 0xf0000000)
+	w += 4;
+    else
+	i <<= 4;
+    if (i & 0xc0000000)
+	w += 2;
+    else
+	i <<= 2;
+    if (i & 0x80000000)
+	w++;
+    return w;
+}
+
 int
 NaturalWidth (Natural *u)
 {
     int	    w;
-    digit   top;
     
     if (NaturalZero (u))
 	return 0;
     w = NaturalLength (u) - 1;
-    top = NaturalDigits(u)[w];
-    w <<= LLBASE2;
-    while (top)
-    {
-	w++;
-	top >>= 1;
-    }
-    return w;
+    return DigitWidth (NaturalDigits (u)[w]) + (w << LLBASE2);
 }
 
 int
@@ -184,19 +203,6 @@ DoubleDigitWidth (double_digit i)
     return w;
 }
 
-static int
-DigitWidth (digit i)
-{
-    int	w;
-
-    w = 0;
-    while (i)
-    {
-	w++;
-	i >>= 1;
-    }
-    return w;
-}
 
 /*
  * Return multiplicative inverse of d in 2**DIGITBITS
@@ -257,7 +263,7 @@ NaturalBdivmodStepInplace (Natural *u, Natural *v, digit b, Bool shift)
 	    *rd++ = r;
     }
     carry_sub = carry_sub + carry_mul;
-    while (i < NaturalLength (u))
+    while (carry_sub && i < NaturalLength (u))
     {
 	quo_d = carry_sub;
 	carry_sub = 0;
@@ -265,6 +271,14 @@ NaturalBdivmodStepInplace (Natural *u, Natural *v, digit b, Bool shift)
 	d = *ud++;
 	if ((r = d - quo_d) > d)
 	    carry_sub = 1;
+	if (!shift || i)
+	    *rd++ = r;
+	i++;
+    }
+    while (i < NaturalLength (u))
+    {
+	GcdCheckPointer (u, ud, sizeof (digit));
+	r = *ud++;
 	if (!shift || i)
 	    *rd++ = r;
 	i++;

@@ -444,7 +444,21 @@ ShiftL (Value av, Value bv)
     }
     if (Negativep (bv))
 	RETURN (ShiftR(av, Negate (bv)));
-    av = Times (av, Pow (NewInt(2), bv));
+    if (Zerop (bv))
+	RETURN(av);
+    if (bv->value.tag == type_int)
+    {
+	Sign	sign = Positive;
+	if (Negativep (av))
+	    sign = Negative;
+	av = Reduce (NewInteger (sign,
+				 NaturalLsl (IntegerType.promote (av,0)->integer.mag,
+					     bv->ints.value)));
+    }
+    else
+    {
+	av = Times (av, Pow (NewInt(2), bv));
+    }
     RETURN (av);
 }
 
@@ -459,7 +473,24 @@ ShiftR (Value av, Value bv)
     }
     if (Negativep (bv))
 	RETURN (ShiftL(av, Negate (bv)));
-    av = Div (av, Pow (NewInt(2), bv));
+    if (Zerop (bv))
+	RETURN(av);
+    if (bv->value.tag == type_int)
+    {
+	Sign	sign = Positive;
+	if (Negativep (av))
+	{
+	    av = Minus (av, ShiftL (One, Minus (bv, One)));
+	    sign = Negative;
+	}
+	av = Reduce (NewInteger (sign,
+				 NaturalRsl (IntegerType.promote (av,0)->integer.mag,
+					     bv->ints.value)));
+    }
+    else
+    {
+	av = Div (av, Pow (NewInt(2), bv));
+    }
     RETURN (av);
 }
 

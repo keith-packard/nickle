@@ -10,6 +10,12 @@
  * gcd.c
  *
  * compute gcd of two natural numbers
+ *
+ * The Accelerated Integer GCD Algorithm
+ *
+ * Kenneth Weber
+ * Kent State University
+ * ACM Transactions on Mathematical Software, Vol 21, No. 1 March 1995, Pages 111-122
  */
 
 #include	"nickle.h"
@@ -41,7 +47,7 @@
 #endif
 
 static void
-gcd_right_shift (Natural *v, int shift)
+NaturalRslInplace (Natural *v, int shift)
 {
     digit   *vt, *rt;
     digit   d1, d2;
@@ -63,6 +69,11 @@ gcd_right_shift (Natural *v, int shift)
     {
 	length--;
 	last = 0;
+    }
+    if (length < 0)
+    {
+	v->length = 0;
+	return;
     }
     rt = NaturalDigits (v);
     vt = NaturalDigits (v) + dshift;
@@ -187,9 +198,172 @@ DigitWidth (digit i)
     return w;
 }
 
+/*
+ * Return multiplicative inverse of d in 2**DIGITBITS
+ *
+ * This is just d ** (2**DIGITBITS-1)
+ */
+
+static digit
+DigitInverse (digit d)
+{
+    digit   b = MAXDIGIT;
+    digit   result = 1;
+    
+    for (;;)
+    {
+        result = result * d;
+	b >>= 1;
+	if (!b)
+	    break;
+	d = d * d;
+    }
+    return result;
+}
 
 static void
-NaturalBdivmodStepInplace (Natural *u, Natural *v, int bits, Bool shift)
+NaturalBdivmodStepInplace (Natural *u, Natural *v, digit b, Bool shift)
+{
+    double_digit    quo;
+    digit	    carry_mul;
+    digit	    carry_sub;
+    digit	    quo_d;
+    digit	    d;
+    digit	    r;
+    digit	    *vd = NaturalDigits(v);
+    digit	    *ud = NaturalDigits(u);
+    digit    	    *rd = ud;
+    int		    i;
+
+    carry_mul = 0;
+    carry_sub = 0;
+    for (i = 0; i < NaturalLength (v); i++)
+    {
+	quo = (double_digit) b * (double_digit) *vd++ + carry_mul;
+	carry_mul = DivBase (quo);
+	quo_d = ModBase (quo) + carry_sub;
+
+	d = *ud++;
+	if (quo_d)
+	{
+	    carry_sub = 0;
+	    GcdCheckPointer (u, ud, sizeof (digit));
+	    if ((r = d - quo_d) > d)
+		carry_sub = 1;
+	}
+	else
+	    r = d;
+	if (!shift || i)
+	    *rd++ = r;
+    }
+    carry_sub = carry_sub + carry_mul;
+    while (i < NaturalLength (u))
+    {
+	quo_d = carry_sub;
+	carry_sub = 0;
+	GcdCheckPointer (u, ud, sizeof (digit));
+	d = *ud++;
+	if ((r = d - quo_d) > d)
+	    carry_sub = 1;
+	if (!shift || i)
+	    *rd++ = r;
+	i++;
+    }
+    /*
+     * The caller must ensure that an extra digit space
+     * is available for this operation
+     */
+    if (carry_sub)
+    {
+	quo_d = carry_sub;
+	carry_sub = 0;
+	GcdCheckPointer (u, ud, sizeof (digit));
+	d = 0;
+	if ((r = d - quo_d) > d)
+	    carry_sub = 1;
+	if (!shift || i)
+	    *rd++ = r;
+	i = rd - NaturalDigits(u);
+	/*
+	 * Two's compliment negative results
+	 */
+	carry_sub = 1;
+	rd = NaturalDigits (u);
+	while (i--)
+	{
+	    d = *rd;
+	    *rd++ = (~d) + carry_sub;
+	    if (d)
+		carry_sub = 0;
+	}
+    }
+    /*
+     * Trim leading zeros
+     */
+    while (--rd >= NaturalDigits (u) && *rd == 0)
+	;
+    NaturalLength (u) = ((rd + 1) - NaturalDigits (u));
+}
+
+static void
+NaturalBdivmodInplace (Natural *u, Natural *v, int bits)
+{
+    digit   v0_inv = DigitInverse (NaturalDigits(v)[0]);
+    digit   q0;
+    
+#ifdef DEBUG_BDIVMOD
+    FilePrintf (FileStdout, "v0 %x v0_inv %x\n", NaturalDigits(v)[0], v0_inv);
+#endif
+    while (bits >= DIGITBITS)
+    {
+	q0 = NaturalDigits(u)[0] * v0_inv;
+
+#ifdef DEBUG_BDIVMOD
+	FilePrintf (FileStdout, "u[0] %x q0 %x\n",
+		    NaturalDigits(u)[0], q0);
+#endif
+	if (q0)
+	    NaturalBdivmodStepInplace (u, v, q0, True);
+	else
+	    NaturalRslInplace (u, DIGITBITS);
+#ifdef DEBUG_BDIVMOD
+	FilePrintf (FileStdout, "bits %d u %N\n", bits, u);
+#endif
+	bits -= DIGITBITS;
+    }
+    if (bits)
+    {
+	digit	dmask = (1 << bits) - 1;
+	
+#ifdef DEBUG_BDIVMOD
+	FilePrintf (FileStdout, "u[0] %x q0 %x\n",
+		    NaturalDigits(u)[0], q0);
+#endif
+	q0 = ((NaturalDigits(u)[0] & dmask) * v0_inv) & dmask;
+	if (q0)
+	    NaturalBdivmodStepInplace (u, v, q0, False);
+	NaturalRslInplace (u, bits);
+#ifdef DEBUG_BDIVMOD
+	FilePrintf (FileStdout, "bits %d u %N\n", bits, u);
+#endif
+    }
+}
+
+Natural *
+NaturalBdivmod (Natural *u_orig, Natural *v)
+{
+    ENTER ();
+    Natural *u;
+    
+    u = AllocNatural (u_orig->length + 2);
+    NaturalCopy (u_orig, u);
+    NaturalBdivmodInplace (u, v, NaturalWidth (u) - NaturalWidth (v) + 1);
+    RETURN (u);
+}
+
+#if 0
+static void
+oldNaturalBdivmodStepInplace (Natural *u, Natural *v, int bits, Bool shift)
 {
     double_digit    quo;
     digit	    carry_mul;
@@ -284,15 +458,13 @@ NaturalBdivmodStepInplace (Natural *u, Natural *v, int bits, Bool shift)
 }
 
 static void
-NaturalBdivmodInplace (Natural *u, Natural *v)
+oldNaturalBdivmodInplace (Natural *u, Natural *v, int d)
 {
     ENTER ();
     digit   v0;
-    int	    d;
     digit   dmask;
     
     v0 = NaturalDigits(v)[0];
-    d = NaturalWidth (u) - NaturalWidth (v) + 1;
     while (d >= DIGITBITS)
     {
 #ifdef DEBUG_BDIVMOD
@@ -300,14 +472,14 @@ NaturalBdivmodInplace (Natural *u, Natural *v)
 #endif
 	if (NaturalDigits(u)[0])
 	{
-	    NaturalBdivmodStepInplace (u, v, DIGITBITS, True);
+	    oldNaturalBdivmodStepInplace (u, v, DIGITBITS, True);
 #ifdef DEBUG_BDIVMOD
 	    FilePrintf (FileStdout, "d %d u %N\n", d, u);
 #endif
 	}
 	else
 	{
-	    gcd_right_shift (u, DIGITBITS);
+	    NaturalRslInplace (u, DIGITBITS);
 	}
 	d -= DIGITBITS;
     }
@@ -316,13 +488,13 @@ NaturalBdivmodInplace (Natural *u, Natural *v)
 	dmask = (((digit) 1) << d) - 1;
 	if (NaturalDigits(u)[0] & dmask)
 	{
-	    NaturalBdivmodStepInplace (u, v, d, False);
+	    oldNaturalBdivmodStepInplace (u, v, d, False);
 #ifdef DEBUG_BDIVMOD
 	    FilePrintf (FileStdout, "d %d u %N\n", d, u);
 #endif
 	}
 	if (NaturalLength (u))
-	    gcd_right_shift (u, d);
+	    NaturalRslInplace (u, d);
     }
 #ifdef DEBUG_BDIVMOD
     FilePrintf (FileStdout, "result u %N (shift %d)\n", u, d);
@@ -330,33 +502,20 @@ NaturalBdivmodInplace (Natural *u, Natural *v)
     EXIT ();
 }
 
-Natural *
-NaturalBdivmod (Natural *u_orig, Natural *v)
+static Natural *
+oldNaturalBdivmod (Natural *u_orig, Natural *v)
 {
     ENTER ();
     Natural *u;
     
     u = AllocNatural (u_orig->length + 2);
     NaturalCopy (u_orig, u);
-    NaturalBdivmodInplace (u, v);
+    oldNaturalBdivmodInplace (u, v, NaturalWidth (u) - NaturalWidth (v) + 1);
     RETURN (u);
 }
 
-#ifdef CHECK
-static Natural *
-RegularGcd (Natural *u, Natural *v)
-{
-    ENTER ();
-    Natural	*quo, *rem;
-
-    while (v->length) 
-    {
-	quo = NaturalDivide (u, v, &rem);
-	u = v;
-	v = rem;
-    }
-    RETURN (u);
-}
+#define NaturalBdivmod	oldNaturalBdivmod
+#define NaturalBdivmodInplace oldNaturalBdivmodInplace
 #endif
 
 #define Odd(n)	(NaturalDigits(n)[0] & 1)
@@ -385,7 +544,7 @@ static void
 ReducedRatMod (Natural *x, Natural *y, digit *np, digit *dp)
 {
     digit   n1, n2, nt, n2i;
-    digit   d1, d2, dt, d;
+    digit   d1, d2, dt;
     digit   c;
     int	    w2;
 
@@ -420,7 +579,6 @@ ReducedRatMod (Natural *x, Natural *y, digit *np, digit *dp)
 #endif
     }
     *np = n2;
-    d = DigitBmod (n2, c, DIGITBITS/2 + 1);
     *dp = d2;
 #ifdef DEBUG_RATMOD
     FilePrintf (FileStdout, "u %n v %n\n", x, y);
@@ -666,6 +824,23 @@ NaturalGcdNormalize (Natural *u, int shift)
     RETURN (r);
 }
 
+#ifdef CHECK
+static Natural *
+RegularGcd (Natural *u, Natural *v)
+{
+    ENTER ();
+    Natural	*quo, *rem;
+
+    while (v->length) 
+    {
+	quo = NaturalDivide (u, v, &rem);
+	u = v;
+	v = rem;
+    }
+    RETURN (u);
+}
+#endif
+
 Natural *
 NaturalGcd (Natural *u0, Natural *v0)
 {
@@ -695,7 +870,6 @@ NaturalGcd (Natural *u0, Natural *v0)
 	u = v;
 	v = t;
     }
-#if 0
     if (NaturalLength (u) == 1 && NaturalLength (v) == 1)
     {
 	digit	ud = NaturalDigits(u)[0];
@@ -759,7 +933,6 @@ NaturalGcd (Natural *u0, Natural *v0)
 	FINISH ("gcd2");
     }
     else
-#endif
     {
 	START;
 
@@ -776,7 +949,8 @@ NaturalGcd (Natural *u0, Natural *v0)
 #ifdef DEBUG_GCD
 		FilePrintf (FileStdout, "bdivmod\n");
 #endif
-		NaturalBdivmodInplace (u, v);
+		NaturalBdivmodInplace (u, v,
+				       NaturalWidth (u) - NaturalWidth (v) + 1);
 	    }
 	    else
 	    {
@@ -787,7 +961,7 @@ NaturalGcd (Natural *u0, Natural *v0)
 	    }
 	    u_zeros = NaturalZeroBits (u);
 	    if (u_zeros)
-		gcd_right_shift (u, u_zeros);
+		NaturalRslInplace (u, u_zeros);
 	    t = u;
 	    u = v;
 	    v = t;
@@ -817,7 +991,7 @@ NaturalGcd (Natural *u0, Natural *v0)
 	    {
 		v_zeros = NaturalZeroBits (v);
 		if (v_zeros)
-		    gcd_right_shift (v, v_zeros);
+		    NaturalRslInplace (v, v_zeros);
 		if (NaturalLess (v, u))
 		{
 		    t = u;

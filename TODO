@@ -14,6 +14,7 @@ NOT TODO
 
 + Comments should not be allowed in interactive mode?
 + "public namespace" has a somewhat non-intuitive meaning.  Fix?
++ tagless GC
 
 DONE
 
@@ -38,4 +39,3 @@ DONE
 + forward declarations of typenames
 + add file/line numbers to compile errors
 + Add a PRNG
-+ tagless GC

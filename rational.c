@@ -70,7 +70,6 @@ RationalPlus (Value av, Value bv, int expandOk)
     switch (catagorize_signs(a->sign, b->sign)) {
     case BothPositive:
     case BothNegative:
-    default:
 	ret = RationalPlusHelper (a->sign, a, b);
 	break;
     case FirstPositive:
@@ -79,6 +78,8 @@ RationalPlus (Value av, Value bv, int expandOk)
     case SecondPositive:
 	ret = RationalMinusHelper (b, a);
 	break;
+    default:
+	abort();
     }
     RETURN (ret);
 }
@@ -96,12 +97,13 @@ RationalMinus (Value av, Value bv, int expandOk)
 	break;
     case FirstPositive:
     case SecondPositive:
-    default:
 	ret = RationalPlusHelper (a->sign, a, b);
 	break;
     case BothNegative:
 	ret = RationalMinusHelper (b, a);
 	break;
+    default:
+	abort();
     }
     RETURN (ret);
 }
@@ -202,7 +204,6 @@ RationalLess (Value av, Value bv, int expandOk)
 	a = b;
 	b = t;
     case BothPositive:
-    default:
 	if (!NaturalEqual (a->den, b->den))
 	    ret = NaturalLess (NaturalTimes (a->num, b->den),
 			       NaturalTimes (b->num, a->den));
@@ -215,6 +216,8 @@ RationalLess (Value av, Value bv, int expandOk)
     case SecondPositive:
 	ret = 1;
 	break;
+    default:
+	abort();
     }
     RETURN (ret ? TrueVal : FalseVal);
 }

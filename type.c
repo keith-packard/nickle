@@ -350,27 +350,17 @@ TypeCompatible (Types *a, Types *b, Bool contains)
     {
 	Types	**ut = TypesUnionElements (a);
 	for (n = 0; n < a->unions.nelements; n++)
-	    if (!TypeCompatible (ut[n], b, contains))
-		break;
-	return n == a->unions.nelements;
+	    if (TypeCompatible (ut[n], b, contains))
+	        return True;
+	return False;
     }
     if (b->base.tag == types_union)
     {
 	Types	**ut = TypesUnionElements (a);
 	for (n = 0; n < b->unions.nelements; n++)
-	{
-	    if (contains)
-	    {
-		if (TypeCompatible (a, ut[n], contains))
-		    return True;
-	    }
-	    else
-	    {
-		if (!TypeCompatible (a, ut[n], contains))
-		    break;
-	    }
-	}
-	return n == b->unions.nelements;
+	    if (TypeCompatible (a, ut[n], contains))
+		return True;
+	return False;
     }
     if (a->base.tag != b->base.tag)
 	return False;
@@ -626,6 +616,7 @@ TypeCombineBinary (Types *left, int tag, Types *right)
 	}
 	break;
     case EQ:
+	return typesPrim[type_integer];
     case NE:
     case LT:
     case GT:

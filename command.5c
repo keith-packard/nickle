@@ -80,3 +80,23 @@
 
     Command::new ("library", Command::lex_library);
 }
+
+/*
+ * Extend command namespace for output
+ */
+
+extend namespace Command {
+    public void function display (poly v) {
+	if (is_void (v))
+	    return;
+	History::insert (v);
+	printf (format, v);
+	putchar ('\n');
+    }
+
+    public void function display_base (poly v, int base) {
+	History::insert (v);
+	File::print (stdout, v, "g", base, 0, -1, " ");
+	putchar ('\n');
+    }
+}

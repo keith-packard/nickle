@@ -189,7 +189,6 @@ init (void)
     SymbolInit ();
     BuiltinInit ();
     ThreadInit ();
-    HistoryInit ();
     TimerInit ();
 }
 

@@ -1,3 +1,5 @@
+Command::lex_file ("@nicklelib@/printf.5c");
+Command::lex_file ("@nicklelib@/history.5c");
 Command::lex_file ("@nicklelib@/command.5c");
 load "@nicklelib@/math.5c"
 import Math;

@@ -8,7 +8,7 @@ CFLAGS = $(CDEBUGFLAGS) -Wall -Wpointer-arith -Wstrict-prototypes \
 
 libbuiltin_a_SOURCES =	builtin.h namespaces.h builtin.c \
 			command.c debug.c environ.c \
-			file.c history.c math.c semaphore.c \
+			file.c math.c semaphore.c \
 			string.c thread.c toplevel.c \
 			sockets.c # bsdrandom.c gcd.c
 

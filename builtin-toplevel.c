@@ -76,7 +76,6 @@ import_Toplevel_namespace()
 
     static struct fbuiltin_v funcs_v[] = {
         { do_imprecise, "imprecise", "R", "R.i" },
-        { do_printf, "printf", "i", "s.p" },
         { do_string_to_integer, "string_to_integer", "i", "s.i" },
         { 0 }
     };
@@ -87,18 +86,6 @@ import_Toplevel_namespace()
     BuiltinFuncs2J (/*parent*/ 0, funcs_2j);
     BuiltinFuncsV (/*parent*/ 0, funcs_v);
     EXIT ();
-}
-
-Value 
-do_printf (int n, Value *p)
-{
-    char	*fmt;
-    
-    fmt = StringChars (&p[0]->string);
-    p++;
-    n--;
-    callformat (FileStdout, fmt, n, p);
-    return Zero;
 }
 
 Value 

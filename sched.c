@@ -965,7 +965,7 @@ RaiseException (Value thread, SymbolPtr except, BoxPtr args, InstPtr *next)
 			except->symbol.name);
 	if (args)
 	{
-	    for (i = 0; i < args->nvalues; i++)
+	    for (i = args->nvalues - 1; i >= 0; i--)
 		PrintError ("\t%v\n", BoxValueGet (args, i));
 	}
 	SetSignalError ();

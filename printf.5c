@@ -1,0 +1,174 @@
+/* $Header$*/
+/*
+ * Copyright © 2002 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+extend namespace File {
+    /*
+     * Include existing public File members
+     */
+    public import File;
+    
+    int default_output_precision = -1;
+    int infinite_output_precision = -2;
+
+    public exception invalid_format (string format);
+    public exception too_many_arguments (string format, poly[*] args);
+    public exception too_few_arguments (string format, poly[*] args);
+    
+    public void function vfprintf (file f, string format, poly[*] args)
+    {
+	/*
+	 * A private namespace to walk the format string 
+	 */
+	namespace fmt {
+	    int	i = 0;
+	    int len = String::length(format);
+	    
+	    /*
+	     * Return whether the end of the string has been reached
+	     */
+	    public int function done () { 
+		return i >= len; 
+	    }
+
+	    /*
+	     * Return current character, raising an exception if
+	     * the end of the string has been reached
+	     */
+	    public int function c() { 
+		if (done())
+		    raise invalid_argument ("invalid format", 1, format);
+		return format[i]; 
+	    }
+	    
+	    /*
+	     * Step to next character
+	     */
+	    public void function step () {
+		++i; 
+	    }
+	    
+	    /*
+	     * Return true and step if current character matches 'm'
+	     */
+	    public int function match(int m) {
+		if (c() == m) 
+		{
+		    step();
+		    return 1;
+		}
+		return 0;
+	    }
+		    
+	    /*
+	     * Return a number from the format string
+	     */
+	    public int function number () {
+		int	n = 0;
+		while ('0' <= c() && c() <= '9')
+		{
+		    n = n * 10 + c() - '0';
+		    step();
+		}
+		return n;
+	    }
+	}
+
+	namespace arg {
+	    int	n = 0;
+	    
+	    public poly function next () {
+		if (n == dim(args))
+		    raise too_few_arguments (format, args);
+		return args[n++];
+	    }
+
+	    public void function done () {
+		if (n != dim(args))
+		    raise too_many_arguments (format, args);
+	    }
+	}
+
+	while (!fmt::done() && !File::error (f))
+	{
+	    if (fmt::match ('%') && fmt::c() != '%')
+	    {
+		/*
+		 * width
+		 */
+		
+		int width = 0;
+		string fill = " ";
+		if (fmt::match('*'))
+		    width = arg::next ();
+		else
+		{
+		    int sign = 1;
+		    if (fmt::match('-'))
+			sign = -1;
+		    if (fmt::match('0'))
+			fill = "0";
+		    width = fmt::number () * sign;
+		}
+		
+		/*
+		 * precision
+		 */
+		
+		int prec = default_output_precision;
+		if (fmt::match ('.'))
+		{
+		    if (fmt::match('-'))
+			prec = infinite_output_precision;
+		    else if (fmt::match('*'))
+			prec = arg::next ();
+		    else
+			prec = fmt::number ();
+		}
+
+		/*
+		 * format
+		 */
+		int base = 10;
+		switch (fmt::c()) {
+		case 'b': case 'B': base = 2; break;
+		case 'x': case 'X': base = 16; break;
+		case 'o': case 'O': base = 8; break;
+		}
+		print (f, arg::next(), String::new(fmt::c()), base, 
+		       width, prec, fill);
+	    } else
+		putc (fmt::c(), f);
+	    fmt::step ();
+	}
+	arg::done ();
+    }
+
+    public void function fprintf (file f, string format, poly args...)
+    {
+	vfprintf (f, format, args);
+    }
+
+    public void function printf (string format, poly args...)
+    {
+	vfprintf (stdout, format, args);
+    }
+    
+    public string function vsprintf (string format, poly[*] args)
+    {
+	file	f = File::string_write ();
+	vfprintf (f, format, args);
+	return File::string_string (f);
+    }
+
+    public string function sprintf (string format, poly args...)
+    {
+	return vsprintf (format, args);
+    }
+}
+    
+void (string format, poly args...) printf = File::printf;
+string (string format, poly args...) sprintf = File::sprintf;

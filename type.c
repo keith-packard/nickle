@@ -384,7 +384,7 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 	if (a->prim.prim == b->prim.prim)
 	    return True;
 	if (TypeNumeric (a) && TypeNumeric (b))
-	    return contains ? a->prim.prim >= b->prim.prim : True;
+	    return True;
 	break;
     case types_ref:
 	/*
@@ -428,6 +428,9 @@ TypeCompatible (Types *a, Types *b, Bool contains)
     case types_union:
 	if (!contains && a->structs.structs->nelements != b->structs.structs->nelements)
 	    break;
+	/*
+	 * Is 'b' a subtype of 'a'?
+	 */
 	for (n = 0; n < a->structs.structs->nelements; n++)
 	{
 	    StructElement   *ae;
@@ -441,7 +444,26 @@ TypeCompatible (Types *a, Types *b, Bool contains)
 		break;
 	}
 	if (n != a->structs.structs->nelements)
-	    break;
+	{
+	    /*
+	     * is 'a' a subtype of 'b'?
+	     */
+	    for (n = 0; n < b->structs.structs->nelements; n++)
+	    {
+		StructElement   *be;
+		Types	    *at;
+    
+		be = &StructTypeElements(b->structs.structs)[n];
+		at = StructTypes (a->structs.structs, be->name);
+		if (!at)
+		    break;
+		if (!TypeCompatible (at, be->type, contains))
+		    break;
+	    }
+	    /* nope, neither are subtypes */
+	    if (n != b->structs.structs->nelements)
+		return False;
+	}
 	return True;
     default:
 	break;

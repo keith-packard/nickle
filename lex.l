@@ -288,7 +288,7 @@ LexGetInteractiveChar (void)
     if (lexInput->at_bol)
     {
 	Value	v = prompt ();
-	dofformat (FileStdout, "%s", 1, &v);
+	Print (FileStdout, prompt (), 's', 0, 0, 0, ' ');
 	FileFlush (FileStdout);
     }
     return LexGetChar ();

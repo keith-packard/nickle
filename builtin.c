@@ -260,7 +260,6 @@ BuiltinInit (void)
     import_Toplevel_namespace();
     import_Debug_namespace();
     import_File_namespace();
-    import_History_namespace();
     import_Math_namespace();
 #ifdef BSD_RANDOM
     import_BSDRandom_namespace();

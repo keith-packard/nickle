@@ -555,7 +555,6 @@ void	SymbolInit (void);
 
 extern NamespacePtr    DebugNamespace;
 extern NamespacePtr    FileNamespace;
-extern NamespacePtr    HistoryNamespace;
 extern NamespacePtr    MathNamespace;
 #ifdef BSD_RANDOM
 extern NamespacePtr    BSDRandomNamespace;
@@ -573,11 +572,6 @@ void	BuiltinInit (void);
 
 Bool	DebugSetFrame (Value continuation, int offset);
 void	DebugStart (Value continuation);
-
-Value	History (Value, Value);
-void	HistoryDisplay (Value, Value *, Value *);
-void	HistoryInsert (Value);
-void	HistoryInit (void);
 
 void	ProfileInterrupt (Value thread);
 
@@ -639,9 +633,6 @@ extern int  ignorenl;
 void	skipcomment (void);
 void	skipline (void);
 int	lexEscape (int);
-
-void	callformat (Value f, char *fmt, int n, Value *p);
-int	dofformat (Value, char *, int, Value *);
 
 extern void	init (void);
 extern int	yyparse (void);
@@ -754,7 +745,6 @@ Value	do_Mutex_try_acquire (Value);
 Value	do_Semaphore_signal (Value);
 Value	do_Semaphore_wait (Value);
 Value	do_Semaphore_test (Value);
-Value	do_History_insert (Value);
 Value	do_File_close (Value);
 Value	do_File_flush (Value);
 Value	do_File_getc (Value);
@@ -794,7 +784,6 @@ Value	do_setjmp (Value, Value);
 Value	do_Command_new (Value, Value);
 Value	do_Command_new_names (Value, Value);
 Value	do_Command_pretty_print (Value, Value);
-Value	do_Command_display (Value, Value);
 #ifdef GCD_DEBUG
 Value	do_Gcd_bdivmod (Value, Value);
 Value	do_Gcd_kary_reduction (Value, Value);

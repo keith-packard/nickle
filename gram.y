@@ -186,10 +186,7 @@ command		: not_command expr reset NL
 			FramePtr	f;
 			
 			e = BuildCall ("Command", "display",
-				       2,
-				       BuildName (0, "format"),
-				       BuildCall ("History", "insert",
-						  1, NewExprTree (DOLLAR, $2, 0)));
+				       1,NewExprTree (DOLLAR, $2, 0));
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, 0));
 			ThreadsRun (t, 0);
@@ -203,21 +200,8 @@ command		: not_command expr reset NL
 			NamespacePtr	s;
 			FramePtr	f;
 
-			e = BuildCall ("File", "print",
-				       7,
-				       BuildName (0, "stdout"),
-				       BuildCall ("History", "insert",
-						  1, $2),
-				       NewExprConst (STRING_CONST, NewStrString ("g")),
-				       $4,
-				       NewExprConst (TEN_CONST, Zero),
-				       NewExprConst (TEN_CONST, NewInt (-1)),
-				       NewExprConst (STRING_CONST, NewStrString (" ")));
-			e = NewExprTree (COMMA,
-					 e,
-					 BuildCall (0, "putchar",
-						    1,
-						    NewExprConst (CHAR_CONST, NewInt ('\n'))));
+			e = BuildCall("Command", "display_base",
+				      2, NewExprTree (DOLLAR, $2, 0), $4);
 			GetNamespace (&s, &f);
 			t = NewThread (f, CompileExpr (e, 0));
 			ThreadsRun (t, 0);
@@ -636,13 +620,23 @@ typename	: TYPENAME
  */
 initnames	: name opt_init next_decl initnames
 		    { 
-			$$ = NewDeclList ($1->symbol.name, $2, $4); 
-			$$->symbol = $1;
+			if ($1)
+			{
+			    $$ = NewDeclList ($1->symbol.name, $2, $4); 
+			    $$->symbol = $1;
+			}
+			else
+			    $$ = $4;
 		    }
 		| name opt_init
 		    { 
-			$$ = NewDeclList ($1->symbol.name, $2, 0);
-			$$->symbol = $1;
+			if ($1)
+			{
+			    $$ = NewDeclList ($1->symbol.name, $2, 0);
+			    $$->symbol = $1;
+			}
+			else
+			    $1 = 0;
 		    }
 		;
 name		: NAME
@@ -1204,9 +1198,9 @@ primary		: fullname
 			$$->base.type = $1;
 		    }
 		| DOLLAR opt_integer
-		    { $$ = NewExprConst(POLY_CONST, History (0, $2)); }
+		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_CONST, $2)); }
 		| DOT
-		    { $$ = NewExprConst(POLY_CONST, History (0, Zero)); }
+		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_CONST, Zero)); }
 		| OP expr CP
 		    { $$ = $2; }
 		| primary STAROS dims CS

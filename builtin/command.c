@@ -33,7 +33,6 @@ import_Command_namespace()
     };
 
     static struct fbuiltin_2 funcs_2[] = {
-        { do_Command_display, "display", "i", "sp" },
         { do_Command_new, "new", "i", "sp" },
         { do_Command_new_names, "new_names", "i", "sp" },
         { do_Command_pretty_print, "pretty_print", "i", "fA*s" },
@@ -159,21 +158,6 @@ do_Command_pretty_print (Value f, Value names)
     if (NamespaceLocate (names, &namespace, &symbol, &publish) && symbol)
 	PrettyPrint (f, publish, symbol);
     RETURN (One);
-}
-
-Value
-do_Command_display (Value format, Value v)
-{
-    ENTER ();
-    if (v != Void)
-    {
-	Value	a[2];
-	a[0] = format;
-	a[1] = v;
-	do_printf (2, a);
-	FileOutput (FileStdout, '\n');
-    }
-    RETURN (Zero);
 }
 
 Value

@@ -1,0 +1,74 @@
+/* $Header$*/
+/*
+ * Copyright © 2002 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+namespace History {
+    typedef list;
+
+    typedef struct {
+	*list	next;
+	poly	value;
+    } list;
+
+    *list   head = 0;
+    int	    count = 0;
+    * *list  tail = &head;
+    
+    public void function insert (poly v)
+    {
+	if (is_void (v))
+	    return;
+	*list	new = reference ((list) { next = 0, value = v });
+	*tail = new;
+	tail = &new->next;
+	++count;
+    }
+
+    *list function elt (*list l, int id)
+    {
+	if (id <= 0) return l;
+	return elt (l->next, id-1);
+    }
+
+    public poly function fetch (int id)
+    {
+	if (id <= 0)
+	    return elt (head, count+id-1)->value;
+	else
+	    return elt (head, id-1)->value;
+    }
+
+    public void function show (string format, int args...)
+    {
+	int from = 10, to = count;
+	*list	f, t;
+	
+	if (count == 0)
+	    return;
+
+	if (dim(args) >= 1)
+	    from = args[0];
+
+	if (dim(args) >= 2)
+	    to = args[1];
+	else
+	{
+	    from = count - from;
+	    if (from < 1)
+		from = 1;
+	}
+	f = elt (head, from - 1);
+	t = elt (head, to - 1)->next;
+	while (f != t)
+	{
+	    printf ("$%-4d\t", from);
+	    printf (format, f->value);
+	    printf ("\n");
+	    f = f->next;
+	    from++;
+	}
+    }
+}

@@ -886,14 +886,13 @@ CompileCountDeclDimensions (ExprPtr expr)
 }
 
 static ObjPtr
-CompileBuildArray (ObjPtr obj, ExprPtr expr, TypesPtr type, int ndim, 
+CompileBuildArray (ObjPtr obj, ExprPtr expr, TypesPtr type, 
+		   ExprPtr dim, int ndim, 
 		   ExprPtr stat, CodePtr code)
 {
     ENTER ();
     InstPtr	inst;
-    ExprPtr	dim;
 
-    dim = type->array.dimensions;
     while (dim)
     {
 	obj = _CompileExpr (obj, dim->tree.left, True, stat, code);
@@ -961,8 +960,7 @@ CompileImplicitArray (ObjPtr obj, ExprPtr array, TypesPtr type,
 			   NewExprConst (TEN_CONST, NewInt (*dims++)),
 			   sub);
     }
-    type->array.dimensions = sub;
-    obj = CompileBuildArray (obj, array, type, ndim, stat, code);
+    obj = CompileBuildArray (obj, array, type, sub, ndim, stat, code);
     RETURN (obj);
 }
 
@@ -1199,7 +1197,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	    }
 	    if (t->array.dimensions && t->array.dimensions->tree.left)
 	    {
-		obj = CompileBuildArray (obj, expr, t, ndim, stat, code);
+		obj = CompileBuildArray (obj, expr, t, t->array.dimensions, ndim, stat, code);
 	    }
 	    else if (expr->tree.left)
 	    {

@@ -132,7 +132,7 @@ NewExprAtom (Atom atom)
     Expr    *e;
 
     e = ALLOCATE (&ExprAtomType, sizeof (ExprAtom));
-    ExprBaseInit (e, NAME);
+    ExprBaseInit (e, ATOM);
     e->atom.atom = atom;
     RETURN (e);
 }

@@ -87,7 +87,7 @@ void yyerror (char *fmt, ...);
 %token		    IF ELSE WHILE DO FOR SWITCH
 %token		    BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
 %token		    TRY CATCH TWIXT
-%token <atom>	    NAME TYPENAME NAMESPACENAME COMMAND NAMECOMMAND
+%token <atom>	    NAME TYPENAME NAMESPACENAME COMMAND NAMECOMMAND ATOM
 %token <value>	    TEN_CONST OCTAL_CONST BINARY_CONST HEX_CONST FLOAT_CONST
 %token <value>	    CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
 %token <value>	    VOIDVAL
@@ -995,6 +995,8 @@ integer		: TEN_CONST
  * Array initializers
  */
 opt_arrayinit	: arrayinit
+		| OC CC
+		    { $$ = 0; }
 		|
 		    { $$ = 0; }
 		;

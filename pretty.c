@@ -112,10 +112,17 @@ PrettyArrayInit (Value f, Expr *e, int level, Bool nest);
 static void
 PrettyArrayInits (Value f, Expr *e, int level, Bool nest)
 {
-    PrettyArrayInit (f, e->tree.left, 0, nest);
-    if (e->tree.right) {
-	FilePuts (f, ", ");
-	PrettyArrayInits (f, e->tree.right, level, nest);
+    while (e)
+    {
+	PrettyArrayInit (f, e->tree.left, 0, nest);
+	e = e->tree.right;
+	if (e)
+	{
+	    if (e->tree.left->base.tag == DOTS)
+		FilePuts (f, " ");
+	    else
+		FilePuts (f, ", ");
+	}
     }
 }
 
@@ -127,6 +134,9 @@ PrettyArrayInit (Value f, Expr *e, int level, Bool nest)
 	FilePuts (f, "{ ");
 	PrettyArrayInits (f, e->tree.left, level, nest);
 	FilePuts (f, " }");
+	break;
+    case DOTS:
+	FilePuts (f, "...");
 	break;
     default:
 	PrettyExpr (f, e, -1, level, nest);
@@ -247,6 +257,9 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     case NAME:
 	FilePuts (f, AtomName (e->name.name->atom));
 	break;
+    case ATOM:
+	FilePuts (f, AtomName (e->atom.atom));
+	break;
     case VAR:
 	PrettyDecl (f, e, level, nest);
 	break;
@@ -264,14 +277,17 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	FilePuts (f, "]");
 	break;
     case NEW:
-	FilePrintf (f, "(%T) ", e->base.type);
-	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
+	FilePrintf (f, "(%T)", e->base.type);
+	if (e->tree.left)
+	{
+	    FilePuts (f, " ");
+	    PrettyExpr (f, e->tree.left, selfPrec, level, nest);
+	}
 	break;
     case ARRAY:
-	FilePuts (f, "[");
-	if (e->tree.left)
-	    PrettyParameters (f, e->tree.left, nest);
-	FilePuts (f, "]");
+	FilePuts (f, "{ ");
+	PrettyArrayInits (f, e->tree.left, level, nest);
+	FilePuts (f, " }");
 	break;
     case STRUCT:
 	FilePuts (f, "{ ");

@@ -105,7 +105,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <expr>	    fullname
 %type  <expr>	    opt_rawnames rawname rawnames rawnamespace
 %type  <atom>	    rawatom
-%type  <expr>	    block opt_func_body func_body statements statement catches catch
+%type  <expr>	    block opt_func_body func_body func_right statements statement catches catch
 %type  <expr>	    block_or_expr
 %type  <expr>	    case_block cases case
 %type  <expr>	    union_case_block union_cases union_case
@@ -134,7 +134,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <argDecl>    argdefine
 %type  <bool>	    opt_dotdotdot
 
-%type  <expr>	    opt_expr for_exprs expr opt_exprs exprs simpleexpr primary
+%type  <expr>	    opt_expr for_exprs expr opt_exprs exprs simpleexpr
 %type  <expr>	    opt_actuals actuals
 %type  <expr>	    comma_expr
 %type  <ints>	    assignop
@@ -146,7 +146,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 
 %token		    VAR EXPR ARRAY STRUCT UNION ENUM COMP HASH
 
-%token		    NL SEMI MOD OC CC DOLLAR DOTDOTDOT
+%token		    NL SEMI MOD OC CC DOLLAR DOTDOTDOT ENDFILE
 %token <class>	    GLOBAL AUTO STATIC CONST
 %token <type>	    POLY INTEGER NATURAL RATIONAL REAL STRING
 %token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID BOOL
@@ -201,6 +201,8 @@ eend		: NL
 		    { yyerrok; }
 		| SEMI
 		    { yyerrok; }
+		| ENDFILE
+		    { yyerrok; }
 		;
 
 /*
@@ -223,6 +225,13 @@ reset		:
 		    }
 
 		;
+
+/*
+ * To make commands only recognized as the first token on a line,
+ * this production precedes every top-level production in the grammar.
+ * As the parser will look one token ahead, this cleverly makes only
+ * the first token on the line match commands
+ */
 not_command	:
 		    { notCommand = 1; }
 		;
@@ -328,6 +337,7 @@ command		: not_command expr reset NL
 			EXIT ();
 		    }
 		| NL
+		| ENDFILE
 		;
 opt_rawnames	: rawnames
 		|
@@ -642,10 +652,10 @@ func_body    	: { ++funcDepth; } block_or_expr { --funcDepth; $$ = $2; }
 		;
 block_or_expr	: block
 		    { $$ = $1; }
-		| ASSIGN simpleexpr SEMI
+		| attendnl ASSIGN simpleexpr SEMI
 		    { 
 			$$ = NewExprTree (OC,
-					  NewExprTree (RETURNTOK, 0, $2),
+					  NewExprTree (RETURNTOK, 0, $3),
 					  NewExprTree (OC, 0, 0));
 		    }
 		;
@@ -815,19 +825,19 @@ opt_init	: ASSIGN simpleexpr
 /*
  * Full declaration including storage, type and publication
  */
-decl		: publish class type ignorenl opt_nl
+decl		: publish class type opt_nl
 		    { $$.publish = $1; $$.class = $2; $$.type = $3; }
-		| class type ignorenl opt_nl
+		| class type opt_nl
 		    { $$.publish = publish_private; $$.class = $1; $$.type = $2; }
-		| publish type ignorenl opt_nl
+		| publish type opt_nl
 		    { $$.publish = $1; $$.class = class_undef; $$.type = $2; }
-		| type ignorenl opt_nl
+		| type opt_nl
 		    { $$.publish = publish_private; $$.class = class_undef; $$.type = $1; }
-		| publish class ignorenl opt_nl
+		| publish class opt_nl
 		    { $$.publish = $1; $$.class = $2; $$.type = typePoly; }
-		| class ignorenl opt_nl
+		| class opt_nl
 		    { $$.publish = publish_private; $$.class = $1; $$.type = typePoly; }
-		| publish ignorenl opt_nl
+		| publish opt_nl
 		    { $$.publish = $1; $$.class = class_undef; $$.type = typePoly; }
 		;
 /*
@@ -1061,12 +1071,12 @@ argdecl		: type NAME
 args		: OP opt_argdefines CP
 		    { $$ = $2; }
 		;
-opt_argdefines	: argdefines
+opt_argdefines	: ignorenl argdefines
 		    {
 			ArgType	*args;
 			Type	*type;
 
-			for (args = $1; args; args = args->next)
+			for (args = $2; args; args = args->next)
 			{
 			    type = args->type;
 			    if (ParseCanonType (type, False) != CanonTypeDefined)
@@ -1084,9 +1094,9 @@ opt_argdefines	: argdefines
 							   class_arg, 
 							   type, args->name);
 			}
-			$$ = $1;
+			$$ = $2;
 		    }
-		| 
+		| ignorenl
 		    { $$ = 0; }
 		;
 argdefines	: argdefine COMMA argdefines
@@ -1157,11 +1167,18 @@ actuals		: simpleexpr COMMA actuals
 			$$ = NewExprTree (COMMA, arg, 0); 
 		    }
 		;
+func_right	: attendnl ASSIGN simpleexpr
+		    { 
+			$$ = NewExprTree (OC,
+					  NewExprTree (RETURNTOK, 0, $3),
+					  NewExprTree (OC, 0, 0));
+		    }
+		| { ++funcDepth; } block { --funcDepth; $$ = $2; }
+		;
 /*
 * Fundemental expression production
 */
-simpleexpr	: primary
-		| simpleexpr assignop simpleexpr    		%prec ASSIGN
+simpleexpr	: simpleexpr assignop simpleexpr    		%prec ASSIGN
 		    { 
 			if ($2 == ASSIGNPOW)
 			    $$ = NewExprTree (ASSIGNPOW, 
@@ -1186,6 +1203,11 @@ simpleexpr	: primary
 			    }
 			    $$ = NewExprTree($2, $1, $3); 
 			}
+		    }
+		| opt_type FUNC namespace_start args func_right namespace_end	    	%prec ASSIGN
+		    {
+			ParseCanonType ($1, False);
+			$$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); 
 		    }
 		| MOD integer						%prec THREADID
 		    {   Value	t;
@@ -1266,22 +1288,7 @@ simpleexpr	: primary
 		    { $$ = NewExprTree(LE, $1, $3); }
 		| simpleexpr GE simpleexpr
 		    { $$ = NewExprTree(GE, $1, $3); }
-		;
-assignop	: ASSIGNPLUS
-		| ASSIGNMINUS
-		| ASSIGNTIMES
-		| ASSIGNDIVIDE
-		| ASSIGNDIV
-		| ASSIGNMOD
-		| ASSIGNPOW
-		| ASSIGNSHIFTL
-		| ASSIGNSHIFTR
-		| ASSIGNLXOR
-		| ASSIGNLAND
-		| ASSIGNLOR
-		| ASSIGN
-		;
-primary		: fullname
+		| fullname
 		| TEN_NUM
 		    { $$ = NewExprConst(TEN_NUM, $1); }
 		| OCTAL_NUM
@@ -1349,7 +1356,7 @@ primary		: fullname
 			$$ = NewExprTree (UNION, NewExprAtom ($3, 0, False), 0); 
 			$$->base.type = $1;
 		    }
-		| OP type DOT NAME CP primary 				%prec UNIONCAST
+		| OP type DOT NAME CP simpleexpr 			%prec UNIONCAST
 		    { 
 			ParseCanonType ($2, False);
 			$$ = NewExprTree (UNION, NewExprAtom ($4, 0, False), $6); 
@@ -1363,25 +1370,33 @@ primary		: fullname
 		    { $$ = $2; }
 		| OP block CP
 		    { $$ = $2; }
-		| primary STAROS dims CS
+		| simpleexpr STAROS dims CS
 		    { $$ = NewExprTree (OS, NewExprTree (STAR, $1, (Expr *) 0), $3); }
-		| primary OS dims CS
+		| simpleexpr OS dims CS
 		    { $$ = NewExprTree(OS, $1, $3); }
-		| primary OP opt_actuals CP				%prec CALL
+		| simpleexpr OP opt_actuals CP				%prec CALL
 		    { $$ = NewExprTree (OP, $1, $3); }
-		| primary DOT NAME
+		| simpleexpr DOT NAME
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0, False)); }
-		| primary ARROW NAME
+		| simpleexpr ARROW NAME
 		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3, 0, False)); }
-		| opt_type FUNC namespace_start args func_body namespace_end
-		    { 
-			ParseCanonType ($1, False);
-			$$ = NewExprCode (NewFuncCode ($1, $4, $5), 0); 
-		    }
 		;
 opt_integer	: integer
 		|
 		    { $$ = Zero; }
+assignop	: ASSIGNPLUS
+		| ASSIGNMINUS
+		| ASSIGNTIMES
+		| ASSIGNDIVIDE
+		| ASSIGNDIV
+		| ASSIGNMOD
+		| ASSIGNPOW
+		| ASSIGNSHIFTL
+		| ASSIGNSHIFTR
+		| ASSIGNLXOR
+		| ASSIGNLAND
+		| ASSIGNLOR
+		| ASSIGN
 		;
 integer		: TEN_NUM
 		| OCTAL_NUM

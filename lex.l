@@ -153,11 +153,8 @@ LexGetChar (void)
 	    ThreadsRun (0, lexInput->file);
 	else
 	{
-	    FileClose (lexInput->file);
-	    
 	    if (!lexInput->next)
 		return FileEOF;
-	    lexInput = lexInput->next;
 	    lexInput->at_eof = True;
 	    return '\n';
 	}
@@ -245,9 +242,13 @@ static int yy_input (char *buf, int max_size)
     int	    c;
     int	    result = 0;
     
-    lexInput->at_eof = False;
     if (lexInput->at_bol) { lexInput->lineno++; }
     while (result < max_size) {
+	if (lexInput->at_eof)
+	{
+	    FileClose (lexInput->file);
+	    lexInput = lexInput->next;
+	}
 	if (lexInput->interactive)
 	    c = LexGetInteractiveChar ();
 	else
@@ -349,6 +350,7 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 "=>"		{ yylval.ints = DARROW; return DARROW; }
 "<>"		{ yylval.value = Void; return VOIDVAL; }
 \n		{ 
+		    if (lexInput->at_eof) { strcpy (yytext, "EOF"); yylval.ints = ENDFILE; return ENDFILE; }
 		    if (!ignorenl) { yylval.ints = NL; return NL; } 
 		}
 "("		{ yylval.ints = OP; ++ignorenl; return OP; }
@@ -617,7 +619,6 @@ skipcomment (void)
     {
 bail:	
         yyerror ("Missing */ at end of file");
-	lexInput->at_eof = False;
         return;
     }
     for (;;) {

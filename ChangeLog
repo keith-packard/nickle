@@ -1,3 +1,14 @@
+2004-06-02  Keith Packard  <keithp@keithp.com>
+version 2.39
+
+	* gram.y:
+	* lex.l:
+	Eliminate 'primary' non-terminal.
+	Add ENDFILE token to ensure files end at top level.
+	Change NL handling to allow NL after simple declarations
+	Allow 'func' values to not require SEMI termination
+	
+
 2004-05-27  Keith Packard  <keithp@keithp.com>
 version 2.38
 

@@ -417,8 +417,8 @@ IntPowMod (int a, int p, int m)
 
     if (m >= 32767)
     {
-#if SIZEOF_LONG_LONG == 8
-	long long   la = a, lm = m, lr;
+#if DIGITBITS == 32
+	signed_digit   la = a, lm = m, lr;
 	lr = 1;
 	while (p)
 	{

@@ -1,3 +1,13 @@
+2005-06-04  Keith Packard  <keithp@keithp.com>
+
+	reviewed by: <delete if not using a buddy>
+
+	* math.5c:
+	Add π as an alias for pi
+	
+	* rational.c: (IntPowMod):
+	Use signed_digit instead of long long
+
 2005-03-15  Keith Packard  <keithp@keithp.com>
 version 2.47
 

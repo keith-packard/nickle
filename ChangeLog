@@ -1,4 +1,10 @@
 2005-06-16  Keith Packard  <keithp@keithp.com>
+version 2.48
+
+	* debian/changelog:
+	Prepare for version 2.48
+
+2005-06-16  Keith Packard  <keithp@keithp.com>
 
 	* compile.c: (CompileLvalue), (CompileCall), (_CompileExpr),
 	(_CompileStat), (ObjUnFuncName):
@@ -11,8 +17,6 @@
 	pair.
 
 2005-06-04  Keith Packard  <keithp@keithp.com>
-
-	reviewed by: <delete if not using a buddy>
 
 	* math.5c:
 	Add π as an alias for pi

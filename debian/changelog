@@ -1,3 +1,10 @@
+nickle (2.48-1) unstable; urgency=low
+  * Reference valued functions assigned to references need to avoid copy
+  * avoid use of 'long long' type in rational.c, use 'signed_digit' instead
+  * add 'π' as an alias for pi.
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 16 Jun 2005 13:53:06 -0700
+
 nickle (2.47-1) unstable; urgency=low
   * Make builtin functions return pointers instead of references.
   * Check for NULL hash value in a valid hash element.

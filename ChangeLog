@@ -1,3 +1,15 @@
+2005-06-16  Keith Packard  <keithp@keithp.com>
+
+	* compile.c: (CompileLvalue), (CompileCall), (_CompileExpr),
+	(_CompileStat), (ObjUnFuncName):
+	&poly foo() { ... };
+	&poly x = &foo();
+	Compiler generated 'Dereference, do_reference' in this
+	call which caused the object referenced by foo() to be
+	copied.  Notice case of call to reference value function
+	followed by & operator and elide the Dereference/do_reference
+	pair.
+
 2005-06-04  Keith Packard  <keithp@keithp.com>
 
 	reviewed by: <delete if not using a buddy>

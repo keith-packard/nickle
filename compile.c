@@ -227,7 +227,7 @@ ObjPtr	CompileAssign (ObjPtr obj, ExprPtr expr, Bool initialize, ExprPtr stat, C
 ObjPtr	CompileAssignOp (ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code);
 ObjPtr	CompileAssignFunc (ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code, char *name);
 ObjPtr	CompileArrayIndex (ObjPtr obj, ExprPtr expr, TypePtr indexType, ExprPtr stat, CodePtr code, int *ndimp);
-ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code);
+ObjPtr	CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code, Bool auto_reference);
 ObjPtr	_CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
 ObjPtr	_CompileBoolExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
 void	CompilePatchLoop (ObjPtr obj, int start,
@@ -610,6 +610,12 @@ isName:
 	    break;
 	}
 	break;
+    case OP:
+	if (auto_reference)
+	{
+	    obj = CompileCall (obj, expr, TailNever, stat, code, True);
+	    break;
+	}
     default:
 	if (auto_reference)
 	{
@@ -1101,7 +1107,7 @@ NewNonLocal (NonLocal *prev, NonLocalKind kind, int target)
  */
 
 ObjPtr
-CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
+CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code, Bool auto_reference)
 {
     ENTER ();
     InstPtr inst;
@@ -1119,7 +1125,7 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
     }
     expr->base.type = TypeCombineReturn (expr->tree.left->base.type);
     t = CompileRefType (obj, expr, expr->base.type);
-    if (t)
+    if ((t && !auto_reference) || (!t && auto_reference))
 	tail = TailNever;
     if ((tail == TailAlways &&
 	 !TypePoly (expr->base.type) &&
@@ -1134,11 +1140,17 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code)
     {
 	BuildInst (obj, OpCall, inst, stat);
 	inst->ints.value = varactual ? -argc : argc;
-	if (t)
+	if (t && !auto_reference)
 	{
 	    BuildInst (obj, OpUnFunc, inst, stat);
 	    inst->unfunc.func = Dereference;
 	    expr->base.type = t;
+	}
+	else if (!t && auto_reference)
+	{
+	    BuildInst (obj, OpUnFunc, inst, stat);
+	    inst->unfunc.func = do_reference;
+	    expr->base.type = NewTypeRef (expr->base.type, True);
 	}
 	else
 	    BuildInst (obj, OpNoop, inst, stat);
@@ -2413,7 +2425,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	inst->ints.value = ndim;
 	break;
     case OP:	    /* function call */
-	obj = CompileCall (obj, expr, TailNever, stat, code);
+	obj = CompileCall (obj, expr, TailNever, stat, code, False);
 	break;
     case COLONCOLON:
 	obj = _CompileExpr (obj, expr->tree.right, evaluate, stat, code);
@@ -2814,7 +2826,7 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 							  expr->tree.left,
 							  (Expr *) 0)),
 			   TailNever,
-			   stat, code);
+			   stat, code, False);
 	expr->base.type = typePrim[rep_thread];
 	break;
     case DOLLAR:
@@ -3617,7 +3629,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    if (expr->tree.right->base.tag == OP && 
 		_CompileCanTailCall (obj, code))
 	    {
-		obj = CompileCall (obj, expr->tree.right, TailAlways, expr, code);
+		obj = CompileCall (obj, expr->tree.right, TailAlways, expr, code, False);
 	    }
 	    else
 	    {
@@ -3641,7 +3653,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	break;
     case EXPR:
 	if (last && expr->tree.left->base.tag == OP && !profiling)
-	    obj = CompileCall (obj, expr->tree.left, TailVoid, expr, code);
+	    obj = CompileCall (obj, expr->tree.left, TailVoid, expr, code, False);
 	else
 	    obj = _CompileExpr (obj, expr->tree.left, False, expr, code);
 	break;
@@ -4277,6 +4289,7 @@ ObjUnFuncName (UnaryFunc func)
 	{ Lnot,		"Lnot" },
 	{ Not,		"Not" },
 	{ Factorial,	"Factorial" },
+	{ do_reference,	"do_reference" },
 	{ 0, 0 }
     };
     int	i;

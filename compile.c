@@ -1150,7 +1150,13 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code, Bo
 	{
 	    BuildInst (obj, OpUnFunc, inst, stat);
 	    inst->unfunc.func = do_reference;
-	    expr->base.type = NewTypeRef (expr->base.type, True);
+	    /* 
+	     * this is called from CompileLvalue which
+	     * must return a value of the type pointed to, not the
+	     * type of the object itself, so don't create a pointer
+	     * type here. Someday we'll figure all of this out...
+	     */
+/*	    expr->base.type = NewTypeRef (expr->base.type, True); */
 	}
 	else
 	    BuildInst (obj, OpNoop, inst, stat);

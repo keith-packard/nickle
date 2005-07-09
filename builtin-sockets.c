@@ -223,6 +223,13 @@ do_Socket_connect (Value s, Value host, Value port)
 	int n, err;
 	flags |= O_NONBLOCK;
 	fcntl (s->file.fd, F_SETFL, flags);
+#ifdef SO_BROADCAST
+	{
+	    int one = 1;
+	    setsockopt (s->file.fd, SOL_SOCKET, SO_BROADCAST,
+			(char *) &one, sizeof (int));
+	}
+#endif
 	n = connect (s->file.fd, (struct sockaddr *) &addr, sizeof addr);
 	flags &= ~O_NONBLOCK;
 	fcntl (s->file.fd, F_SETFL, flags);

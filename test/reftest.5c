@@ -1,0 +1,50 @@
+/*
+ * Test various pointer and reference type combinations
+ */
+
+exception bad_result (poly a, poly b);
+
+int i = 7;
+string s = "hi";
+
+&int ir = &i;
+
+i = 8;
+
+/* make sure references see changes to the underlying object */
+if (i != ir)
+    raise bad_result (i, ir);
+
+*int ip = &i;
+
+i = 9;
+
+/* make sure pointers see changes to the underlying object */
+if (i != *ip)
+    raise bad_result (i, *ip);
+
+if (ir != *ip)
+    raise bad_result (ir, *ip);
+
+/*
+ * Make sure function return values typecheck correctly
+ */
+typedef s;
+typedef struct {
+    &s x;
+} s;
+
+
+s u() {
+    s v;
+
+    &v.x = reference(u());
+    return v;
+}
+
+s t() {
+    s v;
+
+    &v.x = &t();
+    return v;
+}

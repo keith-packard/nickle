@@ -1,3 +1,25 @@
+2005-07-08  Keith Packard  <keithp@keithp.com>
+
+	* builtin-sockets.c: (do_Socket_connect):
+	Set SO_BROADCAST just in case
+	
+	* compile.c: (CompileCall):
+	CompileCall with auto_reference == True must not
+	return a pointer to the return type as this function
+	is called from CompileLvalue which is defined to return
+	the type of the underlying object, not a pointer to
+	that type. The alternative is to return a reference type,
+	and I'm fairly sure that's not right as & is supposed
+	to return a pointer type, not a reference type, right?
+	
+	* nickle.spec.in:
+	Make sure the nickle headers are installed
+	
+	* test/Makefile.am:
+	* test/reftest.5c:
+	Add a test for reference types which checks the above
+	change
+
 2005-06-16  Keith Packard  <keithp@keithp.com>
 version 2.48
 

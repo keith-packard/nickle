@@ -40,6 +40,8 @@ cp -R examples $RPM_BUILD_ROOT%{_datadir}/nickle/
 %dir %{_datadir}/nickle
 %{_mandir}/man1/nickle.1*
 %{_datadir}/nickle/*
+%dir %{_includedir}/nickle
+%{_includedir}/nickle/*
 
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT

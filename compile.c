@@ -3542,7 +3542,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 			CompileIsReachable (obj, obj->used))
 		    {
 			CompileError (obj, expr, 
-				      "Fall through case with varient value");
+				      "Fall-through case with variant value");
 		    }
 		    inst->tagcase.offset = obj->used - case_inst[icase];
 		    inst->tagcase.tag = tag;

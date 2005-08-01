@@ -111,6 +111,7 @@ import Abort;
 library "history.5c";
 
 # Now load the extra commands.
+library "parse-args.5c";
 library "command.5c";
 
 # Note that some libraries extend namespaces, and
@@ -127,5 +128,5 @@ autoload PRNG;
 
 # parse the command line
 extend namespace Command {
-      argv = process_args (argv);
+      process_args (&argv);
 }

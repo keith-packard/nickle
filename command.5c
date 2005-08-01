@@ -1,4 +1,5 @@
 extend namespace Command {
+
     /*
      * These are used by the parser when building
      * programs to run from the top level of the
@@ -226,78 +227,105 @@ extend namespace Command {
     
     new ("char", do_char);
 
-    /*
-     * Command line processing
-     */
-    string[*] process_args(string[*] argv) 
+    void process_args(&string[*] argv)
     {
-	typedef struct {
-	    bool	    library;
-	    string	    name;
-	} lex_arg;
-	lex_arg[dim(argv)]	files;
-	int			nfiles = 0;
-	bool		lex_stdin = true;
-	bool		done = false;
-	int			i = 0;
+	bool lex_stdin = true;
+	string script_name = "";
 
-	while (!done && i < dim (argv))
-	{
-	    switch (argv[i]) {
-	    case "-e":
-		/*
-		 * -e -- remaining arguments are a single expression
-		 */
-		string  expr = "";
-		while (++i < dim(argv))
-		{
-		    expr += argv[i];
-		    if (i < dim(argv)-1)
-			expr += " ";
-		    else
-			expr += "\n";
-		}
-		lex_string (expr);
-		done = true;
-		lex_stdin = false;
-		break;
-	    case "-f":
-		/*
-		 * -f -- lex a file
-		 */
-		i++;
-		files[nfiles].library = false;
-		files[nfiles].name = argv[i];
-		nfiles++;
-		i++;
-		break;
-	    case "-l":
-		i++;
-		files[nfiles].library = true;
-		files[nfiles].name = argv[i];
-		nfiles++;
-		i++;
-		break;
-	    default:
-		/*
-		 * Add the script base directory to the library path
-		 */
-		nickle_path += ":" + String::dirname(argv[0]);
-		files[nfiles].library = false;
-		files[nfiles].name = argv[i];
-		nfiles++;
-		done = true;
-		lex_stdin = false;
-		break;
-	    }
+	/* XXX Much of this architecture is driven by
+	   the fact that the lexer stacks the
+	   files to be processed rather than queueing them. */
+
+	typedef union {
+	    string library;
+	    string sfile;
+	    string script;
+	    string expr;
+	} lexable;
+
+	lexable[...] lexables = {};
+
+	void process_lexables() {
 	}
+
+	void save_lexable(lexable l) {
+	    lexables[dim(lexables)] = l;
+	}
+
+	void save_library(string arg) {
+	    save_lexable((lexable.library)arg);
+	}
+	
+	void save_script(string arg) {
+	    save_lexable((lexable.script)arg);
+	    script_name = arg;
+	    lex_stdin = false;
+	}
+	
+	void save_file(string arg) {
+	    save_lexable((lexable.sfile)arg);
+	}
+	
+	void save_expr(string arg) {
+	    save_lexable((lexable.expr)arg);
+	    lex_stdin = false;
+	}
+	
+	ParseArgs::argdesc argd = {
+	    args = {
+		{var = {arg_lambda = save_library},
+		 abbr = 'l',
+		 name = "library",
+		 expr_name = "lib",
+		 desc = "Library to load."},
+		{var = {arg_lambda = save_file},
+		 abbr = 'f',
+		 name = "file",
+		 expr_name = "source",
+		 desc = "Source file to load."},
+		{var = {arg_lambda = save_expr},
+		 abbr = 'e',
+		 name = "expr",
+		 expr_name = "expression",
+		 desc = "Expression to evaluate."}
+	    },
+	    posn_args = {
+		{var = {arg_lambda = save_script},
+		 name = "script",
+		 optional = <>}
+	    },
+	    unknown = &(int user_argind),
+	    prog_name = "nickle"
+	};
+
+	/* actually parse the arguments */
+	ParseArgs::parseargs(&argd, &argv);
+
+	/* Reset argv to hold remaining arguments */
+	if (is_uninit(&user_argind)) {
+	    string[0] rest = {};
+	    argv = rest;
+	} else {
+	    string[dim(argv) - user_argind + 1] rest;
+	    rest[0] = script_name;
+	    for (int i = 1; i < dim(rest); i++)
+		rest[i] = argv[i + user_argind - 1];
+	    argv = rest;
+	}
+
+	/* Recall the comment above.  Since the lexer
+	   stacks, we must stack stdin, which is to run last,
+	   *before* the other stuff.  Bleah. */
 	if (lex_stdin)
 	{
-	    /*
-	     * Add the current directory to the library path
-	     */
+	    /* Add the current directory to the library path */
 	    nickle_path += ":.";
+
+	    /* we want stdin to be processed after all other lexables */
 	    lex_input (stdin, "<stdin>", false, File::isatty (stdin));
+
+	    /* if there's a .nicklerc, we apparently want that
+	       next-to-last? */
 	    try {
 		lex_file (Environ::get ("HOME") + "/.nicklerc");
 	    } catch invalid_argument (msg, int i, poly value) {
@@ -309,31 +337,39 @@ extend namespace Command {
 	    }
 	}
 
-	while (nfiles-- > 0)
-	{
-	    exception load_fail (string msg);
-	    try {
-		if (files[nfiles].library) {
-		    if (!lex_library (files[nfiles].name))
-			raise load_fail ("no such library");
-		} else {
-		    try {
-			lex_file (files[nfiles].name);
-		    } catch File::open_error (string msg,
-					      File::error_type err,
-					      string name) {
-			raise load_fail (msg);
-		    }
-		}
-	    } catch load_fail (string msg) {
+	/* now stack the other arguments, in reverse order */
+	for (int i = dim(lexables) - 1; i >=0; --i) {
+	    static void load_fail(string name, string msg) {
 		File::fprintf (stderr, "Cannot load \"%s\": %s\n",
-			       files[nfiles].name, msg);
+			       name, msg);
 		exit (1);
 	    }
+
+	    static void lex_script(string arg) {
+		try {
+		    lex_file (arg);
+		} catch File::open_error (string msg,
+					  File::error_type err,
+					  string name) {
+		    load_fail (name, msg);
+		}
+	    }
+
+	    union switch(lexables[i]) {
+	    case library arg:
+		if (!lex_library (arg))
+		    load_fail (arg, "cannot load library");
+		break;
+	    case script arg:
+		lex_script(arg);
+		break;
+	    case sfile arg:
+		lex_script(arg);
+		break;
+	    case expr arg:
+		lex_string(arg + "\n");
+		break;
+	    }
 	}
-	/*
-	 * Reset argv to hold remaining arguments
-	 */
-	return (string[dim(argv) - i]) { [j] = argv[i+j] };
     }
 }

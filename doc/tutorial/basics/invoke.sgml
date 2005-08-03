@@ -6,14 +6,15 @@
 <arg>-l <replaceable>file</replaceable></arg>
 <arg>-e <replaceable>expr</replaceable></arg>
 <arg><replaceable>script</replaceable></arg>
+<arg>--</arg>
+<arg><replaceable>arg ...</replaceable></arg>
 </cmdsynopsis>
 
 <variablelist>
 
 <varlistentry><term><literal>-f</literal></term>
 <listitem><para>
-Evaluate <replaceable>file</replaceable> first.
-In addition, Nickle usually loads a <literal>.nicklerc</literal> file.
+Evaluate <replaceable>file</replaceable>.
 </para></listitem>
 </varlistentry>
 
@@ -26,7 +27,7 @@ Evaluate <replaceable>file</replaceable> like <literal>-f</literal>, but expect 
 <varlistentry><term><literal>-e</literal></term>
 <listitem>
 <para>
-Stop processing arguments and evaluate the rest of the line as a Nickle expression, print its value, and quit, e.g.
+Evaluate a Nickle expression, e.g.
 </para>
 <informalexample><screen>
 $ nickle -e 3**4
@@ -39,6 +40,8 @@ $
 <varlistentry><term><literal>script</literal></term>
 <listitem><para>
 If Nickle encounters an unflagged argument, it assumes it to be the name of a script, which it runs.
+If a <literal>.nicklerc</literal> file is available, it will
+be evaluated first.
 No more arguments are processed; the rest of the line is given to the script as its arguments.
 </para></listitem>
 </varlistentry>
@@ -46,7 +49,7 @@ No more arguments are processed; the rest of the line is given to the script as 
 </variablelist>
 
 <para>
-Without <literal>-e</literal> or a script as arguments, Nickle runs interactively, accepting standard input and writing to standard output.
+Without <literal>-e</literal> or a script as an argument, Nickle runs interactively, accepting standard input and writing to standard output.
 </para>
 
 </sect1>

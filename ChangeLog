@@ -1,3 +1,8 @@
+2005-08-02  Bart Massey  <bart@cs.pdx.edu>
+	
+	* doc/tutorial/basics/invoke.sgml, nickle.1.in:
+	Fix documentation to reflect new argument parsing.
+	
 2005-07-31  Bart Massey  <bart@cs.pdx.edu>
 version 2.49
 	

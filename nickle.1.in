@@ -3,7 +3,7 @@
 .SH NAME
 nickle \- a desk calculator language
 .SH SYNOPSIS
-nickle [-f file] [-l library] [-e expr] [ script ... ]
+nickle [--help|--usage] [-f file] [-l library] [-e expr] [ script ] [--] [arg ...]
 .SH DESCRIPTION
 .PP
 \fINickle\fP is a
@@ -19,30 +19,39 @@ design choices have been made differently,
 and a very few features are simply missing.
 .SH USAGE
 .PP
-When invoked without arguments, Nickle reads from
-standard input, and writes to standard output.
 An un-flagged argument is treated as a Nickle script,
 and replaces standard input.  Any remaining arguments
 following the script are placed in the Nickle string array
-argv for programmatic inspection.
+argv for programmatic inspection.  When invoked without an
+expression or script argument, Nickle reads from
+standard input, and writes to standard output.
 .PP
 Options are as follows:
 .TP
-.BI "-f " file
+.B "--help,--usage"
+Print a help/usage message and exit.  This is a built-in
+feature of Nickle's ParseArgs module, and thus will also be
+true of Nickle scripts that use this library.
+.TP
+.BI "-f,--file " file
 Load
 .I file
 into Nickle before beginning execution.
 .TP
-.BI "-l " library
+.BI "-l,--library " library
 Load
 .I library
 into Nickle before beginning execution.
 See below for a description of the library facility.
 .TP
-.BI "-e " expr
-Instead of looking for input on stdin, evaluate
-.IR expr .
-This must be the last argument to Nickle.
+.BI "-e,--expr " expr
+Evaluate
+.I expr
+before beginning execution.
+.TP
+.B "--"
+Quit parsing arguments and pass the remainder, unevaluated, to
+.IR argv .
 .SH SYNTAX
 .PP
 To make the input language more

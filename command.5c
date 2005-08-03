@@ -258,6 +258,8 @@ extend namespace Command {
 	
 	void save_script(string arg) {
 	    save_lexable((lexable.script)arg);
+	    /* Add directory containing the script to the library path */
+	    nickle_path = String::dirname (arg) + ":" + nickle_path;
 	    script_name = arg;
 	    lex_stdin = false;
 	}

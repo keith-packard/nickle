@@ -1,3 +1,10 @@
+2005-08-03  Keith Packard  <keithp@keithp.com>
+
+	* command.5c:
+	Fix minor regression from argument parsing rewrite;
+	library path was not augmented by script directory
+	as it used to be.
+
 2005-08-02  Keith Packard  <keithp@keithp.com>
 
 	* builtin-string.c: (do_String_index), (do_String_substr):

@@ -752,7 +752,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     char	*initial = 0, *in;
     char	*repeat = 0, *re;
     char	*whole;
-    int		initial_width, repeat_width;
+    int		initial_width, repeat_width = 0;
     int		frac_width;
     int		rep_width, brace_width = 0, dot_width = 0;
     int		whole_width;

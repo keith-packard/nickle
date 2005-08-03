@@ -125,7 +125,7 @@ do_String_index (Value av, Value bv)
     i = 0;
     while (a < p)
     {
-	int c;
+	unsigned c;
 	a = StringNextChar (a, &c, &al);
 	i++;
     }
@@ -170,7 +170,7 @@ do_String_substr (Value av, Value bv, Value cv)
      */
     while (b > 0)
     {
-	int ch;
+	unsigned ch;
 	a = StringNextChar (a, &ch, &alen);
 	b--;
     }
@@ -181,7 +181,7 @@ do_String_substr (Value av, Value bv, Value cv)
     elen = alen;
     while (c > 0)
     {
-	int ch;
+	unsigned ch;
 	e = StringNextChar (e, &ch, &elen);
 	c--;
     }

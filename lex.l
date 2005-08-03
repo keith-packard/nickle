@@ -445,9 +445,10 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 "\r"		;
 \'([^\n\']|\\\')*\'	{
 			ENTER ();
-			char	 *s;
-			long	len = yyleng - 1;
-			int	c;
+			char	    *s;
+			long	    len = yyleng - 1;
+			unsigned    c;
+
 			s = yytext + 1;
 			s = StringNextChar (s, &c, &len);
 			if (c == '\\')
@@ -456,8 +457,9 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 				c = 0;
 			    else if ('0' <= c && c <= '7')
 			    {
-				int	ch;
-				char    *ps = s;
+				unsigned    ch;
+				char	    *ps = s;
+
 				c = c - '0';
 				while ((s = StringNextChar (s, &ch, &len)) &&
 				       '0' <= ch && ch <= '7')
@@ -477,9 +479,9 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 		}
 \"([^\n\"]|\\\")*\"	{
 			ENTER ();
-			char	*d, *s;
-			int	c;
-			long	len = yyleng - 2;
+			char	    *d, *s;
+			unsigned    c;
+			long	    len = yyleng - 2;
 
 			yylval.value = NewString (len);
 			d = StringChars (&yylval.value->string);
@@ -492,9 +494,10 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 				    break;
 				if ('0' <= c && c <= '7')
 				{
-				    int	    ch;
-    				    char    *ps = s;
-				    long    plen = len;
+				    unsigned	ch;
+    				    char	*ps = s;
+				    long	plen = len;
+
 				    c = c - '0';
 				    while ((s = StringNextChar (s, &ch, &len)) &&
 					   '0' <= ch && ch <= '7')

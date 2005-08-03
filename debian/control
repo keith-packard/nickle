@@ -2,8 +2,8 @@ Source: nickle
 Section: interpreters
 Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
-Build-Depends: debhelper (>= 4), libreadline4-dev 
-Standards-Version: 3.6.1
+Build-Depends: debhelper (>= 4), libreadline5-dev 
+Standards-Version: 3.6.2
 
 Package: nickle
 Architecture: any

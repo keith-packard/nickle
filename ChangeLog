@@ -1,3 +1,17 @@
+2005-08-02  Keith Packard  <keithp@keithp.com>
+
+	* builtin-string.c: (do_String_index), (do_String_substr):
+	* file.c: (FileStringWidth), (FilePutString):
+	* lex.l:
+	* rational.c: (RationalDecimalPrint):
+	Fix compiler warnings about signed/unsigned mismatches
+	for StringNextChar (thanks GCC 4)
+
+	* debian/changelog:
+	* debian/control:
+	Update for version 2.49
+	Use new readline (5), update policy to 3.6.2
+
 2005-08-02  Bart Massey  <bart@cs.pdx.edu>
 	
 	* doc/tutorial/basics/invoke.sgml, nickle.1.in:

@@ -1,3 +1,11 @@
+nickle (2.49-1) unstable; urgency=low
+  * Fix &foo() return type to be pointer rather than reference.
+  * Always set SO_BROADCAST for UDP sockets
+  * Rewrite parse-args module to be more useful (Bart Massey)
+  * Replace ad-hoc argument parsing code with parse-args (Bart Massey)
+
+ -- Keith Packard <keithp@keithp.com>  Tue,  2 Aug 2005 23:10:30 -0700
+
 nickle (2.48-1) unstable; urgency=low
   * Reference valued functions assigned to references need to avoid copy
   * avoid use of 'long long' type in rational.c, use 'signed_digit' instead

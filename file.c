@@ -1311,7 +1311,7 @@ FileStringWidth (char *string, long length, char format)
     else
     {
 	int	    width = 2;
-	int	    c;
+	unsigned    c;
 	while ((string = StringNextChar (string, &c, &length)))
 	{
 	    if (c < ' ' || '~' < c)
@@ -1345,7 +1345,7 @@ FilePutString (Value f, char *string, long length, char format)
 	FilePutsc (f, string, length);
     else
     {
-	int c;
+	unsigned c;
 	FileOutput (f, '"');
 	while ((string = StringNextChar (string, &c, &length))) 
 	{

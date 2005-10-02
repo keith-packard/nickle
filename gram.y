@@ -107,7 +107,6 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <symbol>	    name opt_name
 %type  <funcDecl>   func_decl func_name
 %type  <atom>	    typename 
-%type  <symbol>	    opt_typename
 %type  <expr>	    opt_init
 %type  <fulltype>   decl next_decl
 %type  <type>	    opt_type type subscripts subtype

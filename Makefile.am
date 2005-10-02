@@ -6,8 +6,8 @@
 
 SUBDIRS = bench test examples
 
-VERSION = $(shell sh $(top_builddir)/version-sh $(top_srcdir)/ChangeLog)
-BUILD_DATE = $(shell sh $(top_builddir)/date-sh)
+VERSION := $(shell sh $(top_builddir)/version-sh $(top_srcdir)/ChangeLog)
+BUILD_DATE := $(shell sh $(top_builddir)/date-sh)
 
 NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c \
 	arc4.5c prng.5c command.5c abort.5c \

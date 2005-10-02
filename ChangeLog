@@ -1,3 +1,16 @@
+2005-09-02  Bart Massey <bart@cs.pdx.edu>
+
+	* Makefile.am:
+	Older versions of GNU Make (before 3.80,
+	apparently) seem to require shell invocation
+	macros to be defined with :=
+
+	* gram.y:
+	Solaris yacc gives an error if a type is
+	given to a non-terminal that does not
+	actually appear in the grammar.  Removed
+	opttypename.
+	
 2005-08-03  Keith Packard  <keithp@keithp.com>
 
 	* command.5c:

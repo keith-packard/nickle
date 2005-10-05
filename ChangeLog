@@ -1,3 +1,16 @@
+2005-09-04  Bart Massey <bart@cs.pdx.edu>
+
+	* parse-args.5c:
+	Fixes for various buglets including
+	mis-parsing single-character
+	options and using the wrong variable
+	in an error message.
+
+	* command.5c:
+	Changed the semantics of argv.  It is now
+	dim 0 iff the program reads from standard
+	input *and* was not passed arguments.
+	
 2005-09-02  Bart Massey <bart@cs.pdx.edu>
 
 	* Makefile.am:

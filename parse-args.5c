@@ -143,13 +143,11 @@ namespace ParseArgs {
 	void save_value(&arg_var a, string value)
 	    /*
 	     * convert and store the value
-	     * associated with an argument
+	     * associated with an argument.
+	     * return number of args consumed
 	     */
 	{
 	    union switch(a) {
-	    case arg_flag var:
-		var = true;
-		break;
 	    case arg_string var:
 		var = value;
 		break;
@@ -162,21 +160,30 @@ namespace ParseArgs {
 	    case arg_lambda var:
 		var(value);
 		break;
+	    default:
+		abort("save_value called on wrong var type");
 	    }
 	}
 
 	void process_flag(&arg a)
 	    /*
-	     * Process a flag that requires an argument
+	     * Process a flag
 	     */
 	{
-	    if (argind >= dim(argv)) {
-		fprintf(stderr, "%s: missing value for --%s\n",
-			argd.prog_name, a.name);
-		usage(stderr);
-	    }
-	    save_value(&a.var, argv[argind]);
 	    argind++;
+	    union switch(a.var) {
+	    case arg_flag var:
+		var = true;
+		return;
+	    default:
+		if (argind >= dim(argv)) {
+		    fprintf(stderr, "%s: missing value for --%s\n",
+			    argd.prog_name, a.name);
+		    usage(stderr);
+		}
+		save_value(&a.var, argv[argind]);
+		argind++;
+	    }
 	}
 
 	/* handle the help case first */
@@ -202,7 +209,6 @@ namespace ParseArgs {
 
 	    /* process abbreviated (old-style) flags (maybe grouped) */
 	    if (a[0] == '-' && a[1] != '-') {
-		argind++;
 		for (int i = 1; i < length(a); i++) {
 		    if (!hash_test(arg_abbr_hash, a[i])) {
 			fprintf(stderr, "%s: unknown flag char '-%c'\n",
@@ -224,7 +230,6 @@ namespace ParseArgs {
 				argname);
 			usage(stderr);
 		}
-		argind++;
 		process_flag(&arg_name_hash[argname]);
 		continue;
 	    }
@@ -249,7 +254,7 @@ namespace ParseArgs {
 			break;
 		    fprintf(stderr, "%s: missing required argument %s\n",
 			    argd.prog_name,
-			    argd.args[i].expr_name);
+			    argd.posn_args[i].name);
 		    usage(stderr);
 		}
 		save_value(&argd.posn_args[i].var, argv[argind]);

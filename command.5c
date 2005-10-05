@@ -304,14 +304,16 @@ extend namespace Command {
 	ParseArgs::parseargs(&argd, &argv);
 
 	/* Reset argv to hold remaining arguments */
-	if (is_uninit(&user_argind)) {
+	if (lex_stdin && is_uninit(&user_argind)) {
 	    string[0] rest = {};
 	    argv = rest;
 	} else {
+	    if (is_uninit(&user_argind))
+		user_argind = dim(argv);
 	    string[dim(argv) - user_argind + 1] rest;
 	    rest[0] = script_name;
-	    for (int i = 1; i < dim(rest); i++)
-		rest[i] = argv[i + user_argind - 1];
+		for (int i = 1; i < dim(rest); i++)
+		    rest[i] = argv[i + user_argind - 1];
 	    argv = rest;
 	}
 

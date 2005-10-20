@@ -618,6 +618,10 @@ TypeBinaryIntegral (Type *left, Type *right)
 	    left = right;
 	return left;
     }
+    else if (TypeNumeric (left) &&  TypeNumeric (right))
+    {
+	return typePrim[rep_integer];
+    }
     return 0;
 }
 

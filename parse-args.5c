@@ -99,12 +99,14 @@ namespace ParseArgs {
 	/* build hashes for flags */
 	arg[int] arg_abbr_hash = {};
 	arg[string] arg_name_hash = {};
-	for (int i = 0; i < dim(argd.args); i++) {
-	    &arg d = &argd.args[i];
-	    if (!is_uninit(&d.abbr))
-		arg_abbr_hash[d.abbr] = d;
-	    if (!is_uninit(&d.name))
-		arg_name_hash[d.name] = d;
+	if (!is_uninit(&argd.args)) {
+	    for (int i = 0; i < dim(argd.args); i++) {
+		&arg d = &argd.args[i];
+		if (!is_uninit(&d.abbr))
+		    arg_abbr_hash[d.abbr] = d;
+		if (!is_uninit(&d.name))
+		    arg_name_hash[d.name] = d;
+	    }
 	}
 
 	void usage(file f)
@@ -112,11 +114,13 @@ namespace ParseArgs {
 	     * Print a description of program usage on f
 	     */
 	{
-	    fprintf(f, "%s: usage: ", argd.prog_name);
-	    fprintf(f, "%s <options>", argd.prog_name);
-	    for (int i = 0; i < dim(argd.args); i++)
-		if (is_uninit(&argd.args[i].name))
-		    fprintf(f, " %s", arg_string(argd.args[i]));
+	    fprintf(f, "%s: usage: %s", argd.prog_name, argd.prog_name);
+	    if (!is_uninit(&argd.args)) {
+		fprintf(f, " <options>");
+		for (int i = 0; i < dim(argd.args); i++)
+		    if (is_uninit(&argd.args[i].name))
+			fprintf(f, " %s", arg_string(argd.args[i]));
+	    }
 	    if (!is_uninit(&argd.posn_args)) {
 		for (int i = 0; i < dim(argd.posn_args); i++)
 		    if (is_uninit(&argd.posn_args[i].optional))
@@ -127,16 +131,18 @@ namespace ParseArgs {
 	    if (!is_uninit(&&argd.unknown))
 		fprintf(f, " [--] ...");
 	    fprintf(f, "\n");
-	    for (int i = 0; i < dim(argd.args); i++)
-		if (is_uninit(&argd.args[i].name))
-		    fprintf(f, "    %s   %s\n",
-			    argd.args[i].expr_name,
-			    argd.args[i].desc);
-	    for (int i = 0; i < dim(argd.args); i++)
-		if (!is_uninit(&argd.args[i].name))
-		    fprintf(f, "    %s   %s\n",
-			    arg_string(argd.args[i]),
-			    argd.args[i].desc);
+	    if (!is_uninit(&argd.args)) {
+		for (int i = 0; i < dim(argd.args); i++)
+		    if (is_uninit(&argd.args[i].name))
+			fprintf(f, "    %s   %s\n",
+				argd.args[i].expr_name,
+				argd.args[i].desc);
+		for (int i = 0; i < dim(argd.args); i++)
+		    if (!is_uninit(&argd.args[i].name))
+			fprintf(f, "    %s   %s\n",
+				arg_string(argd.args[i]),
+				argd.args[i].desc);
+	    }
 	    exit(1);
 	}
 

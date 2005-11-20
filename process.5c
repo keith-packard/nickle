@@ -1,0 +1,115 @@
+/*
+ * Copyright © 2005 Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+/*
+ * Implementation of process manipulation functions.
+ */
+namespace Process {
+
+    import File, Thread;
+
+    public void system(string cmd, string args ...)
+	/* Fork a separate process. The string cmd is the
+	   actual command to be executed, whereas args forms
+	   the argument vector. */
+    {
+	file[3] descs = {stdin, stdout, stderr};
+	int pid = filter(cmd, args, descs);
+    }
+
+    public void copy(file readfd, file writefd)
+	/* Generic copy-input-to-output sometimes useful
+	   in process manipulation. */
+    {
+	while (!end(readfd))
+	    putc(getc(readfd), writefd);
+    }
+
+    public typedef void(file) agent;
+
+    public void run_process(agent writer, agent reader,
+			     string cmd, string args ...)
+    	/* Run a separate process, invoking an extra thread
+	   so that the process can be concurrently written
+	   to and read from.  The writer should accept a
+	   file descriptor suitable for writing, the reader
+	   a file descriptor suitable for reading.  The
+	   string cmd is the actual command to be executed,
+	   whereas args forms the argument vector.  Return
+	   when both the writer and reader have returned. */
+    {
+	file[*] inpipe = mkpipe();
+	file[*] outpipe = mkpipe();
+	file[3] descs = {inpipe[0], outpipe[1], stderr};
+	int pid = filter(cmd, args, descs);
+	close(inpipe[0]);
+	close(outpipe[1]);
+	thread t = fork(reader(outpipe[0]));
+	writer(inpipe[1]);
+	close(inpipe[1]);
+	join(t);
+	close(outpipe[0]);
+    }
+
+    public typedef enum {
+        read,
+	write
+    } popen_direction;
+
+    public file popen(popen_direction d, bool nullf,
+		      string cmd, string args ...)
+	/* Return a file descriptor suitable for reading
+	   (when d = read) or writing (when d = write) a
+	   separate process.  If nullf is true, the unused
+	   descriptor will be connected to /dev/null.
+	   Otherwise, it will be connected to standard input
+	   (when d = read) or standard output (when d =
+	   write).  The string cmd is the actual command to
+	   be executed, whereas args forms the argument
+	   vector. */
+    {
+	switch(nullf) {
+	case true:
+	    switch(d) {
+	    case popen_direction.read:
+		twixt(file[*] pipe = mkpipe(); close(pipe[1])) {
+		    twixt(file nullf = open("/dev/null", "r"); close(nullf)) {
+			file[3] descs = {nullf, pipe[1], stderr};
+			filter(cmd, args, descs);
+		    }
+		    return pipe[0];
+		}
+	    case popen_direction.write:
+		twixt(file[*] pipe = mkpipe(); close(pipe[0])) {
+		    twixt(file nullf = open("/dev/null", "w"); close(nullf)) {
+			file[3] descs = {pipe[0], nullf, stderr};
+			filter(cmd, args, descs);
+		    }
+		    return pipe[1];
+		}
+	    }
+	    break;
+	case false:
+	    switch(d) {
+	    case popen_direction.read:
+		twixt(file[*] pipe = mkpipe(); close(pipe[1])) {
+		    file[3] descs = {stdin, pipe[1], stderr};
+		    filter(cmd, args, descs);
+		    return pipe[0];
+		}
+	    case popen_direction.write:
+		twixt(file[*] pipe = mkpipe(); close(pipe[0])) {
+		    file[3] descs = {pipe[0], stdout, stderr};
+		    filter(cmd, args, descs);
+		    return pipe[1];
+		}
+	    }
+	    break;
+	}
+	abort("bad popen state");
+    }
+
+}

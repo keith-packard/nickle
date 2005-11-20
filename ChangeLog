@@ -1,3 +1,9 @@
+2005-11-20  Bart Massey <bart@cs.pdx.edu>
+
+        * process.5c:
+	New code to handle process creation provides system(),
+	popen(), and run_process().
+	
 2005-10-26  Bart Massey <bart@cs.pdx.edu>
 
         * parse-args.5c:

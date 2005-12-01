@@ -1,3 +1,9 @@
+2005-12-01  Keith Packard  <keithp@keithp.com>
+
+	* math.5c:
+	cbrt must use more intermediate precision to hit the
+	specified error bound
+
 2005-11-20  Bart Massey <bart@cs.pdx.edu>
 
         * process.5c:

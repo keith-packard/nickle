@@ -64,23 +64,22 @@ extend namespace Math {
     {
 	real real_cbrt(real v)
 	{
-	    real	err;
 	    real	prev, cur;
-	    int	n;
-	    int	s;
-
-	    s = sign (v);
+	    
+	    int s = sign (v);
 	    v = imprecise (abs (v));
-	    err = 1/(2**(precision (v)+3));
-	    prev = imprecise (1 / (0.75 * 2**(floor (exponent(v)/3))), precision(v));
-	    for (;;)
-	    {
-		cur = 1/3 * (2 * prev + v / prev**2);
-		if (abs (cur - prev) < err)
-		    break;
+	    int result_bits = precision (v);
+	    int intermediate_bits = result_bits + 10;
+	    v = imprecise (v, intermediate_bits);
+	    real err = imprecise (1/(2**(result_bits+3)), intermediate_bits);
+
+	    cur = imprecise (1 / (0.75 * 2**(floor (exponent(v)/3))),
+			     intermediate_bits);
+	    do {
 		prev = cur;
-	    }
-	    return s * abs (cur);
+		cur = 1/3 * (2 * prev + v / prev**2);
+	    } while (abs (cur - prev) > err);
+	    return s * imprecise (abs (cur), result_bits);
 	}
 
 	if (is_rational (v))

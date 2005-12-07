@@ -1,3 +1,16 @@
+nickle (2.50-1) unstable; urgency=low
+  * Solaris build fixes (Bart Massey)
+  * Various argument parsing buglets, including mis-parsing single character
+    options (Bart Massey)
+  * Permit any numeric type to TypeBinaryIntegral as required by
+    unified numeric types. Representation errors will be caught by
+    runtime system (Keith Packard)
+  * Add system() popen() and run_process() (Bart Massey)
+  * cbrt must use more intermediate precision to hit the
+    specified error bound (Keith Packard)
+
+ -- Keith Packard <keithp@keithp.com>  Tue,  6 Dec 2005 20:25:02 -0800
+
 nickle (2.49-1) unstable; urgency=low
   * Fix &foo() return type to be pointer rather than reference.
   * Always set SO_BROADCAST for UDP sockets

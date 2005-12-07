@@ -1,3 +1,9 @@
+2005-12-06  Keith Packard  <keithp@keithp.com>
+version 2.50
+
+	* debian/changelog:
+	Update for version 2.50
+
 2005-12-01  Keith Packard  <keithp@keithp.com>
 
 	* math.5c:

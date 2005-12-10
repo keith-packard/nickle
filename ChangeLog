@@ -1,3 +1,27 @@
+2005-12-10  Bart Massey <bart@cs.pdx.edu>
+version 2.51
+
+	* debian/changelog:
+	Update for version 2.51
+	
+        * builtin.5c:
+	Don't load every random library; make the user autoload or
+	autoimport them if they want them instead.
+	
+	* process.5c:
+	Replaced putc and getc in copy function.
+
+	* compile.c:
+	* lex.l:
+	* gram.y:
+	* pretty.c:
+	* type.c:
+	Added &&= and ||= operators.
+
+	* execute.c:
+	* opcode.h:
+	Added Drop opcode needed for short-circuit code for &&= and ||=.
+	
 2005-12-06  Keith Packard  <keithp@keithp.com>
 version 2.50
 

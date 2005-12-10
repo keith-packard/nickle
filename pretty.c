@@ -104,6 +104,8 @@ tokenToPrecedence (int token)
     case ASSIGNLXOR:
     case ASSIGNLAND:
     case ASSIGNLOR:
+    case ASSIGNAND:
+    case ASSIGNOR:
 	return 1;
     case QUEST: case COLON:
 	return 2;
@@ -467,6 +469,8 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest, ProfileData 
     case ASSIGNLXOR:
     case ASSIGNLAND:
     case ASSIGNLOR:
+    case ASSIGNAND:
+    case ASSIGNOR:
     case COMMA:
 	PrettyExpr (f, e->tree.left, selfPrec, level, nest, pd);
 	switch (e->base.tag) {
@@ -503,6 +507,8 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest, ProfileData 
 	case ASSIGNLXOR:FilePuts (f, " ^= "); break;
 	case ASSIGNLAND:FilePuts (f, " &= "); break;
 	case ASSIGNLOR:	FilePuts (f, " |= "); break;
+	case ASSIGNAND:FilePuts (f, " &&= "); break;
+	case ASSIGNOR:	FilePuts (f, " ||= "); break;
 	case COMMA:	FilePuts (f, ", "); break;
 	}
 	PrettyExpr (f, e->tree.right, selfPrec, level, nest, pd);

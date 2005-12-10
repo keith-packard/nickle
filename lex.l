@@ -393,6 +393,8 @@ extend		{ yylval.publish = publish_extend; return EXTEND; }
 ">>="		{ yylval.ints = ASSIGNSHIFTR; return ASSIGNSHIFTR; }
 "⪢="		{ yylval.ints = ASSIGNSHIFTR; return ASSIGNSHIFTR; }
 "^="		{ yylval.ints = ASSIGNLXOR; return ASSIGNLXOR; }
+"&&="           { yylval.ints = ASSIGNAND; return ASSIGNAND; }
+"||="           { yylval.ints = ASSIGNOR; return ASSIGNOR; }
 "&="		{ yylval.ints = ASSIGNLAND; return ASSIGNLAND; }
 "|="		{ yylval.ints = ASSIGNLOR; return ASSIGNLOR; }
 "="		{ yylval.ints = ASSIGN; return ASSIGN; }

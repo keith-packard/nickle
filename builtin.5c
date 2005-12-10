@@ -122,9 +122,11 @@ library "scanf.5c";
 library "socket.5c";
 
 # Now autoload/autoimport the bonus stuff
-autoload Mutex;
-autoload ARC4;
-autoload PRNG;
+# (But why?  Let the users do it.)
+#autoload Mutex;
+#autoload ARC4;
+#autoload PRNG;
+#autoload Process;
 
 # parse the command line
 extend namespace Command {

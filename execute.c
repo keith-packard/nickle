@@ -1422,6 +1422,9 @@ ThreadsRun (Value thread, Value lex)
 		case OpEnd:
 		    SetSignalFinished ();
 		    break;
+		case OpDrop:
+		    stack = 1;
+		    break;
 		default:
 		    break;
 		}

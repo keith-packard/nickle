@@ -163,6 +163,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 		ASSIGNDIV ASSIGNMOD ASSIGNPOW
 		ASSIGNSHIFTL ASSIGNSHIFTR
 		ASSIGNLXOR ASSIGNLAND ASSIGNLOR
+                ASSIGNOR ASSIGNAND
 %right		FORK
 %right		QUEST COLON
 %left		OR
@@ -1478,6 +1479,8 @@ assignop	: ASSIGNPLUS
 		| ASSIGNLXOR
 		| ASSIGNLAND
 		| ASSIGNLOR
+		| ASSIGNOR
+		| ASSIGNAND
 		| ASSIGN
 		;
 integer		: TEN_NUM

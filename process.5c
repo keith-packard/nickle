@@ -25,7 +25,7 @@ namespace Process {
 	   in process manipulation. */
     {
 	while (!end(readfd))
-	    putc(getc(readfd), writefd);
+	    putb(getb(readfd), writefd);
     }
 
     public typedef void(file) agent;

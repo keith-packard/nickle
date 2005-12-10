@@ -2799,6 +2799,96 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case ASSIGNLXOR:	obj = CompileAssignFunc (obj, expr, Lxor, stat, code, "^"); break;
     case ASSIGNLAND:	obj = CompileAssignOp (obj, expr, LandOp, stat, code); break;
     case ASSIGNLOR:	obj = CompileAssignOp (obj, expr, LorOp, stat, code); break;
+    case ASSIGNAND:
+	/*
+	 * a &&= b
+	 *
+	 * a ASSIGNAND b
+	 *   +--------+
+	 */
+	top_inst = obj->used;
+	obj = CompileLvalue (obj, expr->tree.left, stat, code,
+			     False, False, False, False, False);
+	SetPush (obj);
+	NewInst (obj, OpFetch, middle_inst, stat);
+	NewInst (obj, OpBranchFalse, test_inst, stat);
+	/* no short circuit */
+	obj = _CompileBoolExpr (obj, expr->tree.right, True, stat, code);
+	if (test_inst >= 0)
+	{
+	    inst = ObjCode (obj, test_inst);
+	    inst->branch.offset = obj->used - test_inst;
+	    inst->branch.mod = BranchModNone;
+	    BuildInst (obj, OpAssign, inst, stat);
+	    NewInst(obj, OpBranch, test_inst, stat);
+	} else {
+	    NewInst (obj, OpAssign, middle_inst, stat);
+	    NewInst(obj, OpBranch, test_inst, stat);
+	}
+	/* short circuit */
+	NewInst(obj, OpDrop, middle_inst, stat);
+	inst = ObjCode(obj, test_inst);
+	inst->branch.offset = obj->used - test_inst;
+	inst->branch.mod = BranchModNone;
+	/* exit: is this Noop necessary? */
+	BuildInst (obj, OpNoop, inst, stat);
+	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+					     AND,
+					     expr->tree.right->base.type);
+	if (!expr->base.type)
+	{
+	    CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for &&= operation",
+			  expr->tree.left->base.type,
+			  expr->tree.right->base.type);
+	    expr->base.type = typePoly;
+	    break;
+	}
+	break;
+    case ASSIGNOR:
+	/*
+	 * a ||= b
+	 *
+	 * a ASSIGNOR b
+	 *   +--------+
+	 */
+	top_inst = obj->used;
+	obj = CompileLvalue (obj, expr->tree.left, stat, code,
+			     False, False, False, False, False);
+	SetPush (obj);
+	NewInst (obj, OpFetch, middle_inst, stat);
+	NewInst (obj, OpBranchTrue, test_inst, stat);
+	/* no short circuit */
+	obj = _CompileBoolExpr (obj, expr->tree.right, True, stat, code);
+	if (test_inst >= 0)
+	{
+	    inst = ObjCode (obj, test_inst);
+	    inst->branch.offset = obj->used - test_inst;
+	    inst->branch.mod = BranchModNone;
+	    BuildInst (obj, OpAssign, inst, stat);
+	    NewInst(obj, OpBranch, test_inst, stat);
+	} else {
+	    NewInst (obj, OpAssign, middle_inst, stat);
+	    NewInst(obj, OpBranch, test_inst, stat);
+	}
+	/* short circuit */
+	NewInst(obj, OpDrop, middle_inst, stat);
+	inst = ObjCode(obj, test_inst);
+	inst->branch.offset = obj->used - test_inst;
+	inst->branch.mod = BranchModNone;
+	/* exit: is this Noop necessary? */
+	BuildInst (obj, OpNoop, inst, stat);
+	expr->base.type = TypeCombineBinary (expr->tree.left->base.type,
+					     OR,
+					     expr->tree.right->base.type);
+	if (!expr->base.type)
+	{
+	    CompileError (obj, stat, "Incompatible types, left '%T', right '%T', for ||= operation",
+			  expr->tree.left->base.type,
+			  expr->tree.right->base.type);
+	    expr->base.type = typePoly;
+	    break;
+	}
+	break;
     case EQ:	    obj = CompileBinOp (obj, expr, EqualOp, stat, code); break;
     case NE:	    obj = CompileBinFunc (obj, expr, NotEqual, stat, code,"!="); break;
     case LT:	    obj = CompileBinOp (obj, expr, LessOp, stat, code); break;
@@ -4258,6 +4348,7 @@ const char *const OpNames[] = {
     "AssignOp",
     "AssignFunc",
     "End",
+    "Drop",
 };
 
 static char *

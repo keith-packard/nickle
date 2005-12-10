@@ -811,6 +811,21 @@ TypeUnaryBool (Type *type)
     return 0;
 }
 
+/*
+ * Return the least-upper bound for a boolean computation
+ */
+static Type *
+TypeBinaryBool (Type *left, Type *right)
+{
+    if (TypePoly (left))
+	left = typePrim[rep_bool];
+    if (TypePoly (right))
+	right = typePrim[rep_bool];
+    if (TypeBool (left) && TypeBool (right))
+	return left;
+    return 0;
+}
+
 static void
 TypeEltMark (void *object)
 {
@@ -982,6 +997,11 @@ TypeCombineBinary (Type *left, int tag, Type *right)
     case ASSIGNLAND:
     case ASSIGNLOR:
 	if ((type = TypeBinaryIntegral (left, right)))
+	    ret = TypeAdd (ret, type);
+	break;
+    case ASSIGNAND:
+    case ASSIGNOR:
+	if ((type = TypeBinaryBool (left, right)))
 	    ret = TypeAdd (ret, type);
 	break;
     case COLON:

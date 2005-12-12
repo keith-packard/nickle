@@ -6,6 +6,8 @@
  * for licensing information.
  */
 
+autoload PRNG;
+
 namespace Skiplist {
     public typedef *struct {
     } List;

@@ -6,6 +6,8 @@
  * Modified 2003/4 to support /dev/random
  */
 
+autoload ARC4;
+
 namespace PRNG {
   import File;
 

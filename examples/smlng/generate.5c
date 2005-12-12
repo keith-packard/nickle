@@ -4,6 +4,8 @@
  * for licensing information.
  */
 
+autoload PRNG;
+
 int function iswhite (int c)
 {
     switch (c) {

@@ -14,6 +14,8 @@
  * Bart Massey 1999/1
  */
 
+autoload PRNG;
+
 namespace MillerRabin {
 
   int[*] primes = {

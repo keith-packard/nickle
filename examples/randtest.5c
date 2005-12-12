@@ -8,7 +8,7 @@
  * Bart 2001/3
  */
 
-import PRNG;
+autoimport PRNG;
 
 int[*] function t(int n) {
   int[2] s = {0, 0};

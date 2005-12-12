@@ -8,6 +8,7 @@
  */
 
 autoload Skiplist;
+autoload PRNG;
 
 int gt_count = "hi"; 
 

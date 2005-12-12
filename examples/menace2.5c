@@ -16,6 +16,8 @@
  * Bart Massey 2001/11/21
  */
 
+autoload PRNG;
+
 /* initial weight */
 const int initial_weight = 32;
 

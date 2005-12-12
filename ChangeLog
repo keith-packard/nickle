@@ -1,3 +1,28 @@
+2005-12-11  Bart Massey <bart@cs.pdx.edu>
+version 2.52
+
+	* debian/changelog:
+	Update for version 2.52
+	
+        * prng.5c:
+	Since it's now autoimported, autoload ARC4
+	so that it will continue to work.
+
+	* examples/menace2.5c:
+	* examples/miller-rabin.5c:
+	* examples/mutextest.5c:
+	* examples/randtest.5c:
+	* examples/rsa-demo.5c:
+	* examples/skiplist.5c:
+	* examples/skiplisttest.5c:
+	* examples/sort.5c:
+	* examples/smlng/generate.5c:
+	Add needed autoloads/autoimports to make
+	the examples work again.  Not obvious that
+	PRNG shouldn't continue to be loaded, and
+	maybe even imported, although that would also
+	force in ARC4 in the current implementation.
+	
 2005-12-10  Bart Massey <bart@cs.pdx.edu>
 version 2.51
 

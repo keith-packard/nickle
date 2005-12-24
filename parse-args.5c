@@ -67,10 +67,16 @@ namespace ParseArgs {
     }
 
     /*
-     * the argument description was defective, with
-     * a reason string
+     * The argument description was defective, with
+     * a reason string.
      */
     public exception bad_argd(string reason);
+
+    /*
+     * Print a usage message on the given file.
+     * XXX Valid only after parseargs() has been called.
+     */
+    public void(file f) usage;
 
     public void parseargs(&argdesc argd, &(string[*]) argv) 
 	/*
@@ -109,7 +115,7 @@ namespace ParseArgs {
 	    }
 	}
 
-	void usage(file f)
+	void usagef(file f)
 	    /*
 	     * Print a description of program usage on f
 	     */
@@ -145,6 +151,7 @@ namespace ParseArgs {
 	    }
 	    exit(1);
 	}
+	usage = usagef;
 
 	void save_value(&arg_var a, string value)
 	    /*
@@ -185,7 +192,7 @@ namespace ParseArgs {
 		if (argind >= dim(argv)) {
 		    fprintf(stderr, "%s: missing value for --%s\n",
 			    argd.prog_name, a.name);
-		    usage(stderr);
+		    usagef(stderr);
 		}
 		save_value(&a.var, argv[argind]);
 		argind++;
@@ -195,7 +202,7 @@ namespace ParseArgs {
 	/* handle the help case first */
 	if (argind < dim(argv) &&
 	    (argv[argind] == "--help" || argv[argind] == "--usage"))
-	    usage(stdout);
+	    usagef(stdout);
 	
 	/* now walk the arguments */
 	while(argind < dim(argv)) {
@@ -208,7 +215,7 @@ namespace ParseArgs {
 			    "%s: don't know what to do with arg \"%s\"\n",
 			    argd.prog_name,
 			    a);
-			usage(stderr);
+			usagef(stderr);
 		}
 		break;
 	    }
@@ -220,7 +227,7 @@ namespace ParseArgs {
 			fprintf(stderr, "%s: unknown flag char '-%c'\n",
 				argd.prog_name,
 				a[i]);
-			usage(stderr);
+			usagef(stderr);
 		    }
 		    process_flag(&arg_abbr_hash[a[i]]);
 		}
@@ -234,7 +241,7 @@ namespace ParseArgs {
 			fprintf(stderr, "%s: unknown flag \"--%s\"\n",
 				argd.prog_name,
 				argname);
-			usage(stderr);
+			usagef(stderr);
 		}
 		process_flag(&arg_name_hash[argname]);
 		continue;
@@ -248,7 +255,7 @@ namespace ParseArgs {
 	    fprintf(stderr, "%s: extra argument \"%s\"\n",
 		    argd.prog_name,
 		    argv[argind]);
-	    usage(stderr);
+	    usagef(stderr);
 	}
 
 	/* process any positional arguments */
@@ -261,7 +268,7 @@ namespace ParseArgs {
 		    fprintf(stderr, "%s: missing required argument %s\n",
 			    argd.prog_name,
 			    argd.posn_args[i].name);
-		    usage(stderr);
+		    usagef(stderr);
 		}
 		save_value(&argd.posn_args[i].var, argv[argind]);
 		argind++;
@@ -280,7 +287,7 @@ namespace ParseArgs {
 	        fprintf(stderr, "%s: unknown or extra argument \"%s\"\n",
 			argd.prog_name,
 			argv[argind]);
-		usage(stderr);
+		usagef(stderr);
 	    }
 	}
     }

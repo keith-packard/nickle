@@ -1,3 +1,9 @@
+2005-12-23  Bart Massey <bart@cs.pdx.edu>
+	
+        * parse-args.5c:
+	Make usage() function user-visible by exporting
+	closure when parse_args() is called.
+	
 2005-12-11  Bart Massey <bart@cs.pdx.edu>
 version 2.52
 

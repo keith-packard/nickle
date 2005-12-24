@@ -108,7 +108,7 @@ RPMDIR=$(HOME)/rpmbuild
 rpm: dist-gzip nickle.spec
 	mkdir -p $(RPMDIR)/$(PACKAGE)-$(VERSION)
 	cp $(PACKAGE)-$(VERSION).tar.gz $(RPMDIR)/$(PACKAGE)-$(VERSION)
-	rpm -ba nickle.spec
+	rpmbuild -ba nickle.spec
 
 RELEASE_FILES = \
 	$(PACKAGE)-$(VERSION).tar.gz \

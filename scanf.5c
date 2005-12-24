@@ -67,6 +67,8 @@ extend namespace File {
 		return true;
 	    if (c == '.')
 		return true;
+	    if (c == '{' || c == '}')
+		return true;
 	    return false;
 	}
 

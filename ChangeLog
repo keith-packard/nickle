@@ -1,4 +1,9 @@
 2005-1-28  Bart Massey  <bart@cs.pdx.edu>
+	
+	* README.solaris:
+	Update a bit to reflect current reality.
+	
+2005-1-28  Bart Massey  <bart@cs.pdx.edu>
 version 2.53	
 	
 	* debian/changelog:

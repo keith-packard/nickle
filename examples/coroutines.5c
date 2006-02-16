@@ -1,0 +1,65 @@
+#!/usr/bin/env nickle
+# Voluntary co-routines communicate on
+# a channel using setjmp()/longjmp()
+#
+# Bart Massey 2006/02/15
+#
+# Uses some truly ugly magic;
+
+namespace Channel {
+
+    typedef union {
+	void nothing;
+	poly just;
+    } maybe;
+
+    public typedef struct {
+	continuation cs, cr;
+    } channel;
+
+    public void send(&channel c, poly val) {
+	int res = setjmp(&c.cs, 0);
+	if (res == 0 && !is_uninit(&c.cr))
+	    longjmp(c.cr, (maybe.just) val);
+    }
+
+    public poly recv(&channel c, void() gen) {
+	maybe res = setjmp(&c.cr, maybe.nothing);
+	union switch (res) {
+	case nothing:
+	    if (is_uninit(&c.cs))
+		gen();
+	    else
+		longjmp(c.cs, 1);
+	    abort("internal error: recv from nowhere");
+	    break;
+	case just v:
+	    return v;
+	}
+	abort("internal error: union switch match");
+    }
+
+}
+
+import Channel;
+
+{
+    channel c;
+
+    void generate() {
+	for (int i = 0; i < 10; i++) {
+	    printf("sent %d\n", i);
+	    send(&c, i);
+	}
+    }
+
+    void test() {
+	int i;
+	do {
+	    i = recv(&c, generate);
+	    printf("got %d\n", i);
+	} while (i != 7);
+    }
+
+    test();
+}

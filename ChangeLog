@@ -1,3 +1,8 @@
+2005-2-12  Bart Massey  <bart@cs.pdx.edu>
+	
+	* examples/search.5c:
+	New example using continuations.
+	
 2005-1-28  Bart Massey  <bart@cs.pdx.edu>
 	
 	* README.solaris:

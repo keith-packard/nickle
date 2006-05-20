@@ -1,5 +1,9 @@
 2006-5-20  Keith Packard <keithp@keithp.com>
 version 2.54
+	* builtin-toplevel.c
+	time() builtin needs to return all 32 bits
+
+2006-5-20  Keith Packard <keithp@keithp.com>
 
         * Makefile.am:
 	* configure.in

@@ -256,7 +256,8 @@ Value
 do_time (void)
 {
     ENTER ();
-    RETURN (NewInt (time (0)));
+    RETURN (Reduce (NewInteger (Positive, 
+				NewDoubleDigitNatural ((double_digit) time(0)))));
 }
 
 Value

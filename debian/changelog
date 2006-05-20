@@ -1,4 +1,5 @@
-nickle (2.53-2) unstable; urgency=low
+nickle (2.54-1) unstable; urgency=low
+  * time() builtin needs to return all 32 bits
   * Update standards to 3.7.2
   * Compute NICKLELIBDIR at build time
 

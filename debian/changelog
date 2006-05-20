@@ -1,3 +1,9 @@
+nickle (2.53-2) unstable; urgency=low
+  * Update standards to 3.7.2
+  * Compute NICKLELIBDIR at build time
+
+ -- Keith Packard <keithp@keithp.com>  Sat, 20 May 2006 10:39:38 -0500
+
 nickle (2.53-1) unstable; urgency=low
   * Use rpmbuild instead of rpm to build rpms (Keith Packard)
   * Permit {} in numbers to allow exact rational input

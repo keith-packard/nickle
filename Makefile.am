@@ -53,7 +53,8 @@ AM_YFLAGS = -d
 AM_CPPFLAGS = \
 	-DBUILD=\""$(BUILD_DATE)"\" \
 	-DBUILD_VERSION=\""$(VERSION)"\" \
-	-DLOCAL_BUILD
+	-DLOCAL_BUILD \
+	-DNICKLELIBDIR=\"@nicklelibdir@\"
 
 AM_CFLAGS = \
 	-Wall -Wpointer-arith -Wstrict-prototypes \
@@ -75,11 +76,14 @@ $(USES_GRAM_H): gram.h
 
 builtin.o: $(nickle_SOURCES)
 
-debuild debuild-signed: debuild-dirs
+debuild debuild-signed: $(PACKAGE)_$(VERSION).orig.tar.gz
 	(cd $(distdir)/debian && debuild)
 
 debuild-unsigned: debuild-dirs
 	(cd $(distdir)/debian && debuild -us -uc)
+
+$(PACKAGE)_$(VERSION).orig.tar.gz: debuild-dirs
+	tar czf $@ $(distdir).orig
 
 debuild-dirs: distdir
 	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz

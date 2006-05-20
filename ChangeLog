@@ -1,3 +1,10 @@
+2006-5-20  Keith Packard <keithp@keithp.com>
+version 2.54
+
+        * Makefile.am:
+	* configure.in
+	Compute NICKLELIBDIR at build time, not config time
+
 2005-2-15  Bart Massey  <bart@cs.pdx.edu>
 	
 	* examples/coroutines.5c:

@@ -162,7 +162,8 @@ import_File_namespace()
 	    " The output will be at most 'width' characters unless it\n"
 	    " won't fit in that size.\n"
 	    " Any decimal part will be limited to 'precision' characters.\n"
-	    " If 'precision' is -1, sufficient characters will be printed\n"
+	    " If 'precision' is -1, precision will be set to the default (10)\n"
+	    " If 'precision' is -2, precision will set to whatever is needed \n"
 	    " to precisely represent the number.\n"
 	    " Any extra characters will be filled with 'fill'.\n" },
         { 0 }

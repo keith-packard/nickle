@@ -45,12 +45,12 @@ rational qbrating (int attempts, int completions, int yards,
     rational cat_score(rational base, rational offset,
 		       rational scale) {
 	rational avg = base / attempts;
-	rational pct = (avg * 100 + offset) * scale;
-	if (pct < 0)
+	rational score = (avg * 100 + offset) * scale;
+	if (score < 0)
 	    return 0;
-	if (pct > cat_max)
+	if (score > cat_max)
 	    return cat_max;
-	return pct;
+	return score;
     }
     rational total = cat_score(completions, -30, 0.05);
     total += cat_score(yards, -300, 0.0025);

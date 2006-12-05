@@ -2118,6 +2118,8 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
     ExprPtr	name;
     SymbolPtr	exception;
     Type	*catch_type;
+    NonLocal	*nonLocal;
+    int		nest_tmp;
     
     if (catches)
     {
@@ -2160,6 +2162,19 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	NewInst (obj, OpCatch, catch_inst, stat);
 
 	/*
+	 * Pop peer catch blocks from non local list while
+	 * compiling exception handler
+	 */
+	nonLocal = obj->nonLocal;
+	if (nest)
+	{
+	    REFERENCE (nonLocal);
+	    nest_tmp = nest;
+	    while (nest_tmp-- > 0)
+		obj->nonLocal = obj->nonLocal->prev;
+	}
+	
+	/*
 	 * Exception arguments are sitting in value, push
 	 * them on the stack
 	 */
@@ -2188,6 +2203,8 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	    BuildInst (obj, OpUnwind, inst, stat);
 	    inst->unwind.twixt = 0;
 	    inst->unwind.catch = nest;
+	    /* replace peer catch blocks */
+	    obj->nonLocal = nonLocal;
 	}
 	
 	BuildInst (obj, OpExceptionCall, inst, stat);
@@ -2202,13 +2219,11 @@ CompileCatch (ObjPtr obj, ExprPtr catches, ExprPtr body,
 	inst->catch.offset = obj->used - catch_inst;
 	inst->catch.exception = exception;
     
-	if (!catches->tree.left)
-	    obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTry, 0);
+	obj->nonLocal = NewNonLocal (obj->nonLocal, NonLocalTry, 0);
 	
 	obj = CompileCatch (obj, catches->tree.left, body, stat, code, nest+1);
 	
-	if (!catches->tree.left)
-	    obj->nonLocal = obj->nonLocal->prev;
+	obj->nonLocal = obj->nonLocal->prev;
 
 	if (!nest)
 	{

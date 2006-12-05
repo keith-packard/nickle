@@ -1,3 +1,8 @@
+2006-1205  Keith Packard <keithp@keithp.com>
+version 2.55
+	* Fix mismatching catch nesting depth in multi-peer try/catch
+	* Add fourfours.5c example
+
 2006-5-20  Keith Packard <keithp@keithp.com>
 version 2.54
 	* builtin-toplevel.c

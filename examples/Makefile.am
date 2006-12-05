@@ -4,6 +4,7 @@ NICKLEFILES=\
 	comb.5c \
 	cribbage.5c \
 	erat.5c \
+	fourfours.5c \
 	initializer.5c \
 	is-prime.5c \
 	kaiser.5c \

@@ -15,36 +15,15 @@ typedef struct {
 poly() argloop() { 
     int	i = 0;
     static poly[] a = {
-	(v_t) { s =  "4",  v =   4, p = 25 },
-	(v_t) { s = ".4",  v =  .4, p =  5 },
-	(v_t) { s =".{4}", v =.{4}, p =  1 },
+	(v_t) { s =  "4",    v =   4, p = 25 },
+	(v_t) { s = ".4",    v =  .4, p =  5 },
+	(v_t) { s = ".{4}",  v =.{4}, p =  1 },
+	(v_t) { s = "4!",    v =  4!, p = 25 },
+	(v_t) { s = "√4",    v =  sqrt(4), p = 25 },
+	(v_t) { s = "√.{4}", v = sqrt(.{4}), p =  1 },
 	◊
     };
     return poly func() = a[i++ % dim(a)];
-}
-
-/* generator for unary operators */
-poly() unloop(poly() f) {
-    int i = 0;
-    poly v = ◊;
-    static (poly(poly))[] a = { 
-	poly func(x) = x,
-	poly func(x) = (v_t) { s = x.s + "!" ,          v = x.v!,      p = x.p },
-	poly func(x) = (v_t) { s = "sqrt(" + x.s + ")", v = sqrt(x.v), p = x.p }
-    };
-    return poly func() {
-	for (;;) {
-	    if (i % dim (a) == 0 && (v = f()) == ◊)
-		return ◊;
-	    try
-		return a[i++ % dim(a)](v);
-	    catch invalid_unop_value (string s, poly p) {
-		continue;
-	    } catch invalid_argument (string s, int i, poly p) {
-		continue;
-	    }
-	}
-    };
 }
 
 /* generator for binary operators */
@@ -97,8 +76,8 @@ poly() parenloop(poly() x, poly() y, poly() z) {
 void main () {
     int limit = 100;
     v_t[limit + 1] values = { { s = "no solution", v = 0, p=0 } ... };
-    poly() f = parenloop (binloop(unloop(argloop()), unloop(argloop())),
-			  unloop(argloop()), unloop(argloop()));
+    poly() f = parenloop (binloop(argloop(), argloop()),
+			  argloop(), argloop());
     while (((poly value) = f()) != ◊) {
 	if (is_int(value.v) && 1 <= value.v && value.v <= limit) {
 	    if (values[value.v].p < value.p)

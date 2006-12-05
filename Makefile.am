@@ -114,11 +114,17 @@ rpm: dist-gzip nickle.spec
 	cp $(PACKAGE)-$(VERSION).tar.gz $(RPMDIR)/$(PACKAGE)-$(VERSION)
 	rpmbuild -ba nickle.spec
 
-RELEASE_FILES = \
-	$(PACKAGE)-$(VERSION).tar.gz \
-	$(PACKAGE)_$(VERSION)-1_i386.deb \
-	$(RPMDIR)/SRPMS/$(PACKAGE)-$(VERSION)-1.src.rpm \
-	$(RPMDIR)/RPMS/$(PACKAGE)-$(VERSION)-1.i386.rpm
+tarfile=$(PACKAGE)-$(VERSION).tar.gz
+debfile=$(PACKAGE)_$(VERSION)-1_i386.deb
+srcrpmfile=$(RPMDIR)/SRPMS/$(PACKAGE)-$(VERSION)-1.src.rpm
+rpmfile=$(RPMDIR)/RPMS/$(PACKAGE)-$(VERSION)-1.i386.rpm
+RELEASE_FILES = $(tarfile) $(debfile) $(srcrpmfile) $(rpmfile)
+	
+$(tarfile): dist-gzip
+
+$(debfile): debuild
+
+$(rpmfile) $(srcrpmfile): rpm
 
 release: $(RELEASE_FILES)
 	scp $(RELEASE_FILES) nickle.org:/var/www/nickle/release

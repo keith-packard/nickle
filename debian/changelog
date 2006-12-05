@@ -1,3 +1,8 @@
+nickle (2.56-1) unstable; urgency=low
+  * Fix Catch object initialization order to avoid segfault
+
+ -- Keith Packard <keithp@keithp.com>  Tue,  5 Dec 2006 12:57:06 -0800
+ 
 nickle (2.55-1) unstable; urgency=low
   * Fix mismatching catch nesting depth in multi-peer try/catch
   * Add fourfours.5c example

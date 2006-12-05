@@ -1,47 +1,60 @@
 /*
  * Official NFL QB rating
  *
- * Copyright © 1999 Bart Massey.
+ * Copyright © 1999, 2006 Bart Massey.
  * All Rights Reserved.  See the file COPYING in this directory
  * for licensing information.
- * 
- * Info from various web sources
- * 3 ways of computing the result: first uses no
- * decimal approximations, last only decimal approximations.
+ *
+ * Info from
+ *   http://www.nfl.com/news/981202qbrate.html
+ *   http://www.bluedonut.com/qbrating.htm
+ * As per reference 1, you should get
+ *   qbrating(461,324,3969,35,10) ~= 112.79
+ * for Steve Young.  Reference 2 refers to the
+ * formula as a "quadratic" equation; it's actually
+ * a linear equation in the averages, hence the
+ * Nickle exact rational implementation.
+ */
+
+/*
+ * The "QB Rating" is only a rating of passing
+ * effectiveness, and it's pretty marginal at that.  See the
+ * references above for details.  The basic rationale is
+ * that there are four categories considered: completions,
+ * passing yards, passing touchdowns, and interceptions.
+ * For each category, the interesting statistic is the
+ * average over the number of passing attempts.
+ *
+ * The category scores are first scaled such that a score of
+ * 1 is roughly average.  The scaling is then tweaked to
+ * attempt to make a score of 0 awful and of 2 exceptional.
+ * A maximum of 2.375 and minimum of 0 seem mostly to be a
+ * guard against anomalies.  The sum of the categorie scores
+ * is the QB score.
+ *
+ * The QB score is then scaled such that a score of 1
+ * (average) in each category gives a scaled score of
+ * 66.{6}%.  This is the QB rating.  A rating of 100 is
+ * considered quite good.
  */
 
 rational qbrating (int attempts, int completions, int yards,
 		   int touchdowns, int interceptions)
 {
-    int v1, v2, v3, v4;
-    
-    v1 = 500 * completions;
-    v2 = 25 * yards;
-    v3 = 2000 * touchdowns;
-    v4 = -2500 * interceptions;
-    return (v1 + v2 + v3 + v4) / (6 * attempts) + 25 / 12;
-}
-
-real qbr2 (int attempts, int completions, int yards,
-	   int touchdowns, int interceptions)
-{
-    real v1, v2, v3, v4;
-    
-    v1 = (completions / attempts - 0.3) / 0.2;
-    v2 = (yards / attempts - 3) / 4;
-    v3 = (touchdowns / attempts) / 0.05;
-    v4 = (0.095 - interceptions / attempts) / 0.04;
-    return (v1 + v2 + v3 + v4) * 100 / 6;
-}
-
-real qbr3 (int attempts, int completions, int yards,
-	   int touchdowns, int interceptions)
-{
-    real v1, v2, v3, v4;
-    
-    v1 = 83.333 * completions;
-    v2 = 4.167 * yards;
-    v3 = 333.333 * touchdowns;
-    v4 = -416.667 * interceptions;
-    return (v1 + v2 + v3 + v4) / attempts + 2.083;
+    rational cat_max = 2.375;
+    rational cat_score(rational base, rational offset,
+		       rational scale) {
+	rational avg = base / attempts;
+	rational score = (avg * 100 + offset) * scale;
+	if (score < 0)
+	    return 0;
+	if (score > cat_max)
+	    return cat_max;
+	return score;
+    }
+    rational total = cat_score(completions, -30, 0.05);
+    total += cat_score(yards, -300, 0.0025);
+    total += cat_score(touchdowns, 0, 0.2);
+    total += cat_max - cat_score(interceptions, 0, 0.25);
+    return total * 100 / 6;
 }

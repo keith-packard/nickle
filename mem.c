@@ -429,6 +429,7 @@ MemCollect (void)
 
 #ifdef DEBUG
     if (GCdebug) {
+	int i;
 	debug ("GC: used: bytes %7d objects %7d\n",
 	       totalBytesUsed, totalObjectsUsed);
 	debug ("GC: free: bytes %7d objects %7d\n",

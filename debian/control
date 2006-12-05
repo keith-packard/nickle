@@ -3,7 +3,7 @@ Section: interpreters
 Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
 Build-Depends: debhelper (>= 4), libreadline5-dev 
-Standards-Version: 3.7.2
+Standards-Version: 3.7.2.1
 
 Package: nickle
 Architecture: any

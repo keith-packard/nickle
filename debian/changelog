@@ -1,3 +1,10 @@
+nickle (2.55-1) unstable; urgency=low
+  * Fix mismatching catch nesting depth in multi-peer try/catch
+  * Add fourfours.5c example
+  * Update debian-policy version to 3.7.2.1
+
+ -- Keith Packard <keithp@keithp.com>  Tue,  5 Dec 2006 03:39:50 -0800
+
 nickle (2.54-1) unstable; urgency=low
   * time() builtin needs to return all 32 bits
   * Update standards to 3.7.2

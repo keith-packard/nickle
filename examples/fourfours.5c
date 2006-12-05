@@ -1,0 +1,113 @@
+#!/usr/bin/env nickle
+#
+# Using four '4's, find
+# equations using unary and binary operators
+# which compute ever integer from 1 to 100
+#
+
+typedef struct {
+    string	s;  /* string equation */
+    rational	v;  /* equation value */
+    int		p;  /* higher are preferred forms */
+} v_t;
+
+/* generator for primitive operands */
+poly() argloop() { 
+    int	i = 0;
+    static poly[] a = {
+	(v_t) { s =  "4",  v =   4, p = 25 },
+	(v_t) { s = ".4",  v =  .4, p =  5 },
+	(v_t) { s =".{4}", v =.{4}, p =  1 },
+	◊
+    };
+    return poly func() = a[i++ % dim(a)];
+}
+
+/* generator for unary operators */
+poly() unloop(poly() f) {
+    int i = 0;
+    poly v = ◊;
+    static (poly(poly))[] a = { 
+	poly func(x) = x,
+	poly func(x) = (v_t) { s = x.s + "!" ,          v = x.v!,      p = x.p },
+	poly func(x) = (v_t) { s = "sqrt(" + x.s + ")", v = sqrt(x.v), p = x.p }
+    };
+    return poly func() {
+	for (;;) {
+	    if (i % dim (a) == 0 && (v = f()) == ◊)
+		return ◊;
+	    try
+		return a[i++ % dim(a)](v);
+	    catch invalid_unop_value (string s, poly p) {
+		continue;
+	    } catch invalid_argument (string s, int i, poly p) {
+		continue;
+	    }
+	}
+    };
+}
+
+/* generator for binary operators */
+poly () binloop(poly() l, poly() r) {
+    int i = 0;
+    poly la = ◊, ra = ◊;
+    static (poly(poly, poly))[] a = { 
+	poly func(x,y) = (v_t) { s = "(" + x.s + " + " + y.s + ")", v=x.v + y.v, p = x.p + y.p },
+	poly func(x,y) = (v_t) { s = "(" + x.s + " - " + y.s + ")", v=x.v - y.v, p = x.p + y.p },
+	poly func(x,y) = (v_t) { s = "(" + x.s + " * " + y.s + ")", v=x.v * y.v, p = x.p + y.p },
+	poly func(x,y) = (v_t) { s = "(" + x.s + " / " + y.s + ")", v=x.v / y.v, p = x.p + y.p },
+	poly func(x,y) = (v_t) { s = "(" + x.s + " ^ " + y.s + ")", v=x.v ^ y.v, p = x.p + y.p },
+    };
+    return poly func() {
+	for (;;)
+	    try {
+		if (i % dim(a) == 0) {
+		    ra = r ();
+		    if (ra == ◊ || la == ◊) {
+			la = l ();
+			if (la == ◊)
+			    return ◊;
+			if (ra == ◊)
+			    ra = r ();
+		    }
+		}
+		return a[i++ % dim(a)](la, ra);
+	    }
+	    catch divide_by_zero (string a, real x, real y) {	continue; }
+	    catch invalid_argument (string a, int i, poly p) { continue; }
+	    catch invalid_binop_values (string a, poly l, poly r) { continue; }
+    };
+}
+
+/* generator for associating operations */
+poly() parenloop(poly() x, poly() y, poly() z) {
+    int	i = 0;
+    (poly())[]	a = { binloop (x, binloop(y,z)), binloop (binloop(x,y), z) };
+    return poly func() {
+	for (;;) {
+	    poly v = a[i]();
+	    if (v != ◊)
+		return v;
+	    if (++i == dim(a)) {i = 0; return ◊; }
+	}
+    };
+}
+
+/* find equations which compute all values */
+void main () {
+    int limit = 100;
+    v_t[limit + 1] values = { { s = "no solution", v = 0, p=0 } ... };
+    poly() f = parenloop (binloop(unloop(argloop()), unloop(argloop())),
+			  unloop(argloop()), unloop(argloop()));
+    while (((poly value) = f()) != ◊) {
+	if (is_int(value.v) && 1 <= value.v && value.v <= limit) {
+	    if (values[value.v].p < value.p)
+		values[value.v] = value;
+	}
+    }
+    for (int i = 1; i <= limit; i++)
+	printf ("%3d (score %3d) = %s\n", i, values[i].p, values[i].s);
+}
+
+main();
+

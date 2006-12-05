@@ -1085,9 +1085,9 @@ NewCatch (Value thread, SymbolPtr exception)
     CatchPtr	catch;
 
     catch = ALLOCATE (&CatchType, sizeof (Catch));
+    catch->exception = exception;
     ContinuationSet (&catch->continuation, &thread->thread.continuation);
     catch->continuation.pc = thread->thread.continuation.pc + 1;
-    catch->exception = exception;
     RETURN (catch);
 }
 

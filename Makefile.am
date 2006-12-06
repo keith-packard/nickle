@@ -76,20 +76,30 @@ $(USES_GRAM_H): gram.h
 
 builtin.o: $(nickle_SOURCES)
 
-debuild debuild-signed: $(PACKAGE)_$(VERSION).orig.tar.gz
+TARFILE=$(PACKAGE)-$(VERSION).tar.gz
+DEBFILE=$(PACKAGE)_$(VERSION)-1_i386.deb
+SRPMFILE=$(RPMDIR)/SRPMS/$(PACKAGE)-$(VERSION)-1.src.rpm
+RPMFILE=$(RPMDIR)/RPMS/$(PACKAGE)-$(VERSION)-1.i386.rpm
+RELEASE_FILES = $(TARFILE) $(DEBFILE) $(SRPMFILE) $(RPMFILE)
+DEB_TAR_DIR=$(PACKAGE)_$(VERSION).orig
+DEB_TAR=$(DEB_TAR_DIR).tar.gz
+
+debuild: $(DEBFILE)
+
+$(DEBFILE): $(DEB_TAR) $(TARFILE)
+	tar xzf $(TARFILE)
 	(cd $(distdir)/debian && debuild)
 
-debuild-unsigned: debuild-dirs
+debuild-unsigned: $(DEB_TAR) $(TARFILE)
+	tar xzf $(distdir).tar.gz
 	(cd $(distdir)/debian && debuild -us -uc)
 
-$(PACKAGE)_$(VERSION).orig.tar.gz: debuild-dirs
-	tar czf $@ $(distdir).orig
-
-debuild-dirs: distdir
-	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
-	rm -rf $(distdir).orig
-	cp -a $(distdir) $(distdir).orig
-	rm -rf $(distdir).orig/debian
+$(DEB_TAR): $(TARFILE)
+	rm -f $(DEB_TAR)
+	rm -rf $(DEB_TAR_DIR)
+	tar xzf $(TARFILE)
+	mv $(distdir) $(DEB_TAR_DIR)
+	tar czf $(DEB_TAR) $(DEB_TAR_DIR)
 
 nickle.1: nickle.1.in ChangeLog config.h
 	sed -e 's,@''VERSION@,$(VERSION),' \
@@ -109,22 +119,14 @@ clean-local:
 #
 RPMDIR=$(HOME)/rpmbuild
 
-rpm: dist-gzip nickle.spec
+rpm: $(RPMFILE)
+
+$(RPMFILE) $(SRPMFILE): $(TARFILE) nickle.spec
 	mkdir -p $(RPMDIR)/$(PACKAGE)-$(VERSION)
-	cp $(PACKAGE)-$(VERSION).tar.gz $(RPMDIR)/$(PACKAGE)-$(VERSION)
+	cp $(TARFILE) $(RPMDIR)/$(PACKAGE)-$(VERSION)
 	rpmbuild -ba nickle.spec
-
-tarfile=$(PACKAGE)-$(VERSION).tar.gz
-debfile=$(PACKAGE)_$(VERSION)-1_i386.deb
-srcrpmfile=$(RPMDIR)/SRPMS/$(PACKAGE)-$(VERSION)-1.src.rpm
-rpmfile=$(RPMDIR)/RPMS/$(PACKAGE)-$(VERSION)-1.i386.rpm
-RELEASE_FILES = $(tarfile) $(debfile) $(srcrpmfile) $(rpmfile)
 	
-$(tarfile): dist-gzip
-
-$(debfile): debuild
-
-$(rpmfile) $(srcrpmfile): rpm
+$(TARFILE): dist-gzip
 
 release: $(RELEASE_FILES)
 	scp $(RELEASE_FILES) nickle.org:/var/www/nickle/release

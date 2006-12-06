@@ -35,7 +35,11 @@ poly () binloop(poly() l, poly() r) {
 	poly func(x,y) = (v_t) { s = "(" + x.s + " - " + y.s + ")", v=x.v - y.v, p = x.p + y.p },
 	poly func(x,y) = (v_t) { s = "(" + x.s + " * " + y.s + ")", v=x.v * y.v, p = x.p + y.p },
 	poly func(x,y) = (v_t) { s = "(" + x.s + " / " + y.s + ")", v=x.v / y.v, p = x.p + y.p },
-	poly func(x,y) = (v_t) { s = "(" + x.s + " ^ " + y.s + ")", v=x.v ^ y.v, p = x.p + y.p },
+	poly func(x,y) {
+	    if (y.v > 4)
+		raise invalid_argument ("rhs of ** too large", 1, y.v);
+	    return (v_t) { s = "(" + x.s + " ^ " + y.s + ")", v=x.v ** y.v, p = x.p + y.p };
+	}
     };
     return poly func() {
 	for (;;)

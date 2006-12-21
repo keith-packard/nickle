@@ -1,0 +1,56 @@
+/*
+ * compute a CCITT CRC-32
+ * code taken from appendix of PNG Specification v2
+ * http://www.w3.org/TR/2003/REC-PNG-20031110/index-noobject.html#D-CRCAppendix
+ *
+ * Bart Massey 2006/12/20
+ * 
+ * Copyright © 2006  Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+/*
+ * Compute the 32-bit CRC of a single n-bit value.
+ * 0xedb88320 is the bitwise representation of the CCITT
+ * polynomial.
+ */
+int crc_val(int c, int n) {
+    assert(c < (1 << n), "crc_val: value has too many bits");
+    for (int k = 0; k < 8; k++)
+	if ((c & 1) == 0)
+	    c >>= 1;
+	else
+	    c = 0xedb88320 ^ (c >> 1);
+    return c;
+}
+
+/* Table of CRCs of all 8-bit messages */
+int[256] crc_table = { [i] = crc_val(i, 8) };
+
+
+/* Update a running CRC to include the bytes in buf.
+   buf should consist of entries in the range 0..255
+   (which is of course different from Unicode chars, hence
+   not a string here) */
+int update_crc(int crc, int[*] buf)
+{
+    for (int i = 0; i < dim(buf); i++)
+	crc = crc_table[(crc ^ buf[i]) & 0xff] ^ (crc >> 8);
+    return crc;
+}
+
+/* The CRC should be initialized to all 1's, and the
+   transmitted value is the 1's complement of the final
+   running CRC, per CCITT/ITU recommendations */
+int crc(int[*] buf)
+{
+    return update_crc(0xffffffff, buf) ^ 0xffffffff;
+}
+
+import String;
+string s = "hello";
+int[length(s)] buf = { [i] = s[i] };
+int c = crc(buf);
+assert((c & 0x7fffffff) == (hash(s) & 0x7fffffff), "bad crc for %s\n", s);
+printf("%d\n", c);

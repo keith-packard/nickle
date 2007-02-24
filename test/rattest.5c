@@ -1,4 +1,4 @@
-import PRNG;
+autoimport PRNG;
 
 exception bad_result (int u, rational v);
 

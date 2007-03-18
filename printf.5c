@@ -37,7 +37,7 @@ extend namespace File {
 	    f(((c >> bits) & 0x3F) | 0x80);
     }
     
-    public void vfprintf (file f, string format, poly[*] args)
+    public void fprintf (file f, string format, poly args...)
 	/*
 	 * print 'args' to 'f' according to 'format'
 	 */
@@ -198,32 +198,6 @@ extend namespace File {
 	arg::done ();
     }
 
-    public void fprintf (file f, string format, poly args...)
-	/*
-	 * print 'args' to 'f' according to 'format'
-	 */
-    {
-	vfprintf (f, format, args);
-    }
-
-    public void vprintf (string format, poly[*] args)
-	/*
-	 * print 'args' to stdout according to 'format'
-	 */
-    {
-	vfprintf (stdout, format, args);
-    }
-
-    public string vsprintf (string format, poly[*] args)
-	/*
-	 * print 'args' to a string according to 'format'
-	 */
-    {
-	file	f = File::string_write ();
-	vfprintf (f, format, args);
-	return File::string_string (f);
-    }
-
     public namespace PrintfGlobals {
 
 	public void printf (string format, poly args...)
@@ -231,7 +205,7 @@ extend namespace File {
 	     * print 'args' to stdout according to 'format'
 	     */
 	{
-	    vprintf (format, args);
+	    fprintf (stdout, format, args ...);
 	}
 
 	public string sprintf (string format, poly args...)
@@ -239,7 +213,9 @@ extend namespace File {
 	     * print 'args' to a string according to 'format'
 	     */
 	{
-	    return vsprintf (format, args);
+	    file	f = File::string_write ();
+	    fprintf (f, format, args ...);
+	    return File::string_string (f);
 	}
     }
 

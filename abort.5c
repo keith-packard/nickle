@@ -11,10 +11,10 @@ namespace Abort {
     public exception aborting(string);
 
     public void abort(string reason, args ...) 
-	/* Print a stack trace and raise aborting (vsprintf (reason, args)) */
+	/* Print a stack trace and raise aborting exception with message */
     {
 	Debug::trace(Thread::current(), trace_depth);
-	string reasonmsg = File::vsprintf(reason, args);
+	string reasonmsg = File::sprintf(reason, args ...);
 	raise aborting(reasonmsg);
     }
 
@@ -31,6 +31,6 @@ namespace Abort {
 	/* Print to stderr, controlled by 'do_debug' global */
     {
 	if (do_debug)
-	    File::vfprintf(stderr, fmt + "\n", args);
+	    File::fprintf(stderr, fmt + "\n", args ...);
     }
 }

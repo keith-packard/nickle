@@ -2,7 +2,7 @@
  * Scanf code.  Extend File namespace with reading code
  */
 extend namespace File {
-    public int vfscanf (file f, string format, (*poly)[*] args)
+    public int fscanf (file f, string format, *poly args ...)
 	/*
 	 * According to 'format', read from 'f' to 'args'
 	 */
@@ -180,21 +180,13 @@ extend namespace File {
 	return argc;
     }
 
-    public int fscanf (file f, string format, *poly args...)
-	/*
-	 * According to 'format', read from 'f' to 'args'
-	 */
-    {
-	return vfscanf (f, format, args);
-    }
-
     public int sscanf (string s, string format, *poly args...)
 	/*
 	 * According to 'format', read from 's' to 'args'
 	 */
     {
         file sf = string_read(s);
-        int n = vfscanf (sf, format, args);
+        int n = fscanf (sf, format, args ...);
         close(sf);
         return n;
     }
@@ -206,16 +198,9 @@ extend namespace File {
 	     * According to 'format', read from stdin to 'args'
 	     */
 	{
-	    return File::vfscanf (stdin, format, args);
+	    return File::fscanf (stdin, format, args ...);
 	}
 
-	public int vscanf (string format, (*poly)[*] args)
-	    /*
-	     * According to 'format', read from stdin to 'args'
-	     */
-	{
-	    return File::vfscanf (stdin, format, args);
-	}
     }
 
     public import ScanfGlobals;

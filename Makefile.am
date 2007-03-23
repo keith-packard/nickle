@@ -59,7 +59,7 @@ AM_CPPFLAGS = \
 AM_CFLAGS = \
 	-Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
-	-Wnested-externs -fno-strict-aliasing
+	-Wnested-externs -fno-strict-aliasing -fwrapv
 
 USES_GRAM_H = \
 	array.o \

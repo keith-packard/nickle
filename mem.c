@@ -123,6 +123,53 @@ MemAllocateHunk (int sizeIndex)
     return new;
 }
 
+void *
+MemAllocate (DataType *type, int size)
+{
+    int	sizeIndex = 0;
+    struct bfree    *new;
+    
+#if NUMSIZES > 15    
+    bad NUMSIZES
+#endif
+#ifdef MEM_TRACE
+    if (!type->added)
+	MemAddType (type);
+    type->total++;
+    type->total_bytes += size;
+    type->active++;
+    type->active_bytes += size;
+#endif
+    if (size > HUNKSIZE(7))
+	sizeIndex += 8;
+    if (size > HUNKSIZE(sizeIndex+3))
+	sizeIndex += 4;
+    if (size > HUNKSIZE(sizeIndex+1))
+	sizeIndex += 2;
+    if (size > HUNKSIZE(sizeIndex))
+	sizeIndex += 1;
+    
+    if (sizeIndex >= NUMSIZES)
+	new = MemAllocateHuge (size);
+    else if ((new = freeList[sizeIndex]))
+	freeList[sizeIndex] = new->next;
+    else
+	new = MemAllocateHunk (sizeIndex);
+    new->type = type;
+    return new;
+}
+
+void *
+MemAllocateRef (DataType *type, int size)
+{
+    struct bfree    *new = MemAllocate (type, size);
+
+    new->type = 0;
+    REFERENCE (new);
+    new->type = type;
+    return (void *) new;
+}
+
 /*
  * Allocate a large block of memory
  */

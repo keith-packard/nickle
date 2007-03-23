@@ -68,23 +68,17 @@ union block_round {
 # define HEADSIZE	(sizeof (union block_round))
 # define HUNKS(b)	((unsigned char *) (b) + HEADSIZE)
 
-#if HAVE_C_INLINE
-#define USE_C_INLINE 1
-#endif
-
 struct bfree *
 MemAllocateHunk (int sizeIndex);
 
 struct bfree *
 MemAllocateHuge (int size);
 
-#ifndef USE_C_INLINE
 void
 *MemAllocate (DataType *type, int size);
 
 void
 *MemAllocateRef (DataType *type, int size);
-#endif
 
 #ifdef MEM_TRACE
 void
@@ -130,80 +124,5 @@ extern struct bfree *freeList[NUMSIZES];
 #define EXIT()		    STACK_RESET(MemStack, __stackPointer)
 #define RETURN(r)	    return (STACK_RETURN (MemStack, __stackPointer, (r)))
 #define NOREFRETURN(r)	    return (EXIT(), (r))
-
-#if USE_C_INLINE || MEM_NEED_ALLOCATE
-
-/*
- * Allocator entry point
- */
-
-#if USE_C_INLINE
-static inline struct bfree *
-#else
-static struct bfree *
-#endif
-_MemAllocateInt (DataType *type, int size)
-{
-    int	sizeIndex = 0;
-    struct bfree    *new;
-    
-#if NUMSIZES > 15    
-    bad NUMSIZES
-#endif
-#ifdef MEM_TRACE
-    if (!type->added)
-	MemAddType (type);
-    type->total++;
-    type->total_bytes += size;
-    type->active++;
-    type->active_bytes += size;
-#endif
-    if (size > HUNKSIZE(7))
-	sizeIndex += 8;
-    if (size > HUNKSIZE(sizeIndex+3))
-	sizeIndex += 4;
-    if (size > HUNKSIZE(sizeIndex+1))
-	sizeIndex += 2;
-    if (size > HUNKSIZE(sizeIndex))
-	sizeIndex += 1;
-    
-    if (sizeIndex >= NUMSIZES)
-	new = MemAllocateHuge (size);
-    else if ((new = freeList[sizeIndex]))
-	freeList[sizeIndex] = new->next;
-    else
-	new = MemAllocateHunk (sizeIndex);
-    return new;
-}
-
-#if USE_C_INLINE
-static inline void *
-#else
-void *
-#endif
-MemAllocateRef (DataType *type, int size)
-{
-    struct bfree    *new = _MemAllocateInt (type, size);
-
-    new->type = 0;
-    REFERENCE (new);
-    new->type = type;
-    return (void *) new;
-}
-
-#if USE_C_INLINE
-static inline void *
-#else
-void *
-#endif
-MemAllocate (DataType *type, int size)
-{
-    struct bfree    *new = _MemAllocateInt (type, size);
-
-    new->type = type;
-    return (void *) new;
-}
-
-#endif	/* USE_C_INLINE */
 
 #endif /* _MEM_H_ */

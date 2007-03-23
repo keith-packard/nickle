@@ -6,12 +6,18 @@ dnl for licensing information.
 
 AC_PREREQ(2.59)
 
-AC_INIT
+AC_INIT([nickle],
+	2.57,
+	[http://nickle.org],
+	nickle)
+
 AC_CONFIG_SRCDIR([nickle.h])
-AC_CONFIG_AUX_DIR(.)
-AM_INIT_AUTOMAKE(nickle,2.57)
-AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_AUX_DIR(.)
+
+AM_INIT_AUTOMAKE()
+
+AM_MAINTAINER_MODE
 
 dnl Checks for programs.
 AC_PROG_CC

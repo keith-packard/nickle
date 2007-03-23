@@ -4,6 +4,7 @@
 ## All Rights Reserved.  See the file COPYING in this directory
 ## for licensing information.
 
+AUTOMAKE_OPTIONS = foreign
 SUBDIRS = bench test examples
 
 BUILD_DATE := $(shell sh $(top_builddir)/date-sh)

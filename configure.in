@@ -9,7 +9,7 @@ AC_PREREQ(2.59)
 AC_INIT
 AC_CONFIG_SRCDIR([nickle.h])
 AC_CONFIG_AUX_DIR(.)
-AM_INIT_AUTOMAKE(nickle,0.0)
+AM_INIT_AUTOMAKE(nickle,2.57)
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 
@@ -126,7 +126,6 @@ AC_CONFIG_FILES(
  examples/Makefile
  examples/smlng/Makefile
  examples/turtle/Makefile
- date-sh
- version-sh)
+ date-sh)
 
 AC_OUTPUT

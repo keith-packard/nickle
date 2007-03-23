@@ -785,118 +785,6 @@ Value
 JumpStandardException (Value thread, InstPtr *next);
 
 #ifdef HAVE_C_INLINE
-#define HAVE_INT_BINARY
-static inline Value
-IntBinaryOperate (Value av, Value bv, BinaryOp operator) {
-    int	a, b, r;
-    signed_digit rd;
-    switch (operator) {
-    case PlusOp:
-	r = ValueInt(av) + ValueInt(bv);
-
-	if (NICKLE_INT_CARRIED(r))
-	    return Plus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
-	return NewInt(r);
-    case MinusOp:
-	r = ValueInt(av) - ValueInt(bv);
-
-	if (NICKLE_INT_CARRIED(r))
-	    return Minus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
-	return NewInt(r);    
-    case TimesOp:
-	a = ValueInt(av), b = ValueInt(bv);
-	rd = (signed_digit) a * (signed_digit) b;
-
-	if (rd > (signed_digit) MAX_NICKLE_INT || rd < (signed_digit) MIN_NICKLE_INT)
-	    return NewSignedDigitInteger (rd);
-	return NewInt ((int) rd);
-    case DivideOp:
-	a = ValueInt(av), b = ValueInt(bv);
-
-	if (b == 0)
-	{
-	    RaiseStandardException (exception_divide_by_zero,
-				    "int divide by zero",
-				    2, av, bv);
-	    return Void;
-	}
-	if (a % b != 0)
-	    return Divide (NewIntRational (a), NewIntRational (b));
-        return NewInt (a/b);
-    case DivOp:
-	a = ValueInt(av), b = ValueInt(bv);
-
-	if (b == 0)
-	{
-	    RaiseStandardException (exception_divide_by_zero,
-				    "int div by zero",
-				    2, av, bv);
-	    return Void;
-	}
-	switch (catagorize_signs (IntSign(a), IntSign(b))) {
-	case BothPositive:
-	    r = a / b;
-	    break;
-	case FirstPositive:
-	    r = - (a / -b);
-	    if (a % -b)
-		--r;
-	    break;
-	case SecondPositive:
-	    r = -(-a / b);
-	    if (-a % b)
-		--r;
-	    break;
-	case BothNegative:
-	default:
-	    r = -a / -b;
-	    break;
-	}
-	return NewInt (r);
-    case ModOp:
-	a = ValueInt(av), b = ValueInt(bv);
-
-	if (b == 0)
-	{
-	    RaiseStandardException (exception_divide_by_zero,
-				    "int modulus by zero",
-				    2, av, bv);
-	    return Void;
-	}
-	switch (catagorize_signs (IntSign(a), IntSign(b))) {
-	case BothPositive:
-	    r = a % b;
-	    break;
-	case FirstPositive:
-	    r = a % -b;
-	    break;
-	case SecondPositive:
-	    r = -a % b;
-	    if (r)
-		r = b - r;
-	    break;
-	case BothNegative:
-	default:
-	    r = -a % -b;
-	    if (r)
-		r = -b - r;
-	    break;
-	}
-	return NewInt (r);
-    case EqualOp:
-	return av == bv ? TrueVal : FalseVal;
-    case LessOp:
-	return ValueInt(av) < ValueInt(bv) ? TrueVal : FalseVal;
-    case LandOp:
-	return NewInt (ValueInt(av) & ValueInt(bv));
-    case LorOp:
-	return NewInt (ValueInt(av) | ValueInt(bv));
-    case NumBinaryOp:
-    	;
-    }
-    return Void;
-}
-
 static inline Value
 IntIncDec (Value av, BinaryOp operator)
 {
@@ -910,9 +798,10 @@ IntIncDec (Value av, BinaryOp operator)
 	return NewIntInteger (a);
     return NewInt (a);
 }
-#endif
-
 #define ValueIncDec(v,o)    (ValueIsInt(v) ? IntIncDec (v, o) : BinaryOperate (v, One, o))
+#else
+#define ValueIncDec(v,o)    (BinaryOperate (v, One, o))
+#endif
 
 #ifdef HAVE_C_INLINE
 static inline Value

@@ -17,7 +17,7 @@ DEBIAN = debian/nickle.install debian/changelog debian/compat \
 	 debian/control debian/copyright debian/rules debian/lintian.override
 	 
 EXTRA_DIST = README.name autogen.sh \
-	$(NICKLEFILES) $(DEBIAN) ChangeLog nickle.1.in nickle.spec.in
+	$(NICKLEFILES) $(DEBIAN) nickle.1.in nickle.spec.in
 
 nickleincludedir=$(includedir)/nickle
 
@@ -100,12 +100,12 @@ $(DEB_TAR): $(TARFILE)
 	mv $(distdir) $(DEB_TAR_DIR)
 	tar czf $(DEB_TAR) $(DEB_TAR_DIR)
 
-nickle.1: nickle.1.in ChangeLog config.h
+nickle.1: nickle.1.in config.h
 	sed -e 's,@''VERSION@,$(VERSION),' \
 	    -e 's,@''BUILD_DATE@,$(BUILD_DATE),' \
 	    -e 's,@''pkgdatadir@,$(pkgdatadir),' $(top_srcdir)/nickle.1.in > $@
 	    
-nickle.spec: nickle.spec.in ChangeLog config.h
+nickle.spec: nickle.spec.in config.h
 	sed -e 's,@''VERSION@,$(VERSION),' \
 	    -e 's,@''pkgdatadir@,$(pkgdatadir),' $(top_srcdir)/nickle.spec.in > $@
 	    

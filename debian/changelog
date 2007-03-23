@@ -1,3 +1,13 @@
+nickle (2.57-1) unstable; urgency=low
+  * example/fourfours was using xor instead of exponentiation
+  * De-macroize allocator.
+  * Merge IntBinaryOperate into BinaryOperate.
+  * PRNG is no longer loaded by default, tests need to load it.
+  * Avoid broken GCC signed integer changes using -fwrapv.
+  * Move version number to configure.in script and out of ChangeLog.
+
+ -- Keith Packard <keithp@keithp.com>  Fri, 23 Mar 2007 12:10:39 -0700
+
 nickle (2.56-1) unstable; urgency=low
   * Fix Catch object initialization order to avoid segfault
 

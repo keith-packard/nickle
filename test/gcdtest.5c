@@ -13,7 +13,7 @@ int function gcd_euclid (int u, int v)
     return u;
 }
 
-import PRNG;
+autoimport PRNG;
 
 bool gcd_verify = true;
 

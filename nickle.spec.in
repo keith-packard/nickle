@@ -35,7 +35,7 @@ cp -R examples $RPM_BUILD_ROOT%{_datadir}/nickle/
 
 %files
 %defattr(-,root,root)
-%doc README README.name COPYING AUTHORS ChangeLog INSTALL NEWS TODO
+%doc README README.name COPYING AUTHORS INSTALL NEWS TODO
 %attr(755,root,root) %{_bindir}/nickle
 %dir %{_datadir}/nickle
 %{_mandir}/man1/nickle.1*

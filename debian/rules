@@ -50,7 +50,7 @@ binary-arch: build install
 	dh_installcron
 	dh_installman
 	dh_installinfo
-	dh_installchangelogs ChangeLog
+	dh_installchangelogs
 	dh_install
 	dh_link
 	dh_strip

@@ -1,3 +1,11 @@
+nickle (2.58-1) unstable; urgency=low
+  * CCITT/ITU CRC-32 computation example
+  * changed import PRNG to autoimport
+  * get rid of archaic "v" print and scan functions
+  * fixed signededness bug in integer carry calculation
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 26 Apr 2007 07:58:34 -0700
+ 
 nickle (2.57-1) unstable; urgency=low
   * example/fourfours was using xor instead of exponentiation
   * De-macroize allocator.

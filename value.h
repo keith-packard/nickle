@@ -1,7 +1,7 @@
 /* $Header$ */
 
 /*
- * Copyright Â© 1988-2004 Keith Packard and Bart Massey.
+ * Copyright © 1988-2007 Keith Packard and Bart Massey.
  * All Rights Reserved.  See the file COPYING in this directory
  * for licensing information.
  */
@@ -311,12 +311,12 @@ extern ValueRep    ForeignRep;
  * Use all but one bit to hold immediate integer values
  */
 #define NICKLE_INT_BITS	    ((sizeof (int) * 8) - 1)
-#define NICKLE_INT_SIGN	    (1 << (NICKLE_INT_BITS - 1))
+#define NICKLE_INT_SIGN	    (1U << (NICKLE_INT_BITS - 1))
 /*
  * this bit holds any overflow; when different from SIGN,
  * an addition/subtraction has overflowed
  */
-#define NICKLE_INT_CARRY    (1 << NICKLE_INT_BITS)
+#define NICKLE_INT_CARRY    (1U << NICKLE_INT_BITS)
 /*
  * An int fits in a 'nickle int' if the top two bits
  * are the same.  There are four initial values:

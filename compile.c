@@ -1127,6 +1127,8 @@ CompileCall (ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code, Bo
     t = CompileRefType (obj, expr, expr->base.type);
     if ((t && !auto_reference) || (!t && auto_reference))
 	tail = TailNever;
+    if (!code)
+	tail = TailNever;
     if ((tail == TailAlways &&
 	 !TypePoly (expr->base.type) &&
 	 TypeIsSupertype (code->base.type, expr->base.type)) ||

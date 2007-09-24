@@ -15,7 +15,7 @@ AC_CONFIG_SRCDIR([nickle.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(.)
 
-AM_INIT_AUTOMAKE()
+AM_INIT_AUTOMAKE([foreign])
 
 AM_MAINTAINER_MODE
 
@@ -24,7 +24,6 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AM_PROG_LEX
-AC_PROG_RANLIB
 dnl AC_PROG_YACC
 AC_CHECK_PROGS([YACC], byacc yacc bison, yacc)
 case "$YACC" in
@@ -45,7 +44,7 @@ dnl autostars m4 macro for detection of compiler flags
 dnl
 dnl ds@schleef.org
 
-AC_DEFUN(AS_COMPILER_FLAG,
+AC_DEFUN([AS_COMPILER_FLAG],
 [
   AC_MSG_CHECKING(to see if compiler understands $1)
 

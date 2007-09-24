@@ -762,7 +762,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     Bool	use_braces = True;
 
     min_prec = 0;
-    if (format == 'f' || format == 'e')
+    if (format == 'f' || format == 'e' || format == 'g')
     {
 	min_prec = prec;
 	use_braces = False;

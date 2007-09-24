@@ -1,3 +1,14 @@
+nickle (2.59-1) unstable; urgency=low
+  * Bump to version 2.59
+  * Have git ignore nickle binary
+  * Clean up some autotools warnings
+  * Make default rational display not include braces
+  * Clean up some lintian warnings
+  * Construct ChangeLog from git history for distribution.
+  * No tail calls without a parent frame
+
+ -- Keith Packard <keithp@keithp.com>  Sun, 23 Sep 2007 21:16:34 -0700
+ 
 nickle (2.58-1) unstable; urgency=low
   * CCITT/ITU CRC-32 computation example
   * changed import PRNG to autoimport

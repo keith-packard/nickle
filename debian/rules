@@ -22,7 +22,7 @@ clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp configure-stamp
-	-$(MAKE) distclean
+	if test -f Makefile; then $(MAKE) distclean; else true; fi
 	dh_clean
 
 install: build

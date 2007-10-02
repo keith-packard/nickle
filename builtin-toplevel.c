@@ -422,6 +422,7 @@ do_exit (Value av)
     if (aborting)
 	RETURN (Void);
     IoFini ();
+    FileFini ();
     exit (code);
     RETURN (Void);
 }

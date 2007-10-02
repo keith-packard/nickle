@@ -1,3 +1,11 @@
+nickle (2.60-1) unstable; urgency=low
+  * Bump to version 2.60
+  * Flush file output on exit call.
+  * Extend Ctype namespace to latin-1.
+  * Manage file buffer chains with explicit malloc/free.
+
+ -- Keith Packard <keithp@keithp.com>  Tue, 02 Oct 2007 01:55:20 -0700
+
 nickle (2.59-1) unstable; urgency=low
   * Bump to version 2.59
   * Have git ignore nickle binary

@@ -472,6 +472,30 @@ ProcessInterrupt ()
     }
 }
 
+static FileChainPtr
+FileChainAlloc (FileChainPtr next, int size)
+{
+    FileChainPtr	ret;
+
+    ret = malloc (sizeof (FileChain) + size);
+    ret->next = next;
+    ret->size = size;
+    ret->used = 0;
+    ret->ptr = 0;
+    return ret;
+}
+
+static void
+FileChainFree (FileChainPtr ic)
+{
+    while (ic)
+    {
+	FileChainPtr next = ic->next;
+	free (ic);
+	ic = next;
+    }
+}
+
 int
 FileInit (void)
 {
@@ -521,8 +545,6 @@ FileMark (void *object)
 
     FileFlush ((Value) file, False);
     MemReference (file->next);
-    MemReference (file->input);
-    MemReference (file->output);
 }
 
 void
@@ -538,10 +560,14 @@ FileFree (void *object)
 {
     File    *file = object;
 
-    if (file->fd == -1)
+    if (file->fd == -1 || FileClose ((Value) file) != FileBlocked)
+    {
+	FileChainFree (file->input);
+	file->input = NULL;
+	FileChainFree (file->output);
+	file->output = NULL;
 	return 1;
-    if (FileClose ((Value) file) != FileBlocked)
-	return 1;
+    }
     return 0;
 }
 
@@ -611,30 +637,6 @@ FileResetFd (int fd)
 #ifdef  USE_STREAMS_ASYNC
     (void) ioctl(fd, I_SETSIG, 0);
 #endif
-}
-
-static void
-FileChainMark (void *object)
-{
-    FileChainPtr	chain = object;
-
-    MemReference (chain->next);
-}
-
-DataType    FileChainType = { FileChainMark, 0, "FileChainType" };
-
-static FileChainPtr
-NewFileChain (FileChainPtr next, int size)
-{
-    ENTER ();
-    FileChainPtr	ret;
-
-    ret = MemAllocate (&FileChainType, sizeof (FileChain) + size);
-    ret->next = next;
-    ret->size = size;
-    ret->used = 0;
-    ret->ptr = 0;
-    RETURN (ret);
 }
 
 Value
@@ -893,7 +895,7 @@ FileStringRead (char *string, int len)
 
     file = NewFile (-1);
     file->file.flags |= FileString|FileReadable;
-    file->file.input = NewFileChain (0, len);
+    file->file.input = FileChainAlloc (0, len);
     memcpy (FileBuffer (file->file.input), string, len);
     file->file.input->used = len;
     RETURN (file);
@@ -1009,7 +1011,7 @@ FileInput (Value file)
 	    EXIT ();
 	    return FileEOF;
 	}
-	file->file.input = NewFileChain (0, FileBufferSize);
+	file->file.input = FileChainAlloc (NULL, FileBufferSize);
     }
     ic = file->file.input;
     for (;;)
@@ -1022,7 +1024,12 @@ FileInput (Value file)
 	else
 	{
 	    if (ic->next)
-		ic = ic->next;
+	    {
+		file->file.input = ic->next;
+		ic->next = NULL;
+		FileChainFree (ic);
+		ic = file->file.input;
+	    }
 	    else if (file->file.flags & FileString)
 	    {
 		file->file.flags |= FileEnd;
@@ -1084,7 +1091,7 @@ FileUnput (Value file, unsigned char c)
     ic = file->file.input;
     if (!ic || ic->ptr == 0)
     {
-	ic = file->file.input = NewFileChain (file->file.input, FileBufferSize);
+	ic = file->file.input = FileChainAlloc (file->file.input, FileBufferSize);
 	ic->ptr = ic->used = ic->size;
     }
     FileBuffer(ic)[--ic->ptr] = c;
@@ -1175,6 +1182,8 @@ FileFlush (Value file, Bool block)
 		    ic->used = ic->ptr = 0;
 		    break;
 		}
+		else
+		    FileChainFree (ic);
 		*prev = 0;
 	    }
 	}
@@ -1214,7 +1223,7 @@ FileOutput (Value file, char c)
     }
     ic = file->file.output;
     if (!ic)
-	ic = file->file.output = NewFileChain (0, FileBufferSize);
+	ic = file->file.output = FileChainAlloc (0, FileBufferSize);
     if (ic->used == ic->size)
     {
 	if (FileFlush (file, False) == FileError)
@@ -1224,7 +1233,7 @@ FileOutput (Value file, char c)
 	}
 	ic = file->file.output;
 	if (ic->used == ic->size)
-	    ic = file->file.output = NewFileChain (file->file.output, FileBufferSize);
+	    ic = file->file.output = FileChainAlloc (file->file.output, FileBufferSize);
     }
     ic = file->file.output;
     FileBuffer(ic)[ic->used++] = c;

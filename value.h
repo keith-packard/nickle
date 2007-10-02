@@ -625,7 +625,6 @@ typedef struct _array {
 #define ArrayValueSet(a,i,v) (BoxValueSet(ArrayValueBox(a,i),ArrayValueElt(a,i), v))
 
 typedef struct _io_chain {
-    DataType		*data;
     struct _io_chain	*next;
     int			size;
     int			used;

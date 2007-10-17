@@ -15,8 +15,8 @@ autoimport PRNG;
 
 int nprods = 15;   /* number of producer processes to run */
 int niters = 10;   /* number of values for each producer to generate */
-int npsleep = 100;  /* sleep for 1..npsleep msec per value produced */
-int nmsleep = 10;  /* sleep for 1..nmsleep msec per value mplexed */
+int npsleep = 2;   /* sleep for 1..npsleep msec per value produced */
+int nmsleep = 2;   /* sleep for 1..nmsleep msec per value mplexed */
 
 /* make sure lines of output don't get interleaved. */
 mutex dprintf_lock = Mutex::new();
@@ -30,31 +30,25 @@ void randsleep(int msecs) {
     sleep(randint(msecs - 1) + 1);
 }
 
-/* Make sure producers access the shared queue properly. */
-mutex serializing = Mutex::new();
+/* Make sure producers access the shared location
+   properly. */
+semaphore serializing = Semaphore::new(1);
 
 /* The multiplexor blocks here when no values are available. */
 semaphore blocking = Semaphore::new(0);
 
-/* Our queue of integers. Growable array leaks space out the
-   back, but this is just a lame demo.  A circular queue
-   would be more realistic, but also more complex, so to
-   heck with it.  */
-int[...] queue;
-
-/* The pointer to the queue location a producer should insert. */
-int pp = 0;
+/* The shared value a producer uses to communicate with the
+   multiplexor. */
+int mbox;
 
 /* When a value is made available by a producer, retrieve it
-   from the queue and print it on the output. */
+   from the mbox and print it on the output. */
 void multiplex() {
     dprintf("enter multiplex\n");
-    /* note that in our artificial case the multiplexor can
-       have its own local queue pointer and need not
-       serialize with producers */
     for (int i = 0; i < nprods * niters; i++) {
 	wait(blocking);
-	dprintf("%d\n", queue[i]);
+	dprintf("%d\n", mbox);
+	signal(serializing);
 	randsleep(nmsleep);
     }
     dprintf("finish multiplex\n");
@@ -63,19 +57,10 @@ void multiplex() {
 /* Actually start the multiplexor. */
 thread consumer = fork(multiplex());
 
-/* The multiplexor should always run in preference to
-   producers.  Otherwise the producers will get arbitrarily
-   far ahead on the input queue, which can lead to running
-   out of memory in the real world.  Technically, the issue
-   of whether a queue is needed at all gets complicated at
-   this point.  The multiplexor will consume a value as soon
-   as it is enqueued.  However, if the multiplexor
-   participates in the mutual exclusion, there is a tricky
-   race or deadlock depending on whether the producer
-   signals the multiplexor inside or outside the critical
-   section.  We choose to signal outside, and resolve the
-   race by allowing producers to get ahead of the
-   multiplexor using a queue */
+/* For best performance, the multiplexor should always run
+   in preference to producers.  Otherwise producers will
+   block unnecessarily waiting for the multiplexor to wake
+   up and consume the value currently in the mbox. */
 set_priority(consumer, get_priority(consumer) + 1);
 
 /* Produce values, sleeping randomly between, to simulate
@@ -84,8 +69,8 @@ void produce(int offset) {
     dprintf("enter producer %d\n", offset);
     for (int i = 0; i < niters; i++) {
 	randsleep(npsleep);
-	twixt (acquire(serializing); release(serializing))
-	    queue[pp++] = i + niters * offset;
+	wait(serializing);
+	mbox = i + niters * offset;
 	signal(blocking);
     }
     dprintf("finish producer %d\n", offset);

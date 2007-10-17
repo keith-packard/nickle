@@ -15,13 +15,19 @@ autoimport PRNG;
 
 int nprods = 15;   /* number of producer processes to run */
 int niters = 10;   /* number of values for each producer to generate */
-int nsleep = 100;  /* sleep for 1..nsleep msec per value produced */
+int npsleep = 100;  /* sleep for 1..npsleep msec per value produced */
+int nmsleep = 10;  /* sleep for 1..nmsleep msec per value mplexed */
 
 /* make sure lines of output don't get interleaved. */
 mutex dprintf_lock = Mutex::new();
 void dprintf(string fmt, poly args ...) {
     twixt(acquire(dprintf_lock); release(dprintf_lock))
 	printf(fmt, args ...);
+}
+
+/* Sleep for a random number of milliseconds 1..msecs . */
+void randsleep(int msecs) {
+    sleep(randint(msecs - 1) + 1);
 }
 
 /* Make sure producers access the shared queue properly. */
@@ -49,6 +55,7 @@ void multiplex() {
     for (int i = 0; i < nprods * niters; i++) {
 	wait(blocking);
 	dprintf("%d\n", queue[i]);
+	randsleep(nmsleep);
     }
     dprintf("finish multiplex\n");
 }
@@ -76,7 +83,7 @@ set_priority(consumer, get_priority(consumer) + 1);
 void produce(int offset) {
     dprintf("enter producer %d\n", offset);
     for (int i = 0; i < niters; i++) {
-	sleep(randint(nsleep - 1) + 1);
+	randsleep(npsleep);
 	twixt (acquire(serializing); release(serializing))
 	    queue[pp++] = i + niters * offset;
 	signal(blocking);

@@ -1,0 +1,124 @@
+/*
+ * Copyright © 2007 Bart Massey
+ * ALL RIGHTS RESERVED
+ *
+ * You may use this code under terms listed at the end of
+ * this file.
+ */
+
+/* Multiplexing threaded producer output streams---demo code. */
+
+autoimport Thread;
+autoimport Semaphore;
+autoimport Mutex;
+autoimport PRNG;
+
+int nprods = 15;   /* number of producer processes to run */
+int niters = 10;   /* number of values for each producer to generate */
+int nsleep = 100;  /* sleep for 1..nsleep msec per value produced */
+
+/* make sure lines of output don't get interleaved. */
+mutex dprintf_lock = Mutex::new();
+void dprintf(string fmt, poly args ...) {
+    twixt(acquire(dprintf_lock); release(dprintf_lock))
+	printf(fmt, args ...);
+}
+
+/* Make sure producers access the shared queue properly. */
+mutex serializing = Mutex::new();
+
+/* The multiplexor blocks here when no values are available. */
+semaphore blocking = Semaphore::new(0);
+
+/* Our queue of integers. Growable array leaks space out the
+   back, but this is just a lame demo.  A circular queue
+   would be more realistic, but also more complex, so to
+   heck with it.  */
+int[...] queue;
+
+/* The pointer to the queue location a producer should insert. */
+int pp = 0;
+
+/* When a value is made available by a producer, retrieve it
+   from the queue and print it on the output. */
+void multiplex() {
+    dprintf("enter multiplex\n");
+    /* note that in our artificial case the multiplexor can
+       have its own local queue pointer and need not
+       serialize with producers */
+    for (int i = 0; i < nprods * niters; i++) {
+	wait(blocking);
+	dprintf("%d\n", queue[i]);
+    }
+    dprintf("finish multiplex\n");
+}
+
+/* Actually start the multiplexor. */
+thread consumer = fork(multiplex());
+
+/* The multiplexor should always run in preference to
+   producers.  Otherwise the producers will get arbitrarily
+   far ahead on the input queue, which can lead to running
+   out of memory in the real world.  Technically, the issue
+   of whether a queue is needed at all gets complicated at
+   this point.  The multiplexor will consume a value as soon
+   as it is enqueued.  However, if the multiplexor
+   participates in the mutual exclusion, there is a tricky
+   race or deadlock depending on whether the producer
+   signals the multiplexor inside or outside the critical
+   section.  We choose to signal outside, and resolve the
+   race by allowing producers to get ahead of the
+   multiplexor using a queue */
+set_priority(consumer, get_priority(consumer) + 1);
+
+/* Produce values, sleeping randomly between, to simulate
+   some real-world data collection process. */
+void produce(int offset) {
+    dprintf("enter producer %d\n", offset);
+    for (int i = 0; i < niters; i++) {
+	sleep(randint(nsleep - 1) + 1);
+	twixt (acquire(serializing); release(serializing))
+	    queue[pp++] = i + niters * offset;
+	signal(blocking);
+    }
+    dprintf("finish producer %d\n", offset);
+} 
+
+/* Actually start all the producers (using an array comprehension). */
+thread[nprods] prods = { [i] = fork(produce(i)) };
+
+/* Wait for all the threads to finish and gather them up. */
+dprintf("joining producers\n");
+for (int i = 0; i < nprods; i++)
+    join(prods[i]);
+dprintf("joining multiplexer\n");
+join(consumer);
+
+# Permission is hereby granted, free of charge, to any
+# person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the
+# Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the
+# Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice
+# shall be included in all copies or substantial portions of
+# the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+# KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+# PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+# THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+# Except as contained in this notice, the names of the
+# authors or their institutions shall not be used in
+# advertising or otherwise to promote the sale, use or other
+# dealings in this Software without prior written
+# authorization from the authors.
+ 

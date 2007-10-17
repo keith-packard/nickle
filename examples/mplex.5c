@@ -30,6 +30,10 @@ void randsleep(int msecs) {
     sleep(randint(msecs - 1) + 1);
 }
 
+/* We use semaphores instead of mutexes here only because of
+   the ownership check for mutexes---we want the acquiring
+   and releasing threads to be different for this code. */
+
 /* Make sure producers access the shared location
    properly. */
 semaphore serializing = Semaphore::new(1);

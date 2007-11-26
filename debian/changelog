@@ -1,3 +1,10 @@
+nickle (2.61-1) unstable; urgency=low
+  * Allow '.' before struct elt in initializers
+  * Update builtins, tests and examples to use the new syntax
+  * Bump to version 2.61
+
+ -- Keith Packard <keithp@keithp.com>  Sun, 25 Nov 2007 21:57:24 -0800
+
 nickle (2.60-1) unstable; urgency=low
   * Bump to version 2.60
   * Flush file output on exit call.

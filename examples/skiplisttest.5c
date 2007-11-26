@@ -10,7 +10,7 @@
 autoload Skiplist;
 autoload PRNG;
 
-int gt_count = "hi"; 
+int gt_count = 0;
 
 bool int_gt (int a, int b) {
     ++gt_count;

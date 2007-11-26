@@ -49,9 +49,9 @@ check (*z, 4);
 union {int a; string b;} test;
 check (sprintf ("%v", test), "{<unset>}")
 check (test.a = 1, 1);
-check (test, (union {int a;}) {a = 1});
+check (test, (union {int a;}) { .a = 1});
 check (test.b = "hello", "hello");
-check (test, (union {string b;}) { b = "hello" });
+check (test, (union {string b;}) { .b = "hello" });
 check (bool func () { try {
     test.a;
     return false;

@@ -1594,8 +1594,11 @@ structelt	: NAME ASSIGN simpleexpr
 		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0, False), $3); }
 		| NAME ASSIGN init
 		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0, False), $3); }
+		| DOT NAME ASSIGN simpleexpr
+		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($2, 0, False), $4); }
+		| DOT NAME ASSIGN init
+		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($2, 0, False), $4); }
 		;
-
 init		: arrayinit
 		| structinit
 		| hashinit

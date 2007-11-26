@@ -18,4 +18,4 @@ int[*] function t(int n) {
   return s;
 }
 
-File::vprintf ("%d %d\n", t (string_to_integer (argv[1])));
+File::printf ("%d %d\n", t (string_to_integer (argv[1]))...);

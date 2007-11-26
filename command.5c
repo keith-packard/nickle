@@ -274,30 +274,30 @@ extend namespace Command {
 	}
 	
 	ParseArgs::argdesc argd = {
-	    args = {
-		{var = {arg_lambda = save_library},
-		 abbr = 'l',
-		 name = "library",
-		 expr_name = "lib",
-		 desc = "Library to load."},
-		{var = {arg_lambda = save_file},
-		 abbr = 'f',
-		 name = "file",
-		 expr_name = "source",
-		 desc = "Source file to load."},
-		{var = {arg_lambda = save_expr},
-		 abbr = 'e',
-		 name = "expr",
-		 expr_name = "expression",
-		 desc = "Expression to evaluate."}
+	    .args = {
+		{ .var = { .arg_lambda = save_library},
+		  .abbr = 'l',
+		  .name = "library",
+		  .expr_name = "lib",
+		  .desc = "Library to load."},
+		{ .var = { .arg_lambda = save_file},
+		  .abbr = 'f',
+		  .name = "file",
+		  .expr_name = "source",
+		  .desc = "Source file to load."},
+		{ .var = { .arg_lambda = save_expr},
+		  .abbr = 'e',
+		  .name = "expr",
+		  .expr_name = "expression",
+		  .desc = "Expression to evaluate."}
 	    },
-	    posn_args = {
-		{var = {arg_lambda = save_script},
-		 name = "script",
-		 optional = <>}
+	    .posn_args = {
+		{ .var = { .arg_lambda = save_script},
+		  .name = "script",
+		  .optional = <>}
 	    },
-	    unknown = &(int user_argind),
-	    prog_name = "nickle"
+	    .unknown = &(int user_argind),
+	    .prog_name = "nickle"
 	};
 
 	/* actually parse the arguments */

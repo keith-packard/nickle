@@ -91,8 +91,8 @@ namespace Mutex {
 	 */
     {
 	return reference ((mutex_struct) { 
-	    sem = Semaphore::new (1),
-	    owner = mutex_owner.nobody
+	    .sem = Semaphore::new (1),
+	    .owner = mutex_owner.nobody
 	});
     }
 }

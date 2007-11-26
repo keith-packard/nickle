@@ -161,18 +161,18 @@ extend namespace File {
 		    string	message;
 		    int		base;
 		}[*] fmts = {
-		    { formats = "s",	    test = is_string,
-		      message = "string",   base = 10 },
-		    { formats = "dD",	    test = is_int,
-		      message = "int",	    base = 10 },
-		    { formats = "bB",	    test = is_int,
-		      message = "int",	    base = 2 },
-		    { formats = "oO",	    test = is_int,
-		      message = "int",	    base = 8 },
-		    { formats = "xX",	    test = is_int,
-		      message = "int",	    base = 16 },
-		    { formats = "efEF",	    test = is_number,
-		      message = "real",	    base = 10 }
+		    { .formats = "s",	    .test = is_string,
+		      .message = "string",  .base = 10 },
+		    { .formats = "dD",	    .test = is_int,
+		      .message = "int",	    .base = 10 },
+		    { .formats = "bB",	    .test = is_int,
+		      .message = "int",	    .base = 2 },
+		    { .formats = "oO",	    .test = is_int,
+		      .message = "int",	    .base = 8 },
+		    { .formats = "xX",	    .test = is_int,
+		      .message = "int",	    .base = 16 },
+		    { .formats = "efEF",    .test = is_number,
+		      .message = "real",    .base = 10 }
 		};
 		
 		poly	this_arg = arg::next();

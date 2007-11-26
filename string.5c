@@ -185,7 +185,7 @@ extend namespace String {
     }
 
     public dequote_t dequote = make_dequote(
-       (quote_context) {oq = "\"", cq = "\"", qq = "\\"}
+       (quote_context) { .oq = "\"", .cq = "\"", .qq = "\\"}
     );
 
     typedef (string[*])(string) parse_csv_t;
@@ -249,7 +249,7 @@ extend namespace String {
     }
 
     public parse_csv_t parse_csv = make_parse_csv(
-       (quote_context) {oq = "\"", cq = "\"", qq = "\""}
+       (quote_context) { .oq = "\"", .cq = "\"", .qq = "\""}
     );
 
 }

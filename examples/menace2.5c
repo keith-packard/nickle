@@ -108,9 +108,9 @@ ttentref ttable_lookup(position pos) {
     /* nope: create a new entry */
     nttstates++;
     ttent t = {
-	on_move = side_on_move(&pos),
-	posns = all_posns(pos),
-	next = ttable
+	.on_move = side_on_move(&pos),
+	.posns = all_posns(pos),
+	.next = ttable
     };
     /* count legal moves */
     int nmoves = 0;

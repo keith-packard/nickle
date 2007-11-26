@@ -21,7 +21,7 @@ int blot = 10;
 
 SVG::start(stdout, side, side);
 
-point[10] locns = { [i] = (point){x = randint(side), y = randint(side)} };
+point[10] locns = { [i] = (point){ .x = randint(side), .y = randint(side)} };
 for (int i = 0; i < dim(locns); i++)
      SVG::spot(stdout, "red", locns[i].x, locns[i].y, blot);
 

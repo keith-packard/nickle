@@ -29,5 +29,5 @@ course function great_circle (loc start, loc end) {
 	real rdist = earth_radius * r;
 	real sinth = sin(phi) * sin(b) / sin(r);
 	real th = asin(sinth) / rad;
-	return (course){dist = rdist, bearing = th};
+	return (course){ .dist = rdist, .bearing = th };
 }

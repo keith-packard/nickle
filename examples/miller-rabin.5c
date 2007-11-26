@@ -34,9 +34,9 @@ namespace MillerRabin {
   witness_result function witnessexp(int b, int e, int m) {
     switch (e) {
     case 0:
-      return (witness_result){pow = 0, wit = 1};
+      return (witness_result){ .pow = 0, .wit = 1};
     case 1:
-      return (witness_result){pow = b % m, wit = 0};
+      return (witness_result){ .pow = b % m, .wit = 0};
     }
     witness_result tmp = witnessexp(b, e // 2, m);
     if (tmp.wit != 0)

@@ -22,7 +22,7 @@ typedef struct {
 *context no_context = reference ((context) {});
 
 context root_context = (context) {
-    styles=0, underline=0, color=-1, size=-1
+    .styles=0, .underline=0, .color=-1, .size=-1
 };
 
 public exception UnknownColor (int name);

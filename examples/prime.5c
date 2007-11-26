@@ -50,12 +50,12 @@ namespace Factor {
 	}
 
 	if (i < 3) 
-	    return (int_list.ref) reference ((int_list_struct) { next = int_list.end, v = 2 });
+	    return (int_list.ref) reference ((int_list_struct) { .next = int_list.end, .v = 2 });
 
 	int_list    l = primes (i-1);
 
 	if (prime_wrt (l, i))
-	    return (int_list.ref) reference ((int_list_struct) { next = l, v = i });
+	    return (int_list.ref) reference ((int_list_struct) { .next = l, .v = i });
 	return l;
     }
 

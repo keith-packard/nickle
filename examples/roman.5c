@@ -21,9 +21,9 @@ string function roman (int i)
     } digit;
 
     digit[*]	digits = {
-	(digit) { ones = "C", five = "D", tens = "M", base = 100 },
-	(digit) { ones = "X", five = "L", tens = "C", base = 10 },
-	(digit) { ones = "I", five = "V", tens = "X", base = 1 }
+	(digit) { .ones = "C", .five = "D", .tens = "M", .base = 100 },
+	(digit) { .ones = "X", .five = "L", .tens = "C", .base = 10 },
+	(digit) { .ones = "I", .five = "V", .tens = "X", .base = 1 }
     };
 
     string function place (int i, digit dig)

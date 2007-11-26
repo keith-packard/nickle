@@ -14,12 +14,12 @@ typedef struct {
 poly() argloop() { 
     int	i = 0;
     static poly[] a = {
-	(v_t) { s =  "4",    v =   4, p = 25 },
-	(v_t) { s = ".4",    v =  .4, p =  5 },
-	(v_t) { s = ".{4}",  v =.{4}, p =  1 },
-	(v_t) { s = "4!",    v =  4!, p = 25 },
-	(v_t) { s = "√4",    v =  sqrt(4), p = 25 },
-	(v_t) { s = "√.{4}", v = sqrt(.{4}), p =  1 },
+	(v_t) { .s =  "4",    .v =   4, .p = 25 },
+	(v_t) { .s = ".4",    .v =  .4, .p =  5 },
+	(v_t) { .s = ".{4}",  .v =.{4}, .p =  1 },
+	(v_t) { .s = "4!",    .v =  4!, .p = 25 },
+	(v_t) { .s = "√4",    .v =  sqrt(4), .p = 25 },
+	(v_t) { .s = "√.{4}", .v = sqrt(.{4}), .p =  1 },
 	◊
     };
     return poly func() = a[i++ % dim(a)];
@@ -30,14 +30,14 @@ poly () binloop(poly() l, poly() r) {
     int i = 0;
     poly la = ◊, ra = ◊;
     static (poly(poly, poly))[] a = { 
-	poly func(x,y) = (v_t) { s = "(" + x.s + " + " + y.s + ")", v=x.v + y.v, p = x.p + y.p },
-	poly func(x,y) = (v_t) { s = "(" + x.s + " - " + y.s + ")", v=x.v - y.v, p = x.p + y.p },
-	poly func(x,y) = (v_t) { s = "(" + x.s + " * " + y.s + ")", v=x.v * y.v, p = x.p + y.p },
-	poly func(x,y) = (v_t) { s = "(" + x.s + " / " + y.s + ")", v=x.v / y.v, p = x.p + y.p },
+	poly func(x,y) = (v_t) { .s = "(" + x.s + " + " + y.s + ")", .v = x.v + y.v, .p = x.p + y.p },
+	poly func(x,y) = (v_t) { .s = "(" + x.s + " - " + y.s + ")", .v = x.v - y.v, .p = x.p + y.p },
+	poly func(x,y) = (v_t) { .s = "(" + x.s + " * " + y.s + ")", .v = x.v * y.v, .p = x.p + y.p },
+	poly func(x,y) = (v_t) { .s = "(" + x.s + " / " + y.s + ")", .v = x.v / y.v, .p = x.p + y.p },
 	poly func(x,y) {
 	    if (y.v > 4)
 		raise invalid_argument ("rhs of ** too large", 1, y.v);
-	    return (v_t) { s = "(" + x.s + " ^ " + y.s + ")", v=x.v ** y.v, p = x.p + y.p };
+	    return (v_t) { .s = "(" + x.s + " ^ " + y.s + ")", .v =x.v ** y.v, .p = x.p + y.p };
 	}
     };
     return poly func() {
@@ -78,7 +78,7 @@ poly() parenloop(poly() x, poly() y, poly() z) {
 /* find equations which compute all values */
 void main () {
     int limit = 100;
-    v_t[limit + 1] values = { { s = "no solution", v = 0, p=0 } ... };
+    v_t[limit + 1] values = { { .s = "no solution", .v = 0, .p = 0 } ... };
     poly() f = parenloop (binloop(argloop(), argloop()),
 			  argloop(), argloop());
     while (((poly value) = f()) != ◊) {

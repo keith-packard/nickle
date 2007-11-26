@@ -32,7 +32,7 @@ namespace Numbers {
   /* Extended Euclid's Algorithm */
   public coeff function extgcd(int a, int b) {
     if (b == 0)
-      return (coeff) {d = a, x = 1, y = 0};
+      return (coeff) { .d = a, .x = 1, .y = 0};
     coeff t = extgcd(b, a % b);
     int x = t.x;
     t.x = t.y;

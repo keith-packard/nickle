@@ -94,15 +94,15 @@ public namespace Lex {
 	    case StateStart:
 		switch (c.id) {
 		case Lexc::Eof:
-		    return (token) { id = Eof, value = "" };
+		    return (token) { .id = Eof, .value = "" };
 		case Lexc::Printable:
 		case Lexc::Slash:
 		    state = StateString;
-		    t = (token) { id = Text, value = String::new (c.c) };
+		    t = (token) { .id = Text, .value = String::new (c.c) };
 		    continue;
 		case Lexc::White:
 		    state = StateSpace;
-		    t = (token) { id = Space, value = String::new (c.c) };
+		    t = (token) { .id = Space, .value = String::new (c.c) };
 		    continue;
 		case Lexc::Left:
 		    state = StateSeenLeft;
@@ -113,11 +113,11 @@ public namespace Lex {
 		switch (c.id) {
 		case Lexc::Printable:
 		    state = StateStartTag;
-		    t = (token) { id = Start, value = String::new (c.c) };
+		    t = (token) { .id = Start, .value = String::new (c.c) };
 		    continue;
 		case Lexc::Slash:
 		    state = StateEndTag;
-		    t = (token) { id = End, value = "" };
+		    t = (token) { .id = End, .value = "" };
 		    continue;
 		}
 		break;
@@ -197,7 +197,7 @@ public namespace Parse {
     {
 	*element    first = element_end;
 	* *element  p = &first;
-	*c_list	    c = reference ( (c_list) { ctxt=&root_context, prev=c_list_end});
+	*c_list	    c = reference ( (c_list) { .ctxt=&root_context, .prev=c_list_end});
 
 	for (;;)
 	{
@@ -211,23 +211,23 @@ public namespace Parse {
 		return first;
 	    case Lex::Text:
 		*p = reference ((element) { 
-		    next = element_end, 
-		    data = t.value,
-		    ctxt = c->ctxt });
+		    .next = element_end, 
+		    .data = t.value,
+		    .ctxt = c->ctxt });
 		p = &(*p)->next;
 		break;
 	    case Lex::Space:
 		*p = reference ((element) { 
-		    next = element_end, 
-		    data = t.value,
-		    ctxt = c->ctxt });
+		    .next = element_end, 
+		    .data = t.value,
+		    .ctxt = c->ctxt });
 		p = &(*p)->next;
 		break;		
 	    case Lex::Start:
 		c = reference ((c_list) {
-		    ctxt = reference (*c->ctxt),
-		    prev = c,
-		    active_tag = t.value });
+		    .ctxt = reference (*c->ctxt),
+		    .prev = c,
+		    .active_tag = t.value });
 		context_set (c->ctxt, t.value);
 		break;
 	    case Lex::End:

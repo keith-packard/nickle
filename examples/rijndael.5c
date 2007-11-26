@@ -924,10 +924,10 @@ void function main ()
     /*
      * Create an encryption key and encryption instance
      */
-    keyInstance encKeyInst = (keyInstance) { blockLen = 128 };
+    keyInstance encKeyInst = (keyInstance) { .blockLen = 128 };
     makeKey (&encKeyInst, DIR_ENCRYPT, 128, secret);
     
-    cipherInstance	encCipherInst = (cipherInstance) { blockLen = 128 };
+    cipherInstance	encCipherInst = (cipherInstance) { .blockLen = 128 };
     cipherInit (&encCipherInst, MODE_ECB, "");
     
     /*
@@ -942,10 +942,10 @@ void function main ()
     /*
      * Create a decryption key and decryption instance
      */
-    keyInstance decKeyInst = (keyInstance) { blockLen = 128 };
+    keyInstance decKeyInst = (keyInstance) { .blockLen = 128 };
     makeKey (&decKeyInst, DIR_DECRYPT, 128, secret);
     
-    cipherInstance	decCipherInst = (cipherInstance) { blockLen = 128 };
+    cipherInstance	decCipherInst = (cipherInstance) { .blockLen = 128 };
     cipherInit (&decCipherInst, MODE_ECB, "");
     
     /*

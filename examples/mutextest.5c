@@ -76,8 +76,8 @@ void start (int nthread, int nmut_ex, int delay)
     for (i = 0; i < nmut_ex; i++)
     {
 	mutexes[i] = (named_mutex) {
-	    mut_ex = new (),
-	    name = String::new('A' + i)
+	    .mut_ex = new (),
+	    .name = String::new('A' + i)
 	};
     }
     for (i = 0; i < nthread; i++)

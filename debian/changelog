@@ -1,6 +1,7 @@
 nickle (2.62-1) unstable; urgency=low
   * Add modulus test case
   * Fix % and // operators to follow modulus rules
+  * Update manual to fix // and % documentation
   * Bump to version 2.62
 
  -- Keith Packard <keithp@keithp.com>  Sun, 09 Dec 2007 21:14:27 -0800

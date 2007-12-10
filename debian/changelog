@@ -1,3 +1,10 @@
+nickle (2.62-1) unstable; urgency=low
+  * Add modulus test case
+  * Fix % and // operators to follow modulus rules
+  * Bump to version 2.62
+
+ -- Keith Packard <keithp@keithp.com>  Sun, 09 Dec 2007 21:14:27 -0800
+
 nickle (2.61-1) unstable; urgency=low
   * Allow '.' before struct elt in initializers
   * Update builtins, tests and examples to use the new syntax

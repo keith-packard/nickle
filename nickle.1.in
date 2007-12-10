@@ -259,12 +259,12 @@ int.  This is a notable departure from C, where integer division is
 implied by integer operands.
 Integer division is defined by
 .br
-  x // y == floor(x / y)
+  x // y == y > 0 ? floor (x / y) : ceil(x / y)
 .br
-The sign and value of the remainder is defined
+The remainder is always non-negative and is defined by:
 by
 .br
-  (x // y) * y + (x % y) == x
+  x % y = x - (x // y) * y
 .br
 .IP "============="
 .IP "+ -"

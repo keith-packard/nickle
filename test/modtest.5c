@@ -3,7 +3,7 @@ void check(real n, real d) {
     real r = n % d;
     assert(is_int(q), "non-integral quotient %v", q);
     assert(r >= 0, "negative remainder %v", r);
-    assert(r < d, "too-large remainder %v", r);
+    assert(r < abs(d), "too-large remainder %v", r);
     real recons = q * d + r;
     assert(recons == n, "wrong reconstruction %v", recons);
 }

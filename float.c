@@ -408,17 +408,6 @@ FloatDivide (Value av, Value bv, int expandOk)
 }
 
 static Value
-FloatMod (Value av, Value bv, int expandOk)
-{
-    ENTER ();
-    Value   q;
-
-    q = Floor (Divide (av, bv));
-    av = Minus (av, Times (q, bv));
-    RETURN (av);
-}
-
-static Value
 FloatLess (Value av, Value bv, int expandOk)
 {
     ENTER ();
@@ -1006,7 +995,7 @@ ValueRep   FloatRep = {
 	FloatTimes,
 	FloatDivide,
 	NumericDiv,
-	FloatMod,
+	NumericMod,
 	FloatLess,
 	FloatEqual,
 	0,

@@ -163,8 +163,6 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 		break;
 	    case FirstPositive:
 		r = - (a / -b);
-		if (a % -b)
-		    --r;
 		break;
 	    case SecondPositive:
 		r = -(-a / b);
@@ -174,6 +172,8 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	    case BothNegative:
 	    default:
 		r = -a / -b;
+		if (-a % -b)
+		    r++;
 		break;
 	    }
 	    return NewInt (r);
@@ -301,7 +301,24 @@ Value
 NumericDiv (Value av, Value bv, int expandOk)
 {
     ENTER ();
-    RETURN (Floor (Divide (av, bv)));
+
+    av = Divide (av, bv);
+    if (Negativep (bv))
+	av = Ceil (av);
+    else
+	av = Floor (av);
+    RETURN (av);
+}
+
+Value
+NumericMod (Value av, Value bv, int expandOk)
+{
+    ENTER ();
+    Value   q;
+
+    q = NumericDiv (av, bv, expandOk);
+    av = Minus (av, Times (q, bv));
+    RETURN (av);
 }
 
 Value

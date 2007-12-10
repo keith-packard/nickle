@@ -1035,6 +1035,7 @@ Type	*BuildArrayType (Type *type, int ndim, ...);
 Value	BinaryOperate (Value av, Value bv, BinaryOp operator);
 Value	UnaryOperate (Value v, UnaryOp operator);
 Value	NumericDiv (Value av, Value bv, int expandOk);
+Value	NumericMod (Value av, Value bv, int expandOk);
 
 # define	OK_TRUNC	1
 

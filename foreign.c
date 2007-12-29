@@ -11,7 +11,7 @@
 static Value
 ForeignEqual (Value av, Value bv, int expandOk)
 {
-    if (av == bv)
+    if (av->foreign.data == bv->foreign.data)
 	return TrueVal;
     return FalseVal;
 }

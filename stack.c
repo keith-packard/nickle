@@ -79,7 +79,7 @@ StackPop (StackObject *stack)
 	}
 	stack->current = previous;
 	if (!stack->current)
-	    panic ("Stack underflow");
+	    panic ("Stack underflow\n");
 	STACK_TOP(stack) = previous->elements;
     }
     return *STACK_TOP(stack)++;
@@ -109,7 +109,7 @@ StackDrop (StackObject *stack, int i)
 	}
 	stack->current = previous;
 	if (!stack->current)
-	    panic ("Stack underflow");
+	    panic ("Stack underflow\n");
 	STACK_TOP(stack) = CHUNK_MIN(previous);
     }
     STACK_ASSERT (stack);
@@ -130,7 +130,7 @@ StackReset (StackObject *stack, StackPointer stackPointer)
 	}
 	stack->current = previous;
 	if (!stack->current)
-	    panic ("Stack underflow");
+	    panic ("Stack underflow\n");
 	STACK_TOP(stack) = CHUNK_MIN(previous);
     }
     STACK_TOP(stack) = stackPointer;
@@ -159,7 +159,7 @@ StackElt (StackObject *stack, int i)
 	i -= CHUNK_MAX(chunk) - stackPointer;
 	chunk = chunk->previous;
 	if (!chunk)
-	    panic ("StackElt underflow");
+	    panic ("StackElt underflow\n");
 	stackPointer = CHUNK_MIN(chunk);
     }
     return stackPointer[i];

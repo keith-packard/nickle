@@ -272,7 +272,7 @@ MemAddRoot (void *object)
 	    RootSize *= 2;
 	roots = malloc (sizeof (void *) * RootSize);
 	if (!roots)
-	    panic ("Out of memory");
+	    panic ("Out of memory\n");
 	memcpy (roots, Roots, RootCount * sizeof (void *));
 	if (Roots)
 	    free (Roots);

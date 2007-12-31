@@ -359,7 +359,7 @@ HashGet (Value hv, Value key)
 	}
 	ht->count++;
 	HashEltHash(he) = hash;
-	HashEltKey(he) = key;
+	HashEltKey(he) = Copy (key);
 	HashEltValue(he) = Copy(ht->def);
     }
     value = HashEltValue (he);
@@ -388,8 +388,8 @@ HashSet (Value hv, Value key, Value value)
     if (!HashEltValid (he))
 	ht->count++;
     HashEltHash (he) = hash;
-    HashEltKey (he) = key;
-    HashEltValue (he) = value;
+    HashEltKey (he) = Copy (key);
+    HashEltValue (he) = Copy (value);
 }
 
 void
@@ -418,7 +418,7 @@ HashRef (Value hv, Value key)
     {
 	ht->count++;
 	HashEltHash (he) = hash;
-	HashEltKey (he) = key;
+	HashEltKey (he) = Copy (key);
 	if (ht->def)
 	    HashEltValue (he) = Copy(ht->def);
     }

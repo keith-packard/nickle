@@ -1,0 +1,60 @@
+exception bad_result (string reason, poly[poly] h, poly key, poly value);
+
+poly[*][2] values = {
+    { "hello", "world" },
+    { 1, "one" },
+    { (int[*]) { 1, 2, 3, 4 }, (struct { int x, y; }) { x = 1, y = 2 } },
+};
+
+void hash_tests ()
+{
+    poly[poly]	h;
+
+    /*
+     * Test basic insert/find
+     */
+    for (int i = 0; i < dim(values); i++)
+	h[values[i][0]] = values[i][1];
+    for (int i = 0; i < dim(values); i++)
+	if (h[values[i][0]] != values[i][1])
+	    raise bad_result ("wrong value returned", h, values[i][0], values[i][1]);
+    /*
+     * check list of keys
+     */
+    poly[*] keys = hash_keys (h);
+    if (dim (keys) != dim (values))
+	raise bad_result ("wrong number of keys", h, dim(keys), dim (values));
+    for (int i = 0; i < dim (values); i++) {
+	int j;
+	for (j = 0; j < dim (keys); j++)
+	    if (keys[j] == values[i][0])
+		break;
+	if (j == dim (keys))
+	    raise bad_result ("missing key", h, values[i][0], ◊);
+    }
+    /*
+     * test delete
+     */
+    for (int i = 0; i < dim (values); i++)
+	hash_del (h, values[i][0]);
+    if (dim (hash_keys(h)) != 0)
+	raise bad_result ("couldn't delete all keys", h, ◊, ◊);
+
+    /*
+     * test mutable keys
+     */
+
+    int[*] a = { 1, 2, 3 };
+    int[*] b = a;
+    h[a] = "hello";
+    if (h[b] != "hello")
+	raise bad_result ("couldn't find mutable key", h, a, "hello");
+    a[0] = 12;
+    if (hash_test (h, a))
+	raise bad_result ("hash contains mutated key", h, a, h[a]);
+    if (h[b] != "hello")
+	raise bad_result ("couldn't find unmutated key", h, b, h[b]);
+    
+}
+
+hash_tests ();

@@ -531,7 +531,11 @@ FloatFloor (Value av, int expandOk)
     if (a->exp->sign == Positive)
 	RETURN (FloatInteger (av));
     if (NaturalLess (NewNatural (a->prec), a->exp->mag))
+    {
+	if (a->mant->sign == Negative)
+	    RETURN (NewInt (-1));
 	RETURN (Zero);
+    }
     d = NaturalToInt (a->exp->mag);
     mant = FpartRsl (a->mant, d);
     if (d && a->mant->sign == Negative)
@@ -555,7 +559,11 @@ FloatCeil (Value av, int expandOk)
     if (a->exp->sign == Positive)
 	RETURN (FloatInteger (av));
     if (NaturalLess (NewNatural (a->prec), a->exp->mag))
+    {
+	if (a->mant->sign == Positive && !NaturalZero (a->mant->mag))
+	    RETURN (One);
 	RETURN (Zero);
+    }
     d = NaturalToInt (a->exp->mag);
     mant = FpartRsl (a->mant, d);
     if (d && a->mant->sign == Positive)

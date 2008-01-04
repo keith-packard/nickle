@@ -5,7 +5,9 @@ check_SCRIPTS=gcdtest.5c \
 	rattest.5c \
 	reftest.5c \
 	modtest.5c \
-	hashtest.5c
+	hashtest.5c \
+	round.5c
+
 TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir) ../nickle
 TESTS=$(check_SCRIPTS)
 

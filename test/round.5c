@@ -1,0 +1,52 @@
+exception bad_round (int num, int den, int round);
+
+autoimport PRNG;
+
+void floor_check (int num, int den, int floor)
+{
+    if (num // den != floor)
+	raise bad_round (num, den, floor);
+}
+
+void ceil_check (int num, int den, int ceil)
+{
+    int compare;
+    
+    compare = num // den;
+    if (num % den != 0)
+	compare++;
+    if (compare != ceil)
+	raise bad_round (num, den, ceil);
+}
+
+void function round_random (int numbits, int denbits)
+{
+    int	num = randbits (numbits);
+    int den = randbits (numbits);
+
+    if (den == 0)
+	return;
+    
+    floor_check (num, den, floor (num / den));
+    ceil_check (num, den, ceil (num / den));
+    
+    floor_check (num, den, floor (imprecise (num / den)));
+    ceil_check (num, den, ceil (imprecise (num / den)));
+    
+    floor_check (-num, den, floor (-num / den));
+    ceil_check (-num, den, ceil (-num / den));
+    
+    floor_check (-num, den, floor (-imprecise (num / den)));
+    ceil_check (-num, den, ceil (-imprecise (num / den)));
+}
+
+void function round_test (int amin, int amax, int bmin, int bmax)
+{
+    int	a, b;
+
+    for (a = amin; a <= amax; a += randint(30))
+	for (b = bmin; b <= bmax; b += randint(30))
+	    round_random (a, b);
+}
+
+round_test (2, 512, 2, 512)

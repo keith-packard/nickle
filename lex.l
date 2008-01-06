@@ -17,6 +17,21 @@
 #include	<readline/history.h>
 #endif
     
+/*
+ * Silence gcc by providing prototypes for these functions
+ */
+int yyget_lineno (void);
+FILE *yyget_in (void);
+FILE *yyget_out (void);
+int yyget_leng (void);
+char *yyget_text (void);
+void yyset_lineno (int);
+void yyset_in (FILE *);
+void yyset_out (FILE *);
+int yyget_debug (void);
+void yyset_debug (int);
+int yylex_destroy (void);
+
 typedef struct _lexInput {
     DataType		data;
     struct _lexInput	*next;

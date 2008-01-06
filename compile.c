@@ -4117,10 +4117,10 @@ static ObjPtr
 CompileType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code)
 {
     ENTER();
-    ArgType *at;
+    ArgType *at, *aat;
     StructType *st;
     TypeElt *et;
-    int i;
+    int i, j;
     
     switch (type->base.tag) {
     case type_prim:
@@ -4132,8 +4132,14 @@ CompileType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code
 	break;
     case type_func:
 	obj = CompileType (obj, decls, type->func.ret, stat, code);
-	for (at = type->func.args; at; at = at->next)
+	for (at = type->func.args; at; at = at->next) {
+	    if (at->name)
+		for (aat = at->next; aat; aat = aat->next)
+		    if (aat->name == at->name)
+			CompileError (obj, stat, "Duplicate function parameter '%A'",
+				      at->name);
 	    obj = CompileType (obj, decls, at->type, stat, code);
+	}
 	break;
     case type_array:
 	obj = CompileArrayType (obj, decls, type, stat, code);
@@ -4147,7 +4153,13 @@ CompileType (ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code
     case type_union:
 	st = type->structs.structs;
 	for (i = 0; i < st->nelements; i++)
+	{
+	    for (j = 0; j < i; j++)
+		 if (StructTypeAtoms(st)[j] == StructTypeAtoms(st)[i])
+		    CompileError (obj, stat, "Duplicate structure member %A",
+				  StructTypeAtoms(st)[i]);
 	    obj = CompileType (obj, decls, BoxTypesElements(st->types)[i], stat, code);
+	}
 	break;
     case type_types:
 	for (et = type->types.elt; et; et = et->next)

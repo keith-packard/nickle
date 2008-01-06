@@ -941,6 +941,16 @@ type		: subtype subscripts	    %prec CALL
 		    { $$ = NewTypeRef (NewTypeRef ($2, False), False); }
 		| LAND type			%prec POINTER
 		    { $$ = NewTypeRef ($2, False); }
+		| type PLUS type
+		    { 
+			if (ParseCanonType ($1, False) != CanonTypeDefined)
+			    YYERROR;
+			if (ParseCanonType ($3, False) != CanonTypeDefined)
+			    YYERROR;
+			$$ = NewTypePlus ($1, $3); 
+			if (!$$)
+			    YYERROR;
+		    }
 		;
 subtype		: basetype
 		| STRUCT OC struct_members CC

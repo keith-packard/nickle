@@ -89,6 +89,8 @@ TypeStructMark (void *object)
     TypeStruct	*ts = object;
 
     MemReference (ts->structs);
+    MemReference (ts->left);
+    MemReference (ts->right);
 }
 
 static void
@@ -215,6 +217,8 @@ NewTypeStruct (StructType *structs)
     t->base.tag = type_struct;
     t->structs.structs = structs;
     t->structs.enumeration = False;
+    t->structs.left = NULL;
+    t->structs.right = NULL;
     RETURN (t);
 }
 
@@ -228,8 +232,73 @@ NewTypeUnion (StructType *structs, Bool enumeration)
     t->base.tag = type_union;
     t->structs.structs = structs;
     t->structs.enumeration = enumeration;
+    t->structs.left = NULL;
+    t->structs.right = NULL;
     RETURN (t);
 }
+
+static Type *
+TypePlusPart (Type *type)
+{
+    type = TypeCanon (type);
+    switch (type->base.tag) {
+    case type_struct:
+    case type_union:
+	break;
+    default:
+	ParseError ("Type '%T' not struct or union", type);
+	return NULL;
+    }
+    return type;
+}
+
+static int
+AddPlusType (StructType	*new, StructType *old, int pos)
+{
+    int	i;
+
+    for (i = 0; i < old->nelements; i++) {
+        AddBoxType (&new->types, BoxTypesElements (old->types)[i]);
+        StructTypeAtoms (new)[pos] = StructTypeAtoms (old)[i];
+        pos++;
+    }
+    return pos;
+}
+
+Type *
+NewTypePlus (Type *left, Type *right)
+{
+    ENTER ();
+    Type	*t, *l, *r;;
+    StructType	*st;
+    int		i;
+    
+    l = TypePlusPart (left);
+    r = TypePlusPart (right);
+    if (!l || !r)
+	RETURN (NULL);
+    if (l->base.tag != r->base.tag) {
+	ParseError ("'%T' and '%T' are not the same type", left, right);
+	RETURN (NULL);
+    }
+    
+    st = NewStructType (l->structs.structs->nelements + r->structs.structs->nelements);
+    i = AddPlusType (st, l->structs.structs, 0);
+    if (i < 0)
+	RETURN (NULL);
+    i = AddPlusType (st, r->structs.structs, i);
+    if (i < 0)
+	RETURN (NULL);
+
+    t = ALLOCATE (&TypeStructType, sizeof (TypeStruct));
+    t->base.tag = l->base.tag;
+    t->structs.structs = st;
+    t->structs.enumeration = l->structs.enumeration && r->structs.enumeration;
+    t->structs.left = left;
+    t->structs.right = right;
+    RETURN (t);
+}    
+
 
 Type *
 NewTypeTypes (TypeElt *elt)

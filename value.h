@@ -440,6 +440,7 @@ typedef struct _typeStruct {
     TypeBase	    base;
     StructTypePtr   structs;
     Bool	    enumeration;
+    TypePtr	    left, right;
 } TypeStruct;    
 
 typedef struct _typeElt {
@@ -483,6 +484,7 @@ extern Type	    *typePrim[rep_void + 1];
 
 Type	*NewTypeName (ExprPtr expr, SymbolPtr name);
 Type	*NewTypeRef (Type *ref, Bool pointer);
+Type	*NewTypePlus (Type *left, Type *right);
 Type	*NewTypePointer (Type *ref);
 Type	*NewTypeFunc (Type *ret, ArgType *args);
 Type	*NewTypeArray (Type *type, ExprPtr dimensions, Bool resizable);

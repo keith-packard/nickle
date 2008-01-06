@@ -1659,7 +1659,13 @@ FilePutType (Value f, Type *t, Bool minimal)
 	break;
     case type_struct:
     case type_union:
-	if (t->structs.enumeration)
+	if (t->structs.left && t->structs.right)
+	{
+	    FilePutType (f, t->structs.left, False);
+	    FilePuts (f, " + ");
+	    FilePutType (f, t->structs.right, False);
+	}
+	else if (t->structs.enumeration)
 	{
 	    FilePuts (f, "enum { ");
 	    st = t->structs.structs;

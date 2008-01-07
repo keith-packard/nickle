@@ -218,6 +218,7 @@ reset		:
 			CurrentNamespace = TopNamespace; 
 			funcDepth = 0; 
 			notCommand = 0;
+			lastThreadError = True;
 		    }
 
 		;

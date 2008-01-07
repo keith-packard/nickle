@@ -605,6 +605,9 @@ _PrettyCatch (Value f, Expr *e, int level, Bool nest, ProfileData *pd)
     FilePuts (f, "\n");
 }
 
+static void
+PrintArgs (Value f, ArgType *args);
+    
 void
 PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest, ProfileData *pd)
 {
@@ -739,12 +742,23 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest, ProfileData
 	{
 	    DeclListPtr	    decl = e->decl.decl;
 	    ExprPtr	    init = decl->init;
-	    CodePtr	    code = init->code.code;
-
-	    PrettyCode (f, code, decl->name, 
-			e->decl.class,
-			e->decl.publish,
-			level, nest);
+	    if (init)
+	    {
+		CodePtr	    code = init->code.code;
+    
+		PrettyCode (f, code, decl->name, 
+			    e->decl.class,
+			    e->decl.publish,
+			    level, nest);
+	    }
+	    else
+	    {
+		Type	*t = e->decl.type;
+		FilePrintf (f, "%p%k%T %A ", e->decl.publish,
+			    e->decl.class, t->func.ret, decl->name);
+		PrintArgs (f, t->func.args);
+		FilePuts (f, ";");
+	    }
 	}
 	FilePuts (f, "\n");
 	break;

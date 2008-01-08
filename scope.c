@@ -257,7 +257,7 @@ NamespaceLocate (Value		names,
 	}
 	namelist = NamespaceFindNamelist (namespace, 
 					  AtomId (StringChars (&string->string)),
-					  search, False);
+					  search, True);
 	search = False;
 	if (!namelist)
 	{

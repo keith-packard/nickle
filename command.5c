@@ -126,22 +126,26 @@ extend namespace Command {
 	if (do_import)
 	    autotype = "autoimport";
 
-	string make_filename(string m)
+	string make_filename(string[*] m)
 	{
 	    string r = "";
-	    bool last_lower = false;
-	    for (int i = 0; i < String::length(m); i++)
-	    {
-		int c = m[i];
-		bool cur_lower = Ctype::islower(c);
-		if (Ctype::isupper(c))
+	    for (int j = 0; j < dim (m); j++) {
+		if (j > 0)
+		    r = r + "-";
+		bool last_lower = false;
+		for (int i = 0; i < String::length(m[j]); i++)
 		{
-		    c = Ctype::tolower(c);
-		    if (last_lower)
-			r = r + "-";
+		    int c = m[j][i];
+		    bool cur_lower = Ctype::islower(c);
+		    if (Ctype::isupper(c))
+		    {
+			c = Ctype::tolower(c);
+			if (last_lower)
+			    r = r + "-";
+		    }
+		    r = r + String::new(c);
+		    last_lower = cur_lower;
 		}
-		r = r + String::new(c);
-		last_lower = cur_lower;
 	    }
 	    return r + ".5c";
 	}
@@ -168,7 +172,7 @@ extend namespace Command {
 		string[*] subname = (string[j+1]) { [k] = name[k] };
 		if (!valid_name (subname))
 		{
-		    string f = make_filename(name[j]);
+		    string f = make_filename(subname);
 		    if (!lex_library (f)) 
 		    {
 			File::fprintf (stderr,

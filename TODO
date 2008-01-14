@@ -3,12 +3,10 @@ TO DO
 + Allow poll() as a substitute for select().
 + Allow nick to be built without all the async IO and
   gettimeofday() and the like.
-+ Build a small test suite.
 + Build regression tests for everything on the DONE list.
 + Finish the manual.
 + Fix output formatting length problems.
 + Tagless GC.
-+ Null-safe strings.
 
 TO THINK ABOUT
 
@@ -37,6 +35,8 @@ NOT TO DO
 
 DONE
 
++ Build a small test suite.
++ Null-safe strings.
 + Move std math functions out of math, or import math.
 + Implement library autoload mechanism.
 + Write fixed position (scale=n) math library in nickle ala bc/dc.

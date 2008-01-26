@@ -150,25 +150,32 @@ extend namespace Command {
 	    return r + ".5c";
 	}
 	
-	void import_if_needed(string name)
+	void import_if_needed(string[*] name)
 	{
 	    if (do_import)
 	    {
-		string imp = File::sprintf("import %s;\n", name);
+		file	f = File::string_write ();
+		File::fprintf (f, "import ");
+		for (int i = 0; i < dim (name); i++) {
+		    if (i != 0)
+			File::fprintf (f, "::");
+		    File::fprintf (f, "%s", name[i]);
+		}
+		File::fprintf (f, ";\n");
+		string imp = File::string_string (f);
 		lex_string(imp);
 	    }
 	}
 
 	for (int i = 0; i < dim(args); i++) {
 	    string[*]	name = args[i];
-	    if (valid_name (name)) {
-		for (int i = 0; i < dim(name); i++)
-		    import_if_needed(name[i]);
+	    import_if_needed(name);
+
+	    if (valid_name (name))
 		continue;
-	    }
+
 	    for (int j = dim(name) - 1; j >= 0; j--)
 	    {
-		import_if_needed(name[j]);
 		string[*] subname = (string[j+1]) { [k] = name[k] };
 		if (!valid_name (subname))
 		{

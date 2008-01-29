@@ -1,3 +1,9 @@
+nickle (2.66-1) unstable; urgency=low
+  * Support autoload/autoimport of nested namespaces.
+  * Allow 'print' to find unpublished names
+  
+ -- Keith Packard <keithp@keithp.com>  Sun, 13 Jan 2008 17:39:49 -0800
+
 nickle (2.65-1) unstable; urgency=low
   * Add new '+' type operator for subtyping struct/union
   * Eliminate segfault when pretty printing func declarations

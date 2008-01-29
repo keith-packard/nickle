@@ -7,7 +7,7 @@ dnl for licensing information.
 AC_PREREQ(2.59)
 
 AC_INIT([nickle],
-	2.65,
+	2.66,
 	[http://nickle.org],
 	nickle)
 

@@ -1172,6 +1172,9 @@ DoublePart (Value av, char *error)
 	e = MAX_NICKLE_INT;
     if (e > 1023)
     {
+	if (av->floats.exp->sign == Negative)
+	    return 0.0;
+	
 	RaiseStandardException (exception_invalid_argument, error,
 				2, NewInt (0), av);
 	return 0.0;

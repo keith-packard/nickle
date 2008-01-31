@@ -16,6 +16,8 @@
 #include	<fcntl.h>
 #include	<sys/types.h>
 #include	<sys/socket.h>
+#include	<sys/un.h>
+#include	<limits.h>
 #include        <netinet/in.h>
 #include	<netdb.h>
 #include	<string.h>
@@ -32,7 +34,7 @@
 NamespacePtr SocketNamespace;
 Type	     *typeSockaddr;
 
-Value do_Socket_create (Value type);
+Value do_Socket_create (Value family, Value type);
 Value do_Socket_connect (Value s, Value host, Value port);
 Value do_Socket_bind (Value s, Value host, Value port);
 Value do_Socket_listen (Value s, Value backlog);
@@ -55,12 +57,6 @@ import_Socket_namespace()
     };
 
     static const struct fbuiltin_1 funcs_1[] = {
-        { do_Socket_create, "create", "f", "i", "\n"
-	    " file create (int type)\n"
-	    "\n"
-	    " Create a socket where 'type' is one of:\n"
-	    "   SOCK_STREAM:	a stream socket.\n"
-	    "   SOCK_DGRAM:	a datagram socket.\n" },
         { do_Socket_accept, "accept", "f", "f", "\n"
 	    " file accept (file listen)\n"
 	    "\n"
@@ -73,6 +69,16 @@ import_Socket_namespace()
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
+        { do_Socket_create, "create", "f", "ii", "\n"
+	    " file create (int type)\n"
+	    "\n"
+	    " Create a socket where 'family' is one of:\n"
+	    "   AF_UNIX:	Local communication.\n"
+	    "   AF_INET:	IPv4 Internet protocols.\n"
+	    "   AF_INET6:	IPv6 Internet protocols.\n"
+	    " and where 'type' is one of:\n"
+	    "   SOCK_STREAM:	a stream socket.\n"
+	    "   SOCK_DGRAM:	a datagram socket.\n" },
         { do_Socket_listen, "listen", "v", "fi", "\n"
 	    " void listen (file socket, int length)\n"
 	    "\n"
@@ -100,6 +106,11 @@ import_Socket_namespace()
     };
 
     static const struct ibuiltin ivars[] = {
+	{ AF_UNIX, "AF_UNIX", &SocketNamespace },
+	{ AF_INET, "AF_INET", &SocketNamespace },
+#ifdef AF_INET6
+	{ AF_INET6, "AF_INET6", &SocketNamespace },
+#endif
 	{ SOCK_STREAM, "SOCK_STREAM", &SocketNamespace },
 	{ SOCK_DGRAM, "SOCK_DGRAM", &SocketNamespace },
 	{ SHUT_RD, "SHUT_RD", &SocketNamespace },
@@ -143,21 +154,32 @@ import_Socket_namespace()
 
 /* File::file do_Socket_create ({SOCK_STREAM,SOCK_DGRAM} type); */
 Value
-do_Socket_create (Value type)
+do_Socket_create (Value family, Value type)
 {
     ENTER ();
-    int itype, s;
+    int ifamily, itype, s;
+    ifamily = IntPart (family, "Illegal address family");
     itype = IntPart (type, "Illegal socket type");
     if (aborting)
 	RETURN (Void);
-    s = socket (PF_INET, itype, 0);
+    s = socket (ifamily, itype, 0);
     if (s == -1)
 	RETURN (Void);
     RETURN (FileCreate (s, FileReadable|FileWritable));
 }
 
-static Bool address_lookup (Value hostname, Value portname,
-			    struct sockaddr_in *addr)
+typedef union {
+    struct sockaddr_in in;
+    struct sockaddr_un un;
+    struct sockaddr addr;
+    struct {
+	struct sockaddr_un un;
+	char path[PATH_MAX];
+    } align;
+} sockaddr_all_t;
+
+static Bool address_lookup (int s, Value hostname, Value portname,
+			    sockaddr_all_t *addr, socklen_t *len)
 {
     struct hostent *host;
     struct servent *port;
@@ -176,32 +198,51 @@ static Bool address_lookup (Value hostname, Value portname,
     if (*hostchars == '\0' || *portchars == '\0')
 	return False; /* FIXME: more here? */
 
-    addr->sin_family = AF_INET;
+    /* Read the address family back from the kernel. */
+    *len = sizeof (*addr);
+    if (getsockname (s, &addr->addr, len) < 0)
+	return False;
 
-    /* host lookup */
-    host = gethostbyname (hostchars);
-    if (host == 0)
-    {
-	herror ("address_lookup");
-	return False; /* FIXME: more here? */
-    }
-    memcpy (&addr->sin_addr.s_addr, host->h_addr_list[0], sizeof addr->sin_addr.s_addr);
+    switch (addr->addr.sa_family) {
+    case AF_UNIX:
+	if (strlen (portchars) > PATH_MAX)
+	    return False;
+	*len = SUN_LEN (&addr->un);
+	strcpy (addr->un.sun_path, portchars);
+	break;
+    case AF_INET:
+	/* host lookup */
+	host = gethostbyname (hostchars);
+	if (host == 0)
+	{
+	    herror ("address_lookup");
+	    return False; /* FIXME: more here? */
+	}
+	memcpy (&addr->in.sin_addr.s_addr, host->h_addr_list[0], sizeof addr->in.sin_addr.s_addr);
 
-    /* port lookup */
-    portnum = strtol (portchars, &endptr, /* base */ 10);
-    if (*endptr != '\0') /* non-numeric port specification */
-    {
-	/* FIXME: this should not always be "tcp"! */
-	port = getservbyname (portchars, "tcp");
-	if (port == 0)
-	    return False; /* FIXME: more here? */
-	addr->sin_port = port->s_port;
-    }
-    else
-    {
-	if (portnum <= 0 || portnum >= (1 << 16))
-	    return False; /* FIXME: more here? */
-	addr->sin_port = htons (portnum);
+	/* port lookup */
+	portnum = strtol (portchars, &endptr, /* base */ 10);
+
+	if (*endptr != '\0') /* non-numeric port specification */
+	{
+	    /* FIXME: this should not always be "tcp"! */
+	    port = getservbyname (portchars, "tcp");
+	    if (port == 0)
+		return False; /* FIXME: more here? */
+	    addr->in.sin_port = port->s_port;
+	}
+	else
+	{
+	    if (portnum <= 0 || portnum >= (1 << 16))
+		return False; /* FIXME: more here? */
+	    addr->in.sin_port = htons (portnum);
+	}
+	break;
+#if AF_INET6
+    case AF_INET6:
+#endif
+    default:
+	return False;
     }
 
     return True;
@@ -212,9 +253,10 @@ Value
 do_Socket_connect (Value s, Value host, Value port)
 {
     ENTER ();
-    struct sockaddr_in addr;
+    sockaddr_all_t addr;
+    socklen_t len;
 
-    if (!address_lookup (host, port, &addr))
+    if (!address_lookup (s->file.fd, host, port, &addr, &len))
 	RETURN (Void);
 
     if (!running->thread.partial)
@@ -230,7 +272,7 @@ do_Socket_connect (Value s, Value host, Value port)
 			(char *) &one, sizeof (int));
 	}
 #endif
-	n = connect (s->file.fd, (struct sockaddr *) &addr, sizeof addr);
+	n = connect (s->file.fd, &addr.addr, len);
 	flags &= ~O_NONBLOCK;
 	fcntl (s->file.fd, F_SETFL, flags);
 	err = errno;
@@ -266,9 +308,10 @@ Value
 do_Socket_bind (Value s, Value host, Value port)
 {
     ENTER ();
-    struct sockaddr_in addr;
+    sockaddr_all_t addr;
+    socklen_t len;
 
-    if (!address_lookup (host, port, &addr))
+    if (!address_lookup (s->file.fd, host, port, &addr, &len))
 	RETURN (Void);
 
 #ifdef SO_REUSEADDR
@@ -277,7 +320,7 @@ do_Socket_bind (Value s, Value host, Value port)
 	setsockopt (s->file.fd, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof (int));
     }
 #endif
-    if (bind (s->file.fd, (struct sockaddr *) &addr, sizeof addr) == -1)
+    if (bind (s->file.fd, &addr.addr, len) == -1)
     {
 	RaiseStandardException (exception_io_error,
 				FileGetErrorMessage (errno),

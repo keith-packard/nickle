@@ -163,6 +163,7 @@ do_Socket_create (int num, Value *args)
 {
     ENTER ();
     int ifamily, itype, type_index, s;
+    Value ret;
 
     if (num == 0 || num > 2) {
 	RaiseStandardException (exception_invalid_argument,
@@ -184,7 +185,9 @@ do_Socket_create (int num, Value *args)
     s = socket (ifamily, itype, 0);
     if (s == -1)
 	RETURN (Void);
-    RETURN (FileCreate (s, FileReadable|FileWritable));
+    ret = FileCreate (s, FileReadable|FileWritable);
+    ret->file.sock_family = ifamily;
+    RETURN (ret);
 }
 
 typedef union {
@@ -197,7 +200,7 @@ typedef union {
     } align;
 } sockaddr_all_t;
 
-static Bool address_lookup (int s, Value hostname, Value portname,
+static Bool address_lookup (Value s, Value hostname, Value portname,
 			    sockaddr_all_t *addr, socklen_t *len)
 {
     struct hostent *host;
@@ -217,12 +220,7 @@ static Bool address_lookup (int s, Value hostname, Value portname,
     if (*hostchars == '\0' || *portchars == '\0')
 	return False; /* FIXME: more here? */
 
-    /* Read the address family back from the kernel. */
-    *len = sizeof (*addr);
-    if (getsockname (s, &addr->addr, len) < 0)
-	return False;
-
-    switch (addr->addr.sa_family) {
+    switch (s->file.sock_family) {
     case AF_UNIX:
 	if (strlen (portchars) > PATH_MAX)
 	    return False;
@@ -237,6 +235,7 @@ static Bool address_lookup (int s, Value hostname, Value portname,
 	    herror ("address_lookup");
 	    return False; /* FIXME: more here? */
 	}
+	*len = sizeof (addr->in);
 	memcpy (&addr->in.sin_addr.s_addr, host->h_addr_list[0], sizeof addr->in.sin_addr.s_addr);
 
 	/* port lookup */
@@ -275,7 +274,7 @@ do_Socket_connect (Value s, Value host, Value port)
     sockaddr_all_t addr;
     socklen_t len;
 
-    if (!address_lookup (s->file.fd, host, port, &addr, &len))
+    if (!address_lookup (s, host, port, &addr, &len))
 	RETURN (Void);
 
     if (!running->thread.partial)
@@ -330,7 +329,7 @@ do_Socket_bind (Value s, Value host, Value port)
     sockaddr_all_t addr;
     socklen_t len;
 
-    if (!address_lookup (s->file.fd, host, port, &addr, &len))
+    if (!address_lookup (s, host, port, &addr, &len))
 	RETURN (Void);
 
 #ifdef SO_REUSEADDR

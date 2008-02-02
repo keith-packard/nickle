@@ -35,8 +35,8 @@ NamespacePtr SocketNamespace;
 Type	     *typeSockaddr;
 
 Value do_Socket_create (int num, Value *args);
-Value do_Socket_connect (Value s, Value host, Value port);
-Value do_Socket_bind (Value s, Value host, Value port);
+Value do_Socket_connect (int num, Value *args);
+Value do_Socket_bind (int numb, Value *args);
 Value do_Socket_listen (Value s, Value backlog);
 Value do_Socket_accept (Value s);
 Value do_Socket_shutdown (Value s, Value how);
@@ -83,18 +83,6 @@ import_Socket_namespace()
         { 0 }
     };
 
-    static const struct fbuiltin_3 funcs_3[] = {
-        { do_Socket_connect, "connect", "v", "fss", "\n"
-	    " void connect (file socket, string host, string port)\n"
-	    "\n"
-	    " Connect 'socket' to 'host', 'port'.\n" },
-        { do_Socket_bind, "bind", "v", "fss", "\n"
-	    " void bind (file socket, string host, string port)\n"
-	    "\n"
-	    " Bind 'socket' to 'host', 'port'.\n" },
-        { 0 }
-    };
-
     static const struct fbuiltin_v funcs_v[] = {
         { do_Socket_create, "create", "f", ".i", "\n"
 	    " file create ([int family], int type)\n"
@@ -106,6 +94,24 @@ import_Socket_namespace()
 	    " and where 'type' is one of:\n"
 	    "   SOCK_STREAM:		a stream socket.\n"
 	    "   SOCK_DGRAM:		a datagram socket.\n" },
+        { do_Socket_bind, "bind", "v", "f.p", "\n"
+	    " void bind (file socket, string host, string port)\n"
+	    " void bind (file socket, string host, int port)\n"
+	    "\n"
+	    " Bind AF_INET 'socket' to 'host', 'port'.\n"
+	    "\n"
+	    " void bind (file socket, string local_socket)\n"
+	    "\n"
+	    " Bind AF_UNIX 'socket' to 'localhost'.\n" },
+        { do_Socket_connect, "connect", "v", "f.p", "\n"
+	    " void connect (file socket, string host, string port)\n"
+	    " void connect (file socket, string host, int port)\n"
+	    "\n"
+	    " Connect AF_INET 'socket' to 'host', 'port'.\n"
+	    "\n"
+	    " void connect (file socket, string local_socket)\n"
+	    "\n"
+	    " Connect AF_UNIX 'socket' to 'local_socket'.\n" },
 	{ 0 }
     };
 
@@ -148,7 +154,6 @@ import_Socket_namespace()
     BuiltinFuncs0 (&SocketNamespace, funcs_0);
     BuiltinFuncs1 (&SocketNamespace, funcs_1);
     BuiltinFuncs2 (&SocketNamespace, funcs_2);
-    BuiltinFuncs3 (&SocketNamespace, funcs_3);
     BuiltinFuncsV (&SocketNamespace, funcs_v);
 
     BuiltinIntegers (ivars);
@@ -200,81 +205,144 @@ typedef union {
     } align;
 } sockaddr_all_t;
 
-static Bool address_lookup (Value s, Value hostname, Value portname,
-			    sockaddr_all_t *addr, socklen_t *len)
+#define VerifyArgumentCount(arg, condition, error)			\
+if (! (condition)) {							\
+    RaiseStandardException (exception_invalid_argument,			\
+                            (error), 2, NewInt (0), NewInt (arg));	\
+}
+
+/* Supports the following args from both bind and connect:
+ *	(File::file s, String local_socket)
+ */
+static Bool address_lookup_af_unix (int num, Value *args,
+				    struct sockaddr_un *addr, socklen_t *len)
 {
-    struct hostent *host;
-    struct servent *port;
-    char *hostchars;
-    char *portchars;
-    char *endptr = 0;
-    long int portnum;
+    char *local_socket;
+    Value s = args[0];
 
-    hostchars = StrzPart (hostname, "invalid hostname");
-    if (!hostchars)
+    VerifyArgumentCount (num, num == 2,
+			 "must have 2 arguments for an AF_UNIX socket");
+    if (aborting)
 	return False;
-    portchars = StrzPart (portname, "invalid portname");
-    if (!portchars)
+
+    local_socket = StrzPart (args[1], "invalid local_socket");
+    if (!local_socket || *local_socket == '\0')
 	return False;
-    
-    if (*hostchars == '\0' || *portchars == '\0')
-	return False; /* FIXME: more here? */
 
-    switch (s->file.sock_family) {
-    case AF_UNIX:
-	if (strlen (portchars) > PATH_MAX)
-	    return False;
-	*len = SUN_LEN (&addr->un);
-	strcpy (addr->un.sun_path, portchars);
-	break;
-    case AF_INET:
-	/* host lookup */
-	host = gethostbyname (hostchars);
-	if (host == 0)
-	{
-	    herror ("address_lookup");
-	    return False; /* FIXME: more here? */
-	}
-	*len = sizeof (addr->in);
-	memcpy (&addr->in.sin_addr.s_addr, host->h_addr_list[0], sizeof addr->in.sin_addr.s_addr);
-
-	/* port lookup */
-	portnum = strtol (portchars, &endptr, /* base */ 10);
-
-	if (*endptr != '\0') /* non-numeric port specification */
-	{
-	    /* FIXME: this should not always be "tcp"! */
-	    port = getservbyname (portchars, "tcp");
-	    if (port == 0)
-		return False; /* FIXME: more here? */
-	    addr->in.sin_port = port->s_port;
-	}
-	else
-	{
-	    if (portnum <= 0 || portnum >= (1 << 16))
-		return False; /* FIXME: more here? */
-	    addr->in.sin_port = htons (portnum);
-	}
-	break;
-#if AF_INET6
-    case AF_INET6:
-#endif
-    default:
+    if (strlen (local_socket) > PATH_MAX)
 	return False;
-    }
+
+    addr->sun_family = s->file.sock_family;
+    strcpy (addr->sun_path, local_socket);
+    *len = SUN_LEN (addr);
 
     return True;
 }
 
-/* void do_Socket_connect (File::file s, String host, String port); */
+/* Supports the following args from both bind and connect:
+ *	(File::file s, String host, String port)
+ *	(File::file s, String host, int port)
+ */
+static Bool address_lookup_af_inet (int num, Value *args,
+				    struct sockaddr_in *addr, socklen_t *len)
+{
+    Value host, port;
+    char *hostchars;
+    struct hostent *hostent;
+    long int portnum;
+    struct servent *portent;
+    char *endptr;
+    Value s = args[0];
+
+    VerifyArgumentCount (num, num == 3,
+			 "must have 3 arguments for an AF_INET socket");
+    if (aborting)
+	return False;
+
+    host = args[1];
+    port = args[2];
+
+    hostchars = StrzPart (host, "invalid hostname");
+    if (!hostchars || *hostchars == '\0')
+	return False;
+
+    if (ValueIsString (port)) {
+	char *portchars = StrzPart (port, "invalid port string");
+	if (!portchars || *portchars == '\0')
+	    return False;
+	portnum = strtol (portchars, &endptr, /* base */ 10);
+	if (*endptr != '\0') /* non-numeric port specification */
+	{
+	    /* FIXME: this should not always be "tcp"! */
+	    portent = getservbyname (portchars, "tcp");
+	    if (portent == 0)
+		return False; /* FIXME: more here? */
+	    addr->sin_port = portent->s_port;
+	}
+	if (portnum <= 0 || portnum >= (1 << 16))
+	    return False; /* FIXME: more here? */
+    } else {
+	portnum = IntPart (port, "invalid port value");
+	if (portnum <= 0 || portnum >= (1 << 16))
+	    return False; /* FIXME: more here? */
+    }
+
+    addr->sin_family = s->file.sock_family;
+    addr->sin_port = htons (portnum);
+
+    /* host lookup */
+    hostent = gethostbyname (hostchars);
+    if (hostent == 0)
+    {
+	herror ("address_lookup");
+	return False; /* FIXME: more here? */
+    }
+
+    *len = sizeof (*addr);
+    memcpy (&addr->sin_addr.s_addr, hostent->h_addr_list[0],
+	    sizeof (addr->sin_addr.s_addr));
+
+    return True;
+}
+
+/* Supports the following args from both bind and connect:
+ *
+ *	(File::file s, String host, String port)
+ *	(File::file s, String host, int port)
+ *	(File::file s, String local_socket)
+ */
+static Bool address_lookup (int num, Value *args,
+			    sockaddr_all_t *addr, socklen_t *len)
+{
+    Value s = args[0];
+
+    switch (s->file.sock_family) {
+    case AF_UNIX:
+	return address_lookup_af_unix (num, args, &addr->un, len);
+    case AF_INET:
+	return address_lookup_af_inet (num, args, &addr->in, len);
+#ifdef AF_INET6
+    case AF_INET6:
+	/* FIXME */
+#endif
+    default:
+	return False;
+    }
+}
+
+/* void do_Socket_connect (File::file s, String host, String port);
+ * void do_Socket_connect (File::file s, String host, int port);
+ * void do_Socket_connect (File::file s, String local_socket;
+ */
 Value
-do_Socket_connect (Value s, Value host, Value port)
+do_Socket_connect (int num, Value *args)
 {
     ENTER ();
     sockaddr_all_t addr;
     socklen_t len;
+    Value s = args[0];
 
-    if (!address_lookup (s, host, port, &addr, &len))
+    if (!address_lookup (num, args, &addr, &len))
 	RETURN (Void);
 
     if (!running->thread.partial)
@@ -321,15 +389,19 @@ do_Socket_connect (Value s, Value host, Value port)
     RETURN (Void);
 }
 
-/* void do_Socket_bind (File::file s, String host, String port); */
+/* void do_Socket_bind (File::file s, String host, String port);
+ * void do_Socket_bind (File::file s, String host, int port);
+ * void do_Socket_bind (File::file s, String local_socket;
+ */
 Value
-do_Socket_bind (Value s, Value host, Value port)
+do_Socket_bind (int num, Value *args)
 {
     ENTER ();
     sockaddr_all_t addr;
     socklen_t len;
+    Value s = args[0];
 
-    if (!address_lookup (s, host, port, &addr, &len))
+    if (!address_lookup (num, args, &addr, &len))
 	RETURN (Void);
 
 #ifdef SO_REUSEADDR

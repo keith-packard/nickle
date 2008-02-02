@@ -1233,9 +1233,8 @@ RaiseStandardException (StandardException   se,
     i = argc + 1;
     args = NewArray (False, False, typePoly, 1, &i);
     ArrayValueSet (&args->array, 0, NewStrString (string));
-    if (argc)
-	for (i = 0; i < argc; i++)
-	    ArrayValueSet (&args->array, i + 1, va_arg (va, Value));
+    for (i = 0; i < argc; i++)
+	ArrayValueSet (&args->array, i + 1, va_arg (va, Value));
     standardException = se;
     standardExceptionArgs = args;
     SetSignalException ();
@@ -1255,4 +1254,41 @@ JumpStandardException (Value thread, InstPtr *next)
     standardException = exception_none;
     standardExceptionArgs = 0;
     RETURN (args);
+}
+
+static void
+SignalThread (Value thread, Value signal)
+{
+    ENTER ();
+    int		i = 1;
+    Value	args = NewArray (False, False, typePoly, 1, &i);
+    SymbolPtr	except = standardExceptions[exception_signal];
+    
+    ArrayValueSet (&args->array, 0, signal);
+    if (thread == running)
+    {
+	standardException = exception_signal;
+	standardExceptionArgs = args;
+	SetSignalException ();
+    }
+    else if (except)
+    {
+	InstPtr	next;
+	
+	RaiseException (thread, except, args, &next);
+	thread->thread.continuation.pc = next;
+	if (thread->thread.state & ThreadSuspended) {
+	    thread->thread.sleep = 0;
+	    ThreadClearState (thread, ThreadSuspended);
+	}
+    }
+    EXIT ();
+}
+
+Value
+do_Thread_signal (Value thread, Value signal)
+{
+    ENTER ();
+    SignalThread (thread, signal);
+    RETURN (Void);
 }

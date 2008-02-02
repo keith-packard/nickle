@@ -763,6 +763,7 @@ typedef enum _standardException {
     exception_open_error,	    /* string integer string */
     exception_io_error,		    /* string integer file */
     exception_name_error,	    /* string integer string */
+    exception_signal,		    /* integer */
     _num_standard_exceptions
 } StandardException;
 
@@ -932,6 +933,7 @@ Value	do_profile (Value);
 
 /* two argument builtins */
 Value	do_Thread_set_priority (Value, Value);
+Value	do_Thread_signal (Value, Value);
 Value	do_File_open (Value, Value);
 Value	do_gcd (Value, Value);
 Value	do_xor (Value, Value);

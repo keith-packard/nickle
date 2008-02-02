@@ -61,6 +61,11 @@ import_Thread_namespace()
 	    "\n"
 	    " Set 't's scheduling priority to 'priority'.\n"
 	    " Return 'priority.\n" },
+	{ do_Thread_signal, "send_signal", "v", "ti", "\n"
+	    " void signal (thread t, int signal)\n"
+	    "\n"
+	    " Raise the signal exception in thread 't'\n"
+	    " passing 'signal' as the argument\n" },
         { 0 }
     };
 
@@ -75,11 +80,20 @@ import_Thread_namespace()
         { 0 }
     };
 
+    static const struct ebuiltin excepts[] = {
+	{"signal",	exception_signal,	"i", "\n"
+	    " signal (int signal)\n"
+	    "\n"
+	    " Sent from the Thread::send_signal function.\n" },
+	{ 0 },
+    };
+
     ThreadNamespace = BuiltinNamespace (/*parent*/ 0, "Thread")->namespace.namespace;
 
     BuiltinFuncs0 (&ThreadNamespace, funcs_0);
     BuiltinFuncs1 (&ThreadNamespace, funcs_1);
     BuiltinFuncs2 (&ThreadNamespace, funcs_2);
     BuiltinFuncsV (&ThreadNamespace, funcs_v);
+    BuiltinExceptions (&ThreadNamespace, excepts);
     EXIT ();
 }

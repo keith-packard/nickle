@@ -108,6 +108,12 @@ BuiltinAddFunction (NamespacePtr *namespacep, char *name, char *ret_format,
 	char *doc; \
     }
 
+#define BuiltinExceptions(ns, e) do {\
+    const struct ebuiltin   *ei; \
+    for (ei = (e); ei->name; ei++) { \
+	BuiltinAddException ((ns), ei->exception, ei->name, ei->args, ei->doc); \
+    } } while (0)
+    
 #define BuiltinFuncsGeneric(ns, funcs, stype, bitem, jump) do { \
     BuiltinFunc f; const struct stype *fi; \
     for (fi = (funcs); fi->name; fi++) { \

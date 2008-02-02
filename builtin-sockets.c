@@ -34,7 +34,7 @@
 NamespacePtr SocketNamespace;
 Type	     *typeSockaddr;
 
-Value do_Socket_create (Value family, Value type);
+Value do_Socket_create (int num, Value *args);
 Value do_Socket_connect (Value s, Value host, Value port);
 Value do_Socket_bind (Value s, Value host, Value port);
 Value do_Socket_listen (Value s, Value backlog);
@@ -69,16 +69,6 @@ import_Socket_namespace()
     };
 
     static const struct fbuiltin_2 funcs_2[] = {
-        { do_Socket_create, "create", "f", "ii", "\n"
-	    " file create (int type)\n"
-	    "\n"
-	    " Create a socket where 'family' is one of:\n"
-	    "   AF_UNIX:	Local communication.\n"
-	    "   AF_INET:	IPv4 Internet protocols.\n"
-	    "   AF_INET6:	IPv6 Internet protocols.\n"
-	    " and where 'type' is one of:\n"
-	    "   SOCK_STREAM:	a stream socket.\n"
-	    "   SOCK_DGRAM:	a datagram socket.\n" },
         { do_Socket_listen, "listen", "v", "fi", "\n"
 	    " void listen (file socket, int length)\n"
 	    "\n"
@@ -103,6 +93,20 @@ import_Socket_namespace()
 	    "\n"
 	    " Bind 'socket' to 'host', 'port'.\n" },
         { 0 }
+    };
+
+    static const struct fbuiltin_v funcs_v[] = {
+        { do_Socket_create, "create", "f", ".i", "\n"
+	    " file create ([int family], int type)\n"
+	    "\n"
+	    " Create a socket where the optional 'family' is one of:\n"
+	    "   AF_UNIX:		Local communication.\n"
+	    "   AF_INET (default):	IPv4 Internet protocols.\n"
+	    "   AF_INET6:		IPv6 Internet protocols.\n"
+	    " and where 'type' is one of:\n"
+	    "   SOCK_STREAM:		a stream socket.\n"
+	    "   SOCK_DGRAM:		a datagram socket.\n" },
+	{ 0 }
     };
 
     static const struct ibuiltin ivars[] = {
@@ -145,6 +149,7 @@ import_Socket_namespace()
     BuiltinFuncs1 (&SocketNamespace, funcs_1);
     BuiltinFuncs2 (&SocketNamespace, funcs_2);
     BuiltinFuncs3 (&SocketNamespace, funcs_3);
+    BuiltinFuncsV (&SocketNamespace, funcs_v);
 
     BuiltinIntegers (ivars);
     BuiltinStrings (svars);
@@ -154,12 +159,26 @@ import_Socket_namespace()
 
 /* File::file do_Socket_create ({SOCK_STREAM,SOCK_DGRAM} type); */
 Value
-do_Socket_create (Value family, Value type)
+do_Socket_create (int num, Value *args)
 {
     ENTER ();
-    int ifamily, itype, s;
-    ifamily = IntPart (family, "Illegal address family");
-    itype = IntPart (type, "Illegal socket type");
+    int ifamily, itype, type_index, s;
+
+    if (num == 0 || num > 2) {
+	RaiseStandardException (exception_invalid_argument,
+				"create must have one or two arguments",
+				2, NewInt (0), NewInt (num));
+	RETURN (Void);
+    }
+
+    if (num > 1) {
+	ifamily = IntPart (args[0], "Illegal address family");
+	type_index = 1;
+    } else {
+	ifamily = AF_INET;
+	type_index = 0;
+    }
+    itype = IntPart (args[type_index], "Illegal socket type");
     if (aborting)
 	RETURN (Void);
     s = socket (ifamily, itype, 0);

@@ -15,6 +15,9 @@
 #include	<ctype.h>
 #include	<strings.h>
 #include	<time.h>
+#include	<errno.h>
+#include	<sys/stat.h>
+#include	<sys/types.h>
 #include	"builtin.h"
 
 NamespacePtr FileNamespace;
@@ -88,6 +91,14 @@ import_File_namespace()
 	    "\n"
 	    " Return whether 'f' is associated with an interactive\n"
 	    " terminal device\n" },
+	{ do_File_unlink, "unlink", "v", "s", "\n"
+	    " void unlink (string name)\n"
+	    "\n"
+	    " Delete the filename 'name'\n" },
+	{ do_File_rmdir, "rmdir", "v", "s", "\n"
+	    " void rmdir (string name)\n"
+	    "\n"
+	    " Delete the directory 'name'\n" },
         { 0 }
     };
 
@@ -127,6 +138,14 @@ import_File_namespace()
 	    " int ungetc (int c, file f)\n"
 	    "\n"
 	    " Pushes the character 'c' back on file 'f'.\n" },
+	{ do_File_rename, "rename", "v", "ss", "\n"
+	    " void rename (string oldname, string newname)\n"
+	    "\n"
+	    " Renames a file\n" },
+	{ do_File_mkdir, "mkdir", "v", "si", "\n"
+	    " void mkdir (string name, int mode)\n"
+	    "\n"
+	    " Create the new directory 'name'\n" },
         { 0 }
     };
 
@@ -181,6 +200,13 @@ import_File_namespace()
 	    " io_error (string message, error_type error, file f)\n"
 	    "\n"
 	    " Raised when an i/o error occurs.\n" },
+	{"name_error",		exception_name_error,		"sEs", "\n"
+	    " name_error (string message, error_type error, string name)\n"
+	    "\n"
+	    " Raised when an operation involving a filename fails.\n"
+	    " 'message' is a printable error string.\n"
+	    " 'error' is a symbolic error code.\n"
+	    " 'name' is the filename which failed.\n" },
 	{0,			0 },
     };
 
@@ -617,4 +643,95 @@ do_File_setbuf (Value f, Value v)
     if (!aborting)
 	FileSetBuffer (f, i);
     RETURN (v);
+}
+
+Value
+do_File_unlink (Value name)
+{
+    ENTER ();
+    char *n;
+    int ret;
+
+    n = StrzPart (name, "invalid file name");
+    if (!n)
+	RETURN (Void);
+    ret = unlink (n);
+    if (ret < 0) {
+	int err = errno;
+	RaiseStandardException (exception_name_error,
+				FileGetErrorMessage (err),
+				2, FileGetError (err), name);
+	RETURN (Void);
+    }
+    RETURN (Void);
+}
+
+Value
+do_File_rename (Value old, Value new)
+{
+    ENTER ();
+    char *o, *n;
+    int ret;
+
+    o = StrzPart (old, "invalid file name");
+    if (!o)
+	RETURN (Void);
+    n = StrzPart (new, "invalid file name");
+    if (!n)
+	RETURN (Void);
+    ret = rename (o, n);
+    if (ret < 0) {
+	int err = errno;
+	RaiseStandardException (exception_name_error,
+				FileGetErrorMessage (err),
+				2, FileGetError (err), new);
+	RETURN (Void);
+    }
+    RETURN (Void);
+}
+
+Value
+do_File_mkdir (Value name, Value mode)
+{
+    ENTER ();
+    char *n;
+    int m;
+    int ret;
+
+    n = StrzPart (name, "invalid file name");
+    if (!n)
+	RETURN (Void);
+    m = IntPart (mode, "invalid file mode");
+    if (aborting)
+	RETURN (Void);
+    ret = mkdir (n, m);
+    if (ret < 0) {
+	int err = errno;
+	RaiseStandardException (exception_name_error,
+				FileGetErrorMessage (err),
+				2, FileGetError (err), name);
+	RETURN (Void);
+    }
+    RETURN (Void);
+}
+
+Value
+do_File_rmdir (Value name)
+{
+    ENTER ();
+    char *n;
+    int ret;
+
+    n = StrzPart (name, "invalid file name");
+    if (!n)
+	RETURN (Void);
+    ret = rmdir (n);
+    if (ret < 0) {
+	int err = errno;
+	RaiseStandardException (exception_name_error,
+				FileGetErrorMessage (err),
+				2, FileGetError (err), name);
+	RETURN (Void);
+    }
+    RETURN (Void);
 }

@@ -762,6 +762,7 @@ typedef enum _standardException {
     exception_invalid_unop_value,   /* string poly */
     exception_open_error,	    /* string integer string */
     exception_io_error,		    /* string integer file */
+    exception_name_error,	    /* string integer string */
     _num_standard_exceptions
 } StandardException;
 
@@ -912,6 +913,8 @@ Value	do_File_string_read (Value);
 Value	do_File_string_string (Value);
 Value	do_File_isatty (Value);
 Value	do_File_status (Value);
+Value	do_File_unlink (Value);
+Value	do_File_rmdir (Value);
 Value	do_String_length (Value);
 Value	do_String_new (Value);
 Value	do_Primitive_random (Value);
@@ -940,6 +943,8 @@ Value	do_File_putc (Value, Value);
 Value	do_File_ungetb (Value, Value);
 Value	do_File_ungetc (Value, Value);
 Value	do_File_setbuf (Value, Value);
+Value	do_File_rename (Value, Value);
+Value	do_File_mkdir (Value, Value);
 Value	do_String_index (Value, Value);
 Value	do_setjmp (Value, Value);
 Value	do_setdims (Value, Value);

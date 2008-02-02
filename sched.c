@@ -1097,7 +1097,6 @@ TwixtMark (void *object)
     TwixtPtr	twixt = object;
 
     ContinuationMark (&twixt->continuation);
-    MemReference (twixt->leave);
 }
 
 DataType    TwixtType = { TwixtMark, 0, "TwixtType" };

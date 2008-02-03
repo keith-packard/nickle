@@ -963,9 +963,7 @@ ThreadsRun (Value thread, Value lex)
 	    if (signalInterrupt)
 	    {
 		signalInterrupt = False;
-		if (thread)
-		    ThreadSetState (thread, ThreadInterrupted);
-		(void) write (2, "<abort>\n", 8);
+		ThreadsSignal (NewInt (SIGINT));
 	    }
 	    if (signalTimer)
 	    {
@@ -985,10 +983,15 @@ ThreadsRun (Value thread, Value lex)
 	    if (lex && !(lex->file.flags & (FileInputBlocked|FileOutputBlocked)))
 		break;
 	}
-	else if (thread && !Runnable (thread))
+	else if (thread && thread->thread.state == ThreadFinished)
 	    break;
 	else if (!running)
+	{
+	    /* when all threads are done, and all input is read, time to go */
+	    if (!lex && !stopped)
+		break;
 	    ThreadsBlock ();
+	}
 	else 
 	{
 	    ENTER ();
@@ -1442,7 +1445,8 @@ ThreadsRun (Value thread, Value lex)
 		    if (signalSuspend)
 		    {
 			signalSuspend = False;
-			ThreadSetState (thread, ThreadSuspended);
+			if (thread->thread.state == ThreadRunning)
+			    ThreadSetState (thread, ThreadSuspended);
 		    }
 		    if (signalFinished)
 		    {
@@ -1458,7 +1462,6 @@ ThreadsRun (Value thread, Value lex)
 		    if (signalError)
 		    {
 			signalError = False;
-			ThreadFinish (thread, True);
 		    }
 		    if (signalProfile)
 			signalProfile = False;

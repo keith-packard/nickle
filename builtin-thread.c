@@ -24,10 +24,6 @@ import_Thread_namespace()
 {
     ENTER ();
     static const struct fbuiltin_0 funcs_0[] = {
-        { do_Thread_cont, "cont", "i", "", "\n"
-	    " int cont ()\n"
-	    "\n"
-	    " Restarts any interrupted threads.\n" },
         { do_Thread_current, "current", "t", "", "\n"
 	    " thread current ()\n"
 	    "\n"

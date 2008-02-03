@@ -743,10 +743,9 @@ typedef struct _continuation {
 } Continuation;
 
 typedef enum _ThreadState {
-    ThreadRunning = 0,
-    ThreadSuspended = 1,
-    ThreadInterrupted = 2,
-    ThreadFinished = 4
+    ThreadRunning,
+    ThreadSuspended,
+    ThreadFinished
 } ThreadState;
 
 typedef struct _thread {

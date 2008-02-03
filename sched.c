@@ -12,7 +12,6 @@
 
 Value   running;
 Value   stopped;
-int	runnable;
 Bool	signalException;
 
 extern void dumpSleep (void), dumpThreads (void);
@@ -22,14 +21,16 @@ _ThreadInsert (Value thread)
 {
     Value	*prev, t;
 
-    if (Runnable (thread))
-	++runnable;
-    if (thread->thread.state == ThreadRunning)
+    switch (thread->thread.state) {
+    case ThreadRunning:
 	prev = &running;
-    else if (thread->thread.state & ThreadFinished)
-	return;
-    else
+	break;
+    case ThreadSuspended:
 	prev = &stopped;
+	break;
+    case ThreadFinished:
+	return;
+    }
     for (; (t = *prev); prev = &t->thread.next)
 	if (t->thread.priority < thread->thread.priority)
 	    break;
@@ -42,14 +43,16 @@ _ThreadRemove (Value thread)
 {
     Value	*prev;
 
-    if (Runnable (thread))
-	--runnable;
-    if (thread->thread.state == ThreadRunning)
+    switch (thread->thread.state) {
+    case ThreadRunning:
 	prev = &running;
-    else if (thread->thread.state & ThreadFinished)
-	return;
-    else
+	break;
+    case ThreadSuspended:
 	prev = &stopped;
+	break;
+    case ThreadFinished:
+	return;
+    }
     for (; *prev != thread; prev = &(*prev)->thread.next);
     *prev = thread->thread.next;
 }
@@ -57,17 +60,12 @@ _ThreadRemove (Value thread)
 void
 ThreadSetState (Value thread, ThreadState state)
 {
-    _ThreadRemove (thread);
-    thread->thread.state |= state;
-    _ThreadInsert (thread);
-}
-
-void
-ThreadClearState (Value thread, ThreadState state)
-{
-    _ThreadRemove (thread);
-    thread->thread.state &= ~state;
-    _ThreadInsert (thread);
+    if (state != thread->thread.state)
+    {
+	_ThreadRemove (thread);
+	thread->thread.state = state;
+	_ThreadInsert (thread);
+    }
 }
 
 void
@@ -99,11 +97,11 @@ ThreadsWakeup (Value sleep, WakeKind kind)
     for (thread = stopped; thread; thread = next)
     {
 	next = thread->thread.next;
-	if ((thread->thread.state & ThreadSuspended) && 
+	if ((thread->thread.state == ThreadSuspended) && 
 	    thread->thread.sleep == sleep)
 	{
 	    thread->thread.sleep = 0;
-	    ThreadClearState (thread, ThreadSuspended);
+	    ThreadSetState (thread, ThreadRunning);
 	    if (kind == WakeOne)
 		break;
 	}
@@ -115,53 +113,12 @@ Bool	lastThreadError;
 void
 ThreadFinish (Value thread, Bool error)
 {
-    ThreadSetState (thread, ThreadFinished);
-    ThreadsWakeup (thread, WakeAll);
-    lastThreadError = error;
-}
-
-void
-ThreadsInterrupt (void)
-{
-    Value   thread, next;
-    Value   t;
-
-    if (running)
-	t = running;
-    else
-	t = stopped;
-    for (thread = stopped; thread; thread = next)
+    if (thread->thread.state != ThreadFinished)
     {
-	next = thread->thread.next;
-	if (Runnable (thread))
-	    --runnable;
-	thread->thread.state |= ThreadInterrupted;
+	ThreadSetState (thread, ThreadFinished);
+	ThreadsWakeup (thread, WakeAll);
+	lastThreadError = error;
     }
-    for (thread = running; thread; thread = next)
-    {
-	next = thread->thread.next;
-	ThreadSetState (thread, ThreadInterrupted);
-    }
-}
-
-static int
-ThreadContinue (void)
-{
-    Value   thread, next;
-    int	    n;
-
-    n = 0;
-    for (thread = stopped; thread; thread = next)
-    {
-	next = thread->thread.next;
-
-	if (thread->thread.state & ThreadInterrupted)
-	{
-	    n++;
-	    ThreadClearState (thread, ThreadInterrupted);
-	}
-    }
-    return n;
 }
 	    
 Value
@@ -175,7 +132,7 @@ do_Thread_join (Value target)
 				2, target, Void);
 	RETURN (Void);
     }
-    if ((target->thread.state & ThreadFinished) == 0)
+    if (target->thread.state != ThreadFinished)
     {
 	ThreadSleep (running, target, PrioritySync);
 	RETURN (Void);
@@ -186,18 +143,16 @@ do_Thread_join (Value target)
 static void
 ThreadListState (Value thread)
 {
-    int	state = thread->thread.state;
-    
-    if (state == ThreadRunning)
+    switch (thread->thread.state) {
+    case ThreadRunning:
 	FilePuts (FileStdout, " running");
-    else
-    {
-	if (state & ThreadSuspended)
-	    FilePuts (FileStdout, " suspended");
-	if (state & ThreadInterrupted)
-	    FilePuts (FileStdout, " interrupted");
-	if (state & ThreadFinished)
-	    FilePuts (FileStdout, " finished");
+	break;
+    case ThreadSuspended:
+	FilePuts (FileStdout, " suspended");
+	break;
+    case ThreadFinished:
+        FilePuts (FileStdout, " finished");
+	break;
     }
 }
 
@@ -293,15 +248,6 @@ do_Thread_get_priority (Value thread)
     RETURN (NewInt (thread->thread.priority));
 }
 
-Value
-do_Thread_cont (void)
-{
-    int	    n;
-    
-    n = ThreadContinue ();
-    return NewInt (n);
-}
-
 static int
 KillThread (Value thread)
 {
@@ -314,7 +260,7 @@ KillThread (Value thread)
 				2, thread, Void);
 	return 0;
     }
-    if (thread->thread.state & ThreadFinished)
+    if (thread->thread.state == ThreadFinished)
 	ret = 0;
     else
 	ret = 1;
@@ -894,8 +840,11 @@ JumpUnhandledException (Value thread)
 {
     Value   continuation = STACK_POP (thread->thread.continuation.stack);
     
+    /* make exec loop reschedule */
+    if (thread == running)
+	SetSignalError ();
     DebugStart (continuation);
-    SetSignalError ();
+    ThreadFinish (thread, True);
 }
 
 /*
@@ -1257,7 +1206,7 @@ JumpStandardException (Value thread, InstPtr *next)
 }
 
 static void
-SignalThread (Value thread, Value signal)
+SignalThread (Value thread, Value signal, Bool executing)
 {
     ENTER ();
     int		i = 1;
@@ -1265,7 +1214,7 @@ SignalThread (Value thread, Value signal)
     SymbolPtr	except = standardExceptions[exception_signal];
     
     ArrayValueSet (&args->array, 0, signal);
-    if (thread == running)
+    if (thread == running && executing)
     {
 	standardException = exception_signal;
 	standardExceptionArgs = args;
@@ -1277,10 +1226,30 @@ SignalThread (Value thread, Value signal)
 	
 	RaiseException (thread, except, args, &next);
 	thread->thread.continuation.pc = next;
-	if (thread->thread.state & ThreadSuspended) {
+	if (thread->thread.state == ThreadSuspended) {
 	    thread->thread.sleep = 0;
-	    ThreadClearState (thread, ThreadSuspended);
+	    ThreadSetState (thread, ThreadRunning);
 	}
+    }
+    EXIT ();
+}
+
+void
+ThreadsSignal (Value signal)
+{
+    ENTER ();
+    Value   thread, next;
+
+    /* do running first -- signalling makes threads run */
+    for (thread = running; thread; thread = next)
+    {
+	next = thread->thread.next;
+	SignalThread (thread, signal, False);
+    }
+    for (thread = stopped; thread; thread = next)
+    {
+	next = thread->thread.next;
+	SignalThread (thread, signal,  False);
     }
     EXIT ();
 }
@@ -1289,6 +1258,6 @@ Value
 do_Thread_signal (Value thread, Value signal)
 {
     ENTER ();
-    SignalThread (thread, signal);
+    SignalThread (thread, signal, True);
     RETURN (Void);
 }

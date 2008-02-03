@@ -598,10 +598,10 @@ void	    ThreadStepped (Value thread);
 void	    ThreadsWakeup (Value sleep, WakeKind wake);
 void	    ThreadsRun (Value thread, Value lex);
 void	    ThreadsInterrupt (void);
+void	    ThreadsSignal (Value signal);
 void	    ThreadsContinue (void);
 void	    ThreadFinish (Value thread, Bool error);
 void	    ThreadSetState (Value thread, ThreadState state);
-void	    ThreadClearState (Value thread, ThreadState state);
 void	    ThreadInit (void);
 void	    TraceFunction (Value file, FramePtr frame, CodePtr code, ExprPtr name);
 void	    TraceFrame (Value file, FramePtr frame, ObjPtr obj, InstPtr pc, int depth);
@@ -631,12 +631,9 @@ InstPtr	    JumpStart (Value thread, ContinuationPtr continuation, Value ret);
 JumpPtr	    NewJump (TwixtPtr leave, TwixtPtr enter, 
 		     TwixtPtr parent, ContinuationPtr continuation, Value ret);
 
-#define Runnable(t)    (((t)->thread.state & ~(ThreadSuspended)) == 0)
-
 extern Value	running;    /* current thread */
 extern Value	stopped;    /* stopped threads */
 extern Bool	complete;   /* must complete current inst */
-extern int	runnable;   /* number of non-broken threads */
 extern Bool	profiling;  /* profiling is active */
 
 void	    InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch);

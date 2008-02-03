@@ -107,6 +107,8 @@ main (int argc, char **argv)
 	exit(1);
     }
     (void) yyparse ();
+    /* Wait for any running threads to execute */
+    ThreadsRun (0, 0);
     IoFini ();
     FileFini ();
     return lastThreadError;

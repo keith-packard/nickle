@@ -120,7 +120,8 @@ static Bool
 _sleepDone (void *closure)
 {
     Value   thread = closure;
-    ThreadClearState (thread, ThreadSuspended);
+    if (thread->thread.state == ThreadSuspended)
+	ThreadSetState (thread, ThreadRunning);
     return False;
 }
 

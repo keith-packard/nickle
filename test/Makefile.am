@@ -6,6 +6,7 @@ check_SCRIPTS=gcdtest.5c \
 	reftest.5c \
 	modtest.5c \
 	hashtest.5c \
+	signal.5c \
 	round.5c
 
 TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir) ../nickle

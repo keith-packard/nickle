@@ -29,6 +29,7 @@ _ThreadInsert (Value thread)
 	prev = &stopped;
 	break;
     case ThreadFinished:
+    default:
 	return;
     }
     for (; (t = *prev); prev = &t->thread.next)
@@ -51,6 +52,7 @@ _ThreadRemove (Value thread)
 	prev = &stopped;
 	break;
     case ThreadFinished:
+    default:
 	return;
     }
     for (; *prev != thread; prev = &(*prev)->thread.next);
@@ -1225,6 +1227,7 @@ SignalThread (Value thread, Value signal, Bool executing)
 	InstPtr	next;
 	
 	RaiseException (thread, except, args, &next);
+	thread->thread.continuation.value = args;
 	thread->thread.continuation.pc = next;
 	if (thread->thread.state == ThreadSuspended) {
 	    thread->thread.sleep = 0;

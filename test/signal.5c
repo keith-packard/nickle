@@ -1,0 +1,20 @@
+int done = 0;
+
+void child () {
+    try {
+	while (true)
+	    sleep (100);
+    } catch Thread::signal (int i) {
+	done = i;
+    }
+}
+
+void check () {
+    thread t = fork child();
+    sleep (100);
+    Thread::send_signal (t, 12);
+    sleep (100);
+    assert (done == 12, "signal not delivered");
+}
+
+check ();

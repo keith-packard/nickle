@@ -761,6 +761,7 @@ typedef enum _standardException {
     exception_io_error,		    /* string integer file */
     exception_name_error,	    /* string integer string */
     exception_signal,		    /* integer */
+    exception_system_error,	    /* string integer poly */
     _num_standard_exceptions
 } StandardException;
 

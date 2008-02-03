@@ -329,6 +329,7 @@ BuiltinInit (void)
     import_Environ_namespace();
     import_Socket_namespace();
     import_Foreign_namespace ();
+    import_Process_namespace ();
 
     /* Import builtin strings with predefined values */
     BuiltinStrings (svars);

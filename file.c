@@ -653,6 +653,7 @@ FileCreate (int fd, int flags)
 	file->file.flags |= FileIsPipe;
     if (fd >= 3)
 	FileSetFd (fd);
+    file->file.sock_family = 0;
     RETURN (file);
 }
 

@@ -645,6 +645,7 @@ typedef struct _file {
     int		    error;
     FileChainPtr    input;
     FileChainPtr    output;
+    int		    sock_family;
 } File;
 
 #define FileBufferSize	4096

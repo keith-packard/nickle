@@ -179,13 +179,20 @@ do_Command_pretty_print (int argc, Value *args)
     int		    i;
 
     f = args[0];
+    if (argc == 1) {
+	PrettyPrint (f, publish_public, 0);
+	RETURN (Void);
+    }
     for (i = 1; i < argc; i++)
     {
 	names = args[i];
 	if (NamespaceLocate (names, &namespace, &symbol, &publish, True))
 	    PrettyPrint (f, publish, symbol);
 	else
-	    PrettyPrint (f, publish_public, 0);
+	    RaiseStandardException (exception_invalid_argument,
+				    "name not found",
+				    2, 
+				    NewInt (i), names);
     }
     RETURN (Void);
 }

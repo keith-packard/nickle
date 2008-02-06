@@ -76,12 +76,32 @@ extend namespace Command {
     }
     new ("history", do_history);
 
-    void do_pretty_print (string[*] names...)
+    string format_name(string[*] name)
 	/*
-	 * print name	- pretty print name
+	 * given an array of namespace component strings,
+	 * produce a namespace-name
 	 */
     {
-	pretty_print (stdout, names ...);
+	if (dim(name) == 0)
+	    return "";
+	string result = name[0];
+	for (int i = 1; i < dim(name); i++)
+	    result += sprintf("::%s", name[i]);
+	return result;
+    }
+
+    void do_pretty_print (string[*] names...)
+	/*
+	 * print		- pretty print all public names
+	 * print name ...	- pretty print given names
+	 */
+    {
+	try {
+	    pretty_print (stdout, names ...);
+	} catch invalid_argument(string msg, int i, poly value) {
+	    File::fprintf (stderr, "\"%s\": %s\n",
+			   format_name(names[i - 1]), msg);
+	}
     }
 
     new_names ("print", do_pretty_print);
@@ -142,15 +162,7 @@ extend namespace Command {
 	 * and then lexing it.
 	 */
     {
-	file	f = File::string_write ();
-	File::fprintf (f, "import ");
-	for (int i = 0; i < dim (name); i++) {
-	    if (i != 0)
-		File::fprintf (f, "::");
-	    File::fprintf (f, "%s", name[i]);
-	}
-	File::fprintf (f, ";\n");
-	string imp = File::string_string (f);
+	string imp = sprintf("import %s;\n", format_name(name));
 	lex_string(imp);
     }
 

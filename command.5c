@@ -41,13 +41,11 @@ extend namespace Command {
      * Now add a collection of useful commands
      */
 
-    /*
-     * quit
-     *
-     * quit	    - exit with code 0
-     * quit N	    - exit with code N
-     */
     void do_quit (int args...)
+	/*
+	 * quit	    - exit with code 0
+	 * quit N   - exit with code N
+	 */
     {
 	int	code = 0;
 	
@@ -57,14 +55,12 @@ extend namespace Command {
     }
     new ("quit", do_quit);
 
-    /*
-     * history
-     *
-     * history	    - show some recent history
-     * history N    - show N recent history
-     * history N,M  - show history from N to M
-     */
     void do_history (int args...)
+	/*
+	 * history	- show some recent history
+	 * history N    - show N recent history
+	 * history N,M  - show history from N to M
+	 */
     {
 	switch (dim (args)) {
 	case 0:
@@ -80,12 +76,10 @@ extend namespace Command {
     }
     new ("history", do_history);
 
-    /*
-     * print
-     *
-     * print name	- pretty print name
-     */
     void do_pretty_print (string[*] names...)
+	/*
+	 * print name	- pretty print name
+	 */
     {
 	pretty_print (stdout, names ...);
     }
@@ -96,12 +90,10 @@ extend namespace Command {
 
     new_names ("undefine", undefine);
 
-    /*
-     * load
-     *
-     * load "filename"	- read commands from "filename"
-     */
     void do_load (string f)
+	/*
+	 * load "filename"	- read commands from "filename"
+	 */
     {
 	try {
 	    lex_file (f);
@@ -116,60 +108,69 @@ extend namespace Command {
     new ("load", do_load);
 
 
-    /*
-     * core behavior for autoload and autoimport
-     */
+    string make_filename(string[*] m)
+	/*
+	 * construct a filename from a namespace name
+	 */
+    {
+	string r = "";
+	for (int j = 0; j < dim (m); j++) {
+	    if (j > 0)
+		r = r + "-";
+	    bool last_lower = false;
+	    for (int i = 0; i < String::length(m[j]); i++)
+	    {
+		int c = m[j][i];
+		bool cur_lower = Ctype::islower(c);
+		if (Ctype::isupper(c))
+		{
+		    c = Ctype::tolower(c);
+		    if (last_lower)
+			r = r + "-";
+		}
+		r = r + String::new(c);
+		last_lower = cur_lower;
+	    }
+	}
+	return r + ".5c";
+    }
+
+    void force_import(string[*] name)
+	/*
+	 * force an import of the given name.  XXX horrible
+	 * kludge of consing up an import command in a string
+	 * and then lexing it.
+	 */
+    {
+	file	f = File::string_write ();
+	File::fprintf (f, "import ");
+	for (int i = 0; i < dim (name); i++) {
+	    if (i != 0)
+		File::fprintf (f, "::");
+	    File::fprintf (f, "%s", name[i]);
+	}
+	File::fprintf (f, ";\n");
+	string imp = File::string_string (f);
+	lex_string(imp);
+    }
 
     void do_auto (string[*][*] args, bool do_import)
+	/*
+	 * core behavior for autoload and autoimport
+	 */
     {
 	string autotype = "autoload";
 	if (do_import)
 	    autotype = "autoimport";
 
-	string make_filename(string[*] m)
-	{
-	    string r = "";
-	    for (int j = 0; j < dim (m); j++) {
-		if (j > 0)
-		    r = r + "-";
-		bool last_lower = false;
-		for (int i = 0; i < String::length(m[j]); i++)
-		{
-		    int c = m[j][i];
-		    bool cur_lower = Ctype::islower(c);
-		    if (Ctype::isupper(c))
-		    {
-			c = Ctype::tolower(c);
-			if (last_lower)
-			    r = r + "-";
-		    }
-		    r = r + String::new(c);
-		    last_lower = cur_lower;
-		}
-	    }
-	    return r + ".5c";
-	}
-	
-	void import_if_needed(string[*] name)
-	{
-	    if (do_import)
-	    {
-		file	f = File::string_write ();
-		File::fprintf (f, "import ");
-		for (int i = 0; i < dim (name); i++) {
-		    if (i != 0)
-			File::fprintf (f, "::");
-		    File::fprintf (f, "%s", name[i]);
-		}
-		File::fprintf (f, ";\n");
-		string imp = File::string_string (f);
-		lex_string(imp);
-	    }
-	}
-
+	/* XXX things are pushed onto the lexer stack
+	   in reverse order, so we have to be careful
+	   to generate things in the reverse of the order
+	   we want them to appear in. */
 	for (int i = 0; i < dim(args); i++) {
 	    string[*]	name = args[i];
-	    import_if_needed(name);
+	    if (do_import)
+		force_import(name);
 
 	    if (valid_name (name))
 		continue;
@@ -194,42 +195,36 @@ extend namespace Command {
 	}
     }
 
-    /*
-     * autoimport
-     *
-     * autoimport ModuleName ...	-
-     *    load a library named "module-name.5c" and
-     *    import ModuleName; do for each argument
-     */
 
     void do_autoimport (string[*] args...)
+	/*
+	 * autoimport ModuleName ...	-
+	 *    load a library named "module-name.5c" and
+	 *    import ModuleName; do for each argument
+	 */
     {
 	do_auto(args, true);
     }
 
     new_names ("autoimport", do_autoimport);
 
-    /*
-     * autoload
-     *
-     * autoload ModuleName ...	-
-     *    load a library named "module-name.5c".
-     */
 
     void do_autoload (string[*] args...)
+	/*
+	 * autoload ModuleName ...	-
+	 *    load a library named "module-name.5c".
+	 */
     {
 	do_auto(args, false);
     }
 
     new_names ("autoload", do_autoload);
 
-    /*
-     * char
-     *
-     * char c1 c2 c3	    - Print characters for given integers
-     */
 
     void do_char (int c ...)
+	/*
+	 * char c1 c2 c3	    - Print characters for given integers
+	 */
     {
 	for (int i = 0; i < dim (c); i++)
 	    printf ("%3d 0x%02x: %v\n", 
@@ -239,6 +234,9 @@ extend namespace Command {
     new ("char", do_char);
 
     void process_args(&string[*] argv)
+	/*
+	 * parse nickle command-line arguments
+	 */
     {
 	bool lex_stdin = true;
 	string script_name = "";

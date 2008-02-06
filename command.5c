@@ -154,15 +154,12 @@ extend namespace Command {
 	lex_string(imp);
     }
 
-    void do_auto (string[*][*] args, bool do_import)
+    void do_auto (string cmd, string[*][*] args,
+		  bool do_import, bool reimport)
 	/*
-	 * core behavior for autoload and autoimport
+	 * core behavior for autoload / autoimport / reimport
 	 */
     {
-	string autotype = "autoload";
-	if (do_import)
-	    autotype = "autoimport";
-
 	/* XXX things are pushed onto the lexer stack
 	   in reverse order, so we have to be careful
 	   to generate things in the reverse of the order
@@ -172,21 +169,21 @@ extend namespace Command {
 	    if (do_import)
 		force_import(name);
 
-	    if (valid_name (name))
+	    if (!reimport && valid_name (name))
 		continue;
 
 	    for (int j = dim(name) - 1; j >= 0; j--)
 	    {
 		string[*] subname = (string[j+1]) { [k] = name[k] };
-		if (!valid_name (subname))
+		if (reimport || !valid_name (subname))
 		{
 		    string f = make_filename(subname);
 		    if (!lex_library (f)) 
 		    {
 			File::fprintf (stderr,
-				       "Cannot load \"%s\" " +
+				       "Cannot %s from " +
 				       "file \"%s\", giving up.\n",
-				       autotype,
+				       cmd,
 				       f);
 			return;
 		    }
@@ -199,14 +196,27 @@ extend namespace Command {
     void do_autoimport (string[*] args...)
 	/*
 	 * autoimport ModuleName ...	-
+	 *    if needed, load a library named "module-name.5c" and
+	 *    import ModuleName; do for each argument
+	 */
+    {
+	do_auto("autoimport", args, true, false);
+    }
+
+    new_names ("autoimport", do_autoimport);
+
+
+    void do_reimport (string[*] args...)
+	/*
+	 * reimport ModuleName ...	-
 	 *    load a library named "module-name.5c" and
 	 *    import ModuleName; do for each argument
 	 */
     {
-	do_auto(args, true);
+	do_auto("reimport", args, true, true);
     }
 
-    new_names ("autoimport", do_autoimport);
+    new_names ("reimport", do_reimport);
 
 
     void do_autoload (string[*] args...)
@@ -215,7 +225,7 @@ extend namespace Command {
 	 *    load a library named "module-name.5c".
 	 */
     {
-	do_auto(args, false);
+	do_auto("autoload", args, false, false);
     }
 
     new_names ("autoload", do_autoload);

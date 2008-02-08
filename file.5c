@@ -42,13 +42,13 @@ extend namespace File {
 	public int getchar ()
 	    /* return getc (stdin); */
 	{
-	    return File::getc (stdin);
+	    return getc (stdin);
 	}
 
 	public void ungetchar (int ch)
 	    /* ungetc (ch, stdin); */
 	{
-	    File::ungetc (ch, stdin);
+	    ungetc (ch, stdin);
 	}
 
 	public void putchar (int c)
@@ -60,13 +60,13 @@ extend namespace File {
 	public int getbyte ()
 	    /* return getb (stdin) */
 	{
-	    return File::getb (stdin);
+	    return getb (stdin);
 	}
 
 	public void putbyte (int b)
 	    /* putb (b, stdout) */
 	{
-	    File::putb (b, stdout);
+	    putb (b, stdout);
 	}
 
 	public string fgets (file f)
@@ -79,17 +79,17 @@ extend namespace File {
 	    int	c;
 
 	    s = "";
-	    for (;;)
+	    while (!end(f))
 	    {
 		c = getc (f);
 		switch (c) {
 		case '\n':
-		case -1:
 		    return s;
 		default:
 		    s = s + String::new (c);
 		}
 	    }
+	    return s;
 	}
 
 	public string gets ()

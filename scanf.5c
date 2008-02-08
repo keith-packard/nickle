@@ -12,9 +12,11 @@ extend namespace File {
 	{
 	    int c;
 
-	    while (Ctype::isspace (c = File::getc (f)))
-		;
-	    File::ungetc (c, f);
+	    while (!end (f))
+		if (!Ctype::isspace (c = getc (f))) {
+		    ungetc (c, f);
+		    break;
+		}
 	}
 
 	bool isbinary (int c)
@@ -76,13 +78,16 @@ extend namespace File {
 	int integer (bool(int c) test, int base)
 	{
 	    int	    c;
-	    string  s;
+	    string  s = "";
 
 	    whitespace();
-	    s = "";
-	    while (test (c = File::getc (f)))
+	    while (!end (f)) {
+		if (!test (c = getc (f))) {
+		    ungetc (c, f);
+		    break;
+		}
 		s = s + String::new(c);
-	    File::ungetc (c, f);
+	    }
 	    return string_to_integer (s, base);
 	}
 
@@ -90,29 +95,27 @@ extend namespace File {
 	real number (bool(int c) test)
 	{
 	    int	    c;
-	    string  s;
+	    string  s = "";
 
 	    whitespace();
-	    s = "";
-	    while (test (c = File::getc (f)))
+	    while (!end (f)) {
+		if (!test (c = getc (f))) {
+		    ungetc (c, f);
+		    break;
+		}
 		s = s + String::new(c);
-	    File::ungetc (c, f);
+	    }
 	    return string_to_real (s);
 	}
 
 	string word ()
 	{
-	    int	    c;
-	    string  s;
-
 	    whitespace();
-	    s = "";
-	    while (!File::end (f)) 
-	    {
-		c = File::getc(f);
-		if (!Ctype::isgraph (c))
-		{
-		    File::ungetc (c, f);
+	    string  s = "";
+	    while (!end (f)) {
+		int c = getc(f);
+		if (!Ctype::isgraph (c)) {
+		    ungetc (c, f);
 		    break;
 		}
 		s = s + String::new(c);
@@ -124,7 +127,7 @@ extend namespace File {
 	int	argc = 0;
 	int	c;
 
-	while (i < String::length (format) && !File::end(f) && !File::error(f))
+	while (i < String::length (format) && !end(f) && !error(f))
 	{
 	    switch (format[i]) {
 	    case ' ':
@@ -152,25 +155,28 @@ extend namespace File {
 		    *args[argc++] = number(isfloat);
 		    break;
 		case 'c':
-		    *args[argc++] = File::getc(f);
+		    *args[argc++] = getc(f);
 		    break;
 		case 's':
 		    *args[argc++] = word();
 		    break;
 		default:
-		    c = File::getc(f);
-		    if (c != format[i])
-		    {
-			File::ungetc (c, f);
+		    if (end (f))
+			return argc;
+		    c = getc(f);
+		    if (c != format[i]) {
+			ungetc (c, f);
 			return argc;
 		    }
+		    break;
 		}
 		break;
 	    default:
-		c = File::getc(f);
-		if (c != format[i])
-		{
-		    File::ungetc (c, f);
+		if (end (f))
+		    return argc;
+		c = getc(f);
+		if (c != format[i]) {
+		    ungetc (c, f);
 		    return argc;
 		}
 		break;
@@ -198,7 +204,7 @@ extend namespace File {
 	     * According to 'format', read from stdin to 'args'
 	     */
 	{
-	    return File::fscanf (stdin, format, args ...);
+	    return fscanf (stdin, format, args ...);
 	}
 
     }

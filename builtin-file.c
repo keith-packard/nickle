@@ -515,6 +515,9 @@ do_File_getc (Value f)
 				    FileGetErrorMessage (f->file.input_errno),
 				    FileGetError (f->file.input_errno), f);
 	    RETURN (Void);
+	case FileEOF:
+	    RaiseStandardException (exception_io_eof, 1, f);
+	    RETURN (Void);
 	default:
 	    complete = True;
 	    RETURN (NewInt (c));

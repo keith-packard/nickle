@@ -129,9 +129,9 @@ do_Thread_join (Value target)
     ENTER ();
     if (!ValueIsThread(target))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"Thread::join needs thread argument",
-				2, target, Void);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("join needs thread argument"),
+				target, Void);
 	RETURN (Void);
     }
     if (target->thread.state != ThreadFinished)
@@ -219,9 +219,9 @@ do_Thread_set_priority (Value thread, Value priority)
     int	    i;
     if (!ValueIsThread(thread))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"Thread::set_priority: not a thread",
-				2, thread, priority);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("set_priority: not a thread"),
+				thread, priority);
 	RETURN (Void);
     }
     i = IntPart (priority, "Invalid thread priority");
@@ -242,9 +242,9 @@ do_Thread_get_priority (Value thread)
     ENTER ();
     if (!ValueIsThread(thread))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"Thread::get_priority: not a thread",
-				2, thread, Void);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("get_priority: not a thread"),
+				thread, Void);
 	RETURN (Void);
     }
     RETURN (NewInt (thread->thread.priority));
@@ -257,9 +257,9 @@ KillThread (Value thread)
     
     if (!ValueIsThread(thread))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"Thread::kill: not a thread",
-				2, thread, Void);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("kill: not a thread"),
+				thread, Void);
 	return 0;
     }
     if (thread->thread.state == ThreadFinished)
@@ -281,9 +281,9 @@ do_Thread_kill (int n, Value *p)
     {
 	thread = lookupVar (0, "thread");
 	if (!ValueIsThread(thread))
-	    RaiseStandardException (exception_invalid_argument,
-				    "Thread::kill: no default thread",
-				    2, thread, Void);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("kill: no default thread"),
+				    thread, Void);
 	else
 	    ret = KillThread (thread);
     }
@@ -378,13 +378,13 @@ do_Thread_trace (int n, Value *p)
 	break;
     default:
 	if (n == 0)
-	    RaiseStandardException (exception_invalid_argument, 
-				    "Thread::trace: no default continuation",
-				    1, Zero);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("trace: no default continuation"),
+				    NewInt (0), Void);
 	else
-	    RaiseStandardException (exception_invalid_argument, 
-				    "Thread::trace: neither continuation nor thread",
-				    1, v);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("Thread::trace: neither continuation nor thread"),
+				    NewInt (0), v);
 	RETURN (Void);
     }
     TraceFrame (FileStdout, frame, obj, pc, depth);
@@ -983,9 +983,9 @@ do_setjmp (Value continuation_ref, Value ret)
     
     if (!ValueIsRef(continuation_ref))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"setjump: not a reference",
-				1, continuation_ref);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("setjump: not a reference"),
+				NewInt (0), continuation_ref);
 	RETURN (Void);
     }
     continuation = NewContinuation (&running->thread.continuation,
@@ -1010,9 +1010,9 @@ do_longjmp (InstPtr *next, Value continuation, Value ret)
 	RETURN (Void);
     if (!ValueIsContinuation(continuation))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"longjmp: non-continuation argument",
-				1, continuation);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("longjmp: non-continuation argument"),
+				NewInt (0), continuation);
 	RETURN (Void);
     }
     RETURN (ContinuationJump (running, &continuation->continuation, ret, next));
@@ -1171,7 +1171,6 @@ CheckStandardException (void)
 
 void
 RaiseStandardException (StandardException   se,
-			char		    *string,
 			int		    argc,
 			...)
 {
@@ -1181,11 +1180,10 @@ RaiseStandardException (StandardException   se,
     va_list	va;
     
     va_start (va, argc);
-    i = argc + 1;
+    i = argc;
     args = NewArray (False, False, typePoly, 1, &i);
-    ArrayValueSet (&args->array, 0, NewStrString (string));
     for (i = 0; i < argc; i++)
-	ArrayValueSet (&args->array, i + 1, va_arg (va, Value));
+	ArrayValueSet (&args->array, i, va_arg (va, Value));
     standardException = se;
     standardExceptionArgs = args;
     SetSignalException ();

@@ -348,8 +348,7 @@ HashGet (Value hv, Value key)
     {
 	if (!ht->def)
 	{
-	    RaiseStandardException (exception_uninitialized_value,
-				    "uninitialized hash element", 0);
+	    RaiseStandardException (exception_uninitialized_value, 0);
 	    return (Void);
 	}
 	if (ht->count >= ht->hashSet->entries && 
@@ -365,8 +364,7 @@ HashGet (Value hv, Value key)
     value = HashEltValue (he);
     if (!value)
     {
-	RaiseStandardException (exception_uninitialized_value,
-				"uninitialized hash element", 0);
+	RaiseStandardException (exception_uninitialized_value, 0);
 	return (Void);
     }
     return value;

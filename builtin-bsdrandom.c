@@ -45,14 +45,13 @@ do_BSD_random (Value bits)
     Value ret = Zero;
 
     if (n > 31)
-	RaiseStandardException (exception_invalid_argument,
-				"random: modulus exceeds 2^31",
-				2, 
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("random: modulus exceeds 2^31"),
 				NewInt (0), bits);
     else if (n <= 0)
-	RaiseStandardException (exception_invalid_argument,
-				"random: bad modulus",
-				1, NewInt (0), bits);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("random: bad modulus"),
+				NewInt (0), bits);
     else
 	ret = NewInt (random () & ((1 << n) - 1));
     RETURN (ret);

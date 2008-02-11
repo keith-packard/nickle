@@ -35,9 +35,8 @@ RefPlus (Value av, Value bv, int expandOk)
     if (i < 0 || i >= ref->box->nvalues ||
 	(!ref->box->homogeneous && i != ref->element))
     {
-	RaiseStandardException (exception_invalid_array_bounds,
-				"Element out of range in reference addition",
-				2, av, bv);
+	RaiseStandardException (exception_invalid_array_bounds, 2,
+				av, bv);
 	RETURN (Void);
     }
     RETURN (NewRef (ref->box, i));
@@ -73,9 +72,8 @@ RefMinus (Value av, Value bv, int expandOk)
 	bref = &bv->ref;
 	if (ref->box != bref->box)
 	{
-	    RaiseStandardException (exception_invalid_binop_values,
-				    "References to different objects are unordered",
-				    2, av, bv);
+	    RaiseStandardException (exception_invalid_binop_values, 2,
+				    av, bv);
 	    RETURN (Void);
 	}
 	RETURN (NewInt (ref->element - bref->element));
@@ -83,9 +81,8 @@ RefMinus (Value av, Value bv, int expandOk)
     i = i + element;
     if (i < 0 || i >= ref->box->nvalues || (!ref->box->homogeneous && i != ref->element))
     {
-	RaiseStandardException (exception_invalid_array_bounds,
-				"Element out of range in reference subtraction",
-				2, av, bv);
+	RaiseStandardException (exception_invalid_array_bounds, 2,
+				av, bv);
 	RETURN (Void);
     }
     RETURN (NewRef (ref->box, i));
@@ -99,9 +96,8 @@ RefLess (Value av, Value bv, int expandOk)
     if (aref->box != bref->box || 
 	(!aref->box->homogeneous && aref->element != bref->element))
     {
-	RaiseStandardException (exception_invalid_binop_values,
-				"References to different objects are unordered",
-				2, av, bv);
+	RaiseStandardException (exception_invalid_binop_values, 2,
+				av, bv);
 	return FalseVal;
     }
     if (aref->element < bref->element)

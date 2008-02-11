@@ -379,9 +379,8 @@ FloatDivide (Value av, Value bv, int expandOk)
 
     if (FpartZero (b->mant))
     {
-	RaiseStandardException (exception_divide_by_zero,
-				"real divide by zero",
-				2, av, bv);
+	RaiseStandardException (exception_divide_by_zero, 2,
+				av, bv);
 	RETURN (Void);
     }
     DebugF ("Dividend ", a);
@@ -511,10 +510,7 @@ FloatInteger (Value av)
     }
     else
     {
-	RaiseStandardException (exception_invalid_unop_value,
-				"ambiguous conversion to int",
-				1,
-				av);
+	RaiseStandardException (exception_invalid_unop_value, 1, av);
     }
     RETURN (av);
 }
@@ -1162,8 +1158,9 @@ DoublePart (Value av, char *error)
     av = NewValueFloat (av, 64);
     if (!ValueIsFloat (av))
     {
-	RaiseStandardException (exception_invalid_argument, error, 
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString (error), 
+				NewInt (0), av);
 	return 0.0;
     }
     if (NaturalLess (av->floats.exp->mag, max_int_natural))
@@ -1175,8 +1172,9 @@ DoublePart (Value av, char *error)
 	if (av->floats.exp->sign == Negative)
 	    return 0.0;
 	
-	RaiseStandardException (exception_invalid_argument, error,
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString (error),
+				NewInt (0), av);
 	return 0.0;
     }
     if (av->floats.exp->sign == Negative)

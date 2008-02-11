@@ -749,19 +749,20 @@ extern Value    yyinput;
 /* Standard exceptions */
 typedef enum _standardException {
     exception_none,
-    exception_uninitialized_value,  /* string */
+    exception_uninitialized_value,  /* */
     exception_invalid_argument,	    /* string integer poly */
-    exception_readonly_box,	    /* string poly */
-    exception_invalid_array_bounds, /* string poly poly */
-    exception_divide_by_zero,	    /* string number number */
-    exception_invalid_struct_member,/* string poly string */
-    exception_invalid_binop_values, /* string poly poly */
-    exception_invalid_unop_value,   /* string poly */
+    exception_readonly_box,	    /* poly */
+    exception_invalid_array_bounds, /* poly poly */
+    exception_divide_by_zero,	    /* number number */
+    exception_invalid_struct_member,/* poly string */
+    exception_invalid_binop_values, /* poly poly */
+    exception_invalid_unop_value,   /* poly */
     exception_open_error,	    /* string integer string */
     exception_io_error,		    /* string integer file */
     exception_name_error,	    /* string integer string */
     exception_signal,		    /* integer */
     exception_system_error,	    /* string integer poly */
+    exception_io_eof,		    /* file */
     _num_standard_exceptions
 } StandardException;
 
@@ -774,7 +775,6 @@ RegisterStandardException (StandardException	se,
 
 void
 RaiseStandardException (StandardException   se,
-			char		    *string,
 			int		    argc,
 			...);
 
@@ -810,8 +810,7 @@ BoxValue (BoxPtr box, int e)
     Value   v = BoxElements(box)[e];
     if (!v)
     {
-	RaiseStandardException (exception_uninitialized_value,
-				"Uninitialized value", 0);
+	RaiseStandardException (exception_uninitialized_value, 0);
 	return (Void);
     }
     return v;
@@ -822,9 +821,8 @@ Dereference (Value v)
 {
     if (!ValueIsRef(v))
     {
-	RaiseStandardException (exception_invalid_unop_value,
-				"Not a reference",
-				1, v);
+	RaiseStandardException (exception_invalid_unop_value, 1,
+				v);
 	return Void;
     }
     return REFERENCE (RefValue (v));

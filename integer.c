@@ -113,9 +113,8 @@ IntegerDivide (Value av, Value bv, int expandOk)
     
     if (NaturalZero (IMag(b)))
     {
-	RaiseStandardException (exception_divide_by_zero,
-				"integer divide by zero",
-				2, av, bv);
+	RaiseStandardException (exception_divide_by_zero, 2,
+				av, bv);
 	RETURN (Void);
     }
     sign = Positive;
@@ -137,9 +136,8 @@ IntegerDiv (Value av, Value bv, int expandOk)
     
     if  (NaturalZero (IMag(b)))
     {
-	RaiseStandardException (exception_divide_by_zero,
-				"integer div by zero",
-				2, av, bv);
+	RaiseStandardException (exception_divide_by_zero, 2,
+				av, bv);
 	RETURN (Void);
     }
     quo = NaturalDivide (IMag(a), IMag(b), &rem);
@@ -160,9 +158,8 @@ IntegerMod (Value av, Value bv, int expandOk)
     
     if  (NaturalZero (IMag(b)))
     {
-	RaiseStandardException (exception_divide_by_zero,
-				"integer modulus by zero",
-				2, av, bv);
+	RaiseStandardException (exception_divide_by_zero, 2,
+				av, bv);
 	RETURN (Void);
     }
     quo = NaturalDivide (IMag(a), IMag(b), &rem);

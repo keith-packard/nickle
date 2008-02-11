@@ -24,13 +24,6 @@
 #include	"builtin.h"
 #include	<errno.h>
 
-#define perror(s) FilePrintf(FileStderr, s ": %s\n", FileGetErrorMessage(errno))
-#ifdef HAVE_HSTRERROR
-#define herror(s) FilePrintf(FileStderr, s ": %s\n", hstrerror(h_errno))
-#else
-#define herror(s) FilePrintf(FileStderr, s ": network error %d\n", h_errno);
-#endif
-
 NamespacePtr SocketNamespace;
 Type	     *typeSockaddr;
 
@@ -294,7 +287,6 @@ static Bool address_lookup_af_inet (int num, Value *args,
     hostent = gethostbyname (hostchars);
     if (hostent == 0)
     {
-	herror ("address_lookup");
 	return False; /* FIXME: more here? */
     }
 
@@ -371,9 +363,9 @@ do_Socket_connect (int num, Value *args)
 	    }
 	    else
 	    {
-		RaiseStandardException (exception_io_error,
+		RaiseStandardException (exception_io_error, 3,
 					FileGetErrorMessage (err),
-					2, FileGetError (err),
+					FileGetError (err),
 					s);
 		RETURN (Void);
 	    }
@@ -412,9 +404,9 @@ do_Socket_bind (int num, Value *args)
 #endif
     if (bind (s->file.fd, &addr.addr, len) == -1)
     {
-	RaiseStandardException (exception_io_error,
+	RaiseStandardException (exception_io_error, 3,
 				FileGetErrorMessage (errno),
-				2, FileGetError (errno),
+				FileGetError (errno),
 				s);
 	RETURN (Void);
     }
@@ -463,9 +455,9 @@ do_Socket_accept (Value s)
 	}
 	else
 	{
-	    RaiseStandardException (exception_io_error,
+	    RaiseStandardException (exception_io_error, 3,
 				    FileGetErrorMessage (err),
-				    2, FileGetError (err),
+				    FileGetError (err),
 				    s);
 	    RETURN (Void);
 	}
@@ -510,9 +502,9 @@ do_Socket_gethostname (void)
 
     if (gethostname (hostname, sizeof (hostname)) == -1)
     {
-	RaiseStandardException (exception_io_error,
+	RaiseStandardException (exception_io_error, 3,
 				FileGetErrorMessage (errno),
-				2, FileGetError (errno),
+				FileGetError (errno),
 				Void);
 	RETURN (Void);
     }
@@ -532,9 +524,9 @@ do_Socket_getsockname (Value s)
 
     if (getsockname (s->file.fd, (struct sockaddr *) &addr, &len) == -1)
     {
-	RaiseStandardException (exception_io_error,
+	RaiseStandardException (exception_io_error, 3,
 				FileGetErrorMessage (errno),
-				2, FileGetError (errno),
+				FileGetError (errno),
 				s);
 	RETURN (Void);
     }

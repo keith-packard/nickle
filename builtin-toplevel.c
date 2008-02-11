@@ -278,9 +278,8 @@ do_string_to_integer (int n, Value *p)
 	base = p[1];
 	break;
     default:
-	RaiseStandardException (exception_invalid_argument,
-				"string_to_integer: wrong number of arguments",
-				2,
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("string_to_integer: wrong number of arguments"),
 				NewInt (2),
 				NewInt (n));
 	RETURN(Void);
@@ -361,9 +360,9 @@ do_imprecise (int n, Value *p)
 	prec = IntPart (p[1], "imprecise: invalid precision");
 	if (prec <= 0)
 	{
-	    RaiseStandardException (exception_invalid_argument,
-				    "imprecise: precision must be positive",
-				    2, NewInt(0), p[1]);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("imprecise: precision must be positive"),
+				    NewInt(0), p[1]);
 	    RETURN(v);
 	}
     }
@@ -398,9 +397,9 @@ do_func_args (Value a)
     ENTER ();
     if (!ValueIsFunc (a))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"func_args: argument must be function",
-				2, NewInt (0), a);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("func_args: argument must be function"),
+				NewInt (0), a);
 	RETURN (Void);
     }
     RETURN (NewInt (a->func.code->base.argc));
@@ -434,9 +433,9 @@ do_dim(Value av)
     Value ret;
     if (av->array.ndim != 1)
     {
-	RaiseStandardException (exception_invalid_argument,
-				"dim: argument must be one-dimensional array",
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("dim: argument must be one-dimensional array"),
+				NewInt (0), av);
 	RETURN (Void);
     }
     ret = NewInt(ArrayLimits(&av->array)[0]);
@@ -472,16 +471,16 @@ do_setdims (Value av, Value dv)
 
     if (a->ndim != ArrayNvalues(d))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"setdims: size of dimensions must match dimensionality of array",
-				2, NewInt (a->ndim), dv);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("setdims: size of dimensions must match dimensionality of array"),
+				NewInt (a->ndim), dv);
 	RETURN (Void);
     }
     if (!av->array.resizable)
     {
-	RaiseStandardException (exception_invalid_argument,
-				"setdims: array must be resizable",
-				1, av, Void);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("setdims: array must be resizable"),
+				av, Void);
 	RETURN (Void);
     }
     for (i = 0; i < a->ndim; i++)
@@ -492,9 +491,9 @@ do_setdims (Value av, Value dv)
 	    RETURN (Void);
 	if (dims[j] < 0)
 	{
-	    RaiseStandardException (exception_invalid_argument,
-				    "setdims: dimensions must be non-negative",
-				    2, NewInt (i), NewInt (dims[j]));
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("setdims: dimensions must be non-negative"),
+				    NewInt (i), NewInt (dims[j]));
 	    RETURN (Void);
 	}
     }
@@ -511,16 +510,16 @@ do_setdim (Value av, Value dv)
 	RETURN (Void);
     if (d < 0)
     {
-	RaiseStandardException (exception_invalid_argument,
-				"setdim: dimension must be non-negative",
-				2, dv, Void);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("setdim: dimension must be non-negative"),
+				dv, Void);
 	RETURN (Void);
     }
     if (!av->array.resizable)
     {
-	RaiseStandardException (exception_invalid_argument,
-				"setdim: array must be resizable",
-				1, av, Void);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("setdim: array must be resizable"),
+				av, Void);
 	RETURN (Void);
     }
     ArrayResize (av, 0, d);
@@ -573,9 +572,9 @@ do_exponent (Value av)
 
     if (!ValueIsFloat(av))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"exponent: argument must be imprecise",
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("exponent: argument must be imprecise"),
+				NewInt (0), av);
 	RETURN (Void);
     }
     ret = NewInteger (av->floats.exp->sign, av->floats.exp->mag);
@@ -591,9 +590,9 @@ do_mantissa (Value av)
 
     if (!ValueIsFloat(av))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"mantissa: argument must be imprecise",
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("mantissa: argument must be imprecise"),
+				NewInt (0), av);
 	RETURN (Void);
     }
     ret = NewInteger (av->floats.mant->sign, av->floats.mant->mag);
@@ -614,9 +613,9 @@ do_numerator (Value av)
 	av = NewInteger (av->rational.sign, av->rational.num);
 	break;
     default:
-	RaiseStandardException (exception_invalid_argument,
-				"numerator: argument must be precise",
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("numerator: argument must be precise"),
+				NewInt (0), av);
 	av = Void;
 	break;
     }
@@ -636,9 +635,9 @@ do_denominator (Value av)
 	av = NewInteger (Positive, av->rational.den);
 	break;
     default:
-	RaiseStandardException (exception_invalid_argument,
-				"denominator: argument must be precise",
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("denominator: argument must be precise"),
+				NewInt (0), av);
 	av = Void;
 	break;
     }
@@ -657,9 +656,9 @@ do_bit_width (Value av)
 	av = NewInt (NaturalWidth (IntegerMag(av)));
 	break;
     default:
-	RaiseStandardException (exception_invalid_argument,
-				"bit_width: argument must be integer",
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("bit_width: argument must be integer"),
+				NewInt (0), av);
 	av = Void;
 	break;
     }
@@ -827,9 +826,9 @@ do_is_uninit (Value av)
 {
     ENTER ();
     if (!av) {
-	RaiseStandardException (exception_invalid_argument,
-				"do_is_uninit: invalid reference",
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("do_is_uninit: invalid reference"),
+				NewInt (0), av);
 	av = Void;
     } else if (RefValueGet(av)) {
 	av = FalseVal;
@@ -844,9 +843,9 @@ do_make_uninit (Value av)
 {
     ENTER ();
     if (!av) {
-	RaiseStandardException (exception_invalid_argument,
-				"do_make_uninit: invalid reference",
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("do_make_uninit: invalid reference"),
+				NewInt (0), av);
     } else {
 	RefValueSet(av, 0);
     }

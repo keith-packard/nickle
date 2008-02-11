@@ -186,9 +186,8 @@ do_Debug_dump (Value f)
     
     if (!ValueIsFunc (f))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"dump: not a function",
-				1,
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("dump: not a function"),
 				NewInt (0), f);
 	RETURN (Void);
     }

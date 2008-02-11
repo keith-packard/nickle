@@ -207,6 +207,11 @@ import_File_namespace()
 	    " 'message' is a printable error string.\n"
 	    " 'error' is a symbolic error code.\n"
 	    " 'name' is the filename which failed.\n" },
+	{"io_eof",		exception_io_eof,		"f", "\n"
+	    " io_eof (file f)\n"
+	    "\n"
+	    " Raised when reading at end-of-file.\n"
+	    " 'file' is the file at eof.\n" },
 	{0,			0 },
     };
 
@@ -244,8 +249,9 @@ do_File_print (Value file, Value value, Value format,
 	return Void;
     if (ibase < 0 || ibase == 1)
     {
-	RaiseStandardException (exception_invalid_argument,
-				"Illegal base", 2, NewInt (0), base);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("Illegal base"),
+				NewInt (0), base);
 	return Void;
     }
     iwidth = IntPart (width, "Illegal width");
@@ -267,9 +273,10 @@ do_File_print (Value file, Value value, Value format,
 			  fill->string.length, 0));
 	if (file->file.flags & FileOutputError)
 	{
-	    RaiseStandardException (exception_io_error, 
+	    RaiseStandardException (exception_io_error, 3,
 				    FileGetErrorMessage (file->file.output_errno), 
-				    2, FileGetError (file->file.output_errno), file);
+				    FileGetError (file->file.output_errno),
+				    file);
 	}
     }
     return Void;
@@ -294,9 +301,10 @@ do_File_open (Value name, Value mode)
     ret = FileFopen (n, m, &err);
     if (!ret)
     {
-	RaiseStandardException (exception_open_error,
+	RaiseStandardException (exception_open_error, 3,
 				FileGetErrorMessage (err),
-				2, FileGetError (err), name);
+				FileGetError (err),
+				name);
 	RETURN (Void);
     }
     complete = True;
@@ -311,9 +319,9 @@ do_File_flush (Value f)
 	ThreadSleep (running, f, PriorityIo);
 	break;
     case FileError:
-	RaiseStandardException (exception_io_error, 
+	RaiseStandardException (exception_io_error, 3,
 				FileGetErrorMessage (f->file.output_errno), 
-				2, FileGetError (f->file.output_errno), f);
+				FileGetError (f->file.output_errno), f);
 	break;
     }
     return Void;
@@ -329,16 +337,16 @@ do_File_close (Value f)
 	ThreadSleep (running, f, PriorityIo);
 	break;
     case FileError:
-	RaiseStandardException (exception_io_error, 
+	RaiseStandardException (exception_io_error, 3,
 				FileGetErrorMessage (f->file.output_errno), 
-				2, FileGetError (f->file.output_errno), f);
+				FileGetError (f->file.output_errno), f);
 	break;
     default:
 	if (FileClose (f) == FileError)
 	{
-	    RaiseStandardException (exception_io_error, 
+	    RaiseStandardException (exception_io_error, 3,
 				    FileGetErrorMessage (f->file.output_errno), 
-				    2, FileGetError (f->file.output_errno), f);
+				    FileGetError (f->file.output_errno), f);
 	}
 	else
 	    complete = True;
@@ -377,9 +385,9 @@ do_File_filter (Value path, Value argv, Value filev)
     ret = FileFilter (p, args, filev, &err);
     if (!ret)
     {
-	RaiseStandardException (exception_open_error,
+	RaiseStandardException (exception_open_error, 3,
 				FileGetErrorMessage (err),
-				2, FileGetError (err), path);
+				FileGetError (err), path);
 	ret = Void;
     }
     complete = True;
@@ -396,9 +404,9 @@ Value do_File_mkpipe (void) {
     ret = FileMakePipe (&err);
     if (!ret)
     {
-	RaiseStandardException (exception_open_error,
+	RaiseStandardException (exception_open_error, 3,
 				FileGetErrorMessage (err),
-				2, FileGetError (err), Void);
+				FileGetError (err), Void);
 	RETURN (Void);
     }
     RETURN (ret);
@@ -423,9 +431,9 @@ do_File_reopen (Value name, Value mode, Value file)
     ret = FileReopen (n, m, file, &err);
     if (!ret)
     {
-	RaiseStandardException (exception_open_error,
+	RaiseStandardException (exception_open_error, 3,
 				FileGetErrorMessage (err),
-				2, FileGetError (err), name);
+				FileGetError (err), name);
 	RETURN (Void);
     }
     complete = True;
@@ -477,9 +485,9 @@ do_File_getb (Value f)
 	    ThreadSleep (running, f, PriorityIo);
 	    RETURN (Void);
 	case FileError:
-	    RaiseStandardException (exception_io_error,
+	    RaiseStandardException (exception_io_error, 3,
 				    FileGetErrorMessage (f->file.input_errno),
-				    2, FileGetError (f->file.input_errno), f);
+				    FileGetError (f->file.input_errno), f);
 	    RETURN (Void);
 	default:
 	    complete = True;
@@ -503,9 +511,9 @@ do_File_getc (Value f)
 	    ThreadSleep (running, f, PriorityIo);
 	    RETURN (Void);
 	case FileError:
-	    RaiseStandardException (exception_io_error,
+	    RaiseStandardException (exception_io_error, 3,
 				    FileGetErrorMessage (f->file.input_errno),
-				    2, FileGetError (f->file.input_errno), f);
+				    FileGetError (f->file.input_errno), f);
 	    RETURN (Void);
 	default:
 	    complete = True;
@@ -567,9 +575,10 @@ do_File_putb (Value v, Value f)
 	{
 	    if (FileOutput (f, IntPart (v, "putb non integer")) == FileError)
 	    {
-		RaiseStandardException (exception_io_error,
+		RaiseStandardException (exception_io_error, 3,
 					FileGetErrorMessage (f->file.output_errno),
-					2, FileGetError (f->file.output_errno), f);
+					FileGetError (f->file.output_errno),
+					f);
 	    }
 	    else
 		complete = True;
@@ -591,9 +600,10 @@ do_File_putc (Value v, Value f)
 	{
 	    if (FileOutchar (f, IntPart (v, "putc non integer")) == FileError)
 	    {
-		RaiseStandardException (exception_io_error,
+		RaiseStandardException (exception_io_error, 3,
 					FileGetErrorMessage (f->file.output_errno),
-					2, FileGetError (f->file.output_errno), f);
+					FileGetError (f->file.output_errno),
+					f);
 	    }
 	    else
 		complete = True;
@@ -658,9 +668,9 @@ do_File_unlink (Value name)
     ret = unlink (n);
     if (ret < 0) {
 	int err = errno;
-	RaiseStandardException (exception_name_error,
+	RaiseStandardException (exception_name_error, 3,
 				FileGetErrorMessage (err),
-				2, FileGetError (err), name);
+				FileGetError (err), name);
 	RETURN (Void);
     }
     RETURN (Void);
@@ -682,9 +692,9 @@ do_File_rename (Value old, Value new)
     ret = rename (o, n);
     if (ret < 0) {
 	int err = errno;
-	RaiseStandardException (exception_name_error,
+	RaiseStandardException (exception_name_error, 3,
 				FileGetErrorMessage (err),
-				2, FileGetError (err), new);
+				FileGetError (err), new);
 	RETURN (Void);
     }
     RETURN (Void);
@@ -707,9 +717,9 @@ do_File_mkdir (Value name, Value mode)
     ret = mkdir (n, m);
     if (ret < 0) {
 	int err = errno;
-	RaiseStandardException (exception_name_error,
+	RaiseStandardException (exception_name_error, 3,
 				FileGetErrorMessage (err),
-				2, FileGetError (err), name);
+				FileGetError (err), name);
 	RETURN (Void);
     }
     RETURN (Void);
@@ -728,9 +738,9 @@ do_File_rmdir (Value name)
     ret = rmdir (n);
     if (ret < 0) {
 	int err = errno;
-	RaiseStandardException (exception_name_error,
+	RaiseStandardException (exception_name_error, 3,
 				FileGetErrorMessage (err),
-				2, FileGetError (err), name);
+				FileGetError (err), name);
 	RETURN (Void);
     }
     RETURN (Void);

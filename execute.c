@@ -100,9 +100,9 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
 	
 	if (!ValueIsInt (numvar))
 	{
-	    RaiseStandardException (exception_invalid_argument, 
-				    "Incompatible argument",
-				    2, NewInt(-1), Arg(0));
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("Incompatible argument"),
+				    NewInt(-1), Arg(0));
 	    RETURN (Void);
 	}
 	argc = -argc - 1 + ValueInt(numvar);
@@ -115,9 +115,7 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
     if (!ValueIsFunc(func))
     {
 	ThreadStackDump (thread);
-	RaiseStandardException (exception_invalid_unop_value,
-				"Not a function",
-				1, func);
+	RaiseStandardException (exception_invalid_unop_value, 1, func);
 	RETURN (Void);
     }
     code = func->func.code;
@@ -126,23 +124,23 @@ ThreadCall (Value thread, Bool tail, InstPtr *next, int *stack)
     {
 	if (!argt)
 	{
-	    RaiseStandardException (exception_invalid_argument, 
-				    "Too many parameters",
-				    2, NewInt (argc), NewInt(code->base.argc));
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("Too many arguments"),
+				    NewInt (argc), NewInt(code->base.argc));
 	    RETURN (Void);
 	}
 	if (fe == argc)
 	{
-	    RaiseStandardException (exception_invalid_argument, 
-				    "Too few arguments",
-				    2, NewInt (argc), NewInt(code->base.argc));
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("Too few arguments"),
+				    NewInt (argc), NewInt(code->base.argc));
 	    RETURN (Void);
 	}
 	if (!TypeCompatibleAssign (argt->type, Arg(fe)))
 	{
-	    RaiseStandardException (exception_invalid_argument, 
-				    "Incompatible argument",
-				    2, NewInt (fe), Arg(fe));
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("Incompatible argument"),
+				    NewInt (fe), Arg(fe));
 	    RETURN (Void);
 	}
 	fe++;
@@ -277,28 +275,17 @@ ThreadAssign (Value ref, Value v, Bool initialize)
 {
     ENTER ();
     if (!ValueIsRef (ref))
-    {
-	RaiseStandardException (exception_invalid_binop_values,
-				"Attempted store through non reference",
-				2, ref, v);
-    }
+	RaiseStandardException (exception_invalid_binop_values, 2, ref, v);
     else if (RefConstant(ref) && !initialize)
-    {
-	RaiseStandardException (exception_readonly_box,
-				"Attempted assignment to constant box",
-				1, v);
-    }
+	RaiseStandardException (exception_readonly_box, 1, v);
     else if (ref->ref.element >= ref->ref.box->nvalues)
-    {
 	RaiseStandardException (exception_invalid_array_bounds,
-				"Attempted assignment beyond box bounds",
 				2, NewInt(ref->ref.element), v);
-    }
     else if (!TypeCompatibleAssign (RefType (ref), v))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"Incompatible types in assignment",
-				2, NewInt(ref->ref.element), v);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("Incompatible types in assignment"),
+				NewInt(ref->ref.element), v);
     }
     else
     {
@@ -327,9 +314,9 @@ ThreadArray (Value thread, Bool resizable, int ndim, Type *type)
 	Value	d = Stack(i);
 	dims[i] = IntPart (d, "Invalid array dimension");
 	if (dims[i] < 0)
-	    RaiseStandardException (exception_invalid_argument,
-				    "Negative array dimension", 
-				    2, NewInt (0), d);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("Negative array dimension"),
+				    NewInt (0), d);
 	if (aborting)
 	    RETURN (0);
     }
@@ -351,9 +338,9 @@ ThreadArrayInd (Value thread, Bool resizable, Value dim, Type *type)
 	Value	d = ArrayValue (a, i);
 	dims[i] = IntPart (d, "Invalid array dimension");
 	if (dims[i] < 0)
-	    RaiseStandardException (exception_invalid_argument,
-				    "Negative array dimension", 
-				    2, NewInt (0), d);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("Negative array dimension"), 
+				    NewInt (0), d);
 	if (aborting)
 	    RETURN (0);
     }
@@ -380,9 +367,9 @@ ThreadArrayIndex (Value array, Value thread, int ndim,
 	    d = Stack(dim + off - 1);
 	if (!ValueIsInt(d) || (part = ValueInt(d)) < 0)
 	{
-	    RaiseStandardException (exception_invalid_argument,
-				    "Array index not non-negative integer",
-				    2, array, d);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("Array index not non-negative integer"),
+				    array, d);
 	    return 0;
 	}
 	if (limits[dim] <= part)
@@ -396,9 +383,8 @@ ThreadArrayIndex (Value array, Value thread, int ndim,
 	    }
 	    else if (except)
 	    {
-		RaiseStandardException (exception_invalid_array_bounds,
-					"Array index out of bounds",
-					2, array, d);
+		RaiseStandardException (exception_invalid_array_bounds, 2,
+					array, d);
 		return 0;
 	    }
 	}
@@ -497,9 +483,9 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	{
 	    if (!TypeCompatibleAssign (ArrayType(&array->array), value))
 	    {
-		RaiseStandardException (exception_invalid_argument,
-				"Incompatible types in array initialization",
-				2, array, value);
+		RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("Incompatible types in array initialization"),
+				array, value);
 		break;
 	    }
 	    i = ThreadArrayIndex (array, thread, ndim, Stack(1), 2, True, False);
@@ -670,9 +656,9 @@ ThreadExceptionCall (Value thread, InstPtr *next, int *stack)
     args = Stack(0);
     if (!ValueIsArray (args))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"exception call argument must be array",
-				1, args);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("exception call argument must be array"),
+				NewInt (0), args);
 	*stack = 1;
 	RETURN (Void);
     }
@@ -801,16 +787,13 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
     case rep_string:
 	if (!fetch)
 	{
-	    RaiseStandardException (exception_invalid_unop_value,
-				    "Strings aren't addressable",
-				    1, value);
+	    RaiseStandardException (exception_invalid_binop_values, 2, v, value);
 	    break;
 	}
 	if (stack != 1)
 	{
-	    RaiseStandardException (exception_invalid_binop_values,
-				    "Strings have only 1 dimension",
-				    2, NewInt (stack), v);
+	    RaiseStandardException (exception_invalid_binop_values, 2,
+				    NewInt (stack), v);
 	    break;
 	}
 	i = IntPart (value, "Invalid string index");
@@ -819,9 +802,8 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
 	s = StringChars (&v->string);
 	if (i < 0 || StringLength (s, v->string.length) <= i)
 	{
-	    RaiseStandardException (exception_invalid_binop_values,
-				    "String index out of bounds",
-				    2, value, v);
+	    RaiseStandardException (exception_invalid_binop_values, 2,
+				    v, value);
 	    break;
 	}
 	value = NewInt (StringGet (s, v->string.length, i));
@@ -829,9 +811,8 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
     case rep_array:
 	if (stack != v->array.ndim)
 	{
-	    RaiseStandardException (exception_invalid_binop_values,
-				    "Mismatching dimensionality",
-				    2, NewInt (stack), v);
+	    RaiseStandardException (exception_invalid_binop_values, 2,
+				    NewInt (stack), v);
 	    break;
 	}
 	i = ThreadArrayIndex (v, thread, stack, value, 0, True, !fetch);
@@ -850,9 +831,8 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
     case rep_hash:
 	if (stack != 1)
 	{
-	    RaiseStandardException (exception_invalid_binop_values,
-				    "Hashes have only one dimension",
-				    2, NewInt (stack), v);
+	    RaiseStandardException (exception_invalid_binop_values, 2,
+				    NewInt (stack), v);
 	    break;
 	}
 	if (fetch)
@@ -861,9 +841,7 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
 	    value = HashRef (v, value);
 	break;
     default:
-	RaiseStandardException (exception_invalid_unop_value,
-				"Not an array",
-				1, value);
+	RaiseStandardException (exception_invalid_unop_value, 1, v);
 	break;
     }
     return value;
@@ -876,9 +854,7 @@ ThreadOpDot (Value thread, Value value, Atom atom, Bool fetch)
     
     switch (ValueTag(value)) {
     default:
-	RaiseStandardException (exception_invalid_unop_value,
-				"Not a struct/union",
-				1, value);
+	RaiseStandardException (exception_invalid_unop_value, 1, value);
 	break;
     case rep_struct:
 	if (fetch)
@@ -887,10 +863,8 @@ ThreadOpDot (Value thread, Value value, Atom atom, Bool fetch)
 	    v = StructMemRef (value, atom);
 	if (!v)
 	{
-	    RaiseStandardException (exception_invalid_struct_member,
-				    "no such struct member",
-				    2, value, 
-				    NewStrString (AtomName (atom)));
+	    RaiseStandardException (exception_invalid_struct_member, 2,
+				    value, NewStrString (AtomName (atom)));
 	    break;
 	}
 	value = v;
@@ -903,15 +877,11 @@ ThreadOpDot (Value thread, Value value, Atom atom, Bool fetch)
 	if (!v)
 	{
 	    if (StructMemType (value->unions.type, atom))
-		RaiseStandardException (exception_invalid_struct_member,
-					"requested union tag not current",
-					2, value,
-					NewStrString (AtomName (atom)));
+		RaiseStandardException (exception_invalid_struct_member, 2,
+					value, NewStrString (AtomName (atom)));
 	    else
-		RaiseStandardException (exception_invalid_struct_member,
-					"no such union tag",
-					2, value, 
-					NewStrString (AtomName (atom)));
+		RaiseStandardException (exception_invalid_struct_member, 2,
+					value, NewStrString (AtomName (atom)));
 	    break;
 	}
 	value = v;
@@ -1028,9 +998,9 @@ ThreadsRun (Value thread, Value lex)
 		case OpBranchFalse:
 		    if (!ValueIsBool(value))
 		    {
-			RaiseStandardException (exception_invalid_argument,
-						"conditional expression not bool",
-						2, value, Void);
+			RaiseStandardException (exception_invalid_argument, 3,
+						NewStrString ("conditional expression not bool"),
+						value, Void);
 			break;
 		    }
 		    if (!True (value))
@@ -1039,9 +1009,9 @@ ThreadsRun (Value thread, Value lex)
 		case OpBranchTrue:
 		    if (!ValueIsBool(value))
 		    {
-			RaiseStandardException (exception_invalid_argument,
-						"conditional expression not bool",
-						2, value, Void);
+			RaiseStandardException (exception_invalid_argument, 3,
+						NewStrString ("conditional expression not bool"),
+						value, Void);
 			break;
 		    }
 		    if (True (value))
@@ -1062,9 +1032,9 @@ ThreadsRun (Value thread, Value lex)
 		case OpTagCase:
 		    if (!ValueIsUnion(value))
 		    {
-			RaiseStandardException (exception_invalid_argument,
-						"union switch expression not union",
-						2, value, Void);
+			RaiseStandardException (exception_invalid_argument, 3,
+						NewStrString ("union switch expression not union"),
+						value, Void);
 			break;
 		    }
 		    if (value->unions.tag == inst->tagcase.tag)
@@ -1074,15 +1044,11 @@ ThreadsRun (Value thread, Value lex)
 			if (!v)
 			{
 			    if (StructMemType (value->unions.type, inst->atom.atom))
-				RaiseStandardException (exception_invalid_struct_member,
-							"requested union tag not current",
-							2, value,
-							NewStrString (AtomName (inst->atom.atom)));
+				RaiseStandardException (exception_invalid_struct_member, 2,
+							value, NewStrString (AtomName (inst->atom.atom)));
 			    else
-				RaiseStandardException (exception_invalid_struct_member,
-							"no such union tag",
-							2, value, 
-							NewStrString (AtomName (inst->atom.atom)));
+				RaiseStandardException (exception_invalid_struct_member, 2,
+							value, NewStrString (AtomName (inst->atom.atom)));
 			    break;
 			}
 			value = v;
@@ -1103,17 +1069,17 @@ ThreadsRun (Value thread, Value lex)
 		case OpReturn:
 		    if (!thread->thread.continuation.frame)
 		    {
-			RaiseStandardException (exception_invalid_argument,
-						"return outside of function",
-						2, Void, Void);
+			RaiseStandardException (exception_invalid_argument, 3,
+						NewStrString ("return outside of function"),
+						Void, Void);
 			break;
 		    }
 		    if (!TypeCompatibleAssign (thread->thread.continuation.frame->function->func.code->base.type,
 					       value))
 		    {
-			RaiseStandardException (exception_invalid_argument,
-						"Incompatible type in return",
-						2, value, Void);
+			RaiseStandardException (exception_invalid_argument, 3,
+						NewStrString ("Incompatible type in return"),
+						value, Void);
 			break;
 		    }
 		    if (aborting)
@@ -1206,10 +1172,8 @@ ThreadsRun (Value thread, Value lex)
 		    v = StructMemRef (w, inst->atom.atom);
 		    if (!v)
 		    {
-			RaiseStandardException (exception_invalid_struct_member,
-						"Invalid struct member",
-						2, v, 
-						NewStrString (AtomName (inst->atom.atom)));
+			RaiseStandardException (exception_invalid_struct_member, 2,
+						v, NewStrString (AtomName (inst->atom.atom)));
 			break;
 		    }
 		    ThreadAssign (v, value, True);
@@ -1222,10 +1186,8 @@ ThreadsRun (Value thread, Value lex)
 		    v = UnionRef (value, inst->atom.atom);
 		    if (!v)
 		    {
-			RaiseStandardException (exception_invalid_struct_member,
-						"Invalid union member",
-						2, value, 
-						NewStrString (AtomName (inst->atom.atom)));
+			RaiseStandardException (exception_invalid_struct_member, 2,
+						value, NewStrString (AtomName (inst->atom.atom)));
 			break;
 		    }
 		    w = CStack(0); stack = 1;
@@ -1242,16 +1204,14 @@ ThreadsRun (Value thread, Value lex)
 		case OpVarActual:
 		    if (!ValueIsArray(value))
 		    {
-			RaiseStandardException (exception_invalid_unop_value,
-						"Not an array",
-						1, value);
+			RaiseStandardException (exception_invalid_unop_value, 1,
+						value);
 			break;
 		    }
 		    if (value->array.ndim != 1)
 		    {
-			RaiseStandardException (exception_invalid_unop_value,
-						"Array not one dimension",
-						1, value);
+			RaiseStandardException (exception_invalid_unop_value, 1,
+						value);
 			break;
 		    }
 		    for (i = 0; i < ArrayLimits(&value->array)[0]; i++)
@@ -1279,9 +1239,8 @@ ThreadsRun (Value thread, Value lex)
 		case OpArrowRefStore:
 		    if (!ValueIsRef(value))
 		    {
-			RaiseStandardException (exception_invalid_unop_value,
-						"Not a reference",
-						1, value);
+			RaiseStandardException (exception_invalid_unop_value, 1,
+						value);
 			break;
 		    }
 		    value = RefValue (value);
@@ -1302,9 +1261,9 @@ ThreadsRun (Value thread, Value lex)
 		case OpStaticDone:
 		    if (!thread->thread.continuation.frame)
 		    {
-			RaiseStandardException (exception_invalid_argument,
-						"StaticInitDone outside of function",
-						2, Void, Void);
+			RaiseStandardException (exception_invalid_argument, 3,
+						NewStrString ("StaticInitDone outside of function"),
+						Void, Void);
 			break;
 		    }
 		    if (aborting)

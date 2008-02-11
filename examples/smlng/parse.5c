@@ -27,6 +27,9 @@ public namespace Lexc {
     {
 	char	    ch;
 
+	if (File::end (in))
+	    return (char) { c = 0, id = Eof };
+	
 	ch.c = File::getc (in);
 	printf ("got %d\n", ch.c);
 	if (ch.c == '<')

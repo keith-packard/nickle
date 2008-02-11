@@ -55,7 +55,7 @@ check (test, (union {string b;}) { .b = "hello" });
 check (bool func () { try {
     test.a;
     return false;
-} catch invalid_struct_member (string msg, poly test, string name) {
+} catch invalid_struct_member (poly test, string name) {
     return true;
 } return false; } (), true);
 

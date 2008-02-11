@@ -528,14 +528,14 @@ FileGetError (int err)
     RETURN (ret);
 }
 
-char *
+Value
 FileGetErrorMessage (int err)
 {
     int i;
     for (i = 0; i < NUM_FILE_ERRORS; i++)
 	if (fileErrorMap[i].value == err)
-	    return fileErrorMap[i].message;
-    return "Unknown error";
+	    return NewStrString (fileErrorMap[i].message);
+    return NewStrString ("Unknown error");
 }
 
 static void
@@ -718,9 +718,9 @@ FileReopen (char *name, char *mode, Value file, int *errp)
 
     if (file->file.flags & FileString)
     {
-	RaiseStandardException (exception_invalid_argument,
-				"Reopen: string file",
-				2, file, Void);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("Reopen: string file"),
+				NewInt (0), file);
 	RETURN (Void);
     }
 	
@@ -789,21 +789,21 @@ FileFilter (char *program, char *args[], Value filev, int *errp)
     for (i = 0; i < 3; i++) {
 	Value f = ArrayValue (&filev->array, i);
 	if (i == 0 && !(f->file.flags & FileReadable)) {
-	    RaiseStandardException (exception_invalid_argument,
-				    "File::filter: process input not readable",
-				    2, f, Void);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("File::filter: process input not readable"),
+				    NewInt (i), f);
 	    RETURN (Void);
 	}
 	if (i == 1 && !(f->file.flags & FileWritable)) {
-	    RaiseStandardException (exception_invalid_argument,
-				    "File::filter: process output not writable",
-				    2, f, Void);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("File::filter: process output not writable"),
+				    NewInt (i), f);
 	    RETURN (Void);
 	}
 	if (i == 2 && !(f->file.flags & FileWritable)) {
-	    RaiseStandardException (exception_invalid_argument,
-				    "File::filter: process error not writable",
-				    2, f, Void);
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("File::filter: process error not writable"),
+				    NewInt (i), f);
 	    RETURN (Void);
 	}
 	fds[i] = f->file.fd;
@@ -924,9 +924,9 @@ FileStringString (Value file)
 
     if (!(file->file.flags & FileString))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"string_string: not string file",
-				2, file, Void);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("string_string: not string file"),
+				NewInt (0), file);
 	RETURN (Void);
     }
     len = 0;

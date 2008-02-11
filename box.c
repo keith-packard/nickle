@@ -70,8 +70,7 @@ BoxValue (BoxPtr box, int e)
 {
     if (!BoxElements(box)[e].value)
     {
-	RaiseStandardException (exception_uninitialized_value,
-				"Uninitialized value", 0);
+	RaiseStandardException (exception_uninitialized_value, 0);
 	return (Void);
     }
     return (BoxElements(box)[e].value);
@@ -126,9 +125,8 @@ BoxRewrite (BoxPtr box, int *ep)
      */
     if (e >= box->nvalues)
     {
-	RaiseStandardException (exception_invalid_array_bounds,
-				"Rewriting reference beyond box bounds",
-				1, NewInt (e));
+	RaiseStandardException (exception_invalid_array_bounds, 2,
+				Void, NewInt (e));
 	e = 0;
 	box = NewBox (True, False, 1, typePrim[rep_void]);
 	BoxValueSet (box, 0, 0);

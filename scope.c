@@ -235,9 +235,8 @@ NamespaceLocate (Value		names,
     if (!ValueIsArray(names) || names->array.ndim != 1 || 
 	ArrayLimits(&names->array)[0] == 0)
     {
-	RaiseStandardException (exception_invalid_argument,
-				"not non-empty array of strings",
-				2,
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("not non-empty array of strings"),
 				NewInt (0), names);
 	return False;
     }
@@ -249,9 +248,8 @@ NamespaceLocate (Value		names,
 	    return False;
 	if (!ValueIsString(string))
 	{
-	    RaiseStandardException (exception_invalid_argument,
-				    "not string",
-				    2,
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("not string"),
 				    NewInt (0), string);
 	    return False;
 	}
@@ -271,9 +269,8 @@ NamespaceLocate (Value		names,
 	{
 	    if (symbol->symbol.class != class_namespace)
 	    {
-		RaiseStandardException (exception_invalid_argument,
-					"not namespace",
-					2,
+		RaiseStandardException (exception_invalid_argument, 3,
+					NewStrString ("not namespace"),
 					NewInt(i), string);
 		return False;
 	    }

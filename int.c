@@ -75,9 +75,8 @@ IntDivide (Value av, Value bv, int expandOk)
 
     if (b == 0)
     {
-	RaiseStandardException (exception_divide_by_zero,
-				"int divide by zero",
-				2, av, bv);
+	RaiseStandardException (exception_divide_by_zero, 2,
+				av, bv);
 	RETURN (Void);
     }
     if (expandOk && a % b != 0)
@@ -97,9 +96,8 @@ IntDiv (Value av, Value bv, int expandOk)
 
     if (b == 0)
     {
-	RaiseStandardException (exception_divide_by_zero,
-				"int div by zero",
-				2, av, bv);
+	RaiseStandardException (exception_divide_by_zero, 2,
+				av, bv);
 	RETURN (Void);
     }
     switch (catagorize_signs (IntSign(a), IntSign(b))) {
@@ -141,9 +139,8 @@ IntMod (Value av, Value bv, int expandOk)
 
     if (b == 0)
     {
-	RaiseStandardException (exception_divide_by_zero,
-				"int modulus by zero",
-				2, av, bv);
+	RaiseStandardException (exception_divide_by_zero, 2,
+				av, bv);
 	RETURN (Void);
     }
     switch (catagorize_signs (IntSign(a), IntSign(b))) {

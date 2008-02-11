@@ -187,8 +187,9 @@ StrzPart (Value v, char *error)
 {
     if (!ValueIsString (v) || strlen (StringChars(&v->string)) != v->string.length)
     {
-	RaiseStandardException (exception_invalid_argument, error,
-				2, NewInt (0), v);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString (error),
+				NewInt (0), v);
 	return 0;
     }
     return StringChars (&v->string);

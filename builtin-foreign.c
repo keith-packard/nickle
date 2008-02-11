@@ -9,6 +9,7 @@
 #include	<ctype.h>
 #include	<strings.h>
 #include	<time.h>
+#include	<errno.h>
 #include	"builtin.h"
 
 NamespacePtr	ForeignNamespace;
@@ -35,13 +36,16 @@ do_Foreign_load (Value av)
     if (!lib)
     {
 	char	*err = 0;
+	int	e = errno;
 #if HAVE_DLERROR
 	err = dlerror ();
 #endif
 	if (!err)
 	    err = "cannot open";
-	RaiseStandardException (exception_invalid_argument,
-				err, 2, NewInt(0), av);
+	RaiseStandardException (exception_open_error, 3,
+				NewStrString (err),
+				NewInt(e),
+				av);
 	RETURN (Void);
     }
     
@@ -54,8 +58,8 @@ do_Foreign_load (Value av)
 #endif
 	if (!err)
 	    err = "missing nickle_init";
-	RaiseStandardException (exception_invalid_argument,
-				err, 2, NewInt (0), av);
+	RaiseStandardException (exception_open_error, 3,
+				NewStrString (err), NewInt (0), av);
 #if HAVE_DLCLOSE
 	dlclose (lib);
 #endif

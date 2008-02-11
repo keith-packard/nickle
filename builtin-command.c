@@ -111,9 +111,9 @@ command_name (Value name)
 	    if (isdigit ((int)c) || c == '_')
 	     continue;
 	}
-	RaiseStandardException (exception_invalid_argument,
-				"argument must be valid name",
-				2, NewInt (0), name);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("argument must be valid name"),
+				NewInt (0), name);
 	return 0;
     }
     return cmd_base;
@@ -129,9 +129,9 @@ do_Command_new_common (Value name, Value func, Bool names)
 	RETURN (Void);
     if (!ValueIsFunc(func))
     {
-	RaiseStandardException (exception_invalid_argument,
-				"argument must be func",
-				2, NewInt (1), func);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("argument must be func"),
+				NewInt (1), func);
 	RETURN (Void);
     }
     CurrentCommands = NewCommand (CurrentCommands, AtomId (cmd),

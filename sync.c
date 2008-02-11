@@ -102,11 +102,9 @@ do_Semaphore_new (int n, Value *value)
 	count = IntPart (value[0], "Illegal initial semaphore count");
 	break;
     default:
-	RaiseStandardException (exception_invalid_argument,
-				"new: wrong number of arguments",
-				2,
-				NewInt (1),
-				NewInt (n));
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("new: wrong number of arguments"),
+				NewInt (1), NewInt (n));
 	RETURN(Void);
     }
     ret = ALLOCATE (&SemaphoreRep.data, sizeof (Semaphore));

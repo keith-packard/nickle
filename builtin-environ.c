@@ -68,9 +68,9 @@ do_Environ_get (Value av)
 	RETURN (Void);
     c = getenv (name);
     if (!c) {
-	RaiseStandardException (exception_invalid_argument,
-				"name not available",
-				2, NewInt(0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("name not available"),
+				NewInt(0), av);
 	RETURN (Void);
     }
     RETURN (NewStrString (c));

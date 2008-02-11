@@ -100,8 +100,9 @@ IntPart (Value av, char *error)
 {
     if (!ValueIsInt(av))
     {
-	RaiseStandardException (exception_invalid_argument, error, 
-				2, NewInt (0), av);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString (error), 
+				NewInt (0), av);
 	return 0;
     }
     return ValueInt(av);
@@ -139,9 +140,8 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
     
 	    if (b == 0)
 	    {
-		RaiseStandardException (exception_divide_by_zero,
-					"int divide by zero",
-					2, av, bv);
+		RaiseStandardException (exception_divide_by_zero, 2,
+					av, bv);
 		return Void;
 	    }
 	    if (a % b != 0)
@@ -152,9 +152,8 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
     
 	    if (b == 0)
 	    {
-		RaiseStandardException (exception_divide_by_zero,
-					"int div by zero",
-					2, av, bv);
+		RaiseStandardException (exception_divide_by_zero, 2,
+					av, bv);
 		return Void;
 	    }
 	    switch (catagorize_signs (IntSign(a), IntSign(b))) {
@@ -182,9 +181,8 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
     
 	    if (b == 0)
 	    {
-		RaiseStandardException (exception_divide_by_zero,
-					"int modulus by zero",
-					2, av, bv);
+		RaiseStandardException (exception_divide_by_zero, 2,
+					av, bv);
 		return Void;
 	    }
 	    switch (catagorize_signs (IntSign(a), IntSign(b))) {
@@ -249,9 +247,7 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	{
 	    if (operator == EqualOp)
 		RETURN (FalseVal);
-	    RaiseStandardException (exception_invalid_binop_values,
-				    "invalid operands",
-				    2,
+	    RaiseStandardException (exception_invalid_binop_values, 2,
 				    av, bv);
 	    RETURN (Void);
 	}
@@ -274,9 +270,8 @@ UnaryOperate (Value v, UnaryOp operator)
     
     if (!rep->unary[operator])
     {
-	RaiseStandardException (exception_invalid_unop_value,
-				"invalid operand",
-				1, v);
+	RaiseStandardException (exception_invalid_unop_value, 1,
+				v);
 	RETURN (Void);
     }
     if (aborting)
@@ -404,10 +399,7 @@ Factorial (Value av)
 
     if (!Integralp (ValueTag(av)) || Negativep (av))
     {
-	RaiseStandardException (exception_invalid_unop_value,
-				"invalid operand",
-				1,
-				av);
+	RaiseStandardException (exception_invalid_unop_value, 1, av);
 	RETURN (Void);
     }
     /*
@@ -465,9 +457,7 @@ Pow (Value av, Value bv)
 
     if (!Numericp (ValueTag(av)) || !Numericp (ValueTag(bv)))
     {
-	RaiseStandardException (exception_invalid_binop_values,
-				"invalid operands",
-				2,
+	RaiseStandardException (exception_invalid_binop_values, 2,
 				av, bv);
 	RETURN (Void);
     }
@@ -527,9 +517,8 @@ Pow (Value av, Value bv)
 	}
 	break;
     default:
-	RaiseStandardException (exception_invalid_binop_values,
-				"non-integer pow right operand",
-				2, av, bv);
+	RaiseStandardException (exception_invalid_binop_values, 2,
+				av, bv);
 	result = Void;
 	break;
     }
@@ -542,9 +531,8 @@ ShiftL (Value av, Value bv)
     ENTER ();
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
-	RaiseStandardException (exception_invalid_binop_values,
-				"non-integer << operands",
-				2, av, bv);
+	RaiseStandardException (exception_invalid_binop_values, 2,
+				av, bv);
 	RETURN (Void);
     }
     if (Negativep (bv))
@@ -587,9 +575,8 @@ ShiftR (Value av, Value bv)
     ENTER ();
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
-	RaiseStandardException (exception_invalid_binop_values,
-				"non-integer >> operands",
-				2, av, bv);
+	RaiseStandardException (exception_invalid_binop_values, 2,
+				av, bv);
 	RETURN (Void);
     }
     if (Negativep (bv))
@@ -631,9 +618,7 @@ Gcd (Value av, Value bv)
     
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
-	RaiseStandardException (exception_invalid_binop_values,
-				"invalid gcd argument values",
-				2,
+	RaiseStandardException (exception_invalid_binop_values, 2,
 				av, bv);
 	RETURN (Void);
     }
@@ -650,9 +635,7 @@ Bdivmod (Value av, Value bv)
     
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
-	RaiseStandardException (exception_invalid_binop_values,
-				"invalid gcd argument values",
-				2,
+	RaiseStandardException (exception_invalid_binop_values, 2,
 				av, bv);
 	RETURN (Void);
     }
@@ -668,9 +651,7 @@ KaryReduction (Value av, Value bv)
     
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
-	RaiseStandardException (exception_invalid_binop_values,
-				"invalid kary_reduction argument values",
-				2,
+	RaiseStandardException (exception_invalid_binop_values, 2,
 				av, bv);
 	RETURN (Void);
     }
@@ -817,9 +798,7 @@ Dereference (Value v)
 {
     if (!ValueIsRef(v))
     {
-	RaiseStandardException (exception_invalid_unop_value,
-				"Not a reference",
-				1, v);
+	RaiseStandardException (exception_invalid_unop_value, 1, v);
 	return Void;
     }
     return REFERENCE (RefValue (v));

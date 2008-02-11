@@ -132,9 +132,8 @@ RationalDivide (Value av, Value bv, int expandOk)
 
     if (NaturalZero (b->num))
     {
-	RaiseStandardException (exception_divide_by_zero,
-				"rational divide by zero",
-				2, av, bv);
+	RaiseStandardException (exception_divide_by_zero, 2,
+				av, bv);
 	RETURN (Void);
     }
     sign = Positive;
@@ -177,9 +176,8 @@ RationalMod (Value av, Value bv, int expandOk)
 
     if (NaturalZero (b->num))
     {
-	RaiseStandardException (exception_divide_by_zero,
-				"rational modulus by zero",
-				2, av, bv);
+	RaiseStandardException (exception_divide_by_zero, 2,
+				av, bv);
 	RETURN (Void);
     }
     div = NaturalTimes (b->num, a->den);

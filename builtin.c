@@ -78,8 +78,8 @@ static const struct ebuiltin excepts[] = {
 	"\n"
 	" Division or modulus by zero.\n"
 	" 'message' indicates the error context.\n" },
-    {"invalid_struct_member",	exception_invalid_struct_member,"sps", "\n"
-	" invalid_struct_member (string message, poly struct, string member)\n"
+    {"invalid_struct_member",	exception_invalid_struct_member,"ps", "\n"
+	" invalid_struct_member (poly value, string member)\n"
 	"\n"
 	" 'member' is not in 'value'.\n" },
     {"invalid_binop_values",	exception_invalid_binop_values,	"spp",

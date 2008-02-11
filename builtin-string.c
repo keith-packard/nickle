@@ -153,16 +153,16 @@ do_String_substr (Value av, Value bv, Value cv)
     }
     if (b < 0 || b > al)
     {
-	RaiseStandardException (exception_invalid_argument,
-				"substr: index out of range",
-				2, NewInt (1), bv);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("substr: index out of range"),
+				NewInt (1), bv);
 	RETURN (av);
     }
     if (b + c > al)
     {
-	RaiseStandardException (exception_invalid_argument,
-				"substr: count out of range",
-				2, NewInt (2), cv);
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("substr: count out of range"),
+				NewInt (2), cv);
 	RETURN (av);
     }
     /*

@@ -85,6 +85,8 @@ USES_GRAM_H = \
 
 $(USES_GRAM_H): gram.h
 
+YACCCOMPILE = $(YACC) $(YFLAGS) $(AM_YFLAGS) gram.y && sed -i 's/^short yy/static const short yy/' y.tab.c && echo
+
 builtin.o: $(nickle_SOURCES)
 
 TARFILE=$(PACKAGE)-$(VERSION).tar.gz

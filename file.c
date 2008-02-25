@@ -1549,7 +1549,7 @@ FilePutDimensions (Value f, ExprPtr dims, Bool resizable)
     while (dims)
     {
 	if (dims->tree.left)
-	    PrettyExpr (f, dims->tree.left, -1, 0, False, 0);
+	    PrettyExpr (f, dims->tree.left, -1, 0, False);
 	else if (resizable)
 	    FilePuts (f, "...");
 	else

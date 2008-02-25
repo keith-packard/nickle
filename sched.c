@@ -302,7 +302,7 @@ TraceFunction (Value file, FramePtr frame, CodePtr code, ExprPtr name)
     
     FilePuts (file, "    ");
     if (name)
-	PrettyExpr (file, name, -1, 0, False, 0);
+	PrettyExpr (file, name, -1, 0, False);
     else
 	FilePuts (file, "<anonymous>");
     FilePuts (file, " (");

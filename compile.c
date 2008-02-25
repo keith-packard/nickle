@@ -63,6 +63,8 @@ ObjMark (void *object)
 	    break;
 	}
     }
+    if (!profiling)
+	obj->ticks = obj->sub_ticks = 0;
     for (i = 0; i < obj->used_stat; i++)
 	MemReference (ObjStat (obj, i)->stat);
 }
@@ -85,6 +87,8 @@ NewObj (int size, int size_stat)
     obj->used_stat = 0;
     obj->error = False;
     obj->nonLocal = 0;
+    obj->ticks = 0;
+    obj->sub_ticks = 0;
     RETURN (obj);
 }
 

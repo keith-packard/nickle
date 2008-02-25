@@ -42,18 +42,47 @@ ProfileInterrupt (Value thread)
     pc = thread->thread.continuation.pc;
     if (pc)
     {
-	stat = ObjStatement (thread->thread.continuation.obj,pc);
+	ObjPtr	obj = thread->thread.continuation.obj;
+	stat = ObjStatement (obj, pc);
 	if (stat)
 	{
 	    stat->base.ticks += ticks;
+	    stat->base.line = -stat->base.line - 1;
+	}
+	obj->ticks += ticks;
+	obj->error += 100;
+    }
+    for (frame = thread->thread.continuation.frame; frame; frame = frame->previous)
+    {
+	ObjPtr	obj = frame->saveObj;
+        stat = ObjStatement (obj, frame->savePc);
+        if (stat && stat->base.line >= 0) {
+	    stat->base.sub_ticks += ticks;
+	    stat->base.line = -stat->base.line - 1;
+	}
+	if (obj->error < 100) {
+	    obj->sub_ticks += ticks;
+	    obj->error += 100;
 	}
     }
     for (frame = thread->thread.continuation.frame; frame; frame = frame->previous)
     {
-	pc = frame->savePc;
-        stat = ObjStatement (frame->saveObj, frame->savePc);
+	ObjPtr	obj = frame->saveObj;
+        stat = ObjStatement (obj, frame->savePc);
         if (stat)
-	    stat->base.sub_ticks += ticks;
+	    stat->base.line = -stat->base.line + 1;
+	if (obj->error >= 100)
+	    obj->error -= 100;
+    }
+    pc = thread->thread.continuation.pc;
+    if (pc)
+    {
+	ObjPtr	obj = thread->thread.continuation.obj;
+	stat = ObjStatement (obj, pc);
+	if (stat)
+	    stat->base.line = -stat->base.line + 1;
+	if (obj->error >= 100)
+	    obj->error -= 100;
     }
 }
 

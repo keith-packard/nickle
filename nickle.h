@@ -573,6 +573,8 @@ typedef struct _obj {
     int		used;
     int		size_stat;
     int		used_stat;
+    double_digit    ticks;
+    double_digit    sub_ticks;
     Bool	error;
     NonLocal	*nonLocal;
 } Obj;
@@ -697,7 +699,7 @@ void	PrettyPrint (Value f, Publish publish, SymbolPtr name);
 void	PrettyCode (Value f, CodePtr code, Atom name, Class class, 
 		    Publish publish, int level, Bool nest);
 void	PrettyStat (Value F, Expr *e, Bool nest);
-void	PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest, ProfileData *pd);
+void	PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest);
 
 void	EditFunction (SymbolPtr name, Publish publish);
 void	EditFile (Value file_name);

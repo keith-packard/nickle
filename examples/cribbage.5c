@@ -9,7 +9,7 @@
 
 namespace Cribbage {
 
-  int function countsum(int c, int[*] v, int n) {
+  int countsum(int c, int[*] v, int n) {
     if (c < 0)
       return 0;
     int t = 0;
@@ -22,7 +22,7 @@ namespace Cribbage {
     return countsum(c, v, n - 1) + countsum(c - v[n - 1], v, n - 1);
   }
 
-  int function countpairs(int[*] v, int n) {
+  int countpairs(int[*] v, int n) {
     if (n < 2)
       return 0;
     int c = 0;
@@ -37,7 +37,7 @@ namespace Cribbage {
     return c * (c + 1) // 2 + countpairs(w, n - c - 1);
   }
 
-  public int function score(int[*] v) {
+  public int score(int[*] v) {
     int n = dim(v);
     return 2 * countsum(15, v, n) + 2 * countpairs(v, n);
   }

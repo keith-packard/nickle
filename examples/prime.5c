@@ -11,7 +11,7 @@
 
 namespace Factor {
 
-    public bool function is_prime (int i)
+    public bool is_prime (int i)
     {
 	if (i == 1) return false;
 	if (i == 2) return true;
@@ -40,9 +40,9 @@ namespace Factor {
 	int		    v;
     } int_list_struct;
 
-    public int_list function primes (int i)
+    public int_list primes (int i)
     {
-	bool function prime_wrt (int_list l, int i)
+	bool prime_wrt (int_list l, int i)
 	{
 	    if (l == int_list.end) return true;
 	    if (i % l.ref->v == 0) return false;
@@ -59,9 +59,9 @@ namespace Factor {
 	return l;
     }
 
-    int[*] function list_to_array (int_list l)
+    int[*] list_to_array (int_list l)
     {
-	int function list_length (int_list l)
+	int list_length (int_list l)
 	{
 	    return l != int_list.end ? 1+list_length(l.ref->next) : 0;
 	}
@@ -82,9 +82,9 @@ namespace Factor {
 	void	none;
     } array_or_none;
 
-    public array_or_none function factor (int i)
+    public array_or_none factor (int i)
     {
-	array_or_none function array_append (array_or_none a, int v)
+	array_or_none array_append (array_or_none a, int v)
 	{
 	    union switch (a) {
 	    case array:
@@ -105,7 +105,7 @@ namespace Factor {
 
 	array_or_none   result = array_or_none.none;
 
-	int function one_factor (int i)
+	int one_factor (int i)
 	{
 	    if (i == 1) return 1;
 	    if ((i & 1) == 0) return 2;

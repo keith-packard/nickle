@@ -17,7 +17,7 @@ typedef struct {
   real dist, bearing;
 } course;
 
-course function great_circle (loc start, loc end) {
+course great_circle (loc start, loc end) {
 	real rad = pi / 180;
 	/* real earth_radius = 6371.2 km ; */
 	real earth_radius = 3958.9; /* miles */

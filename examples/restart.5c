@@ -12,7 +12,7 @@
 
 exception div0_attempt(continuation c);
 
-rational function f(int x) {
+rational f(int x) {
     continuation c;
     int y;
     if ((y = setjmp(&c, 0)) != 0) {
@@ -28,7 +28,7 @@ rational function f(int x) {
     return 1 / x;
 }
 
-rational function protected_f(int x) {
+rational protected_f(int x) {
     try {
 	return f(x);
     } catch div0_attempt(c) {

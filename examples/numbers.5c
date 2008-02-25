@@ -15,7 +15,7 @@
 
 namespace Numbers {
 
-  public int function bigpowmod(int b, int e, int m) {
+  public int bigpowmod(int b, int e, int m) {
     if (e == 0)
       return 1;
     if (e == 1)
@@ -30,7 +30,7 @@ namespace Numbers {
   public typedef struct { int d, x, y; } coeff;
 
   /* Extended Euclid's Algorithm */
-  public coeff function extgcd(int a, int b) {
+  public coeff extgcd(int a, int b) {
     if (b == 0)
       return (coeff) { .d = a, .x = 1, .y = 0};
     coeff t = extgcd(b, a % b);
@@ -41,7 +41,7 @@ namespace Numbers {
   }
 
   /* multiplicative inverse of a mod n */
-  public int function zminv(int a, int n) {
+  public int zminv(int a, int n) {
     coeff e = extgcd(a, n);
     if (e.x < 0)
       return n + e.x;

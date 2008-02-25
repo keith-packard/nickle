@@ -10,7 +10,7 @@
 
 autoimport PRNG;
 
-int[*] function t(int n) {
+int[*] t(int n) {
   int[2] s = {0, 0};
   int i;
   for (i = 0; i < n; i++)

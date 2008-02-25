@@ -35,11 +35,11 @@ namespace RSA {
   global int n;   /* public key */
   global int d = 0;   /* decryption exponent (0 for encrypt-only) */
 
-  public int function encrypt(int m) {
+  public int encrypt(int m) {
     return bigpowmod(m, e, n);
   }
 
-  public int function decrypt(int c) {
+  public int decrypt(int c) {
     exception decrypt_public_key();
 
     if (d == 0)
@@ -47,7 +47,7 @@ namespace RSA {
     return bigpowmod(c, d, n);
   }
 
-  public void function set_private_key(int p, int q, int e0) {
+  public void set_private_key(int p, int q, int e0) {
     int phi = (p - 1) * (q - 1);
 
     n = p * q;
@@ -59,7 +59,7 @@ namespace RSA {
     d = zminv(e, phi);
   }
 
-  public void function set_public_key(int n0, int e0) {
+  public void set_public_key(int n0, int e0) {
     n = n0;
     e = e0;
     d = 0;

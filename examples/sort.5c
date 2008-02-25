@@ -12,21 +12,17 @@ namespace Sort {
     /*
      * Quicksort with random pivot
      */
-    public void function qsort (&poly[*] a, bool(poly, poly) gt)
+    public void qsort (&poly[*] a, bool(poly, poly) gt)
     {
-	void function quicksort (int p, int r)
-	{
-	    if (p < r)
-	    {
+	void quicksort (int p, int r) {
+	    if (p < r) {
 		/* swap two array elements */
-		void function exchange (int i, int j)
-		{
+		void exchange (int i, int j) {
 		    poly t = a[i]; a[i] = a[j]; a[j] = t;
 		}
     
 		/* partition the array into two pieces and return the pivot */
-		int function partition (int p, int r)
-		{
+		int partition (int p, int r) {
 		    /* select a random element to pivot */
 		    int pivot = p + PRNG::randint(p-r);
 		    exchange (pivot, r);
@@ -57,14 +53,13 @@ namespace Sort {
     /*
      * Mergesort
      */
-    public void function mergesort (&poly[*] a, bool(poly, poly) gt)
+    public void mergesort (&poly[*] a, bool(poly, poly) gt)
     {
-	void function msort (int p, int r)
-	{
+	void msort (int p, int r) {
 	    if (p < r)
 	    {
 		/* merge two sorted lists together */
-		void function merge (int p, int q, int r)
+		void merge (int p, int q, int r)
 		{
 		    /* temporary storage for left half of array */
 		    int n1 = q - p + 1;
@@ -97,6 +92,6 @@ namespace Sort {
 	msort (0, dim(a)-1);
     }
 	
-    protected int[*] function randomints (int n, int max) =
+    protected int[*] randomints (int n, int max) =
 	(int[n]) { [i] = PRNG::randint(max) };
 }

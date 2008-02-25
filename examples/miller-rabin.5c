@@ -31,7 +31,7 @@ namespace MillerRabin {
    * Computes core of Miller-Rabin test
    * as suggested by Cormen/Leiserson/Rivest.
    */
-  witness_result function witnessexp(int b, int e, int m) {
+  witness_result witnessexp(int b, int e, int m) {
     switch (e) {
     case 0:
       return (witness_result){ .pow = 0, .wit = 1};
@@ -55,7 +55,7 @@ namespace MillerRabin {
   }
 
   /* Rest of Miller-Rabin test */
-  bool function witness(int a, int n) {
+  bool witness(int a, int n) {
     witness_result we = witnessexp(a, n - 1, n);
     if (we.wit != 0)
       return true;
@@ -65,7 +65,7 @@ namespace MillerRabin {
   }
 
   /* Try small primes, then Miller-Rabin */
-  public bool function composite(int n, int d) {
+  public bool composite(int n, int d) {
     int i, j;
     for (i = 0; i < nprimes && primes[i] < n; i++)
       if (n % primes[i] == 0)
@@ -79,7 +79,7 @@ namespace MillerRabin {
   }
 
   /* generate an n-bit prime (with probability 1-(2**-d)) number */
-  public int function primebits(int n, int d) {
+  public int primebits(int n, int d) {
     while (true) {
       int q = PRNG::randbits(n - 1) + 2**(n - 1);
       bool why = composite(q, d);

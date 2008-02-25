@@ -11,10 +11,10 @@ continuation	c;
 /*
  * Static initializer example
  */
-function stat ()
+int stat ()
 {
     int	x = 1;
-    function bar ()
+    int bar ()
     {
 	static int qq = 37;
 	/*
@@ -51,14 +51,14 @@ longjmp (c, 1)	/* 110 */
  */
 int glob_x = 2;
 
-function glob ()
+int glob ()
 {
     int	x = 2;
-    function bar ()
+    int bar ()
     {
 	int	z = 3;
 	global	q = 7;
-	function bletch ()
+	int bletch ()
 	{
 	    /*
 	     * This initializer is run in glob's static initializer context

@@ -10,7 +10,7 @@
  * capabilities of the language.
  */
 
-string function roman (int i)
+string roman (int i)
 {
     if (i < 0)
 	return "-" + roman (-i);
@@ -26,9 +26,9 @@ string function roman (int i)
 	(digit) { .ones = "I", .five = "V", .tens = "X", .base = 1 }
     };
 
-    string function place (int i, digit dig)
+    string place (int i, digit dig)
     {
-	string function lots (int i, string s)
+	string lots (int i, string s)
 	{
 	    if (i != 0)
 		return s + lots (i-1,s);

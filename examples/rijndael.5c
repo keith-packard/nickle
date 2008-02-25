@@ -172,7 +172,7 @@ public namespace Rijndael {
     
     namespace algorithm {
 
-	int function SC (int BC) 
+	int SC (int BC) 
 	{ 
 	    return ((BC - 4) >> 1); 
 	};
@@ -183,7 +183,7 @@ public namespace Rijndael {
 	    { { 0, 0 }, { 1, 7 }, { 3, 5 }, { 4, 4 } }
 	}; 
 
-	int function mul(int a, int b) 
+	int mul(int a, int b) 
 	{
 	    /* multiply two elements of GF(2^m)
 	     * needed for MixColumn and InvMixColumn
@@ -194,7 +194,7 @@ public namespace Rijndael {
 		return 0;
 	}
 
-	void function KeyAddition(*int[*,*]	a, 
+	void KeyAddition(*int[*,*]	a, 
 				  *int[*,*,*]	rk,
 				  int		r,
 				  int		BC) 
@@ -208,7 +208,7 @@ public namespace Rijndael {
 		    a*[i,j] ^= rk*[r,i,j];
 	}
 
-	void function ShiftRow(*int[*,*]    a, 
+	void ShiftRow(*int[*,*]    a, 
 			       int	    d,
 			       int	    BC) 
 	{
@@ -227,7 +227,7 @@ public namespace Rijndael {
 	    }
 	}
 
-	void function Substitution(*int[*,*]	a, 
+	void Substitution(*int[*,*]	a, 
 				   *int[*]	box,
 				   int		BC) 
 	{
@@ -241,7 +241,7 @@ public namespace Rijndael {
 		    a*[i,j] = box*[a*[i,j]];
 	}
 
-	void function MixColumn(*int[*,*]   a,
+	void MixColumn(*int[*,*]   a,
 				int	    BC) 
 	{
 	    /* Mix the four bytes of every column in a linear way
@@ -260,7 +260,7 @@ public namespace Rijndael {
 		    a*[i,j] = b[i,j];
 	}
 
-	void function InvMixColumn(*int[*,*]	a,
+	void InvMixColumn(*int[*,*]	a,
 				   int		BC) 
 	{
 	    /* Mix the four bytes of every column in a linear way
@@ -280,7 +280,7 @@ public namespace Rijndael {
 		    a*[i,j] = b[i,j];
 	}
 
-	public int function rijndaelKeySched (int[*,*]	    k,
+	public int rijndaelKeySched (int[*,*]	    k,
 					      int	    keyBits,
 					      int	    blockBits,
 					      *int[*,*,*]   W)
@@ -354,7 +354,7 @@ public namespace Rijndael {
 	    return 0;
 	}
 
-	public void function rijndaelEncrypt (*int[*,*]	    a, 
+	public void rijndaelEncrypt (*int[*,*]	    a, 
 					      int	    keyBits, 
 					      int	    blockBits, 
 					      *int[*,*,*]   rk)
@@ -399,7 +399,7 @@ public namespace Rijndael {
 	}
 
 
-	public void function rijndaelEncryptRound (*int[*,*]	a, 
+	public void rijndaelEncryptRound (*int[*,*]	a, 
 						   int		keyBits, 
 						   int		blockBits, 
 						   *int[*,*,*]	rk,
@@ -449,7 +449,7 @@ public namespace Rijndael {
 	    }
 	}
 
-	public void function rijndaelDecrypt (*int[*,*]	    a, 
+	public void rijndaelDecrypt (*int[*,*]	    a, 
 					      int	    keyBits, 
 					      int	    blockBits, 
 					      *int[*,*,*]   rk)
@@ -508,7 +508,7 @@ public namespace Rijndael {
 	 * of decryption correspond with the intermediate values
 	 * of encryption.
 	 */
-	public void function rijndaelDecryptRound (*int[*,*]	a,
+	public void rijndaelDecryptRound (*int[*,*]	a,
 						   int		keyBits, 
 						   int		blockBits, 
 						   *int[*,*,*]	rk,
@@ -563,7 +563,7 @@ public namespace Rijndael {
 
     import algorithm;
     
-    public int function makeKey (*keyInstance	key, 
+    public int makeKey (*keyInstance	key, 
 				 int		direction, 
 				 int		keyLen,
 				 string		keyMaterial)
@@ -613,7 +613,7 @@ public namespace Rijndael {
     public exception bad_cipher_mode (int mode);
     public exception bad_cipher_instance (string t);
     
-    public int function cipherInit (*cipherInstance cipher,
+    public int cipherInit (*cipherInstance cipher,
 				    int		    mode,
 				    string	    IV)
     {
@@ -659,7 +659,7 @@ public namespace Rijndael {
 
     public exception bad_cipher_state (*cipherInstance	cipher);
     
-    public int function blockEncrypt (*cipherInstance	cipher,
+    public int blockEncrypt (*cipherInstance	cipher,
 				      *keyInstance	key,
 				      *int[*]		input,
 				      int		inputLen,
@@ -735,7 +735,7 @@ public namespace Rijndael {
 	return numBlocks*cipher->blockLen;
     }
 
-    public int function blockDecrypt (*cipherInstance	cipher,
+    public int blockDecrypt (*cipherInstance	cipher,
 				      *keyInstance	key,
 				      *int[*]		input,
 				      int		inputLen,
@@ -843,7 +843,7 @@ public namespace Rijndael {
      *		BAD_CIPHER_STATE - cipher in bad state (e.g., not initialized)
      */
 
-    public int function cipherUpdateRounds (*cipherInstance cipher,
+    public int cipherUpdateRounds (*cipherInstance cipher,
 					    *keyInstance    key,
 					    *int[*]	    input,
 					    int		    inputLen,
@@ -888,7 +888,7 @@ public namespace Rijndael {
 	return TRUE;
     }
     
-    public int[*] function string_to_array (string s, *cipherInstance cipher)
+    public int[*] string_to_array (string s, *cipherInstance cipher)
     {
 	int	blockLen = cipher->blockLen // 8;
 	int	len = (ceil (String::length (s) / blockLen) * blockLen);
@@ -903,7 +903,7 @@ public namespace Rijndael {
 	return a;
     }
     
-    public string function array_to_string (int[*] a)
+    public string array_to_string (int[*] a)
     {
 	string	s = "";
 	int	i;
@@ -916,7 +916,7 @@ public namespace Rijndael {
 
 import Rijndael;
 
-void function main ()
+void main ()
 {
     string	secret = "000102030405060708090a0b0c0d0e0f";
     string	original = "Hello, world.";

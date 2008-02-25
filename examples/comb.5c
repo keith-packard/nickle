@@ -7,15 +7,15 @@
 
 namespace Comb {
 
-  public int function perm(n, r) {
+  public int perm(n, r) {
     return n! // r!;
   }
 
-  public int function choose(n, r) {
+  public int choose(n, r) {
     return n! // (r! * (n - r)!);
   }
 
-  public int function binom(n, k) {
+  public int binom(n, k) {
     int sum, i;
 
     sum = 1;

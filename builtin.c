@@ -73,11 +73,10 @@ static const struct ebuiltin excepts[] = {
 	" Attempt to index outside of array or do pointer arithmetic\n"
 	" on a pointer not referencing an array.\n"
 	" 'message' indicates the error context.\n" },
-    {"divide_by_zero",		exception_divide_by_zero,	"sRR", "\n"
-	" divide_by_zero (string message, real num, real den)\n"
+    {"divide_by_zero",		exception_divide_by_zero,	"RR", "\n"
+	" divide_by_zero (real num, real den)\n"
 	"\n"
-	" Division or modulus by zero.\n"
-	" 'message' indicates the error context.\n" },
+	" Division or modulus by zero.\n" },
     {"invalid_struct_member",	exception_invalid_struct_member,"ps", "\n"
 	" invalid_struct_member (poly value, string member)\n"
 	"\n"

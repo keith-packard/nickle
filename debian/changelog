@@ -1,3 +1,14 @@
+nickle (2.67-1) unstable; urgency=low
+  * Don't require string to be first param on builtin exceptions
+  * Add io_eof exceptions when reading at EOF
+  * Add unix-domain socket support
+  * Make SIGINT raise signal exception
+  * Add pid/uid/gid builtins
+  * Add unlink/rename/mkdir/rmdir builtins
+  * Autoimport works better on nested namespaces
+
+ -- Keith Packard <keithp@keithp.com>  Wed, 19 Mar 2008 16:09:04 -0700
+
 nickle (2.66-1) unstable; urgency=low
   * Support autoload/autoimport of nested namespaces.
   * Allow 'print' to find unpublished names

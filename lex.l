@@ -148,7 +148,7 @@ LexFile (char *s, Bool complain, Bool after)
     if (f == 0) {
 	if (complain)
 	    (void) FilePrintf (FileStderr, "%s: %s\n",
-			       s, FileGetErrorMessage (err));
+			       s, StringChars (&FileGetErrorMessage (err)->string));
 	return False;
     }
     (void) NewLexInput(f, AtomId (s), after, False);

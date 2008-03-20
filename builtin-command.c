@@ -186,7 +186,7 @@ do_Command_pretty_print (int argc, Value *args)
     for (i = 1; i < argc; i++)
     {
 	names = args[i];
-	if (NamespaceLocate (names, &namespace, &symbol, &publish, True))
+	if (NamespaceLocate (names, &namespace, &symbol, &publish, False))
 	    PrettyPrint (f, publish, symbol);
 	else
 	    RaiseStandardException (exception_invalid_argument, 3,

@@ -132,16 +132,20 @@ clean-local:
 #
 RPMDIR=$(HOME)/rpmbuild
 
-rpm: $(RPMFILE)
+rpm: $(RPMFILE) $(SRPMFILE)
 
-$(RPMFILE) $(SRPMFILE): $(TARFILE) nickle.spec
+$(RPMFILE): $(TARFILE) nickle.spec
 	mkdir -p $(RPMDIR)/$(PACKAGE)-$(VERSION)
 	cp $(TARFILE) $(RPMDIR)/$(PACKAGE)-$(VERSION)
 	rpmbuild -ba nickle.spec
-	
+
+$(SRPMFILE): $(RPMFILE)
+
 $(TARFILE): dist-gzip $(DISTFILES)
 	touch $(TARFILE)
 	echo $(TARFILE) ready
+
+release-files: $(RELEASE_FILES)
 
 release: $(RELEASE_FILES)
 	scp $(RELEASE_FILES) nickle.org:/var/www/nickle/release

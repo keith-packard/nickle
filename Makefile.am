@@ -87,7 +87,7 @@ $(USES_GRAM_H): gram.h
 
 YACCCOMPILE = $(YACC) $(YFLAGS) $(AM_YFLAGS) gram.y && sed -i 's/^short yy/static const short yy/' y.tab.c && echo
 
-builtin.o: $(nickle_SOURCES)
+builtin.o main.o: Makefile
 
 TARFILE=$(PACKAGE)-$(VERSION).tar.gz
 DEBFILE=$(PACKAGE)_$(VERSION)-1_i386.deb
@@ -139,7 +139,9 @@ $(RPMFILE) $(SRPMFILE): $(TARFILE) nickle.spec
 	cp $(TARFILE) $(RPMDIR)/$(PACKAGE)-$(VERSION)
 	rpmbuild -ba nickle.spec
 	
-$(TARFILE): dist-gzip
+$(TARFILE): dist-gzip $(DISTFILES)
+	touch $(TARFILE)
+	echo $(TARFILE) ready
 
 release: $(RELEASE_FILES)
 	scp $(RELEASE_FILES) nickle.org:/var/www/nickle/release

@@ -55,7 +55,7 @@ poly () binloop(poly() l, poly() r) {
 		}
 		return a[i++ % dim(a)](la, ra);
 	    }
-	    catch divide_by_zero (string a, real x, real y) {	continue; }
+	    catch divide_by_zero (real x, real y) {	continue; }
 	    catch invalid_argument (string a, int i, poly p) { continue; }
 	    catch invalid_binop_values (string a, poly l, poly r) { continue; }
     };

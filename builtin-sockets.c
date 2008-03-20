@@ -164,9 +164,9 @@ do_Socket_create (int num, Value *args)
     Value ret;
 
     if (num == 0 || num > 2) {
-	RaiseStandardException (exception_invalid_argument,
-				"create must have one or two arguments",
-				2, NewInt (0), NewInt (num));
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString ("create must have one or two arguments"),
+				NewInt (0), NewInt (num));
 	RETURN (Void);
     }
 
@@ -200,8 +200,8 @@ typedef union {
 
 #define VerifyArgumentCount(arg, condition, error)			\
 if (! (condition)) {							\
-    RaiseStandardException (exception_invalid_argument,			\
-                            (error), 2, NewInt (0), NewInt (arg));	\
+    RaiseStandardException (exception_invalid_argument, 3,    		\
+                            NewStrString (error), NewInt (0), NewInt (arg));	\
 }
 
 /* Supports the following args from both bind and connect:

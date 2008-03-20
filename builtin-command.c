@@ -189,9 +189,8 @@ do_Command_pretty_print (int argc, Value *args)
 	if (NamespaceLocate (names, &namespace, &symbol, &publish, True))
 	    PrettyPrint (f, publish, symbol);
 	else
-	    RaiseStandardException (exception_invalid_argument,
-				    "name not found",
-				    2, 
+	    RaiseStandardException (exception_invalid_argument, 3,
+				    NewStrString ("name not found"),
 				    NewInt (i), names);
     }
     RETURN (Void);

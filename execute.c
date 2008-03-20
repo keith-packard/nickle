@@ -279,8 +279,8 @@ ThreadAssign (Value ref, Value v, Bool initialize)
     else if (RefConstant(ref) && !initialize)
 	RaiseStandardException (exception_readonly_box, 1, v);
     else if (ref->ref.element >= ref->ref.box->nvalues)
-	RaiseStandardException (exception_invalid_array_bounds,
-				2, NewInt(ref->ref.element), v);
+	RaiseStandardException (exception_invalid_array_bounds, 2,
+				NewInt(ref->ref.element), v);
     else if (!TypeCompatibleAssign (RefType (ref), v))
     {
 	RaiseStandardException (exception_invalid_argument, 3,
@@ -787,7 +787,8 @@ ThreadOpArray (Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
     case rep_string:
 	if (!fetch)
 	{
-	    RaiseStandardException (exception_invalid_binop_values, 2, v, value);
+	    RaiseStandardException (exception_invalid_binop_values, 2,
+				    v, value);
 	    break;
 	}
 	if (stack != 1)

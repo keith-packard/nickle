@@ -7,7 +7,7 @@
 /*
  * builtin-process.c
  *
- * provide builtin functions for the Process namespace
+ * provide builtin functions for the PID namespace
  */
 
 #include <unistd.h>
@@ -17,38 +17,38 @@
 
 #include "builtin.h"
 
-NamespacePtr ProcessNamespace;
+NamespacePtr PIDNamespace;
 
 static Value
-do_Process_getuid (void)
+do_PID_getuid (void)
 {
     ENTER ();
     RETURN (NewInt (getuid()));
 }
 
 static Value
-do_Process_geteuid (void)
+do_PID_geteuid (void)
 {
     ENTER ();
     RETURN (NewInt (geteuid()));
 }
 
 static Value
-do_Process_getgid (void)
+do_PID_getgid (void)
 {
     ENTER ();
     RETURN (NewInt (getgid()));
 }
 
 static Value
-do_Process_getegid (void)
+do_PID_getegid (void)
 {
     ENTER ();
     RETURN (NewInt (getegid()));
 }
 
 static Value
-do_Process_getgroups (void)
+do_PID_getgroups (void)
 {
     ENTER ();
     int	    n;
@@ -66,7 +66,7 @@ do_Process_getgroups (void)
 }
 
 static Value
-do_Process_getpid (void)
+do_PID_getpid (void)
 {
     ENTER ();
     RETURN (NewInt (getpid()));
@@ -84,7 +84,7 @@ error (Value value)
 }
 
 static Value
-do_Process_setuid (Value uid)
+do_PID_setuid (Value uid)
 {
     ENTER ();
     int u = IntPart (uid, "Invalid uid");
@@ -98,7 +98,7 @@ do_Process_setuid (Value uid)
 }
 
 static Value
-do_Process_seteuid (Value euid)
+do_PID_seteuid (Value euid)
 {
     ENTER ();
     int u = IntPart (euid, "Invalid euid");
@@ -112,7 +112,7 @@ do_Process_seteuid (Value euid)
 }
 
 static Value
-do_Process_setgid (Value gid)
+do_PID_setgid (Value gid)
 {
     ENTER ();
     int u = IntPart (gid, "Invalid gid");
@@ -126,7 +126,7 @@ do_Process_setgid (Value gid)
 }
 
 static Value
-do_Process_setegid (Value egid)
+do_PID_setegid (Value egid)
 {
     ENTER ();
     int u = IntPart (egid, "Invalid egid");
@@ -140,7 +140,7 @@ do_Process_setegid (Value egid)
 }
 
 static Value
-do_Process_setgroups (Value groups)
+do_PID_setgroups (Value groups)
 {
     ENTER ();
     int	    n;
@@ -162,55 +162,55 @@ do_Process_setgroups (Value groups)
 }
 
 void
-import_Process_namespace (void)
+import_PID_namespace (void)
 {
     ENTER ();
 
     static const struct fbuiltin_0 funcs_0[] = {
-	{ do_Process_getuid, "getuid", "i", "", "\n"
+	{ do_PID_getuid, "getuid", "i", "", "\n"
 	    " int getuid ()\n"
 	    "\n"
 	    " Return the current uid\n" },
-	{ do_Process_geteuid, "geteuid", "i", "", "\n"
+	{ do_PID_geteuid, "geteuid", "i", "", "\n"
 	    " int geteuid ()\n"
 	    "\n"
 	    " Return the current effective uid\n" },
-	{ do_Process_getgid, "getgid", "i", "", "\n"
+	{ do_PID_getgid, "getgid", "i", "", "\n"
 	    " int getgid ()\n"
 	    "\n"
 	    " Return the current gid\n" },
-	{ do_Process_getegid, "getegid", "i", "", "\n"
+	{ do_PID_getegid, "getegid", "i", "", "\n"
 	    " int getegid ()\n"
 	    "\n"
 	    " Return the current effective gid\n" },
-	{ do_Process_getgroups, "getgroups", "Ai", "", "\n"
+	{ do_PID_getgroups, "getgroups", "Ai", "", "\n"
 	    " int[*] getgroups ()\n"
 	    "\n"
 	    " Return the list of additional groups\n" },
-	{ do_Process_getpid, "getpid", "i", "", "\n"
+	{ do_PID_getpid, "getpid", "i", "", "\n"
 	    " int getpid ()\n"
 	    "\n"
 	    " Return the current process id." },
 	{ 0 }
     };
     static const struct fbuiltin_1 funcs_1[] = {
-	{ do_Process_setuid, "setuid", "v", "i", "\n"
+	{ do_PID_setuid, "setuid", "v", "i", "\n"
 	    " void setuid (int uid)\n"
 	    "\n"
 	    " Set the current uid." },
-	{ do_Process_seteuid, "seteuid", "v", "i", "\n"
+	{ do_PID_seteuid, "seteuid", "v", "i", "\n"
 	    " void seteuid (int euid)\n"
 	    "\n"
 	    " Set the current euid." },
-	{ do_Process_setgid, "setgid", "v", "i", "\n"
+	{ do_PID_setgid, "setgid", "v", "i", "\n"
 	    " void setgid (int gid)\n"
 	    "\n"
 	    " Set the current gid." },
-	{ do_Process_setegid, "setegid", "v", "i", "\n"
+	{ do_PID_setegid, "setegid", "v", "i", "\n"
 	    " void setegid (int egid)\n"
 	    "\n"
 	    " Set the current egid." },
-	{ do_Process_setgroups, "setgroups", "v", "Ai", "\n"
+	{ do_PID_setgroups, "setgroups", "v", "Ai", "\n"
 	    " void setgroups (int[*] groups)\n"
 	    "\n"
 	    " Set the list of additional groups." },
@@ -229,13 +229,13 @@ import_Process_namespace (void)
     };
     const struct ebuiltin   *e;
 	
-    ProcessNamespace = BuiltinNamespace (/*parent*/ 0, "Process")->namespace.namespace;
+    PIDNamespace = BuiltinNamespace (/*parent*/ 0, "PID")->namespace.namespace;
     
     for (e = excepts; e->name; e++)
-	BuiltinAddException (&ProcessNamespace, e->exception, e->name, e->args, e->doc);
+	BuiltinAddException (&PIDNamespace, e->exception, e->name, e->args, e->doc);
 
-    BuiltinFuncs0 (&ProcessNamespace, funcs_0);
-    BuiltinFuncs1 (&ProcessNamespace, funcs_1);
+    BuiltinFuncs0 (&PIDNamespace, funcs_0);
+    BuiltinFuncs1 (&PIDNamespace, funcs_1);
     EXIT ();
 }
 

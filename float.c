@@ -746,6 +746,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     char	*frac_buffer;
     char	*frac_string;
     char	*exp_string = 0;
+    Bool	rounded = False;
     
     if (base <= 0)
 	base = 10;
@@ -780,11 +781,6 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     negative = a->mant->sign == Negative;
     m = NewInteger (Positive, a->mant->mag);
     
-    /*
-     * Round the mantissa up by adding a bit at the extreme of the precision
-     */
-    m = Plus (m, NewFloat (one_fpart,
-			   NewIntFpart (length - a->prec), a->prec + 2));
     m = Times (m, fratio);
     if (True (Less (m, One)))
     {
@@ -847,10 +843,11 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	if (prec == INFINITE_OUTPUT_PRECISION)
 	    prec = mant_prec;
     }
-	
+    
     int_part = Floor (m);
     frac_part = Minus (m, int_part);
 	
+try_again:	
     if (ValueIsInteger(int_part))
 	int_n = IntegerMag(int_part);
     else
@@ -905,6 +902,31 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     
     if (frac_width < 2)
 	frac_width = 0;
+    /*
+     * Round the fractional part up by 1/2 beyond the
+     * last digit to be printed.
+     */
+    if (!rounded)
+    {
+	int frac_digits = frac_width == 0 ? 0 : frac_width - 1;
+	Value	round = Times (Divide (One, NewInt (2)),
+			       Pow (NewInt (base),
+				    NewInt (-frac_digits)));
+	frac_part = Plus (frac_part, round);
+			  
+	/*
+	 * If the fractional overflowed, bump the integer part
+	 * and try again
+	 */
+	if (GreaterEqual (frac_part, One) == TrueVal)
+	{
+	    frac_part = Minus (frac_part, One);
+	    int_part = Plus (int_part, One);
+	    rounded = True;
+	    free (int_buffer);
+	    goto try_again;
+	}
+    }
     frac_buffer = 0;
     frac_string = 0;
     if (frac_width)
@@ -927,7 +949,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	    EXIT ();
 	    return True;
 	}
-	    
+
 	while (frac_wrote < frac_width - 1)
 	{
 	    *--frac_string = '0';

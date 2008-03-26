@@ -1,5 +1,3 @@
-/* $Header$ */
-
 /*
  * Copyright © 1988-2004 Keith Packard and Bart Massey.
  * All Rights Reserved.  See the file COPYING in this directory
@@ -32,7 +30,9 @@
 ReferencePtr	fileBlockedReference;
 Value		fileBlocked;
 Bool		anyFileWriteBlocked;
+#ifdef NO_PIPE_SIGIO
 Bool		anyPipeReadBlocked;
+#endif
 extern Bool	ownTty[3];
 
 typedef struct _FileErrorMap {
@@ -1876,7 +1876,9 @@ FileCheckBlocked (Bool block)
     Value	    blocked, *prev;
     Bool	    ready;
     Bool	    writeBlocked;
+#ifdef NO_PIPE_SIGIO
     Bool	    readPipeBlocked;
+#endif
     
     FD_ZERO (&readable);
     FD_ZERO (&writable);
@@ -1915,12 +1917,16 @@ FileCheckBlocked (Bool block)
     else
     {
 	anyFileWriteBlocked = False;
+#ifdef NO_PIPE_SIGIO
 	anyPipeReadBlocked = False;
+#endif
     }
     if (n > 0)
     {
 	writeBlocked = False;
+#ifdef NO_PIPE_SIGIO
 	readPipeBlocked = False;
+#endif
 	for (prev = &fileBlocked; (blocked = *prev); )
 	{
 	    fd = blocked->file.fd;
@@ -1940,9 +1946,11 @@ FileCheckBlocked (Bool block)
 	    }
 	    if (blocked->file.flags & FileOutputBlocked)
 		writeBlocked = True;
+#ifdef NO_PIPE_SIGIO
 	    if (blocked->file.flags & FileInputBlocked &&
 		blocked->file.flags & FileIsPipe)
 		readPipeBlocked = True;
+#endif
 	    if (ready)
 		ThreadsWakeup (blocked, WakeAll);
 	    if ((blocked->file.flags & (FileOutputBlocked|FileInputBlocked)) == 0)
@@ -1951,7 +1959,9 @@ FileCheckBlocked (Bool block)
 		prev = &blocked->file.next;
 	}
 	anyFileWriteBlocked = writeBlocked;
+#ifdef NO_PIPE_SIGIO
 	anyPipeReadBlocked = readPipeBlocked;
+#endif
     }
     EXIT ();
 }
@@ -1964,6 +1974,7 @@ FileSetBlocked (Value file, int flag)
 	anyFileWriteBlocked = True;
 	IoNoticeWriteBlocked ();
     }
+#ifdef NO_PIPE_SIGIO
     if (flag == FileInputBlocked && 
 	(file->file.flags & FileIsPipe) && 
 	!anyPipeReadBlocked)
@@ -1971,6 +1982,7 @@ FileSetBlocked (Value file, int flag)
 	anyPipeReadBlocked = True;
 	IoNoticeReadBlocked ();
     }
+#endif
     if (file->file.flags & (FileOutputBlocked|FileInputBlocked))
     {
 	file->file.flags |= flag;

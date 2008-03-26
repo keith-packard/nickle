@@ -681,7 +681,9 @@ void	IoStop (void);
 void	IoFini (void);
 Bool	IoTimeout (void *);
 void	IoNoticeWriteBlocked (void);
+#ifdef NO_PIPE_SIGIO
 void	IoNoticeReadBlocked (void);
+#endif
 void	IoNoticeTtyUnowned (void);
 void	IoInterrupt (void);
 

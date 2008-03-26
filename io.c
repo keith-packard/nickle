@@ -106,7 +106,11 @@ IoTimeout (void *closure)
     if (anyTtyUnowned)
 	IoStart ();
     FileCheckBlocked (False);
-    if (anyFileWriteBlocked || anyPipeReadBlocked || anyTtyUnowned)
+    if (anyFileWriteBlocked || anyTtyUnowned
+#ifdef NO_PIPE_SIGIO
+	|| anyPipeReadBlocked 
+#endif
+	)
 	return True;
     ioTimeoutQueued = False;
     return False;
@@ -134,11 +138,13 @@ IoNoticeWriteBlocked (void)
     IoSetupTimeout ();
 }
 
+#ifdef NO_PIPE_SIGIO
 void
 IoNoticeReadBlocked (void)
 {
     IoSetupTimeout ();
 }
+#endif
 
 void
 IoInit (void)

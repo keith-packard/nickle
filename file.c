@@ -29,7 +29,7 @@
 
 ReferencePtr	fileBlockedReference;
 Value		fileBlocked;
-Bool		anyFileWriteBlocked;
+Bool		stdinOwned, stdinPolling;
 #ifdef NO_PIPE_SIGIO
 Bool		anyPipeReadBlocked;
 #endif
@@ -952,8 +952,12 @@ FileIsReadable (int fd)
     int		    n;
     struct timeval  tv;
 
-    if (fd < 3 && !ownTty[fd])
+    if (fd == 0 && !stdinOwned)
+    {
+	if (!stdinPolling)
+	    IoNoticeTtyUnowned ();
 	return False;
+    }
     do
     {
 	FD_ZERO (&bits);
@@ -1892,7 +1896,7 @@ FileCheckBlocked (Bool block)
 	    continue;
 	}
 	prev = &blocked->file.next;
-	if (fd < 3 && !ownTty[fd])
+	if (fd == 0 && !stdinOwned)
 	    continue;
 	if (blocked->file.flags & FileInputBlocked)
 	    FD_SET (fd, &readable);

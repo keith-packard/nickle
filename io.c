@@ -15,9 +15,10 @@
 #include	"ref.h"
 
 volatile Bool	signalIo;
-Bool		ownTty[3];
-Bool		anyTtyUnowned;
+Bool		stdinOwned;
+Bool		stdinPolling;
 Bool		ioTimeoutQueued;
+Bool		anyFileWriteBlocked;
 
 #ifdef HAVE_SIGACTION
 #define RESTART_SIGNAL(sig,func)
@@ -41,14 +42,11 @@ IoInterrupt (void)
 void
 IoStop (void)
 {
-    int	fd;
-
-    for (fd = 0; fd < 3; fd++)
+    if (stdin_interactive)
     {
-	ownTty[fd] = False;
-	FileResetFd (fd);
+	FileResetFd (0);
+	stdinOwned = False;
     }
-    anyTtyUnowned = True;
 }
 
 #ifdef GETPGRP_VOID
@@ -71,20 +69,15 @@ IoOwnTty (int fd)
 void
 IoStart (void)
 {
-    int	fd;
-    
-    anyTtyUnowned = False;
-    for (fd = 0; fd < 3; fd++)
+    if (stdin_interactive) 
     {
-        ownTty[fd] = IoOwnTty (fd);
-        if (!ownTty[fd])
-	    anyTtyUnowned = True;
+	stdinOwned = IoOwnTty (0);
+	if (stdinOwned)
+	{
+	    stdinPolling = False;
+	    FileSetFd (0);
+	}
     }
-    if (anyTtyUnowned)
-	IoNoticeTtyUnowned ();
-    else if (stdin_interactive)
-	for (fd = 0; fd < 3; fd++)
-	    FileSetFd (fd);
 }
 
 void
@@ -103,10 +96,10 @@ Value   FileStdin, FileStdout, FileStderr;
 Bool
 IoTimeout (void *closure)
 {
-    if (anyTtyUnowned)
+    if (!stdinOwned)
 	IoStart ();
     FileCheckBlocked (False);
-    if (anyFileWriteBlocked || anyTtyUnowned
+    if (anyFileWriteBlocked || (!stdinOwned && stdinPolling)
 #ifdef NO_PIPE_SIGIO
 	|| anyPipeReadBlocked 
 #endif
@@ -129,7 +122,11 @@ IoSetupTimeout (void)
 void
 IoNoticeTtyUnowned (void)
 {
-    IoSetupTimeout();
+    if (!stdinOwned && !stdinPolling)
+    {
+	stdinPolling = True;
+	IoSetupTimeout();
+    }
 }
 
 void

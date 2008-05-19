@@ -78,6 +78,8 @@ IoStart (void)
 	    FileSetFd (0);
 	}
     }
+    else
+	stdinOwned = True;
 }
 
 void

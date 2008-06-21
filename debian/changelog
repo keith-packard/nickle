@@ -1,3 +1,13 @@
+nickle (2.68-1) unstable; urgency=low
+
+  * Add README.release
+  * Bump debian standards to 3.8.0
+  * Allow background nickle to not poll on tty ownership
+  * Remove support for non-SIGIO pipes
+  * Fix floating point printing to correctly round output
+
+ -- Keith Packard <keithp@keithp.com>  Sat, 21 Jun 2008 02:17:49 -0700
+
 nickle (2.67-1) unstable; urgency=low
   * Don't require string to be first param on builtin exceptions
   * Add io_eof exceptions when reading at EOF

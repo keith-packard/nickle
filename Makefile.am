@@ -17,7 +17,7 @@ NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c \
 DEBIAN = debian/nickle.install debian/changelog debian/compat \
 	 debian/control debian/copyright debian/rules debian/lintian.override
 	 
-EXTRA_DIST = README.name autogen.sh ChangeLog \
+EXTRA_DIST = README.name README.release autogen.sh ChangeLog \
 	$(NICKLEFILES) $(DEBIAN) nickle.1.in nickle.spec.in
 
 MAINTAINERCLEANFILES=ChangeLog

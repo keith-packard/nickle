@@ -1,0 +1,39 @@
+If you're going to package nickle for release, there are several
+important steps:
+
+ 1.	Create new version
+ 		edit configure.in, changing the version number in the
+		AC_INIT line
+		
+ 2. 	rebuild the configuration files with autogen.sh
+ 		sh autogen.sh --prefix=/usr --mandir=/usr/share/man
+		
+ 3.	make distcheck
+ 
+ 4.	Update debian/changelog
+
+		git-log --pretty=oneline 2.<xx>..master
+		
+ 5.	Build the release
+
+		make release-files
+ 
+ 6.	Commit these changes
+	
+		git-commit -m'Update to version 2.<xx>' -a
+
+ 7.	Tag
+
+		git-tag -s -m 'Version 2.<xx>' 2.<xx>
+
+ 8.	Push out changes to the repo
+
+		git-push origin master 2.<xx>
+
+ 9.	Push out the release
+
+		make release
+
+10.	Push debian bits
+
+		dput nickle_2.<xx>-1_i386.changes

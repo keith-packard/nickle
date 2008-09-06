@@ -252,4 +252,14 @@ extend namespace String {
        (quote_context) { .oq = "\"", .cq = "\"", .qq = "\""}
     );
 
+    public string reverse(string s)
+        /*
+         * Reverse the string s
+         */
+    {
+        int ns = length(s);
+        int[ns] t = { [i] = s[ns - i - 1] };
+        return String::new(t);
+    }
+
 }

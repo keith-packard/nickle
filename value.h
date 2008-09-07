@@ -972,7 +972,7 @@ Value	NewForeign (const char *id, void *data, void (*mark)(void *data), void (*f
 
 unsigned    FpartLength (Fpart *a);
 
-#define DEFAULT_FLOAT_PREC	4096
+#define DEFAULT_FLOAT_PREC	256
 #define REF_CACHE_SIZE		1031
 
 extern DataCachePtr	refCache;

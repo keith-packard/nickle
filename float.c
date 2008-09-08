@@ -579,10 +579,21 @@ FloatPromote (Value av, Value bv)
 
     if (!ValueIsFloat(av))
     {
+	prec = DEFAULT_FLOAT_PREC;
 	if (bv && ValueIsFloat(bv))
+	{
 	    prec = bv->floats.prec;
+	}
 	else
-	    prec = DEFAULT_FLOAT_PREC;
+	{
+	    Value float_prec = lookupVar(0, "float_precision");
+	    if (float_prec)
+	    {
+		int default_prec = ValueInt(float_prec);
+		if (default_prec > 1)
+		    prec = default_prec;
+	    }
+	}
 	av = NewValueFloat (av, prec);
     }
     RETURN (av);

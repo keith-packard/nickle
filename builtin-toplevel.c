@@ -368,9 +368,17 @@ do_imprecise (int n, Value *p)
     }
     else
     {
+	Value float_prec;
 	if (ValueIsFloat(v))
 	    RETURN(v);
 	prec = DEFAULT_FLOAT_PREC;
+	float_prec = lookupVar(0, "float_precision");
+	if (float_prec)
+	{
+		int default_prec = ValueInt(float_prec);
+		if (default_prec > 1)
+		    prec = default_prec;
+	}
     }
 
     RETURN (NewValueFloat (v, prec));

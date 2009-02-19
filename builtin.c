@@ -51,6 +51,11 @@ static const struct filebuiltin fvars[] = {
     { 0,	0 },
 };
 
+static const struct ibuiltin ivars[] = {
+    { DEFAULT_FLOAT_PREC, "float_precision", &GlobalNamespace },
+    { 0,    0 },
+};
+
 static const struct ebuiltin excepts[] = {
     {"uninitialized_value",	exception_uninitialized_value,	"s", "\n"
 	" uninitialized_value (string message)\n"
@@ -372,6 +377,9 @@ BuiltinInit (void)
 	sym = BuiltinSymbol (f->namespace, f->name, typePrim[rep_file]);
 	BoxValueSet (sym->global.value, 0, *f->value);
     }
+
+    /* Import int objects with predefined values */
+    BuiltinIntegers (ivars);
 
     /* Import standard exceptions */
     for (e = excepts; e->name; e++)

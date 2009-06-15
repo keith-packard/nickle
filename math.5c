@@ -772,6 +772,34 @@ extend namespace Math {
     }
     
     /*
+     * atan (y/x)
+     */
+    public real atan2 (real y, real x)
+	/*
+	 * return atan (y/x), but adjust for quadrant correctly
+	 */
+    {
+	y = imprecise (y);
+	x = imprecise (x);
+
+	if (x == 0) {
+		if (y >= 0)
+			return pi_value(precision(y))/2;
+		else
+			return -pi_value(precision(y))/2;
+	}
+	real a = atan(y/x);
+	if (x < 0) {
+		real p = pi_value(precision(y));
+		if (y >= 0)
+			a += p;
+		else
+			a -= p;
+	}
+	return a;
+    }
+
+    /*
      *	atan(v) = asin(v/sqrt(1+v**2))
      *
      *	q = v/sqrt(1+v**2)
@@ -783,7 +811,7 @@ extend namespace Math {
      *  v**2 = q**2/(1-q**2)
      *  v = q/sqrt(1-q**2)
      *
-     *  asin(q) = atan(q/sqrt(1-q**2))
+     *  asin(q) = atan2(q, sqrt(1-q**2))
      */
     
     public real asin (real v)
@@ -798,14 +826,14 @@ extend namespace Math {
 	    return pi_value (precision (v))/2;
 	if (v == -1)
 	    return -pi_value (precision (v))/2;
-	return atan (v/sqrt(1-v**2));
+	return atan2(v, sqrt(1-v**2));
     }
 
     /*
      * acos(v) = asin (sqrt (1 - v**2))
      *		= atan (sqrt(1-v**2) / sqrt (1-(sqrt (1-v**2))**2))
      *		= atan (sqrt(1-v**2) / sqrt (1-(1-v**2)))
-     *		= atan (sqrt(1-v**2) / v)
+     *		= atan2 (sqrt(1-v**2), v)
      */
     public real acos (real v)
 	/*
@@ -821,41 +849,9 @@ extend namespace Math {
 	    return pi_value(precision(v));
 	if (v == 0)
 	    return pi_value(precision(v))/2;
-	return atan (sqrt (1-v**2)/v);
+	return atan2 (sqrt (1-v**2), v);
     }
 	
-    /*
-     * atan (y/x)
-     */
-    public real atan2 (real y, real x)
-	/*
-	 * return atan (y/x), but adjust for quadrant correctly
-	 */
-    {
-	y = imprecise (y);
-	x = imprecise (x);
-	if (y == 0)
-	{
-	    if (x >= 0)
-		return 0;
-	    return pi_value (precision (y));
-	}
-	if (x == 0)
-	    return sign(y) * pi_value (precision (y))/2;
-
-	real	a;
-
-	a = atan (y/x);
-	if (x < 0)
-	{
-	    if (y >= 0)
-		a += pi_value (precision (a));
-	    else
-		a -= pi_value (precision (a));
-	}
-	return a;
-    }
-
     /*
      * These two are used for the '**' and '**=' operators
      */

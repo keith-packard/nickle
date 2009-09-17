@@ -110,6 +110,7 @@ $(DEB_TAR): $(TARFILE)
 	rm -rf $(DEB_TAR_DIR)
 	tar xzf $(TARFILE)
 	mv $(distdir) $(DEB_TAR_DIR)
+	rm -rf $(DEB_TAR_DIR)/debian
 	tar czf $(DEB_TAR) $(DEB_TAR_DIR)
 
 nickle.1: nickle.1.in config.h

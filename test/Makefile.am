@@ -14,13 +14,14 @@ noinst_PROGRAMS=math-tables
 
 TABLES=math-tables.5c
 
+CLEANFILES=$(TABLES)
+
 TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir) ../nickle
 TESTS=$(check_SCRIPTS)
 
 EXTRA_DIST=$(check_SCRIPTS)
 
+math.5c: $(TABLES)
+
 $(TABLES): math-tables
 	./math-tables > $(TABLES)
-
-
-check-TESTS: math-tables.5c

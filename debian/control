@@ -2,12 +2,12 @@ Source: nickle
 Section: interpreters
 Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
-Build-Depends: debhelper (>= 4), libreadline-dev 
-Standards-Version: 3.8.0
+Build-Depends: debhelper (>= 7), libreadline-dev 
+Standards-Version: 3.8.3
 
 Package: nickle
 Architecture: any
-Depends: ${shlibs:Depends} ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: desk calculator language
  Nickle is a language with powerful programming and scripting capabilities.
  Nickle supports a variety of datatypes, especially arbitrary precision

@@ -22,3 +22,12 @@ version-sh
 nickle-[1-9].*
 nickle_[1-9].*
 nickle
+ChangeLog
+build-stamp
+configure-stamp
+debian/files
+debian/nickle.debhelper.log
+debian/nickle.substvars
+test/math-tables
+test/math-tables.5c
+ylwrap

@@ -37,6 +37,9 @@ extend namespace Math {
 	    return abs (1/cur);
 	}
 
+	if (v == 0)
+		return 0;
+
 	if (is_rational (v))
 	{
 	    int	num, den;
@@ -544,15 +547,17 @@ extend namespace Math {
 	return imprecise (local_pi, prec);
     }
     
+    /* Normalize angle to -π < aa <= π */
     real limit_angle_to_pi (real aa)
     {
 	real	my_pi;
 
 	aa = imprecise (aa);
 	my_pi = pi_value (precision (aa));
+	aa %= 2 * my_pi;
 	if (aa > my_pi)
-	    aa = aa - 2 * my_pi;
-	return aa % (2 * my_pi);
+		aa -= 2 * my_pi;
+	return aa;
     }
     
     public real sin (real a)
@@ -690,7 +695,7 @@ extend namespace Math {
 
 	a = limit_angle_to_pi (a);
 	c = cos (a);
-	s = sign(a) * abs (cos_to_sin(c));
+	s = sign(a) * cos_to_sin(c);
         *cosp = c;
         *sinp = s;
     }
@@ -702,7 +707,7 @@ extend namespace Math {
     {
 	real	c, s;
 
-	a = imprecise (a);
+	a = imprecise(a);
 	sin_cos (a, &s, &c);
 	return s/c;
     }
@@ -783,6 +788,8 @@ extend namespace Math {
 	x = imprecise (x);
 
 	if (x == 0) {
+		if (y == 0)
+			return 0;
 		if (y >= 0)
 			return pi_value(precision(y))/2;
 		else

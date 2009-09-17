@@ -85,8 +85,6 @@ USES_GRAM_H = \
 
 $(USES_GRAM_H): gram.h
 
-YACCCOMPILE = $(YACC) $(YFLAGS) $(AM_YFLAGS) && sed -i 's/^short yy/static const short yy/' y.tab.c && echo
-
 builtin.o main.o: Makefile
 
 TARFILE=$(PACKAGE)-$(VERSION).tar.gz

@@ -190,6 +190,9 @@ extend namespace String {
 
     public typedef (string[*])(string) parse_csv_t;
 
+    public exception bad_csv_parse(string error_msg,
+    	   	                   string[*] partial_parse);
+
     public parse_csv_t make_parse_csv(quote_context q) 
 	/*
 	 * Construct a CSV file parsing context from 'q'
@@ -240,8 +243,8 @@ extend namespace String {
 		cur++;
 	    }
 	    if (t == qstate.openq)
-		raise invalid_argument("parse_csv: unexpected " +
-				       "end of csv line", 0, s);
+		raise bad_csv_parse("parse_csv: unexpected " +
+				    "end of csv line", ss);
 	    consume();
 	    return ss;
 	}

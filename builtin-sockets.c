@@ -17,6 +17,10 @@
 #include	<sys/types.h>
 #include	<sys/socket.h>
 #include	<sys/un.h>
+#ifndef SUN_LEN
+#define SUN_LEN(ptr) \
+    (sizeof(*(ptr)) - sizeof((ptr)->sun_path) + strlen((ptr)->sun_path) + 1)
+#endif
 #include	<limits.h>
 #include        <netinet/in.h>
 #include	<netdb.h>

@@ -509,7 +509,7 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
 	PrettyExpr (f, e->tree.right, selfPrec, level, nest);
 	break;
     case FACT:
-	PrettyExpr (f, e->tree.left, selfPrec, level, nest);
+	PrettyExpr (f, e->tree.right, selfPrec, level, nest);
 	FilePuts (f, "!"); 
 	break;
     case LNOT:

@@ -1,0 +1,85 @@
+/*
+ * Copyright © 2010 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+extend namespace Math {
+	/*
+	 * PrimeSwing factorial algorithm by Peter Luschny
+	 *
+	 * Translated from the Java version as found here:
+	 *
+	 * http://www.luschny.de/math/factorial/FastFactorialFunctions.htm
+	 *
+	 * That code was released under the MIT license using this reference:
+	 *
+	 * http://www.opensource.org/licenses/mit-license.php
+	 *
+	 * This code is functionally equivalent, although is not a direct copy
+	 */
+	public int factorial(int n)
+		/*
+		 * Return the factorial of 'n'
+		 */
+	{
+
+		/* For small values, just do it the naïve way */
+		if (n < 20) {
+			int r = 1;
+			while (n > 0) {
+				r *= n;
+				n--;
+			}
+			return r;
+		}
+
+		int plen = 2 * floor(sqrt(n) + n / (log2(n) - 1));
+		int[plen] prime_list;
+		int[] primes = PrimeSieve::primes(n);
+
+		static int[] smallOddSwing = {
+			1, 1, 1, 3, 3, 15, 5, 35, 35, 315, 63, 693, 231, 3003, 429, 
+			6435, 6435, 109395, 12155, 230945, 46189, 969969, 88179, 
+			2028117, 676039, 16900975, 1300075, 35102025, 5014575,
+			145422675, 9694845, 300540195, 300540195
+		};
+
+		/* Compute the swing factorial of 'n' */
+		int swing(int n) {
+			if (n < dim(smallOddSwing))
+				return smallOddSwing[n];
+			int sqrt_n = floor(sqrt(n));
+			PrimeSieve::range_t r1 = PrimeSieve::primes_range(&primes, 3, sqrt_n);
+			PrimeSieve::range_t r2 = PrimeSieve::primes_range(&primes, sqrt_n + 1, n // 3);
+			int count = 0;
+			for (int i_p = r1.start; i_p < r1.end; i_p++) {
+				int prime = primes[i_p];
+				int q = n, p = 1;
+				while ((q //= prime) > 0)
+					if ((q & 1) == 1)
+						p *= prime;
+				if (p > 1)
+					prime_list[count++] = p;
+			}
+			for (int i_p = r2.start; i_p < r2.end; i_p++) {
+				int prime = primes[i_p];
+				if (((n // prime) & 1) == 1)
+					prime_list[count++] = prime;
+			}
+			int prod = PrimeSieve::primorial(&primes, n // 2 + 1, n);
+			for (int i = 0; i < count; i++)
+				prod *= prime_list[i];
+			return prod;
+		}
+
+		/* Final factorial computation */
+		int recursive_factorial(int n) {
+			if (n < 2)
+				return 1;
+			return recursive_factorial(n>>1) ** 2 * swing(n);
+		}
+
+		return recursive_factorial(n) << (n - popcount(n));
+	}
+}

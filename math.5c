@@ -648,8 +648,10 @@ extend namespace Math {
 	    a4 = a**4;
 	    iter = prec + 8;
 	    v = 0;
+	    int niter = 0;
 	    while (iter-- > 0)
 	    {
+		niter++;
 		term = ai/i! - aj/j!;
 		v += term;
 		if (exponent (v) > exponent (term) + iprec)
@@ -659,6 +661,7 @@ extend namespace Math {
 		i += 4;
 		j += 4;
 	    }
+	    printf ("cos: %d iters\n", niter);
 	    return imprecise (v + term);
 	}
 

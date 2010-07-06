@@ -117,6 +117,8 @@ library "command.5c";
 # Note that some libraries extend namespaces, and
 # thus aren't autoload/autoimport candidates.
 library "math.5c";
+library "prime_sieve.5c"
+library "factorial.5c"
 import Math;
 library "scanf.5c";
 library "socket.5c";

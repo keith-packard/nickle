@@ -28,6 +28,10 @@ import_Math_namespace()
 	    " int popcount (int i)\n"
 	    "\n"
 	    " Return the number of '1' bits in 'i'.\n" },
+	{ do_Math_factorial, "factorial", "i", "i", "\n"
+	    " int factorial (int i)\n"
+	    "\n"
+	    " Return the factorial of 'i'.\n" },
         { 0 }
     };
     static const struct fbuiltin_2 funcs_2[] = {
@@ -145,4 +149,10 @@ Value
 do_Math_popcount(Value v) {
     ENTER ();
     RETURN (Popcount (v));
+}
+
+Value
+do_Math_factorial(Value v) {
+    ENTER ();
+    RETURN (Factorial (v));
 }

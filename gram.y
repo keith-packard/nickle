@@ -1305,7 +1305,11 @@ simpleexpr	: simpleexpr assignop simpleexpr    		%prec ASSIGN
 		| BANG simpleexpr
 		    { $$ = NewExprTree(BANG, $2, (Expr *) 0); }
 		| simpleexpr BANG					%prec FACT
-		    { $$ = NewExprTree(FACT, $1, (Expr *) 0); }
+		    { 
+			$$ = NewExprTree(FACT, 
+					 BuildName ("Math", "factorial"),
+					 $1);
+		    }
 		| INC simpleexpr
 		    { $$ = NewExprTree(INC, $2, (Expr *) 0); }
 		| simpleexpr INC

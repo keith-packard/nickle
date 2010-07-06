@@ -2528,7 +2528,23 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
     case UMINUS:    obj = CompileUnOp (obj, expr, NegateOp, stat, code); break;
     case LNOT:	    obj = CompileUnFunc (obj, expr, Lnot, stat, code,"~"); break;
     case BANG:	    obj = CompileUnFunc (obj, expr, Not, stat, code,"!"); break;
-    case FACT:	    obj = CompileUnFunc (obj, expr, Factorial, stat, code,"!"); break;
+    case FACT:
+	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);
+	SetPush (obj);
+	obj = _CompileExpr (obj, expr->tree.right, True, stat, code);
+	expr->base.type = TypeCombineUnary (expr->tree.right->base.type,
+					    expr->base.tag);
+	if (!expr->base.type)
+	{
+	    CompileError (obj, stat, "Incompatible type, value '%T', for ! operation",
+			  expr->tree.right->base.type);
+	    expr->base.type = typePoly;
+	    break;
+	}
+	BuildInst (obj, OpCall, inst, stat);
+	inst->ints.value = 1;
+	BuildInst (obj, OpNoop, inst, stat);
+	break;
     case INC:	    
 	if (expr->tree.left)
 	{

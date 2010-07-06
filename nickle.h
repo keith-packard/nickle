@@ -940,6 +940,7 @@ Value	do_xor (Value, Value);
 Value	do_Math_pow (Value, Value);
 Value	do_Math_assignpow (Value, Value);
 Value	do_Math_popcount (Value);
+Value   do_Math_factorial (Value);
 Value	do_File_putb (Value, Value);
 Value	do_File_putc (Value, Value);
 Value	do_File_ungetb (Value, Value);

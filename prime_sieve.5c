@@ -1,0 +1,90 @@
+/*
+ * Copyright © 2010 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+public namespace PrimeSieve {
+
+       int num_to_pos(int n) = (n - 3) // 2;
+       int pos_to_num(int p) = (p * 2) + 3;
+
+       /* Generate a list of primes from a boolean array of composite
+	* test results
+	*/
+       int[] sieve_to_array(&bool[] composite, int n_prime) {
+	       int[n_prime] primes;
+	       int p = 0;
+	       for (int i = 0; i < dim(composite); i++)
+		       if (!composite[i])
+			       primes[p++] = pos_to_num(i);
+	       return primes;
+       }
+
+       /* Use the sieve of Eratosthenes to compute the set of
+	* primes <= max
+	*/
+       public int[] primes (int max)
+       {
+	       int n = num_to_pos(max+1);
+	       bool[n] composite = { false ... };
+	       int n_prime = 0;
+
+	       for (int p = 0; p < n; p++) {
+		       if (!composite[p]) {
+			       int prime = pos_to_num(p);
+			       int step = prime;
+			       int init = p + prime;
+			       for (int v = init; v < n; v += step)
+				       composite[v] = true;
+			       n_prime++;
+		       }
+	       }
+	       return sieve_to_array(&composite, n_prime);
+       }
+
+       public typedef struct {
+	       int	start, end;
+       } range_t;
+
+       /* Binary search in a list of numbers for the value <= 'v' */
+       public int primes_search(&int[] primes, int v) {
+	       int min = 0, max = dim(primes);
+	       while (min < max) {
+		       int mid = (max + min) >> 1;
+		       int p = primes[mid];
+		       if (p == v)
+			       return mid;
+		       if (p > v)
+			       max = mid;
+		       else {
+			       if (min == mid)
+				       return mid;
+			       min = mid;
+		       }
+	       }
+	       return min;
+       }
+
+       /* Return the indices within a list of primes such that
+	* primes[start] <= min && max < primes[end]
+	*/
+       public range_t primes_range(&int[] primes, int min, int max) {
+	       int	start = primes_search(&primes, min);
+	       if (primes[start] < min) start++;
+	       int	end = primes_search(&primes, max) + 1;
+	       return (range_t) { start = start, end = end };
+       }
+
+       /*
+	* Multiply all primes between min and max within the
+	* supplied list.
+	*/
+        public int primorial(&int[] primes, int min, int max) {
+	       range_t r = primes_range(&primes, min, max);
+	       int v = 1;
+	       for (int i = r.start; i < r.end; i++)
+		       v *= primes[i];
+	       return v;
+       }
+}

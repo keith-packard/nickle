@@ -26,7 +26,7 @@ public namespace PrimeSieve {
 	*/
        public int[] primes (int max)
        {
-	       int n = num_to_pos(max+1);
+	       int n = num_to_pos(max) + 1;
 	       bool[n] composite = { false ... };
 	       int n_prime = 0;
 

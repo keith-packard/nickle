@@ -1,0 +1,33 @@
+/*
+ * Nickle test suite
+ *
+ * factorial tests
+ */
+
+int errors = 0;
+
+int fact(int n) {
+    int r = 1;
+    while (n > 1) {
+    	r *= n;
+	n--;
+    }
+    return r;
+}
+
+void check_factorial(int max) {
+     for (int n = 0; n < max; n++) {
+	 int is = n!;
+     	 int should = fact(n);
+
+     	 if (is != should) {
+	    printf ("check failed %d! (was %d should be %d)\n",
+	    	    n, is, should);
+	    ++errors;
+	 }
+     }
+}
+
+check_factorial(1000);
+
+exit (errors);

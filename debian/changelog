@@ -1,6 +1,17 @@
+nickle (2.70-1) unstable; urgency=low
+
+  * Make parse_csv_t type public
+  * Throw 'bad_csv_parse' exception on unclosed quotes
+  * Add factorial tests
+  * Repliace naïve factorial algorithm with the prime swing
+    algorithm defined by Peter Luschny
+  * Update to standard 3.8.4
+
+ -- Keith Packard <keithp@keithp.com>  Tue, 06 Jul 2010 01:22:30 -0400
+
 nickle (2.69-1) unstable; urgency=low
 
-  * Make debian build epend on libreadline-dev not libreadline5-dev.
+  * Make debian build depend on libreadline-dev not libreadline5-dev.
   * Get math-tables.5c built before tests are run
   * Fix trig boundary conditions.
   * Add tests for math functions.

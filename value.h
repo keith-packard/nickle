@@ -1015,7 +1015,7 @@ BoxPtr		BoxRewrite (BoxPtr box, int *ep);
 typedef struct {
     DataType	*data;
     int		size;
-    char	*values[0];
+    char	values[0];
 } DataCache, *DataCachePtr;
 
 DataCachePtr	NewDataCache (int size);

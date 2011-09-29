@@ -76,6 +76,15 @@ extern SymbolPtr    NewSymbolStatic (Atom name, Type *Rep);
 extern SymbolPtr    NewSymbolAuto (Atom name, Type *type);
 extern SymbolPtr    NewSymbolNamespace (Atom name, NamespacePtr namespace);
 
+static inline Type *_TypeNameType(TypePtr t) {
+	if (t->name.name)
+		return t->name.name->symbol.type;
+	else
+		return NULL;
+}
+
+#define TypeNameType(t) _TypeNameType(t)
+
 typedef struct _namelist	*NamelistPtr;
 
 typedef struct _namelist {
@@ -183,7 +192,14 @@ TwixtPtr
 NewTwixt (ContinuationPtr continuation, InstPtr enter, InstPtr leave);
 
 InstPtr	    TwixtJump (Value thread, TwixtPtr twixt, Bool enter);
-#define TwixtDepth(t)	((t) ? (t)->depth : 0)
+
+static inline int TwixtDepth(Twixt *t) {
+	if (t)
+		return t->depth;
+	else
+		return 0;
+}
+
 TwixtPtr    TwixtNext (TwixtPtr twixt, TwixtPtr last);
 
 # define	NOTHING	0
@@ -577,12 +593,21 @@ typedef struct _obj {
     double_digit    sub_ticks;
     Bool	error;
     NonLocal	*nonLocal;
+    Inst	insts[0];
 } Obj;
 
-#define ObjCode(obj,i)	(((InstPtr) (obj + 1)) + (i))
-#define ObjLast(obj)	((obj)->used - 1)
+static inline InstPtr ObjCode(Obj *obj, int i) {
+    return &(obj->insts[i]);
+}
 
-#define ObjStat(obj,i)	(((StatPtr) ObjCode(obj,(obj)->size)) + (i))
+static inline int ObjLast(Obj *obj) {
+    return obj->used - 1;
+}
+
+static inline StatPtr ObjStat(Obj *obj, int i) {
+    StatPtr	stats = (StatPtr) ObjCode(obj,obj->size);
+    return &stats[i];
+}
 
 ObjPtr	CompileStat (ExprPtr expr, CodePtr code);
 ObjPtr	CompileExpr (ExprPtr expr, CodePtr code);
@@ -788,7 +813,6 @@ CheckStandardException (void);
 Value
 JumpStandardException (Value thread, InstPtr *next);
 
-#ifdef HAVE_C_INLINE
 static inline Value
 IntIncDec (Value av, BinaryOp operator)
 {
@@ -802,15 +826,15 @@ IntIncDec (Value av, BinaryOp operator)
 	return NewIntInteger (a);
     return NewInt (a);
 }
-#define ValueIncDec(v,o)    (ValueIsInt(v) ? IntIncDec (v, o) : BinaryOperate (v, One, o))
-#else
-#define ValueIncDec(v,o)    (BinaryOperate (v, One, o))
-#endif
 
-#ifdef HAVE_C_INLINE
-static inline Value
-BoxValue (BoxPtr box, int e)
-{
+static inline Value ValueIncDec(Value v, BinaryOp o) {
+	if (ValueIsInt(v))
+		return IntIncDec(v,o);
+	else
+		return BinaryOperate(v, One, o);
+}
+
+static inline Value BoxValue (BoxPtr box, int e) {
     Value   v = BoxElements(box)[e];
     if (!v)
     {
@@ -820,21 +844,14 @@ BoxValue (BoxPtr box, int e)
     return v;
 }
 
-static inline Value
-Dereference (Value v)
-{
-    if (!ValueIsRef(v))
-    {
+static inline Value Dereference (Value v) {
+    if (!ValueIsRef(v)) {
 	RaiseStandardException (exception_invalid_unop_value, 1,
 				v);
 	return Void;
     }
     return REFERENCE (RefValueGet (v));
 }
-#else
-extern Value BoxValue (BoxPtr box, int e);
-extern Value Dereference (Value);
-#endif
 
 /* vararg builtins */
 Value	do_printf (int, Value *);

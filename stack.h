@@ -78,7 +78,6 @@ panic (char *, ...);
 			     StackPush ((s), (o)) : (*--STACK_TOP(s) = (o)))
 #endif
 
-#ifdef HAVE_C_INLINE
 static inline StackElement
 StackPushInline(StackObject *s, StackElement o)
 {
@@ -99,25 +98,5 @@ StackReturnInline(StackObject *s, StackPointer sp, StackElement o)
     return *--STACK_TOP(s) = o;
 }
 #define STACK_RETURN(s,sp,o) StackReturnInline(s,sp,o)
-#endif
-
-#ifndef STACK_PUSH
-#define STACK_PUSH(s,o)	StackPush(s,o)
-#endif
-#ifndef STACK_POP
-#define STACK_POP(s) StackPop(s)
-#endif
-#ifndef STACK_DROP
-#define STACK_DROP(s,i)	StackDrop(s,i)
-#endif
-#ifndef STACK_RESET
-#define STACK_RESET(s,sp) StackReset(s,sp)
-#endif
-#ifndef STACK_ELT
-#define STACK_ELT(s,i) StackElt(s,i)
-#endif
-#ifndef STACK_RETURN
-#define STACK_RETURN(s,sp,o)	StackReturn(s,sp,o)
-#endif
 
 #endif /* _STACK_H_ */

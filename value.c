@@ -763,16 +763,6 @@ CopyMutable (Value v)
     RETURN (nv);
 }
 
-#ifndef HAVE_C_INLINE
-Value
-Copy (Value v)
-{
-    if (v && Mutablep (ValueTag(v)))
-	return CopyMutable (v);
-    return v;
-}
-#endif
-
 Value
 ValueEqual (Value a, Value b, int expandOk)
 {
@@ -791,19 +781,6 @@ ValueHash (Value v)
 	return Zero;
     return NewInt ((*rep->hash) (v) & MAX_NICKLE_INT);
 }
-
-#ifndef HAVE_C_INLINE
-Value
-Dereference (Value v)
-{
-    if (!ValueIsRef(v))
-    {
-	RaiseStandardException (exception_invalid_unop_value, 1, v);
-	return Void;
-    }
-    return REFERENCE (RefValue (v));
-}
-#endif
 
 static Value
 UnitEqual (Value av, Value bv, int expandOk)

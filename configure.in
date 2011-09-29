@@ -51,7 +51,7 @@ AC_DEFUN([AS_COMPILER_FLAG],
   save_CFLAGS="$CFLAGS"
     CFLAGS="$CFLAGS $1"
 
-  AC_LINK_IFELSE(AC_LANG_PROGRAM(,), [flag_ok=yes], [flag_ok=no])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([],[return 0])], [flag_ok=yes], [flag_ok=no])
     CFLAGS="$save_CFLAGS"
 
   if test "X$flag_ok" = Xyes; then
@@ -78,13 +78,6 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h strings.h time.h sys/time.h unistd.h sys/resource.h)
 AC_CHECK_HEADERS(stropts.h)
 AC_CHECK_HEADERS(dlfcn.h)
-
-dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_INLINE
-case "$ac_cv_c_inline" in
-  no) ;;
-  *) AC_DEFINE([HAVE_C_INLINE], 1, [C compiler has some form of inline.]) ;;
-esac
 
 dnl Checks for precise integer types
 AC_CHECK_HEADERS(stdint.h)

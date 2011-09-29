@@ -270,7 +270,7 @@ ThreadStaticInit (Value thread, InstPtr *next)
     EXIT ();
 }
 
-static INLINE void
+static inline void
 ThreadAssign (Value ref, Value v, Bool initialize)
 {
     ENTER ();

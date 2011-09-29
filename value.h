@@ -241,26 +241,18 @@ extern Natural	*zero_natural;
 extern Natural	*one_natural;
 extern Natural	*two_natural;
 
-typedef enum _sign { Positive, Negative } Sign;
+typedef enum _sign { Positive = 0, Negative = 1 } Sign;
 
-#define SignNegate(sign)    ((sign) == Positive ? Negative : Positive)
+static inline Sign SignNegate(Sign sign) {
+	return 1 - sign;
+}
 
 typedef enum _signcat {
-	BothPositive, FirstPositive, SecondPositive, BothNegative
+	BothPositive = 0, FirstPositive = 1, SecondPositive = 2, BothNegative = 3
 } Signcat;
 
 static inline Signcat catagorize_signs(Sign s1, Sign s2) {
-	if (s1 == Positive) {
-		if (s2 == Positive)
-			return BothPositive;
-		else
-			return FirstPositive;
-	} else {
-		if (s2 == Positive)
-			return SecondPositive;
-		else
-			return BothNegative;
-	}
+	return (s1 << 1) | s2;
 }
 
 typedef enum _binaryOp {
@@ -322,8 +314,13 @@ extern ValueRep	   FuncRep, ThreadRep;
 extern ValueRep    SemaphoreRep, ContinuationRep, UnitRep, BoolRep;
 extern ValueRep    ForeignRep;
 
-#define NewInt(i)	((Value) IntToPtr ((((i) << 1) | 1)))
-#define IntSign(i)	((i) < 0 ? Negative : Positive)
+static inline Value NewInt(int i) {
+	return (Value) IntToPtr ((((i) << 1) | 1));
+}
+
+static inline Sign IntSign(int i) {
+	return (i) < 0 ? Negative : Positive;
+}
 
 /*
  * Use all but one bit to hold immediate integer values
@@ -354,9 +351,17 @@ extern ValueRep    ForeignRep;
 #define One NewInt(1)
 #define Zero NewInt(0)
 
-#define ValueIsPtr(v)	((PtrToInt(v) & 1) == 0)
-#define ValueIsInt(v)	(!ValueIsPtr(v))
-#define ValueInt(v)	(PtrToInt (v) >> 1)
+static inline Bool ValueIsPtr (Value v) {
+	return (PtrToInt(v) & 1) == 0;
+}
+	
+static inline Bool ValueIsInt (Value v) {
+	return !ValueIsPtr(v);
+}
+
+static inline int ValueInt(Value v) {
+	return PtrToInt (v) >> 1;
+}
 
 static inline ValueRep *_ValueRep(Value v);
 
@@ -414,8 +419,6 @@ typedef struct _typeName {
     ExprPtr	expr;
     SymbolPtr	name;
 } TypeName;
-
-#define TypeNameType(t)	((t)->name.name ? (t)->name.name->symbol.type : 0)
 
 typedef struct _typeRef {
     TypeBase	base;
@@ -519,8 +522,6 @@ Bool	TypeTypesMember (Type *list, Type *type);
 int	TypeInit (void);
 SymbolPtr   TypeNameName (Type *t);
 
-#define TypeUnionElements(t) ((t)->unions.types)
-
 Type	*TypeCombineBinary (Type *left, int tag, Type *right);
 Type	*TypeCombineUnary (Type *down, int tag);
 Type	*TypeCombineStruct (Type *type, int tag, Atom atom);
@@ -572,14 +573,6 @@ typedef struct _integer {
     BaseValue	base;
     Natural	*magn;
 } Integer;
-
-static inline Natural *IntegerMag(Value i) {
-	return (Natural *) ((long) (i->integer.magn) & ~1);
-}
-
-static inline Sign IntgerSign(Value i) {
-	return (Sign) ((long) (i->integer.magn) & 1);
-}
 
 typedef struct _rational {
     BaseValue	base;
@@ -705,7 +698,13 @@ static inline TypePtr *BoxTypesElements(BoxTypes *bt) {
 	return bt->elements;
 }
 
-#define BoxTypesValue(bt,e)	(BoxTypesElements(bt)[e])
+static inline TypePtr BoxTypesValue(BoxTypes *bt, int e) {
+	return BoxTypesElements(bt)[e];
+}
+
+static inline void BoxTypesValueSet(BoxTypes *bt, int e, TypePtr t) {
+	BoxTypesElements(bt)[e] = t;
+}
 
 extern BoxTypesPtr  NewBoxTypes (int size);
 extern int	    AddBoxType (BoxTypesPtr *btp, TypePtr t);
@@ -939,6 +938,14 @@ static inline Rep ValueTag(Value v) {
 	return ValueRep(v)->tag;
 }
 
+static inline Natural *IntegerMag(Value i) {
+	return (Natural *) ((long) (i->integer.magn) & ~1);
+}
+
+static inline Sign IntegerSign(Value i) {
+	return (Sign) ((long) (i->integer.magn) & 1);
+}
+
 typedef struct _boxReplace {
     DataType	    *data;
     BoxPtr	    new;
@@ -1014,7 +1021,7 @@ typedef struct {
 DataCachePtr	NewDataCache (int size);
 
 static inline void *DataCacheValues(DataCache *vc) {
-	return (void *) vc->values
+	return (void *) vc->values;
 }
 
 static inline int *ArrayDims (Array *a)
@@ -1136,8 +1143,6 @@ int	StringCharSize (unsigned c);
 unsigned    StringGet (char *src, long len, int i);
 char	*StrzPart (Value, char *error);
 
-#ifdef HAVE_C_INLINE
-
 static inline Value
 NewRef (BoxPtr box, int element)
 {
@@ -1152,9 +1157,7 @@ NewRef (BoxPtr box, int element)
     }
     return NewRefReal (box, element, re);
 }
-#else
-Value	NewRef (BoxPtr box, int element);
-#endif
+
 Value	NewStruct (StructType *type, Bool constant);
 StructType  *NewStructType (int nelements);
 Type	*BuildStructType (int nelements, ...);
@@ -1333,21 +1336,9 @@ int	IntPart (Value, char *error);
 
 double	DoublePart (Value av, char *error);
     
-#ifndef Numericp
-Bool	Numericp (Rep);
-#endif
-#ifndef Integralp
-Bool	Integralp (Rep);
-#endif
 Bool	Zerop (Value);
 Bool	Negativep (Value);
 Bool	Evenp (Value);
-
-#ifdef HAVE_C_INLINE
-#define INLINE inline
-#else
-#define INLINE
-#endif
 
 int	ArrayInit (void);
 int	AtomInit (void);
@@ -1364,8 +1355,13 @@ int	RefInit (void);
 int	ForeignInit (void);
 int	ValueInit (void);
 
-# define oneNp(n)	((n)->length == 1 && NaturalDigits(n)[0] == 1)
-# define zeroNp(n)	((n)->length == 0)
+static inline Bool oneNp (Natural *n) {
+	return n->length == 1 && NaturalDigits(n)[0] == 1;
+}
+
+static inline Bool zeroNp (Natural *n) {
+	return n->length == 0;
+}
 
 void	ferr(int);
 void	ignore_ferr (void);

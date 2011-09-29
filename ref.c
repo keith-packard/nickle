@@ -195,24 +195,6 @@ NewRefReal (BoxPtr box, int element, Value *re)
     RETURN (ret);
 }
 
-#ifndef HAVE_C_INLINE
-
-Value
-NewRef (BoxPtr box, int element)
-{
-    int	    c = ((unsigned) (&BoxElements(box)[element])) % REF_CACHE_SIZE;
-    Value   *re = (Value *) &DataCacheValues(refCache)[c];
-    Value   ret = *re;
-
-    if (ret && ret->ref.box == box && ret->ref.element == element)
-    {
-	REFERENCE(ret);
-	return ret;
-    }
-    return NewRefReal (box, element, re);
-}
-#endif
-
 void
 RefRewrite (Value rv)
 {

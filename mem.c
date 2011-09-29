@@ -338,11 +338,7 @@ mark (void)
 	MemReference (TemporaryData);
 }
 
-#if HAVE_C_INLINE
 static inline int
-#else
-static int
-#endif
 busy (unsigned char *data)
 {
     DataType	*type;

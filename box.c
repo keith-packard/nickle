@@ -64,19 +64,6 @@ NewTypedBox (Bool array, BoxTypesPtr bt)
     RETURN (box);
 }
 
-#ifndef HAVE_C_INLINE
-Value
-BoxValue (BoxPtr box, int e)
-{
-    if (!BoxElements(box)[e].value)
-    {
-	RaiseStandardException (exception_uninitialized_value, 0);
-	return (Void);
-    }
-    return (BoxElements(box)[e].value);
-}
-#endif
-
 static void
 MarkBoxReplace (void *object)
 {
@@ -194,7 +181,7 @@ AddBoxType (BoxTypesPtr *btp, Type *t)
 	bt = new;
     }
     position = bt->count++;
-    BoxTypesValue(bt,position) = t;
+    BoxTypesValueSet(bt,position,t);
     EXIT ();
     return position;
 }

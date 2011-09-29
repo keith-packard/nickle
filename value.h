@@ -182,10 +182,11 @@ typedef int HashValue;
 typedef struct _natural {
     DataType	*type;
     int		length;
+    digit	digits[0];
 } Natural;
 
 #define NaturalLength(n)    ((n)->length)
-#define NaturalDigits(n)    ((digit *) ((n) + 1))
+#define NaturalDigits(n)    ((n)->digits)
 
 Natural	*NewNatural (unsigned value);
 Natural *NewDoubleDigitNatural (double_digit dd);
@@ -499,7 +500,7 @@ Bool	TypeTypesMember (Type *list, Type *type);
 int	TypeInit (void);
 SymbolPtr   TypeNameName (Type *t);
 
-#define TypeUnionElements(t) ((Type **) (&t->unions + 1))
+#define TypeUnionElements(t) ((t)->unions.types)
 
 Type	*TypeCombineBinary (Type *left, int tag, Type *right);
 Type	*TypeCombineUnary (Type *down, int tag);
@@ -579,9 +580,10 @@ typedef struct _float {
 typedef struct _string {
     BaseValue	    base;
     long	    length;
+    char	    chars[0];
 } String;
 
-#define StringChars(s)	    ((char *) ((s) + 1))
+#define StringChars(s)	    ((s)->chars)
 
 typedef struct _foreign {
     BaseValue	    base;
@@ -601,9 +603,10 @@ typedef struct _boxVector {
     DataType	*data;
     int		nvalues;
     TypePtr	type;
+    BoxPtr	boxes[0];
 } BoxVector, *BoxVectorPtr;
 
-#define BoxVectorBoxes(v)   ((BoxPtr *) ((v) + 1))
+#define BoxVectorBoxes(v)   ((v)->boxes)
 
 typedef struct _array {
     BaseValue	base;
@@ -613,9 +616,10 @@ typedef struct _array {
 	BoxPtr		fix;
 	BoxVectorPtr	resize;
     } u;
+    int dims[0];
 } Array;
 
-#define ArrayDims(a)	    ((int *) ((a) + 1))
+#define ArrayDims(a)	    ((a)->dims)
 #define ArrayLimits(a)	    (ArrayDims(a) + (a)->ndim)
 #define ArrayConstant
 #define ArrayNvalues(a)	    ((a)->resizable ? (a)->u.resize->nvalues : (a)->u.fix->nvalues)
@@ -631,6 +635,7 @@ typedef struct _io_chain {
     int			size;
     int			used;
     int			ptr;
+    unsigned char	buffer[0];
 } FileChain, *FileChainPtr;
 
 typedef struct _file {
@@ -652,7 +657,7 @@ typedef struct _file {
 #define FileEOF		-1
 #define FileBlocked	-2
 #define FileError	-3
-#define FileBuffer(ic)	((unsigned char *) ((ic) + 1))
+#define FileBuffer(ic)	((ic)->buffer)
 
 #define FileReadable	    0x0001
 #define FileWritable	    0x0002
@@ -673,9 +678,10 @@ typedef struct _boxTypes {
     DataType	*data;
     int		count;
     int		size;
+    TypePtr	elements[0];
 } BoxTypes, *BoxTypesPtr;
 
-#define BoxTypesElements(bt)	((TypePtr *) ((bt) + 1))
+#define BoxTypesElements(bt)	((bt)->elements)
 #define BoxTypesValue(bt,e)	(BoxTypesElements(bt)[e])
 
 extern BoxTypesPtr  NewBoxTypes (int size);
@@ -700,9 +706,10 @@ typedef struct _structType {
     DataType	*data;
     int		nelements;
     BoxTypesPtr	types;
+    Atom	atoms[0];
 } StructType;
 
-#define StructTypeAtoms(st)	((Atom *) (st + 1))
+#define StructTypeAtoms(st)	((st)->atoms)
 
 typedef struct _struct {
     BaseValue	base;
@@ -715,6 +722,7 @@ typedef struct _union {
     StructType	*type;
     Atom	tag;
     BoxPtr	value;
+    Type	*types[0];
 } Union;
 
 typedef struct _func {
@@ -925,6 +933,7 @@ typedef struct _box {
 	TypePtr		    type;
 	BoxReplacePtr	    replace;
     } u;
+    Value	    values[0];
 } Box;
 
 #if 1
@@ -932,7 +941,7 @@ typedef struct _box {
 #else
 #define BoxCheck(box)
 #endif
-#define BoxElements(box)	(BoxCheck (box) ((Value *) ((box) + 1)))
+#define BoxElements(box)	(BoxCheck (box) ((box)->values))
 #define BoxValueSet(box,e,v)	((BoxElements(box)[e]) = (v))
 #define BoxValueGet(box,e)	((BoxElements(box)[e]))
 #define BoxConstant(box,e)	((box)->constant)
@@ -948,11 +957,12 @@ BoxPtr		BoxRewrite (BoxPtr box, int *ep);
 typedef struct {
     DataType	*data;
     int		size;
+    char	*values[0];
 } DataCache, *DataCachePtr;
 
 DataCachePtr	NewDataCache (int size);
 
-#define DataCacheValues(vc)	((void *) ((vc) + 1))
+#define DataCacheValues(vc)	((void *) ((vc)->values))
 
 Value	NewInteger (Sign sign, Natural *mag);
 Value	NewIntInteger (int value);

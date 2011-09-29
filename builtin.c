@@ -277,7 +277,7 @@ BuiltinAddException (NamespacePtr	*namespacep,
     args = BuiltinArgType (format, &argc);
     type = NewTypeFunc (typePoly, args);
     sym = BuiltinException (namespacep, name,
-			    NewTypeFunc (typePoly, args),
+			    type,
 			    doc);
     RegisterStandardException (exception, sym);
     EXIT ();

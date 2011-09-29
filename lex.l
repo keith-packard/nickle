@@ -209,9 +209,7 @@ LexGetInteractiveChar (void)
     if (!line)
     {
 	char    *p;
-	Value	v;
 
-	v = prompt ();
 	p = StrzPart (prompt (), "invalid prompt");
 	if (!p)
 	    p = "??? ";

@@ -154,7 +154,7 @@ IntegerMod (Value av, Value bv, int expandOk)
 {
     ENTER ();
     Integer	*a = &av->integer, *b = &bv->integer;
-    Natural	*quo, *rem;
+    Natural	*rem;
     
     if  (NaturalZero (IMag(b)))
     {
@@ -162,7 +162,7 @@ IntegerMod (Value av, Value bv, int expandOk)
 				av, bv);
 	RETURN (Void);
     }
-    quo = NaturalDivide (IMag(a), IMag(b), &rem);
+    (void) NaturalDivide (IMag(a), IMag(b), &rem);
     if (ISign(a) == Negative && !NaturalZero (rem))
 	rem = NaturalMinus (IMag(b), rem);
     RETURN (NewInteger (Positive, rem));

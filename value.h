@@ -185,8 +185,15 @@ typedef struct _natural {
     digit	digits[0];
 } Natural;
 
-#define NaturalLength(n)    ((n)->length)
-#define NaturalDigits(n)    ((n)->digits)
+static inline int NaturalLength(Natural *n)
+{
+	return n->length;
+}
+
+static inline digit * NaturalDigits(Natural *n)
+{
+	return n->digits;
+}
 
 Natural	*NewNatural (unsigned value);
 Natural *NewDoubleDigitNatural (double_digit dd);
@@ -242,11 +249,19 @@ typedef enum _signcat {
 	BothPositive, FirstPositive, SecondPositive, BothNegative
 } Signcat;
 
-# define catagorize_signs(s1,s2)\
-	((s1) == Positive ? \
-		((s2) == Positive ? BothPositive : FirstPositive) \
-	: \
-		((s2) == Positive ? SecondPositive : BothNegative))
+static inline Signcat catagorize_signs(Sign s1, Sign s2) {
+	if (s1 == Positive) {
+		if (s2 == Positive)
+			return BothPositive;
+		else
+			return FirstPositive;
+	} else {
+		if (s2 == Positive)
+			return SecondPositive;
+		else
+			return BothNegative;
+	}
+}
 
 typedef enum _binaryOp {
     PlusOp, MinusOp, TimesOp, DivideOp, DivOp, ModOp,
@@ -296,6 +311,8 @@ typedef enum _rep {
 /* because rep_undef is -1, using (unsigned) makes these a single compare */
 #define Numericp(t)	((unsigned) (t) <= (unsigned) rep_float)
 #define Integralp(t)	((unsigned) (t) <= (unsigned) rep_integer)
+
+
 #define Mutablep(t)	((t) >= rep_array)
 
 extern ValueRep    IntRep, IntegerRep, RationalRep, FloatRep;
@@ -341,7 +358,9 @@ extern ValueRep    ForeignRep;
 #define ValueIsInt(v)	(!ValueIsPtr(v))
 #define ValueInt(v)	(PtrToInt (v) >> 1)
 
-#define ValueRep(v) (ValueIsInt(v) ? &IntRep : (v)->value.type)
+static inline ValueRep *_ValueRep(Value v);
+
+#define ValueRep(v) _ValueRep(v)
 #define ValueIsInteger(v) (ValueRep(v) == &IntegerRep)
 #define ValueIsRational(v) (ValueRep(v) == &RationalRep)
 #define ValueIsFloat(v) (ValueRep(v) == &FloatRep)
@@ -543,7 +562,7 @@ typedef enum _publish {
     publish_private, publish_protected, publish_public, publish_extend
 } Publish;
 
-#define ValueTag(v) (ValueRep(v)->tag)
+static inline Rep ValueTag(Value v);
 
 typedef struct _baseValue {
     ValueRep	*type;
@@ -554,8 +573,13 @@ typedef struct _integer {
     Natural	*magn;
 } Integer;
 
-#define IntegerMag(i)	((Natural *) ((long) ((i)->integer.magn) & ~1))
-#define IntegerSign(i)	((Sign) ((long) ((i)->integer.magn) & 1))
+static inline Natural *IntegerMag(Value i) {
+	return (Natural *) ((long) (i->integer.magn) & ~1);
+}
+
+static inline Sign IntgerSign(Value i) {
+	return (Sign) ((long) (i->integer.magn) & 1);
+}
 
 typedef struct _rational {
     BaseValue	base;
@@ -583,7 +607,11 @@ typedef struct _string {
     char	    chars[0];
 } String;
 
-#define StringChars(s)	    ((s)->chars)
+static inline char *
+StringChars (String *s)
+{
+	return s->chars;
+}
 
 typedef struct _foreign {
     BaseValue	    base;
@@ -606,7 +634,10 @@ typedef struct _boxVector {
     BoxPtr	boxes[0];
 } BoxVector, *BoxVectorPtr;
 
-#define BoxVectorBoxes(v)   ((v)->boxes)
+static inline BoxPtr *BoxVectorBoxes(BoxVector *v)
+{
+	return (BoxPtr *) v->boxes;
+}
 
 typedef struct _array {
     BaseValue	base;
@@ -618,17 +649,6 @@ typedef struct _array {
     } u;
     int dims[0];
 } Array;
-
-#define ArrayDims(a)	    ((a)->dims)
-#define ArrayLimits(a)	    (ArrayDims(a) + (a)->ndim)
-#define ArrayConstant
-#define ArrayNvalues(a)	    ((a)->resizable ? (a)->u.resize->nvalues : (a)->u.fix->nvalues)
-#define ArrayValueBox(a,i)  ((a)->resizable ? BoxVectorBoxes((a)->u.resize)[i] : (a)->u.fix)
-#define ArrayValueElt(a,i)  ((a)->resizable ? 0 : (i))
-#define ArrayType(a)	    ((a)->resizable ? (a)->u.resize->type : (a)->u.fix->u.type)
-#define ArrayValue(a,i)	    (BoxValue(ArrayValueBox(a,i),ArrayValueElt(a,i)))
-#define ArrayValueGet(a,i)  (BoxValueGet(ArrayValueBox(a,i),ArrayValueElt(a,i)))
-#define ArrayValueSet(a,i,v) (BoxValueSet(ArrayValueBox(a,i),ArrayValueElt(a,i), v))
 
 typedef struct _io_chain {
     struct _io_chain	*next;
@@ -681,7 +701,10 @@ typedef struct _boxTypes {
     TypePtr	elements[0];
 } BoxTypes, *BoxTypesPtr;
 
-#define BoxTypesElements(bt)	((bt)->elements)
+static inline TypePtr *BoxTypesElements(BoxTypes *bt) {
+	return bt->elements;
+}
+
 #define BoxTypesValue(bt,e)	(BoxTypesElements(bt)[e])
 
 extern BoxTypesPtr  NewBoxTypes (int size);
@@ -692,15 +715,6 @@ typedef struct _ref {
     BoxPtr	box;
     int		element;
 } Ref;
-
-int  RefRewrite (Value r);
-
-#define RefCheck(r)	    ((r)->ref.box->replace ? RefRewrite(r) : 0)
-#define RefValueSet(r,v)    (RefCheck (r), BoxValueSet((r)->ref.box, (r)->ref.element, (v)))
-#define RefValue(r)	    (RefCheck (r), BoxValue((r)->ref.box, (r)->ref.element))
-#define RefValueGet(r)	    (RefCheck (r), BoxValueGet((r)->ref.box, (r)->ref.element))
-#define RefType(r)	    (RefCheck (r), BoxType((r)->ref.box, (r)->ref.element))
-#define RefConstant(r)	    BoxConstant((r)->ref.box, (r)->ref.element)
 
 typedef struct _structType {
     DataType	*data;
@@ -915,6 +929,16 @@ struct _valueType {
     Hash	hash;
 };
 
+static inline ValueRep *_ValueRep(Value v) {
+	if (ValueIsInt(v))
+		return &IntRep;
+	return v->value.type;
+}
+
+static inline Rep ValueTag(Value v) {
+	return ValueRep(v)->tag;
+}
+
 typedef struct _boxReplace {
     DataType	    *data;
     BoxPtr	    new;
@@ -937,18 +961,45 @@ typedef struct _box {
 } Box;
 
 #if 1
-#define BoxCheck(box)		assert (!(box)->replace),
+#define BoxCheck(box)		assert (!(box)->replace)
 #else
 #define BoxCheck(box)
 #endif
-#define BoxElements(box)	(BoxCheck (box) ((box)->values))
-#define BoxValueSet(box,e,v)	((BoxElements(box)[e]) = (v))
-#define BoxValueGet(box,e)	((BoxElements(box)[e]))
-#define BoxConstant(box,e)	((box)->constant)
-#define BoxReplace(box)		((box)->replace)
-#define BoxType(box,e)		(BoxCheck (box) ((box)->homogeneous ? (box)->u.type : \
-				 BoxTypesValue((box)->u.types, e)))
-				 
+
+static inline Value *BoxElements(Box *box)
+{
+	BoxCheck(box);
+	return box->values;
+}
+
+static inline Value BoxValueSet(Box *box, long e, Value v) {
+	return BoxElements(box)[e] = v;
+}
+
+static inline Value BoxValueGet(Box *box, long e) {
+	return BoxElements(box)[e];
+}
+
+static inline Bool BoxConstant(Box *box, int e) {
+	return box->constant;
+}
+
+static inline Bool _BoxReplace(Box *box) {
+	return box->replace;
+}
+
+#define BoxReplace(box) _BoxReplace(box)
+
+static inline TypePtr _BoxType(Box *box, long e) {
+	BoxCheck(box);
+	if (box->homogeneous)
+		return box->u.type;
+	else
+		return BoxTypesValue(box->u.types, e);
+}
+
+#define BoxType(box, e) _BoxType(box, e)
+
 extern BoxPtr	NewBox (Bool constant, Bool array, int nvalues, TypePtr type);
 extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr types);
 void		BoxSetReplace (BoxPtr old, BoxPtr new, int oldstride, int newstride);
@@ -962,7 +1013,80 @@ typedef struct {
 
 DataCachePtr	NewDataCache (int size);
 
-#define DataCacheValues(vc)	((void *) ((vc)->values))
+static inline void *DataCacheValues(DataCache *vc) {
+	return (void *) vc->values
+}
+
+static inline int *ArrayDims (Array *a)
+{
+	return a->dims;
+}
+
+#define ArrayLimits(a)	    (ArrayDims(a) + (a)->ndim)
+#define ArrayConstant
+
+static inline long ArrayNvalues(Array *a) {
+	if (a->resizable)
+		return a->u.resize->nvalues;
+	else
+		return a->u.fix->nvalues;
+}
+
+static inline BoxPtr ArrayValueBox(Array *a, long i) {
+	if (a->resizable)
+		return BoxVectorBoxes(a->u.resize)[i];
+	else
+		return a->u.fix;
+}
+
+static inline int ArrayValueElt(Array *a, long i) {
+	if (a->resizable)
+		return 0;
+	else
+		return i;
+}
+
+static inline TypePtr ArrayType(Array *a) {
+	if (a->resizable)
+		return a->u.resize->type;
+	else
+		return a->u.fix->u.type;
+}
+
+#define ArrayValue(a,i)	    (BoxValue(ArrayValueBox(a,i),ArrayValueElt(a,i)))
+#define ArrayValueGet(a,i)  (BoxValueGet(ArrayValueBox(a,i),ArrayValueElt(a,i)))
+
+static inline void ArrayValueSet(Array *a, long i, Value v)
+{
+	BoxValueSet(ArrayValueBox(a,i),ArrayValueElt(a,i), v);
+}
+
+void
+RefRewrite (Value r);
+
+static inline void RefCheck(Value r) {
+	if (BoxReplace(r->ref.box))
+		RefRewrite(r);
+}
+
+static inline void RefValueSet(Value r, Value v) {
+	RefCheck(r);
+	BoxValueSet(r->ref.box, r->ref.element, v);
+}
+
+static inline Value RefValueGet(Value r) {
+	RefCheck(r);
+	return BoxValueGet(r->ref.box, r->ref.element);
+}
+
+static inline TypePtr RefType (Value r) {
+	RefCheck(r);
+	return BoxType(r->ref.box, r->ref.element);
+}
+
+static inline Bool RefConstant(Value r) {
+	return BoxConstant(r->ref.box, r->ref.element);
+}
 
 Value	NewInteger (Sign sign, Natural *mag);
 Value	NewIntInteger (int value);
@@ -1140,7 +1264,7 @@ Bool	Print (Value, Value, char format, int base, int width, int prec, int fill);
 void	PrintError (char *s, ...);
 HashValue HashCrc32 (unsigned char *bytes, int nbytes);
 Value	CopyMutable (Value v);
-#ifdef HAVE_C_INLINE
+
 static inline Value
 Copy (Value v)
 {
@@ -1148,9 +1272,7 @@ Copy (Value v)
 	return CopyMutable (v);
     return v;
 }
-#else
-Value	Copy (Value);
-#endif
+
 Value	ValueEqual (Value a, Value b, int expandOk);
 
 Value	ValueHash (Value a);

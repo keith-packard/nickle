@@ -152,7 +152,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 	for (i = 0; i < a->ndim; i++)
 	    FileOutput (f, '}');
     EXIT ();
-    return True;
+    return ret;
 }
 
 #define hrot(i)	(((i) << 1) | ((i) >> (sizeof (HashValue) * 8 - 1)))

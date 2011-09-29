@@ -66,7 +66,7 @@ do_Math_assignpow (Value a, Value b)
     ENTER ();
     Value   ret;
     
-    ret = Pow (RefValue (a), b);
+    ret = Pow (RefValueGet(a), b);
     RefValueSet (a, ret);
     RETURN (ret);
 }

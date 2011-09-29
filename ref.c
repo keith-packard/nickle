@@ -213,7 +213,7 @@ NewRef (BoxPtr box, int element)
 }
 #endif
 
-int
+void
 RefRewrite (Value rv)
 {
     Ref	    *ref= &rv->ref;
@@ -221,7 +221,6 @@ RefRewrite (Value rv)
 
     if (box->replace)
 	ref->box = BoxRewrite (box, &ref->element);
-    return 0;
 }
 
 int

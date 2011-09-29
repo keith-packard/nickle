@@ -653,7 +653,6 @@ FloatExp (Value exp2, Value *ratio, int ibase, unsigned prec)
     Value   r;
     Value   min, max, mean, nmean;
     Value   pow2;
-    Value   base;
     Value   base_f;
     Value   two;
     Value   two_f;
@@ -662,7 +661,6 @@ FloatExp (Value exp2, Value *ratio, int ibase, unsigned prec)
     DebugV ("exp2", exp2);
     two = NewInt (2);
     two_f = NewIntFloat (2, prec + 32);
-    base = NewInt (ibase);
     base_f = NewIntFloat (ibase, prec + 32);
     /*
      * Compute expbase, this is a bit tricky as log is only

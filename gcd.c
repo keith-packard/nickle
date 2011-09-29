@@ -340,7 +340,7 @@ NaturalBdivmodStepInplace (Natural *u, Natural *v, digit b, Bool shift)
      */
     while (--rd >= NaturalDigits (u) && *rd == 0)
 	;
-    NaturalLength (u) = ((rd + 1) - NaturalDigits (u));
+    u->length = ((rd + 1) - NaturalDigits (u));
 }
 
 static void
@@ -796,7 +796,7 @@ NaturalKaryReductionInplace (Natural *u, Natural *v)
     i = rd - NaturalDigits (u);
     while (i > 0 && *--rd == 0)
 	i--;
-    NaturalLength (u) = i;
+    u->length = i;
 #ifdef DEBUG_KARY
     FilePrintf (FileStdout, "Reduction result %n\n", u);
 #endif
@@ -858,7 +858,7 @@ NaturalGcdNormalize (Natural *u, int shift)
     }
     while (*--rt == 0)
 	;
-    NaturalLength (r) = rt - NaturalDigits (r) + 1;
+    r->length = rt - NaturalDigits (r) + 1;
     RETURN (r);
 }
 
@@ -963,10 +963,10 @@ NaturalGcd (Natural *u0, Natural *v0)
 	    if (NaturalLength (u) != 2)
 		u = v;
 	    NaturalDigits(u)[1] = (digit) td;
-	    NaturalLength (u) = 2;
+	    u->length = 2;
 	}
 	else
-	    NaturalLength (u) = 1;
+	    u->length = 1;
 	NaturalDigits(u)[0] = (digit) ud;
 	FINISH ("gcd2");
     }

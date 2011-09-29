@@ -829,7 +829,7 @@ Dereference (Value v)
 				v);
 	return Void;
     }
-    return REFERENCE (RefValue (v));
+    return REFERENCE (RefValueGet (v));
 }
 #else
 extern Value BoxValue (BoxPtr box, int e);

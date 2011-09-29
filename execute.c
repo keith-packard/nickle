@@ -1244,7 +1244,7 @@ ThreadsRun (Value thread, Value lex)
 						value);
 			break;
 		    }
-		    value = RefValue (value);
+		    value = RefValueGet(value);
 		    /* fall through ... */
 		case OpDot:
 		case OpDotRef:

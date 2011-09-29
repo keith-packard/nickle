@@ -158,6 +158,10 @@ RETSIGTYPE
 intr (int sig)
 {
     resetSignal (SIGINT, intr);
+    if (signalInterrupt) {
+	write(2,"Double interrupt, exiting\n", 26);
+	exit(1);
+    }
     SetSignalInterrupt ();
 }
 

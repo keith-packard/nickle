@@ -850,7 +850,12 @@ static inline Value Dereference (Value v) {
 				v);
 	return Void;
     }
-    return REFERENCE (RefValueGet (v));
+    v = RefValueGet(v);
+    if (!v) {
+	RaiseStandardException (exception_uninitialized_value, 0);
+	return (Void);
+    }
+    return REFERENCE (v);
 }
 
 /* vararg builtins */

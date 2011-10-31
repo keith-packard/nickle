@@ -1290,12 +1290,16 @@ ThreadsRun (Value thread, Value lex)
 		    break;
 		case OpPreOp:
 		    v = Dereference (value);
+		    if (aborting)
+			    break;
 		    v = ValueIncDec (v, inst->binop.op);
 		    ThreadAssign (value, v, False);
 		    value = v;
 		    break;
 		case OpPostOp:
 		    v = Dereference (value);
+		    if (aborting)
+			    break;
 		    ThreadAssign (value, ValueIncDec (v, inst->binop.op), False);
 		    value = v;
 		    break;

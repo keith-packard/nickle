@@ -3,8 +3,12 @@ nickle (2.71-1) unstable; urgency=low
   * Update old-school variable length struct allocation to ansi-C
   * Replace most parameterized macros in nickle.h and value.h with
     static inline functions.
+  * Clean up a pile of build warnings
+  * Catch attempts to use uninitialized pointer contents
+  * Exit after two consecutive interrupts
+  * Cleanup struct type changes
 
- -- Keith Packard <keithp@keithp.com>  Thu, 29 Sep 2011 01:19:50 -0700
+ -- Keith Packard <keithp@keithp.com>  Fri, 25 Nov 2011 11:43:31 -0800
 
 nickle (2.70-1) unstable; urgency=low
 

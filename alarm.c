@@ -146,7 +146,7 @@ do_sleep (Value ms)
 
 ReferencePtr	SleepingReference;
 
-static RETSIGTYPE
+static void
 _CatchAlarm (int sig)
 {
     resetSignal (SIGALRM, _CatchAlarm);

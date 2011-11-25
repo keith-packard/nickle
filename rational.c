@@ -172,7 +172,7 @@ RationalMod (Value av, Value bv, int expandOk)
 {
     ENTER ();
     Rational	*a = &av->rational, *b = &bv->rational;
-    Natural	*rem, *quo, *div;
+    Natural	*rem, *div;
 
     if (NaturalZero (b->num))
     {
@@ -181,7 +181,7 @@ RationalMod (Value av, Value bv, int expandOk)
 	RETURN (Void);
     }
     div = NaturalTimes (b->num, a->den);
-    quo = NaturalDivide (NaturalTimes (a->num, b->den), div, &rem);
+    (void) NaturalDivide (NaturalTimes (a->num, b->den), div, &rem);
     if (a->sign == Negative && !NaturalZero (rem))
 	rem = NaturalMinus (div, rem);
     RETURN (NewRational (Positive, rem, NaturalTimes (a->den, b->den)));

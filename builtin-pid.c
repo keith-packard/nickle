@@ -48,6 +48,17 @@ do_PID_getegid (void)
 }
 
 static Value
+error (Value value)
+{
+    int	err = errno;
+
+    RaiseStandardException (exception_system_error, 3,
+			    FileGetErrorMessage (err),
+			    NewInt (err), value);
+    return Void;
+}
+
+static Value
 do_PID_getgroups (void)
 {
     ENTER ();
@@ -58,7 +69,8 @@ do_PID_getgroups (void)
 
     n = getgroups (0, NULL);
     list = AllocateTemp (n * sizeof (gid_t));
-    getgroups (n, list);
+    if (getgroups (n, list) < 0)
+	    RETURN(error(NewInt(n)));
     ret = NewArray (False, False, typePrim[rep_integer], 1, &n);
     for (i = 0; i < n; i++)
 	ArrayValueSet(&ret->array, i, NewInt (list[i]));
@@ -70,17 +82,6 @@ do_PID_getpid (void)
 {
     ENTER ();
     RETURN (NewInt (getpid()));
-}
-
-static Value
-error (Value value)
-{
-    int	err = errno;
-
-    RaiseStandardException (exception_system_error, 3,
-			    FileGetErrorMessage (err),
-			    NewInt (err), value);
-    return Void;
 }
 
 static Value

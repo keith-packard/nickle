@@ -452,7 +452,7 @@ FileInitErrors (void)
 
 volatile Bool	signalChild;
 
-static RETSIGTYPE
+static void
 sigchld (int sig)
 {
     resetSignal (SIGCHLD, sigchld);
@@ -831,7 +831,8 @@ FileFilter (char *program, char *args[], Value filev, int *errp)
 	fcntl (errpipe[1], F_SETFD, FD_CLOEXEC);
 	execvp (program, args);
 	errcode = errno & 0xff;
-	write (errpipe[1], &errcode, 1);
+	errcode = write (errpipe[1], &errcode, 1);
+	(void) errcode;
 	exit (1);
     }
     /* parent */

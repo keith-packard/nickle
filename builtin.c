@@ -193,7 +193,8 @@ BuiltinType (char *format, Type **type, Bool arg)
 	    break;
     default: 
 	t = 0;
-	write (2, "Invalid builtin argument type\n", 30);
+	i = write (2, "Invalid builtin argument type\n", 30);
+	(void) i;
 	break;
     }
     if (ref)

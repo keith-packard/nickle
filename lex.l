@@ -323,7 +323,7 @@ auto		{ yylval.class = class_auto; return AUTO; }
 const		{ yylval.class = class_const; return CONST; }
 global		{ yylval.class = class_global; return GLOBAL; }
 static		{ yylval.class = class_static; return STATIC; }
-function	{ yylval.type = typePrim[rep_func]; return FUNCTION; }
+function	{ yylval.type = typePrim[rep_void]; return FUNCTION; }
 while		{ yylval.ints = WHILE; return WHILE; }
 for		{ yylval.ints = FOR; return FOR; }
 do		{ yylval.ints = DO; return DO; }
@@ -673,6 +673,7 @@ lexdoc (void)
     int	    c;
     Value   s = NewStrString ("");
 
+    (void) yyunput;
     c = input();
     if (lexInput->at_eof)
     {

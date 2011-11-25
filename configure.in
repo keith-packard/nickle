@@ -4,12 +4,9 @@ dnl Copyright © 1988-2004 Keith Packard and Bart Massey.
 dnl All Rights Reserved.  See the file COPYING in this directory
 dnl for licensing information.
 
-AC_PREREQ(2.59)
+AC_PREREQ([2.68])
 
-AC_INIT([nickle],
-	2.71,
-	[http://nickle.org],
-	nickle)
+AC_INIT([nickle],[2.71],[http://nickle.org],[nickle])
 
 AC_CONFIG_SRCDIR([nickle.h])
 AC_CONFIG_HEADERS([config.h])
@@ -98,7 +95,7 @@ case "$ac_cv_header_stdint_h" in
 esac
 
 dnl Checks for library functions.
-AC_TYPE_SIGNAL
+
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(unsetenv setenv putenv gettimeofday hstrerror select)
 AC_CHECK_FUNCS(sigaction sigrelse sigignore setrlimit getrlimit)

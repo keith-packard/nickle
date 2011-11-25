@@ -768,10 +768,10 @@ void	intr(int);
 void	stop (int), die (int), segv (int);
 
 void
-catchSignal (int sig, RETSIGTYPE (*func) (int sig));
+catchSignal (int sig, void (*func) (int sig));
 
 void
-resetSignal (int sig, RETSIGTYPE (*func) (int sig));
+resetSignal (int sig, void (*func) (int sig));
 
 extern Value    yyinput;
 

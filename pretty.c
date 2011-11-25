@@ -580,7 +580,6 @@ static void
 _PrettyCatch (Value f, Expr *e, int level, Bool nest)
 {
     CodePtr	catch;
-    Atom	name;
     
     if (!e)
 	return;
@@ -589,10 +588,6 @@ _PrettyCatch (Value f, Expr *e, int level, Bool nest)
 	PrettyIndent (f, 0, level);
     e = e->tree.right;
     catch = e->code.code;
-    if (catch->base.name->base.tag == COLONCOLON)
-	name = catch->base.name->tree.right->atom.atom;
-    else
-	name = catch->base.name->atom.atom;
     FilePuts (f, "catch ");
     PrettyExpr (f, catch->base.name, 0, level, nest);
     FilePuts (f, " ");

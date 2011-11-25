@@ -17,7 +17,7 @@ volatile Bool			signalProfile;
 static unsigned long		previousTick;
 Bool				profiling;
 
-static RETSIGTYPE
+static void
 sigprofile (int sig)
 {
     resetSignal (SIGVTALRM, sigprofile);

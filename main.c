@@ -57,8 +57,8 @@ try_nicklestart (void)
     return LexFile (nicklestart, True, False);
 }    
 
-RETSIGTYPE	intr(int), ferr(int);
-RETSIGTYPE	stop (int), die (int), segv (int);
+void	intr(int), ferr(int);
+void	stop (int), die (int), segv (int);
 
 static void
 ignoreSignal(int sig) {
@@ -130,7 +130,7 @@ init (void)
 }
 
 void
-catchSignal (int sig, RETSIGTYPE (*func) (int sig))
+catchSignal (int sig, void (*func) (int sig))
 {
 #ifdef HAVE_SIGACTION
     struct sigaction sa;
@@ -145,7 +145,7 @@ catchSignal (int sig, RETSIGTYPE (*func) (int sig))
 }
 
 void
-resetSignal (int sig, RETSIGTYPE (*func) (int sig))
+resetSignal (int sig, void (*func) (int sig))
 {
 #ifndef HAVE_SIGACTION
     signal (sig, func);
@@ -154,18 +154,19 @@ resetSignal (int sig, RETSIGTYPE (*func) (int sig))
 
 volatile Bool	signalInterrupt;
 
-RETSIGTYPE
+void
 intr (int sig)
 {
     resetSignal (SIGINT, intr);
     if (signalInterrupt) {
-	write(2,"Double interrupt, exiting\n", 26);
+	int ret = write(2,"Double interrupt, exiting\n", 26);
+	(void) ret;
 	exit(1);
     }
     SetSignalInterrupt ();
 }
 
-RETSIGTYPE
+void
 stop (int sig)
 {
     sigset_t	set, oset;
@@ -183,14 +184,14 @@ stop (int sig)
     catchSignal (sig, stop);
 }
 
-RETSIGTYPE
+void
 die (int sig)
 {
     IoStop ();
     _exit (sig);
 }
 
-RETSIGTYPE
+void
 segv (int sig)
 {
     IoStop ();

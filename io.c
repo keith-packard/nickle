@@ -26,7 +26,7 @@ Bool		anyFileWriteBlocked;
 #define RESTART_SIGNAL(sig,func) (void) signal (sig,func)
 #endif
 
-static RETSIGTYPE
+static void
 sigio (int sig)
 {
     resetSignal (SIGIO, sigio);

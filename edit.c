@@ -22,11 +22,12 @@
 #define DEFAULT_EDITOR	"ed"
 #endif
 
-static void
+static int
 edit (char *file_name)
 {
     char	buf[1024];
     char	*editor;
+    int		ret;
 
     if (!(editor = getenv ("EDITOR")))
 	    editor = DEFAULT_EDITOR;
@@ -34,8 +35,9 @@ edit (char *file_name)
 	file_name = "";
     (void) sprintf (buf, "%s %s", editor, file_name);
     IoStop ();
-    (void) system (buf);
+    ret = system (buf);
     IoStart ();
+    return ret;
 }
 
 void
@@ -65,8 +67,8 @@ EditFunction (SymbolPtr symbol, Publish publish)
     {
 	PrettyPrint (tmp, publish, symbol);
 	(void) FileClose (tmp);
-	edit (nickleName);
-	LexFile (nickleName, True, False);
+	if (edit (nickleName) == 0)
+		LexFile (nickleName, True, False);
     }
     (void) unlink (nickleName);
 }

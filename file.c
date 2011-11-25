@@ -467,6 +467,8 @@ ProcessInterrupt ()
 	int		status;
 
 	pid = wait3 (&status, WNOHANG, NULL);
+	if (pid == 0)
+	    break;
 	if (pid < 0 && errno == ECHILD)
 	    break;
     }

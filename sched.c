@@ -524,16 +524,12 @@ ThreadsBlock (void)
 	if (bh->handler)
 	    (*bh->handler) (bh->closure);
     }
-    if (!running)
-    {
-	sigset_t	    set, oset;
 
-	sigfillset (&set);
-	sigprocmask (SIG_SETMASK, &set, &oset);
-	if (!signaling)
-	    sigsuspend (&oset);
-	sigprocmask (SIG_SETMASK, &oset, &set);
-    }
+    /* Pend in either select or sigsuspend, depending
+     * on whether there are files blocked
+     */
+    if (!running)
+	FileCheckBlocked(True);
 }
 
 ReferencePtr	RunningReference, StoppedReference;

@@ -1927,6 +1927,14 @@ FileCheckBlocked (Bool block)
 #ifdef NO_PIPE_SIGIO
 	anyPipeReadBlocked = False;
 #endif
+	if (block) {
+	    sigset_t	    set, oset;
+	    sigfillset (&set);
+	    sigprocmask (SIG_SETMASK, &set, &oset);
+	    if (!signaling && !running)
+		sigsuspend(&oset);
+	    sigprocmask (SIG_SETMASK, &oset, &set);
+	}
     }
     if (n > 0)
     {
@@ -1934,6 +1942,8 @@ FileCheckBlocked (Bool block)
 #ifdef NO_PIPE_SIGIO
 	readPipeBlocked = False;
 #endif
+	if (block)
+	    signaling = True;
 	for (prev = &fileBlocked; (blocked = *prev); )
 	{
 	    fd = blocked->file.fd;

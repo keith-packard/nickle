@@ -484,23 +484,7 @@ FloatInteger (Value av)
     Natural	*mag;
     int		dist;
 
-    /*
-     * Can only reduce floats that are integral
-     *
-     * Ensure that the precision of the number holds every bit
-     * This requires that the precision of the representation
-     * be no smaller than length of the numbers plus the
-     * number of implied zeros.
-     *
-     *  precision >= length (mant) + exponent
-     *  precision - length (mant) >= exponent
-     * !(precision - length (mant) < exponent)
-     *
-     * The canonical representation ensures that length <= prec
-     */
-    if (a->exp->sign == Positive &&
-	!NaturalLess (NewNatural (a->prec - FpartLength (a->mant)),
-		      a->exp->mag))
+    if (a->exp->sign == Positive)
     {
 	mag = a->mant->mag;
 	dist = NaturalToInt (a->exp->mag);

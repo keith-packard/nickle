@@ -1,8 +1,11 @@
 nickle (2.72-1) unstable; urgency=low
 
-  * don't infinite loop when wait3 returns 0
+  * wait3 returns 0 when there's nothing left to do
+  * Rename configure.in to configure.ac
+  * Block in select instead of sigsuspend when waiting for I/O
+  * Keep readline from catching signals
 
- -- Keith Packard <keithp@keithp.com>  Fri, 25 Nov 2011 12:15:26 -0800
+ -- Keith Packard <keithp@keithp.com>  Sun, 29 Jan 2012 22:03:44 -0800
 
 nickle (2.71-1) unstable; urgency=low
 

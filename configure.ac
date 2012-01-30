@@ -106,6 +106,15 @@ AC_FUNC_GETPGRP
 dnl The readline test is complicated enough to rate its own file
 AC_LIB_READLINE
 
+if test "x$ac_cv_header_readline_readline_h" = xyes; then
+    AC_CHECK_DECL(rl_catch_signals,
+		  AC_DEFINE(HAVE_RL_CATCH_SIGNALS,1,[Has rl_catch_signals]),,[#include <readline/readline.h>])
+    AC_CHECK_DECL(rl_reset_after_signal,
+		  AC_DEFINE(HAVE_RL_RESET_AFTER_SIGNAL,1,[Has rl_reset_after_signal]),,[#include <readline/readline.h>])
+    AC_CHECK_DECL(rl_cleanup_after_signal,
+		  AC_DEFINE(HAVE_RL_CLEANUP_AFTER_SIGNAL,1,[Has rl_cleanup_after_signal]),,[#include <readline/readline.h>])
+fi
+
 if test "x$prefix" = xNONE; then
     prefix="$ac_default_prefix"
 fi

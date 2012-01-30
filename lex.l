@@ -96,6 +96,9 @@ LexInit (void)
 {
     ENTER ();
 
+#if HAVE_RL_CATCH_SIGNALS
+    rl_catch_signals = 0;
+#endif
     LexInputReference = NewReference ((void **) &lexInput);
     MemAddRoot (LexInputReference);
     EXIT ();

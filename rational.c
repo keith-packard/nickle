@@ -776,7 +776,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
     /*
      * Check for small numbers for 'e' format
      */
-    if (NaturalLess (r->num, r->den))
+    if (NaturalLess (r->num, r->den) && !NaturalZero(r->num))
     {
 	Natural	*quo, *rem;
 	Natural	*mag;

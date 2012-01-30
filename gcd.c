@@ -977,7 +977,7 @@ NaturalGcd (Natural *u0, Natural *v0)
 	while (v->length)
 	{
 	    if (aborting)
-		RETURN (One);
+		RETURN (one_natural);
 #ifdef DEBUG_GCD
 	    FilePrintf (FileStdout, "u = %n;\n", u);
 	    FilePrintf (FileStdout, "v = %n;\n", v);

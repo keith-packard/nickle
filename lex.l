@@ -89,6 +89,34 @@ NewLexInput (Value file, Atom name, Bool after, Bool interactive)
     EXIT ();
 }
 
+#ifdef HAVE_LIBREADLINE
+
+volatile int stdin_in_readline;
+
+static void
+my_prep_terminal(int meta_flag)
+{
+    stdin_in_readline = 1;
+    rl_prep_terminal(meta_flag);
+}
+
+static void
+my_deprep_terminal(void)
+{
+    rl_deprep_terminal();
+    stdin_in_readline = 0;
+}
+
+static int
+LexGetChar (void);
+
+static int
+ReadlineGetChar (FILE *f)
+{
+    return LexGetChar ();
+}
+#endif
+
 ReferencePtr	LexInputReference;
 
 void
@@ -96,7 +124,10 @@ LexInit (void)
 {
     ENTER ();
 
-#if HAVE_RL_CATCH_SIGNALS
+#if HAVE_LIBREADLINE
+    rl_getc_function = ReadlineGetChar;
+    rl_prep_term_function = my_prep_terminal;
+    rl_deprep_term_function = my_deprep_terminal;
     rl_catch_signals = 0;
 #endif
     LexInputReference = NewReference ((void **) &lexInput);
@@ -180,14 +211,6 @@ LexGetChar (void)
     }
 }
 
-#ifdef HAVE_LIBREADLINE
-static int
-ReadlineGetChar (FILE *f)
-{
-    return LexGetChar ();
-}
-#endif
-
 static Value
 prompt (void)
 {
@@ -227,7 +250,6 @@ LexGetInteractiveChar (void)
 	    else
 		break;
 	}
-	rl_getc_function = ReadlineGetChar;
 	rl_inhibit_completion = 1;
 	line_base = readline (p);
 	line = line_base;

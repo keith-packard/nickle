@@ -166,7 +166,8 @@ intr (int sig)
 	int ret = write(2,"Double interrupt, exiting\n", 26);
 	(void) ret;
 #if HAVE_RL_CLEANUP_AFTER_SIGNAL
-	rl_cleanup_after_signal();
+	if (stdin_in_readline)
+	    rl_cleanup_after_signal();
 #endif
 	exit(1);
     }
@@ -179,7 +180,9 @@ stop (int sig)
     sigset_t	set, oset;
 
 #if HAVE_RL_CLEANUP_AFTER_SIGNAL
-    rl_cleanup_after_signal();
+    printf ("stop %d\n", stdin_in_readline);
+    if (stdin_in_readline)
+	rl_cleanup_after_signal();
 #endif
     sigfillset (&set);
     sigprocmask (SIG_SETMASK, &set, &oset);
@@ -193,7 +196,8 @@ stop (int sig)
     IoStart ();
     catchSignal (sig, stop);
 #if HAVE_RL_RESET_AFTER_SIGNAL
-    rl_reset_after_signal();
+    if (stdin_in_readline)
+	rl_reset_after_signal();
 #endif
 }
 
@@ -202,7 +206,8 @@ die (int sig)
 {
     IoStop ();
 #if HAVE_RL_CLEANUP_AFTER_SIGNAL
-    rl_cleanup_after_signal();
+    if (stdin_in_readline)
+	rl_cleanup_after_signal();
 #endif
     _exit (sig);
 }
@@ -212,7 +217,8 @@ segv (int sig)
 {
     IoStop ();
 #if HAVE_RL_CLEANUP_AFTER_SIGNAL
-    rl_cleanup_after_signal();
+    if (stdin_in_readline)
+	rl_cleanup_after_signal();
 #endif
     releaseSignal (SIGSEGV);
     /* return and reexecute the fatal instruction */

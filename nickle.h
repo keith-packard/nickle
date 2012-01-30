@@ -746,7 +746,9 @@ Bool	LexInteractive (void);
 Bool	LexResetInteractive (void);
 void	LexInit (void);
 void	NewLexInput (Value file, Atom name, Bool after, Bool interactive);
-
+#if HAVE_LIBREADLINE
+extern volatile int stdin_in_readline;
+#endif
 
 int	yywrap (void);
 void	yyerror (char *msg);

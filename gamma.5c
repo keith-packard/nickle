@@ -1,0 +1,128 @@
+
+extend namespace Math {
+
+	public real gamma(real n)
+		/*
+		 * Stieljes continuing fraction method of computing
+		 * gamma
+		 */
+	{
+		real Stieltjes(real n, int ord, int bits) {
+
+			/*
+			 * Compute the continuing fraction coefficients
+			 */
+			real[*] StieltjesCF(int len, int bits) {
+
+				/* Compute a set of Bernouli numbers
+				 * using the Akiyama-Tanigawa algorithm
+				 */
+				real[*] AkiyamaTanigawa(int l, int bits) {
+					int n = 2 * l + 1;
+					real[n] t = { imprecise(1, bits) };
+					real[l] a;
+					int k = 1;
+					for (int m = 2; m <= n; m++) {
+						t[m-1] = 1/imprecise(m, bits);
+						for (int j = m-1; j >= 1; j--)
+							t[j-1] = j * (t[j-1] - t[j]);
+						if ((m & 1) != 0) {
+							real rk = imprecise(k, bits);
+							real	v = t[0]/((2*rk-1)*(2*rk));
+							if ((k & 1) == 0)
+								a[k-1] = -v;
+							else
+								a[k-1] = v;
+							k++;
+						}
+					}
+					return a;
+				}
+				real[*] s = AkiyamaTanigawa(len, bits);
+				real[len,len] m;
+
+				for (int n = 0; n < len; n++)
+					m[n,0] = 0;
+				for (int n = 0; n < len-1; n++)
+					m[n,1] = s[n+1]/s[n];
+				for (int k = 3; k <= len; k++) {
+					for (int n = 1; n <= len - k + 1; n++) {
+						real a = m[n,k-3];
+						real b = m[n,k-2];
+						real c = m[n-1,k-2];
+						if ((k & 1) != 0)
+							m[n-1,k-1] = a + b - c;
+						else
+							m[n-1,k-1] = a * b / c;
+					}
+				}
+				m[0,0] = s[0];
+				return (real[len]) { [k] = m[0,k] };
+			}
+
+			real N = imprecise(n + 1, bits);
+			real q = N;
+			real[*] c = StieltjesCF(ord, bits);
+			real one = imprecise(1, bits);
+			for (int i = ord; i >= 2; i--)
+				q = N + c[i-1] / q;
+			return sqrt(2 * pi_value(bits)/N) * (N/exp(one)) ** N * exp(one/(12*q));
+		}
+
+		/*
+		 * For positive integers, just use factorial
+		 */
+		if (is_int(n)) {
+			if (n <= 0)
+				raise invalid_argument("gamma of non-positive integer", 0, n);
+			return (floor(n)-1)!;
+		}
+
+		/*
+		 * Use Γ(z) = Γ(z+1)/z
+		 * to solve for negative arguments
+		 */
+		if (n < 0) {
+			int	i = -floor(n) + 1;
+			real	g = gamma(n + i);
+
+			while (i-- > 0) {
+				g = g / n;
+				n++;
+			}
+			return g;
+		}
+
+		n = imprecise(n);
+		int bits = precision(n);
+
+		/*
+		 * Smaller numbers take a lot more coefficients to
+		 * get the desired number of bits. Make the value
+		 * larger, and increase the desired precision to match,
+		 * to make the result converge faster.
+		 */
+		if (n < 10000) {
+			int new_bits = bits + 14 - floor(log2(n));
+			real n_new = imprecise(n, new_bits) + 10000;
+			real g = gamma(n_new);
+			for (int i = 0; i < 10000; i++) {
+				n_new -= 1;
+				g = g / n_new;
+			}
+			return imprecise(g, bits);
+		}
+
+		/* This is a rough approximation of the
+		 * number of coefficients in the fraction
+		 * needed to produce the desired precision, it's
+		 * good for any value larger than 10000. Larger numbers
+		 * could use a smaller number of coefficients, but we
+		 * don't know how much smaller
+		 */
+		int ord = ceil(bits / 20);
+		return imprecise(Stieltjes(n-1, ord, bits + 20), bits);
+	}
+
+	public real(real n) Γ = gamma;
+}

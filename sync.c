@@ -39,6 +39,13 @@ do_Semaphore_test (Value s)
 }
 
 Value
+do_Semaphore_count (Value s)
+{
+    ENTER();
+    RETURN (NewInt(s->semaphore.count));
+}
+
+Value
 do_Semaphore_signal (Value s)
 {
     ENTER ();

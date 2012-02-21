@@ -29,6 +29,10 @@ import_Semaphore_namespace()
 	    "\n"
 	    " Increment the count in 's' by one.\n"
 	    " If the count is <= 0, wakeup one thread waiting on 's'.\n" },
+        { do_Semaphore_count, "count", "i", "S", "\n"
+	    " int count (semaphore s)\n"
+	    "\n"
+	    " Return current semaphore count\n" },
         { do_Semaphore_test, "test", "b", "S", "\n"
 	    " bool test (semaphore s)\n"
 	    "\n"

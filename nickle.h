@@ -925,6 +925,7 @@ Value	do_Thread_get_priority (Value);
 Value	do_Thread_id_to_thread (Value);
 Value	do_Thread_join (Value);
 Value	do_Semaphore_signal (Value);
+Value	do_Semaphore_count (Value);
 Value	do_Semaphore_wait (Value);
 Value	do_Semaphore_test (Value);
 Value	do_File_close (Value);

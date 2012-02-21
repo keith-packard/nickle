@@ -1448,13 +1448,9 @@ ThreadsRun (Value thread, Value lex)
 		inst = next;
 		thread->thread.continuation.pc = inst;
 		if (thread->thread.next)
-		{
 		    ThreadStepped (thread);
-		    if (running != thread)
-		    {
-			break; 
-		    }
-		}
+		if (running != thread)
+		    break; 
 	    }
 	    EXIT ();
 	}

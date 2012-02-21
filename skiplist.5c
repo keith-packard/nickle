@@ -9,9 +9,6 @@
 autoload PRNG;
 
 namespace Skiplist {
-    public typedef *struct {
-    } List;
-
     public typedef bool (poly a, poly b) Greater;
 
     public typedef void (poly a) Visit;
@@ -41,7 +38,7 @@ namespace Skiplist {
 	Element		header;
     } SkipRec;
 
-    typedef *SkipRec Skip;
+    public typedef *SkipRec Skip;
 
     int random_level ()
 	/*
@@ -60,7 +57,7 @@ namespace Skiplist {
 	return level;
     }
     
-    public List new (Greater greater)
+    public Skip new (Greater greater)
 	/*
 	 * Allocate a new list with 'greater' as the ordering function
 	 */
@@ -197,6 +194,18 @@ namespace Skiplist {
 	}
 
 	return next;
+    }
+
+    public int length (Skip list)
+    {
+	int len = 0;
+	for (ElementPtr e = list->header.forward[0];
+	     e != ElementPtr.nil;
+	     e = e.element->forward[0])
+	{
+	    len++;	     
+	}
+	return len;
     }
 
     public int storage (Skip list, poly value)

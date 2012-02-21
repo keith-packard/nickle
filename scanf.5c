@@ -7,6 +7,8 @@ extend namespace File {
 	 * According to 'format', read from 'f' to 'args'
 	 */
     {
+	exception bad_conversion();
+	
 	/* Skip whitespace */
 	void whitespace ()
 	{
@@ -88,6 +90,8 @@ extend namespace File {
 		}
 		s = s + String::new(c);
 	    }
+	    if (String::length(s) == 0)
+		raise bad_conversion();
 	    return string_to_integer (s, base);
 	}
 
@@ -105,6 +109,8 @@ extend namespace File {
 		}
 		s = s + String::new(c);
 	    }
+	    if (String::length(s) == 0)
+		raise bad_conversion();
 	    return string_to_real (s);
 	}
 
@@ -120,6 +126,8 @@ extend namespace File {
 		}
 		s = s + String::new(c);
 	    }
+	    if (String::length(s) == 0)
+		raise bad_conversion();
 	    return s;
 	}
 
@@ -129,36 +137,55 @@ extend namespace File {
 
 	while (i < String::length (format) && !end(f) && !error(f))
 	{
-	    switch (format[i]) {
-	    case ' ':
-	    case '\t':
-		whitespace ();
-		break;
-	    case '%':
-		i++;
+	    try {
 		switch (format[i]) {
-		case 'b': case 'B':
-		    *args[argc++] = integer (isbinary, 2);
+		case ' ':
+		case '\t':
+		    whitespace ();
 		    break;
-		case 'o': case 'O':
-		    *args[argc++] = integer (isoctal, 8);
-		    break;
-		case 'd': case 'D':
-		    *args[argc++] = integer (isdecimal, 10);
-		    break;
-		case 'x': case 'X':
-		    *args[argc++] = integer (ishex, 16);
-		    break;
-		case 'e': case 'E':
-		case 'f': case 'F':
-		case 'g': case 'G':
-		    *args[argc++] = number(isfloat);
-		    break;
-		case 'c':
-		    *args[argc++] = getc(f);
-		    break;
-		case 's':
-		    *args[argc++] = word();
+		case '%':
+		    i++;
+		    switch (format[i]) {
+		    case 'b': case 'B':
+			*args[argc] = integer (isbinary, 2);
+			argc++;
+			break;
+		    case 'o': case 'O':
+			*args[argc] = integer (isoctal, 8);
+			argc++;
+			break;
+		    case 'd': case 'D':
+			*args[argc] = integer (isdecimal, 10);
+			argc++;
+			break;
+		    case 'x': case 'X':
+			*args[argc] = integer (ishex, 16);
+			argc++;
+			break;
+		    case 'e': case 'E':
+		    case 'f': case 'F':
+		    case 'g': case 'G':
+			*args[argc] = number(isfloat);
+			argc++;
+			break;
+		    case 'c':
+			*args[argc] = getc(f);
+			argc++;
+			break;
+		    case 's':
+			*args[argc] = word();
+			argc++;
+			break;
+		    default:
+			if (end (f))
+			    return argc;
+			c = getc(f);
+			if (c != format[i]) {
+			    ungetc (c, f);
+			    return argc;
+			}
+			break;
+		    }
 		    break;
 		default:
 		    if (end (f))
@@ -170,18 +197,9 @@ extend namespace File {
 		    }
 		    break;
 		}
-		break;
-	    default:
-		if (end (f))
-		    return argc;
-		c = getc(f);
-		if (c != format[i]) {
-		    ungetc (c, f);
-		    return argc;
-		}
-		break;
+		i++;
+	    } catch bad_conversion() {
 	    }
-	    i++;
 	}
 	return argc;
     }

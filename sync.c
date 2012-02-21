@@ -17,14 +17,12 @@ do_Semaphore_wait (Value s)
     if (aborting)
 	RETURN (Void);
     if (!running->thread.partial)
-    {
 	--s->semaphore.count;
-	if (s->semaphore.count < 0)
-	{
-	    running->thread.partial = 1;
-	    ThreadSleep (running, s, PrioritySync);
-	    RETURN (Void);
-	}
+    if (s->semaphore.count < 0)
+    {
+	running->thread.partial = 1;
+	ThreadSleep (running, s, PrioritySync);
+	RETURN (Void);
     }
     complete = True;
     RETURN (Void);

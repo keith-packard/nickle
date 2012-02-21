@@ -1,4 +1,6 @@
-check_SCRIPTS=gcdtest.5c \
+check_SCRIPTS=\
+	scanf.5c \
+	gcdtest.5c \
 	inttest.5c \
 	optest.5c \
 	orderofoptest.5c \

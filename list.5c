@@ -1,0 +1,78 @@
+/*
+ * Copyright © 2012 Keith Packard <keithp@keithp.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+ */
+
+namespace List {
+	public typedef list_t;
+
+	public typedef struct {
+		*list_t	prev;
+		*list_t	next;
+	} list_t;
+
+	public void init(*list_t l) {
+		l->next = l;
+		l->prev = l;
+	}
+
+	void add(*list_t entry, *list_t prev, *list_t next) {
+		next->prev = entry;
+		entry->next = next;
+		entry->prev = prev;
+		prev->next = entry;
+	}
+
+	void del(*list_t prev, *list_t next) {
+		next->prev = prev;
+		prev->next = next;
+	}
+
+	public bool is_empty(*list_t head) {
+		return head->next == head;
+	}
+
+	public *list_t first(*list_t head) {
+		assert(!is_empty(head), "empty list");
+		return head->next;
+	}
+
+	public *list_t last(*list_t head) {
+		assert(!is_empty(head), "empty list");
+		return head->prev;
+	}
+		
+	public void insert(*list_t entry, *list_t head) {
+		add(entry, head, head->next);
+	}
+
+	public void append(*list_t entry, *list_t head) {
+		add(entry, head->prev, head);
+	}
+
+	public void remove(*list_t entry) {
+		del(entry->prev, entry->next);
+		init(entry);
+	}
+
+	public iterate(*list_t head, bool (*list_t) f) {
+		*list_t next;
+		for (*list_t pos = head->next; pos != head; pos = next) {
+			next = pos->next;
+			if (!f(pos))
+				break;
+		}
+	}
+}

@@ -26,6 +26,10 @@ import_Toplevel_namespace()
 	    " int time ()\n"
 	    "\n"
 	    " Return seconds since Jan 1, 1970 00:00 GMT\n" },
+	{ do_millis, "millis", "i", "", "\n"
+	  " int millis ()\n"
+	  "\n"
+	  " Return time in milliseconds\n" },
         { 0 }
     };
 

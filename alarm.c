@@ -144,6 +144,13 @@ do_sleep (Value ms)
     RETURN (Void);
 }
 
+Value
+do_millis (void)
+{
+    ENTER();
+    RETURN(NewInt(TimeInMs()));
+}
+
 ReferencePtr	SleepingReference;
 
 static void

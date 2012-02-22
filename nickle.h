@@ -885,6 +885,7 @@ Value	do_Debug_done (void);
 Value	do_Debug_collect (void);
 Value   do_Debug_help (void);
 Value	do_File_mkpipe (void);
+Value	do_millis (void);
 
 /* one argument builtins */
 Value	do_sleep (Value);

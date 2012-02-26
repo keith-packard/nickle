@@ -83,6 +83,8 @@ typedef enum _OpCode {
     OpAssign,
     OpAssignOp,
     OpAssignFunc,
+    OpIsType,
+    OpHasMember,
     OpEnd,
     OpDrop
 } __attribute__ ((packed)) OpCode;

@@ -249,6 +249,12 @@ typedef struct _exprDecls {
     Publish	publish;
 } ExprDecl;
 
+typedef struct _exprType {
+    ExprBase	expr;
+    ExprPtr	left;
+    Type	*type;
+} ExprType;
+
 typedef union _expr {
     ExprBase	base;
     ExprTree	tree;
@@ -256,6 +262,7 @@ typedef union _expr {
     ExprAtom	atom;
     ExprCode	code;
     ExprDecl	decl;
+    ExprType	type;
 } Expr;
 
 Expr	*NewExprTree (int tag, Expr *left, Expr *right);
@@ -264,7 +271,7 @@ Expr	*NewExprConst (int tag, Value val);
 Expr	*NewExprAtom (Atom atom, SymbolPtr symbol, Bool privateFound);
 Expr	*NewExprCode (CodePtr code, ExprPtr name);
 Expr	*NewExprDecl (int tag, DeclListPtr decl, Class class, Type *type, Publish publish);
-
+Expr	*NewExprType (int tag, Expr *left, Type *type);
 Expr	*ExprRehang (Expr *expr, Expr *right);
 
 
@@ -529,6 +536,11 @@ typedef struct _instFarJump {
     BranchMod	mod;
 } InstFarJump;
 
+typedef struct _instIsType {
+    InstBase	inst;
+    TypePtr	type;
+} InstIsType;
+
 typedef union _inst {
     InstBase	base;
     InstBox	box;
@@ -554,6 +566,7 @@ typedef union _inst {
     InstTagCase	tagcase;
     InstUnwind	unwind;
     InstFarJump farJump;
+    InstIsType	isType;
 } Inst;
 
 /*

@@ -1,0 +1,29 @@
+int errors = 0;
+
+void check (poly value, string type, bool got, bool want) {
+    if (got != want) {
+	printf ("is_type(%v, %s) = %v. should be %v\n",
+		value, type, got, want);
+	errors++;
+    }
+}
+
+typedef struct { string a; } super_type;
+typedef super_type + struct { string b; } sub_type;
+super_type super_value = { .a = "a value" };
+sub_type sub_value = { .a = "a value", .b = "b value" };
+
+check(super_value, "super_type", is_type(super_value, super_type), true);
+check(super_value, "sub_type", is_type (super_value, sub_type), false);
+check(sub_value, "super_type", is_type (sub_value, super_type), true);
+check(sub_value, "sub_type", is_type (sub_value, sub_type), true);
+
+real real_value = pi;
+real int_value = 12;
+
+check(real_value, "real", is_type (real_value, real), true);
+check(real_value, "int", is_type (real_value, int), false);
+check(int_value, "real", is_type (int_value, real), true);
+check(int_value, "int", is_type(int_value, int), true);
+
+exit (errors);

@@ -155,6 +155,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %token <value>	    COMMENT_CONST
 %token <value>	    VOIDVAL BOOLVAL
 %token		    DARROW
+%token		    ISTYPE HASMEMBER
 
 %nonassoc 	POUND
 %right		COMMA
@@ -1474,6 +1475,14 @@ simpleexpr	: simpleexpr assignop simpleexpr    		%prec ASSIGN
 		    { $$ = NewExprTree(OS, $1, $3); }
 		| simpleexpr OP opt_actuals CP				%prec CALL
 		    { $$ = NewExprTree (OP, $1, $3); }
+		| ISTYPE OP simpleexpr COMMA type CP			%prec CALL
+		    {
+			TypePtr	type = $5;
+			ParseCanonType (type, False);
+			$$ = NewExprType (ISTYPE, $3, type);
+		    }
+		| HASMEMBER OP simpleexpr COMMA NAME CP			%prec CALL
+		    { $$ = NewExprTree (HASMEMBER, $3, NewExprAtom($5, 0, False)); }
 		| simpleexpr DOT NAME
 		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0, False)); }
 		| simpleexpr ARROW NAME

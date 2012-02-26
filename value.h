@@ -530,6 +530,8 @@ Type	*TypeCombineFunction (Type *type);
 Type	*TypeCombineArray (Type *array, int ndim, Bool lvalue);
 /* can assign value 'v' to variable of type 'dest' */
 Bool	TypeCompatibleAssign (Type *dest, Value v);
+/* is value 'v' a subtype of 't' */
+Bool	ValueIsType (Value b, TypePtr a);
 /* super is a supertype of sub */
 Bool	TypeIsSupertype (Type *super, Type *sub);
 /* a is a supertype of b or b is a supertype of a */

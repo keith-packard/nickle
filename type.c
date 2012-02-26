@@ -1404,6 +1404,157 @@ TypeCompatibleAssign (TypePtr a, Value b)
     return False;
 }
 
+/*
+ * Check to see if 'b' is a subtype of 'a'
+ */
+
+Bool
+ValueIsType (Value b, TypePtr a)
+{
+    int	adim, bdim;
+    int	n;
+    
+    if (!a || !b)
+	return True;
+
+    if (a->base.tag == type_types)
+    {
+	TypeElt	*elt;
+	for (elt = a->types.elt; elt; elt = elt->next)
+	    if (ValueIsType (b, elt->type))
+		return True;
+	return False;
+    }
+
+    if (TypePoly (a))
+	return True;
+    
+    switch (a->base.tag) {
+    case type_prim:
+	if (a->prim.prim == ValueTag(b))
+	    return True;
+	if (Numericp (a->prim.prim) && Numericp (ValueTag(b)))
+	{
+	    if (a->prim.prim >= ValueTag(b))
+		return True;
+	}
+	break;
+    case type_name:
+	return ValueIsType (b, TypeNameType(a));
+    case type_ref:
+	if (ValueIsRef(b))
+	{
+	    if (RefValueGet (b))
+		return ValueIsType (RefValueGet (b), a->ref.ref);
+	    else
+		return TypeIsSupertype (RefType(b), a->ref.ref);
+	}
+	break;
+    case type_func:
+	if (ValueIsFunc(b))
+	{
+	    if (TypeIsSupertype (b->func.code->base.type, a->func.ret))
+	    {
+		ArgType *aarg = a->func.args, *barg = b->func.code->base.args;
+    
+		while (aarg || barg)
+		{
+		    if (!barg || !aarg)
+			return False;
+		    if (barg->varargs != aarg->varargs)
+			return False;
+		    if (!TypeIsSupertype (aarg->type, barg->type))
+			return False;
+		    aarg = aarg->next;
+		    barg = barg->next;
+		}
+		return True;
+	    }
+	}
+	break;
+    case type_array:
+	if (ValueIsArray(b))
+	{
+	    adim = TypeCountDimensions (a->array.dimensions);
+	    bdim = b->array.ndim;
+	    if (adim == 0 || adim == bdim)
+	    {
+		if (TypePoly (a->array.type))
+		    return True;
+		if (TypePoly (ArrayType(&b->array)))
+		{
+		    int	i;
+
+		    for (i = 0; i < ArrayNvalues(&b->array); i++)
+		    {
+			Value	v = ArrayValueGet (&b->array, i);
+			if (v &&
+			    !ValueIsType (v, a->array.type))
+			{
+			    return False;
+			}
+		    }
+		    return True;
+		}
+		else
+		    return TypeIsSupertype (ArrayType(&b->array), a->array.type);
+	    }
+	}
+	break;
+    case type_hash:
+	if (ValueIsHash (b))
+	{
+	    if (TypePoly (a->hash.type))
+		return True;
+	    if (TypePoly (b->hash.type))
+	    {
+		HashValue   h;
+		Value	    *e = BoxElements (b->hash.elts);
+
+		for (h = 0; h < b->hash.hashSet->size; h++)
+		{
+		    if (!ValueIsType (HashEltValue(e), a->hash.type))
+		    {
+			return False;
+		    }
+		    if (!ValueIsType (HashEltKey (e), a->hash.keyType))
+		    {
+			return False;
+		    }
+		    HashEltStep (e);
+		}
+		return True;
+	    }
+	    else
+		return (TypeIsSupertype (b->hash.type, a->hash.type) &&
+		        TypeIsSupertype (b->hash.keyType, a->hash.keyType));
+	}
+    case type_struct:
+    case type_union:
+	if ((ValueIsStruct(b) && a->base.tag == type_struct) ||
+	    (ValueIsUnion(b) && a->base.tag == type_union))
+	{
+	    StructType	*st = a->structs.structs;
+	    for (n = 0; n < st->nelements; n++)
+	    {
+		Type		*bt;
+    
+		bt = StructMemType (b->structs.type, StructTypeAtoms(st)[n]);
+		if (!bt)
+		    break;
+		if (!TypeIsSupertype (bt, BoxTypesElements(st->types)[n]))
+		    break;
+	    }
+	    if (n == st->nelements)
+		return True;
+	}
+	break;
+    default:
+	break;
+    }
+    return False;
+}
+
 Type *
 TypeCanon (Type *type)
 {

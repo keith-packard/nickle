@@ -11,7 +11,8 @@ check_SCRIPTS=\
 	signal.5c \
 	round.5c \
 	math.5c \
-	factorial.5c
+	factorial.5c \
+	is_type.5c
 
 noinst_PROGRAMS=math-tables
 

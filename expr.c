@@ -76,11 +76,25 @@ ExprDeclMark (void *object)
 	ed->expr.ticks = ed->expr.sub_ticks = 0;
 }
 
+static void
+ExprTypeMark (void *object)
+{
+    ExprType	*et = object;
+
+    MemReference (et->expr.namespace);
+    MemReference (et->expr.type);
+    MemReference (et->left);
+    MemReference (et->type);
+    if (!profiling)
+	et->expr.ticks = et->expr.sub_ticks = 0;
+}
+
 DataType    ExprTreeType = { ExprTreeMark, 0, "ExprTreeType" };
 DataType    ExprConstType = { ExprConstMark, 0, "ExprConstType" };
 DataType    ExprAtomType = { ExprAtomMark, 0, "ExprAtomType" };
 DataType    ExprCodeType = { ExprCodeMark, 0, "ExprCodeType" };
 DataType    ExprDeclType = { ExprDeclMark, 0, "ExprDeclType" };
+DataType    ExprTypeType = { ExprTypeMark, 0, "ExprTypeType" };
 
 static void
 ExprBaseInit (Expr *e, int tag)
@@ -174,6 +188,19 @@ NewExprDecl (int tag, DeclListPtr decl, Class class, Type *type, Publish publish
     e->decl.class = class;
     e->decl.type = type;
     e->decl.publish = publish;
+    RETURN (e);
+}
+
+Expr *
+NewExprType (int tag, ExprPtr left, Type *type)
+{
+    ENTER ();
+    Expr    *e;
+
+    e = ALLOCATE (&ExprTypeType, sizeof (ExprType));
+    ExprBaseInit (e, tag);
+    e->type.left = left;
+    e->type.type = type;
     RETURN (e);
 }
 

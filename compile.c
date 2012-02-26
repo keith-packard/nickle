@@ -2975,6 +2975,18 @@ _CompileExpr (ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr cod
 	}
 	expr->base.type = typePoly;
 	break;
+    case ISTYPE:
+	obj = _CompileExpr (obj, expr->type.left, evaluate, stat, code);
+	BuildInst (obj, OpIsType, inst, stat);
+	inst->isType.type = expr->type.type;
+	expr->base.type = typePrim[rep_bool];
+	break;
+    case HASMEMBER:
+	obj = _CompileExpr (obj, expr->tree.left, evaluate, stat, code);
+	BuildInst (obj, OpHasMember, inst, stat);
+	inst->atom.atom = expr->tree.right->atom.atom;
+	expr->base.type = typePrim[rep_bool];
+	break;
     case EXPR:
 	/* reposition statement reference so top-level errors are nicer*/
 	obj = _CompileExpr (obj, expr->tree.left, evaluate, expr, code);
@@ -4625,6 +4637,12 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
 	break;
     case OpUnFunc:
 	FilePrintf (FileStdout, "%s", ObjUnFuncName (inst->unfunc.func));
+	break;
+    case OpIsType:
+	FilePrintf (FileStdout, "%T", inst->isType.type);
+	break;
+    case OpHasMember:
+	FilePrintf (FileStdout, "%A", inst->atom.atom);
 	break;
     default:
 	break;

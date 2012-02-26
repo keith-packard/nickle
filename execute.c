@@ -1386,6 +1386,19 @@ ThreadsRun (Value thread, Value lex)
 		case OpUnwind:
 		    ThreadUnwind (thread, inst->unwind.twixt, inst->unwind.catch);
 		    break;
+		case OpIsType:
+		    value = ValueIsType(value, inst->isType.type) ? TrueVal : FalseVal;
+		    break;
+		case OpHasMember:
+		    if (ValueTag(value) != rep_struct)
+			value = FalseVal;
+		    else {
+			if (StructMemType(value->structs.type, inst->atom.atom))
+			    value = TrueVal;
+			else
+			    value = FalseVal;
+		    }
+		    break;
 		case OpEnd:
 		    SetSignalFinished ();
 		    break;

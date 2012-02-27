@@ -3616,8 +3616,17 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	{
 	    if (c->tree.left->tree.left)
 	    {
-		if (expr->base.tag == SWITCH)
+		if (expr->base.tag == SWITCH) {
 		    obj = _CompileExpr (obj, c->tree.left->tree.left, True, c, code);
+		    if (!TypeCombineBinary(expr->tree.left->base.type, EQ,
+					   c->tree.left->tree.left->base.type)) {
+			CompileError (obj, expr, "Incompatible types, left '%T', right '%T', for case comparison",
+				      expr->tree.left->base.type,
+				      c->tree.left->tree.left->base.type,
+				      EQ);
+			expr->base.type = typePoly;
+		    }
+		}
 		NewInst (obj, expr->base.tag == SWITCH ? OpCase : OpTagCase,
 			 case_inst[icase], expr);
 		icase++;

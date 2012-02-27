@@ -310,7 +310,7 @@ TraceFunction (Value file, FramePtr frame, CodePtr code, ExprPtr name)
     {
 	if (fe)
 	    FilePuts (file, ", ");
-	FilePrintf (file, "%g", BoxValue (frame->frame, fe));
+	FilePrintf (file, "%G", BoxValue (frame->frame, fe));
     }
     FilePuts (file, ")\n");
 }

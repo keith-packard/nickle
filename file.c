@@ -1807,6 +1807,18 @@ FileVPrintf (Value file, char *fmt, va_list args)
 		else
 		    Print (file, v, *fmt, 0, 0, DEFAULT_OUTPUT_PRECISION, ' ');
 		break;
+	    case 'G':
+		v = va_arg (args, Value);
+		if (!v)
+		    (void) FilePuts (file, "<uninit>");
+		else {
+		    if (ValueRep(v) <= rep_void) {
+			Print (file, v, 'g', 0, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+		    } else {
+			(void) FilePuts (file, "<composite>");
+		    }
+		}
+		break;
 	    case 'n':
 		FilePuts (file, NaturalSprint (0, va_arg (args, Natural *), 10, 0));
 		break;

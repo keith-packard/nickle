@@ -1812,7 +1812,7 @@ FileVPrintf (Value file, char *fmt, va_list args)
 		if (!v)
 		    (void) FilePuts (file, "<uninit>");
 		else {
-		    if (ValueRep(v) <= rep_void) {
+		    if (ValueRep(v)->tag <= rep_void) {
 			Print (file, v, 'g', 0, 0, DEFAULT_OUTPUT_PRECISION, ' ');
 		    } else {
 			(void) FilePuts (file, "<composite>");

@@ -1,3 +1,13 @@
+nickle (2.73-1) unstable; urgency=low
+
+  * add gamma function
+  * fix readline interaction when using pipes
+  * add sort and skiplist to library
+  * add is_type and has_member built-ins
+  * typecheck switch statements
+
+ -- Keith Packard <keithp@keithp.com>  Wed, 29 Feb 2012 17:00:25 +1300
+
 nickle (2.72-1) unstable; urgency=low
 
   * wait3 returns 0 when there's nothing left to do

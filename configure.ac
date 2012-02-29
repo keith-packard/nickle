@@ -4,7 +4,7 @@ dnl Copyright © 1988-2004 Keith Packard and Bart Massey.
 dnl All Rights Reserved.  See the file COPYING in this directory
 dnl for licensing information.
 
-AC_PREREQ([2.68])
+AC_PREREQ([2.64])
 
 AC_INIT([nickle],[2.73],[http://nickle.org],[nickle])
 

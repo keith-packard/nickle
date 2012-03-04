@@ -101,7 +101,7 @@ debuild: $(DEBFILE)
 
 $(DEBFILE): $(DEB_TAR) $(TARFILE)
 	tar xzf $(TARFILE)
-	(cd $(distdir)/debian && debuild)
+	(cd $(distdir) && pdebuild --buildresult $(abs_top_builddir) --auto-debsign)
 
 debuild-unsigned: $(DEB_TAR) $(TARFILE)
 	tar xzf $(distdir).tar.gz

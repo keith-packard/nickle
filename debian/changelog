@@ -1,3 +1,10 @@
+nickle (2.74-1) unstable; urgency=low
+
+  * Fix Semaphore::wait to not deadlock
+  * Switch debian package building to use pdebuild
+
+ -- Keith Packard <keithp@keithp.com>  Sat, 03 Mar 2012 17:16:35 -0800
+
 nickle (2.73-1) unstable; urgency=low
 
   * add gamma function

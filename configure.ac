@@ -6,7 +6,7 @@ dnl for licensing information.
 
 AC_PREREQ([2.64])
 
-AC_INIT([nickle],[2.73],[http://nickle.org],[nickle])
+AC_INIT([nickle],[2.74],[http://nickle.org],[nickle])
 
 AC_CONFIG_SRCDIR([nickle.h])
 AC_CONFIG_HEADERS([config.h])

@@ -575,6 +575,7 @@ isName:
 	}
 	BuildInst (obj, OpArrowRef, inst, stat);
 	inst->atom.atom = expr->tree.right->atom.atom;
+	flipTypes = True;
 	break;
     case OS:
 	obj = _CompileExpr (obj, expr->tree.left, True, stat, code);

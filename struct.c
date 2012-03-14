@@ -54,15 +54,18 @@ StructPrint (Value f, Value av, char format, int base, int width, int prec, int 
     StructType	    *st = s->type;
     int		    i;
     Bool	    pretty = format == 'v' || format == 'g';
+    char	    down_format = format == 'g' ? 'G' : format;
 
     if (pretty)
 	FileOutput (f, '{');
     for (i = 0; i < st->nelements; i++)
     {
 	FilePuts (f, AtomName (StructTypeAtoms(st)[i]));
-	FilePuts (f, " = ");
-	if (!Print (f, BoxValueGet (s->values, i), format, base, width, prec, fill))
-	    return False;
+	if (format != 'G') {
+	    FilePuts (f, " = ");
+	    if (!Print (f, BoxValueGet (s->values, i), down_format, base, width, prec, fill))
+		return False;
+	}
 	if (i < st->nelements - 1)
 	{
 	    if (pretty)

@@ -87,7 +87,8 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
     int	    ndone;
     int	    limit = ArrayLimit (av);
     Bool    ret = True;
-    Bool    pretty = format == 'v' || format == 'g';
+    Bool    pretty = format == 'v' || format == 'g' || format == 'G';
+    char    down_format = format == 'g' ? 'G' : format;
 
     if (pretty)
     {
@@ -113,44 +114,48 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 	    FilePutSubscriptType (f, ArrayType (a), False);
 	}
 	FilePuts (f, ") ");
-	for (i = 0; i < a->ndim; i++)
-	    FileOutput (f, '{');
-    }
-    i = 0;
-    while (i < limit)
-    {
-	if (!Print (f, ArrayValueGet (a, i), format, base, width, prec, fill))
-	{
-	    ret = False;
-	    break;
+	if (format != 'G') {
+	    for (i = 0; i < a->ndim; i++)
+		FileOutput (f, '{');
 	}
-	i = ArrayNextI (a, i);
-	if (i < limit)
+    }
+    if (format != 'G') {
+	i = 0;
+	while (i < limit)
 	{
-	    ndone = 0;
-	    if (pretty)
+	    if (!Print (f, ArrayValueGet (a, i), format, base, width, prec, fill))
 	    {
-		j = i;
-		k = 0;
-		while (k < a->ndim - 1 && j % dims[k] == 0)
-		{
-		    ndone++;
-		    j = j / dims[k];
-		    k++;
-		}
-		for (k = 0; k < ndone; k++)
-		    FileOutput (f, '}');
-		FileOutput (f, ',');
+		ret = False;
+		break;
 	    }
-	    FileOutput (f, ' ');
-	    if (pretty)
-		for (k = 0; k < ndone; k++)
-		    FileOutput (f, '{');
+	    i = ArrayNextI (a, i);
+	    if (i < limit)
+	    {
+		ndone = 0;
+		if (pretty)
+		{
+		    j = i;
+		    k = 0;
+		    while (k < a->ndim - 1 && j % dims[k] == 0)
+		    {
+			ndone++;
+			j = j / dims[k];
+			k++;
+		    }
+		    for (k = 0; k < ndone; k++)
+			FileOutput (f, '}');
+		    FileOutput (f, ',');
+		}
+		FileOutput (f, ' ');
+		if (pretty)
+		    for (k = 0; k < ndone; k++)
+			FileOutput (f, '{');
+	    }
 	}
+	if (pretty)
+	    for (i = 0; i < a->ndim; i++)
+		FileOutput (f, '}');
     }
-    if (pretty)
-	for (i = 0; i < a->ndim; i++)
-	    FileOutput (f, '}');
     EXIT ();
     return ret;
 }

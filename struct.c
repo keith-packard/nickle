@@ -53,7 +53,7 @@ StructPrint (Value f, Value av, char format, int base, int width, int prec, int 
     Struct	    *s = &av->structs;
     StructType	    *st = s->type;
     int		    i;
-    Bool	    pretty = format == 'v' || format == 'g';
+    Bool	    pretty = format == 'v' || format == 'g' || format == 'G';
     char	    down_format = format == 'g' ? 'G' : format;
 
     if (pretty)

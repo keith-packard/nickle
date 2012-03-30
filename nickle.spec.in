@@ -6,7 +6,7 @@ Group: Development/Languages
 License: MIT
 URL: http://nickle.org
 
-Source: http://nickle.keithp.com/nickle-%{version}.tar.gz
+Source: http://nickle.org/release/nickle-%{version}.tar.gz
 Buildroot: %{_tmppath}/%{name}-%{version}-root
 
 %description

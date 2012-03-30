@@ -15,7 +15,7 @@ NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c \
 	file.5c parse-args.5c svg.5c process.5c \
 	prime_sieve.5c factorial.5c gamma.5c sort.5c list.5c skiplist.5c
 
-DEBIAN = debian/nickle.install debian/changelog debian/compat \
+DEBIAN = debian/changelog debian/compat \
 	 debian/control debian/copyright debian/rules debian/lintian.override
 	 
 EXTRA_DIST = README.name README.release autogen.sh ChangeLog \

@@ -192,13 +192,19 @@ do_Socket_create (int num, Value *args)
     RETURN (ret);
 }
 
+#ifdef PATH_MAX
+#define UN_SOCK_MAX	PATH_MAX
+#else
+#define UN_SOCK_MAX	4096
+#endif
+
 typedef union {
     struct sockaddr_in in;
     struct sockaddr_un un;
     struct sockaddr addr;
     struct {
 	struct sockaddr_un un;
-	char path[PATH_MAX];
+	char path[UN_SOCK_MAX];
     } align;
 } sockaddr_all_t;
 
@@ -226,7 +232,7 @@ static Bool address_lookup_af_unix (int num, Value *args,
     if (!local_socket || *local_socket == '\0')
 	return False;
 
-    if (strlen (local_socket) > PATH_MAX)
+    if (strlen (local_socket) > UN_SOCK_MAX)
 	return False;
 
     addr->sun_family = s->file.sock_family;

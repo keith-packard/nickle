@@ -918,6 +918,102 @@ ThreadStackDump (Value thread)
 int dump_inst = 0;
 #endif
 
+#ifdef VALIDATE_EXECUTION
+
+extern DataType FrameType, BoxType, stackType, stackChunkType;
+
+static void
+ObjValid(ObjPtr obj, InstPtr pc)
+{
+    assert(obj->data == &ObjType);
+    assert(0 <= obj->used && obj->used <= obj->size);
+    assert(0 <= obj->used_stat && obj->used_stat <= obj->size_stat);
+    assert(obj->insts <= pc && pc < &obj->insts[obj->used]);
+}
+
+static void
+FrameValid(FramePtr frame)
+{
+    assert (frame->data == &FrameType);
+
+    if (frame->previous)
+	assert (frame->previous->data == &FrameType);
+
+    if (frame->staticLink)
+	assert (frame->staticLink->data == &FrameType);
+
+    assert (ValueIsFunc(frame->function));
+
+    if (frame->frame)
+	assert (frame->frame->data == &BoxType);
+    if (frame->statics)
+	assert (frame->statics->data == &BoxType);
+
+    ObjValid(frame->saveObj, frame->savePc);
+}
+
+static void
+StackValid(StackObject *stack)
+{
+    StackChunk		*chunk;
+    StackElement	*stackPointer;
+
+    assert(stack->type == &stackType);
+
+    chunk = stack->current;
+    if (chunk) {
+	assert(chunk->type == &stackChunkType);
+	if (chunk->previous)
+	    assert (chunk->previous->type == &stackChunkType);
+    }
+
+    stackPointer = stack->stackPointer;
+    assert ((stackPointer == NULL) == (chunk == NULL));
+    if (stackPointer) {
+	assert (&chunk->elements[0] <= stackPointer &&
+		stackPointer <= &chunk->elements[STACK_ENTS_PER_CHUNK]);
+    }
+}
+
+static void
+ThreadValid(Value thread)
+{
+    Thread 	*t;
+    FramePtr	frame;
+    StackObject	*stack;
+
+    assert(thread->value.type == &ThreadRep);
+    t = &thread->thread;
+
+    /* Check to make sure object is valid */
+    ObjValid(t->continuation.obj,
+	     t->continuation.pc);
+
+    /* Check for valid frame */
+    frame = t->continuation.frame;
+    if (frame)
+	FrameValid(frame);
+
+    stack = t->continuation.stack;
+    if (stack)
+	StackValid(stack);
+}
+
+#define EXEC_HISTORY	256
+Continuation	exec_history[EXEC_HISTORY];
+int		exec_history_i;
+
+static inline void
+ExecRecord(Value thread)
+{
+    exec_history[exec_history_i] = thread->thread.continuation;
+    exec_history_i = (exec_history_i + 1) % EXEC_HISTORY;
+}
+#else
+#define ThreadValid(t)
+#define ExecRecord(t)
+#endif
+
 void
 ThreadsRun (Value thread, Value lex)
 {
@@ -980,6 +1076,8 @@ ThreadsRun (Value thread, Value lex)
 	    cstack = thread->thread.continuation.stack;
 	    for (j = 0; j < 10; j++)
 	    {
+		ThreadValid(thread);
+		ExecRecord(thread);
 		stack = 0;
 		next = inst + 1;
 		complete = False;
@@ -1462,6 +1560,7 @@ ThreadsRun (Value thread, Value lex)
 		thread->thread.continuation.pc = inst;
 		if (thread->thread.next)
 		    ThreadStepped (thread);
+		ThreadValid(thread);
 		if (running != thread)
 		    break; 
 	    }

@@ -65,8 +65,10 @@ void
 panic (char *, ...);
 
 #define STACK_ASSERT(s)	if (!STACK_VALID(s)) panic ("invalid stack\n");
+#define STACK_CHUNK_ASSERT(c)	assert((c)->type == &stackChunkType)
 #else
 #define STACK_ASSERT(s)
+#define STACK_CHUNK_ASSERT(c)
 #endif
 
 #if 0

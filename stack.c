@@ -7,15 +7,16 @@
  */
 
 #include	<config.h>
+#include	<assert.h>
 
 #include	"mem.h"
 #include	"stack.h"
 
 static void	stackMark (void *);
 
-static DataType stackType = { stackMark, 0, "stackType" };
+DataType stackType = { stackMark, 0, "stackType" };
 
-static DataType stackChunkType = { 0, 0, "stackChunkType" };
+DataType stackChunkType = { 0, 0, "stackChunkType" };
 
 static void
 addChunk (StackObject *stack)
@@ -191,6 +192,7 @@ StackCopy (StackObject *stack)
 	 * Copy stack data and fix stack pointer
 	 */
 	*nchunk = *chunk;
+	STACK_CHUNK_ASSERT(chunk->type == &stackChunkType);
 	
 	/*
 	 * Link into chain

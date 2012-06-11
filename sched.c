@@ -861,6 +861,8 @@ JumpContinue (Value thread, InstPtr *next)
 	 * Going up
 	 */
 	twixt = jump->leave;
+	ContinuationSet (&thread->thread.continuation, &twixt->continuation);
+	*next = twixt->leave;
 	jump->leave = twixt->continuation.twixts;
 	/*
 	 * Matching element of the twixt chain, next time start
@@ -868,8 +870,6 @@ JumpContinue (Value thread, InstPtr *next)
 	 */
 	if (jump->leave == jump->parent)
 	    jump->leave = 0;
-	ContinuationSet (&thread->thread.continuation, &twixt->continuation);
-	*next = twixt->leave;
     }
     else if (jump->entering)
     {
@@ -877,16 +877,16 @@ JumpContinue (Value thread, InstPtr *next)
 	 * Going down
 	 */
 	twixt = jump->entering;
-	jump->entering = TwixtNext (jump->entering, jump->enter);
 	*next = ContinuationSet (&thread->thread.continuation, &twixt->continuation);
+	jump->entering = TwixtNext (jump->entering, jump->enter);
     }
     else
     {
 	/*
 	 * All done, set to final continuation and drop the jump object
 	 */
-	running->thread.jump = 0;
 	*next = ContinuationSet (&thread->thread.continuation, jump->continuation);
+	thread->thread.jump = 0;
     }
     if (!*next)
 	JumpUnhandledException (thread);

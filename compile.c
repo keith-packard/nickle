@@ -1500,8 +1500,14 @@ CompileInit (ObjPtr obj, ExprPtr expr, Type *type,
 	     ExprPtr stat, CodePtr code)
 {
     ENTER ();
+    Type *canon_type;
 
-    type = TypeCanon (type);
+    canon_type = TypeCanon (type);
+    if (!canon_type) {
+	CompileError(obj, stat, "Initializer with undefined type '%T'", type);
+	RETURN(obj);
+    }
+    type = canon_type;
     
     if (!expr || expr->base.tag == ANONINIT) 
     {

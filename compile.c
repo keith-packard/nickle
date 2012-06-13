@@ -4424,6 +4424,8 @@ const char *const OpNames[] = {
     "Assign",
     "AssignOp",
     "AssignFunc",
+    "IsType",
+    "HasMember",
     "End",
     "Drop",
 };

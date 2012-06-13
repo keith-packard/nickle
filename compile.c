@@ -246,7 +246,7 @@ ObjPtr	CompileFuncCode (CodePtr	code,
 			 CodePtr	previous,
 			 NonLocalPtr	nonLocal);
 void	CompileError (ObjPtr obj, ExprPtr stat, char *s, ...);
-static Bool CompileIsReachable (ObjPtr obj, int i);
+static Bool CompileIsReachable (ObjPtr obj, int i, int frame);
 static ObjPtr
 CompileArrayDimValue (ObjPtr obj, TypePtr type, Bool lvalue, ExprPtr stat, CodePtr code);
 static ObjPtr
@@ -3309,7 +3309,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 	    /*
 	     * Branch around else if reachable
 	     */
-	    if (CompileIsReachable (obj, obj->used))
+	    if (CompileIsReachable (obj, obj->used, 0))
 	    {
 		NewInst (obj, OpBranch, middle_inst, expr);
 	    }
@@ -3694,7 +3694,7 @@ _CompileStat (ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 		     * Make sure there's no fall-through
 		     */
 		    if (icase > 0 && pair->tree.right &&
-			CompileIsReachable (obj, obj->used))
+			CompileIsReachable (obj, obj->used, 0))
 		    {
 			CompileError (obj, expr, 
 				      "Fall-through case with variant value");
@@ -3863,7 +3863,6 @@ CompileIsBranch (InstPtr inst)
     case OpBranch:
     case OpBranchFalse:
     case OpBranchTrue:
-    case OpFarJump:
     case OpCase:
     case OpTagCase:
     case OpDefault:
@@ -3875,7 +3874,7 @@ CompileIsBranch (InstPtr inst)
 }
 
 static Bool
-CompileIsReachable (ObjPtr obj, int target)
+CompileIsReachable (ObjPtr obj, int target, int frame)
 {
     InstPtr inst;
     int	    i;
@@ -3883,9 +3882,19 @@ CompileIsReachable (ObjPtr obj, int target)
     for (i = 0; i < obj->used; i++)
     {
 	inst = ObjCode (obj, i);
-	if (CompileIsBranch (inst) && i + inst->branch.offset == target)
+	if (frame == 0 && CompileIsBranch (inst) && i + inst->branch.offset == target)
 	    return True;
-	if (i == target - 1 && !CompileIsUnconditional (inst))
+	if (inst->base.opCode == OpObj &&
+	    !inst->code.code->base.builtin &&
+	    inst->code.code->func.body.obj->nonLocal) {
+	    if (CompileIsReachable(inst->code.code->func.body.obj, target, frame + 1))
+		return True;
+	}
+	if (inst->base.opCode == OpFarJump &&
+	    inst->farJump.farJump->frame == frame &&
+	    inst->farJump.farJump->inst == target)
+	    return True;
+	if (frame == 0 && i == target - 1 && !CompileIsUnconditional (inst))
 	    return True;
     }
     return False;
@@ -3907,7 +3916,7 @@ CompileFuncCode (CodePtr	code,
     obj->nonLocal = nonLocal;
     obj = _CompileStat (obj, code->func.code, True, code);
     needReturn = False;
-    if (!obj->used || CompileIsReachable (obj, obj->used))
+    if (!obj->used || CompileIsReachable (obj, obj->used, 0))
 	needReturn = True;
     if (needReturn)
     {
@@ -4690,6 +4699,13 @@ ObjDump (ObjPtr obj, int indent)
 	if (CompileIsBranch (inst))
 	{
 	    j = i + inst->branch.offset;
+	    if (0 <= j && j < obj->used)
+		if (!branch[j])
+		    branch[j] = ++b;
+	}
+	if (inst->base.opCode == OpFarJump)
+	{
+	    j = inst->farJump.farJump->inst;
 	    if (0 <= j && j < obj->used)
 		if (!branch[j])
 		    branch[j] = ++b;

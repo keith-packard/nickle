@@ -82,7 +82,7 @@ Unhandled exception invalid_argument ("sqrt of negative number", 0, -1)
     sqrt (-1)
 /usr/share/nickle/math.5c:895:     result = sqrt (a);
     pow (-1, 0.5)
-<stdin>:1:     -1 ** (1 / 2);
+&lt;stdin&gt;:1:     -1 ** (1 / 2);
 - done
 > quit
 $

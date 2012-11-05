@@ -5,7 +5,7 @@
 ## for licensing information.
 
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = bench test examples
+SUBDIRS = bench test examples doc
 
 BUILD_DATE := $(shell sh $(top_builddir)/date-sh)
 

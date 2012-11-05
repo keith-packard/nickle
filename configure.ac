@@ -101,6 +101,10 @@ AC_CHECK_FUNCS(unsetenv setenv putenv gettimeofday hstrerror select)
 AC_CHECK_FUNCS(sigaction sigrelse sigignore setrlimit getrlimit)
 AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
 
+AC_PATH_PROGS([DOCBOOK2PDF],[docbook2pdf])
+
+AM_CONDITIONAL(HASDOCBOOK,test -n "$DOCBOOK2PDF")
+
 AC_FUNC_GETPGRP
 
 dnl The readline test is complicated enough to rate its own file
@@ -130,6 +134,8 @@ AC_CONFIG_FILES(
  examples/Makefile
  examples/smlng/Makefile
  examples/turtle/Makefile
+ doc/Makefile
+ doc/tutorial/Makefile
  date-sh)
 
 AC_OUTPUT

@@ -65,23 +65,24 @@ else
 twixt ( <replaceable>expr</replaceable>; <replaceable>expr</replaceable> ) <replaceable>statement</replaceable>
 </synopsis>
 <para>
-<literal>twixt</literal>, like <literal>if</literal>, executes <replaceable>statement</replaceable> only if the first <replaceable>expr</replaceable> is true.
-If <replaceable>statement</replaceable> is executed, the second <replaceable>expr</replaceable> is evaluated after it.
-<emphasis>That order is gauranteed</emphasis> - even if <replaceable>statement</replaceable> throws an exception or <literal>long_jmp</literal>s out of the <literal>twixt</literal>, the second <replaceable>expr</replaceable> will be evaluated.
-Thus, <literal>twixt</literal> is useful in locked operations where the statement should only be executed if a lock was successfully acquired and the lock must be released afterward:
+Ensures that the the first <replaceable>expr</replaceable> will always
+have been evaluated whenever control flow passes into any part
+of <replaceable>statement</replaceable> and ensures that the
+second <replaceable>expr</replaceable> will be evaluated anytime
+control flow passes out of <replaceable>statement</replaceable>.
+<emphasis>That order is gauranteed</emphasis>.
+If a <literal>long_jmp</literal> target is inside
+<replaceable>statement</replaceable>, the
+first <replaceable>expr</replaceable> will be executed before control
+passes to the target.
+If <replaceable>statement</replaceable> throws an exception
+or <literal>long_jmp</literal>s out of the <literal>twixt</literal>, the second <replaceable>expr</replaceable> will be evaluated.
+Thus, <literal>twixt</literal> is useful in locked operations where
+the statement should only be executed under a lock and that lock must
+be released afterwards.
 <informalexample><screen>
 twixt ( get_lock ( ); release_lock ( ) )
-	locked_operation ( );
-</screen></informalexample>
-</para>
-<para>
-'Else' statements may bind to 'twixt's as well as 'if's, providing choices
-such as:
-<informalexample><screen>
-twixt ( get_lock ( ); release_lock ( ) )
-	locked_operation ( );
-else
-	printf ( "failed to acquire lock.\n" );
+        locked_operation ( );
 </screen></informalexample>
 </para>
 </sect2>

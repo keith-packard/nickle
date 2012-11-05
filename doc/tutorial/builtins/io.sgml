@@ -188,27 +188,27 @@ It contains the following definitions:
 <informalexample><screen>
 public int scanf (string format, *poly args...)
 {
-	return File::vfscanf (stdin, format, args);
+        return File::vfscanf (stdin, format, args);
 }
 
 public int vscanf (string format, (*poly)[*] args)
 {
-	return File::vfscanf (stdin, format, args);
+        return File::vfscanf (stdin, format, args);
 }    
 
 public string gets ()
 {
-	return File::fgets (stdin);
+        return File::fgets (stdin);
 }
 
 public int getchar ()
 {
-	return File::getc (stdin);
+        return File::getc (stdin);
 }
 
 public void ungetchar (int ch)
 {
-	File::ungetc (ch, stdin);
+        File::ungetc (ch, stdin);
 }
 </screen></informalexample>
 Thus, <literal>scanf</literal>, <literal>vscanf</literal>, <literal>gets</literal>, <literal>getchar</literal>, and <literal>ungetchar</literal> call the appropriate functions in File and return their results.

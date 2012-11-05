@@ -16,16 +16,16 @@ An example namespace might be declared like this:
 <informalexample><screen>
 namespace Example {
 
-	int blah = 1;
-	public int a = 0;
+        int blah = 1;
+        public int a = 0;
 
-	int function bar(int a) {
-		...
-	}
-	
-	protected int function foo(int a) {
-		...
-	}
+        int function bar(int a) {
+                ...
+        }
+        
+        protected int function foo(int a) {
+                ...
+        }
 
 }
 </screen></informalexample>
@@ -37,7 +37,7 @@ The namespace itself may be preceeded by publication information, <emphasis>but 
 If the example above had been declared
 <informalexample><screen>
 protected namespace Example {
-	...
+        ...
 }
 </screen></informalexample>
 Then the names within <literal>Example</literal> would have the same visibility as always, but <literal>Example</literal> itself would be protected in whatever namespace it belongs to.
@@ -54,7 +54,7 @@ The namespace <literal>name</literal> is reopened and the new <literal>statement
 For example,
 <informalexample><screen>
 extend namespace Example {
-	string[*] greeting = [2]{ "hello", "world" };
+        string[*] greeting = [2]{ "hello", "world" };
 }
 </screen></informalexample>
 </para>

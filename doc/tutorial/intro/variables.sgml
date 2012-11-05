@@ -72,7 +72,7 @@ string foo = "hello";
 string bar = "world";
 string msg = foo + ", " + bar;
 
-printf("%s\n", msg);		/* hello, world */
+printf("%s\n", msg);            /* hello, world */
 </screen></informalexample>
 </para>
 </sect3>
@@ -107,7 +107,7 @@ See the section on Concurrency and Continuations.
 <informalexample><screen>
 thread t = fork 5!;
 # do stuf...
-printf("5! = %d\n", join(t));	/* 5! = 120 */
+printf("5! = %d\n", join(t));   /* 5! = 120 */
 </screen></informalexample>
 </para>
 <para>
@@ -127,16 +127,16 @@ Nickle performs full run-time typechecking on poly datatypes to ensure that the 
 > poly i=3, s="hello\n";
 > i+3
 6
-> s+3		/* can't add string and int */
+> s+3           /* can't add string and int */
 Unhandled exception "invalid_binop_values" at <stdin>:45
-	3
-	"hello\n"
-	"invalid operands"
-> printf(i)	/* printf expects a string */
+        3
+        "hello\n"
+        "invalid operands"
+> printf(i)     /* printf expects a string */
 Unhandled exception "invalid_argument" at <stdin>:47
-	3
-	0
-	"Incompatible argument"
+        3
+        0
+        "Incompatible argument"
 > printf(s)
 hello
 > 
@@ -175,17 +175,17 @@ One unusual feature is that a struct value is compatible with a struct type if t
 For example:
 <informalexample><screen>
 typedef struct {
-	int	i;
-	real	r;
+        int     i;
+        real    r;
 } i_and_r;
 
 typedef struct {
-	int	i;
+        int     i;
 } just_i;
 
-i_and_r	i_and_r_value = { i = 12, r = 37 };
+i_and_r i_and_r_value = { i = 12, r = 37 };
 
-just_i	i_value;
+just_i  i_value;
 
 i_value = i_and_r_value;
 </screen></informalexample>
@@ -206,8 +206,8 @@ Values can be converted to a union type by specifying a compatible union tag cas
 A control structure <literal>union switch</literal> exists to split out the different tags and perform different functions based on the current tag:  
 <informalexample><screen>
 typedef union {
-	int	i;
-	real	r;
+        int     i;
+        real    r;
 } i_and_r_union;
 
 i_and_r_union u_value;
@@ -216,15 +216,15 @@ u_value.i = 37;
 
 union switch (u_value) {
 case i:
-	printf ("i value %d\n", u_value.i);
-	break;
+        printf ("i value %d\n", u_value.i);
+        break;
 case r:
-	printf ("r value %d\n", u_value.r);
-	break;
+        printf ("r value %d\n", u_value.r);
+        break;
 }
 
 u_value = (i_and_r_union.r) 1.2;
-printf ("u_value %g\n", u_value);		/* u_value r = 1.2 */
+printf ("u_value %g\n", u_value);               /* u_value r = 1.2 */
 </screen></informalexample>
 </para>
 </sect3>
@@ -247,8 +247,8 @@ on its declaration but rather on its initialization.  See Initialization
 below.  Declaring multidimensional arrays in Nickle is different than in C;
 C provides only arrays of arrays while Nickle allows either:
 <informalexample><screen>
-int[3,3]	array_2d = {};
-int[3][3]	array_of_arrays = { (int[3]) {} ... };
+int[3,3]        array_2d = {};
+int[3][3]       array_of_arrays = { (int[3]) {} ... };
 
 array_2d[0,0] = 7;
 array_of_arrays[0][0] = 7;
@@ -283,8 +283,8 @@ performance characteristics of the underlying implementation clear.
 Hashes are declared a bit like arrays, but instead of a value in the
 brackets, a type is placed:
 <informalexample><screen>
-int[string]	string_to_int = { "hello" => 2, => 0 };
-float[float]	float_to_float = { 2.5 => 27 };
+int[string]     string_to_int = { "hello" => 2, => 0 };
+float[float]    float_to_float = { 2.5 => 27 };
 
 string_to_int["bar"] = 17;
 string_to_int["foo"] += 12;
@@ -303,18 +303,18 @@ separate key from value.  Eliding the key specifies the
 Pointers hold a reference to a separate object; multiple pointers may point at the same object and changes to the referenced object are reflected both in the underlying object as well as in any other references to the same object.
 While pointers can be used to point at existing storage locations, anonymous locations can be created with the reference built-in function; this allows for the creation of pointers to existing values without requiring that the value be stored in a named object.
 <informalexample><screen><![CDATA[
-*int	pointer;
-int	object;
+*int    pointer;
+int     object;
 
 pointer = &object;
 *pointer = 12;
 
-printf ("%g\n", object);		/* 12 */
+printf ("%g\n", object);                /* 12 */
 
 pointer = reference (37);
 (*pointer)++;
 
-printf ("%g\n", *pointer);		/* 38 */
+printf ("%g\n", *pointer);              /* 38 */
 ]]></screen></informalexample>
 </para>
 </sect3>
@@ -344,13 +344,13 @@ References, unlike pointers, need not be dereferenced; they are used exactly as 
 Changing either the value it refers to or the reference itself changes both.
 </para>
 <informalexample><screen>
-printf("%g\n", i);	/* 3 */
-printf("%g\n", ref);	/* 3 */
+printf("%g\n", i);      /* 3 */
+printf("%g\n", ref);    /* 3 */
 
 ++ref;
 
-printf("%g\n", i);	/* 4 */
-printf("%g\n", ref);	/* 4 */
+printf("%g\n", i);      /* 4 */
+printf("%g\n", ref);    /* 4 */
 </screen></informalexample>
 </sect3>
 
@@ -362,13 +362,13 @@ Function types always have a return type and zero or more argument types.
 Functions may use the void return type.
 The final argument type may be followed by an elipsis (...), in which case the function can take any number of arguments at that point, each of the same type as the final argument type:
 <informalexample><screen>
-int(int, int)	a;
-void(int ...)	b;
+int(int, int)   a;
+void(int ...)   b;
 
 a(1,2);
 b(1);
 b(1,2);
-b(1,"hello");	/* illegal, "hello" is not compatible with int */
+b(1,"hello");   /* illegal, "hello" is not compatible with int */
 </screen></informalexample>
 </para>
 <para>
@@ -397,15 +397,15 @@ See Storage classes below.
 <listitem><para>
 Type is some type as described here, for instance
 <informalexample><screen><![CDATA[
-type			/* primitive type */
-*type			/* pointer to type */
-&type			/* reference to type */
-type[*] 		/* array of type */
-type[*,...]		/* multidimensional array of type */
-type(type,...)		/* function with type arguments and return value */
-struct { ... }		/* struct of types */
-union { ... }		/* union of types */
-type(type,...)[*]	/* array of functions */
+type                    /* primitive type */
+*type                   /* pointer to type */
+&type                   /* reference to type */
+type[*]                 /* array of type */
+type[*,...]             /* multidimensional array of type */
+type(type,...)          /* function with type arguments and return value */
+struct { ... }          /* struct of types */
+union { ... }           /* union of types */
+type(type,...)[*]       /* array of functions */
 /* etc. */
 ]]></screen></informalexample>
 </para>
@@ -421,23 +421,23 @@ In any case, type is always checked at runtime.
 Initializers in Nickle are expressions evaluated when the storage for a variable comes into scope.
 To initialize array and structure types, expressions which evaluate to a struct or array object are used:
 <informalexample><screen>
-int	k = 12;
-int	z = floor (pi * 27);
-int[3]	a = (int[3]) { 1, 2, 3 };
+int     k = 12;
+int     z = floor (pi * 27);
+int[3]  a = (int[3]) { 1, 2, 3 };
 
 typedef struct {
-	int 	i;
-	real	r;
+        int     i;
+        real    r;
 } i_and_r;
 
-i_and_r	s = (i_and_r) { i = 12, r = pi/2 };
+i_and_r s = (i_and_r) { i = 12, r = pi/2 };
 </screen></informalexample>
 </para>
 <para>
 As a special case, initializers for struct and array variables may elide the type leaving only the bracketed initializer:
 <informalexample><screen>
-int[3]	a = { 1, 2, 3 };
-i_and_r	s = { i = 12, r = pi/2 };
+int[3]  a = { 1, 2, 3 };
+i_and_r s = { i = 12, r = pi/2 };
 </screen></informalexample>
 </para>
 <para>
@@ -447,7 +447,7 @@ This avoids common mistakes when the structure type is redeclared.
 <para>
 An arrays initializer followed by an elipsis (...) is replicated to fill the remainder of the elements in that dimension:
 <informalexample><screen>
-int[4,4]	a = { { 1, 2 ... }, { 3, 4 ... } ... };
+int[4,4]        a = { { 1, 2 ... }, { 3, 4 ... } ... };
 </screen></informalexample>
 </para>
 <para>
@@ -466,9 +466,9 @@ Function declarations and statement blocks also create new lexical scopes.
 This limits the scope of variables in situations like:
 <informalexample><screen>
 if (int i = foo(x))
-	printf ("i in scope here %d\n", i);
+        printf ("i in scope here %d\n", i);
 else
-	printf ("i still in scope here %d\n", i);
+        printf ("i still in scope here %d\n", i);
 printf ("i not in scope here\n");
 </screen></informalexample>
 </para>
@@ -476,9 +476,9 @@ printf ("i not in scope here\n");
 Identifiers are lexically scoped even when functions are nested:
 <informalexample><screen>
 function foo (int x) {
-	int y = 1;
-	function bar (int z) { return z + y; }
-	return bar (x);
+        int y = 1;
+        function bar (int z) { return z + y; }
+        return bar (x);
 }
 </screen></informalexample>
 </para>
@@ -507,11 +507,11 @@ Storage captured and passed out of the function will remain accessible.
 <informalexample><screen><![CDATA[
 *int function foo (int x)
 {
-	return &x;
+        return &x;
 }
 
-*int	a1 = foo (1);
-*int	a2 = foo (2);
+*int    a1 = foo (1);
+*int    a2 = foo (2);
 ]]></screen></informalexample>
 </para>
 <para>
@@ -526,14 +526,14 @@ A function value includes both the executable code and the storage for any enclo
 <informalexample><screen>
 int() function incrementer ()
 {
-	return (func () { 
-		static int	x = 0;
-		return ++x;
-	});
+        return (func () { 
+                static int      x = 0;
+                return ++x;
+        });
 }
 
-int()	a = incrementer();
-int()	b = incrementer();
+int()   a = incrementer();
+int()   b = incrementer();
 </screen></informalexample>
 </para>
 <para>
@@ -545,13 +545,13 @@ Additionally, any auto variables declared within an initializer for a static var
 <informalexample><screen><![CDATA[
 function foo ()
 {
-	static function bar (*int z)
-	{
-		*z = (*z)!;
-	}
-	static x = ((int y = 7), bar (&y), y);
+        static function bar (*int z)
+        {
+                *z = (*z)!;
+        }
+        static x = ((int y = 7), bar (&y), y);
 
-	return x;
+        return x;
 }
 ]]></screen></informalexample>
 </para>
@@ -568,16 +568,16 @@ When declared within a function, storage is allocated when the function is parse
 <informalexample><screen>
 function foo ()
 {
-	function bar ()
-	{
-		global	g = 1;
-		static	s = 1;
+        function bar ()
+        {
+                global  g = 1;
+                static  s = 1;
 
-		g++;
-		s++;
-		return (int[2]) { g, s };
-	}
-	return bar ();
+                g++;
+                s++;
+                return (int[2]) { g, s };
+        }
+        return bar ();
 }
 </screen></informalexample>
 </para>

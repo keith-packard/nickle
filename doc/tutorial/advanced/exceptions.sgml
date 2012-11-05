@@ -40,10 +40,10 @@ raise my_exception ( "message", 0, 1, 2 );
 Execution is broken and <literal>my_exception</literal> travels up the stack until it is caught by a try-catch block or it reaches the top level, where it prints an error message such as:
 <informalexample><screen>
 Unhandled exception "my_exception"
-	3
-	2
-	1
-	"message"
+        3
+        2
+        1
+        "message"
 </screen></informalexample>
 </para>
 </sect2>
@@ -65,7 +65,7 @@ exception my_exception(string msg,int a,int b,int c);
 
 try raise my_exception("blah",1,2,3);
 catch my_exception(string msg,int a,int b,int c) {
-	printf("%s: exception successfully caught (%d,%d,%d).\n",msg,a,b,c);
+        printf("%s: exception successfully caught (%d,%d,%d).\n",msg,a,b,c);
 }
 </screen></informalexample>
 </para>
@@ -86,8 +86,8 @@ For example,
 exception my_exception(string msg, int a, int b, int c);
 
 void foo(string msg, int a, int b, int c) {
-	twixt(printf("entering twixt..."); printf("leaving twixt.\n"))
-		raise my_exception(msg, a, b, c);
+        twixt(printf("entering twixt..."); printf("leaving twixt.\n"))
+                raise my_exception(msg, a, b, c);
 }
 
 try foo("blah", 1, 2, 3);

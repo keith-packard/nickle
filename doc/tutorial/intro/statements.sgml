@@ -30,7 +30,7 @@ else <replaceable>statement</replaceable>
 For example:
 <informalexample><screen>
 if ( x == 0 )
-	printf ( "x is zero.\n" );
+        printf ( "x is zero.\n" );
 </screen></informalexample>
 </para>
 <para>
@@ -42,20 +42,20 @@ It executes its <replaceable>statement</replaceable> if the most recent <literal
 For example,
 <informalexample><screen>
 if ( x == 0 )
-	printf ( "x is zero.\n" );
+        printf ( "x is zero.\n" );
 else
-	printf ( "x is not zero.\n" );
+        printf ( "x is not zero.\n" );
 </screen></informalexample>
 </para>
 <para>
 More than one option may be presented by nesting further 'if's in 'else' statements like this:
 <informalexample><screen>
 if ( x == 0 )
-	printf ( "x is zero.\n" );
+        printf ( "x is zero.\n" );
 else if ( x < 0 )
-	printf ( "x is negative.\n" );
+        printf ( "x is negative.\n" );
 else
-	printf ( "x is positive.\n" );
+        printf ( "x is positive.\n" );
 </screen></informalexample>
 </para>
 </sect2>
@@ -99,21 +99,21 @@ If nothing is matched and there is no <literal>default</literal>, control skips 
 This example prints out a number to the screen, replacing it by a letter as though it were a poker card:
 <informalexample><screen>
 switch ( x ) {
-	case 1:
-		printf ( "A\n" );	/* ace */
-		break;
-	case 11:
-		printf ( "J\n" );	/* jack */
-		break;
-	case 12:
-		printf ( "Q\n" );	/* queen */
-		break;
-	case 13:
-		printf ( "K\n" );	/* king */
-		break;
-	default:
-		printf ( "%d\n", x );	/* numeric */
-		break;
+        case 1:
+                printf ( "A\n" );       /* ace */
+                break;
+        case 11:
+                printf ( "J\n" );       /* jack */
+                break;
+        case 12:
+                printf ( "Q\n" );       /* queen */
+                break;
+        case 13:
+                printf ( "K\n" );       /* king */
+                break;
+        default:
+                printf ( "%d\n", x );   /* numeric */
+                break;
 }
 </screen></informalexample>
 </para>
@@ -125,12 +125,12 @@ Here is an example of this 'falling through':
 int x = 3;
 
 switch ( sign ( x ) ) {
-	case -1:
-		printf ( "x is negative.\n" );
-	case 1:
-		printf ( "x is positive.\n" );
-	default:
-		printf ( "x is zero.\n" );
+        case -1:
+                printf ( "x is negative.\n" );
+        case 1:
+                printf ( "x is positive.\n" );
+        default:
+                printf ( "x is zero.\n" );
 }
 </screen></informalexample>
 </para>
@@ -158,19 +158,19 @@ As always, <literal>default</literal> matches everything.
 The following example chooses the best way to print the union:
 <informalexample><screen>
 union {
-	int a;
-	string b;
+        int a;
+        string b;
 } u;
 
 u.b = "hello";
 
 union switch ( u ) {
-	case a:
-		printf ( "%d\n", u.a );
-		break;
-	case b:
-		printf ( "%s\n", u.b );
-		break;
+        case a:
+                printf ( "%d\n", u.a );
+                break;
+        case b:
+                printf ( "%s\n", u.b );
+                break;
 }
 </screen></informalexample>
 </para>
@@ -182,12 +182,12 @@ An additional name may follow that of a case; the union's value will be availabl
 The switch above could have been written:
 <informalexample><screen>
 union switch ( u ) {
-	case a num:
-		printf ( "%d\n", num );
-		break;
-	case b str:
-		printf ( "%s\n", str );
-		break;
+        case a num:
+                printf ( "%d\n", num );
+                break;
+        case b str:
+                printf ( "%s\n", str );
+                break;
 }
 </screen></informalexample>
 </para>
@@ -210,8 +210,8 @@ For example:
 <informalexample><screen>
 int x = 0;
 while ( x < 10 ) {
-	printf ( "%d\n", x );
-	++x;
+        printf ( "%d\n", x );
+        ++x;
 }
 </screen></informalexample>
 </para>
@@ -226,7 +226,7 @@ It is often used in input while testing for end-of-file:
 file f = File::open ( "test", "r" );
 
 do {
-	printf ( "%s\n", File::fgets ( f ) );
+        printf ( "%s\n", File::fgets ( f ) );
 } while ( ! end ( f ) );
 
 close ( f );
@@ -239,7 +239,7 @@ After each iteration, the third <replaceable>expr</replaceable> is evaluated, wh
 The <literal>while</literal> example above can also be written as the following <literal>for</literal> loop:
 <informalexample><screen>
 for ( int x = 0; x < 10; ++x )
-	printf ( "%d\n", x );
+        printf ( "%d\n", x );
 </screen></informalexample>
 </para>
 </sect2>

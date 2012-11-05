@@ -23,18 +23,18 @@ For example, the following is a simple binary tree search that uses continuation
 typedef tree;
 
 typedef struct {
-	int key;
-	poly data;
-	&poly left, right;
+        int key;
+        poly data;
+        &poly left, right;
 } tree;
 
 void function search ( tree t, int i, &continuation c ) {
-	if ( i < t.key && ! is_void ( t.left ) )
-		search ( t.left, i, &c );
-	else if ( i > t.key && ! is_void ( t.right ) )
-		search ( t.right, i, &c );
-	else if ( i == t.key )
-		longjmp ( c, t.data );
+        if ( i < t.key && ! is_void ( t.left ) )
+                search ( t.left, i, &c );
+        else if ( i > t.key && ! is_void ( t.right ) )
+                search ( t.right, i, &c );
+        else if ( i == t.key )
+                longjmp ( c, t.data );
 }
 
 tree t = { key = 2, data = "blah", left = reference ( <> ), right = reference ( <> ) };
@@ -42,14 +42,14 @@ tree t = { key = 2, data = "blah", left = reference ( <> ), right = reference ( 
 continuation c;
 int i = 0;
 {
-	poly p = setjmp ( &c, <> );
-	++i;
-	printf ( "I have been here %d times.\n", i );
+        poly p = setjmp ( &c, <> );
+        ++i;
+        printf ( "I have been here %d times.\n", i );
 
-	if ( is_void ( p ) )
-		search ( t, 2, &c );
-	else
-		printf ( "value = %g\n", p );
+        if ( is_void ( p ) )
+                search ( t, 2, &c );
+        else
+                printf ( "value = %g\n", p );
 }
 ]]></screen></informalexample>
 </para>

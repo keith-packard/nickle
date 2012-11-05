@@ -90,11 +90,11 @@ Consider the following situation:
 import Thread;
 
 void function para() {
-	printf("My next statement will be false.\n");
+        printf("My next statement will be false.\n");
 }
 
 void function dox() {
-	printf("My previous statement was true.\n");
+        printf("My previous statement was true.\n");
 }
 
 thread t = fork para();
@@ -166,21 +166,21 @@ import Thread;
 mutex m = new();
 
 void function para() {
-	acquire(m);
-	printf("My next statement will be false.\n");
-	release(m);
+        acquire(m);
+        printf("My next statement will be false.\n");
+        release(m);
 }
 
 void function dox() {
-	acquire(m);
-	printf("My previous statement was true.\n");
-	release(m);
+        acquire(m);
+        printf("My previous statement was true.\n");
+        release(m);
 }
 
 thread t = fork para();
 thread s = fork dox();
 join(t);
-	join(s);
+        join(s);
 </screen></informalexample>
 </para>
 <para>

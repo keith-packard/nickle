@@ -47,7 +47,7 @@ The logarithm of <literal>a</literal> in base e, ten, and two, respectively.
 $ nickle
 > log ( Math::e )
 1.000000000000000
-> log10 ( 16 ) / log10 ( 4 )	/* change of base formula, log_4 16 */
+> log10 ( 16 ) / log10 ( 4 )    /* change of base formula, log_4 16 */
 1.999999999999999
 > log2 ( 16 )
 3.999999999999999

@@ -35,13 +35,14 @@ cp -R examples $RPM_BUILD_ROOT%{_datadir}/nickle/
 
 %files
 %defattr(-,root,root)
-%doc README README.name COPYING AUTHORS INSTALL NEWS TODO
+%doc README README.name COPYING AUTHORS INSTALL NEWS TODO doc/tutorial/nickle-tutorial.pdf
 %attr(755,root,root) %{_bindir}/nickle
 %dir %{_datadir}/nickle
 %{_mandir}/man1/nickle.1*
 %{_datadir}/nickle/*
 %dir %{_includedir}/nickle
 %{_includedir}/nickle/*
+%exclude %{_datadir}/doc/nickle/*
 
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT

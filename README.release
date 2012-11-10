@@ -12,7 +12,7 @@ important steps:
  
  4.	Update debian/changelog
 
-		git-log --pretty=oneline 2.<xx>..master
+		git log --pretty=oneline 2.<xx>..master
 		
  5.	Build the release
 

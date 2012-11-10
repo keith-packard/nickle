@@ -12,13 +12,6 @@ autoimport ParseArgs;
 
 int unit, side;
 
-void setunit(int n) {
-    unit = n;
-    side = unit ** 2;
-}
-
-setunit(3);
-
 typedef int[*] grid;
 
 void print_grid(file f, grid g) {
@@ -51,10 +44,15 @@ bool edge(int p1, int p2) {
     return false;
 }
 
-bool[side**2, side**2] edges = {[i, j] = edge(i, j)};
 
-# check whether the value in g at p
-# conflicts with any other values of g
+bool[*, *] edges;
+
+void init_edges() {
+     edges = (bool[side**2, side**2]){[i, j] = edge(i, j)};
+}
+
+# check whether the value in g at p is consistent with every
+# other value in g
 bool check(&grid g, int p) {
     for (int p2 = 0; p2 < dim(g); p2++)
 	if (g[p2] == g[p] && edges[p, p2])
@@ -64,13 +62,14 @@ bool check(&grid g, int p) {
 
 # simple-minded DFS solver doesnt scale.  assumes it is
 # passed a grid whose filled cells conform to constraints.
-# returns a solution count of 0, 1, or 2 with 2 meaning "2
-# or more".  the recall parameter says whether to undo
-# (true) or preserve (false) the solution; if the latter,
-# then only 0 or 1 will be returned.  the randomize
+# returns a solution count which is a lower bound on the
+# true number of solutions, accurate if 0 or 1.  the
+# preserve parameter says whether to preserve (true) or
+# clear (false) cells of the solution: if preserve is true,
+# the first solution found is returned.  the randomize
 # parameter says to try the values in random order; this is
 # useful for puzzle construction.
-int solve(&grid g, bool recall, bool randomize) {
+int solve(&grid g, bool preserve, bool randomize) {
     int p = 0; 
     for (p < dim(g); p++)
         if (g[p] == 0)
@@ -91,15 +90,14 @@ int solve(&grid g, bool recall, bool randomize) {
 	    g[p] = i + 1;
 	if (!check(&g, p))
 	    continue;
-	answer += solve(&g, recall, randomize);
-        # early return
-	if (answer >= 2)
-	    break;
-	if (!recall && answer >= 1)
-	    break;
+	int result = solve(&g, preserve, randomize);
+        if (preserve && result > 0)
+            return result;
+        answer += result;
+        if (answer > 1)
+            break;
     }
-    if (i >= side || recall)
-	g[p] = 0;
+    g[p] = 0;
     return answer;
 }
 
@@ -114,7 +112,7 @@ void del_soln(&grid g) {
 	&int d = &g[delns[i]];
 	int save = d;
 	d = 0;
-	int s = solve(&g, true, false);
+	int s = solve(&g, false, false);
 	if (s >= 2)
 	    d = save;
 	assert (s != 0, "clearing cell removed solutions!");
@@ -125,7 +123,8 @@ void del_soln(&grid g) {
 # of the solver can do this.
 grid create_soln() {
     grid g = (int[side**2]){0, ...};
-    assert(solve(&g, false, true) != 0, "cannot create puzzle");
+    int nsolns = solve(&g, true, true);
+    assert(nsolns > 0, "cannot create puzzle");
     return g;
 }
 
@@ -133,7 +132,9 @@ void make_std_puzzle(file prob, file soln) {
     grid g = create_soln();
     del_soln(&g);
     print_grid(prob, g);
-    solve(&g, false, false);
+    int nsolns = solve(&g, false, false);
+    assert(nsolns == 1, "found %d solns", nsolns);
+    solve(&g, true, false);
     print_grid(soln, g);
 }
 
@@ -145,8 +146,14 @@ void make_quadrant_puzzle(file prob, file soln) {
 	for (int y = 0; y < unit; y++)
 	    g[x + unit * xoff + (y + unit * yoff) * side] = 0;
     print_grid(prob, g);
-    assert(solve(&g, false, false) == 1, "more than one solution");
+    int nsolns = solve(&g, false, false);
+    assert(nsolns == 1, "found %d solutions", nsolns);
+    solve(&g, true, false);
     print_grid(soln, g);
+}
+
+void count_prob(file prob) {
+    printf("not yet\n");
 }
 
 if (dim(argv) > 0) {
@@ -156,6 +163,11 @@ if (dim(argv) > 0) {
 	      name = "quadrant",
 	      abbr = 'q',
 	      desc = "Construct puzzle with missing quadrant"
+	    },
+	    { var = (arg_var.arg_flag) &(bool count_solns = false),
+	      name = "count",
+	      abbr = 'c',
+	      desc = "Count number of solutions to puzzle"
 	    },
 	    { var = (arg_var.arg_int) &unit,
 	      name = "unit",
@@ -172,16 +184,25 @@ if (dim(argv) > 0) {
     };
     parseargs(&argd, &argv);
     side = unit ** 2;
-
+    init_edges();
     dev_srandom(16);
-    file prob = open(basename + "-prob.txt", "w");
-    file soln = open(basename + "-soln.txt", "w");
-    if (quadrant)
-	make_quadrant_puzzle(prob, soln);
-    else
-	make_std_puzzle(prob, soln);
-    close(prob);
-    close(soln);
+
+    if (count_solns) {
+       twixt(file prob = open(basename + "-prob.txt", "r"); close(prob))
+           count_prob(prob);
+       exit(0);
+    }
+
+    twixt((file prob = open(basename + "-prob.txt", "w")),
+          (file soln = open(basename + "-soln.txt", "w"));
+          close(prob),
+          close(soln)) {
+        if (quadrant)
+            make_quadrant_puzzle(prob, soln);
+        else
+	    make_std_puzzle(prob, soln);
+    }
+    exit(0);
 }
 
 

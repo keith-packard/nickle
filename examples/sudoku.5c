@@ -152,8 +152,31 @@ void make_quadrant_puzzle(file prob, file soln) {
     print_grid(soln, g);
 }
 
-void count_prob(file prob) {
-    printf("not yet\n");
+grid read_prob(file prob) {
+    int[...] g = {};
+    int i = 0;
+    side = 0;
+    while (side == 0 || i < side**2) {
+        int ch = getc(prob);
+        if (ch == '\n') {
+            if (side == 0) {
+                side = i;
+                unit = sqrt(side);
+            }
+            continue;
+        }
+        if (ch == '.') {
+            g[i++] = 0;
+            continue;
+        }
+        if (ch >= 'a' && ch <= 'z') {
+            g[i++] = 10 + ch - 'a';
+            continue;
+        }
+        g[i++] = ch - '0';
+    }
+    print_grid(stdout, g);
+    return g;
 }
 
 if (dim(argv) > 0) {
@@ -183,16 +206,19 @@ if (dim(argv) > 0) {
 	}
     };
     parseargs(&argd, &argv);
-    side = unit ** 2;
-    init_edges();
     dev_srandom(16);
 
     if (count_solns) {
-       twixt(file prob = open(basename + "-prob.txt", "r"); close(prob))
-           count_prob(prob);
+       twixt(file prob = open(basename + "-prob.txt", "r"); close(prob)) {
+           grid g = read_prob(prob);
+           init_edges();
+           printf("%d\n", solve(&g, false, false));
+       }
        exit(0);
     }
 
+    side = unit ** 2;
+    init_edges();
     twixt((file prob = open(basename + "-prob.txt", "w")),
           (file soln = open(basename + "-soln.txt", "w"));
           close(prob),

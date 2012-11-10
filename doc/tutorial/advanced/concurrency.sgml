@@ -222,6 +222,7 @@ void signal ( semaphore s )
 <literal>wait</literal> merely decrements the count of <literal>s</literal>, which starts with the initial value specified by <literal>new</literal>.
 If the count, after the decrement, is positive, the thread continues to run; if it is negative, it blocks until the count becomes positive again.
 This will occur when one of the running threads calls <literal>signal</literal>, which increments the count of <literal>s</literal> and wakes up another thread if any are waiting.
+</para>
 </sect3>
 
 <sect3><title>Negative initial counts</title>

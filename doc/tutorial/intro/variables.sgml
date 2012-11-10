@@ -298,6 +298,7 @@ separate key from value.  Eliding the key specifies the
 "default" value -- used to instantiate newly created elements in the hash.
 </para>
 
+</sect3>
 <sect3><title>Pointers</title>
 <para>
 Pointers hold a reference to a separate object; multiple pointers may point at the same object and changes to the referenced object are reflected both in the underlying object as well as in any other references to the same object.

@@ -51,25 +51,25 @@ bool edge(int p1, int p2) {
     return false;
 }
 
+bool[side**2, side**2] edges = {[i, j] = edge(i, j)};
+
 # check whether the value in g at p
 # conflicts with any other values of g
 bool check(&grid g, int p) {
     for (int p2 = 0; p2 < dim(g); p2++)
-	if (g[p2] == g[p] && edge(p, p2))
+	if (g[p2] == g[p] && edges[p, p2])
 	    return false;
     return true;
 }
 
-# simple-minded DFS solver doesnt
-# scale.  assumes it is passed a grid
-# whose filled cells conform to constraints.
-# returns a solution count of 0, 1, or 2
-# with 2 meaning "2 or more".  the recall
-# parameter says whether to undo or preserve
-# the solution; if the latter, then only 0
-# or 1 will be returned.  the randomize parameter
-# says to try the values in random order; this
-# is useful for puzzle construction.
+# simple-minded DFS solver doesnt scale.  assumes it is
+# passed a grid whose filled cells conform to constraints.
+# returns a solution count of 0, 1, or 2 with 2 meaning "2
+# or more".  the recall parameter says whether to undo
+# (true) or preserve (false) the solution; if the latter,
+# then only 0 or 1 will be returned.  the randomize
+# parameter says to try the values in random order; this is
+# useful for puzzle construction.
 int solve(&grid g, bool recall, bool randomize) {
     int p = 0; 
     for (p < dim(g); p++)
@@ -115,7 +115,7 @@ void del_soln(&grid g) {
 	int save = d;
 	d = 0;
 	int s = solve(&g, true, false);
-	if (s == 2)
+	if (s >= 2)
 	    d = save;
 	assert (s != 0, "clearing cell removed solutions!");
     }

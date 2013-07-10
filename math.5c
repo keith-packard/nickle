@@ -1014,6 +1014,26 @@ extend namespace Math {
 	return ul;
     }
 
+    public int choose(int n, int k)
+        /* Number of ways of choosing k items from a set of
+           n distinct items. */
+    {
+        /* This keeps the size of the intermediate terms
+           smaller below, and also makes the bounds check
+           slightly easier. */
+        if (k > (n + 1) // 2)
+            k = n - k;
+        if (n < 0 || k < 0)
+            return 0;
+        int c = 1;
+        /* This keeps the size of the intermediate terms
+           down a bit compared to the traditional
+           computation.  It probably doesn't matter, but oh
+           well. */
+        for (int i = n - k + 1; i <= n; i++)
+            c *= i;
+        return c / k!;
+    }
 }
 
 /* XXX these shouldn't be here, but it was *convenient* */

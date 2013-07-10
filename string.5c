@@ -193,18 +193,28 @@ extend namespace String {
     public exception bad_csv_parse(string error_msg,
     	   	                   string[*] partial_parse);
 
-    public parse_csv_t make_parse_csv(quote_context q) 
+    public parse_csv_t make_parse_csv(int sep, quote_context q)
 	/*
 	 * Construct a CSV file parsing context from 'q'
 	 */
     {
+        if (length(q.oq) != 1 || length(q.cq) != 1 || length(q.qq) > 1)
+	    raise invalid_argument("make_parse_csv: quote context"
+				   + "has long bits", 0, q);
+	global bool equiv(int c, &string s) {
+	    if (is_uninit(&s))
+		return false;
+	    if (s[0] != c)
+		return false;
+	    return true;
+	}
 	dequote_t dq = make_dequote(q);
 	public string[*] _parse_csv(string s) {
 	    string[...] ss = {};
 	    string curs = "";
 	    void consume() {
 		string t = chomp(curs);
-		if (t != "" && t[0] == '"')
+		if (t != "" && t == q.oq)
 		    t = dq(t);
 		ss[dim(ss)] = t;
 		curs = "";
@@ -215,24 +225,24 @@ extend namespace String {
 		int c = s[cur];
 		switch(t) {
 		case qstate.normal:
-		    if (c == ',') {
+		    if (c == sep) {
 			consume();
 			cur++;
 			continue;
 		    }
-		    if (c == '"')
+		    if (equiv(c, &q.oq))
 			t = qstate.openq;
 		    break;
 		case qstate.openq:
-		    if (c == '"')
+		    if (equiv(c, &q.cq))
 			t = qstate.xq;
 		    break;
 		case qstate.xq:
-		    if (c == '"') {
+		    if (equiv(c, &q.oq)) {
 			t = qstate.openq;
 			break;
 		    }
-		    if (c == ',') {
+		    if (c == sep) {
 			t = qstate.normal;
 			continue;
 		    }
@@ -251,7 +261,7 @@ extend namespace String {
 	return _parse_csv;
     }
 
-    public parse_csv_t parse_csv = make_parse_csv(
+    public parse_csv_t parse_csv = make_parse_csv( ',',
        (quote_context) { .oq = "\"", .cq = "\"", .qq = "\""}
     );
 

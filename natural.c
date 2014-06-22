@@ -420,6 +420,9 @@ DigitsKaratsuba (digit *x, int xlen, digit *y, int ylen, digit *result, digit *t
     int	    flen, m1len, m2len;
     int	    rlen;
     
+    if (aborting)
+	return 0;
+
     if (xlen < KARATSUBA_LIMIT || ylen < KARATSUBA_LIMIT)
 	return DigitsGradeSchool (x, xlen, y, ylen, result);
 
@@ -480,6 +483,8 @@ DigitsKaratsuba (digit *x, int xlen, digit *y, int ylen, digit *result, digit *t
     {
 	memset (result, 0, off * sizeof (digit));
 	rlen = DigitsKaratsuba (m1, m1len, m2, m2len, result + off, next_tmp) + off;
+	if (aborting)
+	    return rlen;
     }
     
     /*
@@ -488,6 +493,8 @@ DigitsKaratsuba (digit *x, int xlen, digit *y, int ylen, digit *result, digit *t
     if (x1len && y1len)
     {
 	flen = DigitsKaratsuba (x1, x1len, y1, y1len, f, next_tmp);
+	if (aborting)
+	    return rlen;
 	rlen = DigitsAddInPlace (result, rlen, f, flen, off2);
 	rlen = DigitsSubInPlace (result, rlen, f, flen, off);
     }
@@ -499,6 +506,8 @@ DigitsKaratsuba (digit *x, int xlen, digit *y, int ylen, digit *result, digit *t
     if (x0len && y0len)
     {
 	flen = DigitsKaratsuba (x0, x0len, y0, y0len, f, next_tmp);
+	if (aborting)
+	    return rlen;
 	rlen = DigitsAddInPlace (result, rlen, f, flen, 0);
 	rlen = DigitsSubInPlace (result, rlen, f, flen, off);
     }
@@ -583,6 +592,8 @@ NaturalTimes (Natural *a, Natural *b)
 	tmp_len = rlen << 3;
 	tmp = AllocateTemp (tmp_len * sizeof (digit));
 	rlen = DigitsKaratsuba (data(a), length (a), data(b), length (b), data(result), tmp);
+	if (aborting)
+	    RETURN(zero_natural);
 	tmp = data(result) + (rlen - 1);
 	while (rlen && *tmp == 0)
 	{
@@ -985,8 +996,14 @@ NaturalSprint (char *result, Natural *a, int base, int *width)
 	    divisors[idivisor++] = divisor;
 	    divisor = NaturalTimes (divisor, divisor);
 	    digits = digits * 2;
+	    if (aborting)
+	    {
+		r = 0;
+		break;
+	    }
 	} while (NaturalLess (divisor, a));
-	r = NaturalSplit (r, a, divisors + idivisor - 1, base, digits, False);
+	if (!aborting)
+	    r = NaturalSplit (r, a, divisors + idivisor - 1, base, digits, False);
 	free (divisors);
     }
     if (width && r)

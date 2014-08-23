@@ -69,7 +69,7 @@ AM_CPPFLAGS = \
 	-DNICKLELIBDIR=\"@nicklelibdir@\"
 
 AM_CFLAGS = \
-	-D_FORTIFY_SOURCE=2 -O2 \
+	-D_FORTIFY_SOURCE=2 \
 	-Wall -Wpointer-arith -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations \
 	-Wnested-externs -fno-strict-aliasing -fwrapv

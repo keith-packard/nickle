@@ -916,6 +916,15 @@ FileStringWrite (void)
     RETURN (file);
 }
 
+static char *
+write_chain(char *s, FileChainPtr out)
+{
+    if (out->next)
+	s = write_chain(s, out->next);
+    memcpy(s, FileBuffer(out), out->used);
+    return s + out->used;
+}
+
 Value
 FileStringString (Value file)
 {
@@ -936,12 +945,8 @@ FileStringString (Value file)
     for (out = file->file.output; out; out = out->next)
 	len += out->used;
     str = NewString (len);
-    s = StringChars (&str->string);
-    for (out = file->file.output; out; out = out->next)
-    {
-	memcpy (s, FileBuffer(out), out->used);
-	s += out->used;
-    }
+    StringChars (&str->string);
+    s = write_chain(StringChars(&str->string), file->file.output);
     *s = '\0';
     RETURN (str);
 }

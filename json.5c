@@ -1,0 +1,293 @@
+/*
+ * Emit and parse JSON
+ */
+
+autoload Sort;
+autoload Ctype;
+
+namespace JSON {
+
+    string quote(string a) {
+	string result = "\"";
+	for (int i = 0; i < String::length(a); i++) {
+	    int c = a[i];
+	    switch (c) {
+	    case '"':
+	    case '\\':
+		result = result + "\\" + String::new(c);
+		break;
+	    case '\n':
+		result = result + "\\n";
+		break;
+	    default:
+		result = result + String::new(c);
+		break;
+	    }
+	}
+	return result + "\"";
+    }
+
+    public string to_json(poly arg)
+    {
+	string do_indent(int indent) {
+	    string result = "\n";
+	    for (int i = 0; i < indent; i++)
+		result = result + "\t";
+	    return result;
+	}
+
+	string json(poly arg, int indent);
+
+	string json_hash(poly[string] a, int indent) {
+	    string[] keys = hash_keys(a);
+	    string result = "{";
+	    bool first = true;
+
+	    Sort::qsort(&keys, bool func(poly a, poly b) { return a > b; });
+	    for (int i = 0; i < dim(keys); i++) {
+		string key = keys[i];
+		string value = json(a[key], indent+1);
+
+		if (!first)
+		    result = result + ",";
+		first = false;
+		result = result + do_indent(indent+1);
+		result = result + quote(key) + ": " + value;
+	    }
+	    result = result + do_indent(indent) + "}";
+	    return result;
+	}
+
+	string json_array(poly[] a, int indent) {
+	    string result = "[";
+	    bool first = true;
+
+	    for (int i = 0; i < dim(a); i++) {
+		if (!first)
+		    result = result + ",";
+		first = false;
+		result = result + do_indent(indent+1);
+		result = result + to_json(a[i]);
+	    }
+	    result = result + do_indent(indent) + "]";
+	    return result;
+	}
+
+	string json_string(string arg) {
+	    return quote(arg);
+	}
+
+	string json_int(int arg) {
+	    return sprintf ("%d", arg);
+	}
+
+	json = string func(poly arg, int indent) {
+	    if (is_hash(arg))
+		return json_hash(arg, indent);
+	    if (is_array(arg))
+		return json_array(arg, indent);
+	    if (is_string(arg))
+		return json_string(arg);
+	    if (is_int(arg))
+		return json_int(arg);
+	    return "";
+	};
+
+	return json(arg, 0);
+    }
+
+    typedef enum {
+	_string,
+	_int,
+	_oc,
+	_cc,
+	_os,
+	_cs,
+	_comma,
+	_colon,
+	_end,
+	_error
+    } term_t;
+
+    typedef struct {
+	union {
+	    int	ival;
+	    string	sval;
+	} val;
+	term_t	token;
+    } token_t;
+
+    typedef struct {
+	file	f;
+	int	line;
+	string	token;
+    } json_input_t;
+
+    json_input_t start_json(string s) {
+	return (json_input_t) { .f = File::string_read(s), .line = 1 };
+    }
+
+    token_t lex(*json_input_t f) {
+
+	int ch() {
+	    int c = File::getc(f->f);
+	    if (c == '\n')
+		f->line++;
+	    f->token = f->token + String::new(c);
+	    return c;
+	}
+
+	void unch(int c) {
+	    if (c == '\n')
+		f->line--;
+	    f->token = String::substr(f->token, 0, String::length(f->token) - 1);
+	    File::ungetc(c, f->f);
+	}
+
+	try {
+	    f->token = "";
+	    for (;;) {
+		int	c = ch();
+
+		switch (c) {
+		case '\n':
+		case ' ':
+		case '\t':
+		    continue;
+		case '{':
+		    return (token_t) { .token = term_t._oc };
+		case '}':
+		    return (token_t) { .token = term_t._cc };
+		case '[':
+		    return (token_t) { .token = term_t._os };
+		case ']':
+		    return (token_t) { .token = term_t._cs };
+		case ',':
+		    return (token_t) { .token = term_t._comma };
+		case ':':
+		    return (token_t) { .token = term_t._colon };
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+		    int ival = 0;
+		    while (Ctype::isdigit(c)) {
+			ival = ival * 10 + c - '0';
+			c = ch();
+		    }
+		    unch(c);
+		    return (token_t) { .val = { .ival = ival }, .token = term_t._int };
+		case '"':
+		    string sval = "";
+		    for (;;) {
+			c = ch();
+			if (c == '"')
+			    break;
+			if (c == '\\') {
+			    c = ch();
+			    switch (c) {
+			    case 'n':
+				c = '\n';
+				break;
+			    case 't':
+				c = '\t';
+				break;
+			    default:
+				break;
+			    }
+			}
+			sval = sval + String::new(c);
+		    }
+		    return (token_t) { .val = { .sval = sval }, .token = term_t._string };
+		default:
+		    break;
+		}
+		break;
+	    }
+	}
+	catch File::io_eof(file f) {
+	    return (token_t) { .token = term_t._end };
+	}
+	return (token_t) { .token = term_t._error };
+    }
+
+    public exception json_parse_error(int line, string token);
+
+    public poly from_json(string arg) {
+	json_input_t f = start_json(arg);
+
+	token_t	token;
+
+	void next() {
+	    token = lex(&f);
+	}
+
+	void expect(term_t t) {
+	    if (token.token != t)
+		raise json_parse_error(f.line, f.token);
+	}
+
+	poly value();
+
+	poly[string] hash() {
+	    poly[string] ret = {};
+	    for (;;) {
+		expect(term_t._string);
+		string name = token.val.sval;
+		next();
+		expect(term_t._colon);
+		next();
+		poly val = value();
+		ret[name] = val;
+		switch (token.token) {
+		case term_t._comma:
+		    next();
+		    continue;
+		case term_t._cc:
+		    next();
+		    return ret;
+		default:
+		    raise json_parse_error(f.line, f.token);
+		}
+	    }
+	}
+
+	poly[] array() {
+	    poly[...] ret = {};
+	    for (;;) {
+		poly val = value();
+		ret[dim(ret)] = val;
+		switch (token.token) {
+		case term_t._comma:
+		    next();
+		    continue;
+		case term_t._cs:
+		    next();
+		    return ret;
+		default:
+		    raise json_parse_error(f.line, f.token);
+		}
+	    }
+	}
+
+	value = poly func() {
+	    switch (token.token) {
+	    case term_t._oc:
+	    next();
+	    return hash();
+	    case term_t._os:
+	    next();
+	    return array();
+	    case term_t._int:
+	    int ival = token.val.ival;
+	    next();
+	    return ival;
+	    case term_t._string:
+	    string sval = token.val.sval;
+	    next();
+	    return sval;
+	    }
+	};
+
+	next();
+	return value();
+    }
+}

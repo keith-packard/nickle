@@ -90,6 +90,10 @@ import_Toplevel_namespace()
 	    " bool is_func (poly v)\n"
 	    "\n"
 	    " Return whether 'v' is an func value.\n" },
+        { do_is_hash, "is_hash", "b", "p", "\n"
+	    " bool is_hash (poly v)\n"
+	    "\n"
+	    " Return whether 'v' is an hash value.\n" },
         { do_is_int, "is_int", "b", "p" , "\n"
 	    " bool is_int (poly v)\n"
 	    "\n"
@@ -877,6 +881,21 @@ do_is_array (Value av)
 	break;
     }
     RETURN (av);
+}
+
+Value
+do_is_hash(Value av)
+{
+    ENTER();
+    switch(ValueTag(av)) {
+    case rep_hash:
+	av = TrueVal;
+	break;
+    default:
+	av = FalseVal;
+	break;
+    }
+    RETURN(av);
 }
 
 Value

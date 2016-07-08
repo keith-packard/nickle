@@ -1,4 +1,4 @@
-.TH NICKLE 1 "@BUILD_DATE@"
+.TH NICKLE 1 "@RELEASE_DATE@"
 .\" $Header$
 .SH NAME
 nickle \- a desk calculator language

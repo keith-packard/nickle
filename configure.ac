@@ -7,7 +7,7 @@ dnl for licensing information.
 AC_PREREQ([2.64])
 
 AC_INIT([nickle],[2.77],[http://nickle.org],[nickle])
-
+RELEASE_DATE="2016-07-08"
 AC_CONFIG_SRCDIR([nickle.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(.)
@@ -16,6 +16,7 @@ AM_INIT_AUTOMAKE([foreign])
 
 AM_MAINTAINER_MODE
 
+AC_SUBST([RELEASE_DATE])
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -26,8 +27,6 @@ AC_CHECK_PROGS([YACC], byacc yacc bison, yacc)
 case "$YACC" in
 *bison)	YACC="$YACC -y"	;;
 esac
-AC_PROG_AWK
-AC_CHECK_PROGS([DATE], date)
 
 dnl Checks for libraries.
 AC_CHECK_FUNC(log,,AC_CHECK_LIB(m, log))
@@ -135,7 +134,6 @@ AC_CONFIG_FILES(
  examples/smlng/Makefile
  examples/turtle/Makefile
  doc/Makefile
- doc/tutorial/Makefile
- date-sh)
+ doc/tutorial/Makefile)
 
 AC_OUTPUT

@@ -7,7 +7,7 @@
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = bench test examples doc
 
-BUILD_DATE := $(shell sh $(top_builddir)/date-sh)
+RELEASE_DATE := @RELEASE_DATE@
 
 NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c \
 	arc4.5c prng.5c command.5c abort.5c \
@@ -64,7 +64,7 @@ man_MANS = nickle.1
 AM_YFLAGS = -d
 
 AM_CPPFLAGS = \
-	-DBUILD=\""$(BUILD_DATE)"\" \
+	-DBUILD=\""$(RELEASE_DATE)"\" \
 	-DBUILD_VERSION=\""$(VERSION)"\" \
 	-DLOCAL_BUILD \
 	-DNICKLELIBDIR=\"@nicklelibdir@\"

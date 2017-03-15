@@ -15,7 +15,8 @@ exampledir=$(pkgdatadir)/examples/smlng
 
 example_DATA=$(NICKLEFILES) COPYING
 
-TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir):$(top_srcdir)/$(subdir) $(top_builddir)/nickle < $(top_srcdir)/$(subdir)/data.sgml > /dev/null
+TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir):$(top_srcdir)/$(subdir)
+LOG_COMPILER=$(top_builddir)/nickle < $(top_srcdir)/$(subdir)/data.sgml
 
 TESTS=test.5c
 

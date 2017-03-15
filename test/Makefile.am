@@ -20,8 +20,9 @@ TABLES=math-tables.5c
 
 CLEANFILES=$(TABLES)
 
-TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir) ../nickle
+TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir)
 TESTS=$(check_SCRIPTS)
+LOG_COMPILER=$(top_builddir)/nickle
 
 EXTRA_DIST=$(check_SCRIPTS)
 

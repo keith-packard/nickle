@@ -214,7 +214,7 @@ extend namespace String {
 	    string curs = "";
 	    void consume() {
 		string t = chomp(curs);
-		if (t != "" && t == q.oq)
+		if (t != "" && t[0] == q.oq[0])
 		    t = dq(t);
 		ss[dim(ss)] = t;
 		curs = "";

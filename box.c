@@ -55,10 +55,10 @@ NewTypedBox (Bool array, BoxTypesPtr bt)
 
     box = ALLOCATE (&BoxType, sizeof (Box) + bt->count * sizeof (Value));
     box->constant = False;
-/*    box->array = array; */
     box->homogeneous = False;
-    box->u.types = bt;
+    box->replace = False;
     box->nvalues = bt->count;
+    box->u.types = bt;
     for (i = 0; i < bt->count; i++)
 	BoxValueSet (box, i, 0);
     RETURN (box);

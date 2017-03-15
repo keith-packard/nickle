@@ -4,10 +4,10 @@ dnl Copyright © 1988-2004 Keith Packard and Bart Massey.
 dnl All Rights Reserved.  See the file COPYING in this directory
 dnl for licensing information.
 
-AC_PREREQ([2.64])
+AC_PREREQ([2.69])
 
-AC_INIT([nickle],[2.77],[http://nickle.org],[nickle])
-RELEASE_DATE="2016-07-08"
+AC_INIT([nickle],[2.78],[http://nickle.org],[nickle])
+RELEASE_DATE="2017-03-15"
 AC_CONFIG_SRCDIR([nickle.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(.)

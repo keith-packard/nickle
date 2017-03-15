@@ -1,3 +1,14 @@
+nickle (2.78-1) unstable; urgency=low
+
+  * Add sudoku generator and solver example.
+  * Fix write order of large queued data.
+  * Add JSON input/output library.
+  * Use release date in configure.in instead of `date`
+  * Initialize 'replace' in NewTypedBox. (Closes: #857840, #857814, #857815)
+  * Adapt test to new automake.
+
+ -- Keith Packard <keithp@keithp.com>  Wed, 15 Mar 2017 09:35:37 -0700
+
 nickle (2.77-1) unstable; urgency=low
 
   * Build tutorial when docbook2pdf is available

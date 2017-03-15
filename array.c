@@ -123,7 +123,7 @@ ArrayPrint (Value f, Value av, char format, int base, int width, int prec, int f
 	i = 0;
 	while (i < limit)
 	{
-	    if (!Print (f, ArrayValueGet (a, i), format, base, width, prec, fill))
+	    if (!Print (f, ArrayValueGet (a, i), down_format, base, width, prec, fill))
 	    {
 		ret = False;
 		break;

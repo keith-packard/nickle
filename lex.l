@@ -700,7 +700,6 @@ lexdoc (void)
     int	    c;
     Value   s = NewStrString ("");
 
-    (void) yyunput;
     c = input();
     if (lexInput->at_eof)
     {

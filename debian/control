@@ -2,7 +2,7 @@ Source: nickle
 Section: interpreters
 Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
-Build-Depends: debhelper (>= 7.0.50), libreadline-dev, autotools-dev, docbook-utils
+Build-Depends: debhelper (>= 7.0.50), libreadline-dev, autotools-dev, docbook-utils, bison, flex
 Standards-Version: 3.9.2
 
 Package: nickle

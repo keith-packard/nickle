@@ -1013,11 +1013,15 @@ extern BoxPtr	NewBox (Bool constant, Bool array, int nvalues, TypePtr type);
 extern BoxPtr	NewTypedBox (Bool array, BoxTypesPtr types);
 void		BoxSetReplace (BoxPtr old, BoxPtr new, int oldstride, int newstride);
 BoxPtr		BoxRewrite (BoxPtr box, int *ep);
-			     
+
 typedef struct {
     DataType	*data;
     int		size;
-    char	values[0];
+    union {
+	double	d;
+	double_digit dd;
+	void	*p;
+    } values[0];
 } DataCache, *DataCachePtr;
 
 DataCachePtr	NewDataCache (int size);

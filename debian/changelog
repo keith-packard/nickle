@@ -1,3 +1,9 @@
+nickle (2.79-1) unstable; urgency=low
+
+  * Fix bus error on sparc64 due to unaligned DataCache.
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 16 Mar 2017 10:52:49 -0700
+
 nickle (2.78-1) unstable; urgency=low
 
   * Add sudoku generator and solver example.

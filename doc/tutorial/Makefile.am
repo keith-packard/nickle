@@ -2,8 +2,15 @@
 SGMLFILES=nickle-tutorial.sgml
 PDFFILES=$(SGMLFILES:.sgml=.pdf)
 
+PDF_DATE=$(shell date -ud '$(RELEASE_DATE)')
+
 .sgml.pdf:
-	docbook2pdf $<
+	docbook2tex $< && \
+	pdfjadetex '\pdfinfo{/CreationDate($(PDF_DATE))/ModDate($(PDF_DATE))}\input{$*.tex}' >/dev/null && \
+	pdfjadetex '\pdfinfo{/CreationDate($(PDF_DATE))/ModDate($(PDF_DATE))}\input{$*.tex}' >/dev/null && \
+	pdfjadetex '\pdfinfo{/CreationDate($(PDF_DATE))/ModDate($(PDF_DATE))}\input{$*.tex}' >/dev/null && \
+	sed -i '/^\/ID \[<[0-9A-F][0-9A-F]*> <[0-9A-F][0-9A-F]*>\]/d' $@ && \
+	rm $*.aux $*.log *$.out *$.tex
 
 SGMLINC= \
 	tour/tour.sgml \

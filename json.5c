@@ -81,6 +81,10 @@ namespace JSON {
 	    return sprintf ("%d", arg);
 	}
 
+	string json_float(real arg) {
+	    return sprintf("%.13g", arg);
+	}
+
 	json = string func(poly arg, int indent) {
 	    if (is_hash(arg))
 		return json_hash(arg, indent);
@@ -90,6 +94,8 @@ namespace JSON {
 		return json_string(arg);
 	    if (is_int(arg))
 		return json_int(arg);
+	    if (is_number(arg))
+		return json_float(arg);
 	    return "";
 	};
 
@@ -99,6 +105,7 @@ namespace JSON {
     typedef enum {
 	_string,
 	_int,
+	_float,
 	_oc,
 	_cc,
 	_os,
@@ -111,8 +118,9 @@ namespace JSON {
 
     typedef struct {
 	union {
-	    int	ival;
+	    int		ival;
 	    string	sval;
+	    real	fval;
 	} val;
 	term_t	token;
     } token_t;
@@ -144,6 +152,26 @@ namespace JSON {
 	    File::ungetc(c, f->f);
 	}
 
+	bool is_int_char(int c) {
+	    if (Ctype::isdigit(c))
+		return true;
+	    if (c == '-')
+		return true;
+	    return false;
+	}
+
+	bool is_float_char(int c) {
+	    if (Ctype::isdigit(c))
+		return true;
+	    if (c == '-')
+		return true;
+	    if (c == '.')
+		return true;
+	    if (c == 'e' || c == 'E')
+		return true;
+	    return false;
+	}
+
 	try {
 	    f->token = "";
 	    for (;;) {
@@ -168,13 +196,21 @@ namespace JSON {
 		    return (token_t) { .token = term_t._colon };
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
-		    int ival = 0;
-		    while (Ctype::isdigit(c)) {
-			ival = ival * 10 + c - '0';
+		case '-': case '.':
+		    string nval = "";
+		    bool has_float = false;
+		    while (is_float_char(c)) {
+			nval = nval + String::new(c);
+			if (!is_int_char(c))
+			    has_float = true;
+			if (File::end(f->f))
+			    break;
 			c = ch();
 		    }
 		    unch(c);
-		    return (token_t) { .val = { .ival = ival }, .token = term_t._int };
+		    if (has_float)
+			return (token_t) { .val = { .fval = atof(nval) }, .token = term_t._float };
+		    return (token_t) { .val = { .ival = atoi(nval) }, .token = term_t._int };
 		case '"':
 		    string sval = "";
 		    for (;;) {
@@ -271,19 +307,23 @@ namespace JSON {
 	value = poly func() {
 	    switch (token.token) {
 	    case term_t._oc:
-	    next();
-	    return hash();
+		    next();
+	    	return hash();
 	    case term_t._os:
-	    next();
-	    return array();
+		    next();
+		    return array();
 	    case term_t._int:
-	    int ival = token.val.ival;
-	    next();
-	    return ival;
+		    int ival = token.val.ival;
+		    next();
+		    return ival;
+	    case term_t._float:
+		    real fval = token.val.fval;
+		    next();
+		    return fval;
 	    case term_t._string:
-	    string sval = token.val.sval;
-	    next();
-	    return sval;
+		    string sval = token.val.sval;
+		    next();
+		    return sval;
 	    }
 	};
 

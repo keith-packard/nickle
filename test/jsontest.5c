@@ -1,0 +1,25 @@
+autoimport JSON;
+
+exception bad_json(poly val, string json, poly got);
+
+void json_test_val(poly val, string match) {
+    string	json = to_json(val);
+    poly	t = from_json(json);
+
+    /* Make sure the string representation is correct and parsing
+     * matches the input
+     */
+    if (json != match || val != t)
+	raise bad_json(val, json, t);
+}
+
+json_test_val(1, "1");
+json_test_val(1.1, "1.1000000000000");
+json_test_val("hello world", "\"hello world\"");
+json_test_val((poly[string]) {
+	"float" => 1.1,
+	"hash" => (poly[string]) { "hashval" => 12 },
+	"int" => 10,
+	"string" => "world"
+    },
+    "{\n\t\"float\": 1.1000000000000,\n\t\"hash\": {\n\t\t\"hashval\": 12\n\t},\n\t\"int\": 10,\n\t\"string\": \"world\"\n}");

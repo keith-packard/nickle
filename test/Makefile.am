@@ -13,7 +13,8 @@ check_SCRIPTS=\
 	math.5c \
 	factorial.5c \
 	is_type.5c \
-	jsontest.5c
+	jsontest.5c \
+	datetest.5c
 
 noinst_PROGRAMS=math-tables
 

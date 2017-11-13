@@ -31,6 +31,7 @@ Natural	*zero_natural;
 Natural	*one_natural;
 Natural *two_natural;
 Natural *max_int_natural;
+Natural *max_signed_digit_natural;
 #ifndef LBASE10
 static Natural *max_tenpow_natural;
 static int	tenpow_digits;
@@ -48,6 +49,20 @@ NaturalToInt (Natural *n)
     i = 0;
     for (index = 0; index < length(n); index++)
 	i = i * BASE + (int) *--d;
+    return i;
+}
+
+double_digit
+NaturalToDoubleDigit(Natural *n)
+{
+    double_digit	i;
+    digit		*d;
+    int			index;
+
+    d = data(n) + length (n);
+    i = 0;
+    for (index = 0; index < length(n); index++)
+	i = i * BASE + (double_digit) *--d;
     return i;
 }
 
@@ -1451,6 +1466,8 @@ NaturalInit (void)
     MemAddRoot (two_natural);
     max_int_natural = NewDoubleDigitNaturalReal (MAX_NICKLE_INT);
     MemAddRoot (max_int_natural);
+    max_signed_digit_natural = NewDoubleDigitNaturalReal (MAX_NICKLE_SIGNED_DIGIT);
+    MemAddRoot(max_signed_digit_natural);
 #ifndef LBASE10
     tenpow_digits = (int) floor (log10 ((double) MAX_NICKLE_INT));
     max_tenpow = 1;

@@ -108,6 +108,33 @@ IntPart (Value av, char *error)
     return ValueInt(av);
 }
 
+int
+BoolPart (Value av, char *error)
+{
+    if (!ValueIsBool(av))
+    {
+	RaiseStandardException (exception_invalid_argument, 3,
+				NewStrString (error), 
+				NewInt (0), av);
+	return 0;
+    }
+    return av == TrueVal;
+}
+
+signed_digit
+SignedDigitPart(Value av, char *error)
+{
+    if (ValueIsInt(av))
+	return ValueInt(av);
+    if (ValueIsInteger(av) && IntegerFitsSignedDigit(&av->integer))
+	return IntegerToSignedDigit(&av->integer);
+
+    RaiseStandardException (exception_invalid_argument, 3,
+			    NewStrString (error), 
+			    NewInt (0), av);
+    return 0;
+}
+
 Value
 BinaryOperate (Value av, Value bv, BinaryOp operator)
 {

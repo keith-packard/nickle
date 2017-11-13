@@ -169,7 +169,7 @@ typedef unsigned short digit;
 			 ((double_digit) NaturalDigits(n)[i] << LBASE2))
 #define ModBase(t)  ((t) & (((double_digit) 1 << LBASE2) - 1))
 #define DivBase(t)  ((t) >> LBASE2)
-    
+
 /* HashValues are stored in rep_int */
 
 typedef int HashValue;
@@ -236,6 +236,7 @@ int	IntWidth (int i);
 int	DoubleDigitWidth (double_digit i);
 HashValue   NaturalHash (Natural *a);
 
+extern Natural	*max_signed_digit_natural;
 extern Natural	*max_int_natural;
 extern Natural	*zero_natural;
 extern Natural	*one_natural;
@@ -288,11 +289,11 @@ typedef enum _rep {
 	rep_bool = 9,
 	rep_foreign = 10,
 	rep_void = 11,
-	
+
 	/* composite types */
 	rep_ref = 12,
 	rep_func = 13,
-    
+
 	/* mutable type */
  	rep_array = 14,
 	rep_struct = 15,
@@ -347,6 +348,7 @@ static inline Sign IntSign(int i) {
 
 #define MAX_NICKLE_INT	    ((int) ((unsigned) NICKLE_INT_SIGN - 1))
 #define MIN_NICKLE_INT	    (-MAX_NICKLE_INT - 1)
+#define MAX_NICKLE_SIGNED_DIGIT	((signed_digit) (((double_digit) 1 << (sizeof(signed_digit) * 8 - 1)) - 1))
 
 #define One NewInt(1)
 #define Zero NewInt(0)
@@ -354,7 +356,7 @@ static inline Sign IntSign(int i) {
 static inline Bool ValueIsPtr (Value v) {
 	return (PtrToInt(v) & 1) == 0;
 }
-	
+
 static inline Bool ValueIsInt (Value v) {
 	return !ValueIsPtr(v);
 }
@@ -400,10 +402,10 @@ ArgType *NewArgType (TypePtr type, Bool varargs, Atom name,
 		     SymbolPtr symbol, ArgType *next);
 
 typedef enum _typeTag {
-    type_prim, type_name, type_ref, type_func, type_array, 
+    type_prim, type_name, type_ref, type_func, type_array,
     type_struct, type_union, type_types, type_hash
 } TypeTag;
-    
+
 typedef struct _typeBase {
     DataType	*data;
     TypeTag	tag;
@@ -464,7 +466,7 @@ typedef struct _typeStruct {
     StructTypePtr   structs;
     Bool	    enumeration;
     TypePtr	    left, right;
-} TypeStruct;    
+} TypeStruct;
 
 typedef struct _typeElt {
     DataType	    *data;
@@ -1336,12 +1338,29 @@ extern Bool signalError;	/* current thread run time error */
 #define SetSignalException()(aborting = signaling = signalException = True)
 #define SetSignalError()    (aborting = signaling = signalError = True)
 
-int	NaturalToInt (Natural *);
-int	IntegerToInt (Integer *);
+int
+NaturalToInt (Natural *n);
+
+double_digit
+NaturalToDoubleDigit(Natural *n);
+
+int	IntegerToInt (Integer *i);
+
+int
+IntegerFitsSignedDigit(Integer *i);
+
+signed_digit
+IntegerToSignedDigit(Integer *i);
+
 int	IntPart (Value, char *error);
 
+int	BoolPart (Value, char *error);
+
+signed_digit
+SignedDigitPart(Value v, char *error);
+
 double	DoublePart (Value av, char *error);
-    
+
 Bool	Zerop (Value);
 Bool	Negativep (Value);
 Bool	Evenp (Value);

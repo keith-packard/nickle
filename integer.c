@@ -28,6 +28,26 @@ IntegerToInt (Integer *i)
     return result;
 }
 
+signed_digit
+IntegerToSignedDigit(Integer *i)
+{
+    double_digit	dd;
+    signed_digit	sd;
+
+    dd = NaturalToDoubleDigit(IMag(i));
+    if (ISign(i) == Negative)
+	sd = -(signed_digit) dd;
+    else
+	sd = (signed_digit) dd;
+    return sd;
+}
+
+int
+IntegerFitsSignedDigit(Integer *i)
+{
+    return NaturalLess(IMag(i), max_signed_digit_natural);
+}
+
 static Value
 IntegerPlus (Value av, Value bv, int expandOk)
 {
@@ -96,7 +116,7 @@ IntegerTimes (Value av, Value bv, int expandOk)
     ENTER ();
     Integer	*a = &av->integer, *b = &bv->integer;
     Sign	sign;
-    
+
     sign = Positive;
     if (ISign(a) != ISign(b))
 	sign = Negative;
@@ -110,7 +130,7 @@ IntegerDivide (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Natural	*rem;
     Sign	sign;
-    
+
     if (NaturalZero (IMag(b)))
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -133,7 +153,7 @@ IntegerDiv (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Sign	sign;
     Natural	*quo, *rem;
-    
+
     if  (NaturalZero (IMag(b)))
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -155,7 +175,7 @@ IntegerMod (Value av, Value bv, int expandOk)
     ENTER ();
     Integer	*a = &av->integer, *b = &bv->integer;
     Natural	*rem;
-    
+
     if  (NaturalZero (IMag(b)))
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -308,7 +328,7 @@ static Value
 IntegerReduce (Value av)
 {
     Integer *a = &av->integer;
-    
+
     if (NaturalLess (IMag(a), max_int_natural))
 	av = NewInt (IntegerToInt (a));
     return av;
@@ -322,7 +342,7 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, int
     char    *result;
     int	    print_width;
     int	    fraction_width;
-    
+
     if (base == 0)
 	base = 10;
     result = NaturalSprint (0, IMag(i), base, &print_width);
@@ -392,7 +412,7 @@ IntegerMark (void *object)
     MemReference (IMag(integer));
 }
 
-ValueRep    IntegerRep = { 
+ValueRep    IntegerRep = {
     { IntegerMark, 0, "IntegerRep" },	    /* base */
     rep_integer,	    /* tag */
     {			    /* binary */

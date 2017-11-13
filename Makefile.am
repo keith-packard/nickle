@@ -52,7 +52,7 @@ nickle_SOURCES = \
 	builtin-file.c builtin-math.c builtin-namespaces.h \
 	builtin-semaphore.c builtin-sockets.c builtin-string.c \
 	builtin-thread.c builtin-toplevel.c builtin-pid.c \
-	builtin.c builtin.h \
+	builtin-date.c builtin.c builtin.h \
 	builtin-foreign.c gram.y lex.l
 
 nickle_LDFLAGS=$(NICKLE_LDFLAGS)

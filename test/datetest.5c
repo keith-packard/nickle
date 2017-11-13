@@ -1,0 +1,62 @@
+import Date;
+
+exception bad_seconds(int want, date_t date, int got);
+
+exception bad_date(date_t want, int seconds, date_t got);
+
+void test_round_seconds(int seconds) {
+    date_t	g = gmtime(seconds);
+    date_t	l = localtime(seconds);
+    int		sg = timegm(g);
+    int		sl = timelocal(l);
+
+    if (seconds != sg)
+	raise bad_seconds(seconds, g, sg);
+    if (seconds != sl)
+	raise bad_seconds(seconds, l, sl);
+}
+
+void test_round_date(date_t date) {
+    int		sg = timegm(date);
+    int		sl = timelocal(date);
+    date_t	g = gmtime(sg);
+    date_t	l = localtime(sl);
+
+    if (g != date)
+	raise bad_date(date, sg, g);
+    if (l != date)
+	raise bad_date(date, sl, l);
+}
+
+void test_utc_seconds(int seconds, date_t date) {
+    date_t	got_date = gmtime(seconds);
+    int		got_seconds = timegm(date);
+
+    if (got_date != date)
+	raise bad_date(date, seconds, got_date);
+    if (got_seconds != seconds)
+	raise bad_seconds(seconds, date, got_seconds);
+}
+
+test_round_seconds(0);
+test_round_seconds(time());
+
+/* Epoch */
+test_utc_seconds(0,
+		 (date_t) {
+		     .sec = 0,
+		     .min = 0,
+		     .hour = 0,
+		     .mday = 1,
+		     .mon = 1,
+		     .wday = 4,
+		     .yday = 0,
+		     .year = 1970,
+		     .isdst = false,
+		     .zone = "GMT"
+			 });
+
+/* Make sure 2038 problem isn't present */
+test_utc_seconds(2**31,
+		 (date_t) {sec = 8, min = 14, hour = 3, mday = 19, mon = 1, year = 2038,
+			 wday = 2, yday = 18, isdst = false, zone = "GMT"});

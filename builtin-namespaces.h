@@ -24,3 +24,4 @@ extern void import_Environ_namespace(void);
 extern void import_Socket_namespace(void);
 extern void import_Foreign_namespace(void);
 extern void import_PID_namespace(void);
+extern void import_Date_namespace(void);

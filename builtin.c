@@ -335,6 +335,7 @@ BuiltinInit (void)
     import_Socket_namespace();
     import_Foreign_namespace ();
     import_PID_namespace ();
+    import_Date_namespace();
 
     /* Import builtin strings with predefined values */
     BuiltinStrings (svars);

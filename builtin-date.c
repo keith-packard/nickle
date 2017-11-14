@@ -83,8 +83,6 @@ to_date(struct tm *tm)
 static void
 from_date(Value date, struct tm *tm)
 {
-    BoxPtr	box = date->structs.values;
-
     tm->tm_sec = value_int(date, "sec", "invalid sec", 0);
     tm->tm_min = value_int(date, "min", "invalid min", 0);
     tm->tm_hour = value_int(date, "hour", "invalid hour", 0);

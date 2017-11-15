@@ -143,7 +143,7 @@ do_Date_timelocal(Value v)
     time_t	seconds;
 
     from_date(v, &tm);
-    seconds = timelocal(&tm);
+    seconds = mktime(&tm);
     RETURN(Reduce(NewSignedDigitInteger((signed_digit) seconds)));
 }
 

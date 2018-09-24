@@ -6,12 +6,12 @@
 
 load "math-tables.5c"
 
-int precision = 64;
+int test_precision = 64;
 int errors = 0;
 
 real checked(real(real) f, real a) {
 	try {
-		real r = f(imprecise (a, precision));
+		real r = f(imprecise (a, test_precision));
 		if (r > 1e10)
 			return 9999;
 		if (r < -1e10)
@@ -25,7 +25,7 @@ real checked(real(real) f, real a) {
 
 real checked2(real(real, real) f, real a, real b) {
 	try {
-		real r = f(imprecise(a, precision), imprecise(b, precision));
+		real r = f(imprecise(a, test_precision), imprecise(b, test_precision));
 
 		/* Just return the same value for large magnitudes
 		 * as small variations in input cause the sign to flip
@@ -122,8 +122,132 @@ void check_tan()
 	}
 }
 
+/* 1000 digits of e */
+string e_digits = ("2." +
+		   "71828182845904523536028747135266249775724709369995" +
+		   "95749669676277240766303535475945713821785251664274" +
+		   "27466391932003059921817413596629043572900334295260" +
+		   "59563073813232862794349076323382988075319525101901" +
+		   "15738341879307021540891499348841675092447614606680" +
+		   "82264800168477411853742345442437107539077744992069" +
+		   "55170276183860626133138458300075204493382656029760" +
+		   "67371132007093287091274437470472306969772093101416" +
+		   "92836819025515108657463772111252389784425056953696" +
+		   "77078544996996794686445490598793163688923009879312" +
+		   "77361782154249992295763514822082698951936680331825" +
+		   "28869398496465105820939239829488793320362509443117" +
+		   "30123819706841614039701983767932068328237646480429" +
+		   "53118023287825098194558153017567173613320698112509" +
+		   "96181881593041690351598888519345807273866738589422" +
+		   "87922849989208680582574927961048419844436346324496" +
+		   "84875602336248270419786232090021609902353043699418" +
+		   "49146314093431738143640546253152096183690888707016" +
+		   "76839642437814059271456354906130310720851038375051" +
+		   "01157477041718986106873969655212671546889570350353");
+
+void check_e()
+{
+    File::sscanf(e_digits, "%f", &(real e_good));
+    for (int prec = 10; prec < 3000; prec *= 2) {
+	real e_tmp = Math::e_value(prec);
+	real error = abs (e_tmp - e_good);
+	/* prec-2 bits right of the decimal point */
+	real limit = 2**(-(prec-2));
+	if (error > limit) {
+	    printf("e_value(%d) error %g limit %g value %g\n", prec, error, limit, e_tmp);
+	    errors++;
+	}
+    }
+}
+
+void check_exp()
+{
+	for (int prec = 10; prec <= 1000; prec *= 10) {
+		printf ("prec %d\n", prec);
+		real eval = Math::e_value(1000);
+		for (int x = 0; x < 100; x++) {
+			real expx = exp(imprecise(x, prec));
+			real powx = imprecise(eval ** x, prec);
+			real	error = abs((imprecise(expx,prec*10) - imprecise(powx,prec*10)) / imprecise(expx,prec*10));
+			real	limit = 2 ** (-(prec - 8));
+
+			if (error > limit) {
+				printf ("exp(i): prec %d error %g limit %g x %.-g val %.-g %.-g\n",
+					prec, error, limit, x, expx, powx);
+				errors++;
+			}
+		}
+		for (real x = imprecise(0.001, prec); x < 20; x *= 1.5) {
+			for (real y = imprecise(0.001, prec); y < 20; y *= 1.5) {
+
+				real	expx = exp(x);
+				real	expy = exp(y);
+				real	expx_expy = exp(x) * exp(y);
+				real	expxy = exp(x+y);
+
+				int	bitdiff = ceil(abs(log2(abs(x)) - log2(abs(y))));
+
+				real	error = abs((expxy - expx_expy) / expxy);
+				real	limit = 2 ** (-(prec - 5 - bitdiff));
+
+				if (error > limit) {
+					printf("exp(x+y): prec %d error %g limit %g x %.-g y %.-g\n",
+					       prec, error, limit, x, y);
+					errors++;
+				}
+			}
+		}
+	}
+}
+
 void check_log()
 {
+	int log_errors = 0;
+	for (int prec = 10; prec <= 1000; prec *= 10) {
+		real eval = Math::e_value(prec);
+		for (real x = imprecise(0.001, prec); x < 20; x *= 1.2) {
+			real	lnx = log(x);
+
+			real	explnx = exp(lnx);
+
+			real	rterror = abs((x - explnx) / x);
+			real	rtlimit = 2 ** (-(prec - 6));
+
+			if (rterror > rtlimit) {
+				printf("exp(log(x)) = x: prec %d error %g limit %g x %.-g\n",
+				       prec, rterror, rtlimit, x);
+				errors++;
+			}
+
+			for (real y = imprecise(0.001, prec); y < 20; y *= 1.2) {
+				real	lny = log(y);
+
+				if (sign (lnx) != sign(lny))
+				    continue;
+
+				real	lnxy = log(x * y);
+				real	lnx_lny = lnx + lny;
+				real	error = abs ((lnxy - lnx_lny) / lnxy);
+
+				int plnxy = precision(lnxy);
+				int plnx_lny = precision(lnx_lny);
+
+				if (plnxy != plnx_lny)
+					printf("precision difference %d %d\n",
+					       plnxy, plnx_lny);
+
+				int	bitdiff = ceil(abs(log2(abs(lnx)) - log2(abs(lny))));
+
+				real	limit = 2 ** -(prec - bitdiff - 5);
+
+				if (error > limit) {
+					printf("log(x*y) = log(x)+log(y): prec %d error %g limit %g x %.-g y %.-g\n",
+					       prec, error, limit, x, y);
+					errors++;
+				}
+			}
+		}
+	}
 	for (int i = 0; i < dim(log_table); i++) {
 		real in = log_table[i].in;
 		real log_value = log_table[i].log;
@@ -138,6 +262,8 @@ void check_log()
 
 check_sin_cos();
 check_tan();
+check_exp();
 check_log();
+check_e();
 
 exit (errors);

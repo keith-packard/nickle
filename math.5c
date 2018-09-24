@@ -2,10 +2,10 @@ extend namespace Math {
     public real pi = imprecise
     (3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679,
     256);
-    
+
     public real π = pi;
 
-    protected real e = imprecise 
+    protected real e = imprecise
     (2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274,
      256);
 
@@ -68,7 +68,7 @@ extend namespace Math {
 	real real_cbrt(real v)
 	{
 	    real	prev, cur;
-	    
+
 	    int s = sign (v);
 	    v = imprecise (abs (v));
 	    int result_bits = precision (v);
@@ -105,6 +105,99 @@ extend namespace Math {
 	return real_cbrt (v);
     }
 
+    /*
+     * Fast integer logarithm via binary search from below (no division).
+     * Returns floor(log(n)/log(base)) with no rounding error
+     */
+    public int ilog(int base, int n)
+	/*
+	 * Fast integer logarithm via binary search from below (no division).
+	 * Returns floor(log(n)/log(base)) with no rounding error
+	 */
+    {
+	if (base <= 1)
+	    raise invalid_argument("ilog of bad base", 0, base);
+	if (n <= 0)
+	    raise invalid_argument("ilog of bad value", 1, n);
+	int below = 0;
+	int above = 1;
+	int k = base;
+	while (k <= n) {
+	    k *= k;
+	    below = above;
+	    above *= 2;
+	}
+	while (true) {
+	    int q = base ** below;
+	    k = base;
+	    int nbelow = 0;
+	    int nabove = 1;
+	    while (q * k <= n) {
+		k *= k;
+		nbelow = nabove;
+		nabove *= 2;
+	    }
+	    if (nbelow == 0)
+		break;
+	    below += nbelow;
+	}
+	return below;
+    }
+
+    real calculate_e (int prec)
+    /*
+     * Calculate e recursively
+     */
+    {
+	typedef struct {
+	    int	p;
+	    int	q;
+	} split_t;
+
+	split_t make_split(int p, int q) = (split_t) { .p = p, .q = q };
+
+	/* Compute e-1 recursively */
+
+	split_t binary_splitting_e(int n0, int n1)
+	{
+	    if (n1 - n0 == 1)
+		return make_split(1, n1);
+
+	    int nmid = (n0 + n1) >> 1;
+
+	    split_t r0 = binary_splitting_e(n0, nmid);
+
+	    split_t r1 = binary_splitting_e(nmid, n1);
+
+	    return make_split(r0.p * r1.q + r1.p, r0.q * r1.q);
+	}
+
+	int log_factorial = 0;
+	int log_max = prec;
+	int series_size = 1;
+
+	while (log_factorial < log_max) {
+	    log_factorial += ilog(2, series_size);
+	    series_size++;
+	}
+
+	split_t pq = binary_splitting_e(0, series_size);
+
+	return imprecise(1 + pq.p / pq.q, prec);
+    }
+
+    public real e_value (int prec)
+	/*
+	 * return e at least as precise as 'prec'
+	 */
+    {
+	static real local_e = e;
+
+	if (precision (local_e) < prec)
+	    local_e = calculate_e (prec);
+	return imprecise(local_e, prec);
+    }
+
     public real exp (real v)
 	/*
 	 * Return e ** v;
@@ -115,7 +208,7 @@ extend namespace Math {
 	if (v == 0)
 	    return 1;
 	v = imprecise (v);
-	
+
 	/*
 	 * Emperically determined scale factor.  This
 	 * reduces the computation to working on values
@@ -131,18 +224,18 @@ extend namespace Math {
 	else
 	    scale = 12;
 	int div = (1 << scale);
-	
+
 	int iter = prec + 1;
 	int iprec = prec + iter;
-	
-	real mant = imprecise (mantissa(v), prec + iter) / div;
+
+	real mant = imprecise (mantissa(v), iprec) / div;
 	int expo = exponent(v) + scale;
-	
+
 	real e = imprecise (0, iprec);
 	real num = imprecise (1, iprec);
 	real den = imprecise (1, iprec);
 	real loop = imprecise (0, iprec);
-	
+
 	/*
 	 * Traditional power series
 	 *
@@ -152,16 +245,15 @@ extend namespace Math {
 	{
 	    real term = num/den;
 	    e = e + term;
-	    if (exponent (e) > exponent(term) + iprec)
+    	    if (exponent (e) > exponent(term) + iprec)
 		break;
 	    num *= mant;
 	    loop++;
 	    den *= loop;
 	}
-	e = imprecise (e, prec + expo);
 
 	e = e ** (1 << expo);
-	
+
 	return imprecise (e, prec);
     }
 
@@ -207,14 +299,14 @@ extend namespace Math {
 	 *		LOG(1+X) - 2S			       X
 	 * RETURN      ---------------  WHERE Z = S*S,  S = ------- , 0 <= Z <= .0294...
 	 *		      S				     2 + X
-	 *		     
+	 *
 	 * DOUBLE PRECISION (VAX D FORMAT 56 bits or IEEE DOUBLE 53 BITS)
 	 * KERNEL FUNCTION FOR LOG; TO BE USED IN LOG1P, LOG, AND POW FUNCTIONS
-	 * CODED IN C BY K.C. NG, 1/19/85; 
+	 * CODED IN C BY K.C. NG, 1/19/85;
 	 * REVISED BY K.C. Ng, 2/3/85, 4/16/85.
 	 *
 	 * Method :
-	 *	1. Polynomial approximation: let s = x/(2+x). 
+	 *	1. Polynomial approximation: let s = x/(2+x).
 	 *	   Based on log(1+x) = log(1+s) - log(1-s)
 	 *		 = 2s + 2/3 s**3 + 2/5 s**5 + .....,
 	 *
@@ -222,11 +314,11 @@ extend namespace Math {
 	 *
 	 *	       z*(L1 + z*(L2 + z*(... (L7 + z*L8)...)))
 	 *
-	 *	   where z=s*s. (See the listing below for Lk's values.) The 
-	 *	   coefficients are obtained by a special Remez algorithm. 
+	 *	   where z=s*s. (See the listing below for Lk's values.) The
+	 *	   coefficients are obtained by a special Remez algorithm.
 	 *
 	 * Accuracy:
-	 *	Assuming no rounding error, the maximum magnitude of the approximation 
+	 *	Assuming no rounding error, the maximum magnitude of the approximation
 	 *	error (absolute) is 2**(-58.49) for IEEE double, and 2**(-63.63)
 	 *	for VAX D format.
 	 *
@@ -251,7 +343,7 @@ extend namespace Math {
 	}
 
 	/* LOG(X)
-	 * RETURN THE LOGARITHM OF x 
+	 * RETURN THE LOGARITHM OF x
 	 * DOUBLE PRECISION (VAX D FORMAT 56 bits or IEEE DOUBLE 53 BITS)
 	 * CODED IN C BY K.C. NG, 1/19/85;
 	 * REVISED BY K.C. NG on 2/7/85, 3/7/85, 3/24/85, 4/16/85.
@@ -259,15 +351,15 @@ extend namespace Math {
 	 * Required system supported functions:
 	 *	scalb(x,n)
 	 *	copysign(x,y)
-	 *	logb(x)	
+	 *	logb(x)
 	 *	finite(x)
 	 *
 	 * Required kernel function:
-	 *	log__L(z) 
+	 *	log__L(z)
 	 *
 	 * Method :
-	 *	1. Argument Reduction: find k and f such that 
-	 *			x = 2^k * (1+f), 
+	 *	1. Argument Reduction: find k and f such that
+	 *			x = 2^k * (1+f),
 	 *	   where  sqrt(2)/2 < 1+f < sqrt(2) .
 	 *
 	 *	2. Let s = f/(2+f) ; based on log(1+f) = log(1+s) - log(1-s)
@@ -285,7 +377,7 @@ extend namespace Math {
 	 *	   since the last 20 bits of ln2hi is 0.)
 	 *
 	 * Special cases:
-	 *	log(x) is NaN with signal if x < 0 (including -INF) ; 
+	 *	log(x) is NaN with signal if x < 0 (including -INF) ;
 	 *	log(+INF) is +INF; log(0) is -INF with signal;
 	 *	log(NaN) is that NaN with no signal.
 	 *
@@ -319,7 +411,7 @@ extend namespace Math {
 	    x += negone ;
 
 	    /* compute log(1+x)  */
-	    s = x/(two + x); 
+	    s = x/(two + x);
 	    t = x*x*half;
 	    z = k*ln2lo + s*(t+log__L(s*s));
 	    x += (z - t);
@@ -330,10 +422,10 @@ extend namespace Math {
 	/*
 	 * Bounds checking
 	 */
-	
+
 	if (a <= 0)
 	    raise invalid_argument ("log: must be positive", 0, a);
-	
+
 	/*
 	 * Checks to bring a into range
 	 */
@@ -351,7 +443,7 @@ extend namespace Math {
 	 */
 
 	real v = bsd_log (imprecise (a, 64));
-	
+
 	/*
 	 * Precision doubles every time around, start
 	 * with 50 bits and compute how many doublings are
@@ -359,15 +451,13 @@ extend namespace Math {
 	 */
 	int	maxiter = 0;
 	int	rprec = 50;
-	
-	while (rprec < prec)
+
+	while (rprec <= prec)
 	{
 	    rprec *= 2;
 	    maxiter++;
 	}
-	
-	/* printf ("maxiter %g\n", maxiter); */
-	
+
 	if (maxiter > 0)
 	{
 	    int	iprec = prec + maxiter * 16;
@@ -375,27 +465,37 @@ extend namespace Math {
 	    v = imprecise (v, iprec);
 	    a = imprecise (a, iprec);
 
-	    int epow = floor (v);
+	    /* reduce to range 1-2 to improve convergence speed */
+	    real epow = imprecise(floor (v) - 2, iprec);
+
+
 	    /*
-	     * compute log(v) = log(v/(e**epow)) + epow;
+	     * compute log(a) = log(a/(exp(epow))) + epow;
 	     */
 	    v = v - epow;
-	    a /= exp(imprecise (epow, iprec));
+	    a /= exp(epow);
 
 	    /*
 	     * Newton's method
+	     *
+	     * v = log(a)
+	     *
+	     * exp(v) = a
+	     *
+	     * exp(v) - a = 0
+	     *
+	     * v' = v - (exp(v) - a) / exp(v)
+	     *
+	     * v' = v - 1 + a/exp(v)
 	     *
 	     *  v' = v - 1 + a * exp(-v);
 	     */
 	    real one = imprecise (1, iprec);
 
 	    while (maxiter-- > 0)
-	    {
-		real term = a * exp (-v) - one;
-		/* printf ("v: %g term: %g err: %g term*err: %g\n",
-			   v, term, err, term * err); */
-		v = v + term;
-	    }
+		v = (v - one) + a / exp(v);
+
+	    /* Add the range reduction value back in */
 	    v = v + epow;
 	}
 
@@ -419,7 +519,7 @@ extend namespace Math {
 	    loge = 1/log(imprecise (10, precision (a)));
 	return loge * log(a);
     }
-    
+
     /*
      * log2(x) = log2(e) * log(x)
      *
@@ -437,7 +537,7 @@ extend namespace Math {
 	    loge = 1/log(imprecise (2, precision (a)));
 	return loge * log(a);
     }
-    
+
     real calculate_pi (int prec)
 	/*
 	 * Calculate pi using the formula:
@@ -458,7 +558,7 @@ extend namespace Math {
 	    /* printf ("v %g p %g avail %g\n", v, p, ret); */
 	    return ret;
 	}
-	
+
 	/*
 	 * Compute the number of loops needed to get
 	 * the desired precision
@@ -524,7 +624,7 @@ extend namespace Math {
 	    /* printf ("\n"); */
 	    return result;
 	}
-	
+
 	real	value;
 	real	part1, part2, part3;
 
@@ -534,19 +634,19 @@ extend namespace Math {
 	value = part1 + part2 + part3;
 	return imprecise (value, prec);
     }
-    
+
     public real pi_value (int prec)
 	/*
 	 * Return pi at least as precise as 'prec'
 	 */
     {
 	static real local_pi = pi;
-    
+
 	if (precision (local_pi) < prec)
 	    local_pi = calculate_pi (prec);
 	return imprecise (local_pi, prec);
     }
-    
+
     /* Normalize angle to -π < aa <= π */
     real limit_angle_to_pi (real aa)
     {
@@ -559,14 +659,14 @@ extend namespace Math {
 		aa -= 2 * my_pi;
 	return aa;
     }
-    
+
     public real sin (real a)
 	/*
 	 * return sine (a)
 	 */
     {
 	/*
-	 * sin(x) = x - x**3/3! + x**5/5! ... 
+	 * sin(x) = x - x**3/3! + x**5/5! ...
 	 */
 	real raw_sin (real a)
 	{
@@ -607,18 +707,18 @@ extend namespace Math {
 	{
 	    return 16 * a**5 - 20 * a**3 + 5 * a;
 	}
-	
+
 	real big_sin (real a)
 	{
 	    if (a > 0.01)
 		return do_5x (big_sin (a/5));
 	    return raw_sin (a);
 	}
-	
+
 	a = limit_angle_to_pi (a);
 	if (a == 0)
 	    return 0;
-	
+
 	return big_sin (a);
     }
 
@@ -628,7 +728,7 @@ extend namespace Math {
 	 */
     {
 	/*
-	 * cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ... 
+	 * cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ...
 	 */
 
 	real raw_cos (real a)
@@ -667,25 +767,25 @@ extend namespace Math {
 	{
 	    return 8 * (c**4 - c**2) + 1;
 	}
-	 
+
 	real big_cos (real a)
 	{
 	    if (a > .01)
 		return do_4x (big_cos (a/4));
 	    return raw_cos (a);
 	}
-	
+
 	a = limit_angle_to_pi (a);
 	if (a == 0)
 	    return 1;
 	return big_cos (limit_angle_to_pi (a));
     }
-    
+
     real cos_to_sin (real v)
     {
 	return sqrt (1 - v**2);
     }
-    
+
     public void sin_cos (real a, *real sinp, *real cosp)
 	/*
 	 * Compute sine and cosine of 'a' simultaneously
@@ -699,7 +799,7 @@ extend namespace Math {
         *cosp = c;
         *sinp = s;
     }
-    
+
     public real tan (real a)
 	/*
 	 * return tangent (a)
@@ -711,13 +811,13 @@ extend namespace Math {
 	sin_cos (a, &s, &c);
 	return s/c;
     }
-    
+
     public real atan (real v)
 	/*
 	 * return arctangent (v)
 	 */
     {
-	/* 
+	/*
 	 * atan(x) = x - x**3/3 + x**5/5 - ...
 	 */
 	real raw_atan (real v)
@@ -752,14 +852,14 @@ extend namespace Math {
 	}
 
 	real	sqrt3;
-	
+
 	v = imprecise (v);
 	/*
-	 * atan(v) = -atan(-v) 
+	 * atan(v) = -atan(-v)
 	 */
 	if (v < 0)
 	    return -atan (-v);
-	/* 
+	/*
 	 * atan(v) = pi/2 - atan(1/v)
 	 */
 	if (v > 1)
@@ -770,12 +870,12 @@ extend namespace Math {
 	if (v > .268)
 	{
 	    sqrt3 = sqrt (imprecise (3,precision(v)));
-	    return (pi_value (precision(v)) / 6 + 
+	    return (pi_value (precision(v)) / 6 +
 		    raw_atan ((v * sqrt3 - 1) / (sqrt3 + v)));
 	}
 	return raw_atan (v);
     }
-    
+
     /*
      * atan (y/x)
      */
@@ -820,7 +920,7 @@ extend namespace Math {
      *
      *  asin(q) = atan2(q, sqrt(1-q**2))
      */
-    
+
     public real asin (real v)
 	/*
 	 * return arcsine (v)
@@ -858,7 +958,7 @@ extend namespace Math {
 	    return pi_value(precision(v))/2;
 	return atan2 (sqrt (1-v**2), v);
     }
-	
+
     /*
      * These two are used for the '**' and '**=' operators
      */
@@ -872,23 +972,32 @@ extend namespace Math {
 	{
 	    if (!is_int (a) && is_rational (a))
 		return pow (numerator(a), b) / pow (denominator (a), b);
-	    int flip = 0;
+	    bool flip = false;
 
 	    if (b < 0)
 	    {
-		flip = 1;
+		flip = true;
 		b = -b;
 	    }
 	    result = 1;
+
+	    int prec = precision(a);
+	    /* Increase precision to avoid dropping bits */
+	    if (prec != 0 && b > 0)
+		a = imprecise(a, prec + (ilog(2, b) + 1) * 4 + 5);
+
 	    while (b > 0)
 	    {
-		if (b % 2 != 0)
+		if ((b & 1) != 0)
 		    result *= a;
-		if ((b //= 2) != 0)
+		b >>= 1;
+		if (b != 0)
 		    a *= a;
 	    }
-	    if (flip != 0)
+	    if (flip)
 		result = 1/result;
+	    if (prec != 0)
+		result = imprecise(result, prec);
 	}
 	else switch (b) {
 	case .5:
@@ -912,7 +1021,7 @@ extend namespace Math {
 	return *a = pow (*a, b);
     }
 
-    public real max(real arg, real args ...) 
+    public real max(real arg, real args ...)
 	/*
 	 * Return maximum of all arguments
 	 */
@@ -934,45 +1043,6 @@ extend namespace Math {
 	return arg;
     }
 
-
-    /*
-     * Fast integer logarithm via binary search from below (no division).
-     * Returns floor(log(n)/log(base)) with no rounding error
-     */
-    public int ilog(int base, int n) 
-	/*
-	 * Fast integer logarithm via binary search from below (no division).
-	 * Returns floor(log(n)/log(base)) with no rounding error
-	 */
-    {
-	if (base <= 1)
-	    raise invalid_argument("ilog of bad base", 0, base);
-	if (n <= 0)
-	    raise invalid_argument("ilog of bad value", 1, n);
-	int below = 0;
-	int above = 1;
-	int k = base;
-	while (k <= n) {
-	    k *= k;
-	    below = above;
-	    above *= 2;
-	}
-	while (true) {
-	    int q = base ** below;
-	    k = base;
-	    int nbelow = 0;
-	    int nabove = 1;
-	    while (q * k <= n) {
-		k *= k;
-		nbelow = nabove;
-		nabove *= 2;
-	    }
-	    if (nbelow == 0)
-		break;
-	    below += nbelow;
-	}
-	return below;
-    }
 
     public exception lsb_0();
 

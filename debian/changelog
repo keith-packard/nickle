@@ -1,3 +1,10 @@
+nickle (2.82-1) unstable; urgency=medium
+
+  * Switch to mktime from timelocal for musl compatibility
+  * Change exp to scale precision correctly. Fixes exp and log.
+
+ -- Keith Packard <keithp@keithp.com>  Tue, 02 Oct 2018 20:57:31 -0700
+
 nickle (2.81-1) unstable; urgency=low
 
   * Don't attempt to test Y2038 bug fix yet. It's not fixed on 32-bit

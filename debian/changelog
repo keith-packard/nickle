@@ -1,3 +1,9 @@
+nickle (2.83-1) UNRELEASED; urgency=medium
+
+  * Include debian/source/format in tarball
+
+ -- Keith Packard <keithp@keithp.com>  Wed, 03 Oct 2018 14:59:47 -0700
+
 nickle (2.82-1) unstable; urgency=medium
 
   * Switch to mktime from timelocal for musl compatibility

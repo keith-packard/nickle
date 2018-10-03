@@ -31,3 +31,11 @@ debian/nickle.substvars
 test/math-tables
 test/math-tables.5c
 ylwrap
+test-driver
+test-nickle.sh
+MakeOut
+TAGS
+build-files
+nickle.spec
+*.log
+*.trs

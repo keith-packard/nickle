@@ -106,6 +106,9 @@ AM_CONDITIONAL(HASDOCBOOK,test -n "$DOCBOOK2PDF")
 
 AC_FUNC_GETPGRP
 
+dnl Handle large files
+AC_SYS_LARGEFILE
+
 dnl The readline test is complicated enough to rate its own file
 AC_LIB_READLINE
 

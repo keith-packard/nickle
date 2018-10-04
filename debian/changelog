@@ -230,7 +230,7 @@ nickle (2.59-1) unstable; urgency=low
   * No tail calls without a parent frame
 
  -- Keith Packard <keithp@keithp.com>  Sun, 23 Sep 2007 21:16:34 -0700
- 
+
 nickle (2.58-1) unstable; urgency=low
   * CCITT/ITU CRC-32 computation example
   * changed import PRNG to autoimport
@@ -238,7 +238,7 @@ nickle (2.58-1) unstable; urgency=low
   * fixed signededness bug in integer carry calculation
 
  -- Keith Packard <keithp@keithp.com>  Thu, 26 Apr 2007 07:58:34 -0700
- 
+
 nickle (2.57-1) unstable; urgency=low
   * example/fourfours was using xor instead of exponentiation
   * De-macroize allocator.
@@ -253,7 +253,7 @@ nickle (2.56-1) unstable; urgency=low
   * Fix Catch object initialization order to avoid segfault
 
  -- Keith Packard <keithp@keithp.com>  Tue,  5 Dec 2006 12:57:06 -0800
- 
+
 nickle (2.55-1) unstable; urgency=low
   * Fix mismatching catch nesting depth in multi-peer try/catch
   * Add fourfours.5c example
@@ -286,7 +286,7 @@ nickle (2.51-1) unstable; urgency=low
     autoimport them if they want them instead (Bart Massey)
   * Fixed bug introduced in copy function (Bart Massey)
   * Added &&= and ||= operators (Bart Massey)
-	
+
  -- Bart Massey <bart@cs.pdx.edu>  Fri,  10 Dec 2005 14:11:45 -0800
 
 nickle (2.50-1) unstable; urgency=low
@@ -331,13 +331,13 @@ nickle (2.46-1) unstable; urgency=low
   * Fix DoublePart to survive invalid value representations
 
  -- Keith Packard <keithp@keithp.com>  Thu, 13 Jan 2005 21:46:26 -0800
- 
+
 nickle (2.45-1) unstable; urgency=low
   * Add foreign function interface
   * Fix floating point printing a bit
 
  -- Keith Packard <keithp@keithp.com>  Fri, 24 Dec 2004 01:02:01 -0800
- 
+
 nickle (2.44-1) unstable; urgency=low
   * Add copyrights and eliminate non-DFSG examples.   Closes: 275277.
   * Fix seg fault when copying large stacks
@@ -346,12 +346,12 @@ nickle (2.44-1) unstable; urgency=low
   * Fix several minor resizable array bugs
 
  -- Keith Packard <keithp@keithp.com>  Wed,  1 Dec 2004 20:28:17 -0800
- 
+
 nickle (2.43-1) unstable; urgency=low
   * rewrite garbage collector to use simpler data structures
 
  -- Keith Packard <keithp@keithp.com>  Thu, 12 Aug 2004 21:21:28 -0700
- 
+
 nickle (2.42-1) unstable; urgency=low
   * unlimit stack to avoid crashes in recursive GC marking
   * add skiplists as an example
@@ -364,7 +364,7 @@ nickle (2.42-1) unstable; urgency=low
   * fix tail call to longjmp
 
  -- Keith Packard <keithp@keithp.com>  Wed,  4 Aug 2004 11:30:08 -0700
- 
+
 nickle (2.41-1) unstable; urgency=low
   * Make a few grammar tweaks to improve NL handling
   * Fix crash with empty array/hash initializers
@@ -378,9 +378,9 @@ nickle (2.41-1) unstable; urgency=low
 
 nickle (2.38-1) unstable; urgency=low
   * fix manual to include correct version and date
-  
+
  -- Keith Packard <keithp@keithp.com>  Thu, 27 May 2004 23:40:13 -0700
- 
+
 nickle (2.37-1) unstable; urgency=low
   * Negative left shifts gave off-by-one often (need ceil, not round)
   * 30-bit integer add/subtract overflow detection broken.
@@ -442,10 +442,9 @@ nickle (2.28-1) unstable; urgency=low
   * Add ilog function (Bart Massey)
 
  -- Keith Packard <keithp@keithp.com>  Thu, 26 Feb 2004 21:15:05 -0800
- 
+
 nickle (2.27-1) unstable; urgency=low
 
-  * Original debian packaging exporting version 2.27.  
+  * Original debian packaging exporting version 2.27.
 
  -- Keith Packard <keithp@keithp.com>  Sun, 15 Feb 2004 13:56:38 -0800
-

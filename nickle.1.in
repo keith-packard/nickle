@@ -343,7 +343,7 @@ the File and Thread ADTs: see below.
 .LP
 .B "More About Types:"
 .PP
-\fINickle\fP supports polymorphic data: As an expresion is evaluated, a
+\fINickle\fP supports polymorphic data: As an expression is evaluated, a
 data type is chosen to fit the result.  Any Nickle object may be
 statically typed, in which case bounds violations will be flagged as errors
 at compile time.
@@ -1262,7 +1262,7 @@ below, and the discussion of Command::library_path above.
 Print expr1 in base expr2 .
 .IP "print NAME"
 Display a formatted version of the object denoted by NAME.
-Comments and original formating are lost.
+Comments and original formatting are lost.
 If NAME is a variable, print the type as well as the value.
 .IP "edit NAME"
 Invoke $EDITOR on the named object, and

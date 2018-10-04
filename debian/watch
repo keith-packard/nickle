@@ -1,0 +1,3 @@
+version=4
+https://nickle.org/release/ \
+    @PACKAGE@@ANY_VERSION@@ARCHIVE_EXT@ debian uupdate

@@ -163,7 +163,6 @@ void check_e()
 void check_exp()
 {
 	for (int prec = 10; prec <= 1000; prec *= 10) {
-		printf ("prec %d\n", prec);
 		real eval = Math::e_value(1000);
 		for (int x = 0; x < 100; x++) {
 			real expx = exp(imprecise(x, prec));

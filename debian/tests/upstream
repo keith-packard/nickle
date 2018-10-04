@@ -1,0 +1,5 @@
+#!/bin/sh
+cd test
+for i in *.5c; do
+	nickle "$i" || exit 1
+fi

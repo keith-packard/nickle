@@ -2,6 +2,7 @@ Source: nickle
 Section: interpreters
 Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
+Homepage: https://nickle.org
 Build-Depends: debhelper (>= 10), libreadline-dev, docbook-utils, bison, flex
 Standards-Version: 4.1.1
 

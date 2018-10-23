@@ -1,5 +1,5 @@
 #!/bin/sh
-cd test
-for i in *.5c; do
-	nickle "$i" || exit 1
-fi
+cd /usr/share/nickle/test > /dev/null
+for test in *.5c; do
+    nickle $test || exit 1
+done

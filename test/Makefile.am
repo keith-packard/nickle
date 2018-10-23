@@ -16,9 +16,15 @@ check_SCRIPTS=\
 	jsontest.5c \
 	datetest.5c
 
-noinst_PROGRAMS=math-tables
-
 TABLES=math-tables.5c
+
+# Install test files so they can be run later
+
+testdir=$(pkgdatadir)/test
+
+test_DATA=$(check_SCRIPTS) $(TABLES)
+
+noinst_PROGRAMS=math-tables
 
 CLEANFILES=$(TABLES)
 

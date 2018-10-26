@@ -1444,10 +1444,6 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 	break;
     default:
 	dim = 1;
-	if (expr->tree.left->base.tag == DOTDOTDOT)
-	    return False;
-	if (ndims != 1)
-	    CompileSizeDimensions (expr, dims + 1, ndims - 1);
 	break;
     }
     if (dim > *dims)

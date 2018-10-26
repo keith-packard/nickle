@@ -416,7 +416,7 @@ ThreadArrayIndex (Value array, Value thread, int ndim,
  * array, so the task is just to copy that first element to the end
  * of the dimension.
  */
- 
+
 static void
 ThreadArrayReplicate (Value thread, Value array, int dim, int start)
 {
@@ -425,15 +425,22 @@ ThreadArrayReplicate (Value thread, Value array, int dim, int start)
     int		total;
     Value	*elements;
 
-    assert (!array->array.resizable);
     for (i = 0; i < dim; i++)
 	dimsize *= ArrayDims(&array->array)[i];
     start = start - dimsize;
     total = ArrayDims(&array->array)[dim] * dimsize;
-    elements = BoxElements (array->array.u.fix);
-    for (i = start + dimsize; i % total; i += dimsize)
-	memmove (elements + i, elements + start,
-		 dimsize * sizeof (elements[0]));
+    if (array->array.resizable) {
+	for (i = start + dimsize; i % total; i += dimsize) {
+	    int j;
+	    for (j = 0; j < dimsize; j++)
+		ArrayValueSet(&array->array, i + j, ArrayValueGet(&array->array, start + j));
+	}
+    } else {
+	elements = BoxElements (array->array.u.fix);
+	for (i = start + dimsize; i % total; i += dimsize)
+	    memmove (elements + i, elements + start,
+		     dimsize * sizeof (elements[0]));
+    }
 }
 
 void

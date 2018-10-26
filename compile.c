@@ -1411,11 +1411,11 @@ CompileBuildArray (ObjPtr obj, ExprPtr expr, TypePtr type,
     RETURN (obj);
 }
 
-static Bool
+static void
 CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 {
     int	    dim;
-    
+
     if (!expr)
 	dim = 0;
     else switch (expr->base.tag) {
@@ -1424,8 +1424,10 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 	expr = expr->tree.left;
 	while (expr)
 	{
-	    if (expr->tree.left->base.tag == DOTDOTDOT)
-		return False;
+	    if (expr->tree.left->base.tag == DOTDOTDOT) {
+		dim = -dim;
+		break;
+	    }
 	    if (ndims != 1)
 	    {
 		CompileSizeDimensions (expr->tree.left, dims + 1, ndims - 1);
@@ -1438,7 +1440,8 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 	}
 	break;
     case COMP:
-	return False;
+	dim = -1;
+	break;
     case ANONINIT:
 	dim = 0;
 	break;
@@ -1446,9 +1449,8 @@ CompileSizeDimensions (ExprPtr expr, int *dims, int ndims)
 	dim = 1;
 	break;
     }
-    if (dim > *dims)
+    if (abs(dim) > *dims || dim > *dims)
 	*dims = dim;
-    return True;
 }
 
 static ExprPtr
@@ -1458,13 +1460,15 @@ CompileImplicitArray (ObjPtr obj, ExprPtr stat, ExprPtr inits, int ndim)
     ExprPtr sub;
     int	    *dims;
     int	    n;
-    
+
     dims = AllocateTemp (ndim * sizeof (int));
     memset (dims, '\0', ndim * sizeof (int));
-    if (!CompileSizeDimensions (inits, dims, ndim))
-    {
-	CompileError (obj, stat, "Implicit dimensioned array with variable initializers");
-	RETURN (0);
+    CompileSizeDimensions (inits, dims, ndim);
+    for (n = 0; n < ndim; n++) {
+	if (dims[n] < 0) {
+	    CompileError (obj, stat, "Implicit dimensioned array with variable initializers");
+	    RETURN (0);
+	}
     }
     sub = 0;
     for (n = ndim - 1; n >= 0; n--)
@@ -1589,6 +1593,9 @@ CompileArrayInits (ObjPtr obj, ExprPtr expr, TypePtr type,
 	    }
 	    break;
 	case ANONINIT:
+	    break;
+	case COMP:
+	    CompileError (obj, stat, "Comprehension not valid for nested array initializer");
 	    break;
 	default:
 	    CompileError (obj, stat, "Not enough initializer dimensions");
@@ -1831,7 +1838,7 @@ CompileArrayInit (ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr co
 	    if (ndim > ninitdim ||
 		(ndim < ninitdim && TypeCanon(sub)->base.tag != type_array))
 	    {
-		CompileError (obj, stat, "Array dimension mismatch %d != %d\n",
+		CompileError (obj, stat, "Array dimension mismatch %d != %d",
 			      ndim, ninitdim);
 		RETURN (obj);
 	    }

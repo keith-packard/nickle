@@ -93,7 +93,7 @@ IoFini (void)
     FileClose (FileStderr);
 }
 
-Value   FileStdin, FileStdout, FileStderr;
+BoxPtr   FileStdinBox, FileStdoutBox, FileStderrBox;
 
 Bool
 IoTimeout (void *closure)
@@ -145,17 +145,23 @@ IoNoticeReadBlocked (void)
 }
 #endif
 
+static BoxPtr
+IoMakeFile(int fd, int flags)
+{
+    BoxPtr	box = NewBox(False, False, 1, typePrim[rep_file]);
+    MemAddRoot(box);
+    BoxValueSet(box, 0, FileCreate(fd, flags));
+    return box;
+}
+
 void
 IoInit (void)
 {
     ENTER ();
     catchSignal (SIGIO, sigio);
-    FileStdin = FileCreate (0, FileReadable);
-    FileStdout = FileCreate (1, FileWritable);
-    FileStderr = FileCreate (2, FileWritable);
-    MemAddRoot (FileStdin);
-    MemAddRoot (FileStdout);
-    MemAddRoot (FileStderr);
+    FileStdinBox = IoMakeFile(0, FileReadable);
+    FileStdoutBox = IoMakeFile(1, FileWritable);
+    FileStderrBox = IoMakeFile(2, FileWritable);
     IoStart ();
     EXIT ();
 }

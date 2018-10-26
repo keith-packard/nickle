@@ -1237,7 +1237,11 @@ void	FileSetBuffer (Value file, int buf);
 extern Bool	anyFileWriteBlocked;
 extern Bool	anyPipeReadBlocked;
 
-extern Value    FileStdin, FileStdout, FileStderr;
+extern BoxPtr	FileStdinBox, FileStdoutBox, FileStderrBox;
+
+#define FileStdin	BoxValueGet(FileStdinBox, 0)
+#define FileStdout	BoxValueGet(FileStdoutBox, 0)
+#define FileStderr	BoxValueGet(FileStderrBox, 0)
 
 typedef Value	(*BinaryFunc) (Value, Value);
 typedef Value	(*UnaryFunc) (Value);

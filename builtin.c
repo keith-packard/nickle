@@ -45,9 +45,9 @@ static const struct envbuiltin envvars[] = {
 };
 
 static const struct filebuiltin fvars[] = {
-    { "stdin",	&FileStdin },
-    { "stdout",	&FileStdout },
-    { "stderr",	&FileStderr },
+    { "stdin",	&FileStdinBox },
+    { "stdout",	&FileStdoutBox },
+    { "stderr",	&FileStderrBox },
     { 0,	0 },
 };
 
@@ -122,6 +122,18 @@ BuiltinSymbol (NamespacePtr *namespacep,
     RETURN (BuiltinAddName (namespacep, 
 			    NewSymbolGlobal (AtomId (string),
 					     type)));
+}
+
+static SymbolPtr
+BuiltinSymbolValue(NamespacePtr *namespacep,
+		   char	    *string,
+		   Type	    *type,
+		   BoxPtr   value)
+{
+    ENTER ();
+    RETURN (BuiltinAddName (namespacep, 
+			    NewSymbolGlobalValue (AtomId (string),
+						  value)));
 }
 
 static Type *typeUserdef[100];
@@ -376,8 +388,7 @@ BuiltinInit (void)
 
     /* Import File objects with predefined values */
     for (f = fvars; f->name; f++) {
-	sym = BuiltinSymbol (f->namespace, f->name, typePrim[rep_file]);
-	BoxValueSet (sym->global.value, 0, *f->value);
+	sym = BuiltinSymbolValue (f->namespace, f->name, typePrim[rep_file], *f->box);
     }
 
     /* Import int objects with predefined values */

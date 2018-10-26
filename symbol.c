@@ -127,6 +127,22 @@ NewSymbolGlobal (Atom name, Type *type)
 }
 
 SymbolPtr
+NewSymbolGlobalValue (Atom name, BoxPtr value)
+{
+    ENTER ();
+    SymbolPtr	s;
+
+    s = ALLOCATE (&SymbolGlobalType, sizeof (SymbolGlobal));
+    s->symbol.next = 0;
+    s->symbol.name = name;
+    s->symbol.class = class_global;
+    s->symbol.type = value->u.type;
+    s->symbol.forward = False;
+    s->global.value = value;
+    RETURN (s);
+}
+
+SymbolPtr
 NewSymbolArg (Atom name, Type *type)
 {
     ENTER ();

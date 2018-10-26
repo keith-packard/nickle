@@ -91,7 +91,7 @@ struct ibuiltin {
 
 struct filebuiltin {
     char	    *name;
-    Value   	    *value;
+    BoxPtr	    *box;
     NamespacePtr    *namespace;
 };
 

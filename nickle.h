@@ -71,6 +71,7 @@ extern SymbolPtr    NewSymbolType (Atom name, Type *type);
 extern SymbolPtr    NewSymbolException (Atom name, Type *type, Value doc);
 extern SymbolPtr    NewSymbolConst (Atom name, Type *type);
 extern SymbolPtr    NewSymbolGlobal (Atom name, Type *type);
+extern SymbolPtr    NewSymbolGlobalValue (Atom name, BoxPtr value);
 extern SymbolPtr    NewSymbolArg (Atom name, Type *type);
 extern SymbolPtr    NewSymbolStatic (Atom name, Type *Rep);
 extern SymbolPtr    NewSymbolAuto (Atom name, Type *type);

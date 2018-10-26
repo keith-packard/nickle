@@ -6,6 +6,7 @@ check_SCRIPTS=\
 	orderofoptest.5c \
 	rattest.5c \
 	reftest.5c \
+	arraytest.5c \
 	modtest.5c \
 	hashtest.5c \
 	signal.5c \

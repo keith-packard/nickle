@@ -101,8 +101,8 @@ main (int argc, char **argv)
     (void) ignoreSignal (SIGPIPE);
     (void) catchSignal (SIGTERM, die);
     (void) catchSignal (SIGTSTP, stop);
-    (void) catchSignal (SIGTTIN, stop);
-    (void) catchSignal (SIGTTOU, stop);
+    (void) ignoreSignal (SIGTTIN);
+    (void) ignoreSignal (SIGTTOU);
     stdin_interactive = isatty(0);
     init ();
     setArgv (argc - 1, argv + 1);
@@ -180,22 +180,26 @@ stop (int sig)
     sigset_t	set, oset;
 
 #if HAVE_RL_CLEANUP_AFTER_SIGNAL
-    printf ("stop %d\n", stdin_in_readline);
-    if (stdin_in_readline)
+    if (stdin_in_readline) {
+	rl_echo_signal_char(sig);
 	rl_cleanup_after_signal();
+    }
 #endif
-    sigfillset (&set);
-    sigprocmask (SIG_SETMASK, &set, &oset);
+
     IoStop ();
     releaseSignal (sig);
-    sigfillset (&set);
-    sigdelset (&set, sig);
-    sigprocmask (SIG_SETMASK, &set, &set);
-    kill (getpid(), sig);
-    sigprocmask (SIG_SETMASK, &oset, &set);
-    IoStart ();
+    killpg (0, sig);
+    sigemptyset(&set);
+    sigaddset(&set, sig);
+    sigprocmask (SIG_UNBLOCK, &set, &oset);
+
+    /* stopped ... */
+
+    sigprocmask (SIG_SETMASK, &oset, NULL);
     catchSignal (sig, stop);
-#if HAVE_RL_RESET_AFTER_SIGNAL
+    IoStart ();
+
+#if HAVE_RL_CLEANUP_AFTER_SIGNAL
     if (stdin_in_readline)
 	rl_reset_after_signal();
 #endif
@@ -204,11 +208,13 @@ stop (int sig)
 void
 die (int sig)
 {
-    IoStop ();
 #if HAVE_RL_CLEANUP_AFTER_SIGNAL
-    if (stdin_in_readline)
+    if (stdin_in_readline) {
+	rl_free_line_state();
 	rl_cleanup_after_signal();
+    }
 #endif
+    IoStop ();
     _exit (sig);
 }
 

@@ -1,3 +1,13 @@
+nickle (2.84-1) unstable; urgency=medium
+
+  * Correct crash compiling implicit sized arrays with mismatching
+    init dimensionality. Closes: #911926.
+  * Fix SIGTSTP handling to work in more cases, including under dash
+    and when run as other than the process group leader.
+  * Ignore '_' in numeric values, permitting its use as a separator.
+
+ -- Keith Packard <keithp@keithp.com>  Fri, 26 Oct 2018 13:36:57 -0700
+
 nickle (2.83-1) unstable; urgency=medium
 
   * Include debian/source/format in tarball

@@ -562,74 +562,74 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 			REFERENCE (yylval.value);
 			return STRING_CONST;
 		}
-0[0-7]*		{
+0[0-7_]*		{
 		yylval.value = atov(yytext+1, 8);
 		if (yytext[1] == '\0')
 		    return TEN_NUM;
 	        else
 		    return OCTAL0_NUM;
 		}
-0o[0-7]+	{
+0o[0-7_]+	{
 		yylval.value = atov(yytext+2, 8);
 		return OCTAL_NUM;
 		}
-0o[0-7]+\./\.\.\.   {
+0o[0-7_]+\./\.\.\.   {
 		yylval.value = aetov(yytext+2, 8);
 		return OCTAL_FLOAT;
 		}
-0o[0-7]+/\.\.	{
+0o[0-7_]+/\.\.	{
 		yylval.value = atov(yytext+2, 8);
 		return OCTAL_NUM;
 		}
-0o(([0-7]+((\.[0-7]*(\{[0-7]+\})?)?))|(\.[0-7]+)|(\.[0-7]*\{[0-7]+\}))(([Ee][-+]?[0-7]+)?) {
+0o(([0-7_]+((\.[0-7_]*(\{[0-7_]+\})?)?))|(\.[0-7_]+)|(\.[0-7_]*\{[0-7_]+\}))(([Ee][-+]?[0-7_]+)?) {
 		yylval.value = aetov (yytext+2, 8);
 		return OCTAL_FLOAT;
 		}
-0b[01]+		{
+0b[01_]+		{
 		yylval.value = atov(yytext+2, 2);
 		return BINARY_NUM;
 		}
-0b[0-1]+\./\.\.\.   {
+0b[01_]+\./\.\.\.   {
 		yylval.value = aetov(yytext+2, 2);
 		return BINARY_FLOAT;
 		}
-0b[0-1]+/\.\.	{
+0b[01_]+/\.\.	{
 		yylval.value = atov(yytext+2, 2);
 		return BINARY_NUM;
 		}
-0b(([0-1]+((\.[0-1]*(\{[0-1]+\})?)?))|(\.[0-1]+)|(\.[0-1]*\{[0-1]+\}))(([Ee][-+]?[0-1]+)?) {
+0b(([01_]+((\.[01_]*(\{[01_]+\})?)?))|(\.[01_]+)|(\.[01_]*\{[01_]+\}))(([Ee][-+]?[01_]+)?) {
 		yylval.value = aetov (yytext+2, 2);
 		return BINARY_FLOAT;
 		}
-0x[0-9a-fA-F]+	{
+0x[0-9a-fA-F_]+	{
 		yylval.value = atov(yytext+2, 16);
 		return HEX_NUM;
 		}
-0x[0-9a-fA-F]+\./\.\.\.   {
+0x[0-9a-fA-F_]+\./\.\.\.   {
 		yylval.value = aetov(yytext+2, 16);
 		return HEX_FLOAT;
 		}
-0x[0-9a-fA-F]+/\.\.	{
+0x[0-9a-fA-F_]+/\.\.	{
 		yylval.value = atov(yytext+2, 16);
 		return HEX_NUM;
 		}
-0x(([0-9a-fA-F]+((\.[0-9a-fA-F]*(\{[0-9a-fA-F]+\})?)?))|(\.[0-9a-fA-F]+)|(\.[0-9a-fA-F]*\{[0-9a-fA-F]+\}))(([Ee][-+]?[0-9a-fA-F]+)?) {
+0x(([0-9a-fA-F_]+((\.[0-9a-fA-F_]*(\{[0-9a-fA-F_]+\})?)?))|(\.[0-9a-fA-F_]+)|(\.[0-9a-fA-F_]*\{[0-9a-fA-F_]+\}))(([Ee][-+]?[0-9a-fA-F_]+)?) {
 		yylval.value = aetov (yytext+2, 16);
 		return HEX_FLOAT;
 		}
-[0-9]+		{
+[0-9][0-9_]*		{
 		yylval.value = atov(yytext, 10);
 		return TEN_NUM;
 		}
-[0-9]+\./\.\.\.	{
+[0-9][0-9_]*\./\.\.\.	{
 		yylval.value = aetov(yytext, 10);
 		return TEN_FLOAT;
 		}
-[0-9]+/\.\.	{
+[0-9][0-9_]*/\.\.	{
 		yylval.value = atov(yytext, 10);
 		return TEN_NUM;
 		}
-(([0-9]+((\.[0-9]*(\{[0-9]+\})?)?))|(\.[0-9]+)|(\.[0-9]*\{[0-9]+\}))(([Ee][-+]?[0-9]+)?) {
+(([0-9][0-9_]*((\.[0-9_]*(\{[0-9_]+\})?)?))|(\.[0-9][0-9_]*)|(\.([0-9][0-9_]*)?\{[0-9_]+\}))(([Ee][-+]?[0-9_]+)?) {
 		yylval.value = aetov (yytext, 10);
 		return TEN_FLOAT;
 		}
@@ -788,6 +788,8 @@ atov (char *s, int base)
 	    i = c - 'a' + 10;
 	else if ('A' <= c && c <= 'Z')
 	    i = c - 'A' + 10;
+	else if (c == '_')
+	    continue;
 	else
 	    break;
 	if (i >= base)
@@ -797,12 +799,47 @@ atov (char *s, int base)
     RETURN (result);
 }
 
+static char *
+scan_number(char *s, char needle, int *lenp)
+{
+    int len = 0;
+    for (;;) {
+	char c = *s;
+	if (tolower(c) == needle)
+	    break;
+	switch (c) {
+	case '\0':
+	    return NULL;
+	case '_':
+	    break;
+	default:
+	    len++;
+	    break;
+	}
+	s++;
+    }
+    if (lenp)
+	*lenp = len;
+    return s;
+}
+
+static int
+number_len(char *s)
+{
+    int len = 0;
+    char c;
+    while ((c = *s++))
+	if (c != '_')
+	    len++;
+    return len;
+}
+
 Value
 aetov (char *s, int base)
 {
     ENTER ();
     char    *int_part, *frac_part, *rep_part, *exp_part, *next;
-    int	    sign, frac_len, rep_len, esign;
+    int	    sign, int_len = -1, frac_len = -1, rep_len = -1, exp_frac_len = -1, esign;
     Value   v, sv;
 
     int_part = s;
@@ -814,7 +851,7 @@ aetov (char *s, int base)
 	sign = -1;
     }
     next = int_part;
-    frac_part = strchr (next, '.');
+    frac_part = scan_number(next, '.', &int_len);
     frac_len = -1;
     rep_part = 0;
     rep_len = 0;
@@ -822,24 +859,20 @@ aetov (char *s, int base)
     if (frac_part) {
 	frac_part++;
 	next = frac_part;
-	rep_part = strchr (next, '{');
+	rep_part = scan_number(next, '{', &frac_len);
 	if (rep_part)
 	{
-	    frac_len = rep_part - frac_part;
 	    rep_part++;
-	    next = strchr (rep_part, '}');
+	    next = rep_part;
+	    next = scan_number(next, '}', &rep_len);
 	    if (!next)
-		RETURN (Void);	    /* "can't" happen */
-	    rep_len = next - rep_part;
-	    next = next + 1;
+		RETURN(Void);	/* can't happen */
 	}
     }
-    exp_part = strchr (next, 'e');
-    if (!exp_part)
-	exp_part = strchr (next, 'E');
+    exp_part = scan_number(next, 'e', &exp_frac_len);
     if (exp_part) {
 	if (frac_len < 0)
-	    frac_len = exp_part - frac_part;
+	    frac_len = exp_frac_len;
 	exp_part++;
 	if (*exp_part == '+')
 	    exp_part++;
@@ -848,7 +881,7 @@ aetov (char *s, int base)
 	    exp_part++;
 	}
     } else if (frac_len < 0 && frac_part)
-	frac_len = strlen(frac_part);
+	frac_len = number_len(frac_part);
     v = atov (int_part, base);
     if (frac_part)
     {
@@ -859,7 +892,7 @@ aetov (char *s, int base)
     if (rep_part)
     {
 	Value	rep;
-	
+
 	rep = Divide (atov (rep_part, base), Minus (Pow (NewInt (base),
 						       NewInt (rep_len)),
 						  One));
@@ -868,7 +901,7 @@ aetov (char *s, int base)
 				    NewInt (frac_len)));
 	v = Plus (v, rep);
     }
-    if (exp_part) 
+    if (exp_part)
     {
 	sv = Pow (NewInt (base), atov (exp_part, base));
 	if (esign > 0)

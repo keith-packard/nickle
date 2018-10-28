@@ -562,12 +562,13 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 			REFERENCE (yylval.value);
 			return STRING_CONST;
 		}
-0[0-7_]*		{
+0		{
+		yylval.value = Zero;
+		return TEN_NUM;
+		}
+0[0-7_]+	{
 		yylval.value = atov(yytext+1, 8);
-		if (yytext[1] == '\0')
-		    return TEN_NUM;
-	        else
-		    return OCTAL0_NUM;
+		return OCTAL0_NUM;
 		}
 0o[0-7_]+	{
 		yylval.value = atov(yytext+2, 8);
@@ -913,4 +914,3 @@ aetov (char *s, int base)
 	v = Negate (v);
     RETURN (v);
 }
-

@@ -14,8 +14,6 @@ AC_CONFIG_AUX_DIR(.)
 
 AM_INIT_AUTOMAKE([foreign])
 
-AM_MAINTAINER_MODE
-
 AC_SUBST([RELEASE_DATE])
 dnl Checks for programs.
 AC_PROG_CC

@@ -919,8 +919,9 @@ FileStringWrite (void)
 static char *
 write_chain(char *s, FileChainPtr out)
 {
-    if (out->next)
-	s = write_chain(s, out->next);
+    if (!out)
+	return s;
+    s = write_chain(s, out->next);
     memcpy(s, FileBuffer(out), out->used);
     return s + out->used;
 }

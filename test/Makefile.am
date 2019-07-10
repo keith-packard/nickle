@@ -15,7 +15,8 @@ check_SCRIPTS=\
 	factorial.5c \
 	is_type.5c \
 	jsontest.5c \
-	datetest.5c
+	datetest.5c \
+	string-file.5c
 
 TABLES=math-tables.5c
 

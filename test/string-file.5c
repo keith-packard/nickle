@@ -1,0 +1,20 @@
+/*
+ * Nickle test suite
+ *
+ * string I/O tests
+ */
+
+exception bad_result (poly want, poly got);
+
+void check(poly want, poly got)
+{
+    if (want != got)
+	raise bad_result(want, got);
+}
+
+check("", File::string_string(File::string_write()));
+
+file f = File::string_write();
+File::fprintf(f, "hello, world");
+check("hello, world", File::string_string(f));
+

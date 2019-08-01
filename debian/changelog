@@ -1,3 +1,9 @@
+nickle (2.85-1) unstable; urgency=medium
+
+  * Fix crash when File::string_string is passed an empty buffer
+
+ -- Keith Packard <keithp@keithp.com>  Wed, 31 Jul 2019 22:20:44 -0700
+
 nickle (2.84-1) unstable; urgency=medium
 
   * Correct crash compiling implicit sized arrays with mismatching

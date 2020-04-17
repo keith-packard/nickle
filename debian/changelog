@@ -1,3 +1,10 @@
+nickle (2.86) unstable; urgency=medium
+
+  * Fix exp() of small values. They were rounding to zero
+  * Stop depending on 'common' semantics in file.c. Closes: #957611.
+
+ -- Keith Packard <keithp@keithp.com>  Fri, 17 Apr 2020 09:56:33 -0700
+
 nickle (2.85-1) unstable; urgency=medium
 
   * Fix crash when File::string_string is passed an empty buffer

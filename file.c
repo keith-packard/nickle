@@ -29,7 +29,7 @@
 
 ReferencePtr	fileBlockedReference;
 Value		fileBlocked;
-Bool		stdinOwned, stdinPolling;
+extern Bool	stdinOwned, stdinPolling;
 #ifdef NO_PIPE_SIGIO
 Bool		anyPipeReadBlocked;
 #endif

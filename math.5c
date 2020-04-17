@@ -218,18 +218,21 @@ extend namespace Math {
 	 * makes the expansion step more expensive.
 	 */
 	int prec = precision (v);
+	int expo = exponent (v);
 	int scale;
 	if (prec > 50)
 	    scale = 27;
 	else
 	    scale = 12;
+	if (expo + scale < 0)
+	    scale = -expo;
+	expo += scale;
 	int div = (1 << scale);
 
 	int iter = prec + 1;
 	int iprec = prec + iter;
 
 	real mant = imprecise (mantissa(v), iprec) / div;
-	int expo = exponent(v) + scale;
 
 	real e = imprecise (0, iprec);
 	real num = imprecise (1, iprec);
@@ -968,6 +971,9 @@ extend namespace Math {
 	 */
     {
 	real    result;
+	if (a == 0)
+	    return 0;
+
 	if (is_int (b))
 	{
 	    if (!is_int (a) && is_rational (a))

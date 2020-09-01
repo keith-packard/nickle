@@ -1,3 +1,10 @@
+nickle (2.87) unstable; urgency=medium
+
+  * Don't install Makefile and Makefile.in. Closes: #958110.
+  * pow(0,0) = 1
+
+ -- Keith Packard <keithp@keithp.com>  Sat, 18 Apr 2020 16:12:15 -0700
+
 nickle (2.86) unstable; urgency=medium
 
   * Fix exp() of small values. They were rounding to zero

@@ -20,3 +20,11 @@ export DH_VERBOSE=1
 override_dh_auto_install:
 	dh_auto_install && (find debian/nickle -name COPYING -print0 | xargs -0 rm)
 	find debian/nickle/usr/share/nickle -type f -print0 | xargs -0 grep -l '^#!.*nickle' | xargs -d '\n' chmod +x
+
+
+# These files are generated. Makefile includes absolute paths which
+# makes it not work on end-user machines, and cause the build to be
+# not reproducible.
+
+override_dh_installdocs:
+	dh_installdocs -XMakefile -XMakefile.in

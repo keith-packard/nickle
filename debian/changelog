@@ -1,3 +1,9 @@
+nickle (2.88) unstable; urgency=medium
+
+  * Switch tutorial to asciidoctor. Closes: #976535.
+
+ -- Keith Packard <keithp@keithp.com>  Mon, 14 Dec 2020 13:28:22 -0800
+
 nickle (2.87) unstable; urgency=medium
 
   * Don't install Makefile and Makefile.in. Closes: #958110.

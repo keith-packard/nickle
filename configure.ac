@@ -98,9 +98,9 @@ AC_CHECK_FUNCS(unsetenv setenv putenv gettimeofday hstrerror select)
 AC_CHECK_FUNCS(sigaction sigrelse sigignore setrlimit getrlimit)
 AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
 
-AC_PATH_PROGS([DOCBOOK2PDF],[docbook2pdf])
+AC_PATH_PROGS([ASCIIDOCTORPDF],[asciidoctor-pdf])
 
-AM_CONDITIONAL(HASDOCBOOK,test -n "$DOCBOOK2PDF")
+AM_CONDITIONAL(HASASCIIDOCTORPDF,test -n "$ASCIIDOCTORPDF")
 
 AC_FUNC_GETPGRP
 

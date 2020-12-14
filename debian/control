@@ -3,7 +3,7 @@ Section: interpreters
 Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
 Homepage: https://nickle.org
-Build-Depends: debhelper (>= 11), libreadline-dev, docbook-utils, bison, flex
+Build-Depends: debhelper (>= 11), libreadline-dev, ruby-asciidoctor-pdf, bison, flex
 Standards-Version: 4.2.1
 
 Package: nickle

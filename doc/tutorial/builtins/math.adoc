@@ -1,0 +1,101 @@
+
+= Math
+
+== Numbers
+
+The three numeric types in Nickle--int, rational, and real--have a hierarchical relationship.
+Specifically, int is a subset of rational, which is a subset of real.
+Ints and rationals are stored internally in infinite precision, and printed as precisely as possible (rationals with repeating portions are represented with curly braces to allow more precision in printing; see the section on Expressions for a discussion of rational constants). Reals are stored in finite, floating-point representations.
+The mantissa defaults to 256 bits long, but this number can be changed. 
+
+Whenever performing calculations, Nickle will keep numbers in their most specific format.
+For example, the result of '4/2' is an int, because although the result (2) is a rational, it is also an int, and int is more specific.
+Similarly, reals are not always in imprecise floating representation; if they are known exactly, they will be represented as rationals or ints.
+Nickle will only produce imprecise reals when it has to, as in square roots and logarithms. 
+
+== Operators
+
+In order to do the Right Thing for a desk calculator, Nickle provides several operators that are not present in C; these are extremely useful.
+To force division to produce an integer, even if the result would be a rational, use the '//' integer divide operator, which always rounds its results to ints.
+Nickle also has an exponentiation operator '**', which behaves correctly for all exponents, including negative and fractional.
+Therefore, sqrt(x) is the same as x**.5, and 1/x is the same as x**-1.
+Finally, it provides a factorial operator '!'. 
+
+== The Math namespace
+
+Nickle provides the builtin namespace Math for useful functions such as trigonometric functions, logarithms, as well as useful constants such as `pi` and ``e``. 
+
+=== Logarithms
+// <synopsis>
+// real log ( real a )
+// </synopsis>
+
+// <synopsis>
+// real log10 ( real a )
+// </synopsis>
+
+// <synopsis>
+// real log2 ( real a )
+// </synopsis>
+
+The logarithm of `a` in base e, ten, and two, respectively. 
+
+----
+
+$ nickle
+> log ( Math::e )
+1.000000000000000
+> log10 ( 16 ) / log10 ( 4 )    /* change of base formula, log_4 16 */
+1.999999999999999
+> log2 ( 16 )
+3.999999999999999
+>
+----
+
+=== Trigonometric functions
+// <synopsis>
+// real sin ( real a )
+// </synopsis>
+
+// <synopsis>
+// real cos ( real a )
+// </synopsis>
+
+// <synopsis>
+// real tan ( real a )
+// </synopsis>
+
+// <synopsis>
+// real asin ( real a )
+// </synopsis>
+
+// <synopsis>
+// real acos ( real a )
+// </synopsis>
+
+// <synopsis>
+// real atan ( real a )
+// </synopsis>
+
+The sine, cosine, and tangent of ``a``, and the inverse functions. 
+
+----
+
+$ nickle
+> sin ( pi ) ** 2 + cos ( pi ) **2
+1
+> atan ( 1 ) * 4
+3.141592653589793
+>
+----
+
+=== Constants
+// <synopsis>
+// protected real e
+// </synopsis>
+
+// <synopsis>
+// real pi
+// </synopsis>
+
+`pi` and `e` define the usual constants (3.14..., 2.72...). ``e`` is protected and must be called `Math::e` to allow ordinary use of the name ``e``. 

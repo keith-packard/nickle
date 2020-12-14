@@ -1,0 +1,68 @@
+
+= Nickle Continuations
+
+Arbitrary flow control is accomplished in Nickle with first-class continuations and the functions `setjmp` and ``longjmp``.
+These are similar to those in C, but without restrictions on the target. 
+// <synopsis>
+// poly setjmp ( continuation *c, poly retval )
+// </synopsis>
+
+// <synopsis>
+// void lomgjmp ( continuation c, poly retval )
+// </synopsis>
+
+Setjmp saves the state of the program, including program counter and names in scope, in `c` and returns ``retval``. 
+
+Longjmp returns `retval`__from the setjmp that set ``__c__``__.
+There can be two distinctions from this jump and the initial call to setjmp: the return value may differ, and variables that have changed retain their new values. 
+
+Continuations are often used to implement control structures that do not exist in the language, interpreters, and escaping from recursive algorithms.
+For example, the following is a simple binary tree search that uses continuations to jump directly to the top instead of returning up each branch once the result is found. 
+
+----
+
+typedef tree;
+
+typedef struct {
+        int key;
+        poly data;
+        &poly left, right;
+} tree;
+
+void function search ( tree t, int i, &continuation c ) {
+        if ( i < t.key && ! is_void ( t.left ) )
+                search ( t.left, i, &c );
+        else if ( i > t.key && ! is_void ( t.right ) )
+                search ( t.right, i, &c );
+        else if ( i == t.key )
+                longjmp ( c, t.data );
+}
+
+tree t = { key = 2, data = "blah", left = reference ( <> ), right = reference ( <> ) };
+
+continuation c;
+int i = 0;
+{
+        poly p = setjmp ( &c, <> );
+        ++i;
+        printf ( "I have been here %d times.\n", i );
+
+        if ( is_void ( p ) )
+                search ( t, 2, &c );
+        else
+                printf ( "value = %g\n", p );
+}
+
+----
+
+This is a pretty normal binary tree search, but notice how it is run: a continuation is set; if setjmp returns <> (which it will the first time), a value is searched for (this is a pretty degenerate example with only one node). If an actual value is returned, it must be from the longjmp in search, and the value is printed; a message is printed to emphasize that setjmp returns twice.
+This optimizes the return from what can be a very deeply nested search. 
+
+Notice that the last part of the code is inside curly braces.
+This is legal, of course, but ordinarily not very useful.
+It is used in this case to get around a slight flaw in Nickle: currently, each top-level command is executed in its own thread.
+Thus when longjmp tries to return from the setjmp, that thread has already finished and the program exits.
+By placing those statements in curly braces, they will all be executed in the same thread and setjmp will still exist for longjmp to find. 
+
+This sort of escape from a nested search is also commonly done with exceptions, raising one when the value is found and catching it at the top, passing the value as an argument to the exception.
+Actually, that method is more common because of its simplicity, but this example was done using continuations to demonstrate them.

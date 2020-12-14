@@ -1,0 +1,92 @@
+
+= Nickle Namespaces
+
+Namespaces collect related variable and function names and allow control over visibility.
+A number of Nickle builtins are gathered into builtin namespaces that may be used.
+The following builtin namespaces have sections in this tutorial: 
+
+* Math - Useful mathematical functions.
+* File - File input/output with the 'file' type.
+* Thread - Concurrent processing.
+* Semaphore and Mutex - Synchronization of threads.
+* String - Useful functions for strings.
+
+An example namespace might be declared like this: 
+
+----
+
+namespace Example {
+
+        int blah = 1;
+        public int a = 0;
+
+        int function bar(int a) {
+                ...
+        }
+        
+        protected int function foo(int a) {
+                ...
+        }
+
+}
+----
+
+The keyword `namespace` is followed by the name of the namespace and a list of statements that declare names in the namespace.
+The publication of those declarations, e.g. `public` or `protected` defines how visible they will be outside the namespace.
+The namespace itself may be preceeded by publication information, __but this has no bearing on the names within the namespace__; it defines the visibility of the name of the namespace.
+If the example above had been declared 
+
+----
+
+protected namespace Example {
+        ...
+}
+----
+Then the names within `Example` would have the same visibility as always, but `Example` itself would be protected in whatever namespace it belongs to.
+In this case, it belongs to the top-level namespace, but namespaces can be nested within each other, which makes the visibility of their own names important. 
+
+== Extend
+// <synopsis>
+// extend namespace <replaceable>name</replaceable> { <replaceable>statement-list</replaceable> }
+// </synopsis>
+
+Names may be added to a namespace after it is initially defined with the `extend` command.
+The namespace `name` is reopened and the new `statement-list` is added to the previous ones.
+For example, 
+
+----
+
+extend namespace Example {
+        string[*] greeting = [2]{ "hello", "world" };
+}
+----
+
+Adds `greeting` to the names already defined in ``Example``. 
+
+== Peering inside
+// <synopsis>
+// <replaceable>namespace</replaceable>::<replaceable>name</replaceable>
+// </synopsis>
+
+// <synopsis>
+// import <replaceable>namespace</replaceable>
+// </synopsis>
+
+The `::` operator refers to a [replaceable]``name``, which is in [replaceable]``namespace``, analogously to a structure dereference.
+If [replaceable]``name`` also refers to a namespace, its names too are visible this way.
+Either `protected` or `public` names are visible in this way. 
+
+An `import` statement brings all the public names in [replaceable]``namespace`` into scope, overshadowing conflicting names.
+Thereafter, those names may be used normally. 
+
+A variable is declared with one of three visibilities that defines how it is visible outside its namespace: 
+
+* "public" may be seen outside with `::` or imported
+* "protected" may be seen outside with `::` but not imported
+* if neither is specified, it may not be seen outside at all
+
+Thus, in our example namespace ``Example``: 
+
+* ``blah``, ``bar``, and `greeting` have no visibility specified and may only be used inside ``Example``.
+* both `a` (which is public) and `foo` (which is protected) may be seen with ``::``.
+* an `import` will only bring `a` into scope, as it is the only name that is public.

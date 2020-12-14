@@ -1,0 +1,262 @@
+
+= Control Statements in Nickle
+
+== Simple statements
+// <synopsis>
+// <replaceable>expr</replaceable>;
+// </synopsis>
+
+// <synopsis>
+// ; /* null statement */
+// </synopsis>
+
+// <synopsis>
+// { <replaceable>statement</replaceable> ... }
+// </synopsis>
+
+The simplest statement is merely an expression terminated by a semicolon; the expression is evaluated.
+A semicolon by itself is allowed but does nothing.
+One or more statements may be grouped inside curly braces to form one compound statement; each is executed in order.
+Any statements may compose the statement list, including control statements and other curly-bracketed lists. 
+
+== Conditionals
+// <synopsis>
+// if ( <replaceable>expr</replaceable> ) <replaceable>statement</replaceable>
+// </synopsis>
+
+// <synopsis>
+// else <replaceable>statement</replaceable>
+// </synopsis>
+
+`if` is used to execute a section of code only under some condition: If [replaceable]``expr`` is true, [replaceable]``statement`` is executed; otherwise control skips over it.
+For example: 
+
+----
+
+if ( x == 0 )
+        printf ( "x is zero.\n" );
+----
+
+In this case, the message will be printed only if `x` is zero. 
+
+`else` allows for a choice if the condition fails.
+It executes its [replaceable]``statement`` if the most recent `if` or `twixt` (see below) did not.
+For example, 
+
+----
+
+if ( x == 0 )
+        printf ( "x is zero.\n" );
+else
+        printf ( "x is not zero.\n" );
+----
+
+More than one option may be presented by nesting further 'if's in 'else' statements like this: 
+
+----
+
+if ( x == 0 )
+        printf ( "x is zero.\n" );
+else if ( x  0 )
+        printf ( "x is negative.\n" );
+else
+        printf ( "x is positive.\n" );
+----
+
+== Twixt
+// <synopsis>
+// twixt ( <replaceable>expr</replaceable>; <replaceable>expr</replaceable> ) <replaceable>statement</replaceable>
+// </synopsis>
+
+Ensures that the the first [replaceable]``expr`` will always have been evaluated whenever control flow passes into any part of [replaceable]``statement`` and ensures that the second [replaceable]``expr`` will be evaluated anytime control flow passes out of [replaceable]``statement``. __That order is gauranteed__.
+If a `long_jmp` target is inside [replaceable]``statement``, the first [replaceable]``expr`` will be executed before control passes to the target.
+If [replaceable]``statement`` throws an exception or ``long_jmp``s out of the ``twixt``, the second [replaceable]``expr`` will be evaluated.
+Thus, `twixt` is useful in locked operations where the statement should only be executed under a lock and that lock must be released afterwards. 
+
+----
+
+twixt ( get_lock ( ); release_lock ( ) )
+        locked_operation ( );
+----
+
+== Switch
+// <synopsis>
+// switch ( <replaceable>expr</replaceable> ) { case <replaceable>expr</replaceable>: <replaceable>statement-list</replaceable> ... default: <replaceable>statement-list</replaceable> }
+// </synopsis>
+
+Control jumps to the first `case` whose [replaceable]``expr`` evaluates to the same value as the [replaceable]``expr`` at the top.
+Unlike in C, these values do not have to be integers, or even constant.
+The optional case `default` matches any value.
+If nothing is matched and there is no ``default``, control skips the `switch` entirely.
+This example prints out a number to the screen, replacing it by a letter as though it were a poker card: 
+
+----
+
+switch ( x ) {
+        case 1:
+                printf ( "A\n" );       /* ace */
+                break;
+        case 11:
+                printf ( "J\n" );       /* jack */
+                break;
+        case 12:
+                printf ( "Q\n" );       /* queen */
+                break;
+        case 13:
+                printf ( "K\n" );       /* king */
+                break;
+        default:
+                printf ( "%d\n", x );   /* numeric */
+                break;
+}
+----
+
+Notice the ``break``s in the example.
+Once control jumps to the matching case, it continues normally: Upon exhausting that [replaceable]``statement-list``, __it does not jump out of the ``__switch__``__; it continues through the subsequent statement lists.
+Here is an example of this 'falling through': 
+
+----
+
+int x = 3;
+
+switch ( sign ( x ) ) {
+        case -1:
+                printf ( "x is negative.\n" );
+        case 1:
+                printf ( "x is positive.\n" );
+        default:
+                printf ( "x is zero.\n" );
+}
+----
+
+This prints: 
+
+----
+
+x is positive.
+x is zero.
+----
+
+Falling through may be desirable if several cases are treated similarly; however, it should be used sparingly and probably commented so it is clear you are doing it on purpose.
+This is a difficult error to catch. 
+
+== Union switch
+// <synopsis>
+// union switch ( <replaceable>union</replaceable> ) { case <replaceable>name</replaceable>: <replaceable>statement-list</replaceable> ... default: <replaceable>statement-list</replaceable> }
+// </synopsis>
+
+`union switch` is similar to ``switch``.
+It matches its ``case``s based on what name currently applies to the union's value.
+As always, `default` matches everything.
+The following example chooses the best way to print the union: 
+
+----
+
+union {
+        int a;
+        string b;
+} u;
+
+u.b = "hello";
+
+union switch ( u ) {
+        case a:
+                printf ( "%d\n", u.a );
+                break;
+        case b:
+                printf ( "%s\n", u.b );
+                break;
+}
+----
+
+In this case, it prints 'hello'. 
+
+An additional name may follow that of a case; the union's value will be available inside the case by that name.
+The switch above could have been written: 
+
+----
+
+union switch ( u ) {
+        case a num:
+                printf ( "%d\n", num );
+                break;
+        case b str:
+                printf ( "%s\n", str );
+                break;
+}
+----
+
+== Loops
+// <synopsis>
+// while ( <replaceable>expr</replaceable> ) <replaceable>statement</replaceable>
+// </synopsis>
+
+// <synopsis>
+// do <replaceable>statement</replaceable> while ( <replaceable>expr</replaceable> )
+// </synopsis>
+
+// <synopsis>
+// for ( <replaceable>expr</replaceable>; <replaceable>expr</replaceable>; <replaceable>expr</replaceable> ) <replaceable>statement</replaceable>
+// </synopsis>
+
+`while` executes [replaceable]``statement`` repeatedly as long as [replaceable]``expr`` is true.
+Control continues outside the loop when [replaceable]``expression`` becomes false.
+For example: 
+
+----
+
+int x = 0;
+while ( x  10 ) {
+        printf ( "%d\n", x );
+        ++x;
+}
+----
+
+This prints the numbers from zero to nine. 
+
+`do-while` is like ``while``, but tests the condition after each iteration rather than before.
+Thus, it is garaunteed to execute at least once.
+It is often used in input while testing for end-of-file: 
+
+----
+
+file f = File::open ( "test", "r" );
+
+do {
+        printf ( "%s\n", File::fgets ( f ) );
+} while ( ! end ( f ) );
+
+close ( f );
+----
+
+`for` begins by evaluating the first [replaceable]``expr``, which often initializes a counter variable; since declarations are expressions in Nickle, they may be used here and the counter will be local to the loop.
+Then it executes [replaceable]``statement`` as long as the second [replaceable]``expr`` is true, like ``while``.
+After each iteration, the third [replaceable]``expr`` is evaluated, which usually increments or decrements the counter variable.
+The `while` example above can also be written as the following `for` loop: 
+
+----
+
+for ( int x = 0; x  10; ++x )
+        printf ( "%d\n", x );
+----
+
+== Flow control
+// <synopsis>
+// continue
+// </synopsis>
+
+// <synopsis>
+// break
+// </synopsis>
+
+// <synopsis>
+// return <replaceable>expr</replaceable>
+// </synopsis>
+
+`continue` restarts the nearest surrounding ``do-while``, ``while``, or `for` loop by jumping directly to the conditional test.
+The iterative statement of a `for` loop will be evaluated first. 
+
+`break` leaves the nearest surrounding ``do-while``, ``while``, ``for``, or `switch` statement by jumping to its end.
+The iterative statement of a `for` loop will not be evaluated. 
+
+`return` returns from the nearest surrounding function with value [replaceable]``expr``. 

@@ -1,0 +1,257 @@
+
+= Nickle Expressions
+
+Expression types are listed in order of increasing precedence. 
+
+== Variable declarations
+
+Variable declarations are expressions in Nickle; the value of a declaration is the value of the last variable with an initialization expression.
+For example, 
+
+----
+
+> int val;
+> val = (int i=2, j=3);
+> print val
+global int val = 3;
+----
+
+If no initialization expressions are present, it is an error to use the value of the expression. 
+
+----
+
+> val = (int i,j);
+Unhandled exception "uninitialized_value" at <stdin>:73
+        "Uninitialized value"
+----
+
+Because they are expressions, declarations can be used in contructs such as: 
+
+----
+
+for (int i = 0; i  10; i++)
+{
+        
+}
+----
+
+== Anonymous function declarations
+
+Functions may be declared anonymously and used immediately, e.g. 
+
+----
+
+> (int func ( int a, int b ) { return a + b; })(2,3)
+5
+----
+
+Any context available to the function at definition time will be available whenever it is executed.
+See Storage classes in the section on Variables. 
+
+== Binary operators
+
+Addition::
+`a + b`
+
+Subtraction::
+`a - b`
+
+Multiplication::
+`a * b`
+
+Division, Integer division::
+`a / b` +
+`a // b`
+
+Remainder::
+`a % b`
+
+Exponentiation::
+`a ** b`
+
+Left shift, Right shift::
+`a << b` +
+`a >> b`
+
+Binary xor, Binary and, Binary or::
+`a ^ b` +
+`a & b` +
+`a | b`
+
+Boolean and, Boolean or::
+`a && b` +
+`a || b`
+
+Equal, Not equal::
+`a == b` +
+`a != b`
+
+Less than, Less than or equal to::
+`a < b` +
+`a <= b`
+
+Greater than, Greater than or equal to::
+`a > b` +
+`a >= b`
+
+Assignment::
+`a = b`
+
+Assignment with operator::
+`a += b` +
+`a -= b` +
+`a *= b` +
+`a /= b` +
+`a //= b` +
+`a %= b` +
+`a **= b` +
+`a >>= b` +
+`a <<= b` +
+`a ^= b` +
+`a &= b` +
+`a |= b`
+
+== Unary operators
+
+Dereference:::
+`* a`
+
+Reference:::
+`& a`
+
+Negation:::
+`- a`
+
+Bitwise inverse:::
+`~ a`
+
+Logical not:::
+`! a`
+
+Factorial:::
+`a !`
+
+Increment:::
+`++a` +
+`a++`
+
+Decrement:::
+`--a` +
+`a--`
+
+== Constants
+
+=== Integer constants
+
+Integer constants with a leading zero are interpreted in octal, with a leading 0x in hex-decimal and with a leading 0b in binary.
+Here are some examples: 
+
+----
+
+12      /* 12, decimal */
+014     /* 12, octal */
+0xc     /* 12, hex */
+0b1100  /* 12, binary */
+----
+
+=== Rational constants
+
+Rational constants are the combination of an integer part, a mantissa with an initial and repeating part, and an exponent.
+All of these pieces are optional, but at least one of the parts (other than the exponent) must be present.
+If no fractional part is given, the resulting type of the value is int rather than rational.
+Some examples: 
+
+----
+
+> 12
+12
+> 12.5
+12.5
+> .34
+0.34
+> .{56}
+0.{56}
+> .34e3
+340
+> .{56}e12
+565656565656.{56}
+----
+
+=== String constants
+
+String constants are surrounded in double quotes, e.g.  `"hello,
+world"`. Characters preceded by a backslash stand for themselves,
+including double-quote (`"`) and blackslash (`\`). The following
+backslashed characters are special:
+
+* \n is newline
+* \r is carriage return
+* \b is backspace
+* \t is tab
+* \f is formfeed
+
+
+== Variables
+
+The name of a variable is replaced by the value of that variable in
+expressions.  If the name is of a pointer, preceding it with the `*`
+dereference operator yields the value of its target.
+
+== Struct and union references
+
+The construct 
+
+----
+
+struct.name
+----
+yields the element [replaceable]``name`` of the struct or union [replaceable]``struct``.
+To retrieve elements from a struct or union pointer, as in C, use 
+
+----
+
+struct->name
+----
+
+== Array references
+
+----
+
+arr[expr]
+
+arr[expr,expr,...,expr]
+----
+
+Elements of an array are indexed with square braces.  Elements of
+multidimensional arrays have indices in each dimension as in the
+second form.  Pointers to arrays can be indexed by placing the `*`
+dereference operator between the name of the array and the first
+square brace:
+
+----
+
+arr*[expr]
+----
+
+This is, however, deprecated in favor of using references to arrays, which have no such problems. 
+
+== The fork operator
+
+The fork operator evaluates its argument in a child thread.
+See the section on Concurrency. 
+
+== Comma operator
+
+----
+
+expr, expr
+----
+
+Evaluates each expression in turn, the resulting value is that of the right hand expression.
+For example, 
+
+----
+
+> 1+2, 5!, 3**4, 27/3
+9
+----

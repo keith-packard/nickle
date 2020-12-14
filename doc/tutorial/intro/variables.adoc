@@ -1,0 +1,551 @@
+
+= Nickle Datatypes
+
+== Primitive datatypes
+
+Nickle has a large set of primitive datatypes.
+Instead of overloading existing datatypes to represent fundamentally distinct objects, Nickle provides additional primitive datatypes to allow for typechecking.
+For instance, instead of using small integers to identify file handles, Nickle provides a `file` datatype. 
+
+=== Numeric datatypes
+
+Nickle has three numeric datatypes: 
+
+* `int`
+* `rational`
+* `real`
+
+Int and rational values are represented exactly to arbitrary precision so that computations need not be concerned about values out of range or a loss of precision during computation.
+For example, 
+
+----
+
+> 1/3 + 2/3 == 1
+true
+> 1000! + 1 > 1000!
+true
+----
+
+As rationals are a superset of the integers, rational values with denominator of 1 are represented as ints.
+The builtin `is_int` demonstrates this by recognizing such rationals as integers: 
+
+----
+
+> rational r = 1/3;
+> is_int(r)   
+false
+> is_int(r*3)
+true
+----
+
+Real values are either represented as a precise int or rational value or as an imprecise value using a floating point representation with arbitrary precision mantissa and exponent values.
+Imprecision is a contagious property; computation among precise and imprecise values yields an imprecise result. 
+
+----
+
+> real i=3/4, j=sqrt(2);
+> is_rational(i)
+true
+> is_rational(j)
+false
+> is_rational(i*j)
+false
+----
+
+Upward type conversion is handled automatically; divide an int by and int and the result is rational.
+Downward conversion only occurs through builtin functions which convert rational or real values to integers. 
+
+----
+
+> int i=4, j=2;
+> is_rational(i/j)
+true
+----
+
+=== String datatype
+
+A `string` holds a read-only null-terminated list of characters.
+Several builtin functions accept and return this datatype.
+Elements of a string are accessible as integers by using the array index operators.
+See the section on Strings. 
+
+----
+
+string foo = "hello";
+string bar = "world";
+string msg = foo + ", " + bar;
+
+printf("%s\n", msg);            /* hello, world */
+----
+
+=== File datatype
+
+The `file` datatype provides access to the native file system.
+Several builtin functions accept and return this datatype.
+See the section on input and output. 
+
+----
+
+file f = open("file", "w");
+File::fprintf(f, "hello, world!\n");
+close(f);
+----
+
+=== Concurrency and control flow datatypes
+
+Nickle has builtin support for threading, mutual exclusion, and continuations, along with the associated types: 
+
+* `thread`
+* `mutex`
+* `semaphore`
+* `continuation`
+
+Threads are created with the `fork` expression, the result of which is a thread value.
+Mutexes and semaphores are synchronization datatypes.
+See the section on Concurrency and Continuations. 
+
+----
+
+thread t = fork 5!;
+# do stuf...
+printf("5! = %d\n", join(t));   /* 5! = 120 */
+----
+
+Continuations capture the dynamic state of execution in much the same way as a C `jmp_buf` except that the `longjmp` operation is not limited to being invoked from a nested function invocation.
+Rather, it can be invoked at any time causing execution to resume from the point of ``setjmp``.
+See the section on Continuations. 
+
+=== Poly datatype
+
+Non-polymorphic typechecking is occasionally insufficient to describe the semantics of an application.
+Nickle provides an 'escape hatch' through the `poly` datatype.
+Every value is compatible with poly; a variable with this type can be used in any circumstance.
+Nickle performs full run-time typechecking on poly datatypes to ensure that the program doesn't violate the type rules. 
+
+----
+
+> poly i=3, s="hello\n";
+> i+3
+6
+> s+3           /* can't add string and int */
+Unhandled exception "invalid_binop_values" at <stdin>:45
+        3
+        "hello\n"
+        "invalid operands"
+> printf(i)     /* printf expects a string */
+Unhandled exception "invalid_argument" at <stdin>:47
+        3
+        0
+        "Incompatible argument"
+> printf(s)
+hello
+>
+----
+
+=== Void datatype
+
+To handle functions with no return value and other times when the value of an object isn't relevant, Nickle includes the `void` datatype.
+This is designed to operate in much the same way as the `unit` type does in ML.
+Void is a type that is compatible with only one value, '<>'. This value can be assigned and passed just like any other value, but it is not type compatible with any type other than void and poly. 
+
+== Composite datatypes
+
+Nickle allows the basic datatypes to be combined in several ways. 
+
+* `struct`
+* `union`
+* arrays
+* pointers
+* references
+* functions
+
+
+=== Structs
+
+Structs work much like C structs; they composite several datatypes into an aggregate with names for each element of the structure.
+One unusual feature is that a struct value is compatible with a struct type if the struct value contains all of the entries in the type.
+For example: 
+
+----
+
+typedef struct {
+        int     i;
+        real    r;
+} i_and_r;
+
+typedef struct {
+        int     i;
+} just_i;
+
+i_and_r i_and_r_value = { i = 12, r = 37 };
+
+just_i  i_value;
+
+i_value = i_and_r_value;
+----
+
+The assignment is legal because `i_and_r` contains all of the elements of ``just_i``. ``i_value`` will end up with both `i` and `r` values. 
+
+=== Unions
+
+Unions provide a way to hold several different datatypes in the same object.
+Unions are declared and used much like structs.
+When a union element is referenced, Nickle checks to make sure the referring element tag is the one currently stored in the union.
+This provides typechecking at runtime for this kind of polymorphism.
+Values can be converted to a union type by specifying a compatible union tag cast.
+A control structure `union switch` exists to split out the different tags and perform different functions based on the current tag: 
+
+----
+
+typedef union {
+        int     i;
+        real    r;
+} i_and_r_union;
+
+i_and_r_union u_value;
+
+u_value.i = 37;
+
+union switch (u_value) {
+case i:
+        printf ("i value %d\n", u_value.i);
+        break;
+case r:
+        printf ("r value %d\n", u_value.r);
+        break;
+}
+
+u_value = (i_and_r_union.r) 1.2;
+printf ("u_value %g\n", u_value);               /* u_value r = 1.2 */
+----
+
+=== Arrays
+
+Array types in Nickle determine only the number of dimensions and not the size of each dimension.
+Therefore they can be declared in one of three ways: 
+
+----
+
+int[*] a;
+int[...] b;
+int[3] c;
+----
+
+By these declarations, ``a``, `b` and ``c`` are of the same type (one-dimensional array). The specification of the size of `c` actually has no effect on its declaration but rather on its initialization.
+See Initialization below.
+Declaring multidimensional arrays in Nickle is different than in C; C provides only arrays of arrays while Nickle allows either: 
+
+----
+
+int[3,3]        array_2d = {};
+int[3][3]       array_of_arrays = { (int[3]) {} ... };
+
+array_2d[0,0] = 7;
+array_of_arrays[0][0] = 7;
+array_of_arrays[1] = (int[2]) { 1, 2 };
+----
+
+These two types can be used in similar circumstances, but the first ensures that the resulting objects are rectangular while the second allows for each row of the array to have a different number of elements.
+The second also allows for each row to be manipulated separately.
+The final example shows an entire row being replaced with new contents. 
+
+Array values created with '...' in place of the dimension information are resizable; requests to store beyond the bounds of such arrays will cause the array dimensions to be increased to include the specified location.
+Resizable arrays may also be passed to the `setdim` and ``setdims`` built-in functions. 
+
+=== Hashes
+
+Hashes provide an associative mapping from arbitrary keys to values.
+Any type may be used as the key.
+This allows indexing by strings, and even composite values.
+They are called ``hashes`` instead of associative arrays to make the performance characteristics of the underlying implementation clear. 
+
+Hashes are declared a bit like arrays, but instead of a value in the brackets, a type is placed: 
+
+----
+
+int[string]     string_to_int = { "hello" => 2, => 0 };
+float[float]    float_to_float = { 2.5 => 27 };
+
+string_to_int["bar"] = 17;
+string_to_int["foo"] += 12;
+float_to_float[pi] = pi/2;
+----
+
+The initializer syntax uses the double-arrow `=>` to separate key from value.
+Eliding the key specifies the "default" value -- used to instantiate newly created elements in the hash. 
+
+=== Pointers
+
+Pointers hold a reference to a separate object; multiple pointers may point at the same object and changes to the referenced object are reflected both in the underlying object as well as in any other references to the same object.
+While pointers can be used to point at existing storage locations, anonymous locations can be created with the reference built-in function; this allows for the creation of pointers to existing values without requiring that the value be stored in a named object. 
+
+----
+
+*int    pointer;
+int     object;
+
+pointer = &object;
+*pointer = 12;
+
+printf ("%g\n", object);                /* 12 */
+
+pointer = reference (37);
+(*pointer)++;
+
+printf ("%g\n", *pointer);              /* 38 */
+----
+
+=== References
+
+References, like pointers, refer to objects.
+They are unlike pointers, however; they are designed to provide for calls by reference in a completely by-value language.
+They may eventually replace pointers altogether.
+They are declared and assigned similarly, but not identically, to pointers: 
+
+----
+
+&int ref;
+int  i;
+
+i = 3;
+&ref = &i;
+----
+====``ref`` is declared as a reference to an integer, ``&int``.
+An integer, ``i``, is declared and given the value 3.
+Finally, the assignment carries some interesting semantics: the address of the reference is set to the address of ``i``.
+References may also be assigned otherwise anonymous values with ``reference``, e.g. 
+
+----
+
+&int foo;
+&foo = reference ( 3 );
+----
+References, unlike pointers, need not be dereferenced; they are used exactly as any other value.
+Changing either the value it refers to or the reference itself changes both. 
+
+----
+
+printf("%g\n", i);      /* 3 */
+printf("%g\n", ref);    /* 3 */
+
+++ref;
+
+printf("%g\n", i);      /* 4 */
+printf("%g\n", ref);    /* 4 */
+----
+
+=== Functions
+
+Nickle has first-class functions.
+These look a lot like function pointers in C, but important semantic differences separate the two.
+Of course, if you want a function pointer in Nickle, those are also available.
+Function types always have a return type and zero or more argument types.
+Functions may use the void return type.
+The final argument type may be followed by an elipsis (...), in which case the function can take any number of arguments at that point, each of the same type as the final argument type: 
+
+----
+
+int(int, int)   a;
+void(int ...)   b;
+
+a(1,2);
+b(1);
+b(1,2);
+b(1,"hello");   /* illegal, "hello" is not compatible with int */
+----
+
+See the section on Functions. 
+
+== Declarations
+
+A declaration in Nickle consists of four elements: publication, storage class, type, and name.
+Publication, class, and type are all optional but at least one must be present and they must be in that order. 
+
+* Publication is one of public or protected, which defines the name's visibility within its namespace. When publication is missing, Nickle uses `private` meaning that the name will not be visible outside of the current namespace. See the section on Namespaces. 
+* Class is one of global, static, or auto. When class is missing, Nickle uses `auto` for variables declared within a function and `global` for variables declared at the top level. See Storage classes below. 
+* Type is some type as described here, for instance 
++
+
+----
+
+type                    /* primitive type */
+*type                   /* pointer to type */
+&type                   /* reference to type */
+type[*]                 /* array of type */
+type[*,...]             /* multidimensional array of type */
+type(type,...)          /* function with type arguments and return value */
+struct { ... }          /* struct of types */
+union { ... }           /* union of types */
+type(type,...)[*]       /* array of functions */
+/* etc. */
+----
++
+When type is missing, Nickle uses poly, which allows the variable to hold data of any type.
+In any case, type is always checked at runtime. 
+
+
+== Initializers
+
+Initializers in Nickle are expressions evaluated when the storage for a variable comes into scope.
+To initialize array and structure types, expressions which evaluate to a struct or array object are used: 
+
+----
+
+int     k = 12;
+int     z = floor (pi * 27);
+int[3]  a = (int[3]) { 1, 2, 3 };
+
+typedef struct {
+        int     i;
+        real    r;
+} i_and_r;
+
+i_and_r s = (i_and_r) { i = 12, r = pi/2 };
+----
+
+As a special case, initializers for struct and array variables may elide the type leaving only the bracketed initializer: 
+
+----
+
+int[3]  a = { 1, 2, 3 };
+i_and_r s = { i = 12, r = pi/2 };
+----
+
+Instead of initializing structures by their position in the declared type, Nickle uses the structure tags.
+This avoids common mistakes when the structure type is redeclared. 
+
+An arrays initializer followed by an elipsis (...) is replicated to fill the remainder of the elements in that dimension: 
+
+----
+
+int[4,4]        a = { { 1, 2 ... }, { 3, 4 ... } ... };
+----
+
+This leaves `a` initialized to an array who's first row is `{ 1, 2, 2, 2 }` and subsequent rows are ``{ 3, 4, 4, 4 }``.
+It is an error to use this elipsis notation when the associated type specification contains stars instead of expressions for the dimensions of the array.
+Variables need not be completely initialized; arrays can be partially filled and structures may have only a subset of their elements initialized.
+Using an uninitialized variable causes a run time exception to be raised. 
+
+== Identifier scope
+
+Identifiers are scoped lexically; any identifier in lexical scope can be used in any expression (with one exception described below). Each compound statement creates a new lexical scope.
+Function declarations and statement blocks also create new lexical scopes.
+This limits the scope of variables in situations like: 
+
+----
+
+if (int i = foo(x))
+        printf ("i in scope here %d\n", i);
+else
+        printf ("i still in scope here %d\n", i);
+printf ("i not in scope here\n");
+----
+
+Identifiers are lexically scoped even when functions are nested: 
+
+----
+
+function foo (int x) {
+        int y = 1;
+        function bar (int z) { return z + y; }
+        return bar (x);
+}
+----
+
+== Storage classes
+
+There are three storage classes in Nickle: 
+
+* auto
+* static
+* global
+
+The storage class of a variable defines the lifetime of the storage referenced by the variable.
+When the storage for a variable is allocated, any associated initializer expression is evaluated and the value assigned to the variable. 
+
+=== Auto variables
+
+Auto variables have lifetime equal to the dynamic scope where they are defined.
+When a function is invoked, storage is allocated which the variables reference.
+Successive invocations allocate new storage.
+Storage captured and passed out of the function will remain accessible. 
+
+----
+
+*int function foo (int x)
+{
+        return &x;
+}
+
+*int    a1 = foo (1);
+*int    a2 = foo (2);
+----
+
+`a1` and `a2` now refer to separately allocated storage. 
+
+=== Static variables
+
+Static variables have lifetime equal to the scope in which the function they are declared in is evaluated.
+A function value includes both the executable code and the storage for any enclosed static variables, function values are created from function declarations. 
+
+----
+
+int() function incrementer ()
+{
+        return (func () { 
+                static int      x = 0;
+                return ++x;
+        });
+}
+
+int()   a = incrementer();
+int()   b = incrementer();
+----
+
+`a` and `b` refer to functions with separate static state and so the values they return form independent sequences.
+Because static variables are initialized as the function is evaluated and not during function execution, any auto variables declared within the enclosing function are not accessible.
+This is the exception to the lexical scoping rules mentioned above.
+It is an error to reference auto variables in this context.
+Additionally, any auto variables declared within an initializer for a static variable exist in the frame for the static initializer, not for the function. 
+
+----
+
+function foo ()
+{
+        static function bar (*int z)
+        {
+                *z = (*z)!;
+        }
+        static x = ((int y = 7), bar (&y), y);
+
+        return x;
+}
+----
+
+The static initializer is an anonymous function sharing the same static scope as the function containing the static declarations, but having its own unique dynamic scope. 
+
+=== Global variables
+
+Global variables have lifetime equal to the global scope.
+When declared at global scope, storage is allocated and the initializer executed as soon as the declaration is parsed.
+When declared within a function, storage is allocated when the function is parsed and the initializer is executed in the static initializer of the outermost enclosing function. 
+
+----
+
+function foo ()
+{
+        function bar ()
+        {
+                global  g = 1;
+                static  s = 1;
+
+                g++;
+                s++;
+                return (int[2]) { g, s };
+        }
+        return bar ();
+}
+----
+
+Because `g` has global scope, only a single instance exists and so the returned values from `foo` increment each time `foo` is called.
+However, because `s` has static scope, it is reinitialized each time `bar` is reevaluated as the static initializer is invoked and returns the same value each time `foo` is called. 

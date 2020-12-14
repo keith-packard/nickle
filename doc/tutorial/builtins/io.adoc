@@ -1,0 +1,208 @@
+
+= Input and Output
+
+Input and output in Nickle are mostly accomplished through the File builtin namespace; some top-level builtins refer to those functions.
+Nickle's input and output are modeled, as much of the language is, on C, but many changes have been made. 
+
+== Opening and closing files
+
+The functions in the File namespace use the `file` primitive type to describe filehandles.
+Three are predefined, with their usual meanings: ``stdin``, ``stdout``, and ``stderr``.
+For many functions in File, there is a top-level builtin which assumes one of these standard streams.
+Other files may be read and written by opening them: 
+// <synopsis>
+// file open(string path, string mode)
+// </synopsis>
+
+The first string gives the path to the file to be opened; the second is one of: 
+
+* "r" to open read-only, starting at the beginning of the file.
+* "r+" to open read-write, starting at the beginning of the file.
+* "w" to create or truncate the file and open write-only.
+* "w+" to create or truncate the file and open read-write.
+* "a" to open write-only, appending to the end of the file.
+* "a+" to open read-write, appending to the end of the file.
+
+If successful, a filehandle will be returned that can then be used. 
+
+Nickle can also open pipes to other programs, reading or writing to their stdouts or stdins; these are also treated as ``file``s, and the difference is transparent to the functions that manipulate them.
+Pipes are opened with `pipe` rather than ``open``; otherwise they are treated identically to flat files. 
+// <synopsis>
+// file pipe(string path, string[*] argv, string mode)
+// </synopsis>
+
+The first string refers to the program to be run; `argv` is an array of the arguments to pass to it.
+By convention, `argv[0]` should be the name of the program.
+Finally, `mode` is one of those for ``open``; reading from the pipe reads from the program's stdout, and writing to the pipe writes to the program's stdin.
+For example, 
+
+----
+
+$ nickle
+> string[*] args = {"-a"};
+> file ls = File::pipe ( "ls", args, "r" );
+> do printf ( "%s\n", File::fgets ( ls ) );
++ while ( ! File::end ( ls ) );
+bin
+man
+nickle
+share
+----
+
+When a file is no longer needed, it should be closed. 
+// <synopsis>
+// void close(file f)
+// </synopsis>
+
+
+----
+
+> File::close ( ls );
+----
+
+== Flush
+
+Output written to a file is not immediately written, but buffered until an appropriate time.
+Ordinarily, this is not noticed; if, however, it is important to know that all buffers have been written to a file, they can be flushed: 
+// <synopsis>
+// void flush (file f)
+// </synopsis>
+
+
+== End
+
+Returns true if the file is at end-of-file, otherwise returns false. 
+// <synopsis>
+// bool end (file f)
+// </synopsis>
+
+
+== Characters and strings
+
+Individual characters can be read and written using ``getc``, ``getchar``, ``putc``, and ``putchar``. 
+// <synopsis>
+// int getc(file f)
+// </synopsis>
+
+// <synopsis>
+// int getchar()
+// </synopsis>
+
+// <synopsis>
+// int putc(int c,file f)
+// </synopsis>
+
+// <synopsis>
+// void putchar(int c)
+// </synopsis>
+
+A character can be pushed back onto the stream with `ungetc` or ``ungetchar``. 
+// <synopsis>
+// int ungetc(int c, file f)
+// </synopsis>
+
+// <synopsis>
+// int ungetchar(int c)
+// </synopsis>
+
+Strings can be read, a line at a time, using `fgets` and ``gets``. 
+// <synopsis>
+// string fgets(file f)
+// </synopsis>
+
+// <synopsis>
+// string gets()
+// </synopsis>
+
+All of these are like their C counterparts, with the exception noted in the following section. 
+
+== Unicode and characters vs. bytes
+
+Unicode is a standard for representing characters, like ASCII.
+However, Unicode is designed to be able to support a much larger range of characters; in fact, every character in every alphabet worldwide.
+It is optimized so standard ASCII characters retain their ASCII codes, and characters are not larger than they have to be.
+Because of its advantages, and the possibility that it may become more standard than ASCII, and because there is no reason not to, Nickle reads and writes Unicode.
+This is entirely transparent to the user/programmer. 
+
+However, there is one situation in which the programmer will notice (disregarding the case where the programmer finds himself typing on a Sanskrit keyboard): extended characters that do not stand for themselves the same in ASCII and Unicode are _not_ one byte long; they can be as many as four for the really obscure characters.
+Therefore, unlike in C, __characters cannot be counted on to be the same as bytes__.
+For this reason, Nickle provides the following functions: 
+// <synopsis>
+// int putb(int c,file f)
+// </synopsis>
+
+// <synopsis>
+// int getb(file f)
+// </synopsis>
+
+// <synopsis>
+// int ungetb(file f)
+// </synopsis>
+
+These operate the same as ``putc``, ``getc``, and ``ungetc``, but will always read or write one byte at a time, regardless of character representation. 
+
+== Formatted I/O
+
+Nickle provides functions such as ``printf``, ``sprintf``, and `scanf` to perform formatted input and output.
+These functions perform like their C counterparts, with the following exceptions: 
+
+* The precision of a field in the format string may be specified to be '-', which means infinite precision.
+* The %g format specifier requires a number, and prints it in the best way possible. For example: 
++
+
+----
+
+> printf("%g %g %g\n", 1, 1/3, sqrt(2));
+1 0.{3} 1.414213562373095
+----
+* The %v format specifier will attempt to find the best way to print whatever value it is given. This is a great way to print polys whose types will not be known ahead of time. 
++
+
+----
+
+> printf("%v %v %v\n", 1/3, "hello", fork 4!);
+(1/3) "hello" %38
+----
+Notice that it can even figure out difficult things like the thread returned by 'fork'. 
+
+
+== At the top level
+
+Many functions in the File namespace have counterparts builtin at the top level; these do not need to be imported from File because they are automatically present. 
+
+* int printf(string fmt, poly args...) is the same as ``File::printf``.
+* string printf(string fmt, poly args...) is the same as ``File::sprintf``.
+* void putchar(int c) is the same as ``File::putchar``.
+
+File also contains a namespace called FileGlobals, which is automatically imported.
+It contains the following definitions: 
+
+----
+
+public int scanf (string format, *poly args...)
+{
+        return File::vfscanf (stdin, format, args);
+}
+
+public int vscanf (string format, (*poly)[*] args)
+{
+        return File::vfscanf (stdin, format, args);
+}    
+
+public string gets ()
+{
+        return File::fgets (stdin);
+}
+
+public int getchar ()
+{
+        return File::getc (stdin);
+}
+
+public void ungetchar (int ch)
+{
+        File::ungetc (ch, stdin);
+}
+----
+Thus, ``scanf``, ``vscanf``, ``gets``, ``getchar``, and `ungetchar` call the appropriate functions in File and return their results.
+The other functions in File must be imported as normal. 

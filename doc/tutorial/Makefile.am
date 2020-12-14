@@ -1,37 +1,32 @@
 
-SGMLFILES=nickle-tutorial.sgml
-PDFFILES=$(SGMLFILES:.sgml=.pdf)
+ADOCFILES=nickle-tutorial.adoc
+PDFFILES=$(ADOCFILES:.adoc=.pdf)
 
 PDF_DATE=$(shell date -ud '$(RELEASE_DATE)')
 
-.sgml.pdf:
-	docbook2tex $< && \
-	pdfjadetex '\pdfinfo{/CreationDate($(PDF_DATE))/ModDate($(PDF_DATE))}\input{$*.tex}' >/dev/null && \
-	pdfjadetex '\pdfinfo{/CreationDate($(PDF_DATE))/ModDate($(PDF_DATE))}\input{$*.tex}' >/dev/null && \
-	pdfjadetex '\pdfinfo{/CreationDate($(PDF_DATE))/ModDate($(PDF_DATE))}\input{$*.tex}' >/dev/null && \
-	sed -i '/^\/ID \[<[0-9A-F][0-9A-F]*> <[0-9A-F][0-9A-F]*>\]/d' $@ && \
-	rm $*.aux $*.log *$.out *$.tex
+.adoc.pdf:
+	asciidoctor-pdf -o $@ $<
 
-SGMLINC= \
-	tour/tour.sgml \
-	basics/invoke.sgml \
-	basics/command.sgml \
-	intro/variables.sgml \
-	intro/expressions.sgml \
-	intro/statements.sgml \
-	intro/functions.sgml \
-	builtins/io.sgml \
-	builtins/math.sgml \
-	builtins/strings.sgml \
-	advanced/copying.sgml \
-	advanced/namespaces.sgml \
-	advanced/exceptions.sgml \
-	advanced/concurrency.sgml \
-	advanced/continuations.sgml
+ADOCINC= \
+	tour/tour.adoc \
+	basics/invoke.adoc \
+	basics/command.adoc \
+	intro/variables.adoc \
+	intro/expressions.adoc \
+	intro/statements.adoc \
+	intro/functions.adoc \
+	builtins/io.adoc \
+	builtins/math.adoc \
+	builtins/strings.adoc \
+	advanced/copying.adoc \
+	advanced/namespaces.adoc \
+	advanced/exceptions.adoc \
+	advanced/concurrency.adoc \
+	advanced/continuations.adoc
 
-EXTRA_DIST=$(SGMLFILES) $(SGMLINC)
+EXTRA_DIST=$(ADOCFILES) $(ADOCINC)
 
-if HASDOCBOOK
+if HASASCIIDOCTORPDF
 
 all-local: $(PDFFILES)
 
@@ -39,7 +34,7 @@ clean-local:
 	$(RM) -f $(PDFFILES)
 
 
-$(PDFFILES): $(SGMLINC)
+$(PDFFILES): $(ADOCINC)
 
 doc_DATA = $(PDFFILES)
 

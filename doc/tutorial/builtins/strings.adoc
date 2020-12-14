@@ -1,0 +1,129 @@
+
+= Strings
+
+Unlike in C, strings in Nickle are not arrays of or pointers to individual characters.
+Consistent with its pattern of providing primitive datatypes for types for things that make sense (e.g. `file` instead of integer file handles), Nickle provides the `string` type.
+This has several interesting differences from C-style strings: 
+
+* In Nickle, strings are immutable--individual characters may not be changed.
+* Strings are, as with everything else, assigned and passed by-value. See the section on Copy semantics for details. 
+
+
+== Operators
+
+Two useful operators have been overloaded to allow sane manipulation of strings: '+' and array subscript ('[]'). 
+
+=== Subscripting
+
+Although they are not arrays of characters, it is often useful to access a string a character at a time; the array subscript operator has been overloaded to allow this.
+For example: 
+
+----
+
+> string s = "hello, world";
+> s[0]
+104
+> s[1]
+101
+> s[2]
+108
+> s[3]
+108
+> s[4]
+111
+>
+----
+
+Those are the integer representations of each character; they are most likely in ASCII, but not necessarily--see the section on Unicode in the I/O section.
+The String namespace provides `new` to recreate a string from these integer character representations, regardless of ASCII or Unicode: 
+// <synopsis>
+// string new(int c)
+// </synopsis>
+
+// <synopsis>
+// string new(int[*] cv)
+// </synopsis>
+
+For instance, 
+
+----
+
+> String::new(s[0])
+"h"
+----
+
+=== Concatenation
+
+On strings, '+' is the concatenation operator.
+For example, 
+
+----
+
+> string s = "hello", t = "world"; 
+> s = s + ", ";
+> t += "!";
+> s+t
+"hello, world!"
+----
+
+== String namespace
+
+In addition, the String namespace provides several useful functions that facilitate using strings, including the following. 
+
+=== Length
+// <synopsis>
+// int length ( string s )
+// </synopsis>
+
+Returns the number of characters in ``s``.
+For example, 
+
+----
+
+$ nickle
+> String::length ( "hello, world" ) 
+12
+>
+----
+
+=== Index
+// <synopsis>
+// int index ( string t, string p )
+// </synopsis>
+
+// <synopsis>
+// int rindex ( string t, string p )
+// </synopsis>
+
+Returns the index of the first occurence of the substring `p` in ``t``, or -1 if `p` is not in ``t``; `rindex` returns the last occurance instead.
+For example, 
+
+----
+
+$ nickle
+> String::index ( "hello, world", "or" ) 
+8
+> String::index ( "hello, world", "goodbye" )
+-1
+> String::rindex ( "hello, world", "o" )
+8
+----
+
+=== Substr
+// <synopsis>
+// string substr ( string s, int i, int l )
+// </synopsis>
+
+Returns the substring of `s` which begins at index `i` and is `l` characters long.
+If `l` is negative, returns the substring of that length which preceeds `i` instead.
+For example, 
+
+----
+
+$ nickle
+> String::substr ( "hello, world", 8, 2 ) 
+"or"
+> String::substr ( "hello, world", 8, -4 )
+"o, w"
+>
+----

@@ -1,10 +1,8 @@
-
 = Nickle Functions
 
 An example function might be declared like this: 
 
 ----
-
 int gcf ( int a, int b ) {
         int f = 1;
         for ( int i = 2; i <= abs ( a ) && i <= abs ( b ); ++i )
@@ -14,16 +12,17 @@ int gcf ( int a, int b ) {
 }
 ----
 
-First comes the return type of the function, then the function name, then the list of arguments (with types), and finally the statement list in curly braces.
-If any types are left off, Nickle assumes ``poly``.
-In any case, all typechecking is done at runtime. 
+First comes the return type of the function, then the function name,
+then the list of arguments (with types), and finally the statement
+list in curly braces.  If any types are left off, Nickle assumes
+``poly``.  In any case, all typechecking is done at runtime.
 
-A function can take any number of arguments.
-The final argument may be succeeded by an ellipses (...) to indicate an arbitrary, variable number of succeeding arguments, each of the type of the final argument; the last argument takes on a list value to store them. 
+A function can take any number of arguments.  The final argument may
+be followed by an ellipses ( `+...+` ) to indicate an arbitrary,
+variable number of succeeding arguments, each of the type of the final
+argument; the last argument becomes an array to store them.
 
 ----
-
-...
 > print sum
 int sum (int a, int b ...)
 {
@@ -42,7 +41,6 @@ int sum (int a, int b ...)
 Functions are called as in C, with their names followed by argument values in parentheses: 
 
 ----
-
 foo ( "hello", 7.2 );
 ----
 
@@ -53,12 +51,11 @@ Since they are first class, functions can be assigned:
 int(int,int) a = gcf;
 ----
 
-See the section on Copy semantics for details on what functions may be assigned to each other. 
-
-Functions may also be declared and used anonymously: 
+See the section on Copy semantics for details on what functions may be
+assigned to each other. Functions may also be declared and used
+anonymously:
 
 ----
-
 (int func ( int a, int b ) { return a + b; })(2,3);     /* 5 */
 ----
 

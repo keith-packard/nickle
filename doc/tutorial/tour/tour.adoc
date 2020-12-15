@@ -1,5 +1,4 @@
 
-
 ----
 
 $ nickle
@@ -28,7 +27,7 @@ Notice that integer division (//) is different from rational division (/). Nickl
 ----
 Variables can be declared implicitly at the top level, as well as explicitly with type.
 The results of statements are not printed; terminating an expression with a semicolon makes it a simple statement.
-C-like control structures may also be used at the top level; the `\+` prompt indicates an incomplete line to be continued. 
+C-like control structures may also be used at the top level; the `+` prompt indicates an incomplete line to be continued. 
 ----
 
 > x = .

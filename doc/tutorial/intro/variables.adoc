@@ -1,4 +1,3 @@
-
 = Nickle Datatypes
 
 == Primitive datatypes
@@ -111,9 +110,11 @@ thread t = fork 5!;
 printf("5! = %d\n", join(t));   /* 5! = 120 */
 ----
 
-Continuations capture the dynamic state of execution in much the same way as a C `jmp_buf` except that the `longjmp` operation is not limited to being invoked from a nested function invocation.
-Rather, it can be invoked at any time causing execution to resume from the point of ``setjmp``.
-See the section on Continuations. 
+Continuations capture the dynamic state of execution in much the same
+way as a C `jmp_buf` except that the `longjmp` operation is not
+limited to being invoked from a nested function invocation.  Rather,
+it can be invoked at any time causing execution to resume from the
+point of ``setjmp``.  See the section on Continuations.
 
 === Poly datatype
 
@@ -271,7 +272,7 @@ string_to_int["foo"] += 12;
 float_to_float[pi] = pi/2;
 ----
 
-The initializer syntax uses the double-arrow `=>` to separate key from value.
+The initializer syntax uses the double-arrow `+=>+` to separate key from value.
 Eliding the key specifies the "default" value -- used to instantiate newly created elements in the hash. 
 
 === Pointers
@@ -310,7 +311,8 @@ int  i;
 i = 3;
 &ref = &i;
 ----
-====``ref`` is declared as a reference to an integer, ``&int``.
+
+``ref`` is declared as a reference to an integer, ``&int``.
 An integer, ``i``, is declared and given the value 3.
 Finally, the assignment carries some interesting semantics: the address of the reference is set to the address of ``i``.
 References may also be assigned otherwise anonymous values with ``reference``, e.g. 
@@ -320,6 +322,7 @@ References may also be assigned otherwise anonymous values with ``reference``, e
 &int foo;
 &foo = reference ( 3 );
 ----
+
 References, unlike pointers, need not be dereferenced; they are used exactly as any other value.
 Changing either the value it refers to or the reference itself changes both. 
 
@@ -336,12 +339,14 @@ printf("%g\n", ref);    /* 4 */
 
 === Functions
 
-Nickle has first-class functions.
-These look a lot like function pointers in C, but important semantic differences separate the two.
-Of course, if you want a function pointer in Nickle, those are also available.
-Function types always have a return type and zero or more argument types.
-Functions may use the void return type.
-The final argument type may be followed by an elipsis (...), in which case the function can take any number of arguments at that point, each of the same type as the final argument type: 
+Nickle has first-class functions.  These look a lot like function
+pointers in C, but important semantic differences separate the two.
+Of course, if you want a function pointer in Nickle, those are also
+available.  Function types always have a return type and zero or more
+argument types.  Functions may use the void return type.  The final
+argument type may be followed by an elipsis (...), in which case the
+function can take any number of arguments at that point, each of the
+same type as the final argument type:
 
 ----
 
@@ -358,16 +363,24 @@ See the section on Functions.
 
 == Declarations
 
-A declaration in Nickle consists of four elements: publication, storage class, type, and name.
-Publication, class, and type are all optional but at least one must be present and they must be in that order. 
+A declaration in Nickle consists of four elements: publication,
+storage class, type, and name.  Publication, class, and type are all
+optional but at least one must be present and they must be in that
+order.
 
-* Publication is one of public or protected, which defines the name's visibility within its namespace. When publication is missing, Nickle uses `private` meaning that the name will not be visible outside of the current namespace. See the section on Namespaces. 
-* Class is one of global, static, or auto. When class is missing, Nickle uses `auto` for variables declared within a function and `global` for variables declared at the top level. See Storage classes below. 
+* Publication is one of public or protected, which defines the name's
+  visibility within its namespace. When publication is missing, Nickle
+  uses `private` meaning that the name will not be visible outside of
+  the current namespace. See the section on Namespaces.
+
+* Class is one of `global`, `static`, or `auto`. When class is missing,
+  Nickle uses `auto` for variables declared within a function and
+  `global` for variables declared at the top level. See Storage
+  classes below.
+
 * Type is some type as described here, for instance 
 +
-
 ----
-
 type                    /* primitive type */
 *type                   /* pointer to type */
 &type                   /* reference to type */
@@ -382,7 +395,6 @@ type(type,...)[*]       /* array of functions */
 +
 When type is missing, Nickle uses poly, which allows the variable to hold data of any type.
 In any case, type is always checked at runtime. 
-
 
 == Initializers
 
@@ -414,7 +426,7 @@ i_and_r s = { i = 12, r = pi/2 };
 Instead of initializing structures by their position in the declared type, Nickle uses the structure tags.
 This avoids common mistakes when the structure type is redeclared. 
 
-An arrays initializer followed by an elipsis (...) is replicated to fill the remainder of the elements in that dimension: 
+An arrays initializer followed by an elipsis ( `+...+` ) is replicated to fill the remainder of the elements in that dimension: 
 
 ----
 
@@ -444,10 +456,9 @@ printf ("i not in scope here\n");
 Identifiers are lexically scoped even when functions are nested: 
 
 ----
-
-function foo (int x) {
+int foo (int x) {
         int y = 1;
-        function bar (int z) { return z + y; }
+        int bar (int z) { return z + y; }
         return bar (x);
 }
 ----
@@ -456,23 +467,25 @@ function foo (int x) {
 
 There are three storage classes in Nickle: 
 
-* auto
-* static
-* global
+* `auto`
+* `static`
+* `global`
 
-The storage class of a variable defines the lifetime of the storage referenced by the variable.
-When the storage for a variable is allocated, any associated initializer expression is evaluated and the value assigned to the variable. 
+The storage class of a variable defines the lifetime of the storage
+referenced by the variable.  When the storage for a variable is
+allocated, any associated initializer expression is evaluated and the
+value assigned to the variable.
 
 === Auto variables
 
-Auto variables have lifetime equal to the dynamic scope where they are defined.
-When a function is invoked, storage is allocated which the variables reference.
-Successive invocations allocate new storage.
-Storage captured and passed out of the function will remain accessible. 
+`auto` variables have lifetime equal to the dynamic scope where they
+are defined.  When a function is invoked, storage is allocated which
+the variables reference.  Successive invocations allocate new storage.
+Storage captured and passed out of the function will remain
+accessible.
 
 ----
-
-*int function foo (int x)
+*int foo (int x)
 {
         return &x;
 }
@@ -485,12 +498,13 @@ Storage captured and passed out of the function will remain accessible.
 
 === Static variables
 
-Static variables have lifetime equal to the scope in which the function they are declared in is evaluated.
-A function value includes both the executable code and the storage for any enclosed static variables, function values are created from function declarations. 
+`static` variables have lifetime equal to the scope in which the
+function they are declared in is evaluated.  A function value includes
+both the executable code and the storage for any enclosed static
+variables, function values are created from function declarations.
 
 ----
-
-int() function incrementer ()
+int() incrementer ()
 {
         return (func () { 
                 static int      x = 0;
@@ -502,17 +516,20 @@ int()   a = incrementer();
 int()   b = incrementer();
 ----
 
-`a` and `b` refer to functions with separate static state and so the values they return form independent sequences.
-Because static variables are initialized as the function is evaluated and not during function execution, any auto variables declared within the enclosing function are not accessible.
-This is the exception to the lexical scoping rules mentioned above.
-It is an error to reference auto variables in this context.
-Additionally, any auto variables declared within an initializer for a static variable exist in the frame for the static initializer, not for the function. 
+`a` and `b` refer to functions with separate static state and so the
+values they return form independent sequences.  Because static
+variables are initialized as the function is evaluated and not during
+function execution, any auto variables declared within the enclosing
+function are not accessible.  This is the exception to the lexical
+scoping rules mentioned above.  It is an error to reference auto
+variables in this context.  Additionally, any auto variables declared
+within an initializer for a static variable exist in the frame for the
+static initializer, not for the function.
 
 ----
-
-function foo ()
+poly foo ()
 {
-        static function bar (*int z)
+        static poly bar (*int z)
         {
                 *z = (*z)!;
         }
@@ -522,19 +539,23 @@ function foo ()
 }
 ----
 
-The static initializer is an anonymous function sharing the same static scope as the function containing the static declarations, but having its own unique dynamic scope. 
+The static initializer is an anonymous function sharing the same
+static scope as the function containing the static declarations, but
+having its own unique dynamic scope.
 
 === Global variables
 
-Global variables have lifetime equal to the global scope.
-When declared at global scope, storage is allocated and the initializer executed as soon as the declaration is parsed.
-When declared within a function, storage is allocated when the function is parsed and the initializer is executed in the static initializer of the outermost enclosing function. 
+`global` variables have lifetime equal to the global scope.  When
+declared at global scope, storage is allocated and the initializer
+executed as soon as the declaration is parsed.  When declared within a
+function, storage is allocated when the function is parsed and the
+initializer is executed in the static initializer of the outermost
+enclosing function.
 
 ----
-
-function foo ()
+poly foo ()
 {
-        function bar ()
+        poly bar ()
         {
                 global  g = 1;
                 static  s = 1;
@@ -547,5 +568,8 @@ function foo ()
 }
 ----
 
-Because `g` has global scope, only a single instance exists and so the returned values from `foo` increment each time `foo` is called.
-However, because `s` has static scope, it is reinitialized each time `bar` is reevaluated as the static initializer is invoked and returns the same value each time `foo` is called. 
+Because `g` has global scope, only a single instance exists and so the
+returned values from `foo` increment each time `foo` is called.
+However, because `s` has static scope, it is reinitialized each time
+`bar` is reevaluated as the static initializer is invoked and returns
+the same value each time `foo` is called.

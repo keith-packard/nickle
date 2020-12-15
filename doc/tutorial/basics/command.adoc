@@ -1,4 +1,3 @@
-
 = Commands
 
 The following are commands that the Nickle interpreter understands, not actual language constructs.
@@ -6,8 +5,10 @@ They may be issued only at the top level.
 
 == Expressions
 
-If an expression is issued at the top level, such as `3**4` or ``100!,``, its value is printed to standard output.
-If the expression ends with a # sign and another expression, its value is printed in whatever base the second expression evaluates to. 
+If an expression is issued at the top level, such as `3**4` or
+``100!``, its value is printed to standard output.  If the expression
+ends with a # sign and another expression, its value is printed in
+whatever base the second expression evaluates to.
 
 ----
 

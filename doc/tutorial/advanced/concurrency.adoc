@@ -1,42 +1,42 @@
-
 = Threads and Mutual Exclusion in Nickle
 
 == Basic threading
 
-Threads provide concurrent processing of calculations.
-They are created with the `fork` operator, which spawns a child thread to evaluate its argument and returns it as a variable of the first-class type ``thread``: 
-// <synopsis>
-// fork <literal>expr</literal>
-// </synopsis>
+Threads provide concurrent processing of calculations.  They are
+created with the `fork` operator, which spawns a child thread to
+evaluate its argument and returns it as a variable of the first-class
+type `thread`:
+
+`fork` _expr_
 
 The thread it returns is typically stored like this: 
 
 ----
-
 thread t = fork x!;
 ----
 
-In the above example, `fork` immediately returns a thread, which is stored in ``t``.
-That thread will calculate the factorial of `x` in the background while the program continues; when the calculation is finished it will block and wait for the parent thread (the one that forked it) to kill, join, or otherwise recognize it. 
+In the above example, `fork` immediately returns a thread, which is
+stored in `t`.  That thread will calculate the factorial of `x` in the
+background while the program continues; when the calculation is
+finished it will block and wait for the parent thread (the one that
+forked it) to kill, join, or otherwise recognize it.
 
-__Threads share names__; if a thread changes the value of a variable, that change will occur in the other threads as well.
-See Mutual exclusion below. 
+_Threads share names_; if a thread changes the value of a variable,
+that change will occur in the other threads as well.  See Mutual
+exclusion below.
 
 == Thread functions
 
-The builtin namespace Thread has functions for manipulating threads once they have been forked. 
+The builtin namespace `Thread` has functions for manipulating threads
+once they have been forked.
 
-=== Kill
-// <synopsis>
-// int kill ( thread t, ... )
-// </synopsis>
+`int kill ( thread t, ... )`
 
-Kills the threads it takes as arguments, regardless of whether or not they are finished, and returns the number of threads successfully killed. 
+Kills the threads it takes as arguments, regardless of whether or not
+they are finished, and returns the number of threads successfully
+killed.
 
-=== Join
-// <synopsis>
-// poly join ( thread t )
-// </synopsis>
+`poly join ( thread t )`
 
 Waits for thread `t` to finish and returns the value of its expression.
 This is how to get the value back out of a thread.
@@ -44,39 +44,34 @@ Once joined, the thread will dissappear.
 For example, 
 
 ----
-
 thread t = fork 1000!;
 # something else...
-printf("1000! = %d\n",Thread::join(t));
+printf("1000! = %d\n", Thread::join(t));
 ----
 
-will execute 'something else' while `t` runs, then wait for it to complete and print out its value. 
+will execute `something else` while `t` runs, then wait for it to
+complete and print out its value.
 
-=== Current
-// <synopsis>
-// thread current ( )
-// </synopsis>
+`thread current ()`
 
-Returns the currently running thread.
-Note that things such as `kill(current())` and `join(current())` are allowed, although the former merely exits and the latter hangs forever; watch out for these errors. 
+Returns the currently running thread.  Note that things such as
+`kill(current())` and `join(current())` are allowed, although the
+former merely exits and the latter hangs forever; watch out for these
+errors.
 
-=== Priorities
-// <synopsis>
-// int set_priority ( thread t, int i )
-// </synopsis>
+`int set_priority ( thread t, int i )` +
+`int get_priority ( thread t )`
 
-// <synopsis>
-// int get_priority ( thread t )
-// </synopsis>
-
-Priorities determine how runtime is divided among threads; a thread with higher priority will always run before one with a lower priority. ``set_priority`` sets the priority of `t` to `i` and returns the new priority. ``get_priority`` returns the priority of thread ``t``. 
+Priorities determine how runtime is divided among threads; a thread
+with higher priority will always run before one with a lower
+priority. `set_priority` sets the priority of `t` to `i` and returns
+the new priority. `get_priority` returns the priority of thread `t`.
 
 == Mutual exclusion
 
 Consider the following situation: 
 
 ----
-
 import Thread;
 
 void function para() {
@@ -96,51 +91,44 @@ join(s);
 When run, this prints out the less than clear message 
 
 ----
-
 MMyy  nperxetv isotuast esmteantte mweinltl  wbaes  ftarlusee..
 ----
 
-Why? Because the two threads are running simultaneously and take turns printing out their messages; the result is that they are interleaved unreadably.
-The solution is in the builtin namespace Mutex.
-A mutex is a first-class object which threads can use to coordinate conflicting sections of code.
-Mutex defines the following functions: 
+Why? Because the two threads are running simultaneously and take turns
+printing out their messages; the result is that they are interleaved
+unreadably.  The solution is in the builtin namespace `Mutex`.  A
+mutex is a first-class object which threads can use to coordinate
+conflicting sections of code.  `Mutex` defines the following functions:
 
-=== New
-// <synopsis>
-// mutex new ( )
-// </synopsis>
+`mutex new ()`
 
 Creates a new mutex and returns it. 
 
-=== Acquire
-// <synopsis>
-// bool acquire ( mutex m )
-// </synopsis>
+`bool acquire ( mutex m )` +
+`bool try_acquire ( mutex m )`
 
 `acquire` blocks until `m` is free, then locks it and returns true.
-At the top of the conflicting code, each thread should acquire the mutex; since only one at a time can have it, they will take turns executing.
-There is also a `try_acquire` that returns false immediately rather than blocking if `m` is in use, but it is deprecated. 
+At the top of the conflicting code, each thread should acquire the
+mutex; since only one at a time can have it, they will take turns
+executing.  There is also a `try_acquire` that returns false
+immediately rather than blocking if `m` is in use, but it is
+deprecated.
 
-=== Release
-// <synopsis>
-// void release ( mutex m )
-// </synopsis>
+`void release ( mutex m )`
 
-When the thread which owns a mutex leaves the conflicting section of code, it should call release to free it for the next thread to acquire it. 
+When the thread which owns a mutex leaves the conflicting section of
+code, it should call release to free it for the next thread to acquire
+it.
 
-=== Owner
-// <synopsis>
-// mutex_owner owner ( mutex m )
-// </synopsis>
+`mutex_owner owner ( mutex m )`
 
-Returns the owner of ``m``: either the thread which currently owns it or null if it is free. 
+Returns the owner of `m`: either the thread which currently owns it or null if it is free. 
 
-== An example
+=== An example
 
 This is how the example above might work with mutual exclusion: 
 
 ----
-
 import Mutex;
 import Thread;
 
@@ -161,61 +149,59 @@ void function dox() {
 thread t = fork para();
 thread s = fork dox();
 join(t);
-        join(s);
+join(s);
 ----
 
 This prints out, as expected, 
 
 ----
-
 My next statement will be false.
 My previous statement was true.
 ----
 
 == Semaphores
 
-Nickle also has counting semaphores, implemented in the Semaphore namespace.
-Semaphores are similar to mutexes, but have some number of threads that may run that isn't necessarily one, as it is with mutexes.
-A semaphore with a count of one behaves just like a mutex. 
+Nickle also has counting semaphores, implemented in the Semaphore
+namespace.  Semaphores are similar to mutexes, but have some number of
+threads that may run that isn't necessarily one, as it is with
+mutexes.  A semaphore with a count of one behaves just like a mutex.
 
-=== New
+`semaphore new ( int c )`
 
-Semaphores are created with ``new``, which is unlike `Mutex::new` in that it takes an argument: the number of threads it will run simultaneously. 
-// <synopsis>
-// semaphore new ( int c )
-// </synopsis>
+Semaphores are created with `new`, which is unlike `Mutex::new` in
+that it takes an argument: the number of threads it will run
+simultaneously.
 
+`void wait ( semaphore s )` +
+`void signal ( semaphore s )`
 
-=== Wait and Signal
-
-Just as Mutexes are ``acquire``d and ``release``d, threads `wait` on semaphores and `signal` them when finished. 
-// <synopsis>
-// void wait ( semaphore s )
-// </synopsis>
-
-// <synopsis>
-// void signal ( semaphore s )
-// </synopsis>
-
-`wait` merely decrements the count of ``s``, which starts with the initial value specified by ``new``.
-If the count, after the decrement, is positive, the thread continues to run; if it is negative, it blocks until the count becomes positive again.
-This will occur when one of the running threads calls ``signal``, which increments the count of `s` and wakes up another thread if any are waiting. 
+`wait` decrements the count of `s`, which starts with the initial
+value specified by `new`.  If the count, after the decrement, is
+positive or zero, the thread continues to run; if it is negative, it
+blocks until the count becomes non-negative again.  This will occur
+when one of the running threads calls `signal`, which increments the
+count of `s` and wakes up another thread if any are waiting.
 
 === Negative initial counts
 
-If `new` is called with a negative initial count, much of the meaning of the semaphore is inverted.
-The count now refers to the number of threads that must wait until one can execute; that is, the first `c` threads will block, and the ``c``+1th will execute. 
+If `new` is called with a negative initial count, much of the meaning
+of the semaphore is inverted.  The count now refers to the number of
+threads that must wait until one can execute; that is, the first `c`
+threads will block, and the `c` + 1th will execute.
 
 === Why semaphores?
 
-Semaphores are useful in situations where several threads can run simultaneously, but not more than a certain number.
-They would be great, for instance, to work in a licensing system, where each thread needs some command, but only a certain number may run at a given time. 
+Semaphores are useful in situations where several threads can run
+simultaneously, but not more than a certain number.  They would be
+great, for instance, to work in a licensing system, where each thread
+needs some command, but only a certain number may run at a given time.
 
 === Be careful
 
-Semaphores, unlike mutexes, are very error-prone.
-They are not ``owned``, in the sense that mutexes are, and therefore do not check what threads are signalling or waiting on them.
-Thus, situations like this are possible: 
+Semaphores, unlike mutexes, are very error-prone.  They are not
+`owned`, in the sense that mutexes are, and therefore do not check
+what threads are signalling or waiting on them.  Thus, situations like
+this are possible:
 
 ----
 
@@ -241,4 +227,6 @@ semaphore 1 (100)
 >
 ----
 
-Therefore, code must be written carefully so that threads do not signal the semaphore more than once, and only once they have waited on it. 
+Therefore, code must be written carefully so that threads do not
+signal the semaphore more than once, and only once they have waited on
+it.

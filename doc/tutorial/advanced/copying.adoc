@@ -1,4 +1,3 @@
-
 = Copy Semantics and Garbage Collection
 
 == Copy by value

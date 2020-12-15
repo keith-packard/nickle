@@ -1,4 +1,3 @@
-
 = Nickle Expressions
 
 Expression types are listed in order of increasing precedence. 
@@ -132,8 +131,8 @@ Factorial:::
 `a !`
 
 Increment:::
-`++a` +
-`a++`
+`+++++a+++` +
+`+++a+++++`
 
 Decrement:::
 `--a` +
@@ -184,11 +183,11 @@ world"`. Characters preceded by a backslash stand for themselves,
 including double-quote (`"`) and blackslash (`\`). The following
 backslashed characters are special:
 
-* \n is newline
-* \r is carriage return
-* \b is backspace
-* \t is tab
-* \f is formfeed
+* `\n` is newline
+* `\r` is carriage return
+* `\b` is backspace
+* `\t` is tab
+* `\f` is formfeed
 
 
 == Variables
@@ -201,26 +200,17 @@ dereference operator yields the value of its target.
 
 The construct 
 
-----
+_str_ `.` _name_
 
-struct.name
-----
-yields the element [replaceable]``name`` of the struct or union [replaceable]``struct``.
+yields the element _name_ of the struct or union _str_
 To retrieve elements from a struct or union pointer, as in C, use 
 
-----
-
-struct->name
-----
+_str_ `+->+` _name_
 
 == Array references
 
-----
-
-arr[expr]
-
-arr[expr,expr,...,expr]
-----
+_array_ `[` _expr_ `]` +
+_array_ `[` expr `,` _expr_ `,` ... `,` _expr_ `]`
 
 Elements of an array are indexed with square braces.  Elements of
 multidimensional arrays have indices in each dimension as in the
@@ -228,10 +218,7 @@ second form.  Pointers to arrays can be indexed by placing the `*`
 dereference operator between the name of the array and the first
 square brace:
 
-----
-
-arr*[expr]
-----
+_array_ `*[` _expr_ `]`
 
 This is, however, deprecated in favor of using references to arrays, which have no such problems. 
 
@@ -242,10 +229,7 @@ See the section on Concurrency.
 
 == Comma operator
 
-----
-
-expr, expr
-----
+_expr_ `,` _expr_
 
 Evaluates each expression in turn, the resulting value is that of the right hand expression.
 For example, 

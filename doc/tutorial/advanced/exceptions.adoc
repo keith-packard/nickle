@@ -1,46 +1,60 @@
-
 = Nickle Exceptions
 
-Nickle has first-class exceptions for error handling and quick escapes from recursive algorithms.
-A number of exceptions are builtin to Nickle that it throws for various errors, including: 
+Nickle has first-class exceptions for error handling and quick escapes
+from recursive algorithms.  A number of exceptions are builtin to
+Nickle that it throws for various errors, including:
 
-* exception uninitialized_value(string msg) - Attempt to use an uninitialized value.
-* exception invalid_argument(string msg,int arg,poly val) - The ``arg``th argument to a builtin function had invalid value ``val``.
-* exception readonly_box(string msg,poly val) - Attempt to change the value of a read-only quantity to ``val``.
-* exception invalid_array_bounds(string msg,poly a,poly i) - Attempt to access array `a` at index `i` is out of bounds.
-* exception divide_by_zero(string msg,real num,real den) - Attempt to divide `num` by `den` when `den` is zero.
-* exception invalid_struct_member(string msg,poly struct,string name) - Attempt to refer to member `name` of the object ``struct``, which does not exist.
-* exception invalid_binop_values(string msg,poly arg1,poly arg2) - Attempt to evaluate a binary operator with arguments `arg1` and ``arg2``, where at least one of these values is invalid.
-* exception invalid_unop_values(string msg,poly arg) - Attempt to evaluate a unary operator with invalid argument ``arg``.
+`exception uninitialized_value(string msg)`::
+Attempt to use an uninitialized value.
+
+`exception invalid_argument(string msg, int arg, poly val)`::
+The argument with index `arg` to a builtin function had invalid value `val`.
+
+`exception readonly_box(string msg, poly val)`::
+Attempt to change the value of a read-only quantity to `val`.
+
+`exception invalid_array_bounds(string msg, poly a, poly i)`::
+Attempt to access array `a` at index `i` is out of bounds.
+
+`exception divide_by_zero(string msg, real num, real den)`::
+Attempt to divide `num` by `den` when `den` is zero.
+
+`exception invalid_struct_member(string msg, poly str, string name)`::
+Attempt to refer to member `name` of the object `str`, which does
+not exist.
+
+`exception invalid_binop_values(string msg, poly arg1, poly arg2)`::
+Attempt to evaluate a binary operator with arguments `arg1` and
+`arg2`, where at least one of these values is invalid.
+
+`exception invalid_unop_values(string msg,poly arg)`::
+Attempt to evaluate a unary operator with invalid argument `arg`.
 
 The following syntax may be used to declare a new exception: 
-// <synopsis>
-// exception <replaceable>name</replaceable> ( <replaceable>type</replaceable> <replaceable>name</replaceable>, ... )
-// </synopsis>
+
+`exception` _name_ `(` _type_ _name_ `,` ... `)`
 
 For example, 
 
 ----
-
 exception my_exception ( string msg, int a, int b, int c );
 ----
 
 == Raise
-// <synopsis>
-// raise <replaceable>name</replaceable> ( <replaceable>value</replaceable>, ... )
-// </synopsis>
+
+`raise` _name_ `(` _value_ `,` ... `)`
 
 Raises the named exception with the given arguments, e.g. 
 
 ----
-
 raise my_exception ( "message", 0, 1, 2 );
 ----
 
-Execution is broken and `my_exception` travels up the stack until it is caught by a try-catch block or it reaches the top level, where it prints an error message such as: 
+Execution is broken and `my_exception` travels up the stack until it
+is caught by a try-catch block or it reaches the top level, where it
+prints an error message such as:
 
 ----
-
 Unhandled exception "my_exception"
         3
         2
@@ -49,21 +63,19 @@ Unhandled exception "my_exception"
 ----
 
 == Try - catch
-// <synopsis>
-// try <replaceable>statement</replaceable>
-// </synopsis>
 
-// <synopsis>
-// catch <replaceable>name</replaceable> ( <replaceable>type</replaceable> <replaceable>name</replaceable>, ... ) { <replaceable>statement-list</replaceable> }
-// </synopsis>
+`try` _statement_ +
+`catch` _name_ `(` _type_ _name_ `,` ... `)` _statement_
 
-`try` executes [replaceable]``statement``; if it raises an exception whose name matches that of a succeeding `catch` block, the arguments are placed in the names specified and the associated [replaceable]``statement-list`` is executed.
-Control continues after the catch without continuing up the stack; if further propagation is desired, [replaceable]``statement-list`` should re-raise the exception.
-Any number of catch blocks may be associated with a try statement.
-For example: 
+`try` executes `statement`; if it raises an exception whose name
+matches that of a succeeding `catch` block, the arguments are placed
+in the names specified and the associated `statement-list` is
+executed.  Control continues after the catch without continuing up the
+stack; if further propagation is desired, `statement-list` should
+re-raise the exception.  Any number of catch blocks may be associated
+with a try statement.  For example:
 
 ----
-
 exception my_exception(string msg,int a,int b,int c);
 
 try raise my_exception("blah",1,2,3);
@@ -72,20 +84,25 @@ catch my_exception(string msg,int a,int b,int c) {
 }
 ----
 
-This example tries to execute a function that raises an exception; since that exception matches the catch block, "blah", 1, 2, and 3 (the arguments) are put into ``msg``, ``a``, ``b``, and `c` and the statement list is executed, which in this case merely prints out the arguments received and continues: 
+This example tries to execute a function that raises an exception;
+since that exception matches the catch block, "blah", 1, 2, and 3 (the
+arguments) are put into `msg`, `a`, `b`, and `c` and the statement
+list is executed, which in this case merely prints out the arguments
+received and continues:
 
 ----
-
 blah: exception successfully caught (1,2,3).
 ----
 
 == Twixt
 
-Nickle does not provide a `finally` clause to a ``try-catch``.
-In order to ensure the order of some expressions, it provides `twixt` (See the section on Statements). For example, 
+`twixt (` _expr_enter_ `;` _expr_leave_ `)` _statement_
+
+Nickle does not provide a `finally` clause to a `try-catch`.  In order
+to ensure the order of some expressions, it provides `twixt` (See the
+section on Statements). For example,
 
 ----
-
 exception my_exception(string msg, int a, int b, int c);
 
 void foo(string msg, int a, int b, int c) {
@@ -95,16 +112,18 @@ void foo(string msg, int a, int b, int c) {
 
 try foo("blah", 1, 2, 3);
 catch my_exception(string msg,int a,int b,int c) {
-printf("%s: exception successfully caught (%d,%d,%d).\n",msg,a,b,c);
+	printf("%s: exception successfully caught (%d,%d,%d).\n",msg,a,b,c);
 }
 ----
+
 Will produce the output: 
 
 ----
-
 entering twixt...leaving twixt.
 blah: exception successfully caught (1,2,3).
 ----
 
-Notice the order of the printed messages: `twixt` finished up before the exception was handled by the ``catch``.
-This is an elegant way to accomplish something that should be done finally, in this case printing the message "leaving twixt" for demonstration. 
+Notice the order of the printed messages: `twixt` finished up before
+the exception was handled by the `catch`.  This is an elegant way to
+accomplish something that should be done finally, in this case
+printing the message `leaving twixt` for demonstration.

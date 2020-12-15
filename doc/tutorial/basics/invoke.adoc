@@ -1,36 +1,31 @@
-
 = Invocation
-// <cmdsynopsis>
-// <command>nickle</command>
-// <arg>-f <replaceable>file</replaceable></arg>
-// <arg>-l <replaceable>file</replaceable></arg>
-// <arg>-e <replaceable>expr</replaceable></arg>
-// <arg><replaceable>script</replaceable></arg>
-// <arg>--</arg>
-// <arg><replaceable>arg ...</replaceable></arg>
-// </cmdsynopsis>
 
+[verse]
+`nickle`
+   `-f` _file_
+   `-l` _file_
+   `-e` _expr_
+   _script_ _arg_ ...
 
-`-f`::
-Evaluate [replaceable]``file``. 
+`-f` _file_::
+Evaluate _file_. 
 
-`-l`::
-Evaluate [replaceable]``file`` like ``-f``, but expect it to be in ``$NICKLEPATH``. 
+`-l` _file_::
+Evaluate _file_ like `-f`, but expect it to be in `$NICKLEPATH`. 
 
 `-e`::
 Evaluate a Nickle expression, e.g. 
 +
-
-
 ----
-
 $ nickle -e 3**4
 81
 $
 ----
+
 `script`::
 If Nickle encounters an unflagged argument, it assumes it to be the name of a script, which it runs.
-If a `$$.$$nicklerc` file is available, it will be evaluated first.
+If a `.nicklerc` file is available, it will be evaluated first.
 No more arguments are processed; the rest of the line is given to the script as its arguments. 
 
-Without `-e` or a script as an argument, Nickle runs interactively, accepting standard input and writing to standard output.
+Without `-e` or a script as an argument, Nickle runs interactively,
+accepting standard input and writing to standard output.

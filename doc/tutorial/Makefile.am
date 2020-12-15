@@ -1,4 +1,3 @@
-
 ADOCFILES=nickle-tutorial.adoc
 PDFFILES=$(ADOCFILES:.adoc=.pdf)
 

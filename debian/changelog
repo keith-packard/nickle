@@ -1,3 +1,9 @@
+nickle (2.89) unstable; urgency=medium
+
+  * Fix a pile of lintian warnings.
+
+ -- Keith Packard <keithp@keithp.com>  Mon, 14 Dec 2020 21:29:39 -0800
+
 nickle (2.88) unstable; urgency=medium
 
   * Switch tutorial to asciidoctor. Closes: #976535.

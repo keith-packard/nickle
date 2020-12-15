@@ -1,5 +1,3 @@
-/* $Header$ */
-
 /*
  * Copyright © 1988-2001 Keith Packard and Bart Massey.
  * All Rights Reserved.  See the file COPYING in this directory

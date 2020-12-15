@@ -1,5 +1,4 @@
 %{
-/* $Header$ */
 
 /*
  * Copyright © 1988-2004 Keith Packard and Bart Massey.

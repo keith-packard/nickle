@@ -1,4 +1,3 @@
-/*
  * All-Pairs Shortest Path Computation
  * using Floyd-Warshall O(n**3) method
  *  CLR 2nd ed p. 632

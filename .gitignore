@@ -4,8 +4,10 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache
-config.h
-config.h.in
+nickle-config.h
+nickle-config.h.in
+build
+compile
 config.log
 config.status
 configure

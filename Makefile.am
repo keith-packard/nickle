@@ -36,7 +36,7 @@ dist-hook: ChangeLog
 nickleincludedir=$(includedir)/nickle
 
 nickleinclude_HEADERS = \
-	builtin.h config.h mem.h nickle.h ref.h value.h \
+	builtin.h nickle-config.h mem.h nickle.h ref.h value.h \
 	builtin-namespaces.h gram.h memp.h opcode.h stack.h
 
 bin_PROGRAMS = nickle
@@ -122,12 +122,12 @@ $(DEB_SIG): $(DEB_TAR)
 	rm -f $@
 	gpg -a -b $(DEB_TAR)
 
-nickle.1: nickle.1.in config.h
+nickle.1: nickle.1.in nickle-config.h
 	sed -e 's,@''VERSION@,$(VERSION),' \
 	    -e 's,@''BUILD_DATE@,$(BUILD_DATE),' \
 	    -e 's,@''pkgdatadir@,$(pkgdatadir),' $(top_srcdir)/nickle.1.in > $@
 	    
-nickle.spec: nickle.spec.in config.h
+nickle.spec: nickle.spec.in nickle-config.h
 	sed -e 's,@''VERSION@,$(VERSION),' \
 	    -e 's,@''pkgdatadir@,$(pkgdatadir),' $(top_srcdir)/nickle.spec.in > $@
 	    

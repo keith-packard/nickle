@@ -5,12 +5,12 @@
  */
 
 #if LOCAL_BUILD
-#include	"config.h"
+#include	"nickle-config.h"
 #include	"mem.h"
 #include	"value.h"
 #include	"opcode.h"
 #else
-#include	<nickle/config.h>
+#include	<nickle/nickle-config.h>
 #include	<nickle/mem.h>
 #include	<nickle/value.h>
 #include	<nickle/opcode.h>

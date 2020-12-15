@@ -4,8 +4,7 @@
  * for licensing information.
  */
 
-#include	<config.h>
-
+#include	"nickle-config.h"
 #include	"mem.h"
 #include	"ref.h"
 

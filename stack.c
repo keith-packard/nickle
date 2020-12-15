@@ -4,9 +4,9 @@
  * for licensing information.
  */
 
-#include	<config.h>
 #include	<assert.h>
 
+#include	"nickle-config.h"
 #include	"mem.h"
 #include	"stack.h"
 

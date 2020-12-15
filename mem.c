@@ -20,10 +20,9 @@
  *
  */
 
-#include	<config.h>
-
 #include	<memory.h>
 #define MEM_NEED_ALLOCATE 1
+#include	"nickle-config.h"
 #include	"mem.h"
 #include	"memp.h"
 #include	<stdlib.h>

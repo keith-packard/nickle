@@ -1,3 +1,0 @@
-version=4
-opts="pgpmode=auto,pgpsigurlmangle=s%$%.sig%" https://nickle.org/release/ \
-    @PACKAGE@@ANY_VERSION@@ARCHIVE_EXT@ debian uupdate

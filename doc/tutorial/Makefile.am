@@ -23,7 +23,9 @@ ADOCINC= \
 	advanced/concurrency.adoc \
 	advanced/continuations.adoc
 
-EXTRA_DIST=$(ADOCFILES) $(ADOCINC)
+IMAGES = nickle_obverse.jpg
+
+EXTRA_DIST=$(ADOCFILES) $(ADOCINC) $(IMAGES)
 
 if HASASCIIDOCTORPDF
 

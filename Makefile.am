@@ -16,12 +16,8 @@ NICKLEFILES = builtin.5c math.5c scanf.5c mutex.5c \
 	prime_sieve.5c factorial.5c gamma.5c sort.5c list.5c skiplist.5c \
 	json.5c
 
-DEBIAN = debian/changelog debian/compat debian/source/format debian/watch \
-	 debian/control debian/copyright debian/rules debian/lintian.override \
-	 debian/tests/control debian/tests/upstream debian/upstream/signing-key.asc
-	 
 EXTRA_DIST = README.name README.release autogen.sh ChangeLog \
-	$(NICKLEFILES) $(DEBIAN) nickle.1.in nickle.spec.in
+	$(NICKLEFILES) nickle.1.in nickle.spec.in
 
 MAINTAINERCLEANFILES=ChangeLog
 
@@ -96,31 +92,7 @@ SIGFILE=$(PACKAGE)-$(VERSION).tar.gz.asc
 DEBFILE=$(PACKAGE)_$(VERSION)_amd64.deb
 SRPMFILE=$(RPMDIR)/SRPMS/$(PACKAGE)-$(VERSION)-1.src.rpm
 RPMFILE=$(RPMDIR)/RPMS/$(PACKAGE)-$(VERSION)-1.x86_64.rpm
-RELEASE_FILES = $(TARFILE) $(SIGFILE) $(DEBFILE) $(SRPMFILE) $(RPMFILE)
-DEB_TAR_DIR=$(PACKAGE)_$(VERSION).orig
-DEB_TAR=$(DEB_TAR_DIR).tar.gz
-DEB_SIG=$(DEB_TAR).asc
-
-debuild: $(DEBFILE)
-
-$(DEBFILE): $(DEB_TAR) $(DEB_SIG) $(TARFILE)
-	tar xzf $(TARFILE)
-	(cd $(distdir) && pdebuild --buildresult $(abs_top_builddir) --auto-debsign)
-
-debuild-unsigned: $(DEB_TAR) $(TARFILE)
-	tar xzf $(distdir).tar.gz
-	(cd $(distdir)/debian && debuild -us -uc)
-
-$(DEB_TAR): $(TARFILE)
-	rm -f $@
-	rm -rf $(DEB_TAR_DIR)
-	tar xzf $(TARFILE) --transform="s%$(distdir)%$(DEB_TAR_DIR)%"
-	rm -rf $(DEB_TAR_DIR)/debian
-	tar czf $@ $(DEB_TAR_DIR)
-
-$(DEB_SIG): $(DEB_TAR)
-	rm -f $@
-	gpg -a -b $(DEB_TAR)
+RELEASE_FILES = $(TARFILE) $(SIGFILE) $(SRPMFILE) $(RPMFILE)
 
 nickle.1: nickle.1.in nickle-config.h
 	sed -e 's,@''VERSION@,$(VERSION),' \
@@ -152,6 +124,9 @@ $(SRPMFILE): $(RPMFILE)
 $(TARFILE): dist-gzip $(DISTFILES)
 	touch $(TARFILE)
 	echo $(TARFILE) ready
+
+compile:
+	echo 'no need to build compile'
 
 $(SIGFILE): $(TARFILE)
 	rm -f $@

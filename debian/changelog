@@ -1,3 +1,9 @@
+nickle (2.90) unstable; urgency=medium
+
+  * Fix a syntax error in sort.5c.
+
+ -- Keith Packard <keithp@keithp.com>  Sat, 19 Dec 2020 19:00:23 -0800
+
 nickle (2.89) unstable; urgency=medium
 
   * Fix a pile of lintian warnings.

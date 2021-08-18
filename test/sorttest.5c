@@ -1,0 +1,39 @@
+/* Make sure sorting works */
+
+autoimport PRNG;
+autoimport Sort;
+
+bool ordered(real[] values)
+{
+    int d = dim(values);
+    if (d == 0)
+	return true;
+    real a = values[0];
+    for (int i = 1; i < d; i++) {
+	if (a > values[i])
+	    return false;
+	a = values[i];
+    }
+    return true;
+}
+
+void check(&real[] values, string sort)
+{
+    if (ordered(values))
+	return;
+    abort("check failed %v not ordered by %s", values, sort);
+}
+
+bool int_gt(int a, int b) = a > b;
+
+for (int i = 0; i < 100; i++) {
+    int len = randint(10000);
+    printf("test %d len %d\n", i, len);
+    real[*] v = Sort::randomints(len, 1000000);
+    real[*] qv = v;
+    real[*] mv = v;
+    Sort::qsort(&qv, int_gt);
+    check(&qv, "qsort");
+    Sort::mergesort(&mv, int_gt);
+    check(&mv, "mergesort");
+}

@@ -61,6 +61,12 @@ namespace PRNG {
      * Returns a random integer in the range 0..'n'-1 
      */
   {
+    if (n == 0)
+      return 0;
+
+    if (n < 0)
+      return -randint(-n);
+
     int bits = bit_width(n);
 
     for (;;) {

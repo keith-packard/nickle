@@ -23,7 +23,7 @@
 static int
 edit (char *file_name)
 {
-    char	buf[1024];
+    char	*buf;
     char	*editor;
     int		ret;
 
@@ -31,10 +31,13 @@ edit (char *file_name)
 	    editor = DEFAULT_EDITOR;
     if (!file_name)
 	file_name = "";
-    (void) sprintf (buf, "%s %s", editor, file_name);
-    IoStop ();
-    ret = system (buf);
-    IoStart ();
+    ret = asprintf (&buf, "%s %s", editor, file_name);
+    if (ret >= 0) {
+	IoStop ();
+	ret = system (buf);
+	IoStart ();
+	free(buf);
+    }
     return ret;
 }
 

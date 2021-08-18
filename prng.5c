@@ -61,7 +61,13 @@ namespace PRNG {
      * Returns a random integer in the range 0..'n'-1 
      */
   {
-    return randbits(32 + bit_width (n)) % n;
+    int bits = bit_width(n);
+
+    for (;;) {
+      int r = randbits(bits);
+      if (r < n)
+	return r;
+    }
   }
 
   public void shuffle(&poly[*] a) 

@@ -23,7 +23,7 @@ namespace Sort {
 		/* partition the array into two pieces and return the pivot */
 		int partition (int p, int r) {
 		    /* select a random element to pivot */
-		    int pivot = p + PRNG::randint(p-r);
+		    int pivot = p + PRNG::randint(r-p);
 		    exchange (pivot, r);
 		    
 		    poly x = a[r];

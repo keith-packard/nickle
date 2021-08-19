@@ -1,0 +1,103 @@
+/*
+ * Copyright © 2021 Keith Packard.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+/*
+ * Implementation of ChaCha20
+ */
+
+namespace ChaCha {
+
+    int rotl(int a, int b) = ((a << b) | (a >> (32 - b))) & 0xffffffff;
+    int plus(int a, int b) = (a + b) & 0xffffffff;
+    int xor(int a, int b) = (a ^ b) & 0xffffffff;
+
+    const int ROUNDS = 10;
+
+    public void qr(&int[16] x, int a, int b, int c, int d) {
+	x[a] = plus(x[a], x[b]);  x[d] = xor(x[d], x[a]);  x[d] = rotl(x[d],16);
+	x[c] = plus(x[c], x[d]);  x[b] = xor(x[b], x[c]);  x[b] = rotl(x[b],12);
+	x[a] = plus(x[a], x[b]);  x[d] = xor(x[d], x[a]);  x[d] = rotl(x[d], 8);
+	x[c] = plus(x[c], x[d]);  x[b] = xor(x[b], x[c]);  x[b] = rotl(x[b], 7);
+    }
+
+    /*
+     * Basic ChaCha20 operation
+     */
+    public void block(&int[16] out, &int[16] in)
+    {
+	int i;
+	int[16] x;
+
+	for (i = 0; i < 16; ++i)
+		x[i] = in[i];
+
+	/* 10 loops × 2 rounds/loop = 20 rounds */
+
+	for (i = 0; i < ROUNDS; i ++) {
+	    /* Odd round */
+	    qr(&x, 0, 4, 8, 12); /* column 0 */
+	    qr(&x, 1, 5, 9, 13); /* column 1 */
+	    qr(&x, 2, 6, 10, 14); /* column 2 */
+	    qr(&x, 3, 7, 11, 15); /* column 3 */
+	    /*  Even round */
+	    qr(&x, 0, 5, 10, 15); /* diagonal 1 (main diagonal) */
+	    qr(&x, 1, 6, 11, 12); /* diagonal 2 */
+	    qr(&x, 2, 7, 8, 13); /* diagonal 3 */
+	    qr(&x, 3, 4, 9, 14); /* diagonal 4 */
+	}
+	for (i = 0; i < 16; ++i)
+	    out[i] = plus(x[i],in[i]);
+    }
+
+    int lsb_word(&int[*] bytes, int i) {
+	return ((bytes[i]) | (bytes[i+1] << 8) |
+		(bytes[i+2] << 16) | (bytes[i+3] << 24));
+    }
+
+    /*
+     * Convert key, count and nonce into chacha state
+     */
+    public int[16] state(&int[32] key, int count, &int[12] nonce)
+    {
+	static int[4] chacha_const = {
+	    0x61707865, 0x3320646e, 0x79622d32, 0x6b206574
+	};
+	return (int[16]) { [i] = (i < 4) ? chacha_const[i] :
+	    ((i < 12) ? lsb_word(&key, (i-4)*4) :
+	     ((i == 12) ? count : lsb_word(&nonce, (i-13) * 4))) };
+    }
+
+    /*
+     * Generate bytes from 32-bit units
+     */
+    void serialize(&int[64] bytes, &int[16] state)
+    {
+	for (int i = 0; i < 64; i++)
+	    bytes[i] = (state[floor(i/4)] >> ((i % 4) * 8)) & 0xff;
+    }
+
+    /*
+     * Stream cypher.
+     */
+    public void encrypt(&int[16] state,
+			&int[*] plaintext, &int[*] cyphertext)
+    {
+	int[16] state_local = state;
+	int[16] state_cha;
+	int[64] bytes;
+	int l = dim(plaintext);
+
+	for (int i = 0; i < ceil(l / 64); i++) {
+	    state_local[12] = state[12] + i;
+	    block(&state_cha, &state_local);
+	    serialize(&bytes, &state_cha);
+	    int e = min(64, l - i * 64);
+	    for (int k = 0; k < e; k++)
+		cyphertext[i*64 + k] = plaintext[i*64+k] ^ bytes[k];
+	}
+    }
+}
+

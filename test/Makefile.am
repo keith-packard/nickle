@@ -17,7 +17,8 @@ check_SCRIPTS=\
 	jsontest.5c \
 	datetest.5c \
 	string-file.5c \
-	sorttest.5c
+	sorttest.5c \
+	chacha_test.5c
 
 TABLES=math-tables.5c
 

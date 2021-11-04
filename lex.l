@@ -613,7 +613,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		yylval.value = atov(yytext+2, 16);
 		return HEX_NUM;
 		}
-0x(([0-9a-fA-F_]+((\.[0-9a-fA-F_]*(\{[0-9a-fA-F_]+\})?)?))|(\.[0-9a-fA-F_]+)|(\.[0-9a-fA-F_]*\{[0-9a-fA-F_]+\}))(([Ee][-+]?[0-9a-fA-F_]+)?) {
+0x(([0-9a-fA-F_]+((\.[0-9a-fA-F_]*(\{[0-9a-fA-F_]+\})?)?))|(\.[0-9a-fA-F_]+)|(\.[0-9a-fA-F_]*\{[0-9a-fA-F_]+\}))(([Pp][-+]?[0-9a-fA-F_]+)?) {
 		yylval.value = aetov (yytext+2, 16);
 		return HEX_FLOAT;
 		}
@@ -840,6 +840,7 @@ aetov (char *s, int base)
     ENTER ();
     char    *int_part, *frac_part, *rep_part, *exp_part, *next;
     int	    sign, int_len = -1, frac_len = -1, rep_len = -1, exp_frac_len = -1, esign;
+    int	    exp_base = 10;
     Value   v, sv;
 
     int_part = s;
@@ -869,7 +870,14 @@ aetov (char *s, int base)
 		RETURN(Void);	/* can't happen */
 	}
     }
-    exp_part = scan_number(next, 'e', &exp_frac_len);
+    exp_part = NULL;
+    if (base == 10) {
+	exp_part = scan_number(next, 'e', &exp_frac_len);
+	exp_base = 10;
+    } else if (base == 16) {
+	exp_part = scan_number(next, 'p', &exp_frac_len);
+	exp_base = 2;
+    }
     if (exp_part) {
 	if (frac_len < 0)
 	    frac_len = exp_frac_len;
@@ -903,7 +911,7 @@ aetov (char *s, int base)
     }
     if (exp_part)
     {
-	sv = Pow (NewInt (base), atov (exp_part, base));
+	sv = Pow (NewInt (exp_base), atov (exp_part, 10));
 	if (esign > 0)
 	    v = Times (v, sv);
 	else

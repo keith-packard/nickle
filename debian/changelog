@@ -1,3 +1,10 @@
+nickle (2.92) unstable; urgency=medium
+
+  * Make lexing numbers in hex float form compatible with C %a
+  * Add a bunch of portability fixes from NetBSD
+
+ -- Keith Packard <keithp@keithp.com>  Fri, 25 Feb 2022 01:20:07 -0800
+
 nickle (2.91) unstable; urgency=medium
 
   * Make randint produce evenly distributed values

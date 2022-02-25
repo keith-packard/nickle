@@ -581,7 +581,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		yylval.value = atov(yytext+2, 8);
 		return OCTAL_NUM;
 		}
-0o(([0-7_]+((\.[0-7_]*(\{[0-7_]+\})?)?))|(\.[0-7_]+)|(\.[0-7_]*\{[0-7_]+\}))(([Ee][-+]?[0-7_]+)?) {
+0o(([0-7_]+((\.[0-7_]*(\{[0-7_]+\})?)?))|(\.[0-7_]+)|(\.[0-7_]*\{[0-7_]+\}))(([Ee][-+]?[0-9_]+)?) {
 		yylval.value = aetov (yytext+2, 8);
 		return OCTAL_FLOAT;
 		}
@@ -597,7 +597,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		yylval.value = atov(yytext+2, 2);
 		return BINARY_NUM;
 		}
-0b(([01_]+((\.[01_]*(\{[01_]+\})?)?))|(\.[01_]+)|(\.[01_]*\{[01_]+\}))(([Ee][-+]?[01_]+)?) {
+0b(([01_]+((\.[01_]*(\{[01_]+\})?)?))|(\.[01_]+)|(\.[01_]*\{[01_]+\}))(([Ee][-+]?[0-9_]+)?) {
 		yylval.value = aetov (yytext+2, 2);
 		return BINARY_FLOAT;
 		}
@@ -613,7 +613,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		yylval.value = atov(yytext+2, 16);
 		return HEX_NUM;
 		}
-0x(([0-9a-fA-F_]+((\.[0-9a-fA-F_]*(\{[0-9a-fA-F_]+\})?)?))|(\.[0-9a-fA-F_]+)|(\.[0-9a-fA-F_]*\{[0-9a-fA-F_]+\}))(([Pp][-+]?[0-9a-fA-F_]+)?) {
+0x(([0-9a-fA-F_]+((\.[0-9a-fA-F_]*(\{[0-9a-fA-F_]+\})?)?))|(\.[0-9a-fA-F_]+)|(\.[0-9a-fA-F_]*\{[0-9a-fA-F_]+\}))(([Pp][-+]?[0-9_]+)?) {
 		yylval.value = aetov (yytext+2, 16);
 		return HEX_FLOAT;
 		}
@@ -840,9 +840,29 @@ aetov (char *s, int base)
     ENTER ();
     char    *int_part, *frac_part, *rep_part, *exp_part, *next;
     int	    sign, int_len = -1, frac_len = -1, rep_len = -1, exp_frac_len = -1, esign;
-    int	    exp_base = 10;
     Value   v, sv;
+    char    exp_char;
+    int	    exp_base;
 
+    switch (base) {
+    case 2:
+	exp_char = 'e';
+	exp_base = 2;
+	break;
+    case 8:
+	exp_char = 'e';
+	exp_base = 2;
+	break;
+    case 10:
+    default:
+	exp_char = 'e';
+	exp_base = 10;
+	break;
+    case 16:
+	exp_char = 'p';
+	exp_base = 2;
+	break;
+    }
     int_part = s;
     sign = 1;
     if (*int_part == '+')
@@ -870,14 +890,7 @@ aetov (char *s, int base)
 		RETURN(Void);	/* can't happen */
 	}
     }
-    exp_part = NULL;
-    if (base == 10) {
-	exp_part = scan_number(next, 'e', &exp_frac_len);
-	exp_base = 10;
-    } else if (base == 16) {
-	exp_part = scan_number(next, 'p', &exp_frac_len);
-	exp_base = 2;
-    }
+    exp_part = scan_number(next, exp_char, &exp_frac_len);
     if (exp_part) {
 	if (frac_len < 0)
 	    frac_len = exp_frac_len;

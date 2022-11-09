@@ -1122,7 +1122,11 @@ NewDoubleFloat (double d)
     double_digit    dd;
     if (d == 0.0) RETURN (Zero);
     e = ilogb (d);
+#ifdef HAVE_SIGNIFICAND
     m = significand (d);
+#else
+    m = scalbn(d, -e);
+#endif
     ms = Positive;
     if (m < 0)
     {

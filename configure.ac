@@ -97,6 +97,13 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(unsetenv setenv putenv gettimeofday hstrerror select)
 AC_CHECK_FUNCS(sigaction sigrelse sigignore setrlimit getrlimit)
 AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
+AC_CHECK_FUNC(significand,,AC_CHECK_LIB(m, significand))
+
+case "$ac_cv_func_significand""$ac_cv_lib_m_significand" in
+    *yes*)
+	AC_DEFINE(HAVE_SIGNIFICAND,1,[Has significand function])
+	;;
+esac
 
 AC_PATH_PROGS([ASCIIDOCTORPDF],[asciidoctor-pdf])
 

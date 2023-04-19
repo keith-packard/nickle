@@ -28,11 +28,29 @@ void test_round_date(date_t date) {
 	raise bad_date(date, sl, l);
 }
 
+/* Allow either "UTC" or "GMT" to represent times that are 0 minutes
+ * from "UTC".
+ */
+string
+canonical_zone(string z)
+{
+    if (z == "UTC" || z == "NONE")
+	return "GMT";
+    return z;
+}
+
+bool
+date_equal(date_t a, date_t b) {
+    a.zone = canonical_zone(a.zone);
+    b.zone = canonical_zone(b.zone);
+    return a == b;
+}
+
 void test_utc_seconds(int seconds, date_t date) {
     date_t	got_date = gmtime(seconds);
     int		got_seconds = timegm(date);
 
-    if (got_date != date)
+    if (!date_equal(got_date, date))
 	raise bad_date(date, seconds, got_date);
     if (got_seconds != seconds)
 	raise bad_seconds(seconds, date, got_seconds);
@@ -53,6 +71,7 @@ test_utc_seconds(0,
 		     .yday = 0,
 		     .year = 1970,
 		     .isdst = false,
+		     .gmtoff = 0,
 		     .zone = "GMT"
 			 });
 
@@ -61,4 +80,4 @@ test_utc_seconds(0,
  */
 test_utc_seconds(2**31-1,
 		 (date_t) {sec = 7, min = 14, hour = 3, mday = 19, mon = 1, year = 2038,
-			 wday = 2, yday = 18, isdst = false, zone = "GMT"});
+		     wday = 2, yday = 18, isdst = false, gmtoff = 0, zone = "GMT"});

@@ -23,9 +23,9 @@ static Type *typeDate;
 #define DATE_S	"00"
 
 static Value
-int_value(int s)
+int_value(signed_digit s)
 {
-    return Reduce(NewSignedDigitInteger((signed_digit) s));
+    return Reduce(NewSignedDigitInteger(s));
 }
 
 static int
@@ -59,6 +59,22 @@ value_bool(Value s, Atom member, char *error, int def)
     return BoolPart(mem, error);
 }
 
+static const char *
+value_string(Value s, Atom member, char *error, const char *def)
+{
+    Value	ref = StructMemRef(s, AtomId(member));
+    Value	mem;
+
+    if (ref == 0)
+	return def;
+
+    mem = RefValueGet(ref);
+    if (mem == 0)
+	return def;
+
+    return StrzPart(mem, error);
+}
+
 static Value
 to_date(struct tm *tm)
 {
@@ -76,7 +92,16 @@ to_date(struct tm *tm)
     BoxValueSet (box, 6, int_value(tm->tm_wday));
     BoxValueSet (box, 7, int_value(tm->tm_yday));
     BoxValueSet (box, 8, tm->tm_isdst ? TrueVal : FalseVal);
-    BoxValueSet (box, 9, NewStrString(tm->tm_zone));
+#ifdef HAVE_STRUCT_TM_TM_GMTOFF
+    BoxValueSet (box, 9, int_value(tm->tm_gmtoff));
+#else
+    BoxValueSet (box, 9, 0);
+#endif
+#ifdef HAVE_STRUCT_TM_TM_ZONE
+    BoxValueSet (box, 10, NewStrString(tm->tm_zone));
+#else
+    BoxValueSet (box, 10, NewStrString("NONE"));
+#endif
     return ret;
 }
 
@@ -92,7 +117,12 @@ from_date(Value date, struct tm *tm)
     tm->tm_wday = value_int(date, "wday", "invalid wday", 0);
     tm->tm_yday = value_int(date, "yday", "invalid yday", 0);
     tm->tm_isdst = value_bool(date, "isdst", "invalid isdst", 0);
-    tm->tm_zone = NULL;
+#ifdef HAVE_STRUCT_TM_TM_GMTOFF
+    tm->tm_gmtoff = value_int(date, "gmtoff", "invalid gmtoff", 0);
+#endif
+#ifdef HAVE_STRUCT_TM_TM_ZONE
+    tm->tm_zone = value_string(date, "zone", "invalid zone", "NONE");
+#endif
 }
 
 static Value
@@ -205,7 +235,7 @@ import_Date_namespace()
 			    publish_public,
 			    DATE_I,
 			    NULL,
-			    BuildStructType (10,
+			    BuildStructType (11,
 					     typePrim[rep_integer], "sec",
 					     typePrim[rep_integer], "min",
 					     typePrim[rep_integer], "hour",
@@ -215,7 +245,9 @@ import_Date_namespace()
 					     typePrim[rep_integer], "wday",
 					     typePrim[rep_integer], "yday",
 					     typePrim[rep_bool], "isdst",
-					     typePrim[rep_string], "zone"));
+					     typePrim[rep_integer], "gmtoff",
+					     typePrim[rep_string], "zone"
+				));
 
     BuiltinFuncs1 (&DateNamespace, funcs_1);
     EXIT ();

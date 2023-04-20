@@ -98,6 +98,12 @@ AC_CHECK_FUNCS(unsetenv setenv putenv gettimeofday hstrerror select)
 AC_CHECK_FUNCS(sigaction sigrelse sigignore setrlimit getrlimit)
 AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
 AC_CHECK_FUNC(significand,,AC_CHECK_LIB(m, significand))
+AC_CHECK_MEMBER([struct tm.tm_zone],
+		AC_DEFINE([HAVE_STRUCT_TM_TM_ZONE], 1, [Has tm_zone in struct tm]),,
+		[[#include <time.h>]])
+AC_CHECK_MEMBER([struct tm.tm_gmtoff],
+		AC_DEFINE([HAVE_STRUCT_TM_TM_GMTOFF], 1, [Has tm_gmtoff in struct tm]),,
+		[[#include <time.h>]])
 
 case "$ac_cv_func_significand""$ac_cv_lib_m_significand" in
     *yes*)

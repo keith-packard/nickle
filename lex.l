@@ -12,8 +12,8 @@
 #include	<strings.h>
 #include	<errno.h>
 #ifdef HAVE_LIBREADLINE
-#include	<readline/readline.h>
-#include	<readline/history.h>
+#include	READLINE_H
+#include	HISTORY_H
 #endif
     
 /*
@@ -125,7 +125,7 @@ LexInit (void)
 
 #if HAVE_LIBREADLINE
     rl_getc_function = ReadlineGetChar;
-    rl_prep_term_function = my_prep_terminal;
+    rl_prep_term_function = (void *) my_prep_terminal;
     rl_deprep_term_function = my_deprep_terminal;
     rl_catch_signals = 0;
 #endif

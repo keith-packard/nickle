@@ -52,8 +52,6 @@ nickle_SOURCES = \
 	builtin-date.c builtin.c builtin.h \
 	builtin-foreign.c gram.y lex.l
 
-nickle_LDFLAGS=$(NICKLE_LDFLAGS)
-
 pkgdata_DATA = $(NICKLEFILES) COPYING
 
 man_MANS = nickle.1

@@ -28,7 +28,7 @@
 #endif
 
 #if HAVE_LIBREADLINE
-#include <readline/readline.h>
+#include READLINE_H
 #endif
 
 int	stdin_interactive;

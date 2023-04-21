@@ -60,12 +60,11 @@ AC_DEFUN([AS_COMPILER_FLAG],
 
 AS_COMPILER_FLAG([-Wl,-E], GCC_EXTERN="yes", GCC_EXTERN="no")
 if test $GCC_EXTERN = yes; then
-	NICKLE_LDFLAGS="-Wl,-E"
+	LDFLAGS="-Wl,-E"
 	AC_DEFINE([HAVE_EXTERN_SYMS], 1, [C compilers can extern program symbols])
 else
-	NICKLE_LDFLAGS=""
+	LDFLAGS=""
 fi
-AC_SUBST(NICKLE_LDFLAGS)
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -120,20 +119,47 @@ AC_FUNC_GETPGRP
 dnl Handle large files
 AC_SYS_LARGEFILE
 
-dnl The readline test is complicated enough to rate its own file
-AC_LIB_READLINE
+AC_ARG_WITH(libedit, "use libedit for command line editing", [use_libedit=yes], [use_libedit=no])
 
-if test "x$ac_cv_header_readline_readline_h" = xyes; then
+case "$use_libedit" in
+ yes)
+   PKG_CHECK_MODULES([LIBEDIT], [libedit])
+   have_libreadline=yes
+   LIBREADLINE_CFLAGS="${LIBEDIT_CFLAGS}"
+   LIBREADLINE_LIBS="${LIBEDIT_LIBS}"
+   READLINE_H="<readline.h>"
+   HISTORY_H="<history.h>"
+   ;;
+ *)
+   AC_LIB_READLINE
+   echo "done checking for readline"
+   if test "x$ac_cv_header_readline_readline_h" = xyes; then
+       have_libreadline=yes
+       READLINE_H="<readline/readline.h>"
+       HISTORY_H="<readline/history.h>"
+    fi
+   ;;
+esac
+
+if test "x$have_libreadline" = "xyes"; then
+
+    AC_DEFINE(HAVE_LIBREADLINE, 1, [Has readline library])
+    AC_DEFINE_UNQUOTED(READLINE_H, ${READLINE_H}, [readline.h include path])
+    AC_DEFINE_UNQUOTED(HISTORY_H, ${HISTORY_H}, [history.h include path])
+
+    CFLAGS="${LIBREADLINE_CFLAGS} ${CFLAGS}"
+    LIBS="${LIBREADLINE_LIBS} ${LIBS}"
+
     AC_CHECK_DECL(rl_catch_signals,
-		  AC_DEFINE(HAVE_RL_CATCH_SIGNALS,1,[Has rl_catch_signals]),,[#include <readline/readline.h>])
+		  AC_DEFINE(HAVE_RL_CATCH_SIGNALS,1,[Has rl_catch_signals]),,[#include ${READLINE_H}])
     AC_CHECK_DECL(rl_reset_after_signal,
-		  AC_DEFINE(HAVE_RL_RESET_AFTER_SIGNAL,1,[Has rl_reset_after_signal]),,[#include <readline/readline.h>])
+		  AC_DEFINE(HAVE_RL_RESET_AFTER_SIGNAL,1,[Has rl_reset_after_signal]),,[#include ${READLINE_H}])
     AC_CHECK_DECL(rl_cleanup_after_signal,
-		  AC_DEFINE(HAVE_RL_CLEANUP_AFTER_SIGNAL,1,[Has rl_cleanup_after_signal]),,[#include <readline/readline.h>])
+		  AC_DEFINE(HAVE_RL_CLEANUP_AFTER_SIGNAL,1,[Has rl_cleanup_after_signal]),,[#include ${READLINE_H}])
     AC_CHECK_DECL(rl_echo_signal_char,
-		  AC_DEFINE(HAVE_RL_ECHO_SIGNAL_CHAR,1,[Has rl_echo_signal_char]),,[#include <readline/readline.h>])
+		  AC_DEFINE(HAVE_RL_ECHO_SIGNAL_CHAR,1,[Has rl_echo_signal_char]),,[#include ${READLINE_H}])
     AC_CHECK_DECL(rl_free_line_state,
-		  AC_DEFINE(HAVE_RL_FREE_LINE_STATE,1,[Has rl_free_line_state]),,[#include <readline/readline.h>])
+		  AC_DEFINE(HAVE_RL_FREE_LINE_STATE,1,[Has rl_free_line_state]),,[#include ${READLINE_H}])
 fi
 
 if test "x$prefix" = xNONE; then

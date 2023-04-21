@@ -10,6 +10,7 @@
  * invoke the users editor (default /bin/ed) 
  */
 
+#define _GNU_SOURCE
 #include	<stdio.h>
 #include	<string.h>
 #include	<stdlib.h>

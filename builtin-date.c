@@ -121,7 +121,7 @@ from_date(Value date, struct tm *tm)
     tm->tm_gmtoff = value_int(date, "gmtoff", "invalid gmtoff", 0);
 #endif
 #ifdef HAVE_STRUCT_TM_TM_ZONE
-    tm->tm_zone = value_string(date, "zone", "invalid zone", "NONE");
+    tm->tm_zone = (char *) value_string(date, "zone", "invalid zone", "NONE");
 #endif
 }
 

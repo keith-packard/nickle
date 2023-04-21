@@ -177,12 +177,14 @@ stop (int sig)
 {
     sigset_t	set, oset;
 
-#if HAVE_RL_CLEANUP_AFTER_SIGNAL
     if (stdin_in_readline) {
+#if HAVE_RL_ECHO_SIGNAL_CHAR
 	rl_echo_signal_char(sig);
-	rl_cleanup_after_signal();
-    }
 #endif
+#if HAVE_RL_CLEANUP_AFTER_SIGNAL
+	rl_cleanup_after_signal();
+#endif
+    }
 
     IoStop ();
     releaseSignal (sig);
@@ -197,7 +199,7 @@ stop (int sig)
     catchSignal (sig, stop);
     IoStart ();
 
-#if HAVE_RL_CLEANUP_AFTER_SIGNAL
+#if HAVE_RL_RESET_AFTER_SIGNAL
     if (stdin_in_readline)
 	rl_reset_after_signal();
 #endif
@@ -206,12 +208,14 @@ stop (int sig)
 void
 die (int sig)
 {
-#if HAVE_RL_CLEANUP_AFTER_SIGNAL
     if (stdin_in_readline) {
+#if HAVE_RL_FREE_LINE_STATE
 	rl_free_line_state();
-	rl_cleanup_after_signal();
-    }
 #endif
+#if HAVE_RL_CLEANUP_AFTER_SIGNAL
+	rl_cleanup_after_signal();
+#endif
+    }
     IoStop ();
     _exit (sig);
 }

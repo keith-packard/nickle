@@ -130,6 +130,10 @@ if test "x$ac_cv_header_readline_readline_h" = xyes; then
 		  AC_DEFINE(HAVE_RL_RESET_AFTER_SIGNAL,1,[Has rl_reset_after_signal]),,[#include <readline/readline.h>])
     AC_CHECK_DECL(rl_cleanup_after_signal,
 		  AC_DEFINE(HAVE_RL_CLEANUP_AFTER_SIGNAL,1,[Has rl_cleanup_after_signal]),,[#include <readline/readline.h>])
+    AC_CHECK_DECL(rl_echo_signal_char,
+		  AC_DEFINE(HAVE_RL_ECHO_SIGNAL_CHAR,1,[Has rl_echo_signal_char]),,[#include <readline/readline.h>])
+    AC_CHECK_DECL(rl_free_line_state,
+		  AC_DEFINE(HAVE_RL_FREE_LINE_STATE,1,[Has rl_free_line_state]),,[#include <readline/readline.h>])
 fi
 
 if test "x$prefix" = xNONE; then

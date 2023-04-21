@@ -735,7 +735,7 @@ ThreadUnwind (Value thread, int twixt, int catch)
 #endif
 }
 
-#define ThreadBoxCheck(box,i) (BoxValueGet(box,i) == 0 ? ThreadBoxSetDefault(box,i,0) : 0)
+#define ThreadBoxCheck(box,i) do { if (BoxValueGet(box, i) == 0) ThreadBoxSetDefault(box,i,0); } while(0)
 
 typedef struct _TypeChain {
     struct _TypeChain	*prev;
@@ -745,38 +745,34 @@ typedef struct _TypeChain {
 static void
 ThreadBoxSetDefault (BoxPtr box, int i, TypeChain *chain)
 {
-    if (BoxValueGet (box, i) == 0)
-    {
-	Type	    *ctype = TypeCanon (BoxType (box, i));
-	StructType  *st = ctype->structs.structs;
-	TypeChain   link, *c;
+    Type	*ctype = TypeCanon (BoxType (box, i));
+    StructType  *st = ctype->structs.structs;
+    TypeChain   link, *c;
 
-	/*
-	 * Check for recursion
-	 */
-	for (c = chain; c; c = c->prev)
-	    if (c->type == ctype)
-		return;
+    /*
+     * Check for recursion
+     */
+    for (c = chain; c; c = c->prev)
+	if (c->type == ctype)
+	    return;
 
-	link.prev = chain;
-	link.type = ctype;
-	
-	switch (ctype->base.tag) {
-	case type_union:
-	    BoxValueSet (box, i, NewUnion (st, False));
-	    break;
-	case type_struct:
-	    BoxValueSet (box, i, NewStruct (st, False));
-	    box = BoxValueGet (box, i)->structs.values;
-	    for (i = 0; i < st->nelements; i++)
-	    {
-		if (BoxValueGet (box, i) == 0)
-		    ThreadBoxSetDefault (box, i, &link);
-	    }
-	    break;
-	default:
-	    break;
+    link.prev = chain;
+    link.type = ctype;
+
+    switch (ctype->base.tag) {
+    case type_union:
+	BoxValueSet (box, i, NewUnion (st, False));
+	break;
+    case type_struct:
+	BoxValueSet (box, i, NewStruct (st, False));
+	box = BoxValueGet (box, i)->structs.values;
+	for (i = 0; i < st->nelements; i++) {
+	    if (BoxValueGet (box, i) == 0)
+		ThreadBoxSetDefault (box, i, &link);
 	}
+	break;
+    default:
+	break;
     }
 }
 

@@ -34,7 +34,7 @@ TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir)
 TESTS=$(check_SCRIPTS)
 LOG_COMPILER=$(top_builddir)/nickle
 
-EXTRA_DIST=$(check_SCRIPTS)
+EXTRA_DIST=$(check_SCRIPTS) math-tables.c
 
 math.5c: $(TABLES)
 

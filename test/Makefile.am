@@ -28,8 +28,6 @@ testdir=$(pkgdatadir)/test
 
 test_DATA=$(check_SCRIPTS) $(TABLES)
 
-noinst_PROGRAMS=math-tables
-
 CLEANFILES=$(TABLES)
 
 TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir)
@@ -40,5 +38,11 @@ EXTRA_DIST=$(check_SCRIPTS)
 
 math.5c: $(TABLES)
 
-$(TABLES): math-tables
-	./math-tables > $(TABLES)
+$(TABLES): math-tables$(BUILD_EXEEXT)
+	./math-tables$(BUILD_EXEEXT) > $(TABLES)
+
+math-tables$(BUILD_EXEEXT): math-tables.o
+	$(CC_FOR_BUILD) -o $@ $(CFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) math-tables.o -lm
+
+math-tables.o: math-tables.c
+	$(CC_FOR_BUILD) -o $@ $(CPPFLAGS_FOR_BUILD) $(CFLAGS_FOR_BUILD) -c math-tables.c

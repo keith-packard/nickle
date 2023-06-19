@@ -113,7 +113,9 @@ LexInit (void)
     rl_getc_function = ReadlineGetChar;
     rl_prep_term_function = (void *) my_prep_terminal;
     rl_deprep_term_function = my_deprep_terminal;
+#if HAVE_RL_CATCH_SIGNALS
     rl_catch_signals = 0;
+#endif
 #endif
     LexInputReference = NewReference ((void **) &lexInput);
     MemAddRoot (LexInputReference);

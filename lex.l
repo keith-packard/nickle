@@ -562,7 +562,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		return OCTAL_NUM;
 		}
 0o[0-7_]+\./\.\.\.   {
-		yylval.value = aetov(yytext+2, 8);
+		yylval.value = aetov(yytext);
 		return OCTAL_FLOAT;
 		}
 0o[0-7_]+/\.\.	{
@@ -570,7 +570,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		return OCTAL_NUM;
 		}
 0o(([0-7_]+((\.[0-7_]*(\{[0-7_]+\})?)?))|(\.[0-7_]+)|(\.[0-7_]*\{[0-7_]+\}))(([Ee][-+]?[0-9_]+)?) {
-		yylval.value = aetov (yytext+2, 8);
+		yylval.value = aetov (yytext);
 		return OCTAL_FLOAT;
 		}
 0b[01_]+		{
@@ -578,7 +578,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		return BINARY_NUM;
 		}
 0b[01_]+\./\.\.\.   {
-		yylval.value = aetov(yytext+2, 2);
+		yylval.value = aetov(yytext);
 		return BINARY_FLOAT;
 		}
 0b[01_]+/\.\.	{
@@ -586,7 +586,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		return BINARY_NUM;
 		}
 0b(([01_]+((\.[01_]*(\{[01_]+\})?)?))|(\.[01_]+)|(\.[01_]*\{[01_]+\}))(([Ee][-+]?[0-9_]+)?) {
-		yylval.value = aetov (yytext+2, 2);
+		yylval.value = aetov (yytext);
 		return BINARY_FLOAT;
 		}
 0x[0-9a-fA-F_]+	{
@@ -594,7 +594,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		return HEX_NUM;
 		}
 0x[0-9a-fA-F_]+\./\.\.\.   {
-		yylval.value = aetov(yytext+2, 16);
+		yylval.value = aetov(yytext);
 		return HEX_FLOAT;
 		}
 0x[0-9a-fA-F_]+/\.\.	{
@@ -602,7 +602,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		return HEX_NUM;
 		}
 0x(([0-9a-fA-F_]+((\.[0-9a-fA-F_]*(\{[0-9a-fA-F_]+\})?)?))|(\.[0-9a-fA-F_]+)|(\.[0-9a-fA-F_]*\{[0-9a-fA-F_]+\}))(([Pp][-+]?[0-9_]+)?) {
-		yylval.value = aetov (yytext+2, 16);
+		yylval.value = aetov (yytext);
 		return HEX_FLOAT;
 		}
 [0-9][0-9_]*		{
@@ -610,7 +610,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		return TEN_NUM;
 		}
 [0-9][0-9_]*\./\.\.\.	{
-		yylval.value = aetov(yytext, 10);
+		yylval.value = aetov(yytext);
 		return TEN_FLOAT;
 		}
 [0-9][0-9_]*/\.\.	{
@@ -618,7 +618,7 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 		return TEN_NUM;
 		}
 (([0-9][0-9_]*((\.[0-9_]*(\{[0-9_]+\})?)?))|(\.[0-9][0-9_]*)|(\.([0-9][0-9_]*)?\{[0-9_]+\}))(([Ee][-+]?[0-9_]+)?) {
-		yylval.value = aetov (yytext, 10);
+		yylval.value = aetov (yytext);
 		return TEN_FLOAT;
 		}
 [a-zA-Z\200-\377_][0-9a-zA-Z\200-\377_]* {
@@ -823,14 +823,30 @@ number_len(char *s)
 }
 
 Value
-aetov (char *s, int base)
+aetov (char *s)
 {
     ENTER ();
     char    *int_part, *frac_part, *rep_part, *exp_part, *next;
     int	    sign, int_len = -1, frac_len = -1, rep_len = -1, exp_frac_len = -1, esign;
     Value   v, sv;
     char    exp_char;
+    int	    base = 10;
     int	    exp_base;
+
+    if (s[0] == '0') {
+	switch (s[1]) {
+	case 'x':
+	    base = 16;
+	    s += 2;
+	    break;
+	case 'o':
+	    base = 8;
+	    s += 2;
+	case 'b':
+	    base = 2;
+	    s += 2;
+	}
+    }
 
     switch (base) {
     case 2:

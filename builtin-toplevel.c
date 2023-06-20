@@ -349,7 +349,7 @@ Value
 do_string_to_real (Value str)
 {
     ENTER ();
-    RETURN (aetov (StringChars (&str->string), 10));
+    RETURN (aetov (StringChars (&str->string)));
 }
 
 

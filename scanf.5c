@@ -65,7 +65,7 @@ extend namespace File {
 	{
 	    if ('0' <= c && c <= '9')
 		return true;
-	    if (c == 'e')
+	    if (c == 'e' || c == 'p' || c == 'x')
 		return true;
 	    if (c == '-')
 		return true;
@@ -162,6 +162,7 @@ extend namespace File {
 			*args[argc] = integer (ishex, 16);
 			argc++;
 			break;
+		    case 'a': case 'A':
 		    case 'e': case 'E':
 		    case 'f': case 'F':
 		    case 'g': case 'G':

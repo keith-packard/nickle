@@ -768,7 +768,7 @@ void	yyerror (char *msg);
 void	ParseError (char *fmt, ...);
 int	yylex (void);
 Bool	LexFile (char *file, Bool complain, Bool after);
-Value	atov (char *, int), aetov (char *, int);
+Value	atov (char *, int), aetov (char *);
 extern int  ignorenl;
 void	skipcomment (void);
 Value	lexdoc (void);

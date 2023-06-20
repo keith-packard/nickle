@@ -6,7 +6,7 @@ Homepage: https://nickle.org
 Build-Depends: debhelper-compat (= 13), libreadline-dev, ruby-asciidoctor-pdf,
  bison, flex, pkg-config, autoconf-archive
 Rules-Requires-Root: no
-Standards-Version: 4.5.1
+Standards-Version: 4.6.2
 
 Package: nickle
 Architecture: any

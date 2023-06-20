@@ -170,7 +170,7 @@ extend namespace File {
 		      .message = "int",	    .base = 8 },
 		    { .formats = "xX",	    .test = is_int,
 		      .message = "int",	    .base = 16 },
-		    { .formats = "efEF",    .test = is_number,
+		    { .formats = "aefEF",    .test = is_number,
 		      .message = "real",    .base = 10 }
 		};
 		

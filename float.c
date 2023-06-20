@@ -738,24 +738,43 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     char	*frac_string;
     char	*exp_string = 0;
     Bool	rounded = False;
+    int		base_exp;
+    char	*exp_label = "e";
+    Bool	leader = False;
+    int		exp_scale;
     
-    if (base <= 0)
-	base = 10;
+    length = FpartLength (a->mant);
+
+    if (format == 'a') {
+	base = 16;
+	base_exp = 10;
+	exp_scale = 2;
+	leader = True;
+	exp_label = "p";
+	if (prec == DEFAULT_OUTPUT_PRECISION)
+	    prec = length * DIGITBITS/4;
+    } else {
+
+	if (base <= 0) {
+	    base = 10;
+	}
     
-    if (prec == DEFAULT_OUTPUT_PRECISION)
-	prec = 15;
+	if (prec == DEFAULT_OUTPUT_PRECISION)
+	    prec = 15;
+	base_exp = base;
+	exp_scale = base;
+    }
     
     mant_prec = a->prec * log(2) / log(base);
 
     DebugFp ("mant", a->mant);
     DebugFp ("exp ", a->exp);
     
-    length = FpartLength (a->mant);
     expbase = FloatExp (Plus (NewInt (length), 
 			      NewInteger (a->exp->sign,
 					  a->exp->mag)),
 			&ratio,
-			base,
+			exp_scale,
 			a->prec);
     if (aborting)
     {
@@ -785,6 +804,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     }
     exp = NewValueFpart (expbase);
     switch (format) {
+    case 'a':
     case 'e':
     case 'E':
     case 'f':
@@ -822,7 +842,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     }
     else
     {
-	exp_string = NaturalSprint (0, exp->mag, base, &exp_width);
+	exp_string = NaturalSprint (0, exp->mag, base_exp, &exp_width);
 	if (aborting)
 	{
 	    EXIT ();
@@ -845,6 +865,8 @@ try_again:
 	int_n = NewNatural (ValueInt(int_part));
 
     int_width = NaturalEstimateLength (int_n, base);
+    if (leader)
+	int_width += 2;
     if (negative)
 	int_width++;
     
@@ -861,6 +883,12 @@ try_again:
     if (*int_string == '0')
 	frac_prec++;
     
+    if (leader)
+    {
+	*--int_string = 'x';
+	*--int_string = '0';
+	int_width += 2;
+    }
     if (negative)
     {
 	*--int_string = '-';
@@ -967,7 +995,7 @@ try_again:
 
     if (exp_width)
     {
-	FilePuts (f, "e");
+	FilePuts (f, exp_label);
 	if (exp->sign == Negative)
 	    FilePuts (f, "-");
 	FilePuts (f, exp_string);

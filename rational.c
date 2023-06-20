@@ -1053,6 +1053,12 @@ RationalPrint (Value f, Value rv, char format, int base, int width, int prec, in
     int		print_width;
     Bool	ret = True;
     
+    if (format == 'a') {
+	Value fv = NewRationalFloat(r, DEFAULT_FLOAT_PREC);
+	ValueRep *rep = ValueRep(fv);
+	return (*rep->print)(f, fv, format, base, width, DEFAULT_OUTPUT_PRECISION, fill);
+    }
+
     if (base == 0)
 	base = 10;
     switch (format) {

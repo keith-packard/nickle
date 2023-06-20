@@ -341,6 +341,12 @@ IntegerPrint (Value f, Value iv, char format, int base, int width, int prec, int
     int	    print_width;
     int	    fraction_width;
 
+    if (format == 'a') {
+	Value fv = NewIntegerFloat(i, DEFAULT_FLOAT_PREC);
+	ValueRep *rep = ValueRep(fv);
+	return (*rep->print)(f, fv, format, base, width, DEFAULT_OUTPUT_PRECISION, fill);
+    }
+
     if (base == 0)
 	base = 10;
     result = NaturalSprint (0, IMag(i), base, &print_width);

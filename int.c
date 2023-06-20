@@ -232,6 +232,12 @@ IntPrint (Value f, Value av, char format, int base, int width, int prec, int fil
     int	    neg;
     long    len;
 
+    if (format == 'a') {
+	Value fv = NewIntFloat(a, DEFAULT_FLOAT_PREC);
+	ValueRep *rep = ValueRep(fv);
+	return (*rep->print)(f, fv, format, base, width, DEFAULT_OUTPUT_PRECISION, fill);
+    }
+
     if ('A' <= format && format <= 'Z')
 	letter = 'A';
     else

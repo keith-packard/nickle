@@ -765,7 +765,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	exp_scale = base;
     }
     
-    mant_prec = a->prec * log(2) / log(base);
+    mant_prec = ceil(a->prec * log(2) / log(base)) + 1;
 
     DebugFp ("mant", a->mant);
     DebugFp ("exp ", a->exp);

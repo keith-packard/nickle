@@ -120,7 +120,10 @@ AC_FUNC_GETPGRP
 dnl Handle large files
 AC_SYS_LARGEFILE
 
-AC_ARG_WITH(libedit, "use libedit for command line editing", [use_libedit=yes], [use_libedit=no])
+AC_ARG_WITH([libedit],
+	    AC_HELP_STRING([--with-libedit],
+                           [use libedit for command line editing]),
+	    [use_libedit=yes], [use_libedit=no])
 
 case "$use_libedit" in
  yes)

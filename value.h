@@ -180,7 +180,7 @@ typedef int HashValue;
 typedef struct _natural {
     DataType	*type;
     int		length;
-    digit	digits[0];
+    digit	digits[];
 } Natural;
 
 static inline int NaturalLength(Natural *n)

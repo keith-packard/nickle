@@ -14,7 +14,9 @@
 #include	<errno.h>
 #ifdef HAVE_LIBREADLINE
 #include	READLINE_H
+#ifdef HISTORY_H
 #include	HISTORY_H
+#endif
 #endif
     
 typedef struct _lexInput {

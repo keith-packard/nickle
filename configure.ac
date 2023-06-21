@@ -132,7 +132,6 @@ case "$use_libedit" in
    LIBREADLINE_CFLAGS="${LIBEDIT_CFLAGS}"
    LIBREADLINE_LIBS="${LIBEDIT_LIBS}"
    READLINE_H="<readline.h>"
-   HISTORY_H="<history.h>"
    ;;
  *)
    AC_LIB_READLINE
@@ -149,7 +148,9 @@ if test "x$have_libreadline" = "xyes"; then
 
     AC_DEFINE(HAVE_LIBREADLINE, 1, [Has readline library])
     AC_DEFINE_UNQUOTED(READLINE_H, ${READLINE_H}, [readline.h include path])
-    AC_DEFINE_UNQUOTED(HISTORY_H, ${HISTORY_H}, [history.h include path])
+    if test "x$HISTORY_H" != "x"; then
+	AC_DEFINE_UNQUOTED(HISTORY_H, ${HISTORY_H}, [history.h include path])
+    fi
 
     CFLAGS="${LIBREADLINE_CFLAGS} ${CFLAGS}"
     LIBS="${LIBREADLINE_LIBS} ${LIBS}"

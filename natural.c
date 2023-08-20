@@ -311,7 +311,7 @@ DigitsSubInPlace (digit *x_orig, int xlen, digit *y, int ylen, int off)
 }
 
 static int
-DigitTimes (digit *x, int xlen, digit y, digit *result)
+DigitTimes (const digit *x, int xlen, digit y, digit *result)
 {
     double_digit    q;
     digit	    carry;
@@ -319,7 +319,7 @@ DigitTimes (digit *x, int xlen, digit y, digit *result)
 
     if (y == 1)
     {
-	memcpy (x, result, xlen * sizeof (digit));
+	memcpy (result, x, xlen * sizeof (digit));
 	return xlen;
     }
     carry = 0;
@@ -338,9 +338,10 @@ DigitTimes (digit *x, int xlen, digit y, digit *result)
 }
 
 static int
-DigitsGradeSchool (digit *x_orig, int xlen, digit *y_orig, int ylen, digit *result)
+DigitsGradeSchool (const digit *x_orig, int xlen, const digit *y_orig, int ylen, digit *result)
 {
-    digit	    *x, *y, *r, *rbase, *rloop;
+    const digit	    *x, *y;
+    digit	    *r, *rbase, *rloop;
     double_digit    temp;
     digit	    carry;
     digit	    xd;

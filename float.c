@@ -262,6 +262,9 @@ FpartInit (void)
 }
 
 static Value
+FloatNegate (Value av, int expandOk);
+
+static Value
 FloatAdd (Value av, Value bv, int expandOk, Bool negate)
 {
     ENTER ();
@@ -274,6 +277,13 @@ FloatAdd (Value av, Value bv, int expandOk, Bool negate)
     unsigned	prec;
     int		alen, blen;
 
+    if (FpartZero(a->mant)) {
+	if (negate)
+	    bv = FloatNegate(bv, expandOk);
+	return bv;
+    } else if (FpartZero(b->mant)) {
+	return av;
+    }
     dist = FpartAdd (a->exp, b->exp, True);
     ret = 0;
     if (NaturalLess (dist->mag, max_int_natural))

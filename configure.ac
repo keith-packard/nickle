@@ -6,8 +6,8 @@ dnl for licensing information.
 
 AC_PREREQ([2.69])
 
-AC_INIT([nickle],[2.93],[http://nickle.org],[nickle])
-RELEASE_DATE="2023-06-20"
+AC_INIT([nickle],[2.94],[http://nickle.org],[nickle])
+RELEASE_DATE="2023-11-30"
 AC_CONFIG_SRCDIR([nickle.h])
 AC_CONFIG_HEADERS([nickle-config.h])
 AC_CONFIG_AUX_DIR(.)

@@ -1,3 +1,10 @@
+nickle (2.94) unstable; urgency=medium
+
+  * Add true/false/null support to json.5c
+  * Add file input/output to json.5c
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 30 Nov 2023 12:13:48 -0800
+
 nickle (2.93) unstable; urgency=medium
 
   * Add hex float support to scanf and printf

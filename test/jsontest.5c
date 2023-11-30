@@ -16,10 +16,27 @@ void json_test_val(poly val, string match) {
 json_test_val(1, "1");
 json_test_val(1.1, "1.1000000000000");
 json_test_val("hello world", "\"hello world\"");
+json_test_val(true, "true");
+json_test_val(false, "false");
+json_test_val(<>, "null");
 json_test_val((poly[string]) {
+	"false" => false,
 	"float" => 1.1,
 	"hash" => (poly[string]) { "hashval" => 12 },
 	"int" => 10,
-	"string" => "world"
+	"null" => <>,
+	"string" => "world",
+	"true" => true,
     },
-    "{\n\t\"float\": 1.1000000000000,\n\t\"hash\": {\n\t\t\"hashval\": 12\n\t},\n\t\"int\": 10,\n\t\"string\": \"world\"\n}");
+    "{\n" +
+    "\t\"false\": false,\n" +
+    "\t\"float\": 1.1000000000000,\n" +
+    "\t\"hash\": {\n" +
+    "\t\t\"hashval\": 12\n" +
+    "\t},\n" +
+    "\t\"int\": 10,\n" +
+    "\t\"null\": null,\n" +
+    "\t\"string\": \"world\",\n" +
+    "\t\"true\": true\n" +
+    "}"
+    );

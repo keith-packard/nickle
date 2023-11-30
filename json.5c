@@ -7,85 +7,96 @@ autoload Ctype;
 
 namespace JSON {
 
-    string quote(string a) {
-	string result = "\"";
-	for (int i = 0; i < String::length(a); i++) {
-	    int c = a[i];
-	    switch (c) {
-	    case '"':
-	    case '\\':
-		result = result + "\\" + String::new(c);
-		break;
-	    case '\n':
-		result = result + "\\n";
-		break;
-	    default:
-		result = result + String::new(c);
-		break;
-	    }
-	}
-	return result + "\"";
-    }
-
-    public string to_json(poly arg)
+    public void to_json_file(file output, poly arg)
     {
-	string do_indent(int indent) {
-	    string result = "\n";
+	void do_indent(int indent) {
+	    File::putc('\n', output);
 	    for (int i = 0; i < indent; i++)
-		result = result + "\t";
-	    return result;
+		File::putc('\t', output);
 	}
 
-	string json(poly arg, int indent);
+	void json_string(string a) {
+	    File::putc('"', output);
+	    for (int i = 0; i < String::length(a); i++) {
+		int c = a[i];
+		switch (c) {
+		case '\n':
+		    c = 'n';
+		case '"':
+		case '\\':
+		    File::putc('\\', output);
+		    break;
+		default:
+		    break;
+		}
+		File::putc(c, output);
+	    }
+	    File::putc('"', output);
+	}
 
-	string json_hash(poly[string] a, int indent) {
+	void putc(int c) {
+	    File::putc(c, output);
+	}
+
+	void puts(string s) {
+	    File::fprintf(output, "%s", s);
+	}
+
+	void json(poly arg, int indent);
+
+	void json_hash(poly[string] a, int indent) {
 	    string[] keys = hash_keys(a);
-	    string result = "{";
+	    putc('{');
 	    bool first = true;
 
 	    Sort::qsort(&keys, bool func(poly a, poly b) { return a > b; });
 	    for (int i = 0; i < dim(keys); i++) {
 		string key = keys[i];
-		string value = json(a[key], indent+1);
 
 		if (!first)
-		    result = result + ",";
+		    putc(',');
 		first = false;
-		result = result + do_indent(indent+1);
-		result = result + quote(key) + ": " + value;
+		do_indent(indent+1);
+		json_string(key);
+		puts(": ");
+		json(a[key], indent+1);
 	    }
-	    result = result + do_indent(indent) + "}";
-	    return result;
+	    do_indent(indent);
+	    putc('}');
 	}
 
-	string json_array(poly[] a, int indent) {
-	    string result = "[";
+	void json_array(poly[] a, int indent) {
+	    putc('[');
 	    bool first = true;
 
 	    for (int i = 0; i < dim(a); i++) {
 		if (!first)
-		    result = result + ",";
+		    putc(',');
 		first = false;
-		result = result + do_indent(indent+1);
-		result = result + to_json(a[i]);
+		do_indent(indent + 1);
+		json(a[i], indent + 1);
 	    }
-	    result = result + do_indent(indent) + "]";
-	    return result;
+	    do_indent(indent);
+	    putc(']');
 	}
 
-	string json_string(string arg) {
-	    return quote(arg);
+	void json_int(int arg) {
+	    File::fprintf (output, "%d", arg);
 	}
 
-	string json_int(int arg) {
-	    return sprintf ("%d", arg);
+	void json_float(real arg) {
+	    File::fprintf(output, "%.13g", arg);
 	}
 
-	string json_float(real arg) {
-	    return sprintf("%.13g", arg);
+	void json_bool(bool arg) {
+	    File::fprintf(output, "%s", arg ? "true" : "false");
 	}
 
-	json = string func(poly arg, int indent) {
+	void json_null(void arg) {
+	    File::fprintf(output, "null");
+	}
+
+	json = void func(poly arg, int indent) {
 	    if (is_hash(arg))
 		return json_hash(arg, indent);
 	    if (is_array(arg))
@@ -96,16 +107,28 @@ namespace JSON {
 		return json_int(arg);
 	    if (is_number(arg))
 		return json_float(arg);
-	    return "";
+	    if (is_bool(arg))
+		return json_bool(arg);
+	    if (is_void(arg))
+		return json_null(arg);
 	};
 
-	return json(arg, 0);
+	json(arg, 0);
+    }
+
+    public string to_json(poly arg)
+    {
+	file output = File::string_write();
+	to_json_file(output, arg);
+	return File::string_string(output);
     }
 
     typedef enum {
 	_string,
 	_int,
 	_float,
+	_bool,
+	_null,
 	_oc,
 	_cc,
 	_os,
@@ -121,6 +144,8 @@ namespace JSON {
 	    int		ival;
 	    string	sval;
 	    real	fval;
+	    bool	bval;
+	    void	nval;
 	} val;
 	term_t	token;
     } token_t;
@@ -134,6 +159,8 @@ namespace JSON {
     json_input_t start_json(string s) {
 	return (json_input_t) { .f = File::string_read(s), .line = 1 };
     }
+
+    public exception json_parse_error(int line, string token);
 
     token_t lex(*json_input_t f) {
 
@@ -170,6 +197,16 @@ namespace JSON {
 	    if (c == 'e' || c == 'E')
 		return true;
 	    return false;
+	}
+
+	bool match_keyword(string keyword) {
+	    int l = String::length(keyword);
+	    for (int i = 1; i < l; i++) {
+		int c = ch();
+		if (keyword[i] != c)
+		    return false;
+	    }
+	    return true;
 	}
 
 	try {
@@ -233,6 +270,21 @@ namespace JSON {
 			sval = sval + String::new(c);
 		    }
 		    return (token_t) { .val = { .sval = sval }, .token = term_t._string };
+		case 't':
+		    if (match_keyword("true"))
+			return (token_t) { .val = { .bval = true }, .token = term_t._bool };
+		    raise json_parse_error(f->line, f->token);
+		    break;
+		case 'f':
+		    if (match_keyword("false"))
+			return (token_t) { .val = { .bval = false }, .token = term_t._bool };
+		    raise json_parse_error(f->line, f->token);
+		    break;
+		case 'n':
+		    if (match_keyword("null"))
+			return (token_t) { .val = { .nval = <> }, .token = term_t._null };
+		    raise json_parse_error(f->line, f->token);
+		    break;
 		default:
 		    break;
 		}
@@ -245,11 +297,8 @@ namespace JSON {
 	return (token_t) { .token = term_t._error };
     }
 
-    public exception json_parse_error(int line, string token);
-
-    public poly from_json(string arg) {
-	json_input_t f = start_json(arg);
-
+    public poly from_json_file(file input) {
+	json_input_t f = { .f = input, .line = 1 };
 	token_t	token;
 
 	void next() {
@@ -308,7 +357,7 @@ namespace JSON {
 	    switch (token.token) {
 	    case term_t._oc:
 		    next();
-	    	return hash();
+		    return hash();
 	    case term_t._os:
 		    next();
 		    return array();
@@ -324,10 +373,22 @@ namespace JSON {
 		    string sval = token.val.sval;
 		    next();
 		    return sval;
+	    case term_t._bool:
+		    bool bval = token.val.bval;
+		    next();
+		    return bval;
+	    case term_t._null:
+		    void nval = token.val.nval;
+		    next();
+		    return nval;
 	    }
 	};
 
 	next();
 	return value();
+    }
+
+    public poly from_json(string arg) {
+	return from_json_file(File::string_read(arg));
     }
 }

@@ -19,6 +19,8 @@ json_test_val("hello world", "\"hello world\"");
 json_test_val(true, "true");
 json_test_val(false, "false");
 json_test_val(<>, "null");
+json_test_val((poly[string]){}, "{\n}");
+json_test_val(([0]){}, "[\n]");
 json_test_val((poly[string]) {
 	"false" => false,
 	"float" => 1.1,

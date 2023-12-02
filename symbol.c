@@ -153,6 +153,7 @@ NewSymbolArg (Atom name, Type *type)
     s->symbol.type = type;
     s->symbol.forward = False;
     s->local.element = 0;
+    s->local.code = 0;
     RETURN (s);
 }
 
@@ -169,6 +170,7 @@ NewSymbolAuto (Atom name, Type *type)
     s->symbol.type = type;
     s->symbol.forward = False;
     s->local.element = -1;
+    s->local.code = 0;
     RETURN (s);
 }
 
@@ -185,6 +187,7 @@ NewSymbolStatic (Atom name, Type *type)
     s->symbol.type = type;
     s->symbol.forward = False;
     s->local.element = -1;
+    s->local.code = 0;
     RETURN (s);
 }
 

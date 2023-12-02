@@ -1,3 +1,11 @@
+nickle (2.95) unstable; urgency=medium
+
+  * Handle empty objects and arrays in JSON input
+  * Initialize SymbolLocal code member in allocator to
+    prevent fault when GC runs before correct value is set.
+
+ -- Keith Packard <keithp@keithp.com>  Sat, 02 Dec 2023 12:52:05 -0800
+
 nickle (2.94) unstable; urgency=medium
 
   * Add true/false/null support to json.5c

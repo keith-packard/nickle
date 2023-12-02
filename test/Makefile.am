@@ -30,7 +30,7 @@ test_DATA=$(check_SCRIPTS) $(TABLES)
 
 CLEANFILES=$(TABLES)
 
-TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir)
+TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir) MALLOC_CHECK_=3 MALLOC_PERTURB_=$(shell echo $$(($$RANDOM % 255 + 1)))
 TESTS=$(check_SCRIPTS)
 LOG_COMPILER=$(top_builddir)/nickle
 

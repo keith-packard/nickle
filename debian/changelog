@@ -1,3 +1,9 @@
+nickle (2.96) unstable; urgency=medium
+
+  * Fix LDFLAGS in debian package.
+
+ -- Keith Packard <keithp@keithp.com>  Sat, 02 Dec 2023 22:21:27 -0800
+
 nickle (2.95) unstable; urgency=medium
 
   * Handle empty objects and arrays in JSON input

@@ -70,6 +70,8 @@ AM_CFLAGS = \
 	-Wmissing-prototypes -Wmissing-declarations \
 	-Wnested-externs -fno-strict-aliasing -fwrapv
 
+AM_LDFLAGS = $(NICKLE_LDFLAGS)
+
 USES_GRAM_H = \
 	array.o \
 	compile.o \

@@ -60,12 +60,12 @@ AC_DEFUN([AS_COMPILER_FLAG],
 ])
 
 AS_COMPILER_FLAG([-Wl,-E], GCC_EXTERN="yes", GCC_EXTERN="no")
+NICKLE_LDFLAGS=""
 if test $GCC_EXTERN = yes; then
-	LDFLAGS="-Wl,-E"
+	NICKLE_LDFLAGS="-Wl,-E"
 	AC_DEFINE([HAVE_EXTERN_SYMS], 1, [C compilers can extern program symbols])
-else
-	LDFLAGS=""
 fi
+AC_SUBST(NICKLE_LDFLAGS)
 
 dnl Checks for header files.
 AC_HEADER_STDC

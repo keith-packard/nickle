@@ -15,3 +15,9 @@ HARNESS=runbench.sh
 EXTRA_DIST=$(CFILES) $(BCFILES) $(NICKLEFILES) $(HARNESS)
 
 CLEANFILES=choose composite ifact rfact
+
+# Install bench files so they can be run later
+
+benchdir=$(pkgdatadir)/bench
+
+bench_DATA=$(EXTRA_DIST)

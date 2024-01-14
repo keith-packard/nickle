@@ -14,6 +14,9 @@ export DH_VERBOSE=1
 %:
 	dh $@
 
+override_dh_auto_configure:
+	CFLAGS_FOR_BUILD="$(CFLAGS)" LDFLAGS_FOR_BUILD="$(LDFLAGS)" dh_auto_configure
+
 # Don't install duplicate copyright info from COPYING files
 # Make examples which happen to start with #! executable
 

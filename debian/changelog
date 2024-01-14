@@ -1,3 +1,11 @@
+nickle (2.97) unstable; urgency=medium
+
+  * Install benchmark bits
+  * Make sure cross compilation works for NetBSD users.
+  * Clean up some lintian warnings about bench files
+
+ -- Keith Packard <keithp@keithp.com>  Sat, 13 Jan 2024 17:47:03 -0800
+
 nickle (2.96) unstable; urgency=medium
 
   * Fix LDFLAGS in debian package.

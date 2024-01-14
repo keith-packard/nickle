@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 while read bmname
 do
   gcc -O4 -o "$bmname" "$bmname.c" -lgmp > /dev/null 2>&1 || exit 1

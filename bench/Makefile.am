@@ -12,12 +12,12 @@ NICKLEFILES = choose.5c \
 	rfact.5c
 HARNESS=runbench.sh
 
-EXTRA_DIST=$(CFILES) $(BCFILES) $(NICKLEFILES) $(HARNESS)
-
 CLEANFILES=choose composite ifact rfact
-
-# Install bench files so they can be run later
 
 benchdir=$(pkgdatadir)/bench
 
-bench_DATA=$(EXTRA_DIST)
+bench_DATA=$(CFILES) $(BCFILES) $(NICKLEFILES)
+
+bench_SCRIPTS=$(HARNESS)
+
+EXTRA_DIST=$(bench_DATA) $(bench_SCRIPTS)

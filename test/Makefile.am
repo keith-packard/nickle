@@ -28,8 +28,6 @@ testdir=$(pkgdatadir)/test
 
 test_DATA=$(check_SCRIPTS) $(TABLES)
 
-CLEANFILES=$(TABLES)
-
 TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir) MALLOC_CHECK_=3 MALLOC_PERTURB_=$(shell echo $$(($$RANDOM % 255 + 1)))
 TESTS=$(check_SCRIPTS)
 LOG_COMPILER=$(top_builddir)/nickle
@@ -44,5 +42,7 @@ $(TABLES): math-tables$(BUILD_EXEEXT)
 math-tables$(BUILD_EXEEXT): math-tables.o
 	$(CC_FOR_BUILD) -o $@ $(CFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) math-tables.o -lm
 
-math-tables.o: math-tables.c
-	$(CC_FOR_BUILD) -o $@ $(CPPFLAGS_FOR_BUILD) $(CFLAGS_FOR_BUILD) -c math-tables.c
+math-tables.o: $(srcdir)/math-tables.c
+	$(CC_FOR_BUILD) -o $@ $(CPPFLAGS_FOR_BUILD) $(CFLAGS_FOR_BUILD) -c $(srcdir)/math-tables.c
+
+CLEANFILES=$(TABLES) math-tables$(BUILD_EXEEXT) math-tables.o

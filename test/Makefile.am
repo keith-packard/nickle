@@ -38,11 +38,11 @@ EXTRA_DIST=$(check_SCRIPTS) math-tables.c
 
 math.5c: $(TABLES)
 
-noinst_PROGRAMS = math-tables
-
-math_tables_SOURCES = math-tables.c
-
-math_tables_LIBS = -lm
-
 $(TABLES): math-tables$(BUILD_EXEEXT)
 	./math-tables$(BUILD_EXEEXT) > $(TABLES)
+
+math-tables$(BUILD_EXEEXT): math-tables.o
+	$(CC_FOR_BUILD) -o $@ $(CFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) math-tables.o -lm
+
+math-tables.o: math-tables.c
+	$(CC_FOR_BUILD) -o $@ $(CPPFLAGS_FOR_BUILD) $(CFLAGS_FOR_BUILD) -c math-tables.c

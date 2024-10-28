@@ -32,17 +32,11 @@ TESTS_ENVIRONMENT=NICKLESTART=$(top_srcdir)/builtin.5c NICKLEPATH=$(top_srcdir) 
 TESTS=$(check_SCRIPTS)
 LOG_COMPILER=$(top_builddir)/nickle
 
-EXTRA_DIST=$(check_SCRIPTS) math-tables.c
+EXTRA_DIST=$(check_SCRIPTS) math-tables.sh math-funcs.bc
 
 math.5c: $(TABLES)
 
-$(TABLES): math-tables$(BUILD_EXEEXT)
-	./math-tables$(BUILD_EXEEXT) > $(TABLES)
+$(TABLES): math-tables.sh math-funcs.bc
+	$(srcdir)/math-tables.sh > $(TABLES)
 
-math-tables$(BUILD_EXEEXT): math-tables.o
-	$(CC_FOR_BUILD) -o $@ $(CFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) math-tables.o -lm
-
-math-tables.o: $(srcdir)/math-tables.c
-	$(CC_FOR_BUILD) -o $@ $(CPPFLAGS_FOR_BUILD) $(CFLAGS_FOR_BUILD) -c $(srcdir)/math-tables.c
-
-CLEANFILES=$(TABLES) math-tables$(BUILD_EXEEXT) math-tables.o
+CLEANFILES=$(TABLES)

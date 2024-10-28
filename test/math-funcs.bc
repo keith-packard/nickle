@@ -1,0 +1,70 @@
+scale = 100
+
+p = 4*a(1)
+
+/* arcsin */
+define b(x) {
+	auto v;
+	if (x < -1.0 || x > 1.0)
+		return (10000);
+	if (x == -1)
+		return (-p/2);
+	if (x == 1)
+		return (p/2);
+	v = a(x / sqrt(1 - x * x));
+	if (v < -p/2) v += p;
+	return (v);
+}
+
+/* arccos */
+define d(x) {
+	auto v;
+	if (x < -1.0 || x > 1.0)
+		return (10000);
+	if (x == 0)
+		return(p/2);
+	if (x == -1)
+		return p;
+	v = a(sqrt(1 - x * x) / x);
+	if (v < 0) v += p;
+	return (v);
+}
+
+/* tan */
+define t(x) {
+	auto v, w, u;
+	v = s(x);
+	w = c(x);
+	u = w;
+	if (u < 0)
+		u = -u;
+	if (u < .1^20)
+		return (9999);
+	if (w == 0)
+		return (10000);
+	return (v / w);
+}
+
+/* atan2 */
+define u(y, x) {
+	auto w;
+	if (y == 0) {
+		if (x < 0)
+			return (p);
+		return 0;
+	}
+	if (x == 0) {
+		if (y < 0)
+			return (-p/2);
+		return (p/2);
+	}
+	w = a(y/x);
+	if (y < 0) {
+		if (x < 0)
+			w -= p;
+	} else {
+		if (x < 0)
+			w += p;
+	}
+	return (w);
+}

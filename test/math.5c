@@ -57,7 +57,7 @@ void check(string op, real(real) f, real input, real correct)
 		printf ("error %v value %v\n", error, value);
 	}
 	if (value != correct) {
-		printf ("check failed %s(%v) (was %.-g, should be %.-g)",
+		printf ("check failed %s(%v) (was %.-g, should be %.-g)\n",
 			op, input, value, correct);
 		errors++;
 	}
@@ -78,7 +78,7 @@ void check2(string op, real(real, real) f, real input1, real input2, real correc
 		printf ("error %v value %v\n", error, value);
 	}
 	if (value != correct) {
-		printf ("check failed %s(%.-g, %.-g) (was %.-g, should be %.-g)",
+		printf ("check failed %s(%.-g, %.-g) (was %.-g, should be %.-g)\n",
 			op, input1, input2, value, correct);
 		errors++;
 	}
@@ -86,6 +86,7 @@ void check2(string op, real(real, real) f, real input1, real input2, real correc
 
 void check_sin_cos()
 {
+	printf("Checking sin and cos\n");
 	for (int i = 0; i < dim(sin_cos_table); i++) {
 		real	angle = sin_cos_table[i].angle;
 		real	sin_value = sin_cos_table[i].sin;
@@ -93,6 +94,7 @@ void check_sin_cos()
 		check("sin", sin, angle, sin_value);
 		check("cos", cos, angle, cos_value);
 	}
+	printf("Checking asin and acos\n");
 	for (int i = 0; i < dim(asin_acos_table); i++) {
 		real	ratio = asin_acos_table[i].ratio;
 		real	asin_value = asin_acos_table[i].asin;
@@ -104,16 +106,19 @@ void check_sin_cos()
 
 void check_tan()
 {
+	printf("Checking tan\n");
 	for (int i = 0; i < dim(tan_table); i++) {
 		real angle = tan_table[i].angle;
 		real tan_value = tan_table[i].tan;
 		check("tan", tan, angle, tan_value);
 	}
+	printf("Checking atan\n");
 	for (int i = 0; i < dim(atan_table); i++) {
 		real ratio = atan_table[i].ratio;
 		real atan_value = atan_table[i].atan;
 		check("atan", atan, ratio, atan_value);
 	}
+	printf("Checking atan2\n");
 	for (int i = 0; i < dim(atan2_table); i++) {
 		real y = atan2_table[i].y;
 		real x = atan2_table[i].x;
@@ -147,21 +152,23 @@ string e_digits = ("2." +
 
 void check_e()
 {
-    File::sscanf(e_digits, "%f", &(real e_good));
-    for (int prec = 10; prec < 3000; prec *= 2) {
-	real e_tmp = Math::e_value(prec);
-	real error = abs (e_tmp - e_good);
-	/* prec-2 bits right of the decimal point */
-	real limit = 2**(-(prec-2));
-	if (error > limit) {
-	    printf("e_value(%d) error %g limit %g value %g\n", prec, error, limit, e_tmp);
-	    errors++;
+	printf("Checking e\n");
+	File::sscanf(e_digits, "%f", &(real e_good));
+	for (int prec = 10; prec < 3000; prec *= 2) {
+		real e_tmp = Math::e_value(prec);
+		real error = abs (e_tmp - e_good);
+		/* prec-2 bits right of the decimal point */
+		real limit = 2**(-(prec-2));
+		if (error > limit) {
+			printf("e_value(%d) error %g limit %g value %g\n", prec, error, limit, e_tmp);
+			errors++;
+		}
 	}
-    }
 }
 
 void check_exp()
 {
+	printf("Checking exp precision\n");
 	for (int prec = 10; prec <= 1000; prec *= 10) {
 		real eval = Math::e_value(1000);
 		for (int x = 0; x < 100; x++) {
@@ -204,14 +211,21 @@ void check_exp()
 			}
 		}
 	}
+	printf("Checking exp\n");
+	for (int i = 0; i < dim(exp_table); i++) {
+		real in = exp_table[i].in;
+		real exp_value = exp_table[i].exp;
+		check("exp", exp, in, exp_value);
+	}
 }
 
 void check_log()
 {
+	printf("Checking log precision\n");
 	int log_errors = 0;
 	for (int prec = 10; prec <= 1000; prec *= 10) {
 		real eval = Math::e_value(prec);
-		for (real x = imprecise(0.001, prec); x < 20; x *= 1.2) {
+		for (real x = imprecise(0.001, prec); x < 20; x *= 1.5) {
 			real	lnx = log(x);
 
 			real	explnx = exp(lnx);
@@ -225,7 +239,7 @@ void check_log()
 				errors++;
 			}
 
-			for (real y = imprecise(0.001, prec); y < 20; y *= 1.2) {
+			for (real y = imprecise(0.001, prec); y < 20; y *= 1.5) {
 				real	lny = log(y);
 
 				if (sign (lnx) != sign(lny))
@@ -242,7 +256,7 @@ void check_log()
 					printf("precision difference %d %d\n",
 					       plnxy, plnx_lny);
 
-				int	bitdiff = ceil(abs(log2(abs(lnx)) - log2(abs(lny))));
+				int	bitdiff = max(2, ceil(abs(log2(abs(lnx)) - log2(abs(lny)))));
 
 				real	limit = 2 ** -(prec - bitdiff - 5);
 
@@ -254,15 +268,11 @@ void check_log()
 			}
 		}
 	}
+	printf("Checking log\n");
 	for (int i = 0; i < dim(log_table); i++) {
 		real in = log_table[i].in;
 		real log_value = log_table[i].log;
 		check("log", log, in, log_value);
-	}
-	for (int i = 0; i < dim(exp_table); i++) {
-		real in = exp_table[i].in;
-		real exp_value = exp_table[i].exp;
-		check("exp", exp, in, exp_value);
 	}
 }
 

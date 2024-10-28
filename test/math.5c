@@ -6,8 +6,9 @@
 
 load "math-tables.5c"
 
-int test_precision = 64;
+int test_precision = 333;
 int errors = 0;
+real error_bound = 1e-70;
 
 real checked(real(real) f, real a) {
 	try {
@@ -30,7 +31,7 @@ real checked2(real(real, real) f, real a, real b) {
 		/* Just return the same value for large magnitudes
 		 * as small variations in input cause the sign to flip
 		 */
-		 
+
 		if (r > 1e10)
 			return 9999;
 		if (r < -1e10)
@@ -45,14 +46,14 @@ real checked2(real(real, real) f, real a, real b) {
 void check(string op, real(real) f, real input, real correct)
 {
 	real	value = checked(f, input);
-	
+
 	if (is_number (value))
 	{
 		real	error = abs (value - correct);
 
-		if (abs(correct) >= 1 && error < abs(correct) * 1e-8)
+		if (abs(correct) >= 1 && error < abs(correct) * error_bound)
 			return;
-		if (abs(correct) < 1 && error < 1e-8)
+		if (abs(correct) < 1 && error < error_bound)
 			return;
 		printf ("error %v value %v\n", error, value);
 	}
@@ -66,14 +67,14 @@ void check(string op, real(real) f, real input, real correct)
 void check2(string op, real(real, real) f, real input1, real input2, real correct)
 {
 	real	value = checked2(f, input1, input2);
-	
+
 	if (is_number (value))
 	{
 		real	error = abs (value - correct);
 
-		if (abs(correct) >= 1 && error < abs(correct) * 1e-10)
+		if (abs(correct) >= 1 && error < abs(correct) * error_bound)
 			return;
-		if (abs(correct) < 1 && error < 1e-10)
+		if (abs(correct) < 1 && error < error_bound)
 			return;
 		printf ("error %v value %v\n", error, value);
 	}

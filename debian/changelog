@@ -1,3 +1,11 @@
+nickle (2.98) unstable; urgency=medium
+
+  * Add gnomesort
+  * Switch to using bc to generate the math test vectors.
+  * Switch to meson
+
+ -- Keith Packard <keithp@keithp.com>  Mon, 28 Oct 2024 15:11:20 -0700
+
 nickle (2.97) unstable; urgency=medium
 
   * Install benchmark bits

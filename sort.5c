@@ -7,7 +7,7 @@
 autoload PRNG;
 
 namespace Sort {
-    
+
     /*
      * Quicksort with random pivot
      */
@@ -19,13 +19,13 @@ namespace Sort {
 		void exchange (int i, int j) {
 		    poly t = a[i]; a[i] = a[j]; a[j] = t;
 		}
-    
+
 		/* partition the array into two pieces and return the pivot */
 		int partition (int p, int r) {
 		    /* select a random element to pivot */
 		    int pivot = p + PRNG::randint(r-p);
 		    exchange (pivot, r);
-		    
+
 		    poly x = a[r];
 		    int i = p;
 		    for (int j = p; j < r; j++)
@@ -39,16 +39,16 @@ namespace Sort {
 		    exchange (i, r);
 		    return i;
 		}
-		
+
 		int q = partition (p, r);
 		quicksort (p, q-1);
 		quicksort (q+1, r);
 	    }
 	}
-    
+
 	quicksort (0, dim(a)-1);
     }
-    
+
     /*
      * Mergesort
      */
@@ -65,13 +65,13 @@ namespace Sort {
 		    poly[n1] L;
 		    for (int i = 0; i < n1; i++)
 			L[i] = a[p+i];
-		    
+
 		    /* temporary storage for right half of array */
 		    int n2 = r - q;
 		    poly[n2] R;
 		    for (int i = 0; i < n2; i++)
 			R[i] = a[q+i+1];
-    
+
 		    /* merge two halves back into main array */
 		    int i = 0, j = 0, k = p;
 		    while (i < n1 && j < n2)
@@ -81,7 +81,7 @@ namespace Sort {
 		    while (j < n2)
 			a[k++] = R[j++];
 		}
-		
+
 		int q = (p + r) // 2;
 		msort (p, q);
 		msort (q+1, r);
@@ -90,7 +90,23 @@ namespace Sort {
 	}
 	msort (0, dim(a)-1);
     }
-	
+
+    public void gnomesort(&poly[*] a, bool(poly, poly) gt)
+    {
+	int l = dim(a);
+	int pos = 0;
+	while (pos < l) {
+	    if (pos == 0 || !gt(a[pos-1], a[pos])) {
+		pos = pos + 1;
+	    } else {
+		poly t = a[pos];
+		a[pos] = a[pos-1];
+		a[pos-1] = t;
+		pos = pos - 1;
+	    }
+	}
+    }
+
     protected int[*] randomints (int n, int max) =
 	(int[n]) { [i] = PRNG::randint(max) };
 }

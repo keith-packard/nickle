@@ -4,9 +4,9 @@ Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
 Homepage: https://nickle.org
 Build-Depends: debhelper-compat (= 13), libreadline-dev, ruby-asciidoctor-pdf,
- bison, flex, pkg-config, autoconf-archive
+ bison, flex, pkg-config, autoconf-archive, bc
 Rules-Requires-Root: no
-Standards-Version: 4.6.2
+Standards-Version: 4.7.0
 
 Package: nickle
 Architecture: any

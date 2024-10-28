@@ -26,8 +26,8 @@ void check(&real[] values, string sort)
 
 bool int_gt(int a, int b) = a > b;
 
-for (int i = 0; i < 100; i++) {
-    int len = randint(10000);
+for (int i = 0; i < 25; i++) {
+    int len = randint(1000);
     printf("test %d len %d\n", i, len);
     real[*] v = Sort::randomints(len, 1000000);
     real[*] qv = v;

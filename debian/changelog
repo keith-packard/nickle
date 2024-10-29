@@ -1,3 +1,10 @@
+nickle (2.99) unstable; urgency=medium
+
+  * Install the binary
+  * Add -Wl,-E link args
+
+ -- Keith Packard <keithp@keithp.com>  Tue, 29 Oct 2024 09:32:11 -0700
+
 nickle (2.98) unstable; urgency=medium
 
   * Add gnomesort

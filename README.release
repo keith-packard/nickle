@@ -30,3 +30,5 @@ important steps:
 		git-push origin master 2.<xx>
 
 10.	Upload release
+		scp build/meson-dist/* nickle.org:/var/www/nickle/release
+		dput 

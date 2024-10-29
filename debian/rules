@@ -12,22 +12,20 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DH_VERBOSE=1
 
 %:
-	dh $@
+	dh $@ --buildsystem=meson
 
 override_dh_auto_configure:
-	CFLAGS_FOR_BUILD="$(CFLAGS)" LDFLAGS_FOR_BUILD="$(LDFLAGS)" dh_auto_configure
+	CFLAGS_FOR_BUILD="$(CFLAGS)" LDFLAGS_FOR_BUILD="$(LDFLAGS)" dh_auto_configure --buildsystem=meson
 
 # Don't install duplicate copyright info from COPYING files
 # Make examples which happen to start with #! executable
 
 override_dh_auto_install:
-	dh_auto_install && (find debian/nickle -name COPYING -print0 | xargs -0 rm)
+	dh_auto_install --buildsystem=meson && (find debian/nickle -name COPYING -print0 | xargs -0 rm)
 	find debian/nickle/usr/share/nickle -type f -print0 | xargs -0 grep -l '^#!.*nickle' | xargs -d '\n' chmod +x
 
+override_dh_update_autotools_config:
+	echo using meson
 
-# These files are generated. Makefile includes absolute paths which
-# makes it not work on end-user machines, and cause the build to be
-# not reproducible.
-
-override_dh_installdocs:
-	dh_installdocs -XMakefile -XMakefile.in
+override_dh_autoreconf:
+	echo using meson

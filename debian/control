@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
 Homepage: https://nickle.org
 Build-Depends: debhelper-compat (= 13), libreadline-dev, ruby-asciidoctor-pdf,
- bison, flex, pkg-config, autoconf-archive, bc
+ bison, flex, meson, pkg-config, ninja-build, bc, libgmp-dev
 Rules-Requires-Root: no
 Standards-Version: 4.7.0
 

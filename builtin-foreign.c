@@ -71,7 +71,7 @@ do_Foreign_load (Value av)
 #endif
 
 void
-import_Foreign_namespace()
+import_Foreign_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {

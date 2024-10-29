@@ -201,7 +201,8 @@ BuiltinType (char *format, Type **type, Bool arg)
 	t = typeUserdef[i];
 	if (t)
 	    break;
-    default: 
+	__NICKLE_FALLTHROUGH;
+    default:
 	t = 0;
 	i = write (2, "Invalid builtin argument type\n", 30);
 	(void) i;

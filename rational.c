@@ -199,6 +199,7 @@ RationalLess (Value av, Value bv, int expandOk)
 	t = a;
 	a = b;
 	b = t;
+	__NICKLE_FALLTHROUGH;
     case BothPositive:
 	if (!NaturalEqual (a->den, b->den))
 	    ret = NaturalLess (NaturalTimes (a->num, b->den),

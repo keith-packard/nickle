@@ -16,7 +16,7 @@
 #include	"builtin.h"
 
 void
-import_Toplevel_namespace()
+import_Toplevel_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_0 funcs_0[] = {
@@ -326,6 +326,7 @@ do_string_to_integer (int n, Value *p)
 	case 8:
 	    if (!strncmp (s, "0o", 2) ||
 		!strncmp (s, "0O", 2)) s += 2;
+	    break;
 	case 10:
 	    if (!strncmp (s, "0t", 2) ||
 		!strncmp (s, "0T", 2)) s += 2;

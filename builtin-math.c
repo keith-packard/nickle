@@ -18,7 +18,7 @@
 NamespacePtr MathNamespace;
 
 void
-import_Math_namespace()
+import_Math_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {

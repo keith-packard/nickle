@@ -18,7 +18,7 @@
 NamespacePtr EnvironNamespace;
 
 void
-import_Environ_namespace()
+import_Environ_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {

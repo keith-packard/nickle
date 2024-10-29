@@ -1020,7 +1020,7 @@ TypeCombineBinary (Type *left, int tag, Type *right)
     case ASSIGNPLUS:
 	if ((type = TypeBinaryString (left, right)))
 	    ret = TypeAdd (ret, type);
-	/* fall through ... */
+	__NICKLE_FALLTHROUGH;
     case MINUS:
     case ASSIGNMINUS:
 	if ((type = TypeBinaryRefOff (left, right)))
@@ -1030,7 +1030,7 @@ TypeCombineBinary (Type *left, int tag, Type *right)
 	if ((tag == MINUS || tag == PLUS) && 
 	    (type = TypeBinaryRefOff (right, left)))
 	    ret = TypeAdd (ret, type);
-	/* fall through ... */
+	__NICKLE_FALLTHROUGH;
     case TIMES:
     case MOD:
     case ASSIGNTIMES:
@@ -1376,6 +1376,7 @@ TypeCompatibleAssign (TypePtr a, Value b)
 		return (TypeIsOrdered (a->hash.type, b->hash.type) &&
 		        TypeIsOrdered (a->hash.keyType, b->hash.keyType));
 	}
+	break;
     case type_struct:
     case type_union:
 	if ((ValueIsStruct(b) && a->base.tag == type_struct) ||
@@ -1527,6 +1528,7 @@ ValueIsType (Value b, TypePtr a)
 		return (TypeIsSupertype (b->hash.type, a->hash.type) &&
 		        TypeIsSupertype (b->hash.keyType, a->hash.keyType));
 	}
+	break;
     case type_struct:
     case type_union:
 	if ((ValueIsStruct(b) && a->base.tag == type_struct) ||

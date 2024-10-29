@@ -10,7 +10,7 @@
 
 #define TICK_MS	10
 
-volatile static unsigned long	currentTick;
+static volatile unsigned long	currentTick;
 volatile Bool			signalProfile;
 static unsigned long		previousTick;
 Bool				profiling;

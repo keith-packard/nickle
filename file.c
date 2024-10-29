@@ -460,7 +460,7 @@ sigchld (int sig)
 }
 
 void
-ProcessInterrupt ()
+ProcessInterrupt (void)
 {
     for (;;) {
 	pid_t		pid;
@@ -1391,6 +1391,7 @@ FilePutString (Value f, char *string, long length, char format)
 		    break;
 		case '\v':
 		    FilePuts (f, "\\v");
+		    break;
 		case '\0':
 		    FilePuts (f, "\\0");
 		    break;

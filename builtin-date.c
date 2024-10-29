@@ -59,6 +59,7 @@ value_bool(Value s, Atom member, char *error, int def)
     return BoolPart(mem, error);
 }
 
+#ifdef HAVE_STRUCT_TM_TM_ZONE
 static const char *
 value_string(Value s, Atom member, char *error, const char *def)
 {
@@ -74,6 +75,7 @@ value_string(Value s, Atom member, char *error, const char *def)
 
     return StrzPart(mem, error);
 }
+#endif
 
 static Value
 to_date(struct tm *tm)
@@ -201,7 +203,7 @@ make_typedef (char	*name_str,
 }
 
 void
-import_Date_namespace()
+import_Date_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {

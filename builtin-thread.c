@@ -18,7 +18,7 @@
 NamespacePtr ThreadNamespace;
 
 void
-import_Thread_namespace()
+import_Thread_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_0 funcs_0[] = {

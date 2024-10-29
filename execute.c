@@ -468,7 +468,7 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
 	array = Stack(ndim+1);
 	if (ValueInt(Stack(dim+1)) == ArrayDims(&array->array)[dim])
 	    break;
-	/* fall through ... */
+	__NICKLE_FALLTHROUGH;
     case AInitModeElement:
         ndim = ValueInt(Stack(0));
 	array = Stack(ndim+1);
@@ -1165,7 +1165,7 @@ ThreadsRun (Value thread, Value lex)
 		    break;
 		case OpReturnVoid:
 		    value = Void;
-		    /* fall through */
+		    __NICKLE_FALLTHROUGH;
 		case OpReturn:
 		    if (!thread->thread.continuation.frame)
 		    {
@@ -1195,7 +1195,7 @@ ThreadsRun (Value thread, Value lex)
 		    break;
 		case OpGlobalRef:
 		    ThreadBoxCheck (inst->box.box, 0);
-		    /* fall through... */
+		    __NICKLE_FALLTHROUGH;
 		case OpGlobalRefStore:
 		    value = NewRef (inst->box.box, 0);
 		    break;
@@ -1344,7 +1344,7 @@ ThreadsRun (Value thread, Value lex)
 			break;
 		    }
 		    value = RefValueGet(value);
-		    /* fall through ... */
+		    __NICKLE_FALLTHROUGH;
 		case OpDot:
 		case OpDotRef:
 		case OpDotRefStore:

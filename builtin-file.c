@@ -21,7 +21,7 @@
 NamespacePtr FileNamespace;
 
 void
-import_File_namespace()
+import_File_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_0 funcs_0[] = {

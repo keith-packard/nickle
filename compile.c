@@ -504,7 +504,7 @@ isName:
 		expr->base.type = typePoly;
 		break;
 	    }
-	    /* fall through ... */
+	    __NICKLE_FALLTHROUGH;
 	case class_global:
 	    BuildInst (obj, OpGlobalRef, inst, stat);
 	    inst->box.box = s->global.value;
@@ -619,6 +619,7 @@ isName:
 	    obj = CompileCall (obj, expr, TailNever, stat, code, True);
 	    break;
 	}
+	break;
     default:
 	if (auto_reference)
 	{

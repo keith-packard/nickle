@@ -431,7 +431,7 @@ PrettyExpr (Value f, Expr *e, int parentPrec, int level, Bool nest)
     case POW:
     case ASSIGNPOW:
 	e = e->tree.right;
-	/* fall through */
+	__NICKLE_FALLTHROUGH;
     case PLUS:
     case MINUS:
     case TIMES:
@@ -752,7 +752,7 @@ PrettyStatement (Value f, Expr *e, int level, int blevel, Bool nest)
 	break;
     case TYPEDEF:
 	e = e->tree.left;
-	/* fall through */
+	__NICKLE_FALLTHROUGH;
     case VAR:
 	PrettyIndent (f, e, level);
 	PrettyDecl (f, e, level, nest);

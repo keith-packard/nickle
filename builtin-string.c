@@ -18,7 +18,7 @@
 NamespacePtr StringNamespace;
 
 void
-import_String_namespace()
+import_String_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {

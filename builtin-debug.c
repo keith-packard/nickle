@@ -23,7 +23,7 @@ do_Debug_dump_active (void);
 #endif
     
 void
-import_Debug_namespace()
+import_Debug_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_0 funcs_0[] = {

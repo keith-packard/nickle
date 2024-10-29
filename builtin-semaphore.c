@@ -18,7 +18,7 @@
 NamespacePtr SemaphoreNamespace;
 
 void
-import_Semaphore_namespace()
+import_Semaphore_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {

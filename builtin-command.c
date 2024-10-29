@@ -18,7 +18,7 @@
 NamespacePtr CommandNamespace;
 
 void
-import_Command_namespace()
+import_Command_namespace(void)
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {

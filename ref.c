@@ -120,6 +120,7 @@ RefTypeCheck (BinaryOp op, Value av, Value bv, int expandOk)
     case MinusOp:
 	if (ValueIsRef(av) && ValueIsRef(bv))
 	    return av->value.type;
+	__NICKLE_FALLTHROUGH;
     case PlusOp:
 	if (ValueIsInt(av))
 	    return bv->value.type;

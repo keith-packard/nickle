@@ -208,6 +208,6 @@ NewSymbolNamespace (Atom name, NamespacePtr namespace)
 }
 
 void
-SymbolInit ()
+SymbolInit (void)
 {
 }

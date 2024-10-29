@@ -1915,11 +1915,11 @@ ParseCanonType (TypePtr type, Bool forwardAllowed)
     int		    n;
     CanonTypeResult ret = CanonTypeDefined, t;
     Bool	    anyResolved;
-    
+
     if (!type)
     {
 	ParseError ("Type missing inside compiler");
-	return False;
+	return CanonTypeUndefined;
     }
     switch (type->base.tag) {
     case type_prim:

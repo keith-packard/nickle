@@ -39,7 +39,7 @@ Value do_Socket_gethostname (void);
 Value do_Socket_getsockname (Value s);
 
 void
-import_Socket_namespace()
+import_Socket_namespace(void)
 {
     ENTER ();
 

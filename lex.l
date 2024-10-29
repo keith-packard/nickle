@@ -19,6 +19,12 @@
 #endif
 #endif
     
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 typedef struct _lexInput {
     DataType		data;
     struct _lexInput	*next;
@@ -844,9 +850,11 @@ aetov (char *s)
 	case 'o':
 	    base = 8;
 	    s += 2;
+	    break;
 	case 'b':
 	    base = 2;
 	    s += 2;
+	    break;
 	}
     }
 

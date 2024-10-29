@@ -4,7 +4,7 @@
  * for licensing information.
  */
 
-#if LOCAL_BUILD
+#ifdef LOCAL_BUILD
 #include	"nickle-config.h"
 #include	"mem.h"
 #include	"value.h"
@@ -759,7 +759,7 @@ Bool	LexInteractive (void);
 Bool	LexResetInteractive (void);
 void	LexInit (void);
 void	NewLexInput (Value file, Atom name, Bool after, Bool interactive);
-#if HAVE_LIBREADLINE
+#ifdef HAVE_LIBREADLINE
 extern volatile int stdin_in_readline;
 #endif
 

@@ -92,11 +92,11 @@ do_Environ_unset (Value av)
 {
     ENTER ();
     char    *name = StrzPart (av, "invalid environment variable name");
-    
+
     if (!name)
 	RETURN (Void);
-    
-#if HAVE_UNSETENV
+
+#ifdef HAVE_UNSETENV
     if (getenv (name))
     {
 	unsetenv (name);
@@ -115,11 +115,11 @@ do_Environ_set (Value name, Value value)
 
     if (!n || !v)
 	RETURN (Void);
-#if HAVE_SETENV
+#ifdef HAVE_SETENV
     if (setenv (n, v, 1) >= 0)
 	RETURN (TrueVal);
 #else
-#if HAVE_PUTENV
+#ifdef HAVE_PUTENV
     {
 	Value	binding = Plus (name,
 				Plus (NewStrString ("="),

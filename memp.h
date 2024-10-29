@@ -25,7 +25,7 @@
 
 # define GARBAGETIME	1000
 
-#if HAVE_STDINT_H
+#ifdef HAVE_STDINT_H
 #include	<stdint.h>
 #define PtrToInt(p)	((int) (intptr_t) (p))
 typedef intptr_t	IntPtr;

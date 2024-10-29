@@ -4515,7 +4515,7 @@ InstDump (InstPtr inst, int indent, int i, int *branch, int maxbranch)
     Bool    realBranch = False;
     
 #ifdef DEBUG
-    FilePrintf (FileStdout, "%x: ", (int) inst);
+    FilePrintf (FileStdout, "%p: ", inst);
 #endif
     ObjIndent (indent);
     FilePrintf (FileStdout, "%s%s %c ",

@@ -10,24 +10,24 @@
  *	main routine for nick
  */
 
+#define __USE_UNIX98 /* Get sigignore() and sigrelse()
+			prototype for Linux */
 #include	"nickle.h"
 #include	"gram.h"
 
 #include	<setjmp.h>
-#define __USE_UNIX98 /* Get sigignore() and sigrelse()
-			prototype for Linux */
 #include	<signal.h>
 #include	<stdio.h>
 
-#if HAVE_SYS_TIME_H
+#ifdef HAVE_SYS_TIME_H
 #include	<sys/time.h>
 #endif
 
-#if HAVE_SYS_RESOURCE_H
+#ifdef HAVE_SYS_RESOURCE_H
 #include	<sys/resource.h>
 #endif
 
-#if HAVE_LIBREADLINE
+#ifdef HAVE_LIBREADLINE
 #include READLINE_H
 #endif
 
@@ -43,7 +43,7 @@ setArgv (int argc, char **argv)
     args = NewArray (True, True, typePrim[rep_string], 1, &argc);
     for (i = 0; i < argc; i++)
 	ArrayValueSet (&args->array, i, NewStrString (argv[i]));
-    setVar (GlobalNamespace, "argv", args, 
+    setVar (GlobalNamespace, "argv", args,
 	    NewTypeArray (typePrim[rep_string],
 			   NewExprTree (COMMA, 0, 0), False));
     EXIT ();
@@ -57,7 +57,7 @@ try_nicklestart (void)
     if ((nicklestart = getenv ("NICKLESTART")) == 0)
 	nicklestart = NICKLELIBDIR "/builtin.5c";
     return LexFile (nicklestart, True, False);
-}    
+}
 
 void	intr(int), ferr(int);
 void	stop (int), die (int), segv (int);
@@ -76,7 +76,7 @@ releaseSignal(int sig) {
 int
 main (int argc, char **argv)
 {
-#if HAVE_GETRLIMIT && HAVE_SETRLIMIT
+#if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT)
     /*
      * Allow stack to grow as large as possible to avoid
      * crashes during recursive datastructure marking in the
@@ -163,7 +163,7 @@ intr (int sig)
     if (signalInterrupt) {
 	int ret = write(2,"Double interrupt, exiting\n", 26);
 	(void) ret;
-#if HAVE_RL_CLEANUP_AFTER_SIGNAL
+#ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
 	if (stdin_in_readline)
 	    rl_cleanup_after_signal();
 #endif
@@ -178,10 +178,10 @@ stop (int sig)
     sigset_t	set, oset;
 
     if (stdin_in_readline) {
-#if HAVE_RL_ECHO_SIGNAL_CHAR
+#ifdef HAVE_RL_ECHO_SIGNAL_CHAR
 	rl_echo_signal_char(sig);
 #endif
-#if HAVE_RL_CLEANUP_AFTER_SIGNAL
+#ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
 	rl_cleanup_after_signal();
 #endif
     }
@@ -199,7 +199,7 @@ stop (int sig)
     catchSignal (sig, stop);
     IoStart ();
 
-#if HAVE_RL_RESET_AFTER_SIGNAL
+#ifdef HAVE_RL_RESET_AFTER_SIGNAL
     if (stdin_in_readline)
 	rl_reset_after_signal();
 #endif
@@ -209,10 +209,10 @@ void
 die (int sig)
 {
     if (stdin_in_readline) {
-#if HAVE_RL_FREE_LINE_STATE
+#ifdef HAVE_RL_FREE_LINE_STATE
 	rl_free_line_state();
 #endif
-#if HAVE_RL_CLEANUP_AFTER_SIGNAL
+#ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
 	rl_cleanup_after_signal();
 #endif
     }
@@ -224,7 +224,7 @@ void
 segv (int sig)
 {
     IoStop ();
-#if HAVE_RL_CLEANUP_AFTER_SIGNAL
+#ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
     if (stdin_in_readline)
 	rl_cleanup_after_signal();
 #endif

@@ -138,7 +138,7 @@ Resize (HashTablePtr ht, const HashSetPtr hs)
     EXIT ();
 }
 
-#if HAVE_STDINT_H
+#ifdef HAVE_STDINT_H
 typedef uint32_t	crc32_t;
 #else
 typedef unsigned int	crc32_t;

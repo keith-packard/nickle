@@ -64,7 +64,7 @@ AtomListPtr  NewAtomList (AtomListPtr next, Atom atom);
  * still work correctly.
  */
 
-#if HAVE_STDINT_H
+#ifdef HAVE_STDINT_H
 
 # include <stdint.h>
 
@@ -73,7 +73,7 @@ AtomListPtr  NewAtomList (AtomListPtr next, Atom atom);
 #define IntToPtr(i)	((void *) (intptr_t) (i))
 #define UIntToPtr(u)	((void *) (uintptr_t) (u))
 
-# if HAVE_UINT64_T
+# ifdef HAVE_UINT64_T
 
 /*
  * If stdint.h defines a 64 bit datatype, use 32 bit

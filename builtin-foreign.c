@@ -12,9 +12,9 @@
 
 NamespacePtr	ForeignNamespace;
 
-#if HAVE_EXTERN_SYMS
+#ifdef HAVE_EXTERN_SYMS
 
-#if HAVE_DLFCN_H && HAVE_DLOPEN && HAVE_DLSYM
+#if defined(HAVE_DLFCN_H) && defined(HAVE_DLOPEN) && defined(HAVE_DLSYM)
 #define HAVE_FOREIGN_LOAD 1
 #include	<dlfcn.h>
 
@@ -29,13 +29,13 @@ do_Foreign_load (Value av)
 
     if (!name)
 	RETURN (Void);
-    
+
     lib = dlopen (name, RTLD_NOW);
     if (!lib)
     {
 	char	*err = 0;
 	int	e = errno;
-#if HAVE_DLERROR
+#ifdef HAVE_DLERROR
 	err = dlerror ();
 #endif
 	if (!err)
@@ -46,19 +46,19 @@ do_Foreign_load (Value av)
 				av);
 	RETURN (Void);
     }
-    
+
     init = (Value (*) (void)) dlsym (lib, "nickle_init");
     if (!init)
     {
 	char	*err = 0;
-#if HAVE_DLERROR
+#ifdef HAVE_DLERROR
 	err = dlerror ();
 #endif
 	if (!err)
 	    err = "missing nickle_init";
 	RaiseStandardException (exception_open_error, 3,
 				NewStrString (err), NewInt (0), av);
-#if HAVE_DLCLOSE
+#ifdef HAVE_DLCLOSE
 	dlclose (lib);
 #endif
 	RETURN (Void);
@@ -75,7 +75,7 @@ import_Foreign_namespace()
 {
     ENTER ();
     static const struct fbuiltin_1 funcs_1[] = {
-#if HAVE_EXTERN_SYMS && HAVE_FOREIGN_LOAD
+#if defined(HAVE_EXTERN_SYMS) && defined(HAVE_FOREIGN_LOAD)
 	{ do_Foreign_load, "load", "b", "s", "\n"
 	    " bool load (string name)\n"
 	    "\n"

@@ -65,6 +65,9 @@ add_project_arguments(cc.get_supported_arguments(
   ]),
 		      language: 'c')
 
+link_args = cc.get_supported_link_arguments('-Wl,-E')
+have_extern_syms = link_args != []
+
 if get_option('libedit')
   readline_dep = dependency('libedit')
   readline_h = '<readline.h>'
@@ -85,7 +88,6 @@ have_dlerror = cc.has_function('dlerror')
 have_dlfcn_h = cc.has_header('dlfcn.h')
 have_dlopen = cc.has_function('dlopen')
 have_dlsym = cc.has_function('dlsym')
-have_extern_syms = cc.has_link_argument('-Wl,-E')
 have_fcntl_h = cc.has_header('fcntl.h')
 have_getrlimit = cc.has_function('getrlimit')
 have_gettimeofday = cc.has_function('gettimeofday')
@@ -257,7 +259,8 @@ install_data(nickle_files,
 nickle = executable('nickle', nickle_srcs,
 		    dependencies : [ readline_dep, math_dep ],
 		    include_directories : include_directories('.'),
-		   install: true)
+		    link_args: link_args,
+		    install: true)
 
 test_env = environment(
   {

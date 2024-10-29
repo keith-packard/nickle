@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <gmp.h>
 
-void ifact(mpz_t res, mpz_t n) {
+static void ifact(mpz_t res, mpz_t n) {
   mpz_t count;
   mpz_init_set(count, n);
   mpz_set_si(res, 1);
@@ -12,7 +12,7 @@ void ifact(mpz_t res, mpz_t n) {
   mpz_clear(count);
 }
 
-void do_ifact(signed long int xa) {
+static void do_ifact(signed long int xa) {
     mpz_t a, res;
 
     mpz_init_set_si(a, xa);
@@ -26,5 +26,5 @@ void do_ifact(signed long int xa) {
 
 int main(void) {
   do_ifact(20000);
-  exit(0);
+  return 0;
 }

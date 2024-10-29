@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <gmp.h>
 
-void rfact(mpz_t res, mpz_t n) {
+static void rfact(mpz_t res, mpz_t n) {
   mpz_t tmp;
   if (mpz_cmp_si(n, 0) <= 0) {
     mpz_set_si(res, 1);
@@ -14,7 +14,7 @@ void rfact(mpz_t res, mpz_t n) {
   mpz_mul(res, res, n);
 }
 
-void do_rfact(signed long int xa) {
+static void do_rfact(signed long int xa) {
     mpz_t a, res;
 
     mpz_init_set_si(a, xa);
@@ -28,5 +28,5 @@ void do_rfact(signed long int xa) {
 
 int main(void) {
   do_rfact(20000);
-  exit(0);
+  return 0;
 }

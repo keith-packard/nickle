@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <gmp.h>
 
-void ifact(mpz_t res, mpz_t n) {
+static void ifact(mpz_t res, mpz_t n) {
   mpz_t count;
   mpz_init_set(count, n);
   mpz_set_si(res, 1);
@@ -12,7 +12,7 @@ void ifact(mpz_t res, mpz_t n) {
   mpz_clear(count);
 }
 
-void choose(mpz_t res, mpz_t n, mpz_t r) {
+static void choose(mpz_t res, mpz_t n, mpz_t r) {
   mpz_t ifr, ifnr, diff;
   mpz_init(ifr);
   mpz_init(ifnr);
@@ -28,7 +28,7 @@ void choose(mpz_t res, mpz_t n, mpz_t r) {
   mpz_clear(diff);
 }
 
-void do_choose(signed long int xa1, signed long int xa2) {
+static void do_choose(signed long int xa1, signed long int xa2) {
     mpz_t a1, a2, res;
 
     mpz_init_set_si(a1, xa1);
@@ -44,5 +44,5 @@ void do_choose(signed long int xa1, signed long int xa2) {
 
 int main(void) {
   do_choose(20000, 5000);
-  exit(0);
+  return 0;
 }

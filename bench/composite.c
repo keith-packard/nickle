@@ -2,7 +2,7 @@
 #include <gmp.h>
 
 /* Miller-Rabin test from Corwin/Rivest/Leiserson */
-void witnessexp(mpz_t res, mpz_t b, mpz_t e, mpz_t m) {
+static void witnessexp(mpz_t res, mpz_t b, mpz_t e, mpz_t m) {
   mpz_t xres, tmp, rem, m1;
   if (mpz_cmp_si(e, 0) == 0) {
     mpz_set_si (res, -1);
@@ -57,7 +57,7 @@ void witnessexp(mpz_t res, mpz_t b, mpz_t e, mpz_t m) {
 /* Note that rather than trying random
    bases, we try _all_ bases[!]... */
 /* ([!] Don't even _think_ it.) */
-void composite(mpz_t res, mpz_t n) {
+static void composite(mpz_t res, mpz_t n) {
   mpz_t n1, j;
   mpz_init(n1);
   mpz_sub_ui(n1, n, 1);
@@ -82,7 +82,7 @@ void composite(mpz_t res, mpz_t n) {
   return;
 }
 
-void do_composite(signed long int xa) {
+static void do_composite(signed long int xa) {
     mpz_t a, res;
 
     mpz_init_set_si(a, xa);
@@ -96,5 +96,5 @@ void do_composite(signed long int xa) {
 
 int main(void) {
   do_composite(39157);
-  exit(0);
+  return 0;
 }

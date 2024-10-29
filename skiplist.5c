@@ -10,9 +10,9 @@ namespace Skiplist {
     public typedef bool (poly a, poly b) Greater;
 
     public typedef void (poly a) Visit;
-    
+
     public exception not_found (poly missing);
-    
+
     /*
      * Private representation of an element
      */
@@ -45,7 +45,7 @@ namespace Skiplist {
     {
 	int bits = PRNG::randbits(MaxLevel * 2);
 	int level = 0;
-	
+
 	while (++level < MaxLevel)
 	{
 	    if ((bits & 3) != 0)
@@ -54,7 +54,7 @@ namespace Skiplist {
 	}
 	return level;
     }
-    
+
     public Skip new (Greater greater)
 	/*
 	 * Allocate a new list with 'greater' as the ordering function
@@ -63,9 +63,9 @@ namespace Skiplist {
 	return &(SkipRec) {
 	    .level = 0,
 	    .greater = greater,
-	    .header = { 
+	    .header = {
 		.forward = (ElementPtr[MaxLevel]) { [i] = ElementPtr.nil },
-		.value = <> 
+		.value = <>
 	    }
 	};
     }
@@ -81,7 +81,7 @@ namespace Skiplist {
 	for (int i = list->level; --i >= 0; )
 	{
 	    while (x.element->forward[i] != ElementPtr.nil &&
-		   list->greater (value, 
+		   list->greater (value,
 				  x.element->forward[i].element->value))
 		x = x.element->forward[i];
 	}
@@ -101,8 +101,8 @@ namespace Skiplist {
 
 	for (int i = list->level; --i >= 0;)
 	{
-	    while (x.element->forward[i] != ElementPtr.nil && 
-		   list->greater (value, 
+	    while (x.element->forward[i] != ElementPtr.nil &&
+		   list->greater (value,
 				  x.element->forward[i].element->value))
 		x = x.element->forward[i];
 	    update[i] = x;
@@ -123,7 +123,7 @@ namespace Skiplist {
 	    .value = value,
 	    .forward = (ElementPtr[level]) {}
 	};
-	
+
 	for (int i = 0; i < level; i++)
 	{
 	    new.element->forward[i] = update[i].element->forward[i];
@@ -142,8 +142,8 @@ namespace Skiplist {
 
 	for (int i = list->level; --i >= 0;)
 	{
-	    while (x.element->forward[i] != ElementPtr.nil && 
-		   list->greater (value, 
+	    while (x.element->forward[i] != ElementPtr.nil &&
+		   list->greater (value,
 				  x.element->forward[i].element->value))
 		x = x.element->forward[i];
 	    update[i] = x;
@@ -152,13 +152,13 @@ namespace Skiplist {
 	if (x == ElementPtr.nil || list->greater (x.element->value, value))
 	    raise not_found (value);
 
-	for (int i = 0; 
-	     i < list->level && update[i].element->forward[i] == x; 
+	for (int i = 0;
+	     i < list->level && update[i].element->forward[i] == x;
 	     i++)
 	{
 	    update[i].element->forward[i] = x.element->forward[i];
 	}
-	
+
 	while (list->level > 0 &&
 	       list->header.forward[list->level-1] == ElementPtr.nil)
 	    list->level--;
@@ -167,7 +167,7 @@ namespace Skiplist {
     public void walk (Skip list, Visit visit)
 	/*
 	 * Invoke 'visit' for each element of 'list'.
-	 * Operations on 
+	 * Operations on
 	 */
     {
 	for (ElementPtr e = list->header.forward[0];
@@ -201,7 +201,7 @@ namespace Skiplist {
 	     e != ElementPtr.nil;
 	     e = e.element->forward[0])
 	{
-	    len++;	     
+	    len++;
 	}
 	return len;
     }
@@ -212,8 +212,8 @@ namespace Skiplist {
 
 	for (int i = list->level; --i >= 0;)
 	{
-	    while (x.element->forward[i] != ElementPtr.nil && 
-		   list->greater (value, 
+	    while (x.element->forward[i] != ElementPtr.nil &&
+		   list->greater (value,
 				  x.element->forward[i].element->value))
 		x = x.element->forward[i];
 	}
@@ -226,4 +226,5 @@ namespace Skiplist {
 
 namespace Sortlist {
     public import Skiplist;
+    public typedef Skip List;
 }

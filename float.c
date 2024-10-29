@@ -364,7 +364,8 @@ FloatTimes (Value av, Value bv, int expandOk)
     Fpart	*mant;
     Fpart	*exp;
     unsigned	prec;
-    
+
+    (void) expandOk;
     mant = FpartMult (a->mant, b->mant);
     exp = FpartAdd (a->exp, b->exp, False);
     if (a->prec < b->prec)
@@ -385,6 +386,7 @@ FloatDivide (Value av, Value bv, int expandOk)
     unsigned	prec;
     unsigned	iprec, alen;
 
+    (void) expandOk;
     if (FpartZero (b->mant))
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -481,6 +483,7 @@ FloatNegate (Value av, int expandOk)
     ENTER ();
     Float   *a = &av->floats;
 
+    (void) expandOk;
     RETURN (NewFloat (FpartNegate (a->mant), a->exp, a->prec));
 }
 
@@ -516,6 +519,7 @@ FloatFloor (Value av, int expandOk)
     Fpart   *exp;
     int	    d;
 
+    (void) expandOk;
     if (a->exp->sign == Positive)
 	RETURN (FloatInteger (av));
     if (NaturalLess (NewNatural (a->prec), a->exp->mag))
@@ -534,7 +538,7 @@ FloatFloor (Value av, int expandOk)
     exp = zero_fpart;
     RETURN (FloatInteger (NewFloat (mant, exp, a->prec - d)));
 }
-   
+
 static Value
 FloatCeil (Value av, int expandOk)
 {
@@ -544,6 +548,7 @@ FloatCeil (Value av, int expandOk)
     Fpart   *exp;
     int	    d;
 
+    (void) expandOk;
     if (a->exp->sign == Positive)
 	RETURN (FloatInteger (av));
     if (NaturalLess (NewNatural (a->prec), a->exp->mag))

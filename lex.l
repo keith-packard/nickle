@@ -106,6 +106,7 @@ LexGetChar (void);
 static int
 ReadlineGetChar (FILE *f)
 {
+    (void) f;
     return LexGetChar ();
 }
 #endif

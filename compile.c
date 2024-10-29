@@ -257,7 +257,8 @@ static void
 CompileStorage (ObjPtr obj, ExprPtr stat, SymbolPtr symbol, CodePtr code)
 {
     ENTER ();
-    
+
+    (void) stat;
     if (!symbol)
 	obj->error = True;
     /*
@@ -297,6 +298,7 @@ CompileDimensionStorage (ObjPtr obj, Class class, TypePtr type, CodePtr code)
     if (class == class_typedef)
 	class = code ? class_auto : class_global;
 
+    (void) obj;
     switch (class) {
     case class_global:
     case class_const:
@@ -336,6 +338,7 @@ CompileCheckSymbol (ObjPtr obj, ExprPtr stat, ExprPtr name, CodePtr code,
     int		d;
     CodePtr	c;
 
+    (void) createIfNecessary;
     s = name->atom.symbol;
     if (!s)
     {
@@ -1022,7 +1025,8 @@ CompileTypecheckArgs (ObjPtr	obj,
     Type	*actual_type;
     int		i;
     Bool	varactual;
-    
+
+    (void) argc;
     func_type = TypeCombineFunction (type);
     if (!func_type)
     {
@@ -1389,6 +1393,7 @@ CompileBuildArray (ObjPtr obj, ExprPtr expr, TypePtr type,
     ENTER ();
     InstPtr	inst;
 
+    (void) expr;
     if (dim)
     {
 	while (dim)
@@ -3137,12 +3142,13 @@ _CompileNonLocal (ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
     InstPtr	inst;
     int		target;
 
+    (void) code;
     switch (mod) {
     case BranchModBreak:	target = NON_LOCAL_BREAK; break;
     case BranchModContinue:	target = NON_LOCAL_CONTINUE; break;
     case BranchModReturn:
     case BranchModReturnVoid:	target = NON_LOCAL_RETURN; break;
-    case BranchModNone:		
+    case BranchModNone:
     default:			RETURN(obj);
     }
     for (nl = obj->nonLocal; nl; nl = nl->prev)
@@ -4054,6 +4060,8 @@ CompileDeclInitObjStart (ObjPtr *obj, CodePtr code, CodePtr code_compile)
 static void
 CompileDeclInitObjFinish (ObjPtr *obj, ObjPtr *initObj, CodePtr code, CodePtr code_compile)
 {
+    (void) obj;
+    (void) initObj;
     if (code_compile)
     {
 	code_compile->func.inStaticInit = False;

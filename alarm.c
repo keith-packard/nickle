@@ -154,6 +154,7 @@ ReferencePtr	SleepingReference;
 static void
 _CatchAlarm (int sig)
 {
+    (void) sig;
     resetSignal (SIGALRM, _CatchAlarm);
     SetSignalTimer();
 }

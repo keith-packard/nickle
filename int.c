@@ -49,7 +49,7 @@ logbase2(int a)
 	log += 1;
     return log;
 }
-		
+
 #define HALF_BITS   (NICKLE_INT_BITS>>1)
 #define HALF_MAX    (1 << (NICKLE_INT_BITS>>1))
 
@@ -59,6 +59,7 @@ IntTimes (Value av, Value bv, int expandOk)
     int		    a = ValueInt(av), b = ValueInt(bv);
     signed_digit    rd = (signed_digit) a * (signed_digit) b;
 
+    (void) expandOk;
     if (rd > (signed_digit) MAX_NICKLE_INT || rd < (signed_digit) MIN_NICKLE_INT)
 	return NewSignedDigitInteger (rd);
     return NewInt ((int) rd);
@@ -92,6 +93,7 @@ IntDiv (Value av, Value bv, int expandOk)
     int		d;
     Value	ret;
 
+    (void) expandOk;
     if (b == 0)
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -135,6 +137,7 @@ IntMod (Value av, Value bv, int expandOk)
     int		a = ValueInt(av), b = ValueInt(bv);
     int		r;
 
+    (void) expandOk;
     if (b == 0)
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -167,6 +170,8 @@ static Value
 IntEqual (Value av, Value bv, int expandOk)
 {
     int		a = ValueInt(av), b = ValueInt(bv);
+
+    (void) expandOk;
     if (a == b)
 	return TrueVal;
     return FalseVal;
@@ -176,6 +181,8 @@ static Value
 IntLess (Value av, Value bv, int expandOk)
 {
     int		a = ValueInt(av), b = ValueInt(bv);
+
+    (void) expandOk;
     if (a < b)
 	return TrueVal;
     return FalseVal;
@@ -185,6 +192,8 @@ static Value
 IntLand (Value av, Value bv, int expandOk)
 {
     ENTER ();
+
+    (void) expandOk;
     int		a = ValueInt(av), b = ValueInt(bv);
     RETURN (NewInt (a & b));
 }
@@ -194,6 +203,8 @@ IntLor (Value av, Value bv, int expandOk)
 {
     ENTER ();
     int		a = ValueInt(av), b = ValueInt(bv);
+
+    (void) expandOk;
     RETURN (NewInt (a | b));
 }
 
@@ -203,6 +214,7 @@ IntNegate (Value av, int expandOk)
     ENTER ();
     int	    a = ValueInt(av);
 
+    (void) expandOk;
     if (-(-a) != a)
 	RETURN (Negate (NewIntInteger (a)));
     RETURN (NewInt (-a));
@@ -211,12 +223,14 @@ IntNegate (Value av, int expandOk)
 static Value
 IntFloor (Value av, int expandOk)
 {
+    (void) expandOk;
     return av;
 }
 
 static Value
 IntCeil (Value av, int expandOk)
 {
+    (void) expandOk;
     return av;
 }
 

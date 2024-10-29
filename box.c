@@ -33,6 +33,7 @@ NewBox (Bool constant, Bool array, int nvalues, TypePtr type)
     BoxPtr  box;
     int	    i;
 
+    (void) array;
     box = ALLOCATE (&BoxType, sizeof (Box) + nvalues * sizeof (Value));
     box->constant = constant;
     box->homogeneous = True;
@@ -51,6 +52,7 @@ NewTypedBox (Bool array, BoxTypesPtr bt)
     BoxPtr  box;
     int	    i;
 
+    (void) array;
     box = ALLOCATE (&BoxType, sizeof (Box) + bt->count * sizeof (Value));
     box->constant = False;
     box->homogeneous = False;

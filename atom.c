@@ -16,6 +16,7 @@ typedef struct _atom {
 static void
 AtomEntryMark (void *object)
 {
+    (void) object;
     ;
 }
 

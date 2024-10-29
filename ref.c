@@ -13,6 +13,7 @@ RefPlus (Value av, Value bv, int expandOk)
     int	    i;
     Ref	    *ref;
 
+    (void) expandOk;
     if (ValueIsInt(av))
     {
 	i = IntPart (av, "Attempt to add non-integer to reference type");
@@ -48,6 +49,7 @@ RefMinus (Value av, Value bv, int expandOk)
     int	    element;
     Ref	    *ref, *bref;
 
+    (void) expandOk;
     if (ValueIsInt(av))
     {
 	i = IntPart (av, "Attempt to subtract non-integer to reference type");
@@ -91,6 +93,7 @@ RefLess (Value av, Value bv, int expandOk)
 {
     Ref	*aref = &av->ref, *bref = &bv->ref;
 
+    (void) expandOk;
     if (aref->box != bref->box || 
 	(!aref->box->homogeneous && aref->element != bref->element))
     {
@@ -108,6 +111,7 @@ RefEqual (Value av, Value bv, int expandOk)
 {
     Ref	*aref = &av->ref, *bref = &bv->ref;
 
+    (void) expandOk;
     if (aref->box != bref->box || aref->element != bref->element)
 	return FalseVal;
     return TrueVal;
@@ -116,6 +120,7 @@ RefEqual (Value av, Value bv, int expandOk)
 static ValueRep *
 RefTypeCheck (BinaryOp op, Value av, Value bv, int expandOk)
 {
+    (void) expandOk;
     switch (op) {
     case MinusOp:
 	if (ValueIsRef(av) && ValueIsRef(bv))

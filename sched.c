@@ -403,6 +403,11 @@ ThreadMark (void *object)
 static Bool
 ThreadPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
+    (void) format;
+    (void) base;
+    (void) width;
+    (void) prec;
+    (void) fill;
     FilePrintf (f, "%%%d", av->thread.id);
     return True;
 }
@@ -656,6 +661,12 @@ ContinuationMark (void *object)
 static Bool
 ContinuationPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
+    (void) av;
+    (void) format;
+    (void) base;
+    (void) width;
+    (void) prec;
+    (void) fill;
     FilePuts (f, "continutation");
     return True;
 }

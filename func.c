@@ -122,6 +122,10 @@ FuncPrint (Value f, Value av, char format, int base, int width, int prec, int fi
 {
     Bool    nest = False;
 
+    (void) base;
+    (void) width;
+    (void) prec;
+    (void) fill;
     if (format == 'v')
 	nest = True;
     PrettyCode (f, av->func.code, 0, class_undef, publish_private, 0, nest);

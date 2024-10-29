@@ -53,6 +53,7 @@ IntegerPlus (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Value	ret;
 
+    (void) expandOk;
     switch (catagorize_signs(ISign(a), ISign(b))) {
     case BothPositive:
     default:
@@ -84,6 +85,7 @@ IntegerMinus (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Value	ret;
 
+    (void) expandOk;
     switch (catagorize_signs(ISign(a), ISign(b))) {
     case BothPositive:
     default:
@@ -115,6 +117,7 @@ IntegerTimes (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Sign	sign;
 
+    (void) expandOk;
     sign = Positive;
     if (ISign(a) != ISign(b))
 	sign = Negative;
@@ -152,6 +155,7 @@ IntegerDiv (Value av, Value bv, int expandOk)
     Sign	sign;
     Natural	*quo, *rem;
 
+    (void) expandOk;
     if  (NaturalZero (IMag(b)))
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -174,6 +178,7 @@ IntegerMod (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Natural	*rem;
 
+    (void) expandOk;
     if  (NaturalZero (IMag(b)))
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -192,6 +197,7 @@ IntegerLess (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Value	ret;
 
+    (void) expandOk;
     ret = FalseVal;
     switch (catagorize_signs (ISign(a), ISign(b))) {
     case BothPositive:
@@ -216,6 +222,7 @@ IntegerEqual (Value av, Value bv, int expandOk)
 {
     Integer	*a = &av->integer, *b = &bv->integer;
 
+    (void) expandOk;
     if (ISign(a) == ISign(b) && NaturalEqual (IMag(a), IMag(b)))
 	return TrueVal;
     return FalseVal;
@@ -235,6 +242,7 @@ IntegerLand (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Natural	*am = IMag(a), *bm = IMag(b), *m;
 
+    (void) expandOk;
     DebugN("a", am);
     if (ISign(a) == Negative)
     {
@@ -269,6 +277,7 @@ IntegerLor (Value av, Value bv, int expandOk)
     Integer	*a = &av->integer, *b = &bv->integer;
     Natural	*am = IMag(a), *bm = IMag(b), *m;
 
+    (void) expandOk;
     DebugN("a", am);
     if (ISign(a) == Negative)
     {
@@ -299,24 +308,28 @@ IntegerNegate (Value av, int expandOk)
 {
     Integer *a = &av->integer;
 
+    (void) expandOk;
     return NewInteger (SignNegate (ISign(a)), IMag(a));
 }
 
 static Value
 IntegerFloor (Value av, int expandOk)
 {
+    (void) expandOk;
     return av;
 }
 
 static Value
 IntegerCeil (Value av, int expandOk)
 {
+    (void) expandOk;
     return av;
 }
 
 static Value
 IntegerPromote (Value av, Value bv)
 {
+    (void) bv;
     if (ValueIsInt(av))
 	av = NewIntInteger (ValueInt(av));
     return av;

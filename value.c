@@ -99,7 +99,7 @@ IntPart (Value av, char *error)
     if (!ValueIsInt(av))
     {
 	RaiseStandardException (exception_invalid_argument, 3,
-				NewStrString (error), 
+				NewStrString (error),
 				NewInt (0), av);
 	return 0;
     }
@@ -112,7 +112,7 @@ BoolPart (Value av, char *error)
     if (!ValueIsBool(av))
     {
 	RaiseStandardException (exception_invalid_argument, 3,
-				NewStrString (error), 
+				NewStrString (error),
 				NewInt (0), av);
 	return 0;
     }
@@ -128,7 +128,7 @@ SignedDigitPart(Value av, char *error)
 	return IntegerToSignedDigit(&av->integer);
 
     RaiseStandardException (exception_invalid_argument, 3,
-			    NewStrString (error), 
+			    NewStrString (error),
 			    NewInt (0), av);
     return 0;
 }
@@ -143,26 +143,26 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	switch (operator) {
 	case PlusOp:
 	    r = ValueInt(av) + ValueInt(bv);
-    
+
 	    if (NICKLE_INT_CARRIED(r))
 		return Plus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
 	    return NewInt(r);
 	case MinusOp:
 	    r = ValueInt(av) - ValueInt(bv);
-    
+
 	    if (NICKLE_INT_CARRIED(r))
 		return Minus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
-	    return NewInt(r);    
+	    return NewInt(r);
 	case TimesOp:
 	    a = ValueInt(av), b = ValueInt(bv);
 	    rd = (signed_digit) a * (signed_digit) b;
-    
+
 	    if (rd > (signed_digit) MAX_NICKLE_INT || rd < (signed_digit) MIN_NICKLE_INT)
 		return NewSignedDigitInteger (rd);
 	    return NewInt ((int) rd);
 	case DivideOp:
 	    a = ValueInt(av), b = ValueInt(bv);
-    
+
 	    if (b == 0)
 	    {
 		RaiseStandardException (exception_divide_by_zero, 2,
@@ -174,7 +174,7 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	    return NewInt (a/b);
 	case DivOp:
 	    a = ValueInt(av), b = ValueInt(bv);
-    
+
 	    if (b == 0)
 	    {
 		RaiseStandardException (exception_divide_by_zero, 2,
@@ -203,7 +203,7 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	    return NewInt (r);
 	case ModOp:
 	    a = ValueInt(av), b = ValueInt(bv);
-    
+
 	    if (b == 0)
 	    {
 		RaiseStandardException (exception_divide_by_zero, 2,
@@ -249,7 +249,7 @@ BinaryOperate (Value av, Value bv, BinaryOp operator)
 	Value	ret;
 	ValueRep	*arep = ValueRep(av), *brep = ValueRep(bv);
 	ValueRep	*rep = 0;
-    
+
 	if (arep->typecheck)
 	    rep = (*arep->typecheck) (operator, av, bv, 1);
 	else if (brep->typecheck)
@@ -292,7 +292,7 @@ UnaryOperate (Value v, UnaryOp operator)
     ENTER ();
     Value	ret;
     ValueRep	*rep = ValueRep(v);
-    
+
     if (!rep->unary[operator])
     {
 	RaiseStandardException (exception_invalid_unop_value, 1,
@@ -322,6 +322,7 @@ NumericDiv (Value av, Value bv, int expandOk)
 {
     ENTER ();
 
+    (void) expandOk;
     av = Divide (av, bv);
     if (Negativep (bv))
 	av = Ceil (av);
@@ -375,7 +376,7 @@ Lxor (Value av, Value bv)
 {
     ENTER ();
     RETURN (Land (Lnot (Land (av, bv)),
-		  Lor (av, bv))); 
+		  Lor (av, bv)));
 }
 
 Value
@@ -419,7 +420,7 @@ Factorial (Value av)
 {
     ENTER ();
     Value   tv;
-    Value   i;    
+    Value   i;
     StackPointer    iref, tvref;
 
     if (!Integralp (ValueTag(av)) || Negativep (av))
@@ -568,11 +569,11 @@ ShiftL (Value av, Value bv)
     {
 	Sign	sign = Positive;
 	int	b = ValueInt(bv);
-	
+
 	if (ValueIsInt (av) && b < NICKLE_INT_BITS)
 	{
 	    signed_digit    rd = (signed_digit) ValueInt (av) << b;
-	    
+
 	    if (rd > (signed_digit) MAX_NICKLE_INT || rd < (signed_digit) MIN_NICKLE_INT)
 		av = NewSignedDigitInteger (rd);
 	    else
@@ -612,7 +613,7 @@ ShiftR (Value av, Value bv)
     {
 	Sign	sign = Positive;
 	int	b = ValueInt(bv);
-	
+
 	if (ValueIsInt (av) && b < NICKLE_INT_BITS)
 	{
 	    av = NewInt (ValueInt (av) >> b);
@@ -640,14 +641,14 @@ Value
 Gcd (Value av, Value bv)
 {
     ENTER ();
-    
+
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseStandardException (exception_invalid_binop_values, 2,
 				av, bv);
 	RETURN (Void);
     }
-    RETURN (Reduce (NewInteger (Positive, 
+    RETURN (Reduce (NewInteger (Positive,
 				NaturalGcd (IntegerMag(IntegerRep.promote (av, 0)),
 					    IntegerMag(IntegerRep.promote (bv, 0))))));
 }
@@ -657,7 +658,7 @@ Value
 Bdivmod (Value av, Value bv)
 {
     ENTER ();
-    
+
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseStandardException (exception_invalid_binop_values, 2,
@@ -673,7 +674,7 @@ Value
 KaryReduction (Value av, Value bv)
 {
     ENTER ();
-    
+
     if (!Integralp (ValueTag(av)) || !Integralp (ValueTag(bv)))
     {
 	RaiseStandardException (exception_invalid_binop_values, 2,
@@ -695,7 +696,7 @@ Print (Value f, Value v, char format, int base, int width, int prec, int fill)
     int		i;
     Bool	ret;
     ValueRep	*rep;
-    
+
     if (!v)
     {
 	FilePuts (f, "<uninit>");
@@ -791,6 +792,7 @@ CopyMutable (Value v)
 Value
 ValueEqual (Value a, Value b, int expandOk)
 {
+    (void) expandOk;
     return a == b ? TrueVal : FalseVal;
 }
 
@@ -810,12 +812,21 @@ ValueHash (Value v)
 static Value
 UnitEqual (Value av, Value bv, int expandOk)
 {
+    (void) av;
+    (void) bv;
+    (void) expandOk;
     return TrueVal;
 }
 
 static Bool
 UnitPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
+    (void) av;
+    (void) format;
+    (void) base;
+    (void) width;
+    (void) prec;
+    (void) fill;
     FilePuts (f, "<>");
     return True;
 }
@@ -823,7 +834,7 @@ UnitPrint (Value f, Value av, char format, int base, int width, int prec, int fi
 ValueRep UnitRep = {
     { 0, 0, "UnitRep" },	    /* data */
     rep_void,	    /* tag */
-    { 
+    {
 	0,	    /* Plus */
 	0,	    /* Minus */
 	0,	    /* Times */
@@ -853,12 +864,18 @@ NewVoid (void)
 static Value
 BoolEqual (Value av, Value bv, int expandOk)
 {
+    (void) expandOk;
     return (av == TrueVal) == (bv == TrueVal) ? TrueVal : FalseVal;
 }
 
 static Bool
 BoolPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
+    (void) format;
+    (void) base;
+    (void) width;
+    (void) prec;
+    (void) fill;
     FilePuts (f, av == TrueVal ? "true" : "false");
     return True;
 }
@@ -866,7 +883,7 @@ BoolPrint (Value f, Value av, char format, int base, int width, int prec, int fi
 ValueRep BoolRep = {
     { 0, 0, "BoolRep" },	    /* data */
     rep_bool,	    /* tag */
-    { 
+    {
 	0,	    /* Plus */
 	0,	    /* Minus */
 	0,	    /* Times */
@@ -907,12 +924,12 @@ DataCacheMark (void *object)
 
 static DataType DataCacheType = { DataCacheMark, 0, "DataCacheType" };
 
-DataCachePtr 
+DataCachePtr
 NewDataCache (int size)
 {
     ENTER ();
     DataCachePtr   dc;
-    dc = (DataCachePtr) MemAllocate (&DataCacheType, 
+    dc = (DataCachePtr) MemAllocate (&DataCacheType,
 				      sizeof (DataCache) +
 				      size * sizeof (void *));
     dc->size = size;

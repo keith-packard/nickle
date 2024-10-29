@@ -72,7 +72,8 @@ static Value
 UnionEqual (Value av, Value bv, int expandOk)
 {
     Union	    *a = &av->unions, *b = &bv->unions;
-    
+
+    (void) expandOk;
     if (!ValueIsUnion(av))
 	return Equal (av, BoxValue (b->value, 0));
     if (!ValueIsUnion(bv))
@@ -82,7 +83,7 @@ UnionEqual (Value av, Value bv, int expandOk)
     return Equal (BoxValue (a->value, 0), BoxValue (b->value, 0));
 }
 
-ValueRep    UnionRep = { 
+ValueRep    UnionRep = {
     { UnionMark, 0, "UnionRep" },	    /* base */
     rep_union,		    /* tag */
     {			    /* binary */

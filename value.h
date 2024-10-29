@@ -989,7 +989,7 @@ static inline Value BoxValueGet(Box *box, long e) {
 	return BoxElements(box)[e];
 }
 
-static inline Bool BoxConstant(Box *box, int e) {
+static inline Bool BoxConstant(Box *box) {
 	return box->constant;
 }
 
@@ -1098,7 +1098,7 @@ static inline TypePtr RefType (Value r) {
 }
 
 static inline Bool RefConstant(Value r) {
-	return BoxConstant(r->ref.box, r->ref.element);
+	return BoxConstant(r->ref.box);
 }
 
 Value	NewInteger (Sign sign, Natural *mag);

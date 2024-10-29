@@ -18,6 +18,7 @@ Bool				profiling;
 static void
 sigprofile (int sig)
 {
+    (void) sig;
     resetSignal (SIGVTALRM, sigprofile);
     currentTick += TICK_MS;
     SetSignalProfile ();

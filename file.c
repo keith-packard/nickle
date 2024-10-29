@@ -455,6 +455,7 @@ volatile Bool	signalChild;
 static void
 sigchld (int sig)
 {
+    (void) sig;
     resetSignal (SIGCHLD, sigchld);
     SetSignalChild ();
 }
@@ -576,6 +577,12 @@ FileFree (void *object)
 static Bool
 FilePrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
+    (void) av;
+    (void) format;
+    (void) base;
+    (void) width;
+    (void) prec;
+    (void) fill;
     FilePuts (f, "file");
     return True;
 }

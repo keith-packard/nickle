@@ -90,7 +90,8 @@ StructEqual (Value a, Value b, int expandOk)
 {
     int		    i;
     StructType	    *at = a->structs.type;
-    
+
+    (void) expandOk;
     if (at->nelements != b->structs.type->nelements)
 	return FalseVal;
     for (i = 0; i < at->nelements; i++)
@@ -148,6 +149,7 @@ NewStruct (StructType *type, Bool constant)
     ENTER ();
     Value	    ret;
 
+    (void) constant;
     ret = ALLOCATE (&StructRep.data, sizeof (Struct));
     ret->structs.type = type;
     ret->structs.values = 0;

@@ -24,6 +24,7 @@ StringPlus (Value av, Value bv, int expandOk)
     ENTER();
     Value	ret;
 
+    (void) expandOk;
     ret = NewString (av->string.length + bv->string.length);
     (void) memcpy (StringChars(&ret->string),
 		   StringChars(&av->string),
@@ -37,6 +38,7 @@ StringPlus (Value av, Value bv, int expandOk)
 static Value
 StringEqual (Value av, Value bv, int expandOk)
 {
+    (void) expandOk;
     if (av->string.length != bv->string.length)
 	return FalseVal;
     if (!memcmp (StringChars (&av->string), 
@@ -52,6 +54,7 @@ StringLess (Value av, Value bv, int expandOk)
     long    len;
     int	    c;
 
+    (void) expandOk;
     len = av->string.length;
     if (len > bv->string.length)
 	len = bv->string.length;
@@ -71,6 +74,8 @@ StringPrint (Value f, Value av, char format, int base, int width, int prec, int 
     long    len = av->string.length;
     int	    print_width;
     
+    (void) base;
+    (void) prec;
     print_width = FileStringWidth (string, len, format);
     while (width > print_width)
     {

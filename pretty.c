@@ -163,6 +163,7 @@ PrettyArrayInit (Value f, Expr *e, int level, Bool nest);
 static void
 PrettyArrayInits (Value f, Expr *e, int level, Bool nest)
 {
+    (void) level;
     while (e)
     {
 	if (e->tree.left)

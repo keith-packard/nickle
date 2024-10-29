@@ -129,6 +129,7 @@ BuiltinSymbolValue(NamespacePtr *namespacep,
 		   BoxPtr   value)
 {
     ENTER ();
+    (void) type;
     RETURN (BuiltinAddName (namespacep, 
 			    NewSymbolGlobalValue (AtomId (string),
 						  value)));

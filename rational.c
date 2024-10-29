@@ -18,7 +18,7 @@ RationalInit (void)
 {
     return 1;
 }
-	
+
 #if 0
 static Value
 natural_to_rational (Natural *n)
@@ -32,7 +32,7 @@ static Value
 RationalPlusHelper (Sign sign, Rational *a, Rational *b)
 {
     ENTER ();
-    RETURN (NewRational (sign, 
+    RETURN (NewRational (sign,
 			  NaturalPlus (NaturalTimes (a->num, b->den),
 				       NaturalTimes (b->num, a->den)),
 			  NaturalTimes (a->den, b->den)));
@@ -47,7 +47,7 @@ RationalMinusHelper (Rational *a, Rational *b)
 
     ra = NaturalTimes (a->num, b->den);
     rb = NaturalTimes (b->num, a->den);
-    if (NaturalLess (ra, rb)) 
+    if (NaturalLess (ra, rb))
     {
 	sign = Negative;
 	t = ra;
@@ -65,6 +65,7 @@ RationalPlus (Value av, Value bv, int expandOk)
     Rational	*a = &av->rational, *b = &bv->rational;
     Value	ret;
 
+    (void) expandOk;
     switch (catagorize_signs(a->sign, b->sign)) {
     case BothPositive:
     case BothNegative:
@@ -89,6 +90,7 @@ RationalMinus (Value av, Value bv, int expandOk)
     Rational	*a = &av->rational, *b = &bv->rational;
     Value	ret;
 
+    (void) expandOk;
     switch (catagorize_signs(a->sign, b->sign)) {
     case BothPositive:
 	ret = RationalMinusHelper (a, b);
@@ -113,10 +115,11 @@ RationalTimes (Value av, Value bv, int expandOk)
     Rational	*a = &av->rational, *b = &bv->rational;
     Sign	sign;
 
+    (void) expandOk;
     sign = Positive;
     if (a->sign != b->sign)
 	sign = Negative;
-    RETURN (NewRational (sign, 
+    RETURN (NewRational (sign,
 			 NaturalTimes (a->num, b->num),
 			 NaturalTimes (a->den, b->den)));
 }
@@ -128,6 +131,7 @@ RationalDivide (Value av, Value bv, int expandOk)
     Rational	*a = &av->rational, *b = &bv->rational;
     Sign	sign;
 
+    (void) expandOk;
     if (NaturalZero (b->num))
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -137,7 +141,7 @@ RationalDivide (Value av, Value bv, int expandOk)
     sign = Positive;
     if (a->sign != b->sign)
 	sign = Negative;
-    RETURN (NewRational (sign, 
+    RETURN (NewRational (sign,
 			  NaturalTimes (a->num, b->den),
 			  NaturalTimes (a->den, b->num)));
 }
@@ -164,7 +168,7 @@ RationalDivide (Value av, Value bv, int expandOk)
  *  (e * b * d) / f = (a * d) % (c * b)
  *  e / f = ((a * d) % (c * b)) / (b * d)
  */
-    
+
 static Value
 RationalMod (Value av, Value bv, int expandOk)
 {
@@ -172,6 +176,7 @@ RationalMod (Value av, Value bv, int expandOk)
     Rational	*a = &av->rational, *b = &bv->rational;
     Natural	*rem, *div;
 
+    (void) expandOk;
     if (NaturalZero (b->num))
     {
 	RaiseStandardException (exception_divide_by_zero, 2,
@@ -194,6 +199,7 @@ RationalLess (Value av, Value bv, int expandOk)
     Rational	*t;
     int		ret;
 
+    (void) expandOk;
     switch (catagorize_signs (a->sign, b->sign)) {
     case BothNegative:
 	t = a;
@@ -223,9 +229,10 @@ static Value
 RationalEqual (Value av, Value bv, int expandOk)
 {
     Rational	*a = &av->rational, *b = &bv->rational;
-    
-    if (a->sign == b->sign && 
-	NaturalEqual (a->num, b->num) && 
+
+    (void) expandOk;
+    if (a->sign == b->sign &&
+	NaturalEqual (a->num, b->num) &&
 	NaturalEqual (a->den, b->den))
     {
 	return TrueVal;
@@ -239,6 +246,7 @@ RationalNegate (Value av, int expandOk)
     ENTER ();
     Rational	*a = &av->rational;
 
+    (void) expandOk;
     RETURN (NewRational (SignNegate (a->sign), a->num, a->den));
 }
 
@@ -249,6 +257,7 @@ RationalFloor (Value av, int expandOk)
     Rational	*a = &av->rational;
     Natural	*quo, *rem;
 
+    (void) expandOk;
     quo = NaturalDivide (a->num, a->den, &rem);
     if (!NaturalZero (rem) && a->sign == Negative)
 	quo = NaturalPlus (quo, one_natural);
@@ -262,6 +271,7 @@ RationalCeil (Value av, int expandOk)
     Rational	*a = &av->rational;
     Natural	*quo, *rem;
 
+    (void) expandOk;
     quo = NaturalDivide (a->num, a->den, &rem);
     if (!NaturalZero (rem) && a->sign == Positive)
 	quo = NaturalPlus (quo, one_natural);
@@ -273,6 +283,7 @@ RationalPromote (Value av, Value bv)
 {
     ENTER ();
 
+    (void) bv;
     switch (ValueTag(av)) {
     case rep_int:
 	av = NewIntRational (ValueInt(av));
@@ -285,7 +296,7 @@ RationalPromote (Value av, Value bv)
     }
     RETURN (av);
 }
-	    
+
 static Value
 RationalReduce (Value av)
 {
@@ -376,7 +387,7 @@ static int
 IntFactor (int a)
 {
     int	    v, lim;
-    
+
     if (!a)
 	return 0;
     if ((a & 1) == 0)
@@ -426,9 +437,9 @@ IntPowMod (int a, int p, int m)
 		la = (la * la) % lm;
 	}
 	result = (int) lr;
-#else	
+#else
 	ENTER ();
-	result = NaturalToInt (NaturalPowMod (NewNatural (a), 
+	result = NaturalToInt (NaturalPowMod (NewNatural (a),
 					      NewNatural (p),
 					      NewNatural (m)));
 	EXIT ();
@@ -539,7 +550,7 @@ NewFactor (Natural *prime, int power, FactorPtr next)
     RETURN (f);
 }
 
-static FactorPtr 
+static FactorPtr
 GenerateFactors (Natural *n, Natural *max)
 {
     ENTER ();
@@ -561,7 +572,7 @@ GenerateFactors (Natural *n, Natural *max)
 		p = NewNatural (3);
 	    else
 		p = NaturalPlus (p, two_natural);
-	    
+
 	    d = NaturalDivide (n, p, &rem);
 	    if (NaturalZero (rem))
 		break;
@@ -590,7 +601,7 @@ FactorBump (FactorPtr	f)
 {
     PartialPtr	p, minp;
     Natural	*factor;
-    
+
     ENTER ();
     if (!f)
 	RETURN(0);
@@ -943,7 +954,7 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 	    EXIT ();
 	    return False;
 	}
-	in = NaturalSprint (initial + initial_width + 1, 
+	in = NaturalSprint (initial + initial_width + 1,
 			    init, base, &initial_width);
 	if (!in)
 	{
@@ -973,9 +984,9 @@ RationalDecimalPrint (Value f, Value rv, char format, int base, int width, int p
 	    repeat_width = -1;
 	    rep_width >>= 1;
 	}
-	rep = NaturalDivide (NaturalTimes (partial, 
+	rep = NaturalDivide (NaturalTimes (partial,
 					   NaturalIntPow (dig, rep_width)),
-			     r->den, 
+			     r->den,
 			     &partial);
 	if (aborting)
 	{
@@ -1053,7 +1064,7 @@ RationalPrint (Value f, Value rv, char format, int base, int width, int prec, in
     int		num_width, den_width;
     int		print_width;
     Bool	ret = True;
-    
+
     if (format == 'a') {
 	Value fv = NewRationalFloat(r, DEFAULT_FLOAT_PREC);
 	ValueRep *rep = ValueRep(fv);
@@ -1122,7 +1133,7 @@ RationalMark (void *object)
     MemReference (rational->den);
 }
 
-ValueRep    RationalRep = { 
+ValueRep    RationalRep = {
     { RationalMark, 0, "RationalRep" },    /* base */
     rep_rational,	    /* tag */
     {			    /* binary */
@@ -1164,7 +1175,7 @@ NewRational (Sign sign, Natural *num, Natural *den)
 	if (NaturalLength(den) != 1 || NaturalDigits(den)[0] != 1)
 	{
 	    g = NaturalGcd (num, den);
-	    if (NaturalLength (g) != 1 || NaturalDigits(g)[0] != 1) 
+	    if (NaturalLength (g) != 1 || NaturalDigits(g)[0] != 1)
 	    {
 		num = NaturalDivide (num, g, &rem);
 		den = NaturalDivide (den, g, &rem);

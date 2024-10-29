@@ -330,6 +330,7 @@ ThreadArrayInd (Value thread, Bool resizable, Value dim, Type *type)
     int	    ndim = ArrayLimits(a)[0];
     int	    *dims;
 
+    (void) thread;
     dims = AllocateTemp (ndim * sizeof (int));
     for (i = 0; i < ndim; i++)
     {
@@ -423,6 +424,7 @@ ThreadArrayReplicate (Value thread, Value array, int dim, int start)
     int		total;
     Value	*elements;
 
+    (void) thread;
     for (i = 0; i < dim; i++)
 	dimsize *= ArrayDims(&array->array)[i];
     start = start - dimsize;
@@ -443,7 +445,7 @@ ThreadArrayReplicate (Value thread, Value array, int dim, int start)
 
 void
 ThreadStackDump (Value thread);
-    
+
 static Value
 ThreadArrayInit (Value thread, Value value, AInitMode mode, 
 		 int dim, int *stack, InstPtr *next)
@@ -453,6 +455,7 @@ ThreadArrayInit (Value thread, Value value, AInitMode mode,
     int	    i;
     int	    ndim;
 
+    (void) next;
     if (aborting)
 	RETURN(value);
     switch (mode) {
@@ -853,7 +856,8 @@ static Value
 ThreadOpDot (Value thread, Value value, Atom atom, Bool fetch)
 {
     Value   v;
-    
+
+    (void) thread;
     switch (ValueTag(value)) {
     default:
 	RaiseStandardException (exception_invalid_unop_value, 1, value);

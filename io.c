@@ -27,6 +27,7 @@ Bool		anyFileWriteBlocked;
 static void
 sigio (int sig)
 {
+    (void) sig;
     resetSignal (SIGIO, sigio);
     SetSignalIo ();
 }
@@ -96,6 +97,7 @@ BoxPtr   FileStdinBox, FileStdoutBox, FileStderrBox;
 Bool
 IoTimeout (void *closure)
 {
+    (void) closure;
     if (!stdinOwned)
 	IoStart ();
     FileCheckBlocked (False);

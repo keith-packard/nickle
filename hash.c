@@ -187,6 +187,7 @@ HashEqual (Value av, Value bv, int expandOk)
     HashValue	i;
     Value	*ae, *be;
 
+    (void) expandOk;
     /* if they have different numbers of valid elements, they're not equal */
     if (at->count != bt->count)
 	return FalseVal;
@@ -323,6 +324,7 @@ NewHash (Bool constant, TypePtr keyType, TypePtr type)
 {
     ENTER ();
     Value   ret = ALLOCATE (&HashRep.data, sizeof (HashTable));
+    (void) constant;
     ret->hash.hashSet = 0;
     ret->hash.count = 0;
     ret->hash.type = type;

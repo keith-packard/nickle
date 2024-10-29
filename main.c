@@ -151,6 +151,9 @@ resetSignal (int sig, void (*func) (int sig))
 {
 #ifndef HAVE_SIGACTION
     signal (sig, func);
+#else
+    (void) sig;
+    (void) func;
 #endif
 }
 
@@ -159,6 +162,7 @@ volatile Bool	signalInterrupt;
 void
 intr (int sig)
 {
+    (void) sig;
     resetSignal (SIGINT, intr);
     if (signalInterrupt) {
 	int ret = write(2,"Double interrupt, exiting\n", 26);
@@ -223,6 +227,7 @@ die (int sig)
 void
 segv (int sig)
 {
+    (void) sig;
     IoStop ();
 #ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
     if (stdin_in_readline)

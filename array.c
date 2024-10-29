@@ -57,6 +57,7 @@ ArrayEqual (Value av, Value bv, int expandOk)
     int	    alimit = ArrayLimit (av), blimit = ArrayLimit (bv);
     int	    d;
 
+    (void) expandOk;
     if (a->ndim != b->ndim)
 	return FalseVal;
     for (d = 0; d < a->ndim; d++)

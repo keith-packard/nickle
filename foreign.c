@@ -9,6 +9,7 @@
 static Value
 ForeignEqual (Value av, Value bv, int expandOk)
 {
+    (void) expandOk;
     if (av->foreign.data == bv->foreign.data)
 	return TrueVal;
     return FalseVal;
@@ -17,6 +18,11 @@ ForeignEqual (Value av, Value bv, int expandOk)
 static Bool
 ForeignPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
 {
+    (void) format;
+    (void) base;
+    (void) width;
+    (void) prec;
+    (void) fill;
     FilePrintf (f, "foreign %s (0x%x)", av->foreign.id, av->foreign.data);
     return True;
 }

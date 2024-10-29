@@ -31,7 +31,7 @@ RefPlus (Value av, Value bv, int expandOk)
     else
 	RETURN (Void);
     i = i + ref->element;
-    if (i < 0 || i >= ref->box->nvalues ||
+    if (i < 0 || (unsigned long) i >= ref->box->nvalues ||
 	(!ref->box->homogeneous && i != ref->element))
     {
 	RaiseStandardException (exception_invalid_array_bounds, 2,
@@ -79,7 +79,7 @@ RefMinus (Value av, Value bv, int expandOk)
 	RETURN (NewInt (ref->element - bref->element));
     }
     i = i + element;
-    if (i < 0 || i >= ref->box->nvalues || (!ref->box->homogeneous && i != ref->element))
+    if (i < 0 || (unsigned long) i >= ref->box->nvalues || (!ref->box->homogeneous && i != ref->element))
     {
 	RaiseStandardException (exception_invalid_array_bounds, 2,
 				av, bv);
@@ -184,8 +184,9 @@ ValueRep RefRep = {
     0,
     RefPrint,
     RefTypeCheck,
+    0,
 };
-    
+
 DataCachePtr	refCache;
 
 Value

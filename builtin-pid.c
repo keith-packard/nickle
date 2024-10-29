@@ -91,10 +91,10 @@ do_PID_setuid (Value uid)
     int u = IntPart (uid, "Invalid uid");
     if (aborting)
 	RETURN(Void);
-    
+
     if (setuid (u) < 0)
 	RETURN (error (uid));
-	
+
     RETURN (Void);
 }
 
@@ -105,10 +105,10 @@ do_PID_seteuid (Value euid)
     int u = IntPart (euid, "Invalid euid");
     if (aborting)
 	RETURN(Void);
-    
+
     if (seteuid (u) < 0)
 	RETURN (error (euid));
-	
+
     RETURN (Void);
 }
 
@@ -119,10 +119,10 @@ do_PID_setgid (Value gid)
     int u = IntPart (gid, "Invalid gid");
     if (aborting)
 	RETURN(Void);
-    
+
     if (setgid (u) < 0)
 	RETURN (error (gid));
-	
+
     RETURN (Void);
 }
 
@@ -133,10 +133,10 @@ do_PID_setegid (Value egid)
     int u = IntPart (egid, "Invalid egid");
     if (aborting)
 	RETURN(Void);
-    
+
     if (setegid (u) < 0)
 	RETURN (error (egid));
-	
+
     RETURN (Void);
 }
 
@@ -155,10 +155,10 @@ do_PID_setgroups (Value groups)
 	if (aborting)
 	    RETURN(Void);
     }
-    
+
     if (setgroups (n, g) < 0)
 	RETURN (error (groups));
-	
+
     RETURN (Void);
 }
 
@@ -226,12 +226,12 @@ import_PID_namespace (void)
 	    " 'message' is a printable error string.\n"
 	    " 'error' is a symbolic error code.\n"
 	    " 'value' is the value which failed.\n" },
-	{ 0, 0 },
+	{ 0, 0, 0, 0 },
     };
     const struct ebuiltin   *e;
-	
+
     PIDNamespace = BuiltinNamespace (/*parent*/ 0, "PID")->namespace.namespace;
-    
+
     for (e = excepts; e->name; e++)
 	BuiltinAddException (&PIDNamespace, e->exception, e->name, e->args, e->doc);
 
@@ -239,5 +239,3 @@ import_PID_namespace (void)
     BuiltinFuncs1 (&PIDNamespace, funcs_1);
     EXIT ();
 }
-
-    

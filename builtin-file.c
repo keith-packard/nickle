@@ -210,7 +210,7 @@ import_File_namespace(void)
 	    "\n"
 	    " Raised when reading at end-of-file.\n"
 	    " 'file' is the file at eof.\n" },
-	{0,			0 },
+	{0, 0, 0, 0 },
     };
 
     const struct ebuiltin   *e;

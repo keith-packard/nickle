@@ -570,7 +570,7 @@ ShiftL (Value av, Value bv)
 	Sign	sign = Positive;
 	int	b = ValueInt(bv);
 
-	if (ValueIsInt (av) && b < NICKLE_INT_BITS)
+	if (ValueIsInt (av) && b >= 0 && (unsigned) b < NICKLE_INT_BITS)
 	{
 	    signed_digit    rd = (signed_digit) ValueInt (av) << b;
 
@@ -614,7 +614,7 @@ ShiftR (Value av, Value bv)
 	Sign	sign = Positive;
 	int	b = ValueInt(bv);
 
-	if (ValueIsInt (av) && b < NICKLE_INT_BITS)
+	if (ValueIsInt (av) && b >= 0 && (unsigned) b < NICKLE_INT_BITS)
 	{
 	    av = NewInt (ValueInt (av) >> b);
 	}
@@ -849,6 +849,8 @@ ValueRep UnitRep = {
     { 0 },	    /* unary */
     0, 0,
     UnitPrint,	    /* print */
+    0,
+    0,
 };
 
 static Value
@@ -898,6 +900,8 @@ ValueRep BoolRep = {
     { 0 },	    /* unary */
     0, 0,
     BoolPrint,	    /* print */
+    0,
+    0,
 };
 
 static Value

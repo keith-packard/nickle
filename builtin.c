@@ -13,21 +13,21 @@
 #include	"builtin.h"
 
 static const struct sbuiltin svars[] = {
-    { "> ",	    "prompt" },
-    { "+ ",	    "prompt2" },
-    { "- ",	    "prompt3" },
-    { "%g",	    "format" },
+    { "> ",	    "prompt", 0 },
+    { "+ ",	    "prompt2", 0  },
+    { "- ",	    "prompt3", 0  },
+    { "%g",	    "format", 0  },
 #ifdef BUILD_VERSION
-    { BUILD_VERSION, "version" },
+    { BUILD_VERSION, "version", 0  },
 #else
-    { VERSION, "version" },
+    { VERSION, "version", 0  },
 #endif
 #ifdef BUILD
-    { BUILD,	    "build" },
+    { BUILD,	    "build", 0  },
 #else
-    { "?",	    "build" },
+    { "?",	    "build", 0  },
 #endif
-    { 0,    0 },
+    { 0, 0, 0 },
 };
 
 extern NamespacePtr CommandNamespace;
@@ -39,19 +39,19 @@ static const struct envbuiltin envvars[] = {
 #else
     { NICKLELIBDIR,	"nickle_libdir",	&CommandNamespace },
 #endif
-    { 0,    0 },
+    { 0, 0, 0 },
 };
 
 static const struct filebuiltin fvars[] = {
-    { "stdin",	&FileStdinBox },
-    { "stdout",	&FileStdoutBox },
-    { "stderr",	&FileStderrBox },
-    { 0,	0 },
+    { "stdin",	&FileStdinBox, 0  },
+    { "stdout",	&FileStdoutBox, 0  },
+    { "stderr",	&FileStderrBox, 0  },
+    { 0, 0, 0  },
 };
 
 static const struct ibuiltin ivars[] = {
     { DEFAULT_FLOAT_PREC, "float_precision", &GlobalNamespace },
-    { 0,    0 },
+    { 0, 0, 0 },
 };
 
 static const struct ebuiltin excepts[] = {
@@ -94,7 +94,7 @@ static const struct ebuiltin excepts[] = {
 	"\n"
 	" 'value' isn't compatible with a unary operator.\n"
 	" 'message' indicates which operator is problematic.\n" },
-    {0,				0 },
+    {0, 0, 0, 0 },
 };
 
 SymbolPtr

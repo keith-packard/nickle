@@ -276,7 +276,7 @@ ThreadAssign (Value ref, Value v, Bool initialize)
 	RaiseStandardException (exception_invalid_binop_values, 2, ref, v);
     else if (RefConstant(ref) && !initialize)
 	RaiseStandardException (exception_readonly_box, 1, v);
-    else if (ref->ref.element >= ref->ref.box->nvalues)
+    else if (ref->ref.element < 0 || (unsigned long) ref->ref.element >= ref->ref.box->nvalues)
 	RaiseStandardException (exception_invalid_array_bounds, 2,
 				NewInt(ref->ref.element), v);
     else if (!TypeCompatibleAssign (RefType (ref), v))

@@ -55,7 +55,7 @@ static const struct {
 static void
 DebugAddCommands (void)
 {
-    int	i;
+    size_t	i;
     for (i = 0; i < NUM_DEBUG_COMMANDS; i++)
 	DebugAddCommand (debugCommands[i].function, debugCommands[i].names);
 }
@@ -63,7 +63,7 @@ DebugAddCommands (void)
 static void
 DebugDeleteCommands (void)
 {
-    int	i;
+    size_t	i;
     for (i = 0; i < NUM_DEBUG_COMMANDS; i++)
 	DebugDeleteCommand (debugCommands[i].function);
 }

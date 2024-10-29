@@ -156,6 +156,7 @@ ValueRep   FuncRep = {
     0,
     FuncPrint,
     0,
+    0,
 };
 
 Value

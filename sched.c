@@ -80,7 +80,7 @@ void
 ThreadStepped (Value thread)
 {
     Value   t;
-    
+
     if ((t = thread->thread.next) &&
         thread->thread.priority <= t->thread.priority)
     {
@@ -97,7 +97,7 @@ ThreadsWakeup (Value sleep, WakeKind kind)
     for (thread = stopped; thread; thread = next)
     {
 	next = thread->thread.next;
-	if ((thread->thread.state == ThreadSuspended) && 
+	if ((thread->thread.state == ThreadSuspended) &&
 	    thread->thread.sleep == sleep)
 	{
 	    thread->thread.sleep = 0;
@@ -120,7 +120,7 @@ ThreadFinish (Value thread, Bool error)
 	lastThreadError = error;
     }
 }
-	    
+
 Value
 do_Thread_join (Value target)
 {
@@ -252,7 +252,7 @@ static int
 KillThread (Value thread)
 {
     int	ret;
-    
+
     if (!ValueIsThread(thread))
     {
 	RaiseStandardException (exception_invalid_argument, 3,
@@ -297,7 +297,7 @@ void
 TraceFunction (Value file, FramePtr frame, CodePtr code, ExprPtr name)
 {
     int		    fe;
-    
+
     FilePuts (file, "    ");
     if (name)
 	PrettyExpr (file, name, -1, 0, False);
@@ -356,7 +356,7 @@ do_Thread_trace (int n, Value *p)
     InstPtr	pc;
     ObjPtr	obj;
     int		depth = 20;
-    
+
     if (n == 0)
 	v = lookupVar (0, "cont");
     else
@@ -436,8 +436,9 @@ ValueRep    ThreadRep = {
     0,
     ThreadPrint,
     0,
+    0,
 };
-    
+
 static int  ThreadId;
 
 Value
@@ -447,7 +448,7 @@ NewThread (FramePtr frame, ObjPtr code)
     Value ret;
 
     ret = ALLOCATE (&ThreadRep.data, sizeof (Thread));
-    
+
     ret->thread.jump = 0;
     ret->thread.state = ThreadRunning;
     ret->thread.priority = 0;
@@ -455,12 +456,12 @@ NewThread (FramePtr frame, ObjPtr code)
     ret->thread.id = ++ThreadId;
     ret->thread.partial = 0;
     ret->thread.next = 0;
-    
+
     ContinuationInit (&ret->thread.continuation);
     ret->thread.continuation.obj = code;
     ret->thread.continuation.pc = ObjCode (code, 0);
     ret->thread.continuation.frame = frame;
-    
+
     complete = True;
     if (code->error)
 	ret->thread.state = ThreadFinished;
@@ -582,7 +583,7 @@ FarJumpContinuation (ContinuationPtr continuation, FarJumpPtr farJump)
     int		frames;
 
     ret = NewContinuation (continuation, 0);
-    
+
     /*
      * Unwind twixts
      */
@@ -625,7 +626,7 @@ FarJumpContinuation (ContinuationPtr continuation, FarJumpPtr farJump)
 	frame = frame->previous;
     }
     ret->continuation.frame = frame;
-    /* 
+    /*
      * Set pc for non-return jumps
      */
     if (farJump->inst >= 0)
@@ -636,7 +637,7 @@ FarJumpContinuation (ContinuationPtr continuation, FarJumpPtr farJump)
      * only intervening catch frames are on the stack
      * and they never have extra values on the stack
      */
-    
+
     ret->continuation.pc = pc;
     ret->continuation.obj = obj;
     RETURN (ret);
@@ -647,7 +648,7 @@ ContinuationMark (void *object)
 {
     ContinuationPtr	continuation = object;
 
-    assert (!continuation->pc || 
+    assert (!continuation->pc ||
 	    (ObjCode (continuation->obj, 0) <= continuation->pc &&
 	     continuation->pc <= ObjCode (continuation->obj, ObjLast(continuation->obj))));
     MemReference (continuation->obj);
@@ -695,6 +696,7 @@ ValueRep    ContinuationRep = {
     0,
     ContinuationPrint,
     0,
+    0,
 };
 
 Value
@@ -732,7 +734,7 @@ ContinuationTrace (char *where, Continuation *continuation, int indent)
     TwixtPtr	twixts = continuation->twixts;
     ObjPtr	obj = continuation->obj;
     InstPtr	pc = continuation->pc;
-    
+
     if (!dump_jump)
 	return;
     TraceIndent (indent);
@@ -846,7 +848,7 @@ static void
 JumpUnhandledException (Value thread)
 {
     Value   continuation = STACK_POP (thread->thread.continuation.stack);
-    
+
     /* make exec loop reschedule */
     if (thread == running)
 	SetSignalError ();
@@ -863,7 +865,7 @@ JumpContinue (Value thread, InstPtr *next)
     ENTER ();
     JumpPtr	jump = thread->thread.jump;
     TwixtPtr	twixt;
-    
+
     if (jump->leave)
     {
 	/*
@@ -985,7 +987,7 @@ do_setjmp (Value continuation_ref, Value ret)
 {
     ENTER ();
     Value	continuation;
-    
+
     if (!ValueIsRef(continuation_ref))
     {
 	RaiseStandardException (exception_invalid_argument, 3,
@@ -1097,9 +1099,9 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
     ENTER ();
     CatchPtr	    catch;
     ContinuationPtr continuation = 0;
-    
-    for (catch = thread->thread.continuation.catches; 
-	 catch; 
+
+    for (catch = thread->thread.continuation.catches;
+	 catch;
 	 catch = catch->continuation.catches)
     {
 	if (catch->exception == except)
@@ -1118,7 +1120,7 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
     {
 	int	i;
 	InstPtr	pc = thread->thread.continuation.pc;
-	
+
 	PrintError ("Unhandled exception %A (", except->symbol.name);
 	if (args)
 	{
@@ -1136,7 +1138,7 @@ RaiseException (Value thread, SymbolPtr except, Value args, InstPtr *next)
 		    pc,
 		    20);
 	continuation = EmptyContinuation();
-	STACK_PUSH (continuation->stack, 
+	STACK_PUSH (continuation->stack,
 		    NewContinuation (&thread->thread.continuation, pc));
     }
     ContinuationJump (thread, continuation, args, next);
@@ -1167,7 +1169,7 @@ SymbolPtr
 CheckStandardException (void)
 {
     SymbolPtr		except = standardExceptions[standardException];
-    
+
     signalException = False;
     standardException = exception_none;
     standardExceptionArgs = 0;
@@ -1183,7 +1185,7 @@ RaiseStandardException (StandardException   se,
     Value	args;
     int		i;
     va_list	va;
-    
+
     va_start (va, argc);
     i = argc;
     args = NewArray (False, False, typePoly, 1, &i);
@@ -1201,7 +1203,7 @@ JumpStandardException (Value thread, InstPtr *next)
     ENTER ();
     SymbolPtr		except = standardExceptions[standardException];
     Value		args = standardExceptionArgs;
-    
+
     aborting = False;
     if (except)
 	RaiseException (thread, except, args, next);
@@ -1217,7 +1219,7 @@ SignalThread (Value thread, Value signal, Bool executing)
     int		i = 1;
     Value	args = NewArray (False, False, typePoly, 1, &i);
     SymbolPtr	except = standardExceptions[exception_signal];
-    
+
     ArrayValueSet (&args->array, 0, signal);
     if (thread == running && executing)
     {
@@ -1228,7 +1230,7 @@ SignalThread (Value thread, Value signal, Bool executing)
     else if (except)
     {
 	InstPtr	next;
-	
+
 	RaiseException (thread, except, args, &next);
 	thread->thread.continuation.value = args;
 	thread->thread.continuation.pc = next;

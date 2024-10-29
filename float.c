@@ -275,7 +275,7 @@ FloatAdd (Value av, Value bv, int expandOk, Bool negate)
     Fpart	*exp;
     int		d;
     unsigned	prec;
-    int		alen, blen;
+    unsigned	alen, blen;
 
     if (FpartZero(a->mant)) {
 	if (negate)

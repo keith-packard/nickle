@@ -431,7 +431,7 @@ FileInitErrors (void)
     ENTER ();
     StructType	    *st;
     Atom	    *atoms;
-    int		    i;
+    size_t	    i;
     SymbolPtr	    error_type;
 
     error_type = NewSymbolType (AtomId("error_type"), 0);
@@ -516,7 +516,7 @@ FileGetError (int err)
 {
     ENTER();
     Value	    ret;
-    int		    i;
+    size_t	    i;
     StructType	    *st;
 
     for (i = 0; i < NUM_FILE_ERRORS; i++)
@@ -534,7 +534,7 @@ FileGetError (int err)
 Value
 FileGetErrorMessage (int err)
 {
-    int i;
+    size_t i;
     for (i = 0; i < NUM_FILE_ERRORS; i++)
 	if (fileErrorMap[i].value == err)
 	    return NewStrString (fileErrorMap[i].message);
@@ -600,6 +600,8 @@ ValueRep FileRep = {
     0,
     0,
     FilePrint,
+    0,
+    0,
 };
 
 Value
@@ -2057,17 +2059,17 @@ FileSetBuffer (Value file, int mode)
  */
 
 int
-FileOutchar (Value file, int c)
+FileOutchar (Value file, uint32_t c)
 {
     char d;
     int	bits;
     
-         if (c <       0x80) { d = c;                         bits= -6; }
-    else if (c <      0x800) { d= ((c >>  6) & 0x1F) | 0xC0;  bits=  0; }
-    else if (c <    0x10000) { d= ((c >> 12) & 0x0F) | 0xE0;  bits=  6; }
-    else if (c <   0x200000) { d= ((c >> 18) & 0x07) | 0xF0;  bits= 12; }
-    else if (c <  0x4000000) { d= ((c >> 24) & 0x03) | 0xF8;  bits= 18; }
-    else if (c < 0x80000000) { d= ((c >> 30) & 0x01) | 0xFC;  bits= 24; }
+         if (c <       0x80UL) { d = c;                         bits= -6; }
+    else if (c <      0x800UL) { d= ((c >>  6) & 0x1F) | 0xC0;  bits=  0; }
+    else if (c <    0x10000UL) { d= ((c >> 12) & 0x0F) | 0xE0;  bits=  6; }
+    else if (c <   0x200000UL) { d= ((c >> 18) & 0x07) | 0xF0;  bits= 12; }
+    else if (c <  0x4000000UL) { d= ((c >> 24) & 0x03) | 0xF8;  bits= 18; }
+    else if (c < 0x80000000UL) { d= ((c >> 30) & 0x01) | 0xFC;  bits= 24; }
     else return FileError;
 
     if (FileOutput (file, d) < 0)
@@ -2132,7 +2134,7 @@ FileInchar (Value file)
 }
 
 void
-FileUnchar (Value file, int c)
+FileUnchar (Value file, uint32_t c)
 {
     char d;
     int	bits;

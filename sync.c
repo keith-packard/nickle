@@ -93,6 +93,7 @@ ValueRep   SemaphoreRep = {
     0,
     SemaphorePrint,
     0,
+    0,
 };
 
 Value

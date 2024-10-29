@@ -11,7 +11,7 @@ BoxMark (void *object)
 {
     BoxPtr	box = object;
     Value	*elements;
-    int		i;
+    unsigned long	i;
 
     elements = BoxElements(box);
     if (box->replace)
@@ -110,7 +110,7 @@ BoxRewrite (BoxPtr box, int *ep)
      * was resized.  But, that's "hard".  This check will
      * at least prevent a seg fault.
      */
-    if (e >= box->nvalues)
+    if (e >= 0 && (unsigned long) e >= box->nvalues)
     {
 	RaiseStandardException (exception_invalid_array_bounds, 2,
 				Void, NewInt (e));

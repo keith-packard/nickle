@@ -829,7 +829,7 @@ NaturalPowMod (Natural *n, Natural *p, Natural *m)
 }
 
 static int
-digit_width (digit d, int base)
+digit_width (digit d, digit base)
 {
     int	    width = 1;
     while (d >= base)
@@ -841,7 +841,7 @@ digit_width (digit d, int base)
 }
 
 int
-NaturalEstimateLength (Natural *a, int base)
+NaturalEstimateLength (Natural *a, digit base)
 {
     if (length (a) == 0)
 	return 2;

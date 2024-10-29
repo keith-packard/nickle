@@ -67,16 +67,16 @@ union block_round {
 # define HUNKS(b)	((unsigned char *) (b) + HEADSIZE)
 
 struct bfree *
-MemAllocateHunk (int sizeIndex);
+MemAllocateHunk (size_t sizeIndex);
 
 struct bfree *
-MemAllocateHuge (int size);
+MemAllocateHuge (size_t size);
 
 void
-*MemAllocate (DataType *type, int size);
+*MemAllocate (DataType *type, size_t size);
 
 void
-*MemAllocateRef (DataType *type, int size);
+*MemAllocateRef (DataType *type, size_t size);
 
 #ifdef MEM_TRACE
 void

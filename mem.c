@@ -53,10 +53,10 @@ int		    useMap[NUMSIZES+1];
  */
 
 static struct block *
-newBlock (int sizeIndex)
+newBlock (size_t sizeIndex)
 {
     struct block    *b;
-    int		    size;
+    size_t	    size;
     
     if (sizeIndex < NUMSIZES)
 	size = BLOCKSIZE;
@@ -90,7 +90,7 @@ newBlock (int sizeIndex)
  */
 
 struct bfree *
-MemAllocateHunk (int sizeIndex)
+MemAllocateHunk (size_t sizeIndex)
 {
     struct block	*b;
     struct bfree    	*new;
@@ -121,7 +121,7 @@ MemAllocateHunk (int sizeIndex)
 }
 
 void *
-MemAllocate (DataType *type, int size)
+MemAllocate (DataType *type, size_t size)
 {
     int	sizeIndex = 0;
     struct bfree    *new;
@@ -157,7 +157,7 @@ MemAllocate (DataType *type, int size)
 }
 
 void *
-MemAllocateRef (DataType *type, int size)
+MemAllocateRef (DataType *type, size_t size)
 {
     struct bfree    *new = MemAllocate (type, size);
 
@@ -172,7 +172,7 @@ MemAllocateRef (DataType *type, int size)
  */
 
 struct bfree *
-MemAllocateHuge (int size)
+MemAllocateHuge (size_t size)
 {
     return (struct bfree *) HUNKS (newBlock (size));
 }
@@ -368,9 +368,9 @@ sweep (void)
      */
     for (p = &head; (b = *p); )
     {
-	int		sizeIndex = b->sizeIndex;
-	int		n = NUMHUNK_ALL(sizeIndex);
-	int		size = HUNKSIZE_ALL(sizeIndex);
+	size_t		sizeIndex = b->sizeIndex;
+	size_t		n = NUMHUNK_ALL(sizeIndex);
+	size_t		size = HUNKSIZE_ALL(sizeIndex);
 	unsigned char   *data = HUNKS(b);
 	struct bfree    *first = 0;
 	struct bfree    **prev = &first;

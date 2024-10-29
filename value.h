@@ -217,7 +217,7 @@ Natural	*NaturalRsl (Natural *v, int shift);
 Natural	*NaturalLsl (Natural *v, int shift);
 Natural	*NaturalMask (Natural *v, int bits);
 int	NaturalPowerOfTwo (Natural *v);
-int	NaturalEstimateLength (Natural *, int base);
+int	NaturalEstimateLength (Natural *, digit base);
 void	NaturalCopy (Natural *, Natural *);
 Bool	NaturalZero (Natural *);
 Bool	NaturalEven (Natural *);
@@ -598,7 +598,7 @@ typedef struct _float {
 
 typedef struct _string {
     BaseValue	    base;
-    long	    length;
+    size_t	    length;
     char	    chars[0];
 } String;
 
@@ -1195,8 +1195,8 @@ int	FileInput (Value);
 int	FileOutput (Value, char);
 void	FileUnput (Value, unsigned char);
 int	FileInchar (Value);
-int	FileOutchar (Value, int);
-void	FileUnchar (Value, int);
+int	FileOutchar (Value, uint32_t);
+void	FileUnchar (Value, uint32_t);
 Value   FileCreate (int fd, int flags);
 int	FileFlush (Value, Bool block);
 int	FileClose (Value);

@@ -107,6 +107,7 @@ ValueRep    UnionRep = {
     0,
     UnionPrint,
     0,
+    0,
 };
 
 Value

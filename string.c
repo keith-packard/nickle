@@ -51,7 +51,7 @@ StringEqual (Value av, Value bv, int expandOk)
 static Value
 StringLess (Value av, Value bv, int expandOk)
 {
-    long    len;
+    size_t  len;
     int	    c;
 
     (void) expandOk;

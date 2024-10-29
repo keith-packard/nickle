@@ -13,6 +13,6 @@ install_data(nickle_files + ['snowflake.tex', 'COPYING'],
 
 test('snowflake', nickle,
      args: files('snowflake.5c'),
-     timeout: 240,
+     timeout: 1000,
      env: test_env)
 

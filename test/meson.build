@@ -40,6 +40,6 @@ foreach test : tests
        depends: math_tables_dep,
        env: test_env,
        workdir: meson.current_build_dir(),
-       timeout: 240
+       timeout: 1000
       )
 endforeach

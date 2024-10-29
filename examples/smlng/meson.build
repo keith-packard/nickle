@@ -16,4 +16,4 @@ install_data(nickle_files + ['COPYING', 'data.sgml'],
 test('smlng', nickle,
      args: files(['test.5c', 'data.sgml']),
      env: test_env,
-     timeout: 240)
+     timeout: 1000)

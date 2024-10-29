@@ -6,5 +6,9 @@
 
 library "parse.5c"
 
-*Parse::element e = Parse::get(stdin);
+file f = stdin;
+if (dim(argv) > 0)
+    f = File::open(argv[1], "r");
+
+*Parse::element e = Parse::get(f);
 Parse::dump(e);

@@ -1,0 +1,8 @@
+#
+# Copyright © 1988-2024 Keith Packard and Bart Massey.
+# All Rights Reserved.  See the file COPYING in this directory
+# for licensing information.
+#
+
+option('libedit', type: 'boolean', value: false,
+       description: 'Use libedit instead of libreadline')

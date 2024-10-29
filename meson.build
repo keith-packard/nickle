@@ -256,7 +256,8 @@ install_data(nickle_files,
 
 nickle = executable('nickle', nickle_srcs,
 		    dependencies : [ readline_dep, math_dep ],
-		    include_directories : include_directories('.'))
+		    include_directories : include_directories('.'),
+		   install: true)
 
 test_env = environment(
   {

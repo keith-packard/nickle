@@ -12,7 +12,7 @@ project('nickle', 'c',
 	],
 	license : 'BSD',
 	meson_version : '>= 1.0',
-	version: '2.99'
+	version: '2.100'
        )
 
 release_date = '2024-10-29'

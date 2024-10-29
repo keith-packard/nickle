@@ -1,3 +1,10 @@
+nickle (2.100) unstable; urgency=medium
+
+  * Increase testing timeouts to 1000 seconds. Closes: #1086332.
+  * Uses bc for test vectors (starting with 2.98). Closes: #1086188.
+
+ -- Keith Packard <keithp@keithp.com>  Tue, 29 Oct 2024 15:18:10 -0700
+
 nickle (2.99) unstable; urgency=medium
 
   * Install the binary

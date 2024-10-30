@@ -189,6 +189,8 @@ conf_data = configuration_data({
 				 'SIZEOF_UNSIGNED_LONG_LONG': sizeof_unsigned_long_long,
 				 'SIZEOF_UNSIGNED_SHORT': sizeof_unsigned_short,
 				 'VERSION': '"@0@"'.format(meson.project_version()),
+				 'pkgdatadir': nickle_libdir,
+				 'RELEASE_DATE': release_date,
 			       })
 
 if history_h != ''
@@ -262,6 +264,12 @@ nickle = executable('nickle', nickle_srcs,
 		    include_directories : include_directories('.'),
 		    link_args: link_args,
 		    install: true)
+
+manual = configure_file(output : 'nickle.1',
+			input : 'nickle.1.in',
+			configuration: conf_data)
+
+install_man(manual)
 
 test_env = environment(
   {

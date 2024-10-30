@@ -31,7 +31,9 @@ prog_math_tables = find_program('math-tables.sh', required: true)
 math_tables_dep = custom_target('math-tables.5c',
 				capture: true,
 				command: prog_math_tables,
-				output: 'math-tables.5c'
+				output: 'math-tables.5c',
+				install: true,
+				install_dir: nickle_testdir
 			       )
 
 foreach test : tests
@@ -43,3 +45,5 @@ foreach test : tests
        timeout: 1000
       )
 endforeach
+
+install_data(tests, install_dir: nickle_testdir)

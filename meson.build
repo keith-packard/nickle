@@ -26,6 +26,7 @@ nickle_libdir = datadir / 'nickle'
 nickle_includedir = include / 'nickle'
 nickle_docdir = docdir / 'nickle'
 nickle_examplesdir = nickle_libdir / 'examples'
+nickle_testdir = nickle_libdir / 'test'
 
 cc = meson.get_compiler('c')
 

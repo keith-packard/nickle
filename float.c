@@ -807,6 +807,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     m = NewInteger (Positive, a->mant->mag);
     
     m = Times (m, fratio);
+try_again:
     if (True (Less (m, One)))
     {
 	m = Times (m, NewInt (base));
@@ -872,8 +873,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     
     int_part = Floor (m);
     frac_part = Minus (m, int_part);
-	
-try_again:	
+
     if (ValueIsInteger(int_part))
 	int_n = IntegerMag(int_part);
     else
@@ -954,10 +954,9 @@ try_again:
 	 */
 	if (GreaterEqual (frac_part, One) == TrueVal)
 	{
-	    frac_part = Minus (frac_part, One);
-	    int_part = Plus (int_part, One);
 	    rounded = True;
 	    free (int_buffer);
+	    m = Plus(int_part, frac_part);
 	    goto try_again;
 	}
     }

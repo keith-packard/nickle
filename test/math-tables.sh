@@ -1,5 +1,14 @@
 #!/bin/sh
 
+case "$1" in
+    "-o")
+	shift
+	output="$1"
+	shift
+	exec > $output
+	;;
+esac
+
 dir=`dirname $0`
 
 # Which tables to generate
@@ -42,10 +51,10 @@ if [ $# -gt 0 ]; then
     done
 fi
 
-# sine and cosine table
-
 inc=1
 ainc=1
+
+# sine and cosine table
 
 echo "typedef struct { real angle, sin, cos; } sin_cos_t;"
 echo "sin_cos_t[] sin_cos_table = {"

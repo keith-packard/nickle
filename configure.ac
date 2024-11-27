@@ -26,7 +26,23 @@ AC_CHECK_PROGS([YACC], byacc yacc bison, yacc)
 case "$YACC" in
 *bison)	YACC="$YACC -y"	;;
 esac
-
+AC_PATH_PROG(BC, bc, yes, no)
+if test "$BC" = "no"; then
+    AC_MSG_ERROR([Missing bc])
+fi
+AC_PATH_PROG(FMT, fmt, yes, no)
+if test "$FMT" = "no"; then
+    AC_MSG_ERROR([Missing fmt])
+fi
+AC_PATH_PROG(TR, tr, yes, no)
+if test "$TR" = "no"; then
+    AC_MSG_ERROR([Missing tr])
+fi
+AC_PATH_PROG(EXPR, expr, yes, no)
+if test "$EXPR" = "no"; then
+    AC_MSG_ERROR([Missing expr])
+fi
+	
 dnl Checks for libraries.
 AC_CHECK_FUNC(log,,AC_CHECK_LIB(m, log))
 AC_CHECK_FUNC(gethostbyname,,AC_CHECK_LIB(nsl, gethostbyname))

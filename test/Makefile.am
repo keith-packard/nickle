@@ -37,6 +37,6 @@ EXTRA_DIST=$(check_SCRIPTS) math-tables.sh math-funcs.bc
 math.5c: $(TABLES)
 
 $(TABLES): math-tables.sh math-funcs.bc
-	$(srcdir)/math-tables.sh > $(TABLES)
+	$(srcdir)/math-tables.sh -o $(TABLES)
 
 CLEANFILES=$(TABLES)

@@ -28,10 +28,21 @@ tests = [
 ]
 
 prog_math_tables = find_program('math-tables.sh', required: true)
+prog_bc = find_program('bc', required: true)
+prog_fmt = find_program('fmt', required: true)
+prog_tr = find_program('tr', required: true)
+prog_expr = find_program('expr', required: true)
+
 math_tables_dep = custom_target('math-tables.5c',
-				capture: true,
-				command: prog_math_tables,
+				command: [prog_math_tables, '-o', '@OUTPUT@'],
 				output: 'math-tables.5c',
+				env: {
+				       'BC': prog_bc.full_path(),
+				       'EXPR': prog_expr.full_path(),
+				       'FMT': prog_fmt.full_path(),
+				       'TR': prog_tr.full_path()
+				     },
+				depend_files: 'math-funcs.bc',
 				install: true,
 				install_dir: nickle_testdir
 			       )

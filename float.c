@@ -28,6 +28,26 @@ Fpart	*zero_fpart, *one_fpart;
 #define DebugF(s,f)
 #endif
 
+#if 0
+#define DPrintV(s,v) FilePrintf (FileStdout, "%s %v\n", s, v)
+
+#define DPrintN(s,n) FilePrintf (FileStdout, "%s %n\n", s, n)
+
+#define DPrintFp(s,f) FilePrintf (FileStdout, "%s %s%n\n", s, \
+				 (f)->sign == Negative ? "-" : "", \
+				 (f)->mag)
+#define DPrintF(s,f) FilePrintf (FileStdout, "%s %s%n * 2**(%s%n)\n", s, \
+				 (f)->mant->sign == Negative ? "-" : "", \
+				 (f)->mant->mag,			\
+				 (f)->exp->sign == Negative ? "-" : "", \
+				 (f)->exp->mag)
+#else
+#define DPrintV(s,v)
+#define DPrintN(s,n)
+#define DPrintFp(s,f)
+#define DPrintF(s,f)
+#endif
+
 static void
 FpartMark (void *object)
 {
@@ -422,7 +442,9 @@ FloatLess (Value av, Value bv, int expandOk)
     ENTER ();
     Value	ret;
     Float	*a = &av->floats, *b = &bv->floats;
-    
+
+    DPrintF("less a", a);
+    DPrintF("less b", b);
     if (FpartEqual (a->mant, zero_fpart))
     {
 	if (b->mant->sign == Positive && 
@@ -447,10 +469,12 @@ FloatLess (Value av, Value bv, int expandOk)
     else
     {
 	av = FloatMinus (av, bv, expandOk);
+	DPrintF("less -", &av->floats);
 	ret = FalseVal;
 	if (av->floats.mant->sign == Negative)
 	    ret = TrueVal;
     }
+    DPrintV("less:", ret);
     RETURN (ret);
 }
 
@@ -757,7 +781,8 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     char	*exp_label = "e";
     Bool	leader = False;
     int		exp_scale;
-    
+
+    DPrintF("print", a);
     length = FpartLength (a->mant);
 
     if (format == 'a') {
@@ -796,13 +821,13 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	EXIT ();
 	return False;
     }
-    DebugV ("expbase", expbase);
-    DebugF ("ratio  ", &ratio->floats);
+    DPrintV ("expbase", expbase);
+    DPrintF ("ratio  ", &ratio->floats);
     down = Pow (NewInt (2),
 		NewInt ((int) length));
-    DebugV ("down   ", down);
+    DPrintV ("down   ", down);
     fratio = Divide (ratio, down);
-    DebugF ("fratio ", &fratio->floats);
+    DPrintF ("fratio ", &fratio->floats);
     negative = a->mant->sign == Negative;
     m = NewInteger (Positive, a->mant->mag);
     
@@ -812,11 +837,15 @@ try_again:
     {
 	m = Times (m, NewInt (base));
 	expbase = Minus (expbase, One);
+	DPrintF("make m >= 1", &m->floats);
+	DPrintV("expbase", expbase);
     }
     else if (False (Less (m, NewInt (base))))
     {
 	m = Divide (m, NewInt (base));
 	expbase = Plus (expbase, One);
+	DPrintF("make m < base", &m->floats);
+	DPrintV("expbase", expbase);
     }
     exp = NewValueFpart (expbase);
     switch (format) {
@@ -843,6 +872,7 @@ try_again:
     if (format == 'f')
     {
 	m = Times (m, Pow (NewInt (base), expbase));
+	DPrintF("f format m", &m->floats);
 	exp_width = 0;
 	if (prec == INFINITE_OUTPUT_PRECISION)
 	{
@@ -873,6 +903,8 @@ try_again:
     
     int_part = Floor (m);
     frac_part = Minus (m, int_part);
+    DPrintV("m int", int_part);
+    DPrintF("m frac", &frac_part->floats);
 
     if (ValueIsInteger(int_part))
 	int_n = IntegerMag(int_part);

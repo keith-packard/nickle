@@ -51,8 +51,8 @@ if [ $# -gt 0 ]; then
     done
 fi
 
-inc=1
-ainc=1
+inc=11
+ainc=11
 
 # sine and cosine table
 

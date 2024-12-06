@@ -115,7 +115,7 @@ FpartAdd (Fpart *a, Fpart *b, Bool negate)
 {
     ENTER ();
     Fpart   *ret;
-    
+
     switch (catagorize_signs(a->sign, negate ? SignNegate (b->sign):b->sign)) {
     default:
     case BothPositive:
@@ -163,7 +163,7 @@ FpartDivide (Fpart *a, Fpart *b)
     sign = Positive;
     if (a->sign != b->sign)
 	sign = Negative;
-    
+
     quo = NaturalDivide (a->mag, b->mag, &rem);
     RETURN (NewFpart (sign, quo));
 }
@@ -227,7 +227,7 @@ FpartLength (Fpart *a)
 
     if (a->mag->length == 0)
 	return 0;
-    
+
     bits = (a->mag->length - 1) * LBASE2;
     top = NaturalDigits(a->mag)[a->mag->length - 1];
     while (top)
@@ -311,7 +311,7 @@ FloatAdd (Value av, Value bv, int expandOk, Bool negate)
 	d = NaturalToInt (dist->mag);
 	if (dist->sign == Negative)
 	    d = -d;
-	
+
 	amant = a->mant;
 	bmant = b->mant;
 	alen = FpartLength (amant);
@@ -447,7 +447,7 @@ FloatLess (Value av, Value bv, int expandOk)
     DPrintF("less b", b);
     if (FpartEqual (a->mant, zero_fpart))
     {
-	if (b->mant->sign == Positive && 
+	if (b->mant->sign == Positive &&
 	    !FpartEqual (b->mant, zero_fpart))
 	    ret = TrueVal;
 	else
@@ -591,7 +591,7 @@ FloatCeil (Value av, int expandOk)
     exp = zero_fpart;
     RETURN (FloatInteger (NewFloat (mant, exp, a->prec - d)));
 }
-    
+
 static Value
 FloatPromote (Value av, Value bv)
 {
@@ -641,7 +641,7 @@ FloatReduce (Value av)
  *	1 <= 2^(exp2-1) / (base^(expbase-1)) < base
  *
  *	-log(base) <= (exp2-1) * log(2) - expbase * log(base) < 1
- *	
+ *
  *  ignoring the right inequality
  *
  *	0 <= (exp2 - 1) * log(2) - (expbase-1) * log(base)
@@ -659,7 +659,7 @@ NaturalBitSet (Natural *n, int i)
 {
     int	d = i / LBASE2;
     int	b = i & LBASE2;
-    
+
     return d < NaturalLength (n) && (NaturalDigits(n)[d] & 1 << b);
 }
 #endif
@@ -698,12 +698,12 @@ FloatExp (Value exp2, Value *ratio, int ibase, unsigned prec)
 	max = Div (min, two);
     else
 	max = Times (min, two);
-    
+
     /*
      * pow2 = 2 ** (exp2-1)
      */
     pow2 = Pow (two_f, Minus (exp2, One));
-    
+
     mean = 0;
     done = False;
     do
@@ -798,19 +798,16 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
 	if (base <= 0) {
 	    base = 10;
 	}
-    
+
 	if (prec == DEFAULT_OUTPUT_PRECISION)
 	    prec = 15;
 	base_exp = base;
 	exp_scale = base;
     }
-    
+
     mant_prec = ceil(a->prec * log(2) / log(base)) + 1;
 
-    DebugFp ("mant", a->mant);
-    DebugFp ("exp ", a->exp);
-    
-    expbase = FloatExp (Plus (NewInt (length), 
+    expbase = FloatExp (Plus (NewInt (length),
 			      NewInteger (a->exp->sign,
 					  a->exp->mag)),
 			&ratio,
@@ -830,7 +827,7 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     DPrintF ("fratio ", &fratio->floats);
     negative = a->mant->sign == Negative;
     m = NewInteger (Positive, a->mant->mag);
-    
+
     m = Times (m, fratio);
 try_again:
     if (True (Less (m, One)))
@@ -868,7 +865,7 @@ try_again:
 	    format = 'f';
 	}
     }
-    
+
     if (format == 'f')
     {
 	m = Times (m, Pow (NewInt (base), expbase));
@@ -916,11 +913,11 @@ try_again:
 	int_width += 2;
     if (negative)
 	int_width++;
-    
+
     int_buffer = malloc (int_width + 1);
     int_string = NaturalSprint (int_buffer + int_width + 1,
 				int_n, base, &int_width);
-    
+
     if (aborting)
     {
 	EXIT ();
@@ -929,7 +926,7 @@ try_again:
     frac_prec = mant_prec - int_width;
     if (*int_string == '0')
 	frac_prec++;
-    
+
     if (leader)
     {
 	*--int_string = 'x';
@@ -941,7 +938,7 @@ try_again:
 	*--int_string = '-';
 	int_width++;
     }
-    
+
     if (width)
     {
 	if (width > 0)
@@ -965,7 +962,7 @@ try_again:
      */
     if (frac_width > frac_prec + 1)
 	frac_width = frac_prec + 1;
-    
+
     if (frac_width < 2)
 	frac_width = 0;
     /*
@@ -979,7 +976,7 @@ try_again:
 			       Pow (NewInt (base),
 				    NewInt (-frac_digits)));
 	frac_part = Plus (frac_part, round);
-			  
+
 	/*
 	 * If the fractional overflowed, bump the integer part
 	 * and try again
@@ -995,17 +992,17 @@ try_again:
     frac_buffer = 0;
     frac_string = 0;
     if (frac_width)
-	frac_part = Floor (Times (frac_part, Pow (NewInt (base), 
+	frac_part = Floor (Times (frac_part, Pow (NewInt (base),
 						  NewInt (frac_width - 1))));
     if (frac_width && (!Zerop (frac_part) || orig_prec > 0))
     {
 	int	frac_wrote;
-	
+
 	if (ValueIsInteger(frac_part))
 	    frac_n = IntegerMag(frac_part);
 	else
 	    frac_n = NewNatural (ValueInt(frac_part));
-	
+
 	frac_buffer = malloc (frac_width + 1);
 	frac_string = NaturalSprint (frac_buffer + frac_width + 1,
 				     frac_n, base, &frac_wrote);
@@ -1034,7 +1031,7 @@ try_again:
 	FileOutchar (f, fill);
 	width--;
     }
-    
+
     FilePuts (f, int_string);
     if (frac_string)
 	FilePuts (f, frac_string);
@@ -1054,7 +1051,7 @@ try_again:
     free (int_buffer);
     if (frac_buffer)
 	free (frac_buffer);
-    
+
     EXIT ();
     return True;
 }
@@ -1176,7 +1173,7 @@ NewRationalFloat (Rational *r, unsigned prec)
 {
     ENTER ();
     Value   num, den;
-    
+
     num = NewNaturalFloat (r->sign, r->num, prec);
     den = NewNaturalFloat (Positive, r->den, prec);
     RETURN (FloatDivide (num, den, 1));
@@ -1245,12 +1242,12 @@ DoublePart (Value av, char *error)
     int	    e;
     digit   *mt;
     double  div;
-    
+
     av = NewValueFloat (av, 64);
     if (!ValueIsFloat (av))
     {
 	RaiseStandardException (exception_invalid_argument, 3,
-				NewStrString (error), 
+				NewStrString (error),
 				NewInt (0), av);
 	return 0.0;
     }
@@ -1262,7 +1259,7 @@ DoublePart (Value av, char *error)
     {
 	if (av->floats.exp->sign == Negative)
 	    return 0.0;
-	
+
 	RaiseStandardException (exception_invalid_argument, 3,
 				NewStrString (error),
 				NewInt (0), av);
@@ -1270,7 +1267,7 @@ DoublePart (Value av, char *error)
     }
     if (av->floats.exp->sign == Negative)
 	e = -e;
-    
+
     mantissa = 0.0;
     i = av->floats.mant->mag->length;
     e += DIGITBITS * i;

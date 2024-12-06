@@ -829,7 +829,9 @@ FloatPrint (Value f, Value fv, char format, int base, int width, int prec, int f
     m = NewInteger (Positive, a->mant->mag);
 
     m = Times (m, fratio);
-try_again:
+
+try_again_e:
+    DPrintF("scaled m", &m->floats);
     if (True (Less (m, One)))
     {
 	m = Times (m, NewInt (base));
@@ -897,7 +899,8 @@ try_again:
 	if (prec == INFINITE_OUTPUT_PRECISION)
 	    prec = mant_prec;
     }
-    
+
+try_again_f:
     int_part = Floor (m);
     frac_part = Minus (m, int_part);
     DPrintV("m int", int_part);
@@ -986,7 +989,10 @@ try_again:
 	    rounded = True;
 	    free (int_buffer);
 	    m = Plus(int_part, frac_part);
-	    goto try_again;
+	    if (format == 'e')
+		goto try_again_e;
+	    else
+		goto try_again_f;
 	}
     }
     frac_buffer = 0;

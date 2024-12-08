@@ -153,19 +153,25 @@ FpartMult (Fpart *a, Fpart *b)
 }
 
 static Fpart *
-FpartDivide (Fpart *a, Fpart *b)
+FpartDivide (Fpart *a, Fpart *b, Natural **remp)
 {
     ENTER ();
-    Natural *rem;
-    Natural *quo;
-    Sign    sign;
+    Natural 	*quo;
+    Sign    	sign;
+    Fpart	*fquo;
+    Natural	*rem;
 
     sign = Positive;
     if (a->sign != b->sign)
 	sign = Negative;
 
     quo = NaturalDivide (a->mag, b->mag, &rem);
-    RETURN (NewFpart (sign, quo));
+    fquo = NewFpart (sign, quo);
+    EXIT();
+    REFERENCE(fquo);
+    REFERENCE(rem);
+    *remp = rem;
+    return fquo;
 }
 
 static Fpart *
@@ -180,6 +186,38 @@ FpartLsl (Fpart *a, int shift)
 {
     ENTER ();
     RETURN (NewFpart (a->sign, NaturalLsl (a->mag, shift)));
+}
+
+static int
+FpartRound (Fpart *a, int shift)
+{
+
+    if (!shift)
+	return 0;
+
+    Natural	*n = a->mag;
+    int		l = n->length;
+    int		round = 0;
+    digit	*d = NaturalDigits(n);
+
+    while (l && shift > DIGITBITS) {
+	if (*d++ != 0)
+	    round = 1;
+	l--;
+	shift -= DIGITBITS;
+    }
+
+    if (l) {
+	digit	last = *d;
+
+	shift -= 2;
+	if (shift < 0) {
+	    last <<= 1;
+	    shift = 0;
+	}
+	round |= (last >> shift) & 3;
+    }
+    return round;
 }
 
 static Bool
@@ -405,6 +443,7 @@ FloatDivide (Value av, Value bv, int expandOk)
     Fpart	*exp;
     unsigned	prec;
     unsigned	iprec, alen;
+    Natural	*rem;
 
     (void) expandOk;
     if (FpartZero (b->mant))
@@ -419,9 +458,10 @@ FloatDivide (Value av, Value bv, int expandOk)
 	prec = a->prec;
     else
 	prec = b->prec;
-    iprec = prec + FpartLength (bmant) + 1;
-    alen = FpartLength (amant);
     exp = b->exp;
+    /* 2 guard bits */
+    iprec = prec + FpartLength (bmant) + 2;
+    alen = FpartLength (amant);
     if (alen < iprec)
     {
 	amant = FpartLsl (amant, iprec - alen);
@@ -430,7 +470,10 @@ FloatDivide (Value av, Value bv, int expandOk)
     exp = FpartAdd (a->exp, exp, True);
     DebugFp ("amant ", amant);
     DebugFp ("bmant ", bmant);
-    mant = FpartDivide (amant, bmant);
+    mant = FpartDivide (amant, bmant, &rem);
+    /* set the low guard bit if there was a remainder */
+    if (!NaturalZero(rem))
+	NaturalDigits(mant->mag)[0] |= 1;
     DebugFp ("mant ", mant);
     DebugFp ("exp ", exp);
     RETURN (NewFloat (mant, exp, prec));
@@ -1113,6 +1156,7 @@ NewFloat (Fpart *mant, Fpart *exp, unsigned prec)
     ENTER ();
     unsigned	bits, dist;
     Value	ret;
+    int		round;
 
     DebugFp ("New mant", mant);
     DebugFp ("New exp ", exp);
@@ -1124,7 +1168,17 @@ NewFloat (Fpart *mant, Fpart *exp, unsigned prec)
     {
 	dist = bits - prec;
 	exp = FpartAdd (exp, NewIntFpart (dist), False);
+	round = FpartRound (mant, dist);
 	mant = FpartRsl (mant, dist);
+	if (round & 2) {
+	    if ((round & 1) || !NaturalEven(mant->mag)) {
+		mant->mag = NaturalPlus(mant->mag, one_natural);
+		if (FpartLength(mant) != prec) {
+		    exp = FpartAdd(exp, one_fpart, False);
+		    mant = FpartRsl(mant, 1);
+		}
+	    }
+	}
     }
     /*
      * Canonicalize by shifting to a 1 in the LSB
@@ -1186,7 +1240,7 @@ NewRationalFloat (Rational *r, unsigned prec)
 }
 
 #define SCALE_BITS  52
-#define SCALE	    4503599627370496.0	/* 2 ** 52 */
+#define SCALE	    0x1p52	/* 2 ** 52 */
 
 Value
 NewDoubleFloat (double d)

@@ -1,0 +1,46 @@
+exception bad_round (int last_bits, int prec, int dist, real computed, rational actual);
+
+void imprecise_check(int last_bits, int prec, int dist)
+{
+    int		power = prec - 1;
+    real	i = imprecise(1, prec + dist + 100);
+    real	f = 0;
+
+    /* add in the last bits */
+    f += last_bits * 2**(-power);
+
+    /* add in a bit just past the value */
+    f += 0.5 * 2**(-power);
+
+    /* Add in a bit far past the value if specified */
+    if (dist > 0)
+	f += 2**(-(power + dist));
+
+    real	computed = imprecise(i + f, prec);
+
+    rational	actual = 1;
+    bool	do_round = false;
+    int		last_actual_bits = last_bits;
+
+    if ((last_bits & 1) == 0) {
+	/* If the last bits are even, then round only if the frac is > 0.5 */
+	do_round = dist > 0;
+    } else {
+	/* Otherwise, always round */
+	do_round = true;
+    }
+    if (do_round)
+	last_actual_bits++;
+
+    actual += last_actual_bits * 2 ** (-power);
+
+    if (computed != actual) {
+	printf("computed %a actual %a\n", computed, actual);
+	raise bad_round(last_bits, prec, dist, computed, actual);
+    }
+}
+
+for(int last_bits = 0; last_bits < 8; last_bits++)
+    for(prec = 24; prec <= 57; prec++)
+	for (dist = 0; dist <= 64; dist++)
+	    imprecise_check(last_bits, prec, dist);

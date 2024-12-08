@@ -11,6 +11,7 @@ check_SCRIPTS=\
 	hashtest.5c \
 	signal.5c \
 	round.5c \
+	fround.5c \
 	math.5c \
 	factorial.5c \
 	is_type.5c \

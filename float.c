@@ -214,6 +214,9 @@ FpartRound (Fpart *a, int shift)
 	if (shift < 0) {
 	    last <<= 1;
 	    shift = 0;
+	} else {
+	    if (last & ((1 << shift) - 1))
+		round |= 1;
 	}
 	round |= (last >> shift) & 3;
     }

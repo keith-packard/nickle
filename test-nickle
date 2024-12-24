@@ -1,0 +1,5 @@
+#!/bin/sh
+DIR=`dirname $0`
+export NICKLESTART="$DIR"/builtin.5c
+export NICKLEPATH="$DIR"
+"$DIR"/build/nickle "$@"

@@ -303,6 +303,8 @@ extend namespace Command {
 	    save_lexable((lexable.expr)arg);
 	    lex_stdin = false;
 	}
+
+	bool show_version = false;
 	
 	ParseArgs::argdesc argd = {
 	    .args = {
@@ -320,7 +322,11 @@ extend namespace Command {
 		  .abbr = 'e',
 		  .name = "expr",
 		  .expr_name = "expression",
-		  .desc = "Expression to evaluate."}
+		  .desc = "Expression to evaluate."},
+		{ .var = { .arg_flag = &show_version },
+		  .abbr = 'V',
+		  .name = "version",
+		  .desc = "Print the Nickle version and exit"},
 	    },
 	    .posn_args = {
 		{ .var = { .arg_lambda = save_script},
@@ -333,6 +339,11 @@ extend namespace Command {
 
 	/* actually parse the arguments */
 	ParseArgs::parseargs(&argd, &argv);
+
+	if (show_version) {
+	    printf("Nickle %s\n", version);
+	    exit(0);
+	}
 
 	/* Reset argv to hold remaining arguments */
 	if (lex_stdin && is_uninit(&user_argind)) {

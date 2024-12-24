@@ -2,7 +2,7 @@
 .SH NAME
 nickle \- a desk calculator language
 .SH SYNOPSIS
-nickle [--help|--usage] [-f file] [-l library] [-e expr] [ script ] [--] [arg ...]
+nickle [--help|--usage] [-f file] [-l library] [-e expr] [-V] [ script ] [--] [arg ...]
 .SH DESCRIPTION
 .PP
 \fINickle\fP is a
@@ -47,6 +47,9 @@ See below for a description of the library facility.
 Evaluate
 .I expr
 before beginning execution.
+.TP
+.BI "-V,--version"
+Print the Nickle version and exit.
 .TP
 .B "--"
 Quit parsing arguments and pass the remainder, unevaluated, to

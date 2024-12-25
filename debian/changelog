@@ -1,3 +1,11 @@
+nickle (2.102) unstable; urgency=medium
+
+  * Round floats nearest, ties to even.
+  * Fix e format float printf rounding to 10.xxx
+  * Add --version command line option
+
+ -- Keith Packard <keithp@keithp.com>  Tue, 24 Dec 2024 20:19:42 -0800
+
 nickle (2.101) unstable; urgency=medium
 
   * Format manual fixing dangling template var. Closes: #1070162.

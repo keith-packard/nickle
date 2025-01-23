@@ -7,7 +7,7 @@
 project('nickle', 'c',
 	default_options: [
 	  'buildtype=debugoptimized',
-	  'c_std=gnu18',
+	  'c_std=gnu23',
 	  'warning_level=2',
 	],
 	license : 'BSD',

@@ -84,7 +84,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
     SymbolPtr	    symbol;
     NamespacePtr    namespace;
     CodePtr	    code;
-    Bool	    bool;
+    Bool	    boolean;
     AtomListPtr	    atomList;
     FuncDecl	    funcDecl;
 }
@@ -121,7 +121,7 @@ ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
 %type  <argDecl>    argdecl
 %type  <argType>    opt_argdefines argdefines args
 %type  <argDecl>    argdefine
-%type  <bool>	    opt_dotdotdot
+%type  <boolean>    opt_dotdotdot
 
 %type  <expr>	    opt_expr for_exprs expr opt_exprs exprs simpleexpr
 %type  <expr>	    opt_actuals actuals

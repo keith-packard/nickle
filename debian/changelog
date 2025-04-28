@@ -1,3 +1,9 @@
+nickle (2.103) unstable; urgency=medium
+
+  * Switch 'bool' in %union to 'boolean' for C23 compatibility
+
+ -- Keith Packard <keithp@keithp.com>  Mon, 28 Apr 2025 15:43:18 -0700
+
 nickle (2.102) unstable; urgency=medium
 
   * Round floats nearest, ties to even.

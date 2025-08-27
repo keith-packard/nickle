@@ -69,7 +69,8 @@ add_project_arguments(cc.get_supported_arguments(
 link_args = cc.get_supported_link_arguments('-Wl,-E')
 have_extern_syms = link_args != []
 
-if get_option('libedit')
+have_libedit = get_option ('libedit')
+if have_libedit
   readline_dep = dependency('libedit')
   readline_h = '<readline.h>'
   history_h = ''
@@ -184,6 +185,7 @@ conf_data = configuration_data({
 				 'HAVE_VPRINTF': have_vfprintf,
 				 'PACKAGE_BUGREPORT': '"http://nickle.org"',
 				 'READLINE_H': readline_h,
+				 'HAVE_LIBEDIT': have_libedit,
 				 'SIZEOF_UNSIGNED_INT': sizeof_unsigned_int,
 				 'SIZEOF_UNSIGNED_LONG': sizeof_unsigned_long,
 				 'SIZEOF_UNSIGNED_LONG_LONG': sizeof_unsigned_long_long,

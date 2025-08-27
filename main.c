@@ -28,7 +28,12 @@
 #endif
 
 #ifdef HAVE_LIBREADLINE
-#include READLINE_H
+#ifdef HAVE_LIBEDIT
+#include <readline.h>
+#else
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
 #endif
 
 int	stdin_interactive;

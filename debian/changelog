@@ -1,3 +1,12 @@
+nickle (2.104) unstable; urgency=medium
+
+  * Replace #include SYMBOL with conditional includes.
+  * Replace 'fmt --width=500' with 'fmt -w 500' which is more common.
+  * Skip readline signal calls when not using libreadline.
+  * Add Multi-Arch: allowed for cross-building pacakges.
+
+ -- Keith Packard <keithp@keithp.com>  Mon, 01 Sep 2025 15:24:57 -0500
+
 nickle (2.103) unstable; urgency=medium
 
   * Switch 'bool' in %union to 'boolean' for C23 compatibility

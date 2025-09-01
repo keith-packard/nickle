@@ -3,7 +3,7 @@ Section: interpreters
 Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
 Homepage: https://nickle.org
-Build-Depends: debhelper-compat (= 13), libreadline-dev, ruby-asciidoctor-pdf,
+Build-Depends: debhelper-compat (= 13), libreadline-dev, asciidoctor-pdf,
  bison, flex, meson, ninja-build, pkgconf, bc, libgmp-dev
 Rules-Requires-Root: no
 Standards-Version: 4.7.0

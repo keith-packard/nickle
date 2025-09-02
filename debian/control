@@ -11,6 +11,7 @@ Standards-Version: 4.7.0
 Package: nickle
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Multi-Arch: allowed
 Description: desk calculator language
  Nickle is a language with powerful programming and scripting capabilities.
  Nickle supports a variety of datatypes, especially arbitrary precision

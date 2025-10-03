@@ -120,6 +120,7 @@ library "math.5c";
 library "prime_sieve.5c"
 library "factorial.5c"
 library "gamma.5c"
+library "math-ext.5c"
 import Math;
 library "scanf.5c";
 library "socket.5c";

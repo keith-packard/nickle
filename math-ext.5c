@@ -1,0 +1,162 @@
+/*
+ * Copyright © 2025 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+extend namespace Math {
+
+    public real acosh(x)
+	/*
+	 * Returns inverse hyperbolic cosine of 'x'.
+	 */
+    {
+	if (x < 1)
+	    raise invalid_argument("acosh arg < 1", 0, x);
+	return log(x + sqrt(x*x-1));
+    }
+
+    public real asinh(x)
+	/*
+	 * Returns inverse hyperbolic sine of 'x'.
+	 */
+    {
+	if (x == 0) return 0;
+	real sign = 1;
+	if (x < 0) {
+	    sign = -1;
+	    x = -x;
+	}
+	return sign * log(x + sqrt(x*x+1));
+    }
+
+    public real atanh(x)
+	/*
+	 * Returns inverse hyperbolic tangent of 'x'.
+	 */
+    {
+	if (abs(x) > 1)
+	    raise invalid_argument("atanh arg > 1", 0, x);
+	return 0.5 * log((1 + x) / (1 - x));
+    }
+
+    public real cosh(x)
+	/*
+	 * Returns hyperbolic cosine of 'x'.
+	 */
+    {
+	return (exp(x) + exp(-x)) / 2;
+    }
+
+    public real sinh(x)
+	/*
+	 * Returns hyperbolic sine of 'x'.
+	 */
+    {
+	return (exp(x) - exp(-x)) / 2;
+    }
+
+    public real tanh(x)
+	/*
+	 * Returns hyperbolic tangent of 'x'.
+	 */
+    {
+	return sinh(x) / cosh(x);
+    }
+
+    real _erf(real x, real off)
+    {
+	if (x == off)
+	    return 0;
+	x = imprecise(x);
+	int bits = precision(x);
+	int obits = bits + 512;
+	real factor = 2 / sqrt(pi_value(obits));
+
+	x = imprecise(x, obits);
+	off = imprecise(off, obits) / factor;
+	real val = x - off;
+
+	for (int n = 1; ; n++) {
+	    int f = 2 * n + 1;
+	    real a = imprecise(((-1)**n * x**f) / (n! * f), obits);
+	    val += a;
+	    if (exponent(val) - exponent(a) > obits)
+		break;
+	}
+	return imprecise(val * factor, bits);
+    }
+
+    public real erf(real x)
+	/*
+	 * Returns Gauss error function of 'x'.
+	 */
+    {
+	return _erf(x, 0);
+    }
+
+    public real erfc(real x)
+	/*
+	 * Returns Gauss complementary error function of 'x'.
+	 */
+    {
+	return -_erf(x, 1);
+    }
+
+    public real jn(int n, real x)
+	/*
+	 * Returns Bessel function of the first kind, order 'n' of 'x'
+	 */
+    {
+	if (n < 0) {
+	    real v = jn(-n, x);
+	    if (n % 2 == 1)
+		v = -v;
+	    return v;
+	}
+
+	x = imprecise(x);
+	int bits = precision(x);
+	int obits = bits + 64;
+
+	x = imprecise(x, obits);
+	real val = imprecise(0, obits);
+
+	int	s = 1;
+
+	int	mf = 1;
+	int	mnf = n!;
+	real	x_2 = x/2;
+	real	x_2_pow = x_2 ** n;
+	real	x_2_2 = x_2 ** 2;
+
+	for (int m = 0; ;) {
+	    real a = (s / (mf * mnf)) * x_2_pow;
+	    val += a;
+	    if (exponent(val) - exponent(a) > obits)
+		break;
+	    s = s > 0 ? -1 : 1;
+	    m++;
+	    mf *= m;
+	    mnf *= (m+n);
+	    x_2_pow *= x_2_2;
+	}
+	return imprecise(val, bits);
+    }
+
+    public real j0(real x)
+	/*
+	 * Returns Bessel function of the first kind, order '0' of 'x'
+	 */
+    {
+	return jn(0, x);
+    }
+
+    public real j1(real x)
+	/*
+	 * Returns Bessel function of the first kind, order '1' of 'x'
+	 */
+    {
+	return jn(1, x);
+    }
+}

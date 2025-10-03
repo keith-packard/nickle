@@ -12,10 +12,10 @@ project('nickle', 'c',
 	],
 	license : 'BSD',
 	meson_version : '>= 1.0',
-	version: '2.103'
+	version: '2.105'
        )
 
-release_date = '2025-04-28'
+release_date = '2025-10-05'
 
 prefix = get_option('prefix')
 include = prefix / get_option('includedir')

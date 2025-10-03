@@ -1,3 +1,15 @@
+nickle (2.105) unstable; urgency=medium
+
+  * Add more math functions
+  * Improve performance of log for large values.
+  * Improve performance of gamma for negative values.
+  * Test gamma using Legendre duplication formula.
+  * Improve accuracy and avoid infinite loop in sqrt and cbrt.
+  * Test sqrt and cbrt.
+  * Add 'complex' type.
+
+ -- Keith Packard <keithp@keithp.com>  Sun, 05 Oct 2025 13:10:14 -0700
+
 nickle (2.104) unstable; urgency=medium
 
   * Replace #include SYMBOL with conditional includes.

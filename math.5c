@@ -441,6 +441,16 @@ extend namespace Math {
 
 	int	prec = precision(a);
 
+	int	e = 0;
+
+	/*
+	 * Bring all values within the range of 1 <= a <= 2.
+	 */
+	if (a > 2) {
+	    e = exponent(a) - 1;
+	    a = mantissa(a) * 2;
+	}
+
 	/*
 	 * estimate = bsd_log (a).  This gives 53 bits
 	 */
@@ -468,16 +478,6 @@ extend namespace Math {
 	    v = imprecise (v, iprec);
 	    a = imprecise (a, iprec);
 
-	    /* reduce to range 1-2 to improve convergence speed */
-	    real epow = imprecise(floor (v) - 2, iprec);
-
-
-	    /*
-	     * compute log(a) = log(a/(exp(epow))) + epow;
-	     */
-	    v = v - epow;
-	    a /= exp(epow);
-
 	    /*
 	     * Newton's method
 	     *
@@ -497,9 +497,15 @@ extend namespace Math {
 
 	    while (maxiter-- > 0)
 		v = (v - one) + a / exp(v);
+	}
 
-	    /* Add the range reduction value back in */
-	    v = v + epow;
+	/* Mix in the log of the exponent */
+	if (e != 0) {
+	    int eprec = prec + 16;
+	    static real log2 = 0;
+	    if (log2 == 0 || precision(log2) < eprec)
+		log2 = log(imprecise(2, eprec));
+	    v += imprecise(e, eprec) * log2;
 	}
 
 	return imprecise (v, prec);

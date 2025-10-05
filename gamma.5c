@@ -77,23 +77,26 @@ extend namespace Math {
 			return (floor(n)-1)!;
 		}
 
-		/*
-		 * Use Γ(z) = Γ(z+1)/z
-		 * to solve for negative arguments
-		 */
-		if (n < 0) {
-			int	i = -floor(n) + 1;
-			real	g = gamma(n + i);
-
-			while (i-- > 0) {
-				g = g / n;
-				n++;
-			}
-			return g;
-		}
-
 		n = imprecise(n);
 		int bits = precision(n);
+
+		/*
+		 * Use Euler's reflection formula to solve for arguments < -½
+		 *
+		 *    Γ(z) = π/(sin(πz)Γ(1-z))
+		 */
+		if (n < -0.5) {
+			int	ibits = bits + 15;
+			real	n_ibits = imprecise(n, ibits);
+			real	pi_ibits = pi_value(ibits);
+			real	sin_n_pi = sin(pi_ibits * n_ibits);
+			real	inv_gamma = gamma(1 - n_ibits);
+			/* convert divide-by-zero into invalid_argument */
+			real	div = sin_n_pi * inv_gamma;
+			if (div == 0)
+				raise invalid_argument("gamma of non-positive integer", 0, n);
+			return	imprecise(pi_ibits / div, bits);
+		}
 
 		/*
 		 * Smaller numbers take a lot more coefficients to
@@ -102,7 +105,7 @@ extend namespace Math {
 		 * to make the result converge faster.
 		 */
 		if (n < 10000) {
-			int new_bits = bits + 14 - floor(log2(n));
+			int new_bits = bits + 20 - exponent(n);
 			real n_new = imprecise(n, new_bits) + 10000;
 			real g = gamma(n_new);
 			for (int i = 0; i < 10000; i++) {

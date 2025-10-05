@@ -305,10 +305,25 @@ void check_gamma()
 		invalid = true;
 	    }
 	    if (invalid != (floor(z) == z)) {
-		printf("%g: negative wrong %b\n", z, invalid);
+		printf("%g: negative wrong %v\n", z, invalid);
 		errors++;
 	    }
 	}
+    }
+}
+
+void check_jn()
+{
+    real jn_fixed(real n, real x) {
+	return jn(floor(n), x);
+    }
+
+    printf("Checking jn\n");
+    for (int i = 0; i < dim(jn_table); i++) {
+	int	n = jn_table[i].n;
+	real	in = jn_table[i].in;
+	real	jn_value = jn_table[i].jn;
+	check2("jn", jn_fixed, n, in, jn_value);
     }
 }
 
@@ -318,5 +333,6 @@ check_exp();
 check_log();
 check_e();
 check_gamma();
+check_jn();
 
 exit (errors);

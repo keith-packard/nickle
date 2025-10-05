@@ -19,6 +19,7 @@ make_tan=y
 make_atan=y
 make_log=y
 make_exp=y
+make_jn=y
 
 if [ $# -gt 0 ]; then
     make_sin=n
@@ -27,6 +28,7 @@ if [ $# -gt 0 ]; then
     make_atan=n
     make_log=n
     make_exp=n
+    make_jn=n
     for i in "$@"; do
 	case "$i" in
 	    sin)
@@ -46,6 +48,9 @@ if [ $# -gt 0 ]; then
 		;;
 	    exp)
 		make_exp=y
+		;;
+	    jn)
+		make_jn=y;
 		;;
 	esac
     done
@@ -170,3 +175,23 @@ while [ "$r" -le 1000 -a $make_exp = "y" ]; do
     r=`expr "$r" + "$inc"`
 done
 echo "};"
+
+# jn table
+
+echo "typedef struct { int n; real in, jn; } jn_t;"
+echo "jn_t[] jn_table = {"
+
+n="-5"
+r="-1000"
+while [ "$n" -le 5 -a $make_jn = "y" ]; do
+    exp=`echo "j($n, $r / 100)" | bc -l "$dir"/math-funcs.bc | fmt -w 500 | tr -d '\\\n ' `
+    echo "    { .n = $n, .in = $r / 100.0,"
+    echo "      .jn = $exp },"
+    r=`expr "$r" + "$inc" '*' 4`
+    if [ "$r" -gt 1000 ]; then
+	n=`expr "$n" + 1`
+	r=-1000
+    fi
+done
+echo "};"
+

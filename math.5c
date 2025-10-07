@@ -1149,6 +1149,11 @@ extend namespace Math {
             c *= i;
         return c / k!;
     }
+
+    real(real) _abs = abs;
+    public real(real) abs = _abs;
+    int(real) _precision = precision;
+    public int(real) precision = _precision;
 }
 
 /* XXX these shouldn't be here, but it was *convenient* */

@@ -653,12 +653,12 @@ TypeBinaryGroup (Type *left, Type *right)
     if (TypePoly (left))
     {
 	if (TypePoly (right) || TypeNumeric (right))
-	    return typePrim[rep_float];
+	    return typePrim[rep_complex];
     }
     else if (TypePoly (right))
     {
 	if (TypeNumeric (left))
-	    return typePrim[rep_float];
+	    return typePrim[rep_complex];
     }
     else if (TypeNumeric (left) &&  TypeNumeric (right))
     {
@@ -702,12 +702,12 @@ TypeBinaryField (Type *left, Type *right)
     if (TypePoly (left))
     {
 	if (TypePoly (right) || TypeNumeric (right))
-	    return typePrim[rep_float];
+	    return typePrim[rep_complex];
     }
     else if (TypePoly (right))
     {
 	if (TypeNumeric (left))
-	    return typePrim[rep_float];
+	    return typePrim[rep_complex];
     }
     else if (TypeNumeric (left) && TypeNumeric (right))
     {
@@ -728,9 +728,9 @@ static Type *
 TypeBinaryDiv (Type *left, Type *right)
 {
     if (TypePoly (left))
-	left = typePrim[rep_float];
+	left = typePrim[rep_complex];
     if (TypePoly (right))
-	right = typePrim[rep_float];
+	right = typePrim[rep_complex];
     if (TypeNumeric (left) && TypeNumeric (right))
     {
 	return typePrim[rep_integer];
@@ -746,14 +746,14 @@ static Type *
 TypeBinaryPow (Type *left, Type *right)
 {
     if (TypePoly (left))
-	left = typePrim[rep_float];
+	left = typePrim[rep_complex];
     if (TypePoly (right))
-	right = typePrim[rep_float];
+	right = typePrim[rep_complex];
     if (TypeNumeric (left) && TypeNumeric (right))
     {
 	if (TypeIntegral (right))
 	    return left;
-	return typePrim[rep_float];
+	return typePrim[rep_complex];
     }
     return 0;
 }
@@ -821,7 +821,7 @@ static Type *
 TypeUnaryGroup (Type *type)
 {
     if (TypePoly (type))
-	return typePrim[rep_float];
+	return typePrim[rep_complex];
     else if (TypeNumeric (type))
 	return type;
     return 0;

@@ -200,7 +200,7 @@ if history_h != ''
 endif
 
 nickle_srcs = [
-  'alarm.c', 'array.c', 'atom.c', 'box.c', 'compile.c', 'debug.c',
+  'alarm.c', 'array.c', 'atom.c', 'box.c', 'compile.c', 'complex.c', 'debug.c',
   'divide.c', 'edit.c', 'error.c', 'execute.c', 'expr.c', 'file.c',
   'float.c', 'foreign.c', 'frame.c', 'func.c', 'gcd.c', 'hash.c',
   'int.c', 'integer.c', 'io.c', 'main.c', 'mem.c', 'natural.c',
@@ -213,6 +213,7 @@ nickle_srcs = [
   'builtin-semaphore.c', 'builtin-sockets.c', 'builtin-string.c',
   'builtin-thread.c', 'builtin-toplevel.c', 'builtin-pid.c',
   'builtin-date.c', 'builtin.c', 'builtin.h', 'builtin-foreign.c',
+  'builtin-complex.c',
 ]
 
 nickle_files = [
@@ -221,7 +222,7 @@ nickle_files = [
   'printf.5c', 'history.5c', 'ctype.5c', 'string.5c', 'socket.5c',
   'file.5c', 'parse-args.5c', 'svg.5c', 'process.5c',
   'prime_sieve.5c', 'factorial.5c', 'gamma.5c', 'sort.5c', 'list.5c', 'skiplist.5c',
-  'json.5c', 'cha-cha.5c', 'math-ext.5c',
+  'json.5c', 'cha-cha.5c', 'math-ext.5c', 'complex.5c'
 ]
 
 nickle_headers = [

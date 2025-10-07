@@ -279,34 +279,36 @@ typedef enum _rep {
 	rep_integer = 1,
  	rep_rational = 2,
  	rep_float = 3,
- 	rep_string = 4,
-	rep_file = 5,
-	rep_thread = 6,
-	rep_semaphore = 7,
-	rep_continuation = 8,
-	rep_bool = 9,
-	rep_foreign = 10,
-	rep_void = 11,
+	rep_complex = 4,
+ 	rep_string = 5,
+	rep_file = 6,
+	rep_thread = 7,
+	rep_semaphore = 8,
+	rep_continuation = 9,
+	rep_bool = 10,
+	rep_foreign = 11,
+	rep_void = 12,
 
 	/* composite types */
-	rep_ref = 12,
-	rep_func = 13,
+	rep_ref = 13,
+	rep_func = 14,
 
 	/* mutable type */
- 	rep_array = 14,
-	rep_struct = 15,
-	rep_union = 16,
-	rep_hash = 17
+ 	rep_array = 15,
+	rep_struct = 16,
+	rep_union = 17,
+	rep_hash = 18
 } Rep;
 
 /* because rep_undef is -1, using (unsigned) makes these a single compare */
-#define Numericp(t)	((unsigned) (t) <= (unsigned) rep_float)
+#define Numericp(t)	((unsigned) (t) <= (unsigned) rep_complex)
+#define Scalarp(t)	((unsigned) (t) <= (unsigned) rep_float)
 #define Integralp(t)	((unsigned) (t) <= (unsigned) rep_integer)
 
 
 #define Mutablep(t)	((t) >= rep_array)
 
-extern ValueRep    IntRep, IntegerRep, RationalRep, FloatRep;
+extern ValueRep    IntRep, IntegerRep, RationalRep, FloatRep, ComplexRep;
 extern ValueRep    StringRep, ArrayRep, FileRep;
 extern ValueRep    RefRep, StructRep, UnionRep, HashRep;
 extern ValueRep	   FuncRep, ThreadRep;
@@ -369,6 +371,7 @@ static inline ValueRep *_ValueRep(Value v);
 #define ValueIsInteger(v) (ValueRep(v) == &IntegerRep)
 #define ValueIsRational(v) (ValueRep(v) == &RationalRep)
 #define ValueIsFloat(v) (ValueRep(v) == &FloatRep)
+#define ValueIsComplex(v) (ValueRep(v) == &ComplexRep)
 #define ValueIsString(v) (ValueRep(v) == &StringRep)
 #define ValueIsArray(v) (ValueRep(v) == &ArrayRep)
 #define ValueIsFile(v) (ValueRep(v) == &FileRep)
@@ -595,6 +598,11 @@ typedef struct _float {
     Fpart	*exp;
     unsigned	prec;
 } Float;
+
+typedef struct _complex {
+    BaseValue	base;
+    Value	r, i;
+} Complex;
 
 typedef struct _string {
     BaseValue	    base;
@@ -887,6 +895,7 @@ typedef union _value {
     Integer	integer;
     Rational	rational;
     Float	floats;
+    Complex	complex;
     String	string;
     Array	array;
     File	file;
@@ -1114,6 +1123,8 @@ Value	NewNaturalFloat (Sign sign, Natural *n, unsigned prec);
 Value	NewRationalFloat (Rational *r, unsigned prec);
 Value	NewValueFloat (Value av, unsigned prec);
 Value	NewDoubleFloat (double d);
+Value	NewComplex (Value r, Value i);
+Value	NewValueComplex (Value r, Value i);
 Value	NewContinuation (ContinuationPtr continuation, InstPtr pc);
 Value	NewForeign (const char *id, void *data, void (*mark)(void *data), void (*free)(void *data));
 
@@ -1181,6 +1192,7 @@ Value	BinaryOperate (Value av, Value bv, BinaryOp operator);
 Value	UnaryOperate (Value v, UnaryOp operator);
 Value	NumericDiv (Value av, Value bv, int expandOk);
 Value	NumericMod (Value av, Value bv, int expandOk);
+
 
 # define	OK_TRUNC	1
 

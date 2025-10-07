@@ -695,6 +695,7 @@ extern NamespacePtr	GcdNamespace;
 #endif
 extern NamespacePtr	EnvironNamespace;
 extern NamespacePtr	DateNamespace;
+extern NamespacePtr	ComplexNamespace;
 
 void	BuiltinInit (void);
 

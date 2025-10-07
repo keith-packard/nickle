@@ -644,7 +644,7 @@ FloatPromote (Value av, Value bv)
     ENTER ();
     int	prec;
 
-    if (!ValueIsFloat(av))
+    if (!ValueIsFloat(av) && !ValueIsComplex(av))
     {
 	prec = DEFAULT_FLOAT_PREC;
 	if (bv && ValueIsFloat(bv))
@@ -1289,6 +1289,8 @@ NewValueFloat (Value av, unsigned prec)
 	av = NewRationalFloat (&av->rational, prec);
 	break;
     case rep_float:
+	if (prec == av->floats.prec)
+	    break;
         av = NewFloat (av->floats.mant, av->floats.exp, prec);
 	break;
     default:

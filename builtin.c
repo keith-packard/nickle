@@ -183,6 +183,7 @@ BuiltinType (char *format, Type **type, Bool arg)
     case 'p': t = typePoly; break;
     case 'n': t = typePrim[rep_float]; break;
     case 'N': t = typePrim[rep_float]; break;
+    case 'C': t = typePrim[rep_complex]; break;
     case 'E': t = typeFileError; break;
     case 'R': t = typePrim[rep_float]; break;
     case 'r': t = typePrim[rep_rational]; break;
@@ -348,6 +349,7 @@ BuiltinInit (void)
     import_Foreign_namespace ();
     import_PID_namespace ();
     import_Date_namespace();
+    import_Complex_namespace();
 
     /* Import builtin strings with predefined values */
     BuiltinStrings (svars);

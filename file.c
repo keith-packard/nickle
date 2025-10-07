@@ -1443,6 +1443,9 @@ FilePutRep (Value f, Rep tag, Bool minimal)
     case rep_float:
 	FilePuts (f, "real");
 	break;
+    case rep_complex:
+	FilePuts (f, "complex");
+	break;
     case rep_string:
 	FilePuts (f, "string");
 	break;

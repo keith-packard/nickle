@@ -148,8 +148,8 @@ import_Toplevel_namespace(void)
 	    " int numerator (rational r)\n"
 	    "\n"
 	    " Return the numerator of 'r'.\n" },
-        { do_precision, "precision", "i", "R", "\n"
-	    " int precision (real r)\n"
+        { do_precision, "precision", "i", "C", "\n"
+	    " int precision (complex r)\n"
 	    "\n"
 	    " Return the number of bits in the\n"
 	    " representation of the mantissa of 'r'.\n"	},
@@ -228,9 +228,9 @@ import_Toplevel_namespace(void)
     };
 
     static const struct fbuiltin_v funcs_v[] = {
-        { do_imprecise, "imprecise", "R", "R.i", "\n"
-	    " real imprecise (real r)\n"
-	    " real imprecise (real r, int precision)\n"
+        { do_imprecise, "imprecise", "C", "C.i", "\n"
+	    " complex imprecise (complex r)\n"
+	    " complex imprecise (complex r, int precision)\n"
 	    "\n"
 	    " Return an imprecise number.\n"
 	    " The precision will be 'precision' if supplied, else 256.\n" },
@@ -378,6 +378,8 @@ do_imprecise (int n, Value *p)
 	Value float_prec;
 	if (ValueIsFloat(v))
 	    RETURN(v);
+	if (ValueIsComplex(v) && ValueIsFloat(v->complex.r) && ValueIsFloat(v->complex.i))
+	    RETURN(v);
 	prec = DEFAULT_FLOAT_PREC;
 	float_prec = lookupVar(0, "float_precision");
 	if (float_prec)
@@ -387,8 +389,12 @@ do_imprecise (int n, Value *p)
 		    prec = default_prec;
 	}
     }
-
-    RETURN (NewValueFloat (v, prec));
+    if (ValueIsComplex(v)) {
+	v = NewValueComplex(NewValueFloat(v->complex.r, prec), NewValueFloat(v->complex.i, prec));
+    } else {
+	v = NewValueFloat (v, prec);
+    }
+    RETURN(v);
 }
 
 Value 
@@ -558,10 +564,20 @@ do_precision (Value av)
     ENTER ();
     unsigned	prec;
 
-    if (ValueIsFloat(av))
+    switch (ValueTag(av)) {
+    case rep_float:
 	prec = av->floats.prec;
-    else
+	break;
+    case rep_complex:
+	prec = ValueInt(do_precision(av->complex.i));
+	unsigned iprec = ValueInt(do_precision(av->complex.r));
+	if (iprec > prec)
+	    prec = iprec;
+	break;
+    default:
 	prec = 0;
+	break;
+    }
     RETURN (NewInt (prec));
 }
 
@@ -722,6 +738,7 @@ do_is_number (Value av)
     case rep_integer:
     case rep_rational:
     case rep_float:
+    case rep_complex:
 	av = TrueVal;
 	break;
     default:
@@ -964,9 +981,8 @@ Value	do_hash_test (Value hv, Value key)
 {
     return HashTest (hv, key);
 }
-   
+
 Value	do_hash_keys (Value hv)
 {
     return HashKeys (hv);
 }
-

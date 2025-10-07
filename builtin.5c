@@ -124,6 +124,7 @@ library "math-ext.5c"
 import Math;
 library "scanf.5c";
 library "socket.5c";
+library "complex.5c";
 
 # Now autoload/autoimport the bonus stuff
 # (But why?  Let the users do it.)

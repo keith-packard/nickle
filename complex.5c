@@ -1,0 +1,176 @@
+/*
+ * Copyright © 2025 Keith Packard and Bart Massey.
+ * All Rights Reserved.  See the file COPYING in this directory
+ * for licensing information.
+ */
+
+extend namespace Complex {
+    protected complex(real r, real i) new = cmplx;
+
+    protected complex i = new(0,1);
+
+    public complex polar(real r, real t)
+    {
+	return new(r * cos(t), r * sin(t));
+    }
+
+    public complex conj(complex z)
+    {
+	return new(creal(z), -cimag(z));
+    }
+
+    protected real abs(complex z)
+    {
+	return Math::sqrt(creal(z)**2 + cimag(z)**2);
+    }
+
+    public real arg(complex z)
+    {
+	return Math::atan2(cimag(z), creal(z));
+    }
+
+    protected complex log(complex z)
+    {
+	return new(Math::log(Math::sqrt(creal(z)**2 + cimag(z)**2)),
+		   Math::atan2(cimag(z), creal(z)));
+    }
+
+    protected complex exp(complex z)
+    {
+	real r = Math::exp(creal(z));
+	return new(r * Math::cos(cimag(z)),
+		   r * Math::sin(cimag(z)));
+    }
+
+    protected complex pow(complex x, complex y)
+    {
+	x = imprecise(x);
+	y = imprecise(y);
+	/* add precision to cover the atan2 + sin/cos operations */
+	int prec = min(precision(x), precision(y));
+	int iprec = prec + abs(exponent(creal(x))) + abs(exponent(cimag(x)));
+	complex xi = imprecise(x, iprec);
+	complex yi = imprecise(y, iprec);
+	return imprecise(exp(log(xi) * yi), prec);
+    }
+
+    protected complex sqrt(complex z)
+    {
+	if (cimag(z) == 0)
+	    return Math::sqrt(creal(z));
+
+	real	mod = abs(z);
+	real	sgn = cimag(z) > 0 ? 1 : -1;
+	return new(Math::sqrt((mod + creal(z)) / 2),
+		   sgn * Math::sqrt((mod - creal(z)) / 2));
+    }
+
+    protected complex atan(complex z)
+    {
+	z = imprecise(z);
+	int		prec = precision(z);
+	int		e = exponent(cimag(z));
+	int		iprec = prec + 64;
+	if (e < 0)
+		iprec -= 2*e;
+
+	complex	zp = imprecise(z, iprec);
+	complex i_over_2 = new(0, 0.5);
+	return imprecise(i_over_2 * log((i+z) / (i-z)), prec);
+    }
+
+    protected complex asin(complex z)
+    {
+	if (Math::abs(creal(z)) == 1 && cimag(z) == 0)
+	    raise invalid_argument("complex asin of 1", 0, z);
+
+	z = imprecise(z);
+	int	prec = precision(z);
+	int	e = min(exponent(creal(z)), exponent(cimag(z)));
+	int	iprec = prec + 14;
+	if (e < 0)
+	    iprec -= 2*e;
+	complex	zp = imprecise(z, iprec);
+	return imprecise(atan(zp / sqrt(1-zp*zp)), prec);
+    }
+
+    protected complex acos(complex z)
+    {
+	if (Math::abs(creal(z)) == 1 && cimag(z) == 0)
+	    raise invalid_argument("complex acos of 1", 0, z);
+
+	z = imprecise(z);
+	int	prec = precision(z);
+	int	iprec = prec + 14;
+	complex	asp = asin(imprecise(z, iprec));
+	return imprecise(new(pi_value(iprec)/2 - creal(asp), -cimag(asp)), prec);
+    }
+
+    protected complex cos(complex z)
+    {
+	return new(Math::cos(creal(z)) * Math::cosh(cimag(z)),
+		   -Math::sin(creal(z)) * Math::sinh(cimag(z)));
+    }
+
+    protected complex sin(complex z)
+    {
+	return new(Math::sin(creal(z)) * Math::cosh(cimag(z)),
+		   Math::cos(creal(z)) * Math::sinh(cimag(z)));
+    }
+
+    protected complex tan(complex z)
+    {
+	return sin(z) / cos(z);
+    }
+
+    protected complex cosh(complex z)
+    {
+	return new(Math::cosh(creal(z)) * Math::cos(cimag(z)),
+		   Math::sinh(creal(z)) * Math::sin(cimag(z)));
+    }
+
+    protected complex sinh(complex z)
+    {
+	return new(Math::sinh(creal(z)) * Math::cos(cimag(z)),
+		   Math::cosh(creal(z)) * Math::sin(cimag(z)));
+    }
+
+    protected complex tanh(complex z)
+    {
+	return sinh(z) / cosh(z);
+    }
+
+    protected complex atanh(complex z)
+    {
+	z = imprecise(z);
+	int	prec = precision(z);
+	int	iprec = prec + 512;
+	int	e = min(exponent(creal(z)), exponent(cimag(z)));
+	if (e < 0)
+	    iprec += e;
+	complex	zp = imprecise(z, iprec);
+	return imprecise(0.5 * log((1 + zp)/(1 - zp)), prec);
+    }
+
+    protected complex asinh(complex z)
+    {
+	int	prec = precision(z);
+	int	iprec = prec + 512;
+	int	e = min(exponent(creal(z)), exponent(cimag(z)));
+	if (e < 0)
+	    iprec += e;
+	complex	zp = imprecise(z, iprec);
+	return imprecise(log(zp + sqrt(zp*zp + 1)), prec);
+    }
+
+    protected complex acosh(complex z)
+    {
+	int	prec = precision(z);
+	int	iprec = prec + 512;
+	int	e = min(exponent(creal(z)), exponent(cimag(z)));
+	if (e < 0)
+	    iprec += e;
+	complex	zp = imprecise(z, iprec);
+	return imprecise(log(zp + sqrt(zp + 1) * sqrt(zp - 1)), prec);
+    }
+}

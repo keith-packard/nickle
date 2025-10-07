@@ -367,6 +367,7 @@ bool		{ yylval.type = typePrim[rep_bool]; return BOOL; }
 int		{ yylval.type = typePrim[rep_integer]; return INTEGER; }
 rational    	{ yylval.type = typePrim[rep_rational]; return RATIONAL; }
 real		{ yylval.type = typePrim[rep_float]; return REAL; }
+complex         { yylval.type = typePrim[rep_complex]; return COMPLEX; }
 string		{ yylval.type = typePrim[rep_string]; return STRING; }
 file		{ yylval.type = typePrim[rep_file]; return FILET; }
 semaphore	{ yylval.type = typePrim[rep_semaphore]; return SEMAPHORE; }

@@ -25,6 +25,23 @@ Numericp (Rep t)
     case rep_integer:
     case rep_rational:
     case rep_float:
+    case rep_complex:
+	return True;
+    default:;
+    }
+    return False;
+}
+#endif
+
+#ifndef Scalarp
+Bool
+Scalarp (Rep t)
+{
+    switch (t) {
+    case rep_int:
+    case rep_integer:
+    case rep_rational:
+    case rep_float:
 	return True;
     default:;
     }
@@ -58,6 +75,8 @@ Zerop (Value av)
 	return av->rational.num->length == 0;
     case rep_float:
 	return av->floats.mant->mag->length == 0;
+    case rep_complex:
+	return Zerop(av->complex.r) && Zerop(av->complex.i);
     default:;
     }
     return False;
@@ -75,6 +94,8 @@ Negativep (Value av)
 	return av->rational.sign == Negative;
     case rep_float:
 	return av->floats.mant->sign == Negative;
+    case rep_complex:
+	return Negativep(av->complex.r);
     default:;
     }
     return False;

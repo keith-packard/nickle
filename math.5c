@@ -691,6 +691,8 @@ extend namespace Math {
 
 	aa = imprecise (aa);
 	my_pi = pi_value (precision (aa));
+	if (aa + my_pi == aa)
+		raise invalid_argument ("argument not precise enough", 0, aa);
 	aa %= 2 * my_pi;
 	if (aa > my_pi)
 		aa -= 2 * my_pi;

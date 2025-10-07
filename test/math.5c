@@ -85,6 +85,57 @@ void check2(string op, real(real, real) f, real input1, real input2, real correc
 	}
 }
 
+void check_sqrt()
+{
+    void check_value (real z, int prec) {
+	z = imprecise(z, prec);
+	real s = sqrt(z);
+	real err = z - s*s;
+	int errdist = exponent(z) - exponent(err);
+	if (err != 0 && errdist < prec - 1) {
+	    printf("%g = sqrt(%g): error too large (differ at %d bits instead of %d bits)\n",
+		   s, z, errdist, prec);
+	    errors++;
+	}
+    }
+
+    printf("Checking sqrt...");
+    for (int prec = 10; prec <= 1000; prec *= 10) {
+	printf(" %d", prec);
+	File::flush(stdout);
+	for (real z = 1e-200; z < 1e200; z *= 1.3) {
+	    check_value(z, prec);
+	}
+    }
+    printf("\n");
+}
+
+void check_cbrt()
+{
+    void check_value (real z, int prec) {
+	z = imprecise(z, prec);
+	real s = cbrt(z);
+	real err = imprecise(z, prec+10) - imprecise(s, prec+10)**3;
+	int errdist = exponent(z) - exponent(err);
+	if (err != 0 && errdist < prec - 2) {
+	    printf("%g = cbrt(%g): error too large (differ at %d bits instead of %d bits)\n",
+		   s, z, errdist, prec);
+	    errors++;
+	}
+    }
+
+    printf("Checking cbrt...");
+    for (int prec = 10; prec <= 1000; prec *= 10) {
+	printf(" %d", prec);
+	File::flush(stdout);
+	for (real z = 1e-200; z < 1e200; z *= 1.3) {
+	    check_value(z, prec);
+	    check_value(-z, prec);
+	}
+    }
+    printf("\n");
+}
+
 void check_sin_cos()
 {
 	printf("Checking sin and cos\n");
@@ -327,6 +378,8 @@ void check_jn()
     }
 }
 
+check_sqrt();
+check_cbrt();
 check_sin_cos();
 check_tan();
 check_exp();

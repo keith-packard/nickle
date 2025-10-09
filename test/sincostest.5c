@@ -1,0 +1,29 @@
+/*
+ * Nickle test suite
+ *
+ * sin, cos, asin and acos tests test
+ */
+library "math-bits.5c"
+
+void check_sin_cos()
+{
+	printf("Checking sin and cos\n");
+	for (int i = 0; i < dim(sin_cos_table); i++) {
+		real	angle = sin_cos_table[i].angle;
+		real	sin_value = sin_cos_table[i].sin;
+		real	cos_value = sin_cos_table[i].cos;
+		check("sin", sin, angle, sin_value);
+		check("cos", cos, angle, cos_value);
+	}
+	printf("Checking asin and acos\n");
+	for (int i = 0; i < dim(asin_acos_table); i++) {
+		real	ratio = asin_acos_table[i].ratio;
+		real	asin_value = asin_acos_table[i].asin;
+		real	acos_value = asin_acos_table[i].acos;
+		check("asin", asin, ratio, asin_value);
+		check("acos", acos, ratio, acos_value);
+	}
+}
+
+check_sin_cos();
+exit(errors);

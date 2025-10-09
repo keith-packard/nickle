@@ -1,0 +1,44 @@
+/*
+ * Nickle test suite
+ *
+ * gamma test
+ */
+library "math-bits.5c"
+
+void check_gamma()
+{
+    printf("Checking gamma using the Legendre duplication formula\n");
+
+    void check_value(real z, int prec) {
+	int iprec = prec + 20 + abs(exponent(imprecise(z)));
+	real zi = imprecise(z, iprec);
+	real left = gamma(zi) * gamma(zi + 1/2);
+	real right = 2**(1-2*zi) * sqrt(pi_value(iprec)) * gamma(zi * 2);
+
+	real error = left - right;
+	if (error != 0 && exponent(error) > exponent(left) - prec) {
+	    printf("%g: Γ(z)Γ(z+½) (%g) != 2^(1-2z) √π Γ(2z) (%g): prec %d error %g\n",
+		   z, left, right, prec, error);
+	    errors++;
+	}
+    }
+
+    for (int prec = 10; prec <= 100; prec *= 10) {
+	for (real z = 1e-38; z < 1e38; z *= 11) {
+	    bool invalid = false;
+	    check_value(z, prec);
+	    try {
+		check_value(-z, prec);
+	    } catch invalid_argument(string err, int i, real z) {
+		invalid = true;
+	    }
+	    if (invalid != (floor(z) == z)) {
+		printf("%g: negative wrong %v\n", z, invalid);
+		errors++;
+	    }
+	}
+    }
+}
+
+check_gamma();
+exit(errors);

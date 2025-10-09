@@ -1,0 +1,86 @@
+/*
+ * Nickle test suite
+ *
+ * Trig operator tests
+ */
+
+load "math-tables.5c"
+
+int test_precision = 333;
+int errors = 0;
+real error_bound = 1e-70;
+
+real checked(real(real) f, real a) {
+	try {
+		real r = f(imprecise (a, test_precision));
+		if (r > 1e10)
+			return 9999;
+		if (r < -1e10)
+			return 9999;
+		return r;
+	} catch invalid_argument(string type, int i, real v) {
+		return 10000;
+	}
+	return 0;
+}
+
+real checked2(real(real, real) f, real a, real b) {
+	try {
+		real r = f(imprecise(a, test_precision), imprecise(b, test_precision));
+
+		/* Just return the same value for large magnitudes
+		 * as small variations in input cause the sign to flip
+		 */
+
+		if (r > 1e10)
+			return 9999;
+		if (r < -1e10)
+			return 9999;
+		return r;
+	} catch invalid_argument(string type, int i, real v) {
+		return 10000;
+	}
+	return 0;
+}
+
+void check(string op, real(real) f, real input, real correct)
+{
+	real	value = checked(f, input);
+
+	if (is_number (value))
+	{
+		real	error = abs (value - correct);
+
+		if (abs(correct) >= 1 && error < abs(correct) * error_bound)
+			return;
+		if (abs(correct) < 1 && error < error_bound)
+			return;
+		printf ("error %v value %v\n", error, value);
+	}
+	if (value != correct) {
+		printf ("check failed %s(%v) (was %.-g, should be %.-g)\n",
+			op, input, value, correct);
+		errors++;
+	}
+}
+
+void check2(string op, real(real, real) f, real input1, real input2, real correct)
+{
+	real	value = checked2(f, input1, input2);
+
+	if (is_number (value))
+	{
+		real	error = abs (value - correct);
+
+		if (abs(correct) >= 1 && error < abs(correct) * error_bound)
+			return;
+		if (abs(correct) < 1 && error < error_bound)
+			return;
+		printf ("error %v value %v\n", error, value);
+	}
+	if (value != correct) {
+		printf ("check failed %s(%.-g, %.-g) (was %.-g, should be %.-g)\n",
+			op, input1, input2, value, correct);
+		errors++;
+	}
+}

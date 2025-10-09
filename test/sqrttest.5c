@@ -1,0 +1,34 @@
+/*
+ * Nickle test suite
+ *
+ * sqrt test
+ */
+library "math-bits.5c"
+
+void check_sqrt()
+{
+    void check_value (real z, int prec) {
+	z = imprecise(z, prec);
+	real s = sqrt(z);
+	real err = z - s*s;
+	int errdist = exponent(z) - exponent(err);
+	if (err != 0 && errdist < prec - 1) {
+	    printf("%g = sqrt(%g): error too large (differ at %d bits instead of %d bits)\n",
+		   s, z, errdist, prec);
+	    errors++;
+	}
+    }
+
+    printf("Checking sqrt...");
+    for (int prec = 10; prec <= 1000; prec *= 10) {
+	printf(" %d", prec);
+	File::flush(stdout);
+	for (real z = 1e-200; z < 1e200; z *= 1.3) {
+	    check_value(z, prec);
+	}
+    }
+    printf("\n");
+}
+
+check_sqrt();
+exit(errors);

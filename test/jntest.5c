@@ -1,0 +1,24 @@
+/*
+ * Nickle test suite
+ *
+ * jn test
+ */
+library "math-bits.5c"
+
+void check_jn()
+{
+    real jn_fixed(real n, real x) {
+	return jn(floor(n), x);
+    }
+
+    printf("Checking jn\n");
+    for (int i = 0; i < dim(jn_table); i++) {
+	int	n = jn_table[i].n;
+	real	in = jn_table[i].in;
+	real	jn_value = jn_table[i].jn;
+	check2("jn", jn_fixed, n, in, jn_value);
+    }
+}
+
+check_jn();
+exit(errors);

@@ -1,0 +1,66 @@
+/*
+ * Nickle test suite
+ *
+ * log test
+ */
+library "math-bits.5c"
+
+void check_log()
+{
+	printf("Checking log precision\n");
+	int log_errors = 0;
+	for (int prec = 10; prec <= 1000; prec *= 10) {
+		real eval = Math::e_value(prec);
+		for (real x = imprecise(0.001, prec); x < 20; x *= 1.5) {
+			real	lnx = log(x);
+
+			real	explnx = exp(lnx);
+
+			real	rterror = abs((x - explnx) / x);
+			real	rtlimit = 2 ** (-(prec - 6));
+
+			if (rterror > rtlimit) {
+				printf("exp(log(x)) = x: prec %d error %g limit %g x %.-g\n",
+				       prec, rterror, rtlimit, x);
+				errors++;
+			}
+
+			for (real y = imprecise(0.001, prec); y < 20; y *= 1.5) {
+				real	lny = log(y);
+
+				if (sign (lnx) != sign(lny))
+				    continue;
+
+				real	lnxy = log(x * y);
+				real	lnx_lny = lnx + lny;
+				real	error = abs ((lnxy - lnx_lny) / lnxy);
+
+				int plnxy = precision(lnxy);
+				int plnx_lny = precision(lnx_lny);
+
+				if (plnxy != plnx_lny)
+					printf("precision difference %d %d\n",
+					       plnxy, plnx_lny);
+
+				int	bitdiff = max(2, ceil(abs(log2(abs(lnx)) - log2(abs(lny)))));
+
+				real	limit = 2 ** -(prec - bitdiff - 5);
+
+				if (error > limit) {
+					printf("log(x*y) = log(x)+log(y): prec %d error %g limit %g x %.-g y %.-g\n",
+					       prec, error, limit, x, y);
+					errors++;
+				}
+			}
+		}
+	}
+	printf("Checking log\n");
+	for (int i = 0; i < dim(log_table); i++) {
+		real in = log_table[i].in;
+		real log_value = log_table[i].log;
+		check("log", log, in, log_value);
+	}
+}
+
+check_log();
+exit(errors);

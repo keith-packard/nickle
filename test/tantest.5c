@@ -1,0 +1,32 @@
+/*
+ * Nickle test suite
+ *
+ * tan, atan and atan2 test
+ */
+library "math-bits.5c"
+
+void check_tan()
+{
+	printf("Checking tan\n");
+	for (int i = 0; i < dim(tan_table); i++) {
+		real angle = tan_table[i].angle;
+		real tan_value = tan_table[i].tan;
+		check("tan", tan, angle, tan_value);
+	}
+	printf("Checking atan\n");
+	for (int i = 0; i < dim(atan_table); i++) {
+		real ratio = atan_table[i].ratio;
+		real atan_value = atan_table[i].atan;
+		check("atan", atan, ratio, atan_value);
+	}
+	printf("Checking atan2\n");
+	for (int i = 0; i < dim(atan2_table); i++) {
+		real y = atan2_table[i].y;
+		real x = atan2_table[i].x;
+		real atan2_value = atan2_table[i].atan2;
+		check2("atan2", atan2, y, x, atan2_value);
+	}
+}
+
+check_tan();
+exit(errors);

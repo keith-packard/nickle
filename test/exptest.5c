@@ -1,0 +1,62 @@
+/*
+ * Nickle test suite
+ *
+ * exp test
+ */
+library "math-bits.5c"
+
+void check_exp()
+{
+	printf("Checking exp precision\n");
+	for (int prec = 10; prec <= 1000; prec *= 10) {
+		real eval = Math::e_value(1000);
+		for (int x = 0; x < 100; x++) {
+			real expx = exp(imprecise(x, prec));
+			real powx = imprecise(eval ** x, prec);
+			real	error = abs((imprecise(expx,prec*10) - imprecise(powx,prec*10)) / imprecise(expx,prec*10));
+			real	limit = 2 ** (-(prec - 8));
+
+			if (error > limit) {
+				printf ("exp(i): prec %d error %g limit %g x %.-g val %.-g %.-g\n",
+					prec, error, limit, x, expx, powx);
+				errors++;
+			}
+		}
+		for (int p = 0; p < prec // 3; p++) {
+		    real x = imprecise(2 ** -p, prec);
+		    if (exp(x) - 1 == 0) {
+			printf("exp(x): prec %d is one for p %d x %.-g\n", prec, p, x);
+			errors++;
+		    }
+		}
+		for (real x = imprecise(0.001, prec); x < 20; x *= 1.5) {
+			for (real y = imprecise(0.001, prec); y < 20; y *= 1.5) {
+
+				real	expx = exp(x);
+				real	expy = exp(y);
+				real	expx_expy = exp(x) * exp(y);
+				real	expxy = exp(x+y);
+
+				int	bitdiff = ceil(abs(log2(abs(x)) - log2(abs(y))));
+
+				real	error = abs((expxy - expx_expy) / expxy);
+				real	limit = 2 ** (-(prec - 5 - bitdiff));
+
+				if (error > limit) {
+					printf("exp(x+y): prec %d error %g limit %g x %.-g y %.-g\n",
+					       prec, error, limit, x, y);
+					errors++;
+				}
+			}
+		}
+	}
+	printf("Checking exp\n");
+	for (int i = 0; i < dim(exp_table); i++) {
+		real in = exp_table[i].in;
+		real exp_value = exp_table[i].exp;
+		check("exp", exp, in, exp_value);
+	}
+}
+
+check_exp();
+exit(errors);

@@ -12,7 +12,7 @@ important steps:
 		meson test -C build
  
  4.	Update debian/changelog
-		git log --pretty=oneline 2.<xx>..master
+		git log --pretty=oneline 2.<xx-1>..master
 		
  5.	Commit these changes
 		git-commit -m'Update to version 2.<xx>' -a
@@ -32,3 +32,6 @@ important steps:
 10.	Upload release
 		scp build/meson-dist/* nickle.org:/var/www/nickle/release
 		dput 
+
+11.	Build and upload RPM
+		./build-rpm upload

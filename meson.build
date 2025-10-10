@@ -285,3 +285,10 @@ subdir('test')
 subdir('examples')
 subdir('bench')
 subdir('doc')
+
+nickle_spec_file = 'nickle-' + meson.project_version() + '.spec'
+
+nickle_spec = configure_file(output: nickle_spec_file,
+			     input: 'nickle.spec.in',
+			     configuration: { 'VERSION': meson.project_version() },
+			     install: false)

@@ -1,14 +1,25 @@
 #!/bin/sh
-VERSION=`egrep BUILD_VERSION version.h | sed -e 's/^[^"]*"//' -e 's/".*$//'`
-echo "Building nickle $VERSION RPM..." >&2
+#
+# usage: build-rpm {upload}
+#
+BUILD_DIR=build-rpm-dir
+rm -rf "$BUILD_DIR"
+trap "rm -rf '$BUILD_DIR'" EXIT
+meson setup "$BUILD_DIR"
+ninja -C "$BUILD_DIR" dist
+SPEC_FILE=`echo "$BUILD_DIR"/nickle-*.spec`
+VERSION=`echo "$SPEC_FILE" | sed -e 's/^.*nickle-//' -e 's/.spec$//'`
 RPMBUILD=$HOME/rpmbuild
-echo mkdir -p $RPMBUILD/nickle-$VERSION
-make nickle-$VERSION.tar.gz
-cp nickle-$VERSION.tar.gz $RPMBUILD/nickle-$VERSION
-cp nickle.spec nickle-$VERSION.spec
-ed nickle-$VERSION.spec << EOF
-/VERSION/s//$VERSION/
-w
-q
-EOF
-rpm -ba nickle-$VERSION.spec
+mkdir -p $RPMBUILD/SOURCES
+TAR=nickle-$VERSION.tar.xz
+cp "$BUILD_DIR"/meson-dist/"$TAR" "$RPMBUILD/SOURCES/$TAR"
+rpmbuild -ba "$SPEC_FILE"
+case "$1" in
+    upload)
+	scp \
+	    "$RPMBUILD"/RPMS/*/nickle-"$VERSION"*.rpm \
+	    "$RPMBUILD"/RPMS/*/nickle-debuginfo-"$VERSION"*.rpm \
+	    "$RPMBUILD"/SRPMS/nickle-"$VERSION"-*.src.rpm \
+	    nickle.org:/var/www/nickle/release
+	;;
+esac

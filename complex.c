@@ -157,7 +157,7 @@ ComplexHash (Value av)
 static void
 ComplexMark (void *object)
 {
-    Complex	*c = object;
+    ComplexVal	*c = object;
 
     MemReference(c->r);
     MemReference(c->i);
@@ -196,7 +196,7 @@ NewComplex (Value r, Value i)
     ENTER();
     Value	ret;
 
-    ret = ALLOCATE (&ComplexRep.data, sizeof (Complex));
+    ret = ALLOCATE (&ComplexRep.data, sizeof (ComplexVal));
     ret->complex.r = r;
     ret->complex.i = i;
     RETURN (ret);

@@ -602,7 +602,7 @@ typedef struct _float {
 typedef struct _complex {
     BaseValue	base;
     Value	r, i;
-} Complex;
+} ComplexVal;
 
 typedef struct _string {
     BaseValue	    base;
@@ -895,7 +895,7 @@ typedef union _value {
     Integer	integer;
     Rational	rational;
     Float	floats;
-    Complex	complex;
+    ComplexVal	complex;
     String	string;
     Array	array;
     File	file;

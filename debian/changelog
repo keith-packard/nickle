@@ -1,3 +1,9 @@
+nickle (2.107) unstable; urgency=medium
+
+  * Fix autopkgtest by installing missing math-bits.5c.
+
+ -- Keith Packard <keithp@keithp.com>  Sat, 11 Oct 2025 09:31:18 -0700
+
 nickle (2.106) unstable; urgency=medium
 
   * Rename Complex as ComplexVal. Closes: #1117746.

@@ -36,6 +36,10 @@ tests = [
   'chacha_test.5c'
 ]
 
+extra_files = [
+  'math-bits.5c'
+  ]
+
 prog_math_tables = find_program('math-tables.sh', required: true)
 prog_bc = find_program('bc', required: true)
 prog_fmt = find_program('fmt', required: true)
@@ -66,4 +70,4 @@ foreach test : tests
       )
 endforeach
 
-install_data(tests, install_dir: nickle_testdir)
+install_data(files(tests + extra_files), install_dir: nickle_testdir)

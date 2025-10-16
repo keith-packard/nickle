@@ -59,7 +59,7 @@ extend namespace Math {
 				return (real[len]) { [k] = m[0,k] };
 			}
 
-			real N = imprecise(n + 1, bits);
+			real N = imprecise(n, bits);
 			real q = N;
 			real[*] c = StieltjesCF(ord, bits);
 			real one = imprecise(1, bits);
@@ -69,13 +69,16 @@ extend namespace Math {
 		}
 
 		/*
-		 * For positive integers, just use factorial
+		 * For non-positive integers, raise exception
 		 */
-		if (is_int(n)) {
-			if (n <= 0)
-				raise invalid_argument("gamma of non-positive integer", 0, n);
+		if (n <= 0 && n == floor(n))
+		    raise invalid_argument("gamma of non-positive integer", 0, n);
+
+		/*
+		 * For positive integers, use factorial
+		 */
+		if (is_int(n))
 			return (floor(n)-1)!;
-		}
 
 		n = imprecise(n);
 		int bits = precision(n);
@@ -123,7 +126,7 @@ extend namespace Math {
 		 * don't know how much smaller
 		 */
 		int ord = ceil(bits / 20);
-		return imprecise(Stieltjes(n-1, ord, bits + 20), bits);
+		return imprecise(Stieltjes(n, ord, bits + 20), bits);
 	}
 
 	public real(real n) Γ = gamma;

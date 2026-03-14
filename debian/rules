@@ -1,21 +1,9 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
-# Sample debian/rules that uses debhelper.
-# This file was originally written by Joey Hess and Craig Small.
-# As a special exception, when this file is copied by dh-make into a
-# dh-make output file, you may use that output file without restriction.
-# This special exception was added by Craig Small in version 0.37 of dh-make.
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
-# Uncomment this to turn on verbose mode.
-export DH_VERBOSE=1
-
 %:
-	dh $@ --buildsystem=meson
-
-override_dh_auto_configure:
-	CFLAGS_FOR_BUILD="$(CFLAGS)" LDFLAGS_FOR_BUILD="$(LDFLAGS)" dh_auto_configure --buildsystem=meson
+	dh $@
 
 # Don't install duplicate copyright info from COPYING files
 # Make examples which happen to start with #! executable
@@ -23,9 +11,3 @@ override_dh_auto_configure:
 override_dh_auto_install:
 	dh_auto_install --buildsystem=meson && (find debian/nickle -name COPYING -print0 | xargs -0 rm)
 	find debian/nickle/usr/share/nickle -type f -print0 | xargs -0 grep -l '^#!.*nickle' | xargs -d '\n' chmod +x
-
-override_dh_update_autotools_config:
-	echo using meson
-
-override_dh_autoreconf:
-	echo using meson

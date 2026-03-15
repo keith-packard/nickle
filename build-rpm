@@ -10,15 +10,16 @@ ninja -C "$BUILD_DIR" dist
 SPEC_FILE=`echo "$BUILD_DIR"/nickle-*.spec`
 VERSION=`echo "$SPEC_FILE" | sed -e 's/^.*nickle-//' -e 's/.spec$//'`
 RPMBUILD=$HOME/rpmbuild
-mkdir -p $RPMBUILD/SOURCES
+SOURCEDIR="$RPMBUILD/nickle-$VERSION"
+mkdir -p "$SOURCEDIR"
 TAR=nickle-$VERSION.tar.xz
-cp "$BUILD_DIR"/meson-dist/"$TAR" "$RPMBUILD/SOURCES/$TAR"
+cp "$BUILD_DIR"/meson-dist/"$TAR" "$SOURCEDIR/$TAR"
 rpmbuild -ba "$SPEC_FILE"
 case "$1" in
     upload)
 	scp \
-	    "$RPMBUILD"/RPMS/*/nickle-"$VERSION"*.rpm \
-	    "$RPMBUILD"/RPMS/*/nickle-debuginfo-"$VERSION"*.rpm \
+	    "$RPMBUILD"/RPMS/nickle-"$VERSION"*.rpm \
+	    "$RPMBUILD"/RPMS/nickle-debuginfo-"$VERSION"*.rpm \
 	    "$RPMBUILD"/SRPMS/nickle-"$VERSION"-*.src.rpm \
 	    nickle.org:/var/www/nickle/release
 	;;

@@ -1149,6 +1149,36 @@ extend namespace Math {
 	return round_correctly (precision (v), compute);
     }
 
+    real atan2_w (real y, real x, int wprec, *real err)
+	/*
+	 * Compute atan2(y, x), (x, y) != (0, 0), to 'wprec' bits,
+	 * setting 'err' to a bound on the absolute error
+	 */
+    {
+	if (x == 0) {
+	    *err = 2 ** -wprec;
+	    return (y > 0 ? 1 : -1) * pi_value (wprec) / 2;
+	}
+
+	/*
+	 * Rounding y, x and y/x to 'wprec' bits gives q a relative
+	 * error under 3 * 2**-wprec, moving atan(q) by q/(1+q**2) of that
+	 */
+	real	q = imprecise (y, wprec) / imprecise (x, wprec);
+	real	a = atan_w (q, wprec, err);
+
+	*err += abs (q) / (1 + q**2) * 3 * 2 ** -wprec;
+	if (x < 0) {
+	    real p = pi_value (wprec);
+	    if (y >= 0)
+		a += p;
+	    else
+		a -= p;
+	    *err += 2 ** (2 - wprec);
+	}
+	return a;
+    }
+
     /*
      * atan (y/x)
      */
@@ -1160,23 +1190,14 @@ extend namespace Math {
 	y = imprecise (y);
 	x = imprecise (x);
 
-	if (x == 0) {
-		if (y == 0)
-			return 0;
-		if (y >= 0)
-			return pi_value(precision(y))/2;
-		else
-			return -pi_value(precision(y))/2;
+	if (y == 0 && x >= 0)
+	    return 0;
+	real compute (int wprec, *real err)
+	{
+	    return atan2_w (y, x, wprec, err);
 	}
-	real a = atan(y/x);
-	if (x < 0) {
-		real p = pi_value(precision(y));
-		if (y >= 0)
-			a += p;
-		else
-			a -= p;
-	}
-	return a;
+
+	return round_correctly (max (precision (y), precision (x)), compute);
     }
 
     /*

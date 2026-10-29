@@ -226,6 +226,24 @@ extend namespace Math {
 	return imprecise(local_e, prec);
     }
 
+    real round_correctly (int prec, real(int, *real) compute)
+	/*
+	 * Call compute(wprec, &err) with increasing working precision
+	 * until its result, whose absolute error is below 'err', rounds
+	 * to the same 'prec' bit value at both ends of that range. As
+	 * imprecise rounds to nearest, that value is correctly rounded
+	 */
+    {
+	for (int guard = 32; ; guard *= 2) {
+	    real	err;
+	    real	v = compute (prec + guard, &err);
+	    real	lo = imprecise (v - err, prec);
+
+	    if (lo == imprecise (v + err, prec))
+		return lo;
+	}
+    }
+
     public real exp (real v)
 	/*
 	 * Return e ** v;
@@ -286,6 +304,51 @@ extend namespace Math {
 	e = e ** (1 << expo);
 
 	return imprecise (e, prec);
+    }
+
+    real log1p_series (real f, int wprec, *real err)
+	/*
+	 * Return log(1+f) for sqrt(2)/2 < 1+f < sqrt(2) to 'wprec' bits,
+	 * following log1p from fdlibm (as also used in picolibc) with
+	 * its polynomial R replaced by the series it approximates:
+	 *
+	 *	s = f/(2+f), z = s*s, hfsq = f*f/2
+	 *	R = 2/3 z + 2/5 z**2 + 2/7 z**3 + ...
+	 *	log(1+f) = f - (hfsq - s*(hfsq+R))
+	 *
+	 * https://netlib.org/fdlibm/s_log1p.c
+	 *
+	 * 'f' must be exact. Sets 'err' to a bound on the absolute error
+	 */
+    {
+	f = imprecise (f, wprec);
+
+	real	hfsq = f * f / 2;
+	real	s = f / (2 + f);
+	real	z = s * s;
+	real	zn = z;
+	real	R = imprecise (0, wprec);
+	int	n;
+
+	for (n = 1; ; n++) {
+	    real t = 2 * zn / (2 * n + 1);
+	    R += t;
+	    if (exponent (R) - exponent (t) > wprec)
+		break;
+	    zn *= z;
+	}
+
+	real	c = s * (hfsq + R);
+	real	v = f - (hfsq - c);
+
+	/*
+	 * f is exact and hfsq has one rounding error. s, z and the n
+	 * terms of R carry fewer than 7n + 6 between them, relative
+	 * to c, and each remaining operation one more
+	 */
+	*err = (2 * abs (v) + 4 * abs (hfsq) + (8 * n + 12) * abs (c)) *
+	       2 ** -wprec;
+	return v;
     }
 
     public real log (real a)
@@ -452,60 +515,61 @@ extend namespace Math {
 	}
 
 	/*
-	 * Bounds checking
+	 * Compute log(a) to 'wprec' bits, setting 'err' to a bound on
+	 * the absolute error
 	 */
-
-	if (a <= 0)
-	    raise invalid_argument ("log: must be positive", 0, a);
-
-	/*
-	 * Checks to bring a into range
-	 */
-	if (a == 1)
-	    return 0;
-	if (a < 1)
-	    return -log(1/a);
-
-	a = imprecise (a);
-
-	int	prec = precision(a);
-
-	int	e = 0;
-
-	/*
-	 * Bring all values within the range of 1 <= a <= 2.
-	 */
-	if (a > 2) {
-	    e = exponent(a) - 1;
-	    a = mantissa(a) * 2;
-	}
-
-	/*
-	 * estimate = bsd_log (a).  This gives 53 bits
-	 */
-
-	real v = bsd_log (imprecise (a, 64));
-
-	/*
-	 * Precision doubles every time around, start
-	 * with 50 bits and compute how many doublings are
-	 * needed to get the desired precision
-	 */
-	int	maxiter = 0;
-	int	rprec = 50;
-
-	while (rprec <= prec)
+	real log_w (real a, int wprec, *real err)
 	{
-	    rprec *= 2;
-	    maxiter++;
-	}
+	    /*
+	     * Near 1, where Newton's method below would lose relative
+	     * precision, use the log1p series
+	     */
+	    if (0.7071067811865476 < a && a < 1.4142135623730951)
+		return log1p_series (a - 1, wprec, err);
 
-	if (maxiter > 0)
-	{
-	    int	iprec = prec + maxiter * 16;
+	    /* log(a) = -log(1/a); rounding 1/a moves log under 2**-wprec */
+	    int	sgn = 1;
+	    if (a < 1) {
+		a = 1 / imprecise (a, wprec);
+		sgn = -1;
+	    }
 
-	    v = imprecise (v, iprec);
-	    a = imprecise (a, iprec);
+	    int	e = 0;
+
+	    /*
+	     * Bring all values within the range of 1 <= a <= 2.
+	     */
+	    if (a > 2) {
+		e = exponent(a) - 1;
+		a = mantissa(a) * 2;
+	    }
+
+	    /*
+	     * estimate = bsd_log (a).  This gives 53 bits
+	     */
+
+	    real v = bsd_log (imprecise (a, 64));
+
+	    /*
+	     * Precision doubles every time around, start
+	     * with 50 bits and compute how many doublings are
+	     * needed to get the desired precision
+	     */
+	    int	maxiter = 0;
+	    int	rprec = 50;
+
+	    while (rprec <= wprec)
+	    {
+		rprec *= 2;
+		maxiter++;
+	    }
+
+	    int	iprec = wprec + maxiter * 16;
+
+	    if (maxiter > 0)
+	    {
+		v = imprecise (v, iprec);
+		a = imprecise (a, iprec);
 
 	    /*
 	     * Newton's method
@@ -522,22 +586,48 @@ extend namespace Math {
 	     *
 	     *  v' = v - 1 + a * exp(-v);
 	     */
-	    real one = imprecise (1, iprec);
+		real one = imprecise (1, iprec);
 
-	    while (maxiter-- > 0)
-		v = (v - one) + a / exp(v);
+		while (maxiter-- > 0)
+		    v = (v - one) + a / exp(v);
+	    }
+
+	    /* Mix in the log of the exponent */
+	    if (e != 0) {
+		int eprec = iprec + ilog(2, e) + 1;
+		static real log2 = 0;
+		if (log2 == 0 || precision(log2) < eprec)
+		    log2 = log(imprecise(2, eprec));
+		v += imprecise(e, eprec) * log2;
+	    }
+
+	    /*
+	     * Rounding 1/a adds under 2**-wprec, Newton's method stops
+	     * below 2**-wprec, exp and the arithmetic add a few units of
+	     * 2**-iprec and e * log(2) adds under 2**-iprec
+	     */
+	    *err = (4 + abs (v)) * 2 ** -wprec;
+	    return sgn * v;
 	}
 
-	/* Mix in the log of the exponent */
-	if (e != 0) {
-	    int eprec = prec + 16;
-	    static real log2 = 0;
-	    if (log2 == 0 || precision(log2) < eprec)
-		log2 = log(imprecise(2, eprec));
-	    v += imprecise(e, eprec) * log2;
+	/*
+	 * Bounds checking
+	 */
+
+	if (a <= 0)
+	    raise invalid_argument ("log: must be positive", 0, a);
+
+	if (a == 1)
+	    return 0;
+
+	a = imprecise (a);
+
+	real compute (int wprec, *real err)
+	{
+	    return log_w (a, wprec, err);
 	}
 
-	return imprecise (v, prec);
+	return round_correctly (precision (a), compute);
     }
 
     /*

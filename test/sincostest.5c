@@ -15,6 +15,21 @@ void check_sin_cos()
 		check("sin", sin, angle, sin_value);
 		check("cos", cos, angle, cos_value);
 	}
+	printf("Checking sin and cos are correctly rounded\n");
+	real[*] angles = (real[*]) {
+		-1e4 - 0.3, -6.28, -1e-3, 1e-7, 1.5707963267948966,
+		3.141592653589793, 6.283185307179586, 355, 0x1.da821p+30 };
+	check_rounded("sin", sin, angles);
+	check_rounded("cos", cos, angles);
+	for (int i = 0; i < dim(angles); i++) {
+		real	s, c;
+		real	a = imprecise(angles[i], 100);
+		sin_cos(a, &s, &c);
+		if (s != sin(a) || c != cos(a)) {
+			printf("check failed sin_cos(%.-g) differs from sin and cos\n", a);
+			errors++;
+		}
+	}
 	printf("Checking asin and acos\n");
 	for (int i = 0; i < dim(asin_acos_table); i++) {
 		real	ratio = asin_acos_table[i].ratio;

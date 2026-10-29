@@ -94,6 +94,31 @@ void check_rounded2(string op, real(real, real) f, real[*] as, real[*] bs)
 					  imprecise(bs[j], prec), prec);
 }
 
+/*
+ * Check that two-argument f is faithfully rounded: within an ulp
+ * of f at much higher precision
+ */
+void check_faithful2(string op, real(real, real) f, real[*] as, real[*] bs)
+{
+	void check_one(real a, real b, int prec) {
+		int	hprec = 2 * prec + 128;
+		real	v = f(a, b);
+		real	ref = f(imprecise(a, hprec), imprecise(b, hprec));
+
+		if (abs(v - ref) >= 2 ** (exponent(v) - prec)) {
+			printf("check failed %s(%.-g, %.-g) at prec %d off by an ulp or more (was %.-g, should be %.-g)\n",
+			       op, a, b, prec, v, ref);
+			errors++;
+		}
+	}
+
+	for (int prec = 24; prec <= 344; prec += 64)
+		for (int i = 0; i < dim(as); i++)
+			for (int j = 0; j < dim(bs); j++)
+				check_one(imprecise(as[i], prec),
+					  imprecise(bs[j], prec), prec);
+}
+
 void check(string op, real(real) f, real input, real correct)
 {
 	real	value = checked(f, input);

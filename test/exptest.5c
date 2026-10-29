@@ -50,6 +50,10 @@ void check_exp()
 			}
 		}
 	}
+	printf("Checking pow is faithfully rounded\n");
+	real[*] bases = { 0.5, 1.0000001, 3, 7.25, 100 };
+	real[*] powers = { -700.5, -2.5, 0.3, 10.5, 64, 1e-5 };
+	check_faithful2("pow", pow, bases, powers);
 	printf("Checking exp\n");
 	for (int i = 0; i < dim(exp_table); i++) {
 		real in = exp_table[i].in;

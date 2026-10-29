@@ -50,6 +50,9 @@ void check_exp()
 			}
 		}
 	}
+	printf("Checking exp is correctly rounded\n");
+	check_rounded("exp", exp, (real[*]) {
+		-700, -20.5, -1, -1e-9, 1e-30, 0.5, 1, 2.75, 50.3, 700 });
 	printf("Checking pow is faithfully rounded\n");
 	real[*] bases = { 0.5, 1.0000001, 3, 7.25, 100 };
 	real[*] powers = { -700.5, -2.5, 0.3, 10.5, 64, 1e-5 };

@@ -17,6 +17,10 @@ void check_tan()
 	check_rounded("tan", tan, (real[*]) {
 		-1e4 - 0.3, -6.28, -1e-3, 1e-7, 1.5707963267948966,
 		3.141592653589793, 6.283185307179586, 355, 0x1.da821p+30 });
+	printf("Checking atan is correctly rounded\n");
+	check_rounded("atan", atan, (real[*]) {
+		-1e300, -10, -1, -0.5773, -1e-20, 0.2679, 0.3, 1.0000001,
+		3.7320508, 1e300 });
 	printf("Checking atan\n");
 	for (int i = 0; i < dim(atan_table); i++) {
 		real ratio = atan_table[i].ratio;

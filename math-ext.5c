@@ -124,12 +124,16 @@ extend namespace Math {
 	     * high-precision computation of Euler's constant",
 	     * Math. Comp. 34 (1980), 305-312
 	     * https://www.ams.org/mcom/1980-34-149/S0025-5718-1980-0551307-4/
+	     *
+	     * Grow by at least half again, so slowly rising precisions
+	     * reuse the value
 	     */
-	    int	wbits = prec + 32;
-	    int	n = prec // 5 + 1;
+	    int	grown = precision(local_gamma) * 3 // 2;
+	    int	wprec = max(prec, grown) + 32;
+	    int	n = wprec // 5 + 1;
 	    int	n2 = n * n;
-	    real a = -log(imprecise(n, wbits));
-	    real b = imprecise(1, wbits);
+	    real a = -log(imprecise(n, wprec));
+	    real b = imprecise(1, wprec);
 	    real u = a;
 	    real v = b;
 
@@ -139,11 +143,11 @@ extend namespace Math {
 		u += a;
 		v += b;
 		if (k > n &&
-		    exponent(v) - exponent(b) > wbits &&
-		    exponent(u) - exponent(a) > wbits)
+		    exponent(v) - exponent(b) > wprec &&
+		    exponent(u) - exponent(a) > wprec)
 		    break;
 	    }
-	    local_gamma = imprecise(u / v, prec);
+	    local_gamma = imprecise(u / v, wprec);
 	}
 	return imprecise(local_gamma, prec);
     }

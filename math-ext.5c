@@ -109,6 +109,121 @@ extend namespace Math {
      */
     real log2_e = 1 / log(imprecise(2, 64));
 
+    public real euler_gamma_value(int prec)
+	/*
+	 * Returns the Euler-Mascheroni constant at least as precise as 'prec'
+	 */
+    {
+	static real local_gamma = 0;
+
+	if (local_gamma == 0 || precision(local_gamma) < prec) {
+	    /*
+	     * Brent-McMillan algorithm B1, error is O(e**(-4n))
+	     *
+	     * R. P. Brent and E. M. McMillan, "Some new algorithms for
+	     * high-precision computation of Euler's constant",
+	     * Math. Comp. 34 (1980), 305-312
+	     * https://www.ams.org/mcom/1980-34-149/S0025-5718-1980-0551307-4/
+	     */
+	    int	wbits = prec + 32;
+	    int	n = prec // 5 + 1;
+	    int	n2 = n * n;
+	    real a = -log(imprecise(n, wbits));
+	    real b = imprecise(1, wbits);
+	    real u = a;
+	    real v = b;
+
+	    for (int k = 1; ; k++) {
+		b = b * n2 / (k * k);
+		a = (a * n2 / k + b) / k;
+		u += a;
+		v += b;
+		if (k > n &&
+		    exponent(v) - exponent(b) > wbits &&
+		    exponent(u) - exponent(a) > wbits)
+		    break;
+	    }
+	    local_gamma = imprecise(u / v, prec);
+	}
+	return imprecise(local_gamma, prec);
+    }
+
+    real _yn_series(int n, real x, int obits, *int err)
+	/*
+	 * Power series for Yn (Abramowitz & Stegun 9.1.11):
+	 *
+	 * Yn(x) = (2/π) (log(x/2) + γ) Jn(x)
+	 *	   - (1/π) (x/2)**-n Σ{k=0..n-1} (n-k-1)!/k! (x/2)**2k
+	 *	   - (1/π) (x/2)**n Σ{k=0..} (Hk + Hn+k) (-(x/2)**2)**k /
+	 *					     (k! (n+k)!)
+	 *
+	 * where Hk + Hn+k - 2γ = ψ(k+1) + ψ(n+k+1) turns the digamma
+	 * form of the series into harmonic numbers
+	 *
+	 * https://en.wikipedia.org/wiki/Bessel_function
+	 *	("Bessel functions of the second kind")
+	 * https://en.wikipedia.org/wiki/Digamma_function
+	 *
+	 * The infinite sum suffers cancellation for large x; the
+	 * caller must supply sufficient extra precision in 'obits'.
+	 * Sets 'err' so that the absolute error is below 2**err
+	 */
+    {
+	real	x_2 = x / 2;
+	real	x_2_2 = x_2 * x_2;
+
+	real	fin = imprecise(0, obits);
+	if (n > 0) {
+	    real ft = imprecise((n-1)!, obits);
+	    for (int k = 0; k < n; k++) {
+		fin += ft;
+		if (k + 1 < n)
+		    ft = ft * x_2_2 / ((k + 1) * (n - k - 1));
+	    }
+	}
+
+	real	t = x_2 ** n / n!;
+	real	hk = imprecise(0, obits);
+	real	hnk = imprecise(0, obits);
+	for (int j = 1; j <= n; j++)
+	    hnk += 1/j;
+
+	real	jsum = imprecise(0, obits);
+	real	hsum = imprecise(0, obits);
+	real	jabs = imprecise(0, obits);
+	real	habs = imprecise(0, obits);
+	int	lim = exponent(t) - obits;
+	int	k;
+
+	for (k = 0; ; ) {
+	    real ht = (hk + hnk) * t;
+	    jsum += t;
+	    hsum += ht;
+	    jabs += abs(t);
+	    habs += abs(ht);
+	    if (exponent(t) > lim + obits)
+		lim = exponent(t) - obits;
+	    if (k > x_2 && exponent(t) < lim && exponent(ht) < lim)
+		break;
+	    k++;
+	    hk += 1/k;
+	    hnk += 1/(n+k);
+	    t = t * -x_2_2 / (k * (n + k));
+	}
+
+	real	l = log(x_2) + euler_gamma_value(obits);
+	real	fx = fin / x_2 ** n;
+
+	/*
+	 * Each term carries fewer than 3k + 2n rounding errors and each
+	 * sum k more, all relative to the sums of absolute values; the
+	 * harmonic numbers, log and γ add a few more
+	 */
+	real	mag = (2 * abs(l) + 4) * jabs + habs + fx;
+	*err = exponent(mag * (6 * k + 3 * n + 16)) - obits + 1;
+	return (2 * l * jsum - hsum - fx) / pi_value(obits);
+    }
+
     typedef struct {
 	real	p, q;
 	real	sin_chi, cos_chi;
@@ -207,6 +322,27 @@ extend namespace Math {
 	    return false;
 	real	a = sqrt(2 / (pi_value(obits) * x));
 	*result = a * (h.p * h.cos_chi - h.q * h.sin_chi);
+	*err = h.err + exponent(a) + 1;
+	return true;
+    }
+
+    bool _yn_asymptotic(int n, real x, int obits, *real result, *int err)
+	/*
+	 * Hankel asymptotic expansion for Yn (Abramowitz & Stegun 9.2.6):
+	 *
+	 * Yn(x) = sqrt(2/(πx)) (P(n,x) sin χ + Q(n,x) cos χ)
+	 *
+	 * Sets 'err' so that the absolute error is below 2**err, or
+	 * returns false if the series diverges before reaching 'obits'
+	 * of precision
+	 */
+    {
+	hankel_t	h;
+
+	if (!_hankel_pq(n, x, obits, &h))
+	    return false;
+	real	a = sqrt(2 / (pi_value(obits) * x));
+	*result = a * (h.p * h.sin_chi + h.q * h.cos_chi);
 	*err = h.err + exponent(a) + 1;
 	return true;
     }
@@ -333,5 +469,70 @@ extend namespace Math {
 	 */
     {
 	return jn(1, x);
+    }
+
+    public real yn(int n, real x)
+	/*
+	 * Returns Bessel function of the second kind, order 'n' of 'x'
+	 */
+    {
+	/*
+	 * Y-n(x) = (-1)**n Yn(x)
+	 * https://en.wikipedia.org/wiki/Bessel_function
+	 */
+	if (n < 0) {
+	    real v = yn(-n, x);
+	    if (n % 2 == 1)
+		v = -v;
+	    return v;
+	}
+
+	if (x < 0)
+	    raise invalid_argument("yn of negative value", 1, x);
+	if (x == 0)
+	    raise divide_by_zero(-1, 0);
+
+	x = imprecise(x);
+	int bits = precision(x);
+	/*
+	 * Start with 32 bits beyond the target and retry with more
+	 * when the error bound shows the result falls short, as it
+	 * does near a zero of Yn
+	 */
+	int obits = bits + 32;
+
+	for (;;) {
+	    real v;
+	    int	err;
+
+	    /* Asymptotic series reaches about e**(-2x); try it for large x */
+	    if (!(x > obits * 0.3 && 4 * n * n < 8 * x &&
+		  _yn_asymptotic(n, imprecise(x, obits), obits, &v, &err))) {
+		/* Power series loses about x * log2(e) bits to cancellation */
+		int sbits = obits + ceil(x * log2_e);
+		v = _yn_series(n, imprecise(x, sbits), sbits, &err);
+	    }
+
+	    int more = _bessel_shortfall(v, err, bits);
+	    if (more == 0)
+		return imprecise(v, bits);
+	    obits += more + 8;
+	}
+    }
+
+    public real y0(real x)
+	/*
+	 * Returns Bessel function of the second kind, order '0' of 'x'
+	 */
+    {
+	return yn(0, x);
+    }
+
+    public real y1(real x)
+	/*
+	 * Returns Bessel function of the second kind, order '1' of 'x'
+	 */
+    {
+	return yn(1, x);
     }
 }

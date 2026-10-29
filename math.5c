@@ -1327,7 +1327,17 @@ extend namespace Math {
 	    result = cbrt (a);
 	    break;
 	default:
-	    result = exp (b * log(a));
+	    /*
+	     * An error in b * log(a) becomes the same relative error in
+	     * the result, so compute it with as many more bits as its
+	     * magnitude needs, plus some guard bits
+	     */
+	    real	t = b * log(a);
+	    int	prec = precision (t);
+	    int	wprec = prec + max (exponent (t), 0) + 8;
+
+	    t = imprecise (b, wprec) * log (imprecise (a, wprec));
+	    result = imprecise (exp (t), prec);
 	    break;
 	}
 	return result;

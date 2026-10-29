@@ -1,3 +1,11 @@
+nickle (2.109) unstable; urgency=medium
+
+  * Add y0/y1/yn functions
+  * Improve accuracy of math functions (all <= 0.5 ulp now)
+  * Accept leading +/- in string_to_real
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 29 Oct 2026 14:38:14 -0700
+
 nickle (2.108) unstable; urgency=medium
 
   * Raise exception for gamma for all non-positive integers.

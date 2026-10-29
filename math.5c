@@ -630,6 +630,44 @@ extend namespace Math {
 	return round_correctly (precision (a), compute);
     }
 
+    public real logp1 (real x)
+	/*
+	 * Return natural logarithm of 1 + 'x'
+	 */
+    {
+	if (x <= -1)
+	    raise invalid_argument ("logp1: must be greater than -1", 0, x);
+	if (x == 0)
+	    return 0;
+
+	x = imprecise (x);
+
+	int	prec = precision (x);
+
+	real compute (int wprec, *real err)
+	{
+	    if (-0.2928932188134524 < x && x < 0.4142135623730951)
+		return log1p_series (x, wprec, err);
+
+	    /*
+	     * Otherwise 1 + x is far enough from 1 for log. Form it
+	     * exactly, then round it to 'wprec' bits, which moves the
+	     * result by under 2**-wprec
+	     */
+	    int	e = exponent (x);
+	    real	u = imprecise (x, prec + abs (e) + 2) + 1;
+	    real	v = log (imprecise (u, wprec));
+
+	    *err = (2 + abs (v)) * 2 ** -wprec;
+	    return v;
+	}
+
+	return round_correctly (prec, compute);
+    }
+
+    /* The C99 name for logp1 */
+    public real(real) log1p = logp1;
+
     /*
      * log10(x) = log10(e) * log(x)
      *

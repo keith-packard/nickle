@@ -248,6 +248,51 @@ extend namespace Math {
 	return arg;
     }
 
+    real ln2_value (int prec)
+	/*
+	 * Return log(2) at least as precise as 'prec', from
+	 * log(2) = 2 atanh(1/3) = 2/3 Σ{k=0..} 1 / ((2k+1) 9**k),
+	 * summed exactly by binary splitting
+	 */
+    {
+	static real local_ln2 = 0;
+
+	if (local_ln2 == 0 || precision (local_ln2) < prec) {
+	    typedef struct {
+		int	b;
+		int	q;
+		int	t;
+	    } split_t;
+
+	    /* Σ{k=a..c-1} is t / (b q) */
+	    split_t binary_splitting_ln2 (int a, int c)
+	    {
+		if (c - a == 1)
+		    return (split_t) { .b = 2 * a + 1, .q = a == 0 ? 1 : 9,
+				       .t = 1 };
+
+		int	m = (a + c) >> 1;
+		split_t	l = binary_splitting_ln2 (a, m);
+		split_t	r = binary_splitting_ln2 (m, c);
+
+		return (split_t) { .b = l.b * r.b, .q = l.q * r.q,
+				   .t = r.b * r.q * l.t + l.b * r.t };
+	    }
+
+	    /*
+	     * Grow by at least half again, so slowly rising precisions
+	     * reuse the value. Terms shrink by 9, more than 3 bits each
+	     */
+	    int		grown = precision (local_ln2) * 3 // 2;
+	    int		wprec = max (prec, grown) + 8;
+	    split_t	s = binary_splitting_ln2 (0, wprec // 3 + 2);
+
+	    local_ln2 = imprecise (2 * s.t, wprec) /
+			imprecise (3 * s.b * s.q, wprec);
+	}
+	return imprecise (local_ln2, prec);
+    }
+
     real round_correctly (int prec, real(int, *real) compute)
 	/*
 	 * Call compute(wprec, &err) with increasing working precision
@@ -282,6 +327,29 @@ extend namespace Math {
 	    return imprecise (1, wprec);
 	}
 	v = imprecise (v);
+
+	/*
+	 * For v > 1, use e**v = 2**n e**r with v = n log(2) + r and
+	 * 0 <= r < log(2). log(2) carries as many more bits as n needs,
+	 * so r is good to under 2**-(wprec+6) absolute, which is that
+	 * relative error in the result
+	 */
+	int	n = 0;
+	real	reduce_rel = 0;
+
+	if (v > 1) {
+	    int	lprec = wprec + exponent (v) + 8;
+	    real	ln2 = ln2_value (lprec);
+
+	    v = imprecise (v, lprec);
+	    n = floor (v / ln2);
+	    v -= n * ln2;
+	    reduce_rel = 2 ** -(wprec + 6);
+	    if (v == 0) {
+		*rel = reduce_rel;
+		return ldexp (imprecise (1, wprec), n);
+	    }
+	}
 
 	/*
 	 * Emperically determined scale factor.  This
@@ -338,11 +406,11 @@ extend namespace Math {
 	/*
 	 * The terms are positive and term n carries fewer than 2n
 	 * rounding errors; the sum adds one per term and the tail is
-	 * below the last term. Each squaring doubles that and adds one
-	 * more rounding
+	 * below the last term, and rounding v to 'iprec' adds one more.
+	 * Each squaring doubles that and adds one more rounding
 	 */
-	*rel = 2 ** (expo + 1) * (3 * loop + 4) * 2 ** -iprec;
-	return e;
+	*rel = 2 ** (expo + 1) * (3 * loop + 5) * 2 ** -iprec + reduce_rel;
+	return ldexp (e, n);
     }
 
     public real exp (real v)

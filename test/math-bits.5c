@@ -20,6 +20,8 @@ real checked(real(real) f, real a) {
 		return r;
 	} catch invalid_argument(string type, int i, real v) {
 		return 10000;
+	} catch divide_by_zero(real num, real den) {
+		return 9999;
 	}
 	return 0;
 }
@@ -39,6 +41,8 @@ real checked2(real(real, real) f, real a, real b) {
 		return r;
 	} catch invalid_argument(string type, int i, real v) {
 		return 10000;
+	} catch divide_by_zero(real num, real den) {
+		return 9999;
 	}
 	return 0;
 }

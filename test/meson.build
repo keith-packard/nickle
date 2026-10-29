@@ -27,6 +27,7 @@ tests = [
   'etest.5c',
   'gammatest.5c',
   'jntest.5c',
+  'yntest.5c',
   'factorial.5c',
   'is_type.5c',
   'jsontest.5c',

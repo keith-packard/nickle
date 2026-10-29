@@ -20,6 +20,7 @@ make_atan=y
 make_log=y
 make_exp=y
 make_jn=y
+make_yn=y
 
 if [ $# -gt 0 ]; then
     make_sin=n
@@ -29,6 +30,7 @@ if [ $# -gt 0 ]; then
     make_log=n
     make_exp=n
     make_jn=n
+    make_yn=n
     for i in "$@"; do
 	case "$i" in
 	    sin)
@@ -51,6 +53,9 @@ if [ $# -gt 0 ]; then
 		;;
 	    jn)
 		make_jn=y;
+		;;
+	    yn)
+		make_yn=y;
 		;;
 	esac
     done
@@ -208,6 +213,43 @@ if [ $make_jn = "y" ]; then
 	exp=`echo "q($n, $x)" | bc -l "$dir"/math-funcs.bc | fmt -w 500 | tr -d '\\\n ' `
 	echo "    { .n = $n, .in = $x,"
 	echo "      .jn = $exp },"
+    done
+fi
+echo "};"
+
+# yn table
+
+echo "typedef struct { int n; real in, yn; } yn_t;"
+echo "yn_t[] yn_table = {"
+
+n="-5"
+r="44"
+while [ "$n" -le 5 -a $make_yn = "y" ]; do
+    exp=`echo "y($n, $r / 100)" | bc -l "$dir"/math-funcs.bc | fmt -w 500 | tr -d '\\\n ' `
+    echo "    { .n = $n, .in = $r / 100.0,"
+    echo "      .yn = $exp },"
+    r=`expr "$r" + "$inc" '*' 4`
+    if [ "$r" -gt 1000 ]; then
+	n=`expr "$n" + 1`
+	r=44
+    fi
+done
+
+# Cases covering each path in Math::yn at the 333-bit test
+# precision: x < 0; x == 0; small x; heavy cancellation in the
+# power series; asymptotic series tried but diverging (about
+# 119 < x < 139); asymptotic series skipped because n is too
+# large; asymptotic series used; negative n
+
+if [ $make_yn = "y" ]; then
+    for p in 0:-1 1:0 0:0.01 2:0.01 0:60.25 3:100.5 0:125.5 4:130.25 \
+	     20:150.5 0:150.5 1:200.75 2:333.25 7:500.25 1:1000.5 \
+	     -2:2.5 -3:750.5; do
+	n=${p%%:*}
+	x=${p#*:}
+	exp=`echo "y($n, $x)" | bc -l "$dir"/math-funcs.bc | fmt -w 500 | tr -d '\\\n ' `
+	echo "    { .n = $n, .in = $x,"
+	echo "      .yn = $exp },"
     done
 fi
 echo "};"

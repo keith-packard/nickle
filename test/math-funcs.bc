@@ -70,6 +70,37 @@ define u(y, x) {
 }
 
 /*
+ * Euler-Mascheroni constant, Brent-McMillan algorithm B1
+ *
+ * R. P. Brent and E. M. McMillan, "Some new algorithms for
+ * high-precision computation of Euler's constant",
+ * Math. Comp. 34 (1980), 305-312
+ * https://www.ams.org/mcom/1980-34-149/S0025-5718-1980-0551307-4/
+ */
+define g() {
+	auto b, c, k, m, n, s, u, v, w;
+	s = scale;
+	scale = 0;
+	/* error is O(e^(-4n)), so n = 0.6 * digits suffices */
+	n = (s * 6) / 10 + 2;
+	scale = s + 10;
+	m = n * n;
+	w = -l(n);
+	b = 1;
+	u = w;
+	v = b;
+	for (k = 1; k <= 4 * n; k++) {
+		b = b * m / (k * k);
+		w = (w * m / k + b) / k;
+		u += w;
+		v += b;
+	}
+	c = u / v;
+	scale = s;
+	return (c / 1);
+}
+
+/*
  * Bessel function of the first kind, order n, using bc's j().
  * Its power series loses about x/2.3 digits to cancellation, so
  * add that much scale
@@ -87,5 +118,77 @@ define q(n, x) {
 	scale = o + 20 + w / 2;
 	v = j(n, x);
 	scale = o;
+	return (v / 1);
+}
+
+/*
+ * Bessel function of the second kind, order n, from the power
+ * series (Abramowitz & Stegun 9.1.11) with extra scale to cover
+ * cancellation, writing the digamma terms as harmonic numbers
+ * using ψ(m+1) = Hm - γ. Y-n(x) = (-1)^n Yn(x). Returns 10000
+ * for x < 0 and 9999 for x == 0 or values beyond 1e10
+ *
+ * https://en.wikipedia.org/wiki/Bessel_function
+ *	("Bessel functions of the second kind")
+ * https://en.wikipedia.org/wiki/Digamma_function
+ */
+define y(n, x) {
+	auto c, f, h, i, k, m, o, r, s, t, v, z;
+	if (x < 0)
+		return (10000);
+	if (x == 0)
+		return (9999);
+	o = scale;
+	scale = 0;
+	n = n / 1;
+	s = 1;
+	if (n < 0) {
+		n = -n;
+		if (n % 2 == 1)
+			s = -1;
+	}
+	scale = o + 20 + x / 2;
+	z = x / 2;
+	r = z * z;
+
+	/* Σ{k=0..n-1} (n-k-1)!/k! (x/2)^2k */
+	f = 0;
+	if (n > 0) {
+		t = 1;
+		for (k = 2; k < n; k++)
+			t *= k;
+		for (k = 0; k < n; k++) {
+			f += t;
+			if (k + 1 < n)
+				t = t * r / ((k + 1) * (n - k - 1));
+		}
+	}
+
+	/*
+	 * Σ{k=0..} (-(x/2)^2)^k / (k! (n+k)!), plain and weighted
+	 * by Hk + Hn+k
+	 */
+	t = 1;
+	for (k = 1; k <= n; k++)
+		t = t * z / k;
+	h = 0;
+	i = 0;
+	for (k = 1; k <= n; k++)
+		i += 1 / k;
+	c = 0;
+	m = 0;
+	k = 0;
+	while (k <= z || t != 0) {
+		c += t;
+		m += (h + i) * t;
+		k += 1;
+		h += 1 / k;
+		i += 1 / (n + k);
+		t = -t * r / (k * (n + k));
+	}
+	v = s * (2 * (l(z) + g()) * c - m - f / z ^ n) / (4 * a(1));
+	scale = o;
+	if (v > 10 ^ 10 || v < -(10 ^ 10))
+		return (9999);
 	return (v / 1);
 }

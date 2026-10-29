@@ -1,0 +1,61 @@
+/*
+ * Nickle test suite
+ *
+ * yn test
+ */
+library "math-bits.5c"
+
+void check_yn()
+{
+    real yn_fixed(real n, real x) {
+	return yn(floor(n), x);
+    }
+
+    printf("Checking yn\n");
+    for (int i = 0; i < dim(yn_table); i++) {
+	int	n = yn_table[i].n;
+	real	in = yn_table[i].in;
+	real	yn_value = yn_table[i].yn;
+	check2("yn", yn_fixed, n, in, yn_value);
+	if (n == 0)
+	    check("y0", y0, in, yn_value);
+	if (n == 1)
+	    check("y1", y1, in, yn_value);
+    }
+}
+
+void check_yn_zeros()
+{
+    /*
+     * Find zeros with Newton's method, using
+     * Yn'(x) = Yn-1(x) - (n/x) Yn(x), round them to 256 bits
+     * and check that yn retains full precision there
+     */
+    real zero(int n, real x0) {
+	real	z = imprecise(x0, 1024);
+	for (int i = 0; i < 10; i++)
+	    z -= yn(n, z) / (yn(n - 1, z) - n / z * yn(n, z));
+	return z;
+    }
+
+    printf("Checking yn near zeros\n");
+    int[] ns = { 0, 1, 2, 0, 1 };
+    real[] x0s = { 0.8936, 2.1971, 3.3842, 200.8399, 250.5405 };
+    for (int i = 0; i < dim(ns); i++) {
+	real	x = imprecise(zero(ns[i], x0s[i]), 256);
+	real	v = yn(ns[i], x);
+	real	ref = yn(ns[i], imprecise(x, 1024));
+	real	error = abs((v - ref) / ref);
+	real	limit = 2 ** -(256 - 2);
+
+	if (error > limit) {
+	    printf("check failed yn(%d, %.-g) near zero error %g limit %g\n",
+		   ns[i], x, error, limit);
+	    errors++;
+	}
+    }
+}
+
+check_yn();
+check_yn_zeros();
+exit(errors);

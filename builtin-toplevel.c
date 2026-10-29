@@ -350,7 +350,23 @@ Value
 do_string_to_real (Value str)
 {
     ENTER ();
-    RETURN (aetov (StringChars (&str->string)));
+    char *s = StringChars(&str->string);
+    while (isblank(*s))
+	s++;
+    int sign = 1;
+    switch (*s) {
+    case '+':
+	s++;
+	break;
+    case '-':
+	sign = -1;
+	s++;
+	break;
+    }
+    Value v = aetov(s);
+    if (sign < 0)
+	v = Negate(v);
+    RETURN (v);
 }
 
 

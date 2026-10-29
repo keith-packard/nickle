@@ -835,19 +835,150 @@ extend namespace Math {
 	return arg;
     }
 
-    /* Normalize angle to -π < aa <= π */
-    real limit_angle_to_pi (real aa)
+    /*
+     * Normalize angle to -π < aa <= π with an absolute error below
+     * 2**(2-wprec), reducing with enough bits of π to cover the
+     * magnitude of 'aa'
+     */
+    real limit_angle_to_pi (real aa, int wprec)
     {
-	real	my_pi;
-
 	aa = imprecise (aa);
-	my_pi = pi_value (precision (aa));
-	if (aa + my_pi == aa)
+	if (aa + pi_value (precision (aa)) == aa)
 		raise invalid_argument ("argument not precise enough", 0, aa);
-	aa %= 2 * my_pi;
+	if (abs (aa) <= 3)
+		return imprecise (aa, wprec);
+
+	int	rprec = wprec + max (exponent (aa), 0) + 4;
+	real	my_pi = pi_value (rprec);
+
+	aa = imprecise (aa, rprec) % (2 * my_pi);
 	if (aa > my_pi)
 		aa -= 2 * my_pi;
-	return aa;
+	return imprecise (aa, wprec);
+    }
+
+    /*
+     * sin(x) = x - x**3/3! + x**5/5! ...
+     */
+    real raw_sin (real a)
+    {
+	real    err;
+	real    v, term;
+	real    a4, aj, ai;
+	int	    i, j;
+	int	    iter;
+	int	    prec;
+
+	prec = precision(a);
+	int iprec = prec * 2;
+	a = imprecise(a,iprec);
+	i = 1;
+	j = 3;
+	a4 = a**4;
+	ai = a**i;
+	aj = a**j;
+	iter = prec + 8;
+	v = 0;
+	while (iter-- > 0)
+	{
+	    term = ai/i! - aj/j!;
+	    /* printf ("sin iter %d term %d\n", iter, term);*/
+	    v += term;
+	    if (exponent (v) > exponent (term) + iprec)
+		break;
+	    ai *= a4;
+	    aj *= a4;
+	    i += 4;
+	    j += 4;
+	}
+	return imprecise (v + term, prec);
+    }
+
+    /* sin(5x) = 16 * sin**5(x) - 20 * sin**3(x) + 5 * sin(x) */
+    real do_5x (real a)
+    {
+	return 16 * a**5 - 20 * a**3 + 5 * a;
+    }
+
+    real big_sin (real a)
+    {
+	if (a > 0.01)
+	    return do_5x (big_sin (a/5));
+	return raw_sin (a);
+    }
+
+    /*
+     * cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ...
+     */
+
+    real raw_cos (real a)
+    {
+	real    v, term;
+	real    ai, aj, a4;
+	int	    i, j;
+	int	    iter;
+	int	    prec = precision(a);
+	int	    iprec = prec * 2;
+
+	a = imprecise(a, iprec);
+	i = 0;
+	j = 2;
+	ai = 1;
+	aj = a**2;
+	a4 = a**4;
+	iter = prec + 8;
+	v = 0;
+	while (iter-- > 0)
+	{
+	    term = ai/i! - aj/j!;
+	    v += term;
+	    if (exponent (v) > exponent (term) + iprec)
+		break;
+	    ai *= a4;
+	    aj *= a4;
+	    i += 4;
+	    j += 4;
+	}
+	return imprecise (v + term);
+    }
+
+    /* cos(4x) = 8 * (cos**4(x) - cos**2(x)) + 1 */
+    real do_4x (real c)
+    {
+	return 8 * (c**4 - c**2) + 1;
+    }
+
+    real big_cos (real a)
+    {
+	if (a > .01)
+	    return do_4x (big_cos (a/4));
+	return raw_cos (a);
+    }
+
+    /*
+     * The reduced angle is good to 2**(2-wprec). Working with 24
+     * more bits keeps the error from the at most four 5x steps in
+     * big_sin, each amplifying earlier errors by under 6.25, well
+     * below 2**-wprec; raw_cos and the 4x steps in big_cos run at
+     * twice that precision
+     */
+    real reduced_angle (real a, int wprec)
+    {
+	return imprecise (limit_angle_to_pi (a, wprec), wprec + 24);
+    }
+
+    real sin_reduced (real r)
+    {
+	if (r == 0)
+	    return r;
+	return r < 0 ? -big_sin (-r) : big_sin (r);
+    }
+
+    real cos_reduced (real r)
+    {
+	if (r == 0)
+	    return imprecise (1, precision (r));
+	return big_cos (abs (r));
     }
 
     public real sin (real a)
@@ -855,61 +986,16 @@ extend namespace Math {
 	 * return sine (a)
 	 */
     {
-	/*
-	 * sin(x) = x - x**3/3! + x**5/5! ...
-	 */
-	real raw_sin (real a)
-	{
-	    real    err;
-	    real    v, term;
-	    real    a4, aj, ai;
-	    int	    i, j;
-	    int	    iter;
-	    int	    prec;
-
-	    prec = precision(a);
-	    int iprec = prec * 2;
-	    a = imprecise(a,iprec);
-	    i = 1;
-	    j = 3;
-	    a4 = a**4;
-	    ai = a**i;
-	    aj = a**j;
-	    iter = prec + 8;
-	    v = 0;
-	    while (iter-- > 0)
-	    {
-		term = ai/i! - aj/j!;
-		/* printf ("sin iter %d term %d\n", iter, term);*/
-		v += term;
-		if (exponent (v) > exponent (term) + iprec)
-		    break;
-		ai *= a4;
-		aj *= a4;
-		i += 4;
-		j += 4;
-	    }
-	    return imprecise (v + term, prec);
-	}
-
-	/* sin(5x) = 16 * sin**5(x) - 20 * sin**3(x) + 5 * sin(x) */
-	real do_5x (real a)
-	{
-	    return 16 * a**5 - 20 * a**3 + 5 * a;
-	}
-
-	real big_sin (real a)
-	{
-	    if (a > 0.01)
-		return do_5x (big_sin (a/5));
-	    return raw_sin (a);
-	}
-
-	a = limit_angle_to_pi (a);
+	a = imprecise (a);
 	if (a == 0)
 	    return 0;
+	real compute (int wprec, *real err)
+	{
+	    *err = 2 ** (3 - wprec);
+	    return sin_reduced (reduced_angle (a, wprec));
+	}
 
-	return big_sin (a);
+	return round_correctly (precision (a), compute);
     }
 
     public real cos (real a)
@@ -917,63 +1003,16 @@ extend namespace Math {
 	 * return cosine (a)
 	 */
     {
-	/*
-	 * cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ...
-	 */
-
-	real raw_cos (real a)
-	{
-	    real    v, term;
-	    real    ai, aj, a4;
-	    int	    i, j;
-	    int	    iter;
-	    int	    prec = precision(a);
-	    int	    iprec = prec * 2;
-
-	    a = imprecise(a, iprec);
-	    i = 0;
-	    j = 2;
-	    ai = 1;
-	    aj = a**2;
-	    a4 = a**4;
-	    iter = prec + 8;
-	    v = 0;
-	    while (iter-- > 0)
-	    {
-		term = ai/i! - aj/j!;
-		v += term;
-		if (exponent (v) > exponent (term) + iprec)
-		    break;
-		ai *= a4;
-		aj *= a4;
-		i += 4;
-		j += 4;
-	    }
-	    return imprecise (v + term);
-	}
-
-	/* cos(4x) = 8 * (cos**4(x) - cos**2(x)) + 1 */
-	real do_4x (real c)
-	{
-	    return 8 * (c**4 - c**2) + 1;
-	}
-
-	real big_cos (real a)
-	{
-	    if (a > .01)
-		return do_4x (big_cos (a/4));
-	    return raw_cos (a);
-	}
-
-	a = limit_angle_to_pi (a);
+	a = imprecise (a);
 	if (a == 0)
 	    return 1;
-	return big_cos (limit_angle_to_pi (a));
-    }
+	real compute (int wprec, *real err)
+	{
+	    *err = 2 ** (3 - wprec);
+	    return cos_reduced (reduced_angle (a, wprec));
+	}
 
-    real cos_to_sin (real v)
-    {
-	return sqrt (1 - v**2);
+	return round_correctly (precision (a), compute);
     }
 
     public void sin_cos (real a, *real sinp, *real cosp)
@@ -981,13 +1020,8 @@ extend namespace Math {
 	 * Compute sine and cosine of 'a' simultaneously
 	 */
     {
-	real	c, s;
-
-	a = limit_angle_to_pi (a);
-	c = cos (a);
-	s = sign(a) * cos_to_sin(c);
-        *cosp = c;
-        *sinp = s;
+	*sinp = sin (a);
+	*cosp = cos (a);
     }
 
     public real tan (real a)
@@ -995,11 +1029,28 @@ extend namespace Math {
 	 * return tangent (a)
 	 */
     {
-	real	c, s;
+	a = imprecise (a);
+	if (a == 0)
+	    return 0;
+	real compute (int wprec, *real err)
+	{
+	    real	r = reduced_angle (a, wprec);
+	    real	s = sin_reduced (r);
+	    real	c = cos_reduced (r);
 
-	a = imprecise(a);
-	sin_cos (a, &s, &c);
-	return s/c;
+	    if (c == 0) {
+		*err = 1;
+		return s;
+	    }
+
+	    /* sin and cos are each good to 2**(3-wprec) */
+	    real	t = s / c;
+	    *err = (1 + abs (t)) * 2 ** (3 - wprec) / abs (c) +
+		   abs (t) * 2 ** -wprec;
+	    return t;
+	}
+
+	return round_correctly (precision (a), compute);
     }
 
     public real atan (real v)

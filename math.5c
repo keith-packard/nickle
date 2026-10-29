@@ -813,6 +813,28 @@ extend namespace Math {
 	return imprecise (local_pi, prec);
     }
 
+    public real max(real arg, real args ...)
+	/*
+	 * Return maximum of all arguments
+	 */
+    {
+	for (int i = 0; i < dim(args); i++)
+	    if (arg < args[i])
+		arg = args[i];
+	return arg;
+    }
+
+    public real min(real arg, real args ...)
+	/*
+	 * Return minimum of all arguments
+	 */
+    {
+	for (int i = 0; i < dim(args); i++)
+	    if (arg > args[i])
+		arg = args[i];
+	return arg;
+    }
+
     /* Normalize angle to -π < aa <= π */
     real limit_angle_to_pi (real aa)
     {
@@ -1193,28 +1215,6 @@ extend namespace Math {
 	 */
     {
 	return *a = pow (*a, b);
-    }
-
-    public real max(real arg, real args ...)
-	/*
-	 * Return maximum of all arguments
-	 */
-    {
-	for (int i = 0; i < dim(args); i++)
-	    if (arg < args[i])
-		arg = args[i];
-	return arg;
-    }
-
-    public real min(real arg, real args ...)
-	/*
-	 * Return minimum of all arguments
-	 */
-    {
-	for (int i = 0; i < dim(args); i++)
-	    if (arg > args[i])
-		arg = args[i];
-	return arg;
     }
 
 

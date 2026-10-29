@@ -1215,6 +1215,18 @@ extend namespace Math {
      *  asin(q) = atan2(q, sqrt(1-q**2))
      */
 
+    real asin_cos (real v, int wprec, *real s)
+	/*
+	 * Return v at enough precision that 1 - v**2 is exact near
+	 * |v| = 1, as v has precision(v) bits, and set 's' to
+	 * sqrt(1 - v**2), good to under 2**-(wprec+8) relative
+	 */
+    {
+	real	x = imprecise (v, max (2 * precision (v), wprec) + 8);
+	*s = sqrt (1 - x**2);
+	return x;
+    }
+
     public real asin (real v)
 	/*
 	 * return arcsine (v)
@@ -1223,11 +1235,16 @@ extend namespace Math {
 	v = imprecise (v);
 	if (abs (v) > 1)
 	    raise invalid_argument ("asin argument out of range", 0, v);
-	if (v == 1)
-	    return pi_value (precision (v))/2;
-	if (v == -1)
-	    return -pi_value (precision (v))/2;
-	return atan2(v, sqrt(1-v**2));
+	if (v == 0)
+	    return v;
+	real compute (int wprec, *real err)
+	{
+	    real	s;
+	    real	x = asin_cos (v, wprec, &s);
+	    return atan2_w (x, s, wprec, err);
+	}
+
+	return round_correctly (precision (v), compute);
     }
 
     /*
@@ -1246,11 +1263,14 @@ extend namespace Math {
 	    raise invalid_argument ("acos argument out of range", 0, v);
 	if (v == 1)
 	    return 0;
-	if (v == -1)
-	    return pi_value(precision(v));
-	if (v == 0)
-	    return pi_value(precision(v))/2;
-	return atan2 (sqrt (1-v**2), v);
+	real compute (int wprec, *real err)
+	{
+	    real	s;
+	    real	x = asin_cos (v, wprec, &s);
+	    return atan2_w (s, x, wprec, err);
+	}
+
+	return round_correctly (precision (v), compute);
     }
 
     /*

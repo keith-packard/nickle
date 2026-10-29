@@ -979,6 +979,7 @@ Value	do_File_open (Value, Value);
 Value	do_gcd (Value, Value);
 Value	do_xor (Value, Value);
 Value	do_Math_pow (Value, Value);
+Value	do_Math_ldexp (Value, Value);
 Value	do_Math_assignpow (Value, Value);
 Value	do_Math_popcount (Value);
 Value   do_Math_factorial (Value);

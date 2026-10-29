@@ -1274,6 +1274,15 @@ NewDoubleFloat (double d)
 }
 
 Value
+FloatLdexp (Value av, Value ev)
+{
+    ENTER ();
+    RETURN (NewFloat (av->floats.mant,
+		      FpartAdd (av->floats.exp, NewValueFpart (ev), False),
+		      av->floats.prec));
+}
+
+Value
 NewValueFloat (Value av, unsigned prec)
 {
     ENTER ();

@@ -1122,6 +1122,7 @@ Value	NewIntegerFloat (Integer *i, unsigned prec);
 Value	NewNaturalFloat (Sign sign, Natural *n, unsigned prec);
 Value	NewRationalFloat (Rational *r, unsigned prec);
 Value	NewValueFloat (Value av, unsigned prec);
+Value	FloatLdexp (Value av, Value ev);
 Value	NewDoubleFloat (double d);
 Value	NewComplex (Value r, Value i);
 Value	NewValueComplex (Value r, Value i);

@@ -41,6 +41,11 @@ import_Math_namespace(void)
 	    " real pow (real a, int b)\n"
 	    "\n"
 	    " Return a ** b.\n" },
+        { do_Math_ldexp, "ldexp", "R", "Ri", "\n"
+	    " real ldexp (real r, int e)\n"
+	    "\n"
+	    " Return 'r' * 2 ** 'e'. For imprecise 'r', this adjusts\n"
+	    " the exponent without computing 2 ** 'e'.\n" },
         { 0 }
     };
 
@@ -56,6 +61,16 @@ do_Math_pow (Value a, Value b)
 {
     ENTER ();
     RETURN (Pow (a, b));
+}
+
+Value
+do_Math_ldexp (Value a, Value e)
+{
+    ENTER ();
+
+    if (ValueIsFloat(a))
+	RETURN (FloatLdexp (a, e));
+    RETURN (Times (a, Pow (NewInt (2), e)));
 }
 
 Value

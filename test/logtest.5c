@@ -78,6 +78,12 @@ void check_log()
 	printf("Checking logp1 is correctly rounded\n");
 	check_rounded("logp1", logp1, (real[*]) {
 		1e-300, -1e-20, 3e-9, -0.29, 0.41, -0.5, 0.9, 3, 1e30 });
+	printf("Checking log10 and log2 are correctly rounded\n");
+	real[*] logb_args = {
+		1e-300, 0.001, 0.3, 0.9999999, 1.0000001, 2, 3, 10, 1000,
+		1e300 };
+	check_rounded("log10", log10, logb_args);
+	check_rounded("log2", log2, logb_args);
 	printf("Checking log\n");
 	for (int i = 0; i < dim(log_table); i++) {
 		real in = log_table[i].in;

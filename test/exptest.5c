@@ -52,7 +52,16 @@ void check_exp()
 	}
 	printf("Checking exp is correctly rounded\n");
 	check_rounded("exp", exp, (real[*]) {
-		-700, -20.5, -1, -1e-9, 1e-30, 0.5, 1, 2.75, 50.3, 700 });
+		-700, -20.5, -1, -1e-9, 1e-30, 0.5, 1, 2.75, 50.3, 700,
+		-2**20, 2**20 + 0.5, -1e6 - 0.25 });
+
+	/* reducing by log(2) keeps huge arguments fast */
+	real	tiny = exp(imprecise(-2**100001, 64));
+	real	huge = exp(imprecise(2**100001, 64));
+	if (abs(tiny * huge - 1) > 2**-60 || precision(tiny) != 64) {
+		printf("check failed exp(-2**100001)\n");
+		errors++;
+	}
 	printf("Checking pow is faithfully rounded\n");
 	real[*] bases = { 0.5, 1.0000001, 3, 7.25, 100 };
 	real[*] powers = { -700.5, -2.5, 0.3, 10.5, 64, 1e-5 };

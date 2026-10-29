@@ -43,6 +43,33 @@ real checked2(real(real, real) f, real a, real b) {
 	return 0;
 }
 
+/*
+ * Check that f is correctly rounded: at each precision, f(x)
+ * must equal f at much higher precision rounded to that precision
+ */
+void check_rounded(string op, real(real) f, real[*] inputs)
+{
+	for (int prec = 24; prec <= 344; prec += 32) {
+		for (int i = 0; i < dim(inputs); i++) {
+			real	x = imprecise(inputs[i], prec);
+			int	hprec = 2 * prec + 128;
+			real	v, ref;
+
+			try {
+				v = f(x);
+				ref = imprecise(f(imprecise(x, hprec)), prec);
+			} catch invalid_argument(string type, int j, real w) {
+				continue;
+			}
+			if (v != ref || (v != 0 && precision(v) != prec)) {
+				printf("check failed %s(%.-g) at prec %d not correctly rounded (was %.-g, should be %.-g)\n",
+				       op, x, prec, v, ref);
+				errors++;
+			}
+		}
+	}
+}
+
 void check(string op, real(real) f, real input, real correct)
 {
 	real	value = checked(f, input);

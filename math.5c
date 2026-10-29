@@ -1053,68 +1053,100 @@ extend namespace Math {
 	return round_correctly (precision (a), compute);
     }
 
+    /*
+     * atan(x) = x - x**3/3 + x**5/5 - ...
+     */
+    real raw_atan (real v)
+    {
+	real    a, term;
+	real    vi, vj, v4;
+	int	    i, j;
+	int	    iter;
+	int	    prec = precision(v);
+	int	    iprec = prec * 2;
+
+	v = imprecise (v, iprec);
+	i = 1;
+	j = 3;
+	vi = v**i;
+	vj = v**j;
+	v4 = v**4;
+	a = 0;
+	iter = prec + 8;
+	while (iter-- > 0)
+	{
+	    term = vi/i - vj/j;
+	    a += term;
+	    if (exponent (a) > exponent (term) + iprec)
+		break;
+	    vi *= v4;
+	    vj *= v4;
+	    i += 4;
+	    j += 4;
+	}
+	return imprecise (a, prec);
+    }
+
+    real atan_w (real v, int wprec, *real err)
+	/*
+	 * Compute atan(v) to 'wprec' bits, setting 'err' to a bound on
+	 * the absolute error
+	 */
+    {
+	v = imprecise (v, wprec);
+	if (v == 0) {
+	    *err = 0;
+	    return v;
+	}
+	/*
+	 * atan(v) = -atan(-v)
+	 */
+	if (v < 0)
+	    return -atan_w (-v, wprec, err);
+	/*
+	 * atan(v) = pi/2 - atan(1/v). Rounding 1/v, pi/2 and the
+	 * difference each add under 2**(1-wprec)
+	 */
+	if (v > 1) {
+	    real a = pi_value (wprec) / 2 - atan_w (1/v, wprec, err);
+	    *err += 2 ** (3 - wprec);
+	    return a;
+	}
+	/*
+	 * atan(v) = pi/6 + atan((v*sqrt(3) - 1) / (sqrt(3) + v)). The
+	 * argument is good to 2**(2-wprec) and atan' <= 1; pi/6 and the
+	 * sum each add under 2**(1-wprec)
+	 */
+	if (v > .268)
+	{
+	    real	sqrt3 = sqrt (imprecise (3, wprec));
+	    real	t = (v * sqrt3 - 1) / (sqrt3 + v);
+	    real	a = pi_value (wprec) / 6;
+	    if (t != 0)
+		a += raw_atan (t);
+	    *err = 2 ** (4 - wprec);
+	    return a;
+	}
+	/* The series runs at twice the precision, then rounds once */
+	real	a = raw_atan (v);
+	*err = abs (a) * 2 ** (2 - wprec);
+	return a;
+    }
+
     public real atan (real v)
 	/*
 	 * return arctangent (v)
 	 */
     {
-	/*
-	 * atan(x) = x - x**3/3 + x**5/5 - ...
-	 */
-	real raw_atan (real v)
-	{
-	    real    a, term;
-	    real    vi, vj, v4;
-	    int	    i, j;
-	    int	    iter;
-	    int	    prec = precision(v);
-	    int	    iprec = prec * 2;
-
-	    v = imprecise (v, iprec);
-	    i = 1;
-	    j = 3;
-	    vi = v**i;
-	    vj = v**j;
-	    v4 = v**4;
-	    a = 0;
-	    iter = prec + 8;
-	    while (iter-- > 0)
-	    {
-		term = vi/i - vj/j;
-		a += term;
-		if (exponent (a) > exponent (term) + iprec)
-		    break;
-		vi *= v4;
-		vj *= v4;
-		i += 4;
-		j += 4;
-	    }
-	    return imprecise (a, prec);
-	}
-
-	real	sqrt3;
-
 	v = imprecise (v);
-	/*
-	 * atan(v) = -atan(-v)
-	 */
-	if (v < 0)
-	    return -atan (-v);
-	/*
-	 * atan(v) = pi/2 - atan(1/v)
-	 */
-	if (v > 1)
-	    return pi_value (precision(v))/2 - atan (1/v);
-	/*
-	 * atan(v) = pi/6 + atan((v*sqrt(3) - 1) / (sqrt(3) + v))
-	 */
-	if (v > .268)
+	if (v == 0)
+	    return v;
+	real compute (int wprec, *real err)
 	{
-	    sqrt3 = sqrt (imprecise (3,precision(v)));
-	    return (pi_value (precision(v)) / 6 +
-		    raw_atan ((v * sqrt3 - 1) / (sqrt3 + v)));
+	    return atan_w (v, wprec, err);
 	}
-	return raw_atan (v);
+
+	return round_correctly (precision (v), compute);
     }
 
     /*

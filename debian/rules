@@ -9,5 +9,5 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 # Make examples which happen to start with #! executable
 
 override_dh_auto_install:
-	dh_auto_install --buildsystem=meson && (find debian/nickle -name COPYING -print0 | xargs -0 rm)
+	dh_auto_install && (find debian/nickle -name COPYING -print0 | xargs -0 rm)
 	find debian/nickle/usr/share/nickle -type f -print0 | xargs -0 grep -l '^#!.*nickle' | xargs -d '\n' chmod +x

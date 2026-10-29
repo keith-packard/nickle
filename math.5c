@@ -437,7 +437,8 @@ extend namespace Math {
 	    int k,n;
 
 	    /* argument reduction */
-	    k=exponent(x);   x=mantissa(x);
+	    /* mantissa() is in [0.5, 1); the code below expects [1, 2) */
+	    k=exponent(x)-1;   x=mantissa(x)*2;
 	    if(x >= sqrt2 ) {k += 1; x *= half;}
 	    x += negone ;
 

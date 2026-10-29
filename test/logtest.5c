@@ -54,6 +54,23 @@ void check_log()
 			}
 		}
 	}
+	printf("Checking log at many precisions\n");
+	for (int prec = 52; prec <= 520; prec += 4) {
+		real[] xs = { 0.001, 0.4467884831395837, 1.75, 3, 1000 };
+		for (int i = 0; i < dim(xs); i++) {
+			real	x = imprecise(xs[i], prec);
+			real	lnx = log(x);
+			real	ref = log(imprecise(x, 2 * prec + 64));
+			real	error = abs((lnx - ref) / ref);
+			real	limit = 2 ** -(prec - 4);
+
+			if (error > limit) {
+				printf("log: prec %d error %g limit %g x %.-g\n",
+				       prec, error, limit, x);
+				errors++;
+			}
+		}
+	}
 	printf("Checking log\n");
 	for (int i = 0; i < dim(log_table); i++) {
 		real in = log_table[i].in;

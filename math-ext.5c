@@ -103,11 +103,176 @@ extend namespace Math {
 	return -_erf(x, 1);
     }
 
+    /*
+     * log2(e), converting the e**x growth of the terms in the Bessel
+     * power series into the number of bits lost to cancellation
+     */
+    real log2_e = 1 / log(imprecise(2, 64));
+
+    typedef struct {
+	real	p, q;
+	real	sin_chi, cos_chi;
+	int	err;
+    } hankel_t;
+
+    bool _hankel_pq(int n, real x, int obits, *hankel_t h)
+	/*
+	 * Hankel asymptotic series (Abramowitz & Stegun 9.2.9, 9.2.10):
+	 *
+	 * P(n,x) = Σ{k=0..} (-1)**k a2k(n) / x**2k
+	 * Q(n,x) = Σ{k=0..} (-1)**k a2k+1(n) / x**(2k+1)
+	 * ak(n) = (4n**2 - 1**2) (4n**2 - 3**2) ... (4n**2 - (2k-1)**2) /
+	 *	   (k! 8**k)
+	 * χ = x - (n/2 + 1/4) π
+	 *
+	 * H. Hankel, "Die Cylinderfunctionen erster und zweiter Art",
+	 * Math. Ann. 1 (1869), 467-501
+	 * https://link.springer.com/article/10.1007/BF01445870
+	 *
+	 * Returns P, Q, sin χ and cos χ along with 'err' such that
+	 * P and Q combined with sin χ and cos χ have absolute error
+	 * below 2**err, or false if the series diverges before reaching
+	 * 'obits' of precision
+	 */
+    {
+	int	mu = 4 * n * n;
+	real	x8 = 8 * x;
+	real	t = imprecise(1, obits);
+	real	p = t;
+	real	q = imprecise(0, obits);
+	real	tabs = t;
+	int	k;
+
+	for (k = 1; ; k++) {
+	    int	f = mu - (2 * k - 1) ** 2;
+	    real r = f / (k * x8);
+	    if (f < 0 && abs(r) >= 1)
+		return false;
+	    t *= r;
+	    tabs += abs(t);
+	    switch (k % 4) {
+	    case 0: p += t; break;
+	    case 1: q += t; break;
+	    case 2: p -= t; break;
+	    case 3: q -= t; break;
+	    }
+	    if (k > n && exponent(t) < -obits)
+		break;
+	}
+
+	/*
+	 * With k > n, the remainders of P and Q are each below their
+	 * first omitted terms, k+1 and k+2 (Hankel, pp. 491-494; G. N.
+	 * Watson, "A Treatise on the Theory of Bessel Functions" (1922),
+	 * §7.3, https://archive.org/details/treatiseontheory00watsuoft)
+	 */
+	real	t1 = t * (mu - (2 * k + 1) ** 2) / ((k + 1) * x8);
+	real	t2 = t1 * (mu - (2 * k + 3) ** 2) / ((k + 2) * x8);
+
+	/* Reduce χ using enough bits of π to cover the magnitude of x */
+	int	cbits = obits + max(exponent(x), 0);
+	real	pi_c = pi_value(cbits);
+	real	chi = imprecise(x, cbits) - (2 * n + 1) / 4 * pi_c;
+	chi = imprecise(chi % (2 * pi_c), obits);
+
+	real	s, c;
+	sin_cos(chi, &s, &c);
+
+	/*
+	 * Term k carries fewer than 2k rounding errors and each sum k
+	 * more, relative to the sum of absolute values. χ is good to
+	 * about 2**(4-obits), perturbing sin χ and cos χ by as much
+	 */
+	real	round = (3 * k + 2) * tabs + 32 * (abs(p) + abs(q)) + 4;
+	real	bound = round * 2 ** -obits + abs(t1) + abs(t2);
+	*h = (hankel_t) { .p = p, .q = q, .sin_chi = s, .cos_chi = c,
+			  .err = exponent(bound) + 1 };
+	return true;
+    }
+
+    bool _jn_asymptotic(int n, real x, int obits, *real result, *int err)
+	/*
+	 * Hankel asymptotic expansion for Jn (Abramowitz & Stegun 9.2.5):
+	 *
+	 * Jn(x) = sqrt(2/(πx)) (P(n,x) cos χ - Q(n,x) sin χ)
+	 *
+	 * Sets 'err' so that the absolute error is below 2**err, or
+	 * returns false if the series diverges before reaching 'obits'
+	 * of precision
+	 */
+    {
+	hankel_t	h;
+
+	if (!_hankel_pq(n, x, obits, &h))
+	    return false;
+	real	a = sqrt(2 / (pi_value(obits) * x));
+	*result = a * (h.p * h.cos_chi - h.q * h.sin_chi);
+	*err = h.err + exponent(a) + 1;
+	return true;
+    }
+
+    real _jn_series(int n, real x, int obits, *int err)
+	/*
+	 * Power series for Jn (Abramowitz & Stegun 9.1.10):
+	 *
+	 * Jn(x) = (x/2)**n Σ{k=0..} (-(x/2)**2)**k / (k! (n+k)!)
+	 *
+	 * https://en.wikipedia.org/wiki/Bessel_function
+	 *	("Bessel functions of the first kind")
+	 *
+	 * The sum suffers cancellation for large x; the caller
+	 * must supply sufficient extra precision in 'obits'.
+	 * Sets 'err' so that the absolute error is below 2**err
+	 */
+    {
+	real	x_2 = x / 2;
+	real	x_2_2 = x_2 * x_2;
+	real	t = x_2 ** n / n!;
+	real	val = imprecise(0, obits);
+	real	vabs = imprecise(0, obits);
+	int	lim = exponent(t) - obits;
+	int	k;
+
+	for (k = 0; ; ) {
+	    val += t;
+	    vabs += abs(t);
+	    if (exponent(t) > lim + obits)
+		lim = exponent(t) - obits;
+	    if (k > x_2 && exponent(t) < lim)
+		break;
+	    k++;
+	    t = t * -x_2_2 / (k * (n + k));
+	}
+
+	/*
+	 * Each term carries fewer than 3k + 2n rounding errors and the
+	 * sum k more, all relative to the sum of absolute values
+	 */
+	*err = exponent(vabs * (4 * k + 2 * n + 8)) - obits + 1;
+	return val;
+    }
+
+    int _bessel_shortfall(real v, int err, int bits)
+	/*
+	 * Returns how many more bits of working precision are needed
+	 * for 'v', whose absolute error is below 2**err, to be good to
+	 * 'bits' bits, or 0 if it already is
+	 */
+    {
+	if (v == 0)
+	    return bits;
+	return max(bits + 2 - (exponent(v) - err), 0);
+    }
+
     public real jn(int n, real x)
 	/*
 	 * Returns Bessel function of the first kind, order 'n' of 'x'
 	 */
     {
+	/*
+	 * J-n(x) = (-1)**n Jn(x)
+	 * https://en.wikipedia.org/wiki/Bessel_function
+	 */
 	if (n < 0) {
 	    real v = jn(-n, x);
 	    if (n % 2 == 1)
@@ -117,31 +282,41 @@ extend namespace Math {
 
 	x = imprecise(x);
 	int bits = precision(x);
-	int obits = bits + 64;
 
-	x = imprecise(x, obits);
-	real val = imprecise(0, obits);
-
-	int	s = 1;
-
-	int	mf = 1;
-	int	mnf = n!;
-	real	x_2 = x/2;
-	real	x_2_pow = x_2 ** n;
-	real	x_2_2 = x_2 ** 2;
-
-	for (int m = 0; ;) {
-	    real a = (s / (mf * mnf)) * x_2_pow;
-	    val += a;
-	    if (exponent(val) - exponent(a) > obits)
-		break;
-	    s = s > 0 ? -1 : 1;
-	    m++;
-	    mf *= m;
-	    mnf *= (m+n);
-	    x_2_pow *= x_2_2;
+	if (x == 0)
+	    return imprecise(n == 0 ? 1 : 0, bits);
+	/* Jn(-x) = (-1)**n Jn(x), the series terms are x**(n+2k) */
+	if (x < 0) {
+	    real v = jn(n, -x);
+	    if (n % 2 == 1)
+		v = -v;
+	    return v;
 	}
-	return imprecise(val, bits);
+
+	/*
+	 * Start with 32 bits beyond the target and retry with more
+	 * when the error bound shows the result falls short, as it
+	 * does near a zero of Jn
+	 */
+	int obits = bits + 32;
+
+	for (;;) {
+	    real v;
+	    int	err;
+
+	    /* Asymptotic series reaches about e**(-2x); try it for large x */
+	    if (!(x > obits * 0.3 && 4 * n * n < 8 * x &&
+		  _jn_asymptotic(n, imprecise(x, obits), obits, &v, &err))) {
+		/* Power series loses about x * log2(e) bits to cancellation */
+		int sbits = obits + ceil(x * log2_e);
+		v = _jn_series(n, imprecise(x, sbits), sbits, &err);
+	    }
+
+	    int more = _bessel_shortfall(v, err, bits);
+	    if (more == 0)
+		return imprecise(v, bits);
+	    obits += more + 8;
+	}
     }
 
     public real j0(real x)

@@ -30,6 +30,12 @@ void check_sin_cos()
 			errors++;
 		}
 	}
+	printf("Checking asin and acos are correctly rounded\n");
+	real[*] ratios = {
+		-1, -0.9999999, -0.7071, -1e-10, 0.3, 0.7071, 0.9999999,
+		1 - 2**-60, 1 };
+	check_rounded("asin", asin, ratios);
+	check_rounded("acos", acos, ratios);
 	printf("Checking asin and acos\n");
 	for (int i = 0; i < dim(asin_acos_table); i++) {
 		real	ratio = asin_acos_table[i].ratio;

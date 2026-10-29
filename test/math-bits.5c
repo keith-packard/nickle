@@ -70,6 +70,30 @@ void check_rounded(string op, real(real) f, real[*] inputs)
 	}
 }
 
+/*
+ * Check that two-argument f is correctly rounded, as check_rounded
+ */
+void check_rounded2(string op, real(real, real) f, real[*] as, real[*] bs)
+{
+	void check_one(real a, real b, int prec) {
+		int	hprec = 2 * prec + 128;
+		real	v = f(a, b);
+		real	ref = f(imprecise(a, hprec), imprecise(b, hprec));
+
+		if (v != imprecise(ref, prec)) {
+			printf("check failed %s(%.-g, %.-g) at prec %d not correctly rounded (was %.-g, should be %.-g)\n",
+			       op, a, b, prec, v, imprecise(ref, prec));
+			errors++;
+		}
+	}
+
+	for (int prec = 24; prec <= 344; prec += 64)
+		for (int i = 0; i < dim(as); i++)
+			for (int j = 0; j < dim(bs); j++)
+				check_one(imprecise(as[i], prec),
+					  imprecise(bs[j], prec), prec);
+}
+
 void check(string op, real(real) f, real input, real correct)
 {
 	real	value = checked(f, input);

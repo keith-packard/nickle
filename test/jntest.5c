@@ -17,8 +17,45 @@ void check_jn()
 	real	in = jn_table[i].in;
 	real	jn_value = jn_table[i].jn;
 	check2("jn", jn_fixed, n, in, jn_value);
+	if (n == 0)
+	    check("j0", j0, in, jn_value);
+	if (n == 1)
+	    check("j1", j1, in, jn_value);
+    }
+}
+
+void check_jn_zeros()
+{
+    /*
+     * Find zeros with Newton's method, using
+     * Jn'(x) = Jn-1(x) - (n/x) Jn(x), round them to 256 bits
+     * and check that jn retains full precision there
+     */
+    real zero(int n, real x0) {
+	real	z = imprecise(x0, 1024);
+	for (int i = 0; i < 10; i++)
+	    z -= jn(n, z) / (jn(n - 1, z) - n / z * jn(n, z));
+	return z;
+    }
+
+    printf("Checking jn near zeros\n");
+    int[] ns = { 0, 1, 2, 0, 1 };
+    real[] x0s = { 2.4048, 3.8317, 5.1356, 200.0545, 252.1113 };
+    for (int i = 0; i < dim(ns); i++) {
+	real	x = imprecise(zero(ns[i], x0s[i]), 256);
+	real	v = jn(ns[i], x);
+	real	ref = jn(ns[i], imprecise(x, 1024));
+	real	error = abs((v - ref) / ref);
+	real	limit = 2 ** -(256 - 2);
+
+	if (error > limit) {
+	    printf("check failed jn(%d, %.-g) near zero error %g limit %g\n",
+		   ns[i], x, error, limit);
+	    errors++;
+	}
     }
 }
 
 check_jn();
+check_jn_zeros();
 exit(errors);

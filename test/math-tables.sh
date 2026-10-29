@@ -184,7 +184,7 @@ echo "jn_t[] jn_table = {"
 n="-5"
 r="-1000"
 while [ "$n" -le 5 -a $make_jn = "y" ]; do
-    exp=`echo "j($n, $r / 100)" | bc -l "$dir"/math-funcs.bc | fmt -w 500 | tr -d '\\\n ' `
+    exp=`echo "q($n, $r / 100)" | bc -l "$dir"/math-funcs.bc | fmt -w 500 | tr -d '\\\n ' `
     echo "    { .n = $n, .in = $r / 100.0,"
     echo "      .jn = $exp },"
     r=`expr "$r" + "$inc" '*' 4`
@@ -193,5 +193,22 @@ while [ "$n" -le 5 -a $make_jn = "y" ]; do
 	r=-1000
     fi
 done
+
+# Cases covering each path in Math::jn at the 333-bit test
+# precision: x == 0; heavy cancellation in the power series;
+# asymptotic series tried but diverging (about 119 < x < 139);
+# asymptotic series skipped because n is too large; asymptotic
+# series used, including negative n and negative x
+
+if [ $make_jn = "y" ]; then
+    for p in 0:0 3:0 2:60.25 0:125.5 4:130.25 20:150.5 0:150.5 1:333.25 \
+	     5:500.25 -2:750.5 1:-200.75 3:-1000.5 1:2000.25; do
+	n=${p%%:*}
+	x=${p#*:}
+	exp=`echo "q($n, $x)" | bc -l "$dir"/math-funcs.bc | fmt -w 500 | tr -d '\\\n ' `
+	echo "    { .n = $n, .in = $x,"
+	echo "      .jn = $exp },"
+    done
+fi
 echo "};"
 

@@ -68,3 +68,24 @@ define u(y, x) {
 	}
 	return (w);
 }
+
+/*
+ * Bessel function of the first kind, order n, using bc's j().
+ * Its power series loses about x/2.3 digits to cancellation, so
+ * add that much scale
+ *
+ * https://en.wikipedia.org/wiki/Bessel_function
+ *	("Bessel functions of the first kind")
+ */
+define q(n, x) {
+	auto o, v, w;
+	o = scale;
+	scale = 0;
+	w = x;
+	if (w < 0)
+		w = -w;
+	scale = o + 20 + w / 2;
+	v = j(n, x);
+	scale = o;
+	return (v / 1);
+}

@@ -26,4 +26,30 @@ void function int_test (int amin, int amax, int bmin, int bmax)
 	    int_random (a, b);
 }
 
+exception bad_width (int n, int w);
+
+void function width_check (int n)
+{
+    int	    w = 0;
+
+    for (int m = abs (n); m != 0; m >>= 1)
+	w++;
+    if (bit_width (n) != w)
+	raise bad_width (n, bit_width (n));
+    /* numerator returns its value as a big integer even when small */
+    if (n % 3 != 0 && bit_width (numerator (n / 3)) != w)
+	raise bad_width (n, bit_width (numerator (n / 3)));
+}
+
+void function width_test ()
+{
+    width_check (0);
+    for (int k = 0; k <= 300; k++)
+	for (int d = -1; d <= 1; d++) {
+	    width_check (2**k + d);
+	    width_check (-(2**k + d));
+	}
+}
+
 int_test(2,2000,2,2000)
+width_test ()

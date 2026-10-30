@@ -1,0 +1,61 @@
+/*
+ * Nickle test suite
+ *
+ * complex tan and tanh test
+ */
+library "math-bits.5c"
+
+void check_complex_tan()
+{
+	printf("Checking complex tan and tanh\n");
+
+	/*
+	 * Each part at 'prec' must be within a few ulps, relative to
+	 * that part, of the result at much higher precision, and
+	 * the tiny part must have the sign of sin of twice the angle
+	 */
+	void check_one(string op, complex(complex) f, complex z, real angle,
+		       bool angle_is_real, int prec) {
+		complex	v = f(imprecise(z, prec));
+		complex	ref = f(imprecise(z, 2 * prec + 128));
+		real[2]	got = { Complex::creal(v), Complex::cimag(v) };
+		real[2]	want = { Complex::creal(ref),
+				   Complex::cimag(ref) };
+
+		for (int k = 0; k < 2; k++) {
+			real	bound = abs(want[k]) * 2 ** (4 - prec);
+
+			if (abs(got[k] - want[k]) > bound) {
+				printf("check failed %s(%.-g) at prec %d part %d (was %.-g, should be %.-g)\n",
+				       op, z, prec, k, got[k], want[k]);
+				errors++;
+			}
+		}
+		real	tiny = angle_is_real ? got[0] : got[1];
+		int	hprec = 2 * prec + 128;
+		real	want_sin = sin(imprecise(2 * angle, hprec));
+
+		if (sign(tiny) != sign(want_sin)) {
+			printf("check failed %s(%.-g) at prec %d has the wrong sign\n",
+			       op, z, prec);
+			errors++;
+		}
+	}
+
+	real[*]	angles = { 0.3, -1.25, 2 };
+	real[*]	sizes = { 0.5, -20.25, 300.5, -1523.25, 8000.75 };
+	int[*]	precs = { 64, 256, 1024 };
+
+	for (int p = 0; p < dim(precs); p++)
+		for (int i = 0; i < dim(angles); i++)
+			for (int j = 0; j < dim(sizes); j++) {
+				real	a = angles[i], b = sizes[j];
+				check_one("tan", Complex::tan, Complex::new(a, b), a, true,
+					  precs[p]);
+				check_one("tanh", Complex::tanh, Complex::new(b, a), a, false,
+					  precs[p]);
+			}
+}
+
+check_complex_tan();
+exit(errors);

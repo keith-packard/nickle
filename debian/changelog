@@ -1,3 +1,11 @@
+nickle (2.110) unstable; urgency=medium
+
+  * Add Math::ldexp
+  * Improve performance of exp, y0, y1 and yn.
+  * Fix bit_width for big integers
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 29 Oct 2026 17:57:46 -0700
+
 nickle (2.109) unstable; urgency=medium
 
   * Add y0/y1/yn functions

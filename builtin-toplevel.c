@@ -700,7 +700,11 @@ do_bit_width (Value av)
 	av = NewInt (IntWidth (ValueInt(av)));
 	break;
     case rep_integer:
-	av = NewInt (NaturalWidth (IntegerMag(av)));
+	/* NaturalWidth is the position of the top bit, one less than the width */
+	if (NaturalZero (IntegerMag(av)))
+	    av = NewInt (0);
+	else
+	    av = NewInt (NaturalWidth (IntegerMag(av)) + 1);
 	break;
     default:
 	RaiseStandardException (exception_invalid_argument, 3,

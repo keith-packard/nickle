@@ -120,7 +120,16 @@ extend namespace Complex {
 
     protected complex tan(complex z)
     {
-	return sin(z) / cos(z);
+	/*
+	 * tan(x+iy) = (sin 2x + i sinh 2y) / (cos 2x + cosh 2y), avoiding
+	 * the cancellation in sin(z) / cos(z), which loses about
+	 * 2|y| log2(e) bits of the real part
+	 */
+	real	x2 = 2 * creal(z);
+	real	y2 = 2 * cimag(z);
+	real	d = Math::cos(x2) + Math::cosh(y2);
+
+	return new(Math::sin(x2) / d, Math::sinh(y2) / d);
     }
 
     protected complex cosh(complex z)
@@ -137,7 +146,15 @@ extend namespace Complex {
 
     protected complex tanh(complex z)
     {
-	return sinh(z) / cosh(z);
+	/*
+	 * tanh(x+iy) = (sinh 2x + i sin 2y) / (cosh 2x + cos 2y), avoiding
+	 * the cancellation in sinh(z) / cosh(z)
+	 */
+	real	x2 = 2 * creal(z);
+	real	y2 = 2 * cimag(z);
+	real	d = Math::cosh(x2) + Math::cos(y2);
+
+	return new(Math::sinh(x2) / d, Math::sin(y2) / d);
     }
 
     protected complex atanh(complex z)

@@ -803,14 +803,30 @@ scan_number(char *s, char needle, int *lenp)
     return s;
 }
 
+/* Count the digits that atov will convert */
 static int
-number_len(char *s)
+number_len(char *s, int base)
 {
     int  len = 0;
     char c;
-    while ((c = *s++))
-        if (c != '_')
-            len++;
+    int  i;
+
+    for (;;) {
+        c = *s++;
+        if ('0' <= c && c <= '9')
+            i = c - '0';
+        else if ('a' <= c && c <= 'z')
+            i = c - 'a' + 10;
+        else if ('A' <= c && c <= 'Z')
+            i = c - 'A' + 10;
+        else if (c == '_')
+            continue;
+        else
+            break;
+        if (i >= base)
+            break;
+        len++;
+    }
     return len;
 }
 
@@ -899,7 +915,7 @@ aetov(char *s)
             exp_part++;
         }
     } else if (frac_len < 0 && frac_part)
-        frac_len = number_len(frac_part);
+        frac_len = number_len(frac_part, base);
     v = atov(int_part, base);
     if (frac_part) {
         v = Plus(v, Divide(atov(frac_part, base), Pow(NewInt(base), NewInt(frac_len))));

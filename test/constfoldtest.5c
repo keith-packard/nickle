@@ -1,0 +1,49 @@
+/*
+ * Nickle test suite
+ *
+ * Constant operations that raise exceptions
+ *
+ * Folding a constant operation that raised an exception made the
+ * enclosing statement a compile error, so 'try' couldn't catch the
+ * exception and a function containing the operation failed to compile
+ * even when the operation never ran. Such operations now raise at run
+ * time, as they do with variable operands.
+ */
+
+exception not_raised (string what);
+exception bad_args (string what, real a, real b);
+
+try {
+    int x = 1 / 0;
+    raise not_raised ("1 / 0");
+} catch divide_by_zero (real a, real b) {
+    if (a != 1 || b != 0)
+	raise bad_args ("1 / 0", a, b);
+}
+
+try {
+    int x = 7 // 0;
+    raise not_raised ("7 // 0");
+} catch divide_by_zero (real a, real b) {
+    if (a != 7 || b != 0)
+	raise bad_args ("7 // 0", a, b);
+}
+
+try {
+    int x = 7 % 0;
+    raise not_raised ("7 % 0");
+} catch divide_by_zero (real a, real b) {
+}
+
+try {
+    int x = 1 << (1/2);
+    raise not_raised ("1 << (1/2)");
+} catch invalid_binop_values (string m, poly a, poly b) {
+}
+
+/* Never called, so it never raises */
+int function never () { return 1 / 0; }
+
+/* Constants that don't raise still fold to the same values */
+if (2 + 3 != 5 || -(7/2) != -7/2 || (1 << 10) != 1024 || !(3 >= 2))
+    raise not_raised ("folded values");

@@ -18,6 +18,7 @@ tests = [
   'powtest.5c',
   'complexfunctest.5c',
   'exceptionargstest.5c',
+  'constfoldtest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

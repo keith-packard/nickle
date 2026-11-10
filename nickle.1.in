@@ -373,9 +373,11 @@ many computations cannot be carried out exactly as rational
 numbers, Nickle implements non-precise arithmetic using its
 own machine-independent representation for floating point
 numbers.  The builtin function imprecise(n) generates
-a real number with 256 bits of precision from the number
-n, while imprecise(n,p) generates a real number with p
-bits of precision.
+a real number from the number n with the precision in the
+global float_precision, which starts at 256 bits; values of
+float_precision below 2 select 256. imprecise(n,p) generates
+a real number with p bits of precision. A precision too large
+to represent raises out_of_memory.
 .IP "T[]"
 An array of type T, of one or more dimensions.  There are no
 zero-dimensional arrays in Nickle.

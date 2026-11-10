@@ -650,7 +650,7 @@ typedef struct _float {
     BaseValue base;
     Fpart    *mant;
     Fpart    *exp;
-    unsigned  prec;
+    ptrdiff_t prec;
 } Float;
 
 typedef struct _complex {
@@ -1203,30 +1203,34 @@ RefConstant(Value r)
     return BoxConstant(r->ref.box);
 }
 
-Value    NewInteger(Sign sign, Natural *mag);
-Value    NewIntInteger(int value);
-Value    NewSignedDigitInteger(signed_digit d);
-Value    NewPtrdiffInteger(ptrdiff_t i);
-Value    NewRational(Sign sign, Natural *num, Natural *den);
-Value    NewIntRational(int value);
-Value    NewIntegerRational(Integer *);
-Value    NewFloat(Fpart *mant, Fpart *exp, unsigned prec);
-Value    NewIntFloat(int i, unsigned prec);
-Value    NewIntegerFloat(Integer *i, unsigned prec);
-Value    NewNaturalFloat(Sign sign, Natural *n, unsigned prec);
-Value    NewRationalFloat(Rational *r, unsigned prec);
-Value    NewValueFloat(Value av, unsigned prec);
-Value    FloatLdexp(Value av, Value ev);
-Value    NewDoubleFloat(double d);
-Value    NewComplex(Value r, Value i);
-Value    NewValueComplex(Value r, Value i);
-Value    NewContinuation(ContinuationPtr continuation, InstPtr pc);
-Value    NewForeign(const char *id, void *data, void (*mark)(void *data), void (*free)(void *data));
+Value     NewInteger(Sign sign, Natural *mag);
+Value     NewIntInteger(int value);
+Value     NewSignedDigitInteger(signed_digit d);
+Value     NewPtrdiffInteger(ptrdiff_t i);
+Value     NewRational(Sign sign, Natural *num, Natural *den);
+Value     NewIntRational(int value);
+Value     NewIntegerRational(Integer *);
+Value     NewFloat(Fpart *mant, Fpart *exp, ptrdiff_t prec);
+Value     NewIntFloat(int i, ptrdiff_t prec);
+Value     NewIntegerFloat(Integer *i, ptrdiff_t prec);
+Value     NewNaturalFloat(Sign sign, Natural *n, ptrdiff_t prec);
+Value     NewRationalFloat(Rational *r, ptrdiff_t prec);
+Value     NewValueFloat(Value av, ptrdiff_t prec);
+Bool      FloatPrecisionPart(Value v, ptrdiff_t *precp, char *error);
+ptrdiff_t FloatDefaultPrecision(void);
+Value     FloatLdexp(Value av, Value ev);
+Value     NewDoubleFloat(double d);
+Value     NewComplex(Value r, Value i);
+Value     NewValueComplex(Value r, Value i);
+Value     NewContinuation(ContinuationPtr continuation, InstPtr pc);
+Value NewForeign(const char *id, void *data, void (*mark)(void *data), void (*free)(void *data));
 
-unsigned FpartLength(Fpart *a);
+ptrdiff_t FpartLength(Fpart *a);
 
 #define DEFAULT_FLOAT_PREC 256
-#define REF_CACHE_SIZE     1031
+/* The largest float precision, the bits in the largest natural */
+#define FLOAT_MAX_PREC (NATURAL_MAX_LENGTH * LBASE2)
+#define REF_CACHE_SIZE 1031
 
 extern DataCachePtr refCache;
 

@@ -105,6 +105,13 @@ NewValueFpart(Value v)
 }
 
 static Fpart *
+NewPtrdiffFpart(ptrdiff_t i)
+{
+    ENTER();
+    RETURN(NewValueFpart(NewPtrdiffInteger(i)));
+}
+
+static Fpart *
 FpartAdd(Fpart *a, Fpart *b, Bool negate)
 {
     ENTER();
@@ -169,30 +176,30 @@ FpartDivide(Fpart *a, Fpart *b, Natural **remp)
 }
 
 static Fpart *
-FpartRsl(Fpart *a, int shift)
+FpartRsl(Fpart *a, ptrdiff_t shift)
 {
     ENTER();
     RETURN(NewFpart(a->sign, NaturalRsl(a->mag, shift)));
 }
 
 static Fpart *
-FpartLsl(Fpart *a, int shift)
+FpartLsl(Fpart *a, ptrdiff_t shift)
 {
     ENTER();
     RETURN(NewFpart(a->sign, NaturalLsl(a->mag, shift)));
 }
 
 static int
-FpartRound(Fpart *a, int shift)
+FpartRound(Fpart *a, ptrdiff_t shift)
 {
 
     if (!shift)
         return 0;
 
-    Natural *n = a->mag;
-    int      l = n->length;
-    int      round = 0;
-    digit   *d = NaturalDigits(n);
+    Natural  *n = a->mag;
+    ptrdiff_t l = n->length;
+    int       round = 0;
+    digit    *d = NaturalDigits(n);
 
     while (l && shift > DIGITBITS) {
         if (*d++ != 0)
@@ -209,7 +216,7 @@ FpartRound(Fpart *a, int shift)
             last <<= 1;
             shift = 0;
         } else {
-            if (last & ((1 << shift) - 1))
+            if (last & (((digit)1 << shift) - 1))
                 round |= 1;
         }
         round |= (last >> shift) & 3;
@@ -254,11 +261,11 @@ FpartZero(Fpart *a)
     return NaturalZero(a->mag);
 }
 
-unsigned
+ptrdiff_t
 FpartLength(Fpart *a)
 {
-    unsigned bits;
-    digit    top;
+    ptrdiff_t bits;
+    digit     top;
 
     if (a->mag->length == 0)
         return 0;
@@ -272,12 +279,12 @@ FpartLength(Fpart *a)
     return bits;
 }
 
-static unsigned
+static ptrdiff_t
 FpartZeros(Fpart *a)
 {
-    int   i;
-    int   zeros = 0;
-    digit top;
+    ptrdiff_t i;
+    ptrdiff_t zeros = 0;
+    digit     top;
 
     if (a->mag->length == 0)
         return 0;
@@ -292,6 +299,18 @@ FpartZeros(Fpart *a)
         top >>= 1;
     }
     return zeros;
+}
+
+/*
+ * Store 'a' in '*p' and return True when it fits a ptrdiff_t
+ */
+static Bool
+FpartToPtrdiff(Fpart *a, ptrdiff_t *p)
+{
+    ENTER();
+    Bool ret = ValueToPtrdiff(NewInteger(a->sign, a->mag), p);
+    EXIT();
+    return ret;
 }
 
 static Fpart *
@@ -319,14 +338,14 @@ static Value
 FloatAdd(Value av, Value bv, int expandOk, Bool negate)
 {
     ENTER();
-    Value    ret;
-    Float   *a = &av->floats, *b = &bv->floats;
-    Fpart   *dist;
-    Fpart   *amant, *bmant, *mant;
-    Fpart   *exp;
-    int      d;
-    unsigned prec;
-    unsigned alen, blen;
+    Value     ret;
+    Float    *a = &av->floats, *b = &bv->floats;
+    Fpart    *dist;
+    Fpart    *amant, *bmant, *mant;
+    Fpart    *exp;
+    ptrdiff_t d;
+    ptrdiff_t prec;
+    ptrdiff_t alen, blen;
 
     if (FpartZero(a->mant)) {
         if (negate)
@@ -399,10 +418,10 @@ static Value
 FloatTimes(Value av, Value bv, int expandOk)
 {
     ENTER();
-    Float   *a = &av->floats, *b = &bv->floats;
-    Fpart   *mant;
-    Fpart   *exp;
-    unsigned prec;
+    Float    *a = &av->floats, *b = &bv->floats;
+    Fpart    *mant;
+    Fpart    *exp;
+    ptrdiff_t prec;
 
     (void)expandOk;
     mant = FpartMult(a->mant, b->mant);
@@ -418,13 +437,13 @@ static Value
 FloatDivide(Value av, Value bv, int expandOk)
 {
     ENTER();
-    Float   *a = &av->floats, *b = &bv->floats;
-    Fpart   *mant;
-    Fpart   *amant = a->mant, *bmant = b->mant;
-    Fpart   *exp;
-    unsigned prec;
-    unsigned iprec, alen;
-    Natural *rem;
+    Float    *a = &av->floats, *b = &bv->floats;
+    Fpart    *mant;
+    Fpart    *amant = a->mant, *bmant = b->mant;
+    Fpart    *exp;
+    ptrdiff_t prec;
+    ptrdiff_t iprec, alen;
+    Natural  *rem;
 
     (void)expandOk;
     if (FpartZero(b->mant)) {
@@ -443,7 +462,7 @@ FloatDivide(Value av, Value bv, int expandOk)
     alen = FpartLength(amant);
     if (alen < iprec) {
         amant = FpartLsl(amant, iprec - alen);
-        exp = FpartAdd(NewIntFpart(iprec - alen), exp, False);
+        exp = FpartAdd(NewPtrdiffFpart(iprec - alen), exp, False);
     }
     exp = FpartAdd(a->exp, exp, True);
     DebugFp("amant ", amant);
@@ -525,13 +544,14 @@ static Value
 FloatInteger(Value av)
 {
     ENTER();
-    Float   *a = &av->floats;
-    Natural *mag;
-    int      dist;
+    Float    *a = &av->floats;
+    Natural  *mag;
+    ptrdiff_t dist;
 
     if (a->exp->sign == Positive) {
+        if (!NaturalBitsOk(a->exp->mag) || !FpartToPtrdiff(a->exp, &dist))
+            RETURN(Void);
         mag = a->mant->mag;
-        dist = NaturalToInt(a->exp->mag);
         if (dist)
             mag = NaturalLsl(mag, dist);
         av = Reduce(NewInteger(a->mant->sign, mag));
@@ -546,20 +566,20 @@ static Value
 FloatFloor(Value av, int expandOk)
 {
     ENTER();
-    Float *a = &av->floats;
-    Fpart *mant;
-    Fpart *exp;
-    int    d;
+    Float    *a = &av->floats;
+    Fpart    *mant;
+    Fpart    *exp;
+    ptrdiff_t d;
 
     (void)expandOk;
     if (a->exp->sign == Positive)
         RETURN(FloatInteger(av));
-    if (NaturalLess(NewNatural(a->prec), a->exp->mag)) {
+    if (!FpartToPtrdiff(a->exp, &d) || -d > a->prec) {
         if (a->mant->sign == Negative)
             RETURN(NewInt(-1));
         RETURN(Zero);
     }
-    d = NaturalToInt(a->exp->mag);
+    d = -d;
     mant = FpartRsl(a->mant, d);
     if (d && a->mant->sign == Negative) {
         mant = FpartAdd(mant, one_fpart, True);
@@ -573,20 +593,20 @@ static Value
 FloatCeil(Value av, int expandOk)
 {
     ENTER();
-    Float *a = &av->floats;
-    Fpart *mant;
-    Fpart *exp;
-    int    d;
+    Float    *a = &av->floats;
+    Fpart    *mant;
+    Fpart    *exp;
+    ptrdiff_t d;
 
     (void)expandOk;
     if (a->exp->sign == Positive)
         RETURN(FloatInteger(av));
-    if (NaturalLess(NewNatural(a->prec), a->exp->mag)) {
+    if (!FpartToPtrdiff(a->exp, &d) || -d > a->prec) {
         if (a->mant->sign == Positive && !NaturalZero(a->mant->mag))
             RETURN(One);
         RETURN(Zero);
     }
-    d = NaturalToInt(a->exp->mag);
+    d = -d;
     mant = FpartRsl(a->mant, d);
     if (d && a->mant->sign == Positive) {
         mant = FpartAdd(mant, one_fpart, False);
@@ -600,20 +620,13 @@ static Value
 FloatPromote(Value av, Value bv)
 {
     ENTER();
-    int prec;
+    ptrdiff_t prec;
 
     if (!ValueIsFloat(av) && !ValueIsComplex(av)) {
-        prec = DEFAULT_FLOAT_PREC;
-        if (bv && ValueIsFloat(bv)) {
+        if (bv && ValueIsFloat(bv))
             prec = bv->floats.prec;
-        } else {
-            Value float_prec = lookupVar(0, "float_precision");
-            if (float_prec) {
-                int default_prec = ValueInt(float_prec);
-                if (default_prec > 1)
-                    prec = default_prec;
-            }
-        }
+        else
+            prec = FloatDefaultPrecision();
         av = NewValueFloat(av, prec);
     }
     RETURN(av);
@@ -664,7 +677,7 @@ NaturalBitSet (Natural *n, int i)
 #endif
 
 static Value
-FloatExp(Value exp2, Value *ratio, int ibase, unsigned prec)
+FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
 {
     ENTER();
     double dscale;
@@ -741,7 +754,7 @@ FloatExp(Value exp2, Value *ratio, int ibase, unsigned prec)
 }
 
 static Bool
-FloatPrint(Value f, Value fv, char format, int base, int width, int prec, int fill)
+FloatPrint(Value f, Value fv, char format, int base, int width, int print_prec, int fill)
 {
     ENTER();
     Float    *a = &fv->floats;
@@ -755,11 +768,13 @@ FloatPrint(Value f, Value fv, char format, int base, int width, int prec, int fi
     Value     m;
     Value     int_part;
     Value     frac_part;
-    unsigned  length;
-    int       orig_prec = prec;
-    int       mant_prec;
-    int       frac_prec;
-    int       dig_max;
+    ptrdiff_t length;
+    ptrdiff_t prec = print_prec;
+    int       orig_prec = print_prec;
+    ptrdiff_t mant_prec;
+    ptrdiff_t frac_prec;
+    ptrdiff_t dig_max;
+    ptrdiff_t exp_value;
     ptrdiff_t exp_width;
     ptrdiff_t int_width;
     ptrdiff_t frac_width;
@@ -799,17 +814,17 @@ FloatPrint(Value f, Value fv, char format, int base, int width, int prec, int fi
         exp_scale = base;
     }
 
-    mant_prec = ceil(a->prec * log(2) / log(base)) + 1;
+    mant_prec = (ptrdiff_t)ceil((double)a->prec * log(2) / log(base)) + 1;
 
-    expbase = FloatExp(Plus(NewInt(length), NewInteger(a->exp->sign, a->exp->mag)), &ratio,
-                       exp_scale, a->prec);
+    expbase = FloatExp(Plus(NewPtrdiffInteger(length), NewInteger(a->exp->sign, a->exp->mag)),
+                       &ratio, exp_scale, a->prec);
     if (aborting) {
         EXIT();
         return False;
     }
     DPrintV("expbase", expbase);
     DPrintF("ratio  ", &ratio->floats);
-    down = Pow(NewInt(2), NewInt((int)length));
+    down = Pow(NewInt(2), NewPtrdiffInteger(length));
     DPrintV("down   ", down);
     fratio = Divide(ratio, down);
     DPrintF("fratio ", &fratio->floats);
@@ -840,7 +855,8 @@ try_again_e:
         break;
     default:
         dig_max = prec;
-        if ((exp->sign == Positive && !NaturalLess(exp->mag, NewNatural(dig_max)))
+        if ((exp->sign == Positive && dig_max >= 0
+             && (!FpartToPtrdiff(exp, &exp_value) || exp_value >= dig_max))
             || (exp->sign == Negative && NaturalLess(NewNatural(4), exp->mag))) {
             format = 'e';
         } else {
@@ -896,7 +912,7 @@ try_again_f:
     if (negative)
         int_width++;
 
-    int_buffer = malloc(int_width + 1);
+    int_buffer = malloc((size_t)int_width + 1);
     int_string = NaturalSprint(int_buffer + int_width + 1, int_n, base, &int_width);
 
     if (aborting) {
@@ -945,8 +961,9 @@ try_again_f:
      * last digit to be printed.
      */
     if (!rounded) {
-        int   frac_digits = frac_width == 0 ? 0 : frac_width - 1;
-        Value round = Times(Divide(One, NewInt(2)), Pow(NewInt(base), NewInt(-frac_digits)));
+        ptrdiff_t frac_digits = frac_width == 0 ? 0 : frac_width - 1;
+        Value     round
+            = Times(Divide(One, NewInt(2)), Pow(NewInt(base), NewPtrdiffInteger(-frac_digits)));
         frac_part = Plus(frac_part, round);
 
         /*
@@ -966,7 +983,7 @@ try_again_f:
     frac_buffer = 0;
     frac_string = 0;
     if (frac_width)
-        frac_part = Floor(Times(frac_part, Pow(NewInt(base), NewInt(frac_width - 1))));
+        frac_part = Floor(Times(frac_part, Pow(NewInt(base), NewPtrdiffInteger(frac_width - 1))));
     if (frac_width && (!Zerop(frac_part) || orig_prec > 0)) {
         ptrdiff_t frac_wrote;
 
@@ -975,7 +992,7 @@ try_again_f:
         else
             frac_n = NewNatural(ValueInt(frac_part));
 
-        frac_buffer = malloc(frac_width + 1);
+        frac_buffer = malloc((size_t)frac_width + 1);
         frac_string = NaturalSprint(frac_buffer + frac_width + 1, frac_n, base, &frac_wrote);
         if (aborting) {
             EXIT();
@@ -1061,12 +1078,12 @@ ValueRep FloatRep = {
 };
 
 Value
-NewFloat(Fpart *mant, Fpart *exp, unsigned prec)
+NewFloat(Fpart *mant, Fpart *exp, ptrdiff_t prec)
 {
     ENTER();
-    unsigned bits, dist;
-    Value    ret;
-    int      round;
+    ptrdiff_t bits, dist;
+    Value     ret;
+    int       round;
 
     DebugFp("New mant", mant);
     DebugFp("New exp ", exp);
@@ -1076,7 +1093,7 @@ NewFloat(Fpart *mant, Fpart *exp, unsigned prec)
     bits = FpartLength(mant);
     if (bits > prec) {
         dist = bits - prec;
-        exp = FpartAdd(exp, NewIntFpart(dist), False);
+        exp = FpartAdd(exp, NewPtrdiffFpart(dist), False);
         round = FpartRound(mant, dist);
         mant = FpartRsl(mant, dist);
         if (round & 2) {
@@ -1094,7 +1111,7 @@ NewFloat(Fpart *mant, Fpart *exp, unsigned prec)
      */
     dist = FpartZeros(mant);
     if (dist) {
-        exp = FpartAdd(exp, NewIntFpart(dist), False);
+        exp = FpartAdd(exp, NewPtrdiffFpart(dist), False);
         mant = FpartRsl(mant, dist);
     }
     bits = FpartLength(mant);
@@ -1110,14 +1127,14 @@ NewFloat(Fpart *mant, Fpart *exp, unsigned prec)
 }
 
 Value
-NewIntFloat(int i, unsigned prec)
+NewIntFloat(int i, ptrdiff_t prec)
 {
     ENTER();
     RETURN(NewFloat(NewIntFpart(i), zero_fpart, prec));
 }
 
 Value
-NewIntegerFloat(Integer *i, unsigned prec)
+NewIntegerFloat(Integer *i, ptrdiff_t prec)
 {
     ENTER();
     Fpart *mant;
@@ -1127,7 +1144,7 @@ NewIntegerFloat(Integer *i, unsigned prec)
 }
 
 Value
-NewNaturalFloat(Sign sign, Natural *n, unsigned prec)
+NewNaturalFloat(Sign sign, Natural *n, ptrdiff_t prec)
 {
     ENTER();
     Fpart *mant;
@@ -1137,15 +1154,15 @@ NewNaturalFloat(Sign sign, Natural *n, unsigned prec)
 }
 
 Value
-NewRationalFloat(Rational *r, unsigned prec)
+NewRationalFloat(Rational *r, ptrdiff_t prec)
 {
     ENTER();
-    Fpart   *num = NewFpart(r->sign, r->num);
-    Fpart   *den = NewFpart(Positive, r->den);
-    Fpart   *mant;
-    Fpart   *exp = zero_fpart;
-    unsigned iprec, nlen;
-    Natural *rem;
+    Fpart    *num = NewFpart(r->sign, r->num);
+    Fpart    *den = NewFpart(Positive, r->den);
+    Fpart    *mant;
+    Fpart    *exp = zero_fpart;
+    ptrdiff_t iprec, nlen;
+    Natural  *rem;
 
     /*
      * Divide the exact numerator by the exact denominator, as
@@ -1156,7 +1173,7 @@ NewRationalFloat(Rational *r, unsigned prec)
     nlen = FpartLength(num);
     if (nlen < iprec) {
         num = FpartLsl(num, iprec - nlen);
-        exp = FpartAdd(exp, NewIntFpart(iprec - nlen), True);
+        exp = FpartAdd(exp, NewPtrdiffFpart(iprec - nlen), True);
     }
     mant = FpartDivide(num, den, &rem);
     /* set the low guard bit if there was a remainder */
@@ -1203,8 +1220,54 @@ FloatLdexp(Value av, Value ev)
                     av->floats.prec));
 }
 
+/*
+ * Store the float precision 'v' in '*precp', raising an exception and
+ * returning False when it isn't one. Negative integers too large for a
+ * ptrdiff_t read as 0, which callers reject or replace like any other
+ * precision below 1.
+ */
+Bool
+FloatPrecisionPart(Value v, ptrdiff_t *precp, char *error)
+{
+    ptrdiff_t prec;
+
+    if (!ValueToPtrdiff(v, &prec)) {
+        if (ValueIsInteger(v) && Negativep(v)) {
+            *precp = 0;
+            return True;
+        }
+        if (ValueIsInteger(v))
+            RaiseStandardException(exception_out_of_memory, 1, NewStrString("precision too large"));
+        else
+            RaiseStandardException(exception_invalid_argument, 3, NewStrString(error), NewInt(0),
+                                   v);
+        return False;
+    }
+    if (prec > FLOAT_MAX_PREC) {
+        RaiseStandardException(exception_out_of_memory, 1, NewStrString("precision too large"));
+        return False;
+    }
+    *precp = prec;
+    return True;
+}
+
+/*
+ * The precision for new imprecise values: float_precision when it is
+ * greater than 1, else DEFAULT_FLOAT_PREC
+ */
+ptrdiff_t
+FloatDefaultPrecision(void)
+{
+    Value     float_prec = lookupVar(0, "float_precision");
+    ptrdiff_t prec;
+
+    if (float_prec && FloatPrecisionPart(float_prec, &prec, "invalid float_precision") && prec > 1)
+        return prec;
+    return DEFAULT_FLOAT_PREC;
+}
+
 Value
-NewValueFloat(Value av, unsigned prec)
+NewValueFloat(Value av, ptrdiff_t prec)
 {
     ENTER();
 
@@ -1232,11 +1295,11 @@ NewValueFloat(Value av, unsigned prec)
 double
 DoublePart(Value av, char *error)
 {
-    double mantissa;
-    int    i;
-    int    e;
-    digit *mt;
-    double div;
+    double    mantissa;
+    ptrdiff_t i;
+    int       e;
+    digit    *mt;
+    double    div;
 
     av = NewValueFloat(av, 64);
     if (!ValueIsFloat(av)) {
@@ -1259,7 +1322,7 @@ DoublePart(Value av, char *error)
 
     mantissa = 0.0;
     i = av->floats.mant->mag->length;
-    e += DIGITBITS * i;
+    e += (int)(DIGITBITS * i);
     mt = NaturalDigits(av->floats.mant->mag) + i;
     div = 1.0 / (double)BASE;
     while (i--) {

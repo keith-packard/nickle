@@ -416,12 +416,13 @@ Value
 do_imprecise(ptrdiff_t n, Value *p)
 {
     ENTER();
-    Value v;
-    int   prec;
+    Value     v;
+    ptrdiff_t prec;
 
     v = p[0];
     if (n > 1) {
-        prec = IntPart(p[1], "imprecise: invalid precision");
+        if (!FloatPrecisionPart(p[1], &prec, "imprecise: invalid precision"))
+            RETURN(v);
         if (prec <= 0) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("imprecise: precision must be positive"), NewInt(0),
@@ -429,18 +430,13 @@ do_imprecise(ptrdiff_t n, Value *p)
             RETURN(v);
         }
     } else {
-        Value float_prec;
         if (ValueIsFloat(v))
             RETURN(v);
         if (ValueIsComplex(v) && ValueIsFloat(v->complex.r) && ValueIsFloat(v->complex.i))
             RETURN(v);
-        prec = DEFAULT_FLOAT_PREC;
-        float_prec = lookupVar(0, "float_precision");
-        if (float_prec) {
-            int default_prec = ValueInt(float_prec);
-            if (default_prec > 1)
-                prec = default_prec;
-        }
+        prec = FloatDefaultPrecision();
+        if (aborting)
+            RETURN(v);
     }
     if (ValueIsComplex(v)) {
         v = NewValueComplex(NewValueFloat(v->complex.r, prec), NewValueFloat(v->complex.i, prec));
@@ -604,27 +600,28 @@ do_reference(Value av)
     RETURN(ret);
 }
 
+static ptrdiff_t
+ValuePrecision(Value av)
+{
+    ptrdiff_t prec, iprec;
+
+    switch (ValueTag(av)) {
+    case rep_float:
+        return av->floats.prec;
+    case rep_complex:
+        prec = ValuePrecision(av->complex.r);
+        iprec = ValuePrecision(av->complex.i);
+        return iprec > prec ? iprec : prec;
+    default:
+        return 0;
+    }
+}
+
 Value
 do_precision(Value av)
 {
     ENTER();
-    unsigned prec;
-
-    switch (ValueTag(av)) {
-    case rep_float:
-        prec = av->floats.prec;
-        break;
-    case rep_complex:
-        prec = ValueInt(do_precision(av->complex.i));
-        unsigned iprec = ValueInt(do_precision(av->complex.r));
-        if (iprec > prec)
-            prec = iprec;
-        break;
-    default:
-        prec = 0;
-        break;
-    }
-    RETURN(NewInt(prec));
+    RETURN(NewPtrdiffInteger(ValuePrecision(av)));
 }
 
 Value
@@ -653,7 +650,7 @@ do_exponent(Value av)
         RETURN(Void);
     }
     ret = NewInteger(av->floats.exp->sign, av->floats.exp->mag);
-    ret = Plus(ret, NewInt(FpartLength(av->floats.mant)));
+    ret = Plus(ret, NewPtrdiffInteger(FpartLength(av->floats.mant)));
     RETURN(ret);
 }
 
@@ -669,7 +666,7 @@ do_mantissa(Value av)
         RETURN(Void);
     }
     ret = NewInteger(av->floats.mant->sign, av->floats.mant->mag);
-    ret = Divide(ret, Pow(NewInt(2), NewInt(FpartLength(av->floats.mant))));
+    ret = Divide(ret, Pow(NewInt(2), NewPtrdiffInteger(FpartLength(av->floats.mant))));
     RETURN(ret);
 }
 

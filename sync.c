@@ -74,7 +74,7 @@ SemaphorePrint(Value f, Value av, char format, int base, int width, int prec, in
     (void)width;
     (void)prec;
     (void)fill;
-    FilePrintf(f, "semaphore %d (%z)", av->semaphore.id, av->semaphore.count);
+    FilePrintf(f, "semaphore %z (%z)", av->semaphore.id, av->semaphore.count);
     return True;
 }
 
@@ -104,9 +104,9 @@ Value
 do_Semaphore_new(ptrdiff_t n, Value *value)
 {
     ENTER();
-    Value      ret;
-    ptrdiff_t  count;
-    static int id;
+    Value            ret;
+    ptrdiff_t        count;
+    static ptrdiff_t id;
 
     switch (n) {
     case 0:

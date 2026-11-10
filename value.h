@@ -854,7 +854,7 @@ typedef struct _thread {
     ThreadState  state;
     int          priority;
     Value        sleep;
-    int          id;
+    ptrdiff_t    id;
     int          partial;
     /*
      * Lower priority threads
@@ -870,7 +870,7 @@ typedef struct _thread {
 typedef struct _semaphore {
     BaseValue value;
     ptrdiff_t count;
-    int       id;
+    ptrdiff_t id;
 } Semaphore;
 
 /*

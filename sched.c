@@ -154,12 +154,12 @@ do_Thread_list(void)
     Value t;
 
     for (t = running; t; t = t->thread.next) {
-        FilePrintf(FileStdout, "\t%%%d", t->thread.id);
+        FilePrintf(FileStdout, "\t%%%z", t->thread.id);
         ThreadListState(t);
         FileOutput(FileStdout, '\n');
     }
     for (t = stopped; t; t = t->thread.next) {
-        FilePrintf(FileStdout, "\t%%%d", t->thread.id);
+        FilePrintf(FileStdout, "\t%%%z", t->thread.id);
         ThreadListState(t);
         if (t->thread.sleep)
             FilePrintf(FileStdout, " %g", t->thread.sleep);
@@ -172,10 +172,10 @@ Value
 do_Thread_id_to_thread(Value id)
 {
     ENTER();
-    int   i;
-    Value t;
+    ptrdiff_t i;
+    Value     t;
 
-    i = IntPart(id, "Invalid thread id");
+    i = PtrdiffPart(id, "Invalid thread id");
     if (aborting)
         RETURN(Void);
     for (t = running; t; t = t->thread.next)
@@ -380,7 +380,7 @@ ThreadPrint(Value f, Value av, char format, int base, int width, int prec, int f
     (void)width;
     (void)prec;
     (void)fill;
-    FilePrintf(f, "%%%d", av->thread.id);
+    FilePrintf(f, "%%%z", av->thread.id);
     return True;
 }
 
@@ -406,7 +406,7 @@ ValueRep ThreadRep = {
     0,
 };
 
-static int ThreadId;
+static ptrdiff_t ThreadId;
 
 Value
 NewThread(FramePtr frame, ObjPtr code)

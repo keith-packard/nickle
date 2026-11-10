@@ -1,0 +1,32 @@
+/*
+ * Nickle test suite
+ *
+ * Comprehensions over arrays with an empty dimension
+ *
+ * The comprehension called its function for the first element before
+ * checking for one, so a multi-dimensional array with an empty
+ * dimension raised invalid_array_bounds.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+int calls = 0;
+
+int[2,0] a = { [i,j] = ++calls };
+check ("int[2,0]", dims (a), (int[*]) { 2, 0 });
+int[0,2] b = { [i,j] = ++calls };
+check ("int[0,2]", dims (b), (int[*]) { 0, 2 });
+int[3,0,2] c = { [i,j,k] = ++calls };
+check ("int[3,0,2]", dims (c), (int[*]) { 3, 0, 2 });
+int[0] d = { [i] = ++calls };
+check ("int[0]", dims (d), (int[*]) { 0 });
+check ("calls", calls, 0);
+
+int[3,2] e = { [i,j] = 10 * i + j };
+check ("int[3,2]", e, (int[3,2]) { { 0, 1 }, { 10, 11 }, { 20, 21 } });

@@ -766,6 +766,8 @@ Atom    LexFileName(void);
 int     LexFileLine(void);
 Bool    LexInteractive(void);
 Bool    LexResetInteractive(void);
+void    LexSetExitOnError(Bool exit);
+void    LexErrorExit(void);
 void    LexInit(void);
 void    NewLexInput(Value file, Atom name, Bool after, Bool interactive);
 #ifdef HAVE_LIBREADLINE
@@ -1012,6 +1014,7 @@ Value do_File_filter(Value file, Value argv, Value filev);
 
 /* four argument builtins */
 Value do_Command_lex_input(Value file, Value name, Value after, Value interactive);
+Value do_Command_lex_exit_on_error(Value exit);
 
 /* seven argument builtins */
 Value do_File_print(Value, Value, Value, Value, Value, Value, Value);

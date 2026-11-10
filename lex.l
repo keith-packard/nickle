@@ -36,6 +36,7 @@ typedef struct _lexInput {
     Bool              at_bol;
     Bool              at_eof;
     Bool              interactive;
+    Bool              exit_on_error; /* exit on parse and compile errors */
 } LexInput;
 
 LexInput  *lexInput;
@@ -68,6 +69,8 @@ NewLexInput(Value file, Atom name, Bool after, Bool interactive)
     lex->at_bol = True;
     lex->at_eof = False;
     lex->interactive = interactive;
+    /* Files loaded by this input share its error handling */
+    lex->exit_on_error = lexInput ? lexInput->exit_on_error : False;
     if (after) {
         LexInput **prev;
 
@@ -152,6 +155,28 @@ LexInteractive(void)
     if (lexInput)
         return lexInput->interactive;
     return False;
+}
+
+/*
+ * Set whether parse and compile errors in the current input, the most
+ * recently added one, exit with an error status, as for files and
+ * expressions given on the command line
+ */
+void
+LexSetExitOnError(Bool exit)
+{
+    if (lexInput)
+        lexInput->exit_on_error = exit;
+}
+
+void
+LexErrorExit(void)
+{
+    if (lexInput && lexInput->exit_on_error) {
+        IoFini();
+        FileFini();
+        exit(1);
+    }
 }
 
 Bool

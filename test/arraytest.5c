@@ -18,6 +18,7 @@ check (([*,*,*]) { { { 1, 2, 3 } ... }, { { 4, 5, 6}, {7, 8, 9}, {10, 11, 12}}}[
 check (([10]) { [i] = i ** 2 + 1 }[9], 82);
 
 /* These should all generate compile errors, but shouldn't crash */
+Command::lex_exit_on_error (false);
 file save_stderr = stderr;
 stderr = File::open("/dev/null", "w");
 ([*,*]) { { [i] = i ** 2 + 1 }, { 4, 5, 6, 7, 8 }};
@@ -26,5 +27,6 @@ stderr = File::open("/dev/null", "w");
 int[*,*] x = {1};
 int[] x = {{1},2};
 stderr = save_stderr;
+Command::lex_exit_on_error (true);
 
 exit(0);

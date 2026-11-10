@@ -1982,6 +1982,7 @@ ParseError(char *fmt, ...)
     FileVPrintf(FileStderr, fmt, args);
     FilePrintf(FileStderr, "\n");
     va_end(args);
+    LexErrorExit();
 }
 
 void

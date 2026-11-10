@@ -432,8 +432,10 @@ NewThread(FramePtr frame, ObjPtr code)
     ret->thread.continuation.frame = frame;
 
     complete = True;
-    if (code->error)
+    if (code->error) {
+        LexErrorExit();
         ret->thread.state = ThreadFinished;
+    }
     _ThreadInsert(ret);
     RETURN(ret);
 }

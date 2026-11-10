@@ -22,6 +22,14 @@ import_Command_namespace(void)
 {
     ENTER();
     static const struct fbuiltin_1 funcs_1[] = {
+        { do_Command_lex_exit_on_error, "lex_exit_on_error", "v", "b",
+         "\n"
+          " void lex_exit_on_error (bool exit)\n"
+          "\n"
+          " Set whether a parse or compile error in the current input,\n"
+          " or in files it loads, exits with an error status.\n"
+          " The current input is the one most recently added to the\n"
+          " lexer, or the one holding this call.\n" },
         { do_Command_delete, "delete", "b", "s",
          "\n"
           " bool delete(string command)\n"
@@ -253,4 +261,11 @@ do_Command_lex_input(Value file, Value name, Value after, Value interactive)
     ENTER();
     NewLexInput(file, AtomId(StringChars(&name->string)), after == TrueVal, interactive == TrueVal);
     RETURN(TrueVal);
+}
+
+Value
+do_Command_lex_exit_on_error(Value exit)
+{
+    LexSetExitOnError(exit == TrueVal);
+    return Void;
 }

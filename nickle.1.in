@@ -54,6 +54,14 @@ Print the Nickle version and exit.
 .B "--"
 Quit parsing arguments and pass the remainder, unevaluated, to
 .IR argv .
+.PP
+A syntax or compile error in a script, or in a file, library or
+expression given with these options, or in any file they load,
+makes Nickle exit with status 1.  Errors in input read from
+standard input, and in files it loads, are reported and Nickle
+continues.  An unhandled exception stops processing and exits
+with status 1, unless Nickle reads commands from a terminal, where
+it enters the debugger instead.
 .SH SYNTAX
 .PP
 To make the input language more
@@ -1189,6 +1197,11 @@ variable for the first file with the given filename.
 .IP "int function lex_string(string code)"
 Attempt to make the Nickle code contained in the string code be
 the next input.
+.IP "void function lex_exit_on_error(bool exit)"
+Set whether a syntax or compile error in the current input, or in
+files it loads, makes Nickle exit with status 1.  This is set for
+input named on the command line; clear it around code that is
+expected to produce compile errors.
 .IP "int function edit(string[*] names)"
 Implements the top-level edit command. The names in the
 array are a path of namespace names leading to the symbol

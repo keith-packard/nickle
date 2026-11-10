@@ -416,6 +416,8 @@ extend namespace Command {
 		lex_string(arg + "\n");
 		break;
 	    }
+	    /* Errors in command-line input, unlike stdin, are fatal */
+	    lex_exit_on_error (true);
 	}
     }
 }

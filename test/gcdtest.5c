@@ -1,8 +1,6 @@
 int function gcd_euclid (int u, int v)
 {
     int steps = 0;
-    if (u == 0 || v == 0)
-	return 0;
     while (v > 0)
     {
 	int t = u % v;
@@ -71,3 +69,26 @@ void function gcd_wide_test ()
 }
 
 gcd_wide_test ();
+
+exception bad_gcd_zero (int u, int v, int got);
+
+/* Every integer divides zero, so gcd (0, v) is the absolute value of v */
+void function gcd_zero_test ()
+{
+    int[*] values = { 0, 1, 5, 2**32, 2**100 + 1 };
+
+    for (int i = 0; i < dim (values); i++) {
+	int v = values[i];
+
+	if (gcd (0, v) != v)
+	    raise bad_gcd_zero (0, v, gcd (0, v));
+	if (gcd (v, 0) != v)
+	    raise bad_gcd_zero (v, 0, gcd (v, 0));
+	if (gcd (0, -v) != v)
+	    raise bad_gcd_zero (0, -v, gcd (0, -v));
+	if (gcd (-v, 0) != v)
+	    raise bad_gcd_zero (-v, 0, gcd (-v, 0));
+    }
+}
+
+gcd_zero_test ();

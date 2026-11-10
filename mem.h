@@ -98,6 +98,8 @@ void                 debug(char *, ...);
 
 void                 panic(char *, ...);
 
+void                 MemExhausted(void);
+
 extern StackObject  *MemStack;
 extern void         *TemporaryData;
 

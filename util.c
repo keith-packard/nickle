@@ -94,6 +94,32 @@ debug(char *format, ...)
     wait_write(2, buf, len);
 }
 
+/*
+ * Report that memory is exhausted, then exit. Flush pending output
+ * first so that it precedes the message, and shut down I/O after, as
+ * that closes stderr. Either may itself run out of memory and call
+ * here again, so do each only once.
+ */
+void
+MemExhausted(void)
+{
+    static Bool flushed, finished;
+    static char message[] = "Out of memory\n";
+
+    if (!flushed) {
+        flushed = True;
+        FileFlush(FileStdout, True);
+        FileFlush(FileStderr, True);
+    }
+    wait_write(2, message, sizeof(message) - 1);
+    if (!finished) {
+        finished = True;
+        IoFini();
+        FileFini();
+    }
+    exit(1);
+}
+
 void
 panic(char *format, ...)
 {

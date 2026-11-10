@@ -125,7 +125,7 @@ static void
 MarkBoxTypes(void *object)
 {
     BoxTypesPtr bt = object;
-    int         i;
+    ptrdiff_t   i;
 
     for (i = 0; i < bt->count; i++)
         MemReference(BoxTypesValue(bt, i));
@@ -136,24 +136,24 @@ DataType BoxTypesType = { MarkBoxTypes, 0, "BoxTypesType" };
 #define BT_INCR 4
 
 BoxTypesPtr
-NewBoxTypes(int size)
+NewBoxTypes(ptrdiff_t size)
 {
     ENTER();
     BoxTypesPtr bt;
 
-    bt = ALLOCATE(&BoxTypesType, sizeof(BoxTypes) + size * sizeof(Type *));
+    bt = ALLOCATE(&BoxTypesType, sizeof(BoxTypes) + (size_t)size * sizeof(Type *));
     bt->size = size;
     bt->count = 0;
     RETURN(bt);
 }
 
-int
+ptrdiff_t
 AddBoxType(BoxTypesPtr *btp, Type *t)
 {
     ENTER();
     BoxTypesPtr bt, new;
-    int         count, size;
-    int         position;
+    ptrdiff_t   count, size;
+    ptrdiff_t   position;
 
     bt = *btp;
     if (!bt) {
@@ -164,10 +164,11 @@ AddBoxType(BoxTypesPtr *btp, Type *t)
         size = bt->size;
     }
     if (count == size) {
-        size = size + BT_INCR;
+        /* Double the size, so that adding n types copies O(n) of them */
+        size = size ? size * 2 : BT_INCR;
         new = NewBoxTypes(size);
         if (count) {
-            memcpy(BoxTypesElements(new), BoxTypesElements(bt), count * sizeof(Type *));
+            memcpy(BoxTypesElements(new), BoxTypesElements(bt), (size_t)count * sizeof(Type *));
         }
         new->size = size;
         new->count = count;

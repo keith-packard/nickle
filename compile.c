@@ -14,9 +14,9 @@ SymbolPtr CompileNamespace(ExprPtr);
 static void
 ObjMark(void *object)
 {
-    ObjPtr  obj = object;
-    InstPtr inst;
-    int     i;
+    ObjPtr    obj = object;
+    InstPtr   inst;
+    ptrdiff_t i;
 
     MemReference(obj->nonLocal);
     inst = ObjCode(obj, 0);
@@ -69,12 +69,13 @@ ObjMark(void *object)
 DataType ObjType = { ObjMark, 0, "ObjType" };
 
 static ObjPtr
-NewObj(int size, int size_stat)
+NewObj(ptrdiff_t size, ptrdiff_t size_stat)
 {
     ENTER();
     ObjPtr obj;
 
-    obj = ALLOCATE(&ObjType, sizeof(Obj) + size * sizeof(Inst) + size_stat * sizeof(Stat));
+    obj = ALLOCATE(&ObjType,
+                   sizeof(Obj) + (size_t)size * sizeof(Inst) + (size_t)size_stat * sizeof(Stat));
     obj->size = size;
     obj->used = 0;
     obj->size_stat = size_stat;
@@ -99,14 +100,15 @@ AddInst(ObjPtr obj, ExprPtr stat)
     if (obj->used_stat && ObjStat(obj, obj->used_stat - 1)->stat == stat)
         need_stat = 0;
     if (obj->used == obj->size || obj->used_stat + need_stat > obj->size_stat) {
-        int nsize = obj->size, nsize_stat = obj->size_stat;
+        ptrdiff_t nsize = obj->size, nsize_stat = obj->size_stat;
+        /* Double the sizes, so that adding n instructions copies O(n) of them */
         if (obj->used == obj->size)
-            nsize = obj->size + OBJ_INCR;
+            nsize = obj->size * 2;
         if (obj->used_stat + need_stat > obj->size_stat)
-            nsize_stat = obj->size_stat + OBJ_STAT_INCR;
+            nsize_stat = obj->size_stat * 2;
         nobj = NewObj(nsize, nsize_stat);
-        memcpy(ObjCode(nobj, 0), ObjCode(obj, 0), obj->used * sizeof(Inst));
-        memcpy(ObjStat(nobj, 0), ObjStat(obj, 0), obj->used_stat * sizeof(Stat));
+        memcpy(ObjCode(nobj, 0), ObjCode(obj, 0), (size_t)obj->used * sizeof(Inst));
+        memcpy(ObjStat(nobj, 0), ObjStat(obj, 0), (size_t)obj->used_stat * sizeof(Stat));
         nobj->used = obj->used;
         nobj->used_stat = obj->used_stat;
         nobj->error = obj->error;
@@ -126,8 +128,8 @@ AddInst(ObjPtr obj, ExprPtr stat)
 static ObjPtr
 AppendObj(ObjPtr first, ObjPtr last)
 {
-    int     i;
-    InstPtr firsti, lasti;
+    ptrdiff_t i;
+    InstPtr   firsti, lasti;
 
     for (i = 0; i < last->used; i++) {
         lasti = ObjCode(last, i);
@@ -143,11 +145,11 @@ AppendObj(ObjPtr first, ObjPtr last)
 ExprPtr
 ObjStatement(ObjPtr obj, InstPtr inst)
 {
-    int i = inst - ObjCode(obj, 0);
-    int low = 0, high = obj->used_stat - 1;
+    ptrdiff_t i = inst - ObjCode(obj, 0);
+    ptrdiff_t low = 0, high = obj->used_stat - 1;
 
     while (low < high - 1) {
-        int mid = (low + high) >> 1;
+        ptrdiff_t mid = (low + high) >> 1;
         if (ObjStat(obj, mid)->inst <= i)
             low = mid;
         else
@@ -163,7 +165,7 @@ ObjStatement(ObjPtr obj, InstPtr inst)
 }
 
 static void
-ResetInst(ObjPtr obj, int i)
+ResetInst(ObjPtr obj, ptrdiff_t i)
 {
     obj->used = i;
     while (obj->used_stat && ObjStat(obj, obj->used_stat - 1)->inst > i)
@@ -226,14 +228,14 @@ ObjPtr CompileCall(ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr co
                    Bool auto_reference);
 ObjPtr _CompileExpr(ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
 ObjPtr _CompileBoolExpr(ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
-void   CompilePatchLoop(ObjPtr obj, int start, int continue_offset, int break_offset,
-                        int catch_offset);
+void   CompilePatchLoop(ObjPtr obj, ptrdiff_t start, ptrdiff_t continue_offset,
+                        ptrdiff_t break_offset, ptrdiff_t catch_offset);
 ObjPtr _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code);
 ObjPtr CompileFunc(ObjPtr obj, CodePtr code, ExprPtr stat, CodePtr previous, NonLocalPtr nonLocal);
 ObjPtr CompileDecl(ObjPtr obj, ExprPtr decls, Bool evaluate, ExprPtr stat, CodePtr code);
 ObjPtr CompileFuncCode(CodePtr code, ExprPtr stat, CodePtr previous, NonLocalPtr nonLocal);
 void   CompileError(ObjPtr obj, ExprPtr stat, char *s, ...);
-static Bool   CompileIsReachable(ObjPtr obj, int i, int frame);
+static Bool   CompileIsReachable(ObjPtr obj, ptrdiff_t i, ptrdiff_t frame);
 static ObjPtr CompileArrayDimValue(ObjPtr obj, TypePtr type, Bool lvalue, ExprPtr stat,
                                    CodePtr code);
 static ObjPtr CompileType(ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code);
@@ -313,12 +315,12 @@ CompileDimensionStorage(ObjPtr obj, Class class, TypePtr type, CodePtr code)
  * Make sure a symbol is valid
  */
 static SymbolPtr
-CompileCheckSymbol(ObjPtr obj, ExprPtr stat, ExprPtr name, CodePtr code, int *depth,
+CompileCheckSymbol(ObjPtr obj, ExprPtr stat, ExprPtr name, CodePtr code, ptrdiff_t *depth,
                    Bool createIfNecessary)
 {
     ENTER();
     SymbolPtr s;
-    int       d;
+    ptrdiff_t d;
     CodePtr   c;
 
     (void)createIfNecessary;
@@ -445,7 +447,7 @@ CompileLvalue(ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createI
     ENTER();
     InstPtr   inst = 0;
     SymbolPtr s;
-    int       depth;
+    ptrdiff_t depth;
     int       ndim;
     TypePtr   t;
     Bool      flipTypes = False;
@@ -673,8 +675,8 @@ ObjPtr
 CompileBinOp(ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code)
 {
     ENTER();
-    InstPtr inst;
-    int     left, right;
+    InstPtr   inst;
+    ptrdiff_t left, right;
 
     left = obj->used;
     obj = _CompileExpr(obj, expr->tree.left, True, stat, code);
@@ -711,8 +713,8 @@ ObjPtr
 CompileBinFunc(ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code, char *name)
 {
     ENTER();
-    InstPtr inst;
-    int     left, right;
+    InstPtr   inst;
+    ptrdiff_t left, right;
 
     left = obj->used;
     obj = _CompileExpr(obj, expr->tree.left, True, stat, code);
@@ -754,9 +756,9 @@ ObjPtr
 CompileUnOp(ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code)
 {
     ENTER();
-    InstPtr inst;
-    ExprPtr down;
-    int     d;
+    InstPtr   inst;
+    ExprPtr   down;
+    ptrdiff_t d;
 
     if (expr->tree.right)
         down = expr->tree.right;
@@ -791,9 +793,9 @@ ObjPtr
 CompileUnFunc(ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr code, char *name)
 {
     ENTER();
-    InstPtr inst;
-    ExprPtr down;
-    int     d;
+    InstPtr   inst;
+    ExprPtr   down;
+    ptrdiff_t d;
 
     if (expr->tree.right)
         down = expr->tree.right;
@@ -896,11 +898,11 @@ CompileAssignFunc(ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodeP
 }
 
 static ObjPtr
-CompileArgs(ObjPtr obj, int *argcp, Bool *varactualp, ExprPtr arg, Bool pushValue, ExprPtr stat,
-            CodePtr code)
+CompileArgs(ObjPtr obj, ptrdiff_t *argcp, Bool *varactualp, ExprPtr arg, Bool pushValue,
+            ExprPtr stat, CodePtr code)
 {
     ENTER();
-    int argc;
+    ptrdiff_t argc;
 
     argc = 0;
     *varactualp = False;
@@ -927,16 +929,16 @@ CompileArgs(ObjPtr obj, int *argcp, Bool *varactualp, ExprPtr arg, Bool pushValu
  * Typecheck function object and arguments
  */
 static Bool
-CompileTypecheckArgs(ObjPtr obj, Type *type, ExprPtr args, int argc, ExprPtr stat)
+CompileTypecheckArgs(ObjPtr obj, Type *type, ExprPtr args, ptrdiff_t argc, ExprPtr stat)
 {
     ENTER();
-    Bool     ret = True;
-    ArgType *argt;
-    ExprPtr  arg;
-    Type    *func_type;
-    Type    *actual_type;
-    int      i;
-    Bool     varactual;
+    Bool      ret = True;
+    ArgType  *argt;
+    ExprPtr   arg;
+    Type     *func_type;
+    Type     *actual_type;
+    ptrdiff_t i;
+    Bool      varactual;
 
     (void)argc;
     func_type = TypeCombineFunction(type);
@@ -969,7 +971,7 @@ CompileTypecheckArgs(ObjPtr obj, Type *type, ExprPtr args, int argc, ExprPtr sta
                 actual_type = arg->tree.left->base.type;
             if (!TypeIsOrdered(argt->type, actual_type)) {
                 CompileError(obj, stat,
-                             "Incompatible types, formal '%T', actual '%T', for argument %d",
+                             "Incompatible types, formal '%T', actual '%T', for argument %z",
                              argt->type, arg->tree.left->base.type, i);
                 ret = False;
             }
@@ -1023,10 +1025,10 @@ ObjPtr
 CompileCall(ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code, Bool auto_reference)
 {
     ENTER();
-    InstPtr inst;
-    int     argc;
-    Bool    varactual;
-    TypePtr t;
+    InstPtr   inst;
+    ptrdiff_t argc;
+    Bool      varactual;
+    TypePtr   t;
 
     obj = _CompileExpr(obj, expr->tree.left, True, stat, code);
     obj = CompileArgs(obj, &argc, &varactual, expr->tree.right, True, stat, code);
@@ -1080,7 +1082,7 @@ static ObjPtr
 CompileRaise(ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 {
     ENTER();
-    int       argc;
+    ptrdiff_t argc;
     ExprPtr   name;
     SymbolPtr sym;
     InstPtr   inst;
@@ -1132,8 +1134,8 @@ static ObjPtr
 CompileTwixt(ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 {
     ENTER();
-    int     enter_inst, twixt_inst;
-    InstPtr inst;
+    ptrdiff_t enter_inst, twixt_inst;
+    InstPtr   inst;
 
     enter_inst = obj->used;
 
@@ -1602,8 +1604,8 @@ CompileArrayInit(ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr cod
         InstPtr inst;
 
         if (expr->base.tag == COMP) {
-            int start_inst;
-            int top_inst;
+            ptrdiff_t start_inst;
+            ptrdiff_t top_inst;
 
             /*
              *	Comprehension:
@@ -1920,7 +1922,7 @@ static ObjPtr
 CompileCatch(ObjPtr obj, ExprPtr catches, ExprPtr body, ExprPtr stat, CodePtr code, int nest)
 {
     ENTER();
-    int       catch_inst, exception_inst;
+    ptrdiff_t catch_inst, exception_inst;
     InstPtr   inst;
     ExprPtr   catch;
     ExprPtr   name;
@@ -2042,11 +2044,11 @@ _CompileExpr(ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code
 {
     ENTER();
     int       ndim;
-    int       top_inst, test_inst, middle_inst;
+    ptrdiff_t top_inst, test_inst, middle_inst;
     InstPtr   inst;
     SymbolPtr s;
     Type     *t;
-    int       staticLink;
+    ptrdiff_t staticLink;
     Bool      bool_const;
 
     switch (expr->base.tag) {
@@ -2769,7 +2771,8 @@ _CompileExpr(ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code
 }
 
 void
-CompilePatchLoop(ObjPtr obj, int start, int continue_offset, int break_offset, int catch_offset)
+CompilePatchLoop(ObjPtr obj, ptrdiff_t start, ptrdiff_t continue_offset, ptrdiff_t break_offset,
+                 ptrdiff_t catch_offset)
 {
     InstPtr inst;
 
@@ -2832,7 +2835,7 @@ CompilePatchLoop(ObjPtr obj, int start, int continue_offset, int break_offset, i
 }
 
 static void
-CompileMoveObj(ObjPtr obj, int start, int depth, int amount)
+CompileMoveObj(ObjPtr obj, ptrdiff_t start, ptrdiff_t depth, ptrdiff_t amount)
 {
     InstPtr inst;
 
@@ -2863,7 +2866,7 @@ static ObjPtr
 _CompileNonLocal(ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
 {
     ENTER();
-    int       twixt = 0, catch = 0, frame = 0;
+    ptrdiff_t twixt = 0, catch = 0, frame = 0;
     NonLocal *nl;
     InstPtr   inst;
     int       target;
@@ -2974,9 +2977,9 @@ ObjPtr
 _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 {
     ENTER();
-    int         start_inst, top_inst, continue_inst, test_inst, middle_inst;
+    ptrdiff_t   start_inst, top_inst, continue_inst, test_inst, middle_inst;
     ExprPtr     c;
-    int         ncase, *case_inst, icase;
+    ptrdiff_t   ncase, *case_inst, icase;
     Bool        has_default;
     InstPtr     inst;
     StructType *st;
@@ -3191,7 +3194,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 
         /* glue b into place */
         if (bobj) {
-            int middle_inst = obj->used;
+            ptrdiff_t middle_inst = obj->used;
             obj = AppendObj(obj, bobj);
             CompileMoveObj(obj, middle_inst, 0, middle_inst);
             if (obj->used == middle_inst + 1
@@ -3302,7 +3305,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
             if (missing && !has_default)
                 CompileError(obj, expr, "Union switch missing elements with no default");
         }
-        case_inst = AllocateTemp(ncase * sizeof(int));
+        case_inst = AllocateTemp((size_t)ncase * sizeof(ptrdiff_t));
         /*
          * Compile the comparisons
          */
@@ -3528,10 +3531,10 @@ CompileIsBranch(InstPtr inst)
 }
 
 static Bool
-CompileIsReachable(ObjPtr obj, int target, int frame)
+CompileIsReachable(ObjPtr obj, ptrdiff_t target, ptrdiff_t frame)
 {
-    InstPtr inst;
-    int     i;
+    InstPtr   inst;
+    ptrdiff_t i;
 
     for (i = 0; i < obj->used; i++) {
         inst = ObjCode(obj, i);
@@ -3707,9 +3710,9 @@ static ObjPtr
 CompileArrayDimValue(ObjPtr obj, TypePtr type, Bool lvalue, ExprPtr stat, CodePtr code)
 {
     ENTER();
-    InstPtr inst = 0;
-    int     d;
-    CodePtr c;
+    InstPtr   inst = 0;
+    ptrdiff_t d;
+    CodePtr   c;
 
     switch (type->array.storage) {
     case DimStorageNone:
@@ -4136,10 +4139,10 @@ BranchModName(BranchMod mod)
 }
 
 void
-InstDump(InstPtr inst, int indent, int i, int *branch, int maxbranch)
+InstDump(InstPtr inst, int indent, ptrdiff_t i, ptrdiff_t *branch, ptrdiff_t maxbranch)
 {
-    int  j;
-    Bool realBranch = False;
+    ptrdiff_t j;
+    Bool      realBranch = False;
 
 #ifdef DEBUG
     FilePrintf(FileStdout, "%p: ", inst);
@@ -4165,11 +4168,11 @@ InstDump(InstPtr inst, int indent, int i, int *branch, int maxbranch)
         if (branch) {
             j = i + inst->branch.offset;
             if (0 <= j && j < maxbranch)
-                FilePrintf(FileStdout, "branch L%d", branch[j]);
+                FilePrintf(FileStdout, "branch L%z", branch[j]);
             else
-                FilePrintf(FileStdout, "Broken branch %d", inst->branch.offset);
+                FilePrintf(FileStdout, "Broken branch %z", inst->branch.offset);
         } else
-            FilePrintf(FileStdout, "branch %d", inst->branch.offset);
+            FilePrintf(FileStdout, "branch %z", inst->branch.offset);
         if (realBranch)
             FilePrintf(FileStdout, " %s", BranchModName(inst->branch.mod));
         break;
@@ -4181,36 +4184,36 @@ InstDump(InstPtr inst, int indent, int i, int *branch, int maxbranch)
         ObjDump(inst->obj.obj, indent + 1);
         break;
     case OpEndCatch:
-        FilePrintf(FileStdout, " %d catches", inst->ints.value);
+        FilePrintf(FileStdout, " %z catches", inst->ints.value);
         break;
     case OpRaise:
         FilePrintf(FileStdout, "%A", inst->raise.exception->symbol.name);
-        FilePrintf(FileStdout, " argc %d", inst->raise.argc);
+        FilePrintf(FileStdout, " argc %z", inst->raise.argc);
         break;
     case OpTwixt:
         if (branch) {
             j = i + inst->twixt.enter;
             if (0 <= j && j < maxbranch)
-                FilePrintf(FileStdout, "enter L%d", branch[j]);
+                FilePrintf(FileStdout, "enter L%z", branch[j]);
             else
-                FilePrintf(FileStdout, "Broken enter %d", inst->branch.offset);
+                FilePrintf(FileStdout, "Broken enter %z", inst->twixt.enter);
             j = i + inst->twixt.leave;
             if (0 <= j && j < maxbranch)
-                FilePrintf(FileStdout, " leave L%d", branch[j]);
+                FilePrintf(FileStdout, " leave L%z", branch[j]);
             else
-                FilePrintf(FileStdout, " Broken leave %d", inst->branch.offset);
+                FilePrintf(FileStdout, " Broken leave %z", inst->twixt.leave);
         } else {
-            FilePrintf(FileStdout, "enter %d leave %d", inst->twixt.enter, inst->twixt.leave);
+            FilePrintf(FileStdout, "enter %z leave %z", inst->twixt.enter, inst->twixt.leave);
         }
         break;
     case OpFarJump:
-        FilePrintf(FileStdout, "twixt %d catch %d frame %d inst %d mod %s",
+        FilePrintf(FileStdout, "twixt %z catch %z frame %z inst %z mod %s",
                    inst->farJump.farJump->twixt, inst->farJump.farJump->catch,
                    inst->farJump.farJump->frame, inst->farJump.farJump->inst,
                    BranchModName(inst->farJump.mod));
         break;
     case OpUnwind:
-        FilePrintf(FileStdout, "twixt %d catch %d", inst->unwind.twixt, inst->unwind.catch);
+        FilePrintf(FileStdout, "twixt %z catch %z", inst->unwind.twixt, inst->unwind.catch);
         break;
     case OpStatic:
     case OpStaticRef:
@@ -4219,14 +4222,14 @@ InstDump(InstPtr inst, int indent, int i, int *branch, int maxbranch)
     case OpLocalRef:
     case OpLocalRefStore:
     case OpTagLocal:
-        FilePrintf(FileStdout, " (link %d elt %d)", inst->frame.staticLink, inst->frame.element);
+        FilePrintf(FileStdout, " (link %z elt %z)", inst->frame.staticLink, inst->frame.element);
         break;
     case OpConst:
         FilePrintf(FileStdout, "%v", inst->constant.constant);
         break;
     case OpCall:
     case OpTailCall:
-        FilePrintf(FileStdout, "%d args", inst->ints.value);
+        FilePrintf(FileStdout, "%z args", inst->ints.value);
         break;
     case OpBuildArray:
         FilePrintf(FileStdout, "%d dims %sresizable", inst->array.ndim,
@@ -4293,18 +4296,18 @@ InstDump(InstPtr inst, int indent, int i, int *branch, int maxbranch)
 void
 ObjDump(ObjPtr obj, int indent)
 {
-    int     i, j;
-    InstPtr inst;
-    ExprPtr stat;
-    int    *branch;
-    int     b;
+    ptrdiff_t  i, j;
+    InstPtr    inst;
+    ExprPtr    stat;
+    ptrdiff_t *branch;
+    ptrdiff_t  b;
 
-    branch = AllocateTemp(obj->used * sizeof(int));
-    memset(branch, '\0', obj->used * sizeof(int));
+    branch = AllocateTemp((size_t)obj->used * sizeof(ptrdiff_t));
+    memset(branch, '\0', (size_t)obj->used * sizeof(ptrdiff_t));
 
     ObjIndent(indent);
-    FilePrintf(FileStdout, "%d instructions %d statements (0x%x)\n", obj->used, obj->used_stat,
-               ObjCode(obj, 0));
+    FilePrintf(FileStdout, "%z instructions %z statements (0x%x)\n", obj->used, obj->used_stat,
+               (unsigned int)(uintptr_t)ObjCode(obj, 0));
     b = 0;
     for (i = 0; i < obj->used; i++) {
         inst = ObjCode(obj, i);
@@ -4341,7 +4344,7 @@ ObjDump(ObjPtr obj, int indent)
             PrettyStat(FileStdout, stat, False);
         }
         if (branch[i])
-            FilePrintf(FileStdout, "L%d:\n", branch[i]);
+            FilePrintf(FileStdout, "L%z:\n", branch[i]);
         InstDump(inst, indent, i, branch, obj->used);
     }
 }

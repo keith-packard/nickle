@@ -84,7 +84,8 @@ MarkBuiltinCode(void *object)
 DataType BuiltinCodeType = { MarkBuiltinCode, 0, "BuiltinCodeType" };
 
 CodePtr
-NewBuiltinCode(Type *type, ArgType *args, int argc, BuiltinFunc builtin, Bool needsNext, char *doc)
+NewBuiltinCode(Type *type, ArgType *args, ptrdiff_t argc, BuiltinFunc builtin, Bool needsNext,
+               char *doc)
 {
     ENTER();
     CodePtr bc;

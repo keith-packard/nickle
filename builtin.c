@@ -262,13 +262,13 @@ BuiltinType(char *format, Type **type, Bool arg)
 }
 
 static ArgType *
-BuiltinArgType(char *format, int *argcp)
+BuiltinArgType(char *format, ptrdiff_t *argcp)
 {
     ENTER();
-    ArgType *args, *a, **last;
-    int      argc;
-    Type    *t;
-    Bool     varargs;
+    ArgType  *args, *a, **last;
+    ptrdiff_t argc;
+    Type     *t;
+    Bool      varargs;
 
     args = 0;
     last = &args;
@@ -315,7 +315,7 @@ BuiltinAddException(NamespacePtr *namespacep, StandardException exception, char 
     SymbolPtr sym;
     ArgType  *args;
     Type     *type;
-    int       argc;
+    ptrdiff_t argc;
 
     args = BuiltinArgType(format, &argc);
     type = NewTypeFunc(typePoly, args);
@@ -331,7 +331,7 @@ BuiltinAddFunction(NamespacePtr *namespacep, char *name, char *ret_format, char 
     ENTER();
     Value     func;
     SymbolPtr sym;
-    int       argc;
+    ptrdiff_t argc;
     ArgType  *args;
     Type     *ret;
 

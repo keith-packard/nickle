@@ -313,7 +313,7 @@ do_time(void)
 }
 
 Value
-do_string_to_integer(int n, Value *p)
+do_string_to_integer(ptrdiff_t n, Value *p)
 {
     ENTER();
     char *s;
@@ -332,7 +332,7 @@ do_string_to_integer(int n, Value *p)
     default:
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("string_to_integer: wrong number of arguments"),
-                               NewInt(2), NewInt(n));
+                               NewInt(2), NewPtrdiffInteger(n));
         RETURN(Void);
     }
 
@@ -413,7 +413,7 @@ do_string_to_real(Value str)
 }
 
 Value
-do_imprecise(int n, Value *p)
+do_imprecise(ptrdiff_t n, Value *p)
 {
     ENTER();
     Value v;
@@ -474,7 +474,7 @@ do_func_args(Value a)
                                NewStrString("func_args: argument must be function"), NewInt(0), a);
         RETURN(Void);
     }
-    RETURN(NewInt(a->func.code->base.argc));
+    RETURN(NewPtrdiffInteger(a->func.code->base.argc));
 }
 
 Value

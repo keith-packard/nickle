@@ -80,9 +80,9 @@ StackPop(StackObject *stack)
 }
 
 void
-StackDrop(StackObject *stack, int i)
+StackDrop(StackObject *stack, ptrdiff_t i)
 {
-    int         this;
+    ptrdiff_t   this;
     StackChunk *previous;
     STACK_ASSERT(stack);
     while (i) {
@@ -135,7 +135,7 @@ StackReturn(StackObject *stack, StackPointer stackPointer, StackElement object)
 }
 
 StackElement
-StackElt(StackObject *stack, int i)
+StackElt(StackObject *stack, ptrdiff_t i)
 {
     StackChunk  *chunk;
     StackPointer stackPointer;

@@ -91,7 +91,7 @@ ValueRep SemaphoreRep = {
 };
 
 Value
-do_Semaphore_new(int n, Value *value)
+do_Semaphore_new(ptrdiff_t n, Value *value)
 {
     ENTER();
     Value      ret;
@@ -108,7 +108,7 @@ do_Semaphore_new(int n, Value *value)
     default:
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("new: wrong number of arguments"), NewInt(1),
-                               NewInt(n));
+                               NewPtrdiffInteger(n));
         RETURN(Void);
     }
     ret = ALLOCATE(&SemaphoreRep.data, sizeof(Semaphore));

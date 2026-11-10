@@ -251,11 +251,11 @@ KillThread(Value thread)
 }
 
 Value
-do_Thread_kill(int n, Value *p)
+do_Thread_kill(ptrdiff_t n, Value *p)
 {
     ENTER();
-    Value thread;
-    int   ret = 0;
+    Value     thread;
+    ptrdiff_t ret = 0;
 
     /* With no threads, kill the current one */
     if (n == 0) {
@@ -266,13 +266,13 @@ do_Thread_kill(int n, Value *p)
         while (n--)
             ret += KillThread(*p++);
     }
-    RETURN(NewInt(ret));
+    RETURN(NewPtrdiffInteger(ret));
 }
 
 void
 TraceFunction(Value file, FramePtr frame, CodePtr code, ExprPtr name)
 {
-    int fe;
+    ptrdiff_t fe;
 
     FilePuts(file, "    ");
     if (name)
@@ -322,7 +322,7 @@ TraceIndent(int indent)
 #endif
 
 Value
-do_Thread_trace(int n, Value *p)
+do_Thread_trace(ptrdiff_t n, Value *p)
 {
     ENTER();
     Value    v;
@@ -521,7 +521,7 @@ ThreadInit(void)
 DataType FarJumpType = { 0, 0, "FarJumpType" };
 
 FarJumpPtr
-NewFarJump(int inst, int twixt, int catch, int frame)
+NewFarJump(ptrdiff_t inst, ptrdiff_t twixt, ptrdiff_t catch, ptrdiff_t frame)
 {
     ENTER();
     FarJumpPtr farJump;
@@ -538,15 +538,15 @@ Value
 FarJumpContinuation(ContinuationPtr continuation, FarJumpPtr farJump)
 {
     ENTER();
-    Value    ret;
-    CatchPtr catch;
-    TwixtPtr twixt;
-    FramePtr frame;
-    InstPtr  pc;
-    ObjPtr   obj;
-    int      twixts;
-    int      catches;
-    int      frames;
+    Value     ret;
+    CatchPtr  catch;
+    TwixtPtr  twixt;
+    FramePtr  frame;
+    InstPtr   pc;
+    ObjPtr    obj;
+    ptrdiff_t twixts;
+    ptrdiff_t catches;
+    ptrdiff_t frames;
 
     ret = NewContinuation(continuation, 0);
 

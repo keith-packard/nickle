@@ -6,6 +6,8 @@
 
 #ifndef _STACK_H_
 #define _STACK_H_
+#include <stddef.h>
+
 #define STACK_ENTS_PER_CHUNK 126
 
 typedef void         *StackElement;
@@ -29,10 +31,10 @@ extern StackObject *StackCreate(void);
 extern StackObject *StackCopy(StackObject *stack);
 extern StackElement StackPush(StackObject *stack, StackElement object);
 extern StackElement StackPop(StackObject *stack);
-extern void         StackDrop(StackObject *stack, int i);
+extern void         StackDrop(StackObject *stack, ptrdiff_t i);
 extern void         StackReset(StackObject *stack, StackPointer stackPointer);
 extern StackElement StackReturn(StackObject *stack, StackPointer stackPointer, StackElement object);
-extern StackElement StackElt(StackObject *stack, int i);
+extern StackElement StackElt(StackObject *stack, ptrdiff_t i);
 
 #define CHUNK_MAX(c) ((c)->elements + STACK_ENTS_PER_CHUNK)
 #define CHUNK_MIN(c) ((c)->elements)

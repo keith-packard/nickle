@@ -26,7 +26,7 @@ Bool signalSuspend;  /* current thread is suspending */
 
 static FramePtr
 BuildFrame(Value thread, Value func, Value value, Bool staticInit, Bool tail, Bool varargs,
-           int nformal, int base, int argc, InstPtr savePc, ObjPtr saveObj)
+           ptrdiff_t nformal, ptrdiff_t base, ptrdiff_t argc, InstPtr savePc, ObjPtr saveObj)
 {
     ENTER();
     CodePtr      code = func->func.code;
@@ -66,18 +66,18 @@ BuildFrame(Value thread, Value func, Value value, Bool staticInit, Bool tail, Bo
 }
 
 static Value
-ThreadCall(Value thread, Bool tail, InstPtr *next, int *stack)
+ThreadCall(Value thread, Bool tail, InstPtr *next, ptrdiff_t *stack)
 {
     ENTER();
-    int          argc = *stack;
+    ptrdiff_t    argc = *stack;
     Value        value = thread->thread.continuation.value;
     StackObject *cstack = thread->thread.continuation.stack;
     Value        func;
     CodePtr      code;
     FramePtr     frame;
     ArgType     *argt;
-    int          fe;
-    int          base;
+    ptrdiff_t    fe;
+    ptrdiff_t    base;
 
     /*
      * Typecheck actuals
@@ -85,14 +85,15 @@ ThreadCall(Value thread, Bool tail, InstPtr *next, int *stack)
     fe = 0;
     base = argc - 2;
     if (argc < 0) {
-        Value numvar = Arg(0);
+        Value     numvar = Arg(0);
+        ptrdiff_t nvar;
 
-        if (!ValueIsInt(numvar)) {
+        if (!ValueToPtrdiff(numvar, &nvar)) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("Incompatible argument"), NewInt(-1), Arg(0));
             RETURN(Void);
         }
-        argc = -argc - 1 + ValueInt(numvar);
+        argc = -argc - 1 + nvar;
         base = argc - 1;
         *stack = 1 + argc; /* count + args */
         func = CStack(argc);
@@ -108,18 +109,19 @@ ThreadCall(Value thread, Bool tail, InstPtr *next, int *stack)
     while (fe < argc || (argt && !argt->varargs)) {
         if (!argt) {
             RaiseStandardException(exception_invalid_argument, 3,
-                                   NewStrString("Too many arguments"), NewInt(argc),
-                                   NewInt(code->base.argc));
+                                   NewStrString("Too many arguments"), NewPtrdiffInteger(argc),
+                                   NewPtrdiffInteger(code->base.argc));
             RETURN(Void);
         }
         if (fe == argc) {
             RaiseStandardException(exception_invalid_argument, 3, NewStrString("Too few arguments"),
-                                   NewInt(argc), NewInt(code->base.argc));
+                                   NewPtrdiffInteger(argc), NewPtrdiffInteger(code->base.argc));
             RETURN(Void);
         }
         if (!TypeCompatibleAssign(argt->type, Arg(fe))) {
             RaiseStandardException(exception_invalid_argument, 3,
-                                   NewStrString("Incompatible argument"), NewInt(fe), Arg(fe));
+                                   NewStrString("Incompatible argument"), NewPtrdiffInteger(fe),
+                                   Arg(fe));
             RETURN(Void);
         }
         fe++;
@@ -128,13 +130,13 @@ ThreadCall(Value thread, Bool tail, InstPtr *next, int *stack)
     }
 
     if (code->base.builtin) {
-        Value *values = 0;
-        int    formal;
+        Value    *values = 0;
+        ptrdiff_t formal;
 
         formal = code->base.argc;
         if (code->base.varargs) {
             formal = -1;
-            values = AllocateTemp(argc * sizeof(Value));
+            values = AllocateTemp((size_t)argc * sizeof(Value));
             for (fe = 0; fe < argc; fe++)
                 values[fe] = Arg(fe);
         }
@@ -271,10 +273,10 @@ static Value
 ThreadArray(Value thread, Bool resizable, int ndim, Type *type)
 {
     ENTER();
-    int        i;
+    ptrdiff_t  i;
     ptrdiff_t *dims;
 
-    dims = AllocateTemp(ndim * sizeof(ptrdiff_t));
+    dims = AllocateTemp((size_t)ndim * sizeof(ptrdiff_t));
     for (i = 0; i < ndim; i++) {
         Value d = Stack(i);
         dims[i] = PtrdiffPart(d, "Invalid array dimension");
@@ -315,7 +317,8 @@ ThreadArrayInd(Value thread, Bool resizable, Value dim, Type *type)
 }
 
 static ptrdiff_t
-ThreadArrayIndex(Value array, Value thread, int ndim, Value last, int off, Bool except, Bool resize)
+ThreadArrayIndex(Value array, Value thread, int ndim, Value last, ptrdiff_t off, Bool except,
+                 Bool resize)
 {
     ptrdiff_t  i;
     int        dim;
@@ -428,7 +431,7 @@ InitIndex(Value v)
 }
 
 static Value
-ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, int *stack, InstPtr *next)
+ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, ptrdiff_t *stack, InstPtr *next)
 {
     ENTER();
     Value     array;
@@ -578,13 +581,13 @@ ThreadCatches(Value thread)
 #endif
 
 static Value
-ThreadRaise(Value thread, Value value, int argc, SymbolPtr exception, InstPtr *next)
+ThreadRaise(Value thread, Value value, ptrdiff_t argc, SymbolPtr exception, InstPtr *next)
 {
     ENTER();
     StackObject *cstack = thread->thread.continuation.stack;
     Value        args;
     ptrdiff_t    i;
-    int          base = argc - 2;
+    ptrdiff_t    base = argc - 2;
 
 #ifdef DEBUG_JUMP
     FilePrintf(FileStdout, "    Raise: %A ", exception->symbol.name);
@@ -606,10 +609,10 @@ ThreadRaise(Value thread, Value value, int argc, SymbolPtr exception, InstPtr *n
 }
 
 static void
-ThreadEndCatch(Value thread, int catches)
+ThreadEndCatch(Value thread, ptrdiff_t catches)
 {
 #ifdef DEBUG_JUMP
-    FilePrintf(FileStdout, "    EndCatch: %d ", catches);
+    FilePrintf(FileStdout, "    EndCatch: %z ", catches);
 #endif
     while (catches--)
         thread->thread.continuation.catches
@@ -620,12 +623,12 @@ ThreadEndCatch(Value thread, int catches)
 }
 
 static Value
-ThreadExceptionCall(Value thread, InstPtr *next, int *stack)
+ThreadExceptionCall(Value thread, InstPtr *next, ptrdiff_t *stack)
 {
     ENTER();
     Value     args;
     Value     ret;
-    int       argc;
+    ptrdiff_t argc;
     ptrdiff_t i;
 
     /*
@@ -685,7 +688,7 @@ ThreadFarJump(Value thread, Value ret, FarJumpPtr farJump, InstPtr *next)
 }
 
 static void
-ThreadUnwind(Value thread, int twixt, int catch)
+ThreadUnwind(Value thread, ptrdiff_t twixt, ptrdiff_t catch)
 {
     while (twixt--)
         thread->thread.continuation.twixts
@@ -754,7 +757,7 @@ ThreadBoxSetDefault(BoxPtr box, ptrdiff_t i, TypeChain *chain)
 }
 
 static Value
-ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
+ThreadOpArray(Value thread, Value value, ptrdiff_t stack, Bool fetch, Bool typeCheck)
 {
     Value     v;
     char     *s;
@@ -770,8 +773,8 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
         }
         if (stack != 1) {
             RaiseStandardException(exception_invalid_binop_values, 3,
-                                   NewStrString("wrong number of string indices"), NewInt(stack),
-                                   v);
+                                   NewStrString("wrong number of string indices"),
+                                   NewPtrdiffInteger(stack), v);
             break;
         }
         if (!ValueToPtrdiff(value, &i)) {
@@ -795,7 +798,8 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
     case rep_array:
         if (stack != v->array.ndim) {
             RaiseStandardException(exception_invalid_binop_values, 3,
-                                   NewStrString("wrong number of array indices"), NewInt(stack), v);
+                                   NewStrString("wrong number of array indices"),
+                                   NewPtrdiffInteger(stack), v);
             break;
         }
         i = ThreadArrayIndex(v, thread, stack, value, 0, True, !fetch);
@@ -813,7 +817,8 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
     case rep_hash:
         if (stack != 1) {
             RaiseStandardException(exception_invalid_binop_values, 3,
-                                   NewStrString("wrong number of hash indices"), NewInt(stack), v);
+                                   NewStrString("wrong number of hash indices"),
+                                   NewPtrdiffInteger(stack), v);
             break;
         }
         if (fetch)
@@ -1034,7 +1039,7 @@ ThreadsRun(Value thread, Value lex)
             InstPtr      inst, next;
             FramePtr     fp;
             ptrdiff_t    i, j;
-            int          stack;
+            ptrdiff_t    stack;
             Value        value, v, w;
             BoxPtr       box;
 
@@ -1276,7 +1281,7 @@ ThreadsRun(Value thread, Value lex)
                     if (i != ArrayLimits(&value->array)[0])
                         break;
                     complete = True;
-                    value = NewInt(ArrayLimits(&value->array)[0]);
+                    value = NewPtrdiffInteger(ArrayLimits(&value->array)[0]);
                     break;
                 case OpCall:
                 case OpTailCall:

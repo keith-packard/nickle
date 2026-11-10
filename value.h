@@ -493,9 +493,9 @@ typedef struct _typeArray {
     union {
         BoxPtr global;
         struct {
-            int     element;
-            Bool    staticScope;
-            CodePtr code;
+            ptrdiff_t element;
+            Bool      staticScope;
+            CodePtr   code;
         } frame;
     } u;
 } TypeArray;
@@ -754,8 +754,8 @@ typedef struct _file {
 
 typedef struct _boxTypes {
     DataType *data;
-    int       count;
-    int       size;
+    ptrdiff_t count;
+    ptrdiff_t size;
     TypePtr   elements[0];
 } BoxTypes, *BoxTypesPtr;
 
@@ -766,19 +766,19 @@ BoxTypesElements(BoxTypes *bt)
 }
 
 static inline TypePtr
-BoxTypesValue(BoxTypes *bt, int e)
+BoxTypesValue(BoxTypes *bt, ptrdiff_t e)
 {
     return BoxTypesElements(bt)[e];
 }
 
 static inline void
-BoxTypesValueSet(BoxTypes *bt, int e, TypePtr t)
+BoxTypesValueSet(BoxTypes *bt, ptrdiff_t e, TypePtr t)
 {
     BoxTypesElements(bt)[e] = t;
 }
 
-extern BoxTypesPtr NewBoxTypes(int size);
-extern int         AddBoxType(BoxTypesPtr *btp, TypePtr t);
+extern BoxTypesPtr NewBoxTypes(ptrdiff_t size);
+extern ptrdiff_t   AddBoxType(BoxTypesPtr *btp, TypePtr t);
 
 typedef struct _ref {
     BaseValue base;

@@ -41,7 +41,7 @@ typedef struct _symbolGlobal {
 
 typedef struct _symbolLocal {
     SymbolBase symbol;
-    int        element;
+    ptrdiff_t  element;
     Bool       staticScope; /* dynamic scope equal to static */
     CodePtr    code;
 } SymbolLocal;
@@ -277,7 +277,7 @@ typedef struct _codeBase {
     DataType *data;
     Bool      builtin;
     Type     *type;
-    int       argc;
+    ptrdiff_t argc;
     Bool      varargs;
     ArgType  *args;
     ExprPtr   name;
@@ -343,7 +343,7 @@ typedef struct _funcCode {
 } FuncCode, *FuncCodePtr;
 
 typedef union _builtinFunc {
-    Value (*builtinN)(int, Value *);
+    Value (*builtinN)(ptrdiff_t, Value *);
     Value (*builtin0)(void);
     Value (*builtin1)(Value);
     Value (*builtin2)(Value, Value);
@@ -353,7 +353,7 @@ typedef union _builtinFunc {
     Value (*builtin6)(Value, Value, Value, Value, Value, Value);
     Value (*builtin7)(Value, Value, Value, Value, Value, Value, Value);
     Value (*builtin8)(Value, Value, Value, Value, Value, Value, Value, Value);
-    Value (*builtinNJ)(InstPtr *, int, Value *);
+    Value (*builtinNJ)(InstPtr *, ptrdiff_t, Value *);
     Value (*builtin0J)(InstPtr *);
     Value (*builtin1J)(InstPtr *, Value);
     Value (*builtin2J)(InstPtr *, Value, Value);
@@ -372,19 +372,19 @@ typedef union _code {
 } Code;
 
 CodePtr NewFuncCode(Type *type, ArgType *args, ExprPtr code, Value doc);
-CodePtr NewBuiltinCode(Type *type, ArgType *args, int argc, BuiltinFunc func, Bool needsNext,
+CodePtr NewBuiltinCode(Type *type, ArgType *args, ptrdiff_t argc, BuiltinFunc func, Bool needsNext,
                        char *doc);
 Value   NewFunc(CodePtr, FramePtr);
 
 typedef struct _farJump {
     DataType *data;
-    int       inst;
-    int       twixt;
-    int catch;
-    int frame;
+    ptrdiff_t inst;
+    ptrdiff_t twixt;
+    ptrdiff_t catch;
+    ptrdiff_t frame;
 } FarJump, *FarJumpPtr;
 
-FarJumpPtr NewFarJump(int inst, int twixt, int catch, int frame);
+FarJumpPtr NewFarJump(ptrdiff_t inst, ptrdiff_t twixt, ptrdiff_t catch, ptrdiff_t frame);
 Value      FarJumpContinuation(ContinuationPtr continuation, FarJumpPtr farJump);
 
 #define InstPush 0x01
@@ -400,9 +400,9 @@ typedef struct _instBox {
 } InstBox;
 
 typedef struct _instFrame {
-    InstBase inst;
-    short    staticLink;
-    short    element;
+    InstBase  inst;
+    ptrdiff_t staticLink;
+    ptrdiff_t element;
 } InstFrame;
 
 typedef struct _instConst {
@@ -416,8 +416,8 @@ typedef struct _instAtom {
 } InstAtom;
 
 typedef struct _instInt {
-    InstBase inst;
-    int      value;
+    InstBase  inst;
+    ptrdiff_t value;
 } InstInt;
 
 typedef struct _instStruct {
@@ -468,7 +468,7 @@ typedef enum _branchMod {
 
 typedef struct _instBranch {
     InstBase  inst;
-    int       offset;
+    ptrdiff_t offset;
     BranchMod mod;
 } InstBranch;
 
@@ -504,32 +504,32 @@ typedef struct _instObj {
 
 typedef struct _instCatch {
     InstBase  inst;
-    int       offset;
+    ptrdiff_t offset;
     SymbolPtr exception;
 } InstCatch;
 
 typedef struct _instRaise {
     InstBase  inst;
-    int       argc;
+    ptrdiff_t argc;
     SymbolPtr exception;
 } InstRaise;
 
 typedef struct _instTwixt {
-    InstBase inst;
-    int      enter;
-    int      leave;
+    InstBase  inst;
+    ptrdiff_t enter;
+    ptrdiff_t leave;
 } InstTwixt;
 
 typedef struct _instTagCase {
-    InstBase inst;
-    int      offset;
-    Atom     tag;
+    InstBase  inst;
+    ptrdiff_t offset;
+    Atom      tag;
 } InstTagCase;
 
 typedef struct _instUnwind {
-    InstBase inst;
-    int      twixt;
-    int catch;
+    InstBase  inst;
+    ptrdiff_t twixt;
+    ptrdiff_t catch;
 } InstUnwind;
 
 typedef struct _instFarJump {
@@ -597,16 +597,16 @@ typedef struct _nonLocal {
 } NonLocal, *NonLocalPtr;
 
 typedef struct _Stat {
-    int     inst;
-    ExprPtr stat;
+    ptrdiff_t inst;
+    ExprPtr   stat;
 } Stat, *StatPtr;
 
 typedef struct _obj {
     DataType    *data;
-    int          size;
-    int          used;
-    int          size_stat;
-    int          used_stat;
+    ptrdiff_t    size;
+    ptrdiff_t    used;
+    ptrdiff_t    size_stat;
+    ptrdiff_t    used_stat;
     double_digit ticks;
     double_digit sub_ticks;
     Bool         error;
@@ -615,19 +615,19 @@ typedef struct _obj {
 } Obj;
 
 static inline InstPtr
-ObjCode(Obj *obj, int i)
+ObjCode(Obj *obj, ptrdiff_t i)
 {
     return &(obj->insts[i]);
 }
 
-static inline int
+static inline ptrdiff_t
 ObjLast(Obj *obj)
 {
     return obj->used - 1;
 }
 
 static inline StatPtr
-ObjStat(Obj *obj, int i)
+ObjStat(Obj *obj, ptrdiff_t i)
 {
     StatPtr stats = (StatPtr)ObjCode(obj, obj->size);
     return &stats[i];
@@ -683,10 +683,10 @@ extern Value stopped;   /* stopped threads */
 extern Bool  complete;  /* must complete current inst */
 extern Bool  profiling; /* profiling is active */
 
-void         InstDump(InstPtr inst, int indent, int i, int *branch, int maxbranch);
-void         ObjDump(ObjPtr obj, int indent);
+void InstDump(InstPtr inst, int indent, ptrdiff_t i, ptrdiff_t *branch, ptrdiff_t maxbranch);
+void ObjDump(ObjPtr obj, int indent);
 
-void         SymbolInit(void);
+void SymbolInit(void);
 
 extern NamespacePtr DebugNamespace;
 extern NamespacePtr FileNamespace;
@@ -883,17 +883,13 @@ Dereference(Value v)
 }
 
 /* vararg builtins */
-Value do_printf(int, Value *);
-Value do_fprintf(int, Value *);
-Value do_imprecise(int, Value *);
-Value do_Thread_kill(int, Value *);
-Value do_Thread_trace(int, Value *);
-Value do_Thread_trace(int, Value *);
-Value do_History_show(int, Value *);
-Value do_string_to_integer(int, Value *);
-Value do_Semaphore_new(int, Value *);
-Value do_Command_undefine(int, Value *);
-Value do_Command_pretty_print(int, Value *);
+Value do_imprecise(ptrdiff_t, Value *);
+Value do_Thread_kill(ptrdiff_t, Value *);
+Value do_Thread_trace(ptrdiff_t, Value *);
+Value do_string_to_integer(ptrdiff_t, Value *);
+Value do_Semaphore_new(ptrdiff_t, Value *);
+Value do_Command_undefine(ptrdiff_t, Value *);
+Value do_Command_pretty_print(ptrdiff_t, Value *);
 
 /* zero argument builtins */
 Value do_Thread_cont(void);

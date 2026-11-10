@@ -177,7 +177,7 @@ do_Command_delete(Value name)
 }
 
 Value
-do_Command_pretty_print(int argc, Value *args)
+do_Command_pretty_print(ptrdiff_t argc, Value *args)
 {
     ENTER();
     Value        f;
@@ -185,7 +185,7 @@ do_Command_pretty_print(int argc, Value *args)
     NamespacePtr namespace;
     SymbolPtr    symbol;
     Publish      publish;
-    int          i;
+    ptrdiff_t    i;
 
     f = args[0];
     if (argc == 1) {
@@ -198,19 +198,19 @@ do_Command_pretty_print(int argc, Value *args)
             PrettyPrint(f, publish, symbol);
         else
             RaiseStandardException(exception_invalid_argument, 3, NewStrString("name not found"),
-                                   NewInt(i), names);
+                                   NewPtrdiffInteger(i), names);
     }
     RETURN(Void);
 }
 
 Value
-do_Command_undefine(int argc, Value *args)
+do_Command_undefine(ptrdiff_t argc, Value *args)
 {
     ENTER();
     NamespacePtr namespace;
     SymbolPtr    symbol;
     Publish      publish;
-    int          i;
+    ptrdiff_t    i;
 
     for (i = 0; i < argc; i++)
         if (NamespaceLocate(args[i], &namespace, &symbol, &publish, True))

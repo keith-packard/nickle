@@ -28,9 +28,9 @@
 NamespacePtr SocketNamespace;
 Type        *typeSockaddr;
 
-Value        do_Socket_create(int num, Value *args);
-Value        do_Socket_connect(int num, Value *args);
-Value        do_Socket_bind(int numb, Value *args);
+Value        do_Socket_create(ptrdiff_t num, Value *args);
+Value        do_Socket_connect(ptrdiff_t num, Value *args);
+Value        do_Socket_bind(ptrdiff_t num, Value *args);
 Value        do_Socket_listen(Value s, Value backlog);
 Value        do_Socket_accept(Value s);
 Value        do_Socket_shutdown(Value s, Value how);
@@ -163,7 +163,7 @@ import_Socket_namespace(void)
 
 /* File::file do_Socket_create ({SOCK_STREAM,SOCK_DGRAM} type); */
 Value
-do_Socket_create(int num, Value *args)
+do_Socket_create(ptrdiff_t num, Value *args)
 {
     ENTER();
     int   ifamily, itype, type_index, s;
@@ -172,7 +172,7 @@ do_Socket_create(int num, Value *args)
     if (num == 0 || num > 2) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("create must have one or two arguments"), NewInt(0),
-                               NewInt(num));
+                               NewPtrdiffInteger(num));
         RETURN(Void);
     }
 
@@ -213,14 +213,14 @@ typedef union {
 #define VerifyArgumentCount(arg, condition, error)                                            \
     if (!(condition)) {                                                                       \
         RaiseStandardException(exception_invalid_argument, 3, NewStrString(error), NewInt(0), \
-                               NewInt(arg));                                                  \
+                               NewPtrdiffInteger(arg));                                       \
     }
 
 /* Supports the following args from both bind and connect:
  *	(File::file s, String local_socket)
  */
 static Bool
-address_lookup_af_unix(int num, Value *args, struct sockaddr_un *addr, socklen_t *len)
+address_lookup_af_unix(ptrdiff_t num, Value *args, struct sockaddr_un *addr, socklen_t *len)
 {
     char *local_socket;
     Value s = args[0];
@@ -248,7 +248,7 @@ address_lookup_af_unix(int num, Value *args, struct sockaddr_un *addr, socklen_t
  *	(File::file s, String host, int port)
  */
 static Bool
-address_lookup_af_inet(int num, Value *args, struct sockaddr_in *addr, socklen_t *len)
+address_lookup_af_inet(ptrdiff_t num, Value *args, struct sockaddr_in *addr, socklen_t *len)
 {
     Value           host, port;
     char           *hostchars;
@@ -312,7 +312,7 @@ address_lookup_af_inet(int num, Value *args, struct sockaddr_in *addr, socklen_t
  *	(File::file s, String local_socket)
  */
 static Bool
-address_lookup(int num, Value *args, sockaddr_all_t *addr, socklen_t *len)
+address_lookup(ptrdiff_t num, Value *args, sockaddr_all_t *addr, socklen_t *len)
 {
     Value s = args[0];
 
@@ -335,7 +335,7 @@ address_lookup(int num, Value *args, sockaddr_all_t *addr, socklen_t *len)
  * void do_Socket_connect (File::file s, String local_socket;
  */
 Value
-do_Socket_connect(int num, Value *args)
+do_Socket_connect(ptrdiff_t num, Value *args)
 {
     ENTER();
     sockaddr_all_t addr;
@@ -385,7 +385,7 @@ do_Socket_connect(int num, Value *args)
  * void do_Socket_bind (File::file s, String local_socket;
  */
 Value
-do_Socket_bind(int num, Value *args)
+do_Socket_bind(ptrdiff_t num, Value *args)
 {
     ENTER();
     sockaddr_all_t addr;

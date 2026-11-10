@@ -113,7 +113,7 @@ void BuiltinAddFunction(NamespacePtr *namespacep, char *name, char *ret_format, 
         }                                                                            \
     } while (0)
 
-typedef Value (*fbuiltin_v_func)(int, Value *);
+typedef Value (*fbuiltin_v_func)(ptrdiff_t, Value *);
 BuiltinFuncStructDef(fbuiltin_v, fbuiltin_v_func);
 #define BuiltinFuncsV(n, f) BuiltinFuncsGeneric(n, f, fbuiltin_v, builtinN, False)
 
@@ -153,7 +153,7 @@ typedef Value (*fbuiltin_8_func)(Value, Value, Value, Value, Value, Value, Value
 BuiltinFuncStructDef(fbuiltin_8, fbuiltin_8_func);
 #define BuiltinFuncs8(n, f) BuiltinFuncsGeneric(n, f, fbuiltin_8, builtin8, False)
 
-typedef Value (*fbuiltin_vj_func)(InstPtr *, int, Value *);
+typedef Value (*fbuiltin_vj_func)(InstPtr *, ptrdiff_t, Value *);
 BuiltinFuncStructDef(fbuiltin_vj, fbuiltin_vj_func);
 #define BuiltinFuncsVJ(n, f) BuiltinFuncsGeneric(n, f, fbuiltin_vj, builtinNJ, True)
 

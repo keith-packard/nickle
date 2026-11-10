@@ -1,0 +1,29 @@
+/*
+ * Nickle test suite
+ *
+ * Calling a value that isn't a function
+ *
+ * The call raised invalid_unop_value, but first printed the operand
+ * stack to stdout, leftover debugging output that appeared even when
+ * the program caught the exception.
+ */
+
+exception not_raised ();
+exception printed (string output);
+
+file	saved = stdout;
+string	output;
+poly	f = 1;
+
+stdout = File::string_write ();
+try {
+    f (2, 3);
+    stdout = saved;
+    raise not_raised ();
+} catch invalid_unop_value (string m, poly v) {
+}
+output = File::string_string (stdout);
+stdout = saved;
+
+if (output != "")
+    raise printed (output);

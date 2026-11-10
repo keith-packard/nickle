@@ -63,7 +63,8 @@ tests = [
   'chacha_test.5c',
   'manylocalstest.5c',
   'floatprectest.5c',
-  'semcounttest.5c'
+  'semcounttest.5c',
+  'datelimittest.5c'
 ]
 
 extra_files = [

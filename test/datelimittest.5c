@@ -1,0 +1,60 @@
+/*
+ * Nickle test suite
+ *
+ * Dates at the limits of struct tm
+ *
+ * gmtime and localtime ignored failures, returning the contents of an
+ * uninitialized struct tm for times whose year doesn't fit an int, and
+ * converting the year back to a date overflowed an int. Reading a date
+ * limited each field to a small int, so the latest dates gmtime
+ * produced couldn't be converted back, and a field that raised an
+ * exception was still passed to timegm.
+ */
+
+import Date;
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function rejected (string what, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, poly a, poly b) {
+    }
+}
+
+/* The last second of the latest year struct tm can hold */
+int latest = 67767976233532799;
+date_t d = gmtime (latest);
+check ("latest year", d.year, 2**31 - 1);
+check ("latest month", d.mon, 12);
+check ("latest day", d.mday, 31);
+check ("latest round trip", timegm (d), latest);
+
+/* The first second of the year after, whose year is 2**31 */
+check ("year 2**31", gmtime (latest + 1).year, 2**31);
+check ("year 2**31 round trip", timegm (gmtime (latest + 1)), latest + 1);
+
+/* Times whose year doesn't fit struct tm */
+rejected ("gmtime (2**63 - 1)", void func () { gmtime (2**63 - 1); });
+rejected ("localtime (2**63 - 1)", void func () { localtime (2**63 - 1); });
+rejected ("gmtime (-(2**63))", void func () { gmtime (-(2**63)); });
+rejected ("gmtime (2**63)", void func () { gmtime (2**63); });
+
+/* Fields that don't fit struct tm */
+rejected ("year too large",
+	  void func () { timegm ((date_t) { year = 2**31 + 1900, mon = 1, mday = 1 }); });
+rejected ("sec too large",
+	  void func () { timegm ((date_t) { year = 1970, mon = 1, mday = 1, sec = 2**31 }); });
+rejected ("year beyond any integer type", void func () { timegm ((date_t) { year = 2**70 }); });
+
+/* -1 is a valid time, not an error */
+check ("timegm (gmtime (-1))", timegm (gmtime (-1)), -1);

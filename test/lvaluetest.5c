@@ -1,0 +1,28 @@
+/*
+ * Nickle test suite
+ *
+ * Function calls as assignment targets
+ *
+ * A call used as the target of an assignment, increment, or assignment
+ * operator reported nothing and left the target's type unset, which
+ * made the compiler fail an assertion. These must be compile errors.
+ */
+
+int f () { return 1; }
+&int h () { static int w = 1; return &w; }
+
+Command::lex_exit_on_error (false);
+file save_stderr = stderr;
+stderr = File::open ("/dev/null", "w");
+f () = 3;
+f ()++;
+f () += 2;
+h () = 7;
+stderr = save_stderr;
+Command::lex_exit_on_error (true);
+
+/* Calls returning pointers can still be dereferenced and assigned */
+*int g () { static int v = 1; return &v; }
+*g () = 5;
+if (*g () != 5)
+    raise invalid_argument ("*g () = 5", 0, *g ());

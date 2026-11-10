@@ -22,6 +22,7 @@ tests = [
   'noncalltest.5c',
   'hugeinttest.5c',
   'implicitdimtest.5c',
+  'lvaluetest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

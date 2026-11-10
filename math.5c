@@ -1420,6 +1420,9 @@ extend namespace Math {
 	if (a == 0) {
 	    if (b == 0)
 		return 1;
+	    /* 0 ** b is 1 / 0 ** -b */
+	    if (b < 0)
+		raise divide_by_zero (1, a);
 	    return 0;
 	}
 

@@ -858,7 +858,8 @@ BoxValue(BoxPtr box, int e)
 {
     Value v = BoxElements(box)[e];
     if (!v) {
-        RaiseStandardException(exception_uninitialized_value, 0);
+        RaiseStandardException(exception_uninitialized_value, 1,
+                               NewStrString("uninitialized value"));
         return (Void);
     }
     return v;
@@ -868,12 +869,14 @@ static inline Value
 Dereference(Value v)
 {
     if (!ValueIsRef(v)) {
-        RaiseStandardException(exception_invalid_unop_value, 1, v);
+        RaiseStandardException(exception_invalid_unop_value, 2,
+                               NewStrString("dereferencing a non-reference"), v);
         return Void;
     }
     v = RefValueGet(v);
     if (!v) {
-        RaiseStandardException(exception_uninitialized_value, 0);
+        RaiseStandardException(exception_uninitialized_value, 1,
+                               NewStrString("dereferencing uninitialized storage"));
         return (Void);
     }
     return REFERENCE(v);

@@ -257,7 +257,12 @@ NaturalBdivmodStepInplace(Natural *u, Natural *v, digit b, Bool shift)
         carry_mul = DivBase(quo);
         quo_d = ModBase(quo) + carry_sub;
 
-        d = *ud++;
+        /*
+         * u may have become shorter than v; digits past its end
+         * are left over from earlier steps and must read as zero
+         */
+        d = i < NaturalLength(u) ? *ud : 0;
+        ud++;
         if (quo_d) {
             carry_sub = 0;
             GcdCheckPointer(u, ud, sizeof(digit));
@@ -366,8 +371,12 @@ NaturalBdivmod(Natural *u_orig, Natural *v)
 {
     ENTER();
     Natural *u;
+    int      len = u_orig->length;
 
-    u = AllocNatural(u_orig->length + 2);
+    /* Each step writes as many digits as v has, plus a carry */
+    if (len < v->length)
+        len = v->length;
+    u = AllocNatural(len + 2);
     NaturalCopy(u_orig, u);
     NaturalBdivmodInplace(u, v, NaturalWidth(u) - NaturalWidth(v) + 1);
     RETURN(u);

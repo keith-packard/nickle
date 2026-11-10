@@ -1,0 +1,9 @@
+/*
+ * Nickle test suite
+ *
+ * A compile error in a script must make nickle exit with an error
+ * status; meson expects this test to fail
+ */
+
+int x = "string";
+exit (0);

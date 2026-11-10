@@ -84,4 +84,24 @@ foreach test : tests
       )
 endforeach
 
-install_data(files(tests + extra_files), install_dir: nickle_testdir)
+# Errors in input named on the command line must exit with an error status
+error_tests = [
+  'syntax-error.5c',
+  'compile-error.5c',
+]
+
+foreach test : error_tests
+  test(test, nickle,
+       args: files(test),
+       env: test_env,
+       should_fail: true
+      )
+endforeach
+
+test('expr-error', nickle,
+     args: ['-e', 'int x = ;', '-e', 'exit (0);'],
+     env: test_env,
+     should_fail: true
+    )
+
+install_data(files(tests + error_tests + extra_files), install_dir: nickle_testdir)

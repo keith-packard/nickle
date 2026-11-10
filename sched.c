@@ -635,7 +635,7 @@ ContinuationPrint(Value f, Value av, char format, int base, int width, int prec,
     (void)width;
     (void)prec;
     (void)fill;
-    FilePuts(f, "continutation");
+    FilePuts(f, "continuation");
     return True;
 }
 

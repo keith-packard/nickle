@@ -33,8 +33,9 @@ IntegerToSignedDigit(Integer *i)
     signed_digit sd;
 
     dd = NaturalToDoubleDigit(IMag(i));
-    if (ISign(i) == Negative)
-        sd = -(signed_digit)dd;
+    if (ISign(i) == Negative && dd != 0)
+        /* Negate in two steps so the most negative value doesn't overflow */
+        sd = -(signed_digit)(dd - 1) - 1;
     else
         sd = (signed_digit)dd;
     return sd;
@@ -43,7 +44,10 @@ IntegerToSignedDigit(Integer *i)
 int
 IntegerFitsSignedDigit(Integer *i)
 {
-    return NaturalLess(IMag(i), max_signed_digit_natural);
+    /* |i| <= the magnitude of the most negative or largest value */
+    if (ISign(i) == Negative)
+        return !NaturalLess(min_signed_digit_natural, IMag(i));
+    return !NaturalLess(max_signed_digit_natural, IMag(i));
 }
 
 static Value

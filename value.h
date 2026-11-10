@@ -245,6 +245,8 @@ int             DoubleDigitWidth(double_digit i);
 HashValue       NaturalHash(Natural *a);
 
 extern Natural *max_signed_digit_natural;
+/* The magnitude of the most negative signed_digit */
+extern Natural *min_signed_digit_natural;
 extern Natural *max_int_natural;
 extern Natural *zero_natural;
 extern Natural *one_natural;

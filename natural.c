@@ -30,6 +30,7 @@ Natural *one_natural;
 Natural *two_natural;
 Natural *max_int_natural;
 Natural *max_signed_digit_natural;
+Natural *min_signed_digit_natural;
 #ifndef LBASE10
 static Natural *max_tenpow_natural;
 static int      tenpow_digits;
@@ -1361,6 +1362,8 @@ NaturalInit(void)
     MemAddRoot(max_int_natural);
     max_signed_digit_natural = NewDoubleDigitNaturalReal(MAX_NICKLE_SIGNED_DIGIT);
     MemAddRoot(max_signed_digit_natural);
+    min_signed_digit_natural = NewDoubleDigitNaturalReal((double_digit)MAX_NICKLE_SIGNED_DIGIT + 1);
+    MemAddRoot(min_signed_digit_natural);
 #ifndef LBASE10
     tenpow_digits = (int)floor(log10((double)MAX_NICKLE_INT));
     max_tenpow = 1;

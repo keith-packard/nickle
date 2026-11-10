@@ -307,6 +307,25 @@ NewHash(Bool constant, TypePtr keyType, TypePtr type)
     RETURN(ret);
 }
 
+/*
+ * Make room for a new entry for 'key', which Find placed at '*he'.
+ * Growing the table moves the entries, so find the key's place again.
+ * Raise out_of_memory when the table is as large as it can get.
+ */
+static Bool
+HashMakeRoom(HashTablePtr ht, Value **he, Value hash, Value key)
+{
+    if (ht->count < ht->hashSet->entries)
+        return True;
+    if (ht->hashSet == &hashSets[NHASHSETS - 1]) {
+        RaiseStandardException(exception_out_of_memory, 1, NewStrString("hash table too large"));
+        return False;
+    }
+    Resize(ht, ht->hashSet + 1);
+    *he = Find(ht, hash, key);
+    return True;
+}
+
 Value
 HashGet(Value hv, Value key)
 {
@@ -322,9 +341,8 @@ HashGet(Value hv, Value key)
                                    NewStrString("key not in hash"));
             return (Void);
         }
-        if (ht->count >= ht->hashSet->entries && ht->hashSet != &hashSets[NHASHSETS - 1]) {
-            Resize(ht, ht->hashSet + 1);
-        }
+        if (!HashMakeRoom(ht, &he, hash, key))
+            return (Void);
         ht->count++;
         HashEltHash(he) = hash;
         HashEltKey(he) = Copy(key);
@@ -346,12 +364,12 @@ HashSet(Value hv, Value key, Value value)
     Value        hash = ValueHash(key);
     Value       *he;
 
-    if (ht->count >= ht->hashSet->entries && ht->hashSet != &hashSets[NHASHSETS - 1]) {
-        Resize(ht, ht->hashSet + 1);
-    }
     he = Find(ht, hash, key);
-    if (!HashEltValid(he))
+    if (!HashEltValid(he)) {
+        if (!HashMakeRoom(ht, &he, hash, key))
+            return;
         ht->count++;
+    }
     HashEltHash(he) = hash;
     HashEltKey(he) = Copy(key);
     HashEltValue(he) = Copy(value);
@@ -373,11 +391,10 @@ HashRef(Value hv, Value key)
     Value       *he;
     Value        hash = ValueHash(key);
 
-    if (ht->count == ht->hashSet->entries && ht->hashSet != &hashSets[NHASHSETS - 1]) {
-        Resize(ht, ht->hashSet + 1);
-    }
     he = Find(ht, hash, key);
     if (!HashEltValid(he)) {
+        if (!HashMakeRoom(ht, &he, hash, key))
+            RETURN(Void);
         ht->count++;
         HashEltHash(he) = hash;
         HashEltKey(he) = Copy(key);

@@ -1264,6 +1264,18 @@ FilePutInt(Value file, int a)
     FilePutIntBase(file, a, 10);
 }
 
+void
+FilePutPtrdiff(Value file, ptrdiff_t a)
+{
+    double_digit m = (double_digit)a;
+
+    if (a < 0) {
+        FileOutput(file, '-');
+        m = -m;
+    }
+    FilePutDoubleDigitBase(file, m, 10);
+}
+
 int
 FileStringWidth(char *string, long length, char format)
 {

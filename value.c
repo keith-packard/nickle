@@ -146,6 +146,43 @@ SignedDigitPart(Value av, char *error)
     return 0;
 }
 
+/*
+ * Store 'av' in '*p' and return True when it is an integer that fits a
+ * ptrdiff_t, as for a count or index
+ */
+Bool
+ValueToPtrdiff(Value av, ptrdiff_t *p)
+{
+    if (ValueIsInt(av)) {
+        *p = ValueInt(av);
+        return True;
+    }
+    if (ValueIsInteger(av) && IntegerFitsSignedDigit(&av->integer)) {
+        signed_digit d = IntegerToSignedDigit(&av->integer);
+
+        if ((ptrdiff_t)d == d) {
+            *p = (ptrdiff_t)d;
+            return True;
+        }
+    }
+    return False;
+}
+
+/*
+ * Return 'av' as a ptrdiff_t, raising invalid_argument when it isn't
+ * an integer in that range
+ */
+ptrdiff_t
+PtrdiffPart(Value av, char *error)
+{
+    ptrdiff_t p;
+
+    if (ValueToPtrdiff(av, &p))
+        return p;
+    RaiseStandardException(exception_invalid_argument, 3, NewStrString(error), NewInt(0), av);
+    return 0;
+}
+
 static char *
 BinaryOpMessage(BinaryOp operator)
 {

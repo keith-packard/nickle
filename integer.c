@@ -560,6 +560,17 @@ NewSignedDigitInteger(signed_digit d)
     RETURN(NewInteger(sign, NewDoubleDigitNatural(dd)));
 }
 
+/*
+ * Return a count or index as an integer of any size
+ */
+Value
+NewPtrdiffInteger(ptrdiff_t i)
+{
+    if (MIN_NICKLE_INT <= i && i <= MAX_NICKLE_INT)
+        return NewInt((int)i);
+    return NewSignedDigitInteger(i);
+}
+
 int
 IntegerInit(void)
 {

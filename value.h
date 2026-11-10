@@ -1206,6 +1206,7 @@ RefConstant(Value r)
 Value    NewInteger(Sign sign, Natural *mag);
 Value    NewIntInteger(int value);
 Value    NewSignedDigitInteger(signed_digit d);
+Value    NewPtrdiffInteger(ptrdiff_t i);
 Value    NewRational(Sign sign, Natural *num, Natural *den);
 Value    NewIntRational(int value);
 Value    NewIntegerRational(Integer *);
@@ -1316,6 +1317,7 @@ void          FilePutDoubleDigitBase(Value file, double_digit a, int base);
 void          FilePutUIntBase(Value file, unsigned int a, int base);
 void          FilePutIntBase(Value file, int a, int base);
 void          FilePutInt(Value, int);
+void          FilePutPtrdiff(Value, ptrdiff_t);
 int           FileStringWidth(char *string, long length, char format);
 void          FilePutString(Value f, char *string, long length, char format);
 void          FilePutRep(Value f, Rep tag, Bool minimal);
@@ -1456,6 +1458,8 @@ int          IntegerFitsSignedDigit(Integer *i);
 signed_digit IntegerToSignedDigit(Integer *i);
 
 int          IntPart(Value, char *error);
+Bool         ValueToPtrdiff(Value av, ptrdiff_t *p);
+ptrdiff_t    PtrdiffPart(Value, char *error);
 
 int          BoolPart(Value, char *error);
 

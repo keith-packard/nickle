@@ -1,0 +1,64 @@
+/*
+ * Nickle test suite
+ *
+ * Arguments of standard exceptions
+ *
+ * Several standard exceptions were raised without the message their
+ * declarations start with, so catching them with the declared
+ * arguments raised invalid_argument from the catch instead.
+ */
+
+exception missing (string what);
+exception bad_message (string what, string message);
+
+void function check_message (string what, string message)
+{
+    if (String::length (message) == 0)
+	raise bad_message (what, message);
+}
+
+poly s = "a", r = 1/3, i = 5, notfunc = 1;
+
+try {
+    poly x = s - 1;
+    raise missing ("string - int");
+} catch invalid_binop_values (string m, poly left, poly right) {
+    check_message ("string - int", m);
+}
+
+try {
+    poly x = 1 & r;
+    raise missing ("int & rational");
+} catch invalid_binop_values (string m, poly left, poly right) {
+    check_message ("int & rational", m);
+}
+
+try {
+    poly x = -s;
+    raise missing ("- string");
+} catch invalid_unop_value (string m, poly v) {
+    check_message ("- string", m);
+}
+
+try {
+    notfunc ();
+    raise missing ("call of non-function");
+} catch invalid_unop_value (string m, poly v) {
+    check_message ("call of non-function", m);
+}
+
+try {
+    int[3] a = { 1, 2, 3 };
+    poly x = a[i];
+    raise missing ("array bounds");
+} catch invalid_array_bounds (string m, poly a, poly index) {
+    check_message ("array bounds", m);
+}
+
+try {
+    int[string] h = {};
+    poly x = h["k"];
+    raise missing ("hash key");
+} catch uninitialized_value (string m) {
+    check_message ("hash key", m);
+}

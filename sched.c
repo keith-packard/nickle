@@ -1066,7 +1066,7 @@ RaiseException(Value thread, SymbolPtr except, Value args, InstPtr *next)
 
         PrintError("Unhandled exception %A (", except->symbol.name);
         if (args) {
-            int dim = ArrayLimits(&args->array)[0];
+            ptrdiff_t dim = ArrayLimits(&args->array)[0];
             for (i = 0; i < dim; i++) {
                 PrintError("%g", ArrayValue(&args->array, i));
                 if (i < dim - 1)

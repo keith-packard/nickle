@@ -666,7 +666,7 @@ RationalRepeatLength(int prec, Natural *nden, int ibase)
 }
 
 static void
-CheckDecimalLength(int prec, Natural *nden, int ibase, int *initial, int *repeat)
+CheckDecimalLength(int prec, Natural *nden, int ibase, ptrdiff_t *initial, ptrdiff_t *repeat)
 {
     ENTER();
     Natural *rem;
@@ -719,12 +719,12 @@ RationalDecimalPrint(Value f, Value rv, char format, int base, int width, int pr
     char     *initial = 0, *in;
     char     *repeat = 0, *re;
     char     *whole;
-    int       initial_width, repeat_width = 0;
-    int       frac_width;
-    int       rep_width, brace_width = 0, dot_width = 0;
-    int       whole_width;
-    int       fraction_width;
-    int       print_width;
+    ptrdiff_t initial_width, repeat_width = 0;
+    ptrdiff_t frac_width;
+    ptrdiff_t rep_width, brace_width = 0, dot_width = 0;
+    ptrdiff_t whole_width;
+    ptrdiff_t fraction_width;
+    ptrdiff_t print_width;
     int       min_prec;
     Bool      use_braces = True;
 
@@ -743,9 +743,9 @@ RationalDecimalPrint(Value f, Value rv, char format, int base, int width, int pr
      * Check for small numbers for 'e' format
      */
     if (NaturalLess(r->num, r->den) && !NaturalZero(r->num)) {
-        Natural *quo, *rem;
-        Natural *mag;
-        int      bits;
+        Natural  *quo, *rem;
+        Natural  *mag;
+        ptrdiff_t bits;
 
         if (format == 'e' || (format == 'g' && prec > 0)) {
             quo = NaturalDivide(r->den, r->num, &rem);
@@ -961,8 +961,8 @@ RationalPrint(Value f, Value rv, char format, int base, int width, int prec, int
 {
     Rational *r = &rv->rational;
     char     *num, *num_base, *den, *den_base;
-    int       num_width, den_width;
-    int       print_width;
+    ptrdiff_t num_width, den_width;
+    ptrdiff_t print_width;
     Bool      ret = True;
 
     if (format == 'a') {

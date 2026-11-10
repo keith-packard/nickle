@@ -110,11 +110,11 @@ Value
 Popcount(Value av)
 {
     ENTER();
-    Natural *i;
-    Value    ret;
-    digit   *d;
-    int      n;
-    unsigned part;
+    Natural  *i;
+    Value     ret;
+    digit    *d;
+    ptrdiff_t n;
+    unsigned  part;
 
     if (!Integralp(ValueTag(av))) {
         RaiseStandardException(exception_invalid_argument, 3,

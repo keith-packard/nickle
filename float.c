@@ -744,37 +744,37 @@ static Bool
 FloatPrint(Value f, Value fv, char format, int base, int width, int prec, int fill)
 {
     ENTER();
-    Float   *a = &fv->floats;
-    Value    expbase;
-    Fpart   *exp;
-    Natural *int_n;
-    Natural *frac_n;
-    Value    ratio;
-    Value    down;
-    Value    fratio;
-    Value    m;
-    Value    int_part;
-    Value    frac_part;
-    unsigned length;
-    int      orig_prec = prec;
-    int      mant_prec;
-    int      frac_prec;
-    int      dig_max;
-    int      exp_width;
-    int      int_width;
-    int      frac_width;
-    int      print_width;
-    Bool     negative;
-    char    *int_buffer;
-    char    *int_string;
-    char    *frac_buffer;
-    char    *frac_string;
-    char    *exp_string = 0;
-    Bool     rounded = False;
-    int      base_exp;
-    char    *exp_label = "e";
-    Bool     leader = False;
-    int      exp_scale;
+    Float    *a = &fv->floats;
+    Value     expbase;
+    Fpart    *exp;
+    Natural  *int_n;
+    Natural  *frac_n;
+    Value     ratio;
+    Value     down;
+    Value     fratio;
+    Value     m;
+    Value     int_part;
+    Value     frac_part;
+    unsigned  length;
+    int       orig_prec = prec;
+    int       mant_prec;
+    int       frac_prec;
+    int       dig_max;
+    ptrdiff_t exp_width;
+    ptrdiff_t int_width;
+    ptrdiff_t frac_width;
+    ptrdiff_t print_width;
+    Bool      negative;
+    char     *int_buffer;
+    char     *int_string;
+    char     *frac_buffer;
+    char     *frac_string;
+    char     *exp_string = 0;
+    Bool      rounded = False;
+    int       base_exp;
+    char     *exp_label = "e";
+    Bool      leader = False;
+    int       exp_scale;
 
     DPrintF("print", a);
     length = FpartLength(a->mant);
@@ -968,7 +968,7 @@ try_again_f:
     if (frac_width)
         frac_part = Floor(Times(frac_part, Pow(NewInt(base), NewInt(frac_width - 1))));
     if (frac_width && (!Zerop(frac_part) || orig_prec > 0)) {
-        int frac_wrote;
+        ptrdiff_t frac_wrote;
 
         if (ValueIsInteger(frac_part))
             frac_n = IntegerMag(frac_part);

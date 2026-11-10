@@ -229,10 +229,10 @@ IntegerEqual(Value av, Value bv, int expandOk)
  * with zeros and a negative value with ones.
  */
 typedef struct _twosDigits {
-    digit *digits;
-    int    length;
-    digit  carry;  /* set while every lower digit was zero */
-    digit  extend; /* 0 or ~0 */
+    digit    *digits;
+    ptrdiff_t length;
+    digit     carry;  /* set while every lower digit was zero */
+    digit     extend; /* 0 or ~0 */
 } TwosDigits;
 
 static void
@@ -245,7 +245,7 @@ TwosDigitsInit(TwosDigits *t, Integer *i)
 }
 
 static digit
-TwosDigitsNext(TwosDigits *t, int i)
+TwosDigitsNext(TwosDigits *t, ptrdiff_t i)
 {
     digit d;
 
@@ -272,10 +272,10 @@ IntegerBitwise(Value av, Value bv, BinaryOp op)
     ENTER();
     Integer   *a = &av->integer, *b = &bv->integer;
     Bool       aneg = ISign(a) == Negative, bneg = ISign(b) == Negative;
-    int        alen = NaturalLength(IMag(a)), blen = NaturalLength(IMag(b));
-    int        shorter = alen < blen ? alen : blen;
-    int        longer = alen < blen ? blen : alen;
-    int        len, i;
+    ptrdiff_t  alen = NaturalLength(IMag(a)), blen = NaturalLength(IMag(b));
+    ptrdiff_t  shorter = alen < blen ? alen : blen;
+    ptrdiff_t  longer = alen < blen ? blen : alen;
+    ptrdiff_t  len, i;
     Bool       neg;
     digit      extend, carry, x, y;
     digit     *r;
@@ -415,10 +415,10 @@ static Bool
 IntegerPrint(Value f, Value iv, char format, int base, int width, int prec, int fill)
 {
     ENTER();
-    Integer *i = &iv->integer;
-    char    *result;
-    int      print_width;
-    int      fraction_width;
+    Integer  *i = &iv->integer;
+    char     *result;
+    ptrdiff_t print_width;
+    ptrdiff_t fraction_width;
 
     if (format == 'a') {
         Value     fv = NewIntegerFloat(i, DEFAULT_FLOAT_PREC);

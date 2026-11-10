@@ -13,6 +13,8 @@
 #ifndef _VALUE_H_
 #define _VALUE_H_
 #include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -179,11 +181,11 @@ typedef int HashValue;
 
 typedef struct _natural {
     DataType *type;
-    int       length;
+    ptrdiff_t length;
     digit     digits[];
 } Natural;
 
-static inline int
+static inline ptrdiff_t
 NaturalLength(Natural *n)
 {
     return n->length;
@@ -197,7 +199,7 @@ NaturalDigits(Natural *n)
 
 Natural        *NewNatural(unsigned value);
 Natural        *NewDoubleDigitNatural(double_digit dd);
-Natural        *AllocNatural(int size);
+Natural        *AllocNatural(ptrdiff_t size);
 Bool            NaturalEqual(Natural *, Natural *);
 Bool            NaturalLess(Natural *, Natural *);
 Natural        *NaturalPlus(Natural *, Natural *);
@@ -207,28 +209,28 @@ Natural        *NaturalLand(Natural *, Natural *);
 Natural        *NaturalLor(Natural *, Natural *);
 Natural        *NaturalDivide(Natural *a, Natural *b, Natural **remp);
 Natural        *NaturalGcd(Natural *a, Natural *b);
-char           *NaturalSprint(char *, Natural *, int base, int *width);
+char           *NaturalSprint(char *, Natural *, int base, ptrdiff_t *width);
 Natural        *NaturalSqrt(Natural *);
 Natural        *NaturalFactor(Natural *n, Natural *max);
 Natural        *NaturalIntPow(Natural *n, int p);
 Natural        *NaturalPow(Natural *n, Natural *);
 Natural        *NaturalPowMod(Natural *n, Natural *p, Natural *m);
-Natural        *NaturalRsl(Natural *v, int shift);
-Natural        *NaturalLsl(Natural *v, int shift);
-Natural        *NaturalMask(Natural *v, int bits);
-int             NaturalPowerOfTwo(Natural *v);
-int             NaturalEstimateLength(Natural *, digit base);
+Natural        *NaturalRsl(Natural *v, ptrdiff_t shift);
+Natural        *NaturalLsl(Natural *v, ptrdiff_t shift);
+Natural        *NaturalMask(Natural *v, ptrdiff_t bits);
+ptrdiff_t       NaturalPowerOfTwo(Natural *v);
+ptrdiff_t       NaturalEstimateLength(Natural *, digit base);
 void            NaturalCopy(Natural *, Natural *);
 Bool            NaturalZero(Natural *);
 Bool            NaturalEven(Natural *);
 void            NaturalDigitMultiply(Natural *a, digit i, Natural *result);
-digit           NaturalSubtractOffset(Natural *a, Natural *b, int offset);
-digit           NaturalSubtractOffsetReverse(Natural *a, Natural *b, int offset);
-Bool            NaturalGreaterEqualOffset(Natural *a, Natural *b, int offset);
-void            NaturalAddOffset(Natural *a, Natural *b, int offset);
+digit           NaturalSubtractOffset(Natural *a, Natural *b, ptrdiff_t offset);
+digit           NaturalSubtractOffsetReverse(Natural *a, Natural *b, ptrdiff_t offset);
+Bool            NaturalGreaterEqualOffset(Natural *a, Natural *b, ptrdiff_t offset);
+void            NaturalAddOffset(Natural *a, Natural *b, ptrdiff_t offset);
 Natural        *NaturalBdivmod(Natural *u_orig, Natural *v);
 Natural        *NaturalKaryReduction(Natural *u_orig, Natural *v);
-int             NaturalWidth(Natural *u);
+ptrdiff_t       NaturalWidth(Natural *u);
 digit           DigitBmod(digit u, digit v, int s);
 int             IntWidth(int i);
 int             DoubleDigitWidth(double_digit i);

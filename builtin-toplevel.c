@@ -724,7 +724,7 @@ do_bit_width(Value av)
         if (NaturalZero(IntegerMag(av)))
             av = NewInt(0);
         else
-            av = NewInt(NaturalWidth(IntegerMag(av)) + 1);
+            av = Reduce(NewSignedDigitInteger(NaturalWidth(IntegerMag(av)) + 1));
         break;
     default:
         RaiseStandardException(exception_invalid_argument, 3,

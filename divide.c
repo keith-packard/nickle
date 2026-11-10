@@ -19,7 +19,7 @@
 void
 pr(Natural *n)
 {
-    int i;
+    ptrdiff_t i;
 
     for (i = 0; i < NaturalLength(n); i++)
         (void)printf("%u ", (unsigned int)NaturalDigits(n)[i]);
@@ -56,13 +56,13 @@ Natural *
 NaturalDivide(Natural *a, Natural *b, Natural **remp)
 {
     ENTER();
-    int          quolen, remlen;
+    ptrdiff_t    quolen, remlen;
     Natural     *quo, *rem;
-    int          index;
+    ptrdiff_t    index;
     double_digit temp;
     digit        temp2;
     Natural     *partial;
-    int          offset;
+    ptrdiff_t    offset;
     digit        dividend1; /* first digit of dividend */
     digit        dividend2; /* second digit of dividend */
     digit        dividend3; /* third digit of dividend */
@@ -218,7 +218,7 @@ NaturalDivide(Natural *a, Natural *b, Natural **remp)
             }
 #ifdef DEBUG
             prs("partial", partial);
-            printf("result[%d] = %u\n", (int)offset, (unsigned int)d);
+            printf("result[%td] = %u\n", offset, (unsigned int)d);
 #endif
             NaturalDigits(quo)[offset] = d;
         }
@@ -227,7 +227,7 @@ NaturalDivide(Natural *a, Natural *b, Natural **remp)
          */
         for (offset = index - b->length; offset >= 0; offset--) {
 #ifdef DEBUG
-            printf("result[%d] zeroed\n", offset);
+            printf("result[%td] zeroed\n", offset);
 #endif
             NaturalDigits(quo)[offset] = 0;
         }

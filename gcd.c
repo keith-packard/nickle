@@ -45,13 +45,14 @@
 #endif
 
 static void
-NaturalRslInplace(Natural *v, int shift)
+NaturalRslInplace(Natural *v, ptrdiff_t shift)
 {
-    digit *vt, *rt;
-    digit  d1, d2;
-    int    length;
-    int    dshift;
-    int    index, last;
+    digit    *vt, *rt;
+    digit     d1, d2;
+    ptrdiff_t length;
+    ptrdiff_t dshift;
+    ptrdiff_t index;
+    int       last;
 
 #ifdef LLBASE2
     dshift = (shift >> LLBASE2);
@@ -175,10 +176,10 @@ DigitWidth(digit i)
 }
 #endif
 
-int
+ptrdiff_t
 NaturalWidth(Natural *u)
 {
-    int w;
+    ptrdiff_t w;
 
     if (NaturalZero(u))
         return 0;
@@ -248,7 +249,7 @@ NaturalBdivmodStepInplace(Natural *u, Natural *v, digit b, Bool shift)
     digit       *vd = NaturalDigits(v);
     digit       *ud = NaturalDigits(u);
     digit       *rd = ud;
-    int          i;
+    ptrdiff_t    i;
 
     carry_mul = 0;
     carry_sub = 0;
@@ -327,7 +328,7 @@ NaturalBdivmodStepInplace(Natural *u, Natural *v, digit b, Bool shift)
 }
 
 static void
-NaturalBdivmodInplace(Natural *u, Natural *v, int bits)
+NaturalBdivmodInplace(Natural *u, Natural *v, ptrdiff_t bits)
 {
     digit v0_inv = DigitInverse(NaturalDigits(v)[0]);
     digit q0;
@@ -370,8 +371,8 @@ Natural *
 NaturalBdivmod(Natural *u_orig, Natural *v)
 {
     ENTER();
-    Natural *u;
-    int      len = u_orig->length;
+    Natural  *u;
+    ptrdiff_t len = u_orig->length;
 
     /* Each step writes as many digits as v has, plus a carry */
     if (len < v->length)
@@ -541,12 +542,12 @@ oldNaturalBdivmod (Natural *u_orig, Natural *v)
 
 #define Odd(n) (NaturalDigits(n)[0] & 1)
 
-static int
+static ptrdiff_t
 NaturalZeroBits(Natural *u)
 {
-    digit *ut = NaturalDigits(u);
-    digit  d;
-    int    z = 0;
+    digit    *ut = NaturalDigits(u);
+    digit     d;
+    ptrdiff_t z = 0;
 
     if (u->length) {
         while ((d = *ut++) == 0)
@@ -611,9 +612,9 @@ NaturalKaryReductionInplace(Natural *u, Natural *v)
     double_digit qd, qv;
     digit        carry_d, carry_v, carry;
     digit        quo_d, quo_v, r;
-    int          i;
+    ptrdiff_t    i;
     Bool         add;
-    int          lim;
+    ptrdiff_t    lim;
 
     ReducedRatMod(u, v, &n, &d);
     add = False;
@@ -758,8 +759,8 @@ Natural *
 NaturalKaryReduction(Natural *u, Natural *v)
 {
     ENTER();
-    Natural *t;
-    int      len;
+    Natural  *t;
+    ptrdiff_t len;
 
     len = NaturalLength(u);
     if (len < NaturalLength(v))
@@ -776,14 +777,14 @@ NaturalKaryReduction(Natural *u, Natural *v)
  */
 
 static Natural *
-NaturalGcdNormalize(Natural *u, int shift)
+NaturalGcdNormalize(Natural *u, ptrdiff_t shift)
 {
     ENTER();
-    Natural *r;
-    int      dshift;
-    digit    d1, d2;
-    digit   *ut, *rt;
-    int      index;
+    Natural  *r;
+    ptrdiff_t dshift;
+    digit     d1, d2;
+    digit    *ut, *rt;
+    ptrdiff_t index;
 
     dshift = shift >> LLBASE2;
     shift = shift & (LBASE2 - 1);
@@ -832,10 +833,10 @@ NaturalGcd(Natural *u0, Natural *v0)
 #ifdef CHECK
     Natural *true = RegularGcd(u0, v0);
 #endif
-    Natural *u, *v, *t;
-    int      normal;
-    int      u_zeros, v_zeros;
-    int      fix;
+    Natural  *u, *v, *t;
+    ptrdiff_t normal;
+    ptrdiff_t u_zeros, v_zeros;
+    int       fix;
 
     /* Every integer divides zero */
     if (NaturalZero(u0))

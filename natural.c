@@ -39,9 +39,9 @@ DataCachePtr naturalCache;
 int
 NaturalToInt(Natural *n)
 {
-    int    i;
-    digit *d;
-    int    index;
+    int       i;
+    digit    *d;
+    ptrdiff_t index;
 
     d = data(n) + length(n);
     i = 0;
@@ -55,7 +55,7 @@ NaturalToDoubleDigit(Natural *n)
 {
     double_digit i;
     digit       *d;
-    int          index;
+    ptrdiff_t    index;
 
     d = data(n) + length(n);
     i = 0;
@@ -67,8 +67,8 @@ NaturalToDoubleDigit(Natural *n)
 void
 NaturalCopy(Natural *a, Natural *b)
 {
-    digit *ad, *bd;
-    int    index;
+    digit    *ad, *bd;
+    ptrdiff_t index;
 
     length(b) = length(a);
     ad = data(a);
@@ -113,8 +113,8 @@ NaturalOne (Natural *n)
 Bool
 NaturalLess(Natural *a, Natural *b)
 {
-    int    index;
-    digit *at, *bt;
+    ptrdiff_t index;
+    digit    *at, *bt;
 
     if (length(a) < length(b))
         return True;
@@ -138,8 +138,8 @@ NaturalLess(Natural *a, Natural *b)
 Bool
 NaturalEqual(Natural *a, Natural *b)
 {
-    int    index;
-    digit *at, *bt;
+    ptrdiff_t index;
+    digit    *at, *bt;
 
     if (length(a) == length(b)) {
         at = data(a);
@@ -157,8 +157,8 @@ NaturalEqual(Natural *a, Natural *b)
  * of digits
  */
 
-static int
-DigitsLen(digit *x, int len)
+static ptrdiff_t
+DigitsLen(digit *x, ptrdiff_t len)
 {
     x += (len - 1);
     while (len && *x == 0) {
@@ -168,13 +168,13 @@ DigitsLen(digit *x, int len)
     return len;
 }
 
-static int
-DigitsAdd(digit *x, int xlen, digit *y, int ylen, digit *r_orig)
+static ptrdiff_t
+DigitsAdd(digit *x, ptrdiff_t xlen, digit *y, ptrdiff_t ylen, digit *r_orig)
 {
-    digit *r = r_orig;
-    int    rlen;
-    digit  carry = 0;
-    digit  xv, yv, rv;
+    digit    *r = r_orig;
+    ptrdiff_t rlen;
+    digit     carry = 0;
+    digit     xv, yv, rv;
 
     while (xlen && ylen) {
         xlen--;
@@ -217,8 +217,8 @@ DigitsAdd(digit *x, int xlen, digit *y, int ylen, digit *r_orig)
     return rlen;
 }
 
-static int
-DigitsAddInPlace(digit *x_orig, int xlen, digit *y, int ylen, int off)
+static ptrdiff_t
+DigitsAddInPlace(digit *x_orig, ptrdiff_t xlen, digit *y, ptrdiff_t ylen, ptrdiff_t off)
 {
     digit *x = x_orig;
     digit  carry = 0;
@@ -266,8 +266,8 @@ DigitsAddInPlace(digit *x_orig, int xlen, digit *y, int ylen, int off)
     return xlen + (x - x_orig);
 }
 
-static int
-DigitsSubInPlace(digit *x_orig, int xlen, digit *y, int ylen, int off)
+static ptrdiff_t
+DigitsSubInPlace(digit *x_orig, ptrdiff_t xlen, digit *y, ptrdiff_t ylen, ptrdiff_t off)
 {
     digit *x = x_orig;
     digit  carry = 0;
@@ -298,12 +298,12 @@ DigitsSubInPlace(digit *x_orig, int xlen, digit *y, int ylen, int off)
     return xlen + (x - x_orig);
 }
 
-static int
-DigitTimes(const digit *x, int xlen, digit y, digit *result)
+static ptrdiff_t
+DigitTimes(const digit *x, ptrdiff_t xlen, digit y, digit *result)
 {
     double_digit q;
     digit        carry;
-    int          rlen = xlen;
+    ptrdiff_t    rlen = xlen;
 
     if (y == 1) {
         memcpy(result, x, xlen * sizeof(digit));
@@ -322,16 +322,17 @@ DigitTimes(const digit *x, int xlen, digit y, digit *result)
     return rlen;
 }
 
-static int
-DigitsGradeSchool(const digit *x_orig, int xlen, const digit *y_orig, int ylen, digit *result)
+static ptrdiff_t
+DigitsGradeSchool(const digit *x_orig, ptrdiff_t xlen, const digit *y_orig, ptrdiff_t ylen,
+                  digit *result)
 {
     const digit *x, *y;
     digit       *r, *rbase, *rloop;
     double_digit temp;
     digit        carry;
     digit        xd;
-    int          xindex, yindex;
-    int          rlen;
+    ptrdiff_t    xindex, yindex;
+    ptrdiff_t    rlen;
 
     if (xlen == 0 || ylen == 0)
         return 0;
@@ -395,8 +396,8 @@ DigitsGradeSchool(const digit *x_orig, int xlen, const digit *y_orig, int ylen, 
      year = "1962"
  }
  */
-static int
-DigitsKaratsuba(digit *x, int xlen, digit *y, int ylen, digit *result, digit *tmp)
+static ptrdiff_t
+DigitsKaratsuba(digit *x, ptrdiff_t xlen, digit *y, ptrdiff_t ylen, digit *result, digit *tmp)
 {
     /*
      * x * y = (x1 * b + x0) * (y1 * b + y0);
@@ -404,14 +405,14 @@ DigitsKaratsuba(digit *x, int xlen, digit *y, int ylen, digit *result, digit *tm
      *	     = b^2 x1 y1 + b (x1 y0 + x0 y1 + x1 y1 + x0 y0) + x0 y0 - b x1 y1 - b x0 y0
      *	     = (b^2 - b) x1 y1 + b (x1 + x0) (y0 + y1) + (1 - b) x0 y0
      */
-    int    off;
-    int    off2;
-    digit *x1, *x0, *y1, *y0;
-    digit *f, *m1, *m2;
-    digit *next_tmp;
-    int    x1len, x0len, y1len, y0len;
-    int    flen, m1len, m2len;
-    int    rlen;
+    ptrdiff_t off;
+    ptrdiff_t off2;
+    digit    *x1, *x0, *y1, *y0;
+    digit    *f, *m1, *m2;
+    digit    *next_tmp;
+    ptrdiff_t x1len, x0len, y1len, y0len;
+    ptrdiff_t flen, m1len, m2len;
+    ptrdiff_t rlen;
 
     if (aborting)
         return 0;
@@ -515,12 +516,12 @@ Natural *
 NaturalMinus(Natural *a, Natural *b)
 {
     ENTER();
-    int          resultlen;
+    ptrdiff_t    resultlen;
     Natural     *result;
     signed_digit temp, carry;
     digit       *at, *bt, *rt;
-    int          index;
-    int          len;
+    ptrdiff_t    index;
+    ptrdiff_t    len;
 
     resultlen = length(a);
     result = AllocNatural(resultlen);
@@ -549,10 +550,10 @@ Natural *
 NaturalTimes(Natural *a, Natural *b)
 {
     ENTER();
-    Natural *result;
-    int      rlen;
-    digit   *tmp;
-    size_t   tmp_len;
+    Natural  *result;
+    ptrdiff_t rlen;
+    digit    *tmp;
+    size_t    tmp_len;
 
     if (length(a) < KARATSUBA_LIMIT || length(b) < KARATSUBA_LIMIT) {
         if (zeroNp(a) || zeroNp(b))
@@ -589,9 +590,9 @@ Natural *
 NaturalLand(Natural *a, Natural *b)
 {
     ENTER();
-    digit   *at, *bt, *rt;
-    Natural *result;
-    int      resultlen;
+    digit    *at, *bt, *rt;
+    Natural  *result;
+    ptrdiff_t resultlen;
 
     resultlen = length(a);
     if (resultlen > length(b))
@@ -616,10 +617,10 @@ Natural *
 NaturalLor(Natural *a, Natural *b)
 {
     ENTER();
-    digit   *at, *bt, *rt;
-    Natural *result;
-    int      alength;
-    int      blength;
+    digit    *at, *bt, *rt;
+    Natural  *result;
+    ptrdiff_t alength;
+    ptrdiff_t blength;
 
     alength = length(a);
     blength = length(b);
@@ -756,7 +757,7 @@ digit_width(digit d, digit base)
     return width;
 }
 
-int
+ptrdiff_t
 NaturalEstimateLength(Natural *a, digit base)
 {
     if (length(a) == 0)
@@ -764,11 +765,11 @@ NaturalEstimateLength(Natural *a, digit base)
     return length(a) * digit_width(MAXDIGIT, base) + 1;
 }
 
-char *naturalBuffer;
-int   naturalBufferSize;
+char     *naturalBuffer;
+ptrdiff_t naturalBufferSize;
 
 static char *
-NaturalBottom(char *result, digit partial, int base, int digits, Bool fill)
+NaturalBottom(char *result, digit partial, int base, ptrdiff_t digits, Bool fill)
 {
     digit dig;
 
@@ -789,7 +790,7 @@ NaturalBottom(char *result, digit partial, int base, int digits, Bool fill)
 }
 
 static char *
-NaturalSplit(char *result, Natural *a, Natural **divisors, int base, int digits, Bool fill)
+NaturalSplit(char *result, Natural *a, Natural **divisors, int base, ptrdiff_t digits, Bool fill)
 {
     ENTER();
     Natural *q, *r;
@@ -819,17 +820,17 @@ NaturalSplit(char *result, Natural *a, Natural **divisors, int base, int digits,
 }
 
 char *
-NaturalSprint(char *result, Natural *a, int base, int *width)
+NaturalSprint(char *result, Natural *a, int base, ptrdiff_t *width)
 {
     ENTER();
-    int          len;
+    ptrdiff_t    len;
     double_digit max_base;
-    int          digits;
+    ptrdiff_t    digits;
     digit       *t;
     Natural     *divisor;
     char        *r;
     digit        partial;
-    int          print_width;
+    ptrdiff_t    print_width;
     Natural    **divisors;
     int          ndivisors;
     int          idivisor;
@@ -924,11 +925,11 @@ NaturalSprint(char *result, Natural *a, int base, int *width)
 DataType NaturalType = { 0, 0, "NaturalType" };
 
 Natural *
-AllocNatural(int size)
+AllocNatural(ptrdiff_t size)
 {
     Natural *result;
 
-    result = ALLOCATE(&NaturalType, sizeof(Natural) + size * sizeof(digit));
+    result = ALLOCATE(&NaturalType, sizeof(Natural) + (size_t)size * sizeof(digit));
     result->length = size;
     return result;
 }
@@ -1000,15 +1001,16 @@ NewNatural(unsigned value)
 }
 
 Natural *
-NaturalRsl(Natural *v, int shift)
+NaturalRsl(Natural *v, ptrdiff_t shift)
 {
     ENTER();
-    Natural *r;
-    digit   *vt, *rt;
-    digit    d1, d2;
-    int      length;
-    int      dshift;
-    int      index, last;
+    Natural  *r;
+    digit    *vt, *rt;
+    digit     d1, d2;
+    ptrdiff_t length;
+    ptrdiff_t dshift;
+    ptrdiff_t index;
+    int       last;
 
     if (v->length == 0)
         RETURN(zero_natural);
@@ -1049,16 +1051,16 @@ NaturalRsl(Natural *v, int shift)
 }
 
 Natural *
-NaturalLsl(Natural *v, int shift)
+NaturalLsl(Natural *v, ptrdiff_t shift)
 {
     ENTER();
-    Natural *r;
-    digit   *vt, *rt;
-    digit    d1, d2;
-    int      length;
-    int      dshift;
-    int      index;
-    int      last;
+    Natural  *r;
+    digit    *vt, *rt;
+    digit     d1, d2;
+    ptrdiff_t length;
+    ptrdiff_t dshift;
+    ptrdiff_t index;
+    int       last;
 
     if (v->length == 0)
         RETURN(zero_natural);
@@ -1101,13 +1103,13 @@ NaturalLsl(Natural *v, int shift)
 }
 
 Natural *
-NaturalMask(Natural *v, int bits)
+NaturalMask(Natural *v, ptrdiff_t bits)
 {
     ENTER();
-    Natural *r;
-    digit   *vt, *rt;
-    digit    mask;
-    int      length;
+    Natural  *r;
+    digit    *vt, *rt;
+    digit     mask;
+    ptrdiff_t length;
 
 #ifdef LLBASE2
     length = (bits + LBASE2) >> LLBASE2;
@@ -1137,12 +1139,12 @@ NaturalMask(Natural *v, int bits)
     RETURN(r);
 }
 
-int
+ptrdiff_t
 NaturalPowerOfTwo(Natural *v)
 {
-    int    bit;
-    int    l;
-    digit *vt, last;
+    ptrdiff_t bit;
+    ptrdiff_t l;
+    digit    *vt, last;
 
     if (!v->length)
         return -1;
@@ -1175,13 +1177,13 @@ NaturalDigitMultiply(Natural *a, digit i, Natural *result)
  */
 
 digit
-NaturalSubtractOffset(Natural *a, Natural *b, int offset)
+NaturalSubtractOffset(Natural *a, Natural *b, ptrdiff_t offset)
 {
-    int    index;
-    digit  carry;
-    digit *at, *bt;
-    digit  av, bv;
-    int    len;
+    ptrdiff_t index;
+    digit     carry;
+    digit    *at, *bt;
+    digit     av, bv;
+    ptrdiff_t len;
 
     carry = 0;
     at = NaturalDigits(a) + offset;
@@ -1212,13 +1214,13 @@ NaturalSubtractOffset(Natural *a, Natural *b, int offset)
 }
 
 digit
-NaturalSubtractOffsetReverse(Natural *a, Natural *b, int offset)
+NaturalSubtractOffsetReverse(Natural *a, Natural *b, ptrdiff_t offset)
 {
-    int    index;
-    digit  carry;
-    digit *at, *bt;
-    digit  av, bv;
-    int    len;
+    ptrdiff_t index;
+    digit     carry;
+    digit    *at, *bt;
+    digit     av, bv;
+    ptrdiff_t len;
 
     carry = 0;
     at = NaturalDigits(a) + offset;
@@ -1249,12 +1251,12 @@ NaturalSubtractOffsetReverse(Natural *a, Natural *b, int offset)
 }
 
 void
-NaturalAddOffset(Natural *a, Natural *b, int offset)
+NaturalAddOffset(Natural *a, Natural *b, ptrdiff_t offset)
 {
-    int    index;
-    digit  carry;
-    digit *at, *bt;
-    digit  av, bv;
+    ptrdiff_t index;
+    digit     carry;
+    digit    *at, *bt;
+    digit     av, bv;
 
     carry = 0;
     at = NaturalDigits(a) + offset;
@@ -1277,10 +1279,10 @@ NaturalAddOffset(Natural *a, Natural *b, int offset)
 }
 
 Bool
-NaturalGreaterEqualOffset(Natural *a, Natural *b, int offset)
+NaturalGreaterEqualOffset(Natural *a, Natural *b, ptrdiff_t offset)
 {
-    digit *ad, *bd;
-    int    index;
+    digit    *ad, *bd;
+    ptrdiff_t index;
 
     if (a->length > b->length + offset)
         return True;
@@ -1303,7 +1305,7 @@ NaturalGreaterEqualOffset(Natural *a, Natural *b, int offset)
 HashValue
 NaturalHash(Natural *a)
 {
-    return HashCrc32((unsigned char *)&a->length, sizeof(int) + sizeof(digit) * a->length);
+    return HashCrc32((unsigned char *)&a->length, sizeof(a->length) + sizeof(digit) * a->length);
 }
 
 int

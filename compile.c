@@ -1309,14 +1309,14 @@ CompileSizeDimensions(ExprPtr expr, int *dims, int ndims)
                     dim = -dim;
                     break;
                 }
-                if (ndims != 1) {
+                if (ndims != 1)
                     CompileSizeDimensions(expr->tree.left, dims + 1, ndims - 1);
-                    if (dims[1])
-                        dim++;
-                } else
-                    dim++;
+                dim++;
                 expr = expr->tree.right;
             }
+            /* Rows that are all empty make an empty array */
+            if (ndims != 1 && dims[1] == 0)
+                dim = 0;
             break;
         case COMP:
             dim = -1;

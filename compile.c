@@ -1952,7 +1952,7 @@ CompileCatch(ObjPtr obj, ExprPtr catches, ExprPtr body, ExprPtr stat, CodePtr co
         }
         if (exception->symbol.class != class_exception) {
             CompileError(obj, stat, "Invalid use of %C \"%A\" as exception",
-                         exception->symbol.class, catch->code.code->base.name->atom);
+                         exception->symbol.class, name->atom.atom);
             RETURN(obj);
         }
 

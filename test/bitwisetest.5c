@@ -1,0 +1,72 @@
+/*
+ * Nickle test suite
+ *
+ * Bitwise operations on integers of any size and sign
+ *
+ * Compare &, | and ^ with results built from 16-bit chunks of the
+ * two's complement operands, which fit in small integers.
+ */
+
+autoimport PRNG;
+
+exception bad_bitwise (string op, int a, int b, int got, int want);
+
+int chunk_bits = 16;
+int chunk_mask = (1 << chunk_bits) - 1;
+
+/* Two's complement chunk i, extracted without bitwise operators */
+int function chunk (int x, int i)
+{
+    return (x // 2 ** (chunk_bits * i)) % 2 ** chunk_bits;
+}
+
+int function reference (int a, int b, int(int, int) op)
+{
+    int	width = max (bit_width (a), bit_width (b)) + 1;
+    int	chunks = width // chunk_bits + 1;
+    int	r = 0;
+
+    for (int i = 0; i < chunks; i++)
+	r += op (chunk (a, i), chunk (b, i)) * 2 ** (chunk_bits * i);
+    /* Every chunk past the last is the sign extension of the result */
+    if (op (chunk (a, chunks), chunk (b, chunks)) != 0)
+	r -= 2 ** (chunk_bits * chunks);
+    return r;
+}
+
+int function and (int a, int b) = a & b;
+int function or (int a, int b) = a | b;
+int function xor (int a, int b) = a ^ b;
+
+void function check (int a, int b)
+{
+    if ((a & b) != reference (a, b, and))
+	raise bad_bitwise ("&", a, b, a & b, reference (a, b, and));
+    if ((a | b) != reference (a, b, or))
+	raise bad_bitwise ("|", a, b, a | b, reference (a, b, or));
+    if ((a ^ b) != reference (a, b, xor))
+	raise bad_bitwise ("^", a, b, a ^ b, reference (a, b, xor));
+}
+
+int[...] values = {};
+
+void function add (int v)
+{
+    values[dim (values)] = v;
+    values[dim (values)] = -v;
+}
+
+add (0);
+add (1);
+for (int k = 1; k <= 200; k++)
+    if (k % 32 <= 1 || k % 32 == 31 || k == 200) {
+	add (2 ** k);
+	add (2 ** k - 1);
+	add (2 ** k + 1);
+    }
+for (int i = 0; i < 10; i++)
+    add (randbits (randint (300) + 1));
+
+for (int i = 0; i < dim (values); i++)
+    for (int j = 0; j < dim (values); j++)
+	check (values[i], values[j]);

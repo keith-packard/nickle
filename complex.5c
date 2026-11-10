@@ -42,13 +42,50 @@ extend namespace Complex {
 		   r * Math::sin(cimag(z)));
     }
 
+    int min_exponent(complex z)
+	/*
+	 * Returns the smaller exponent of the nonzero parts of 'z', or
+	 * 0 when there are none; a part may be an exact zero even in
+	 * an imprecise value
+	 */
+    {
+	int	e = 0;
+	bool	any = false;
+	real[2]	parts = { creal(z), cimag(z) };
+
+	for (int k = 0; k < 2; k++) {
+	    if (parts[k] == 0)
+		continue;
+	    int pe = exponent(imprecise(parts[k]));
+	    if (!any || pe < e)
+		e = pe;
+	    any = true;
+	}
+	return e;
+    }
+
+    int part_exponent(real x)
+	/*
+	 * Returns the exponent of 'x', or 0 when 'x' is an exact zero
+	 */
+    {
+	return x == 0 ? 0 : exponent(imprecise(x));
+    }
+
     protected complex pow(complex x, complex y)
     {
+	if (x == 0) {
+	    if (y == 0)
+		return 1;
+	    if (creal(y) > 0)
+		return 0;
+	    raise divide_by_zero(1, x);
+	}
 	x = imprecise(x);
 	y = imprecise(y);
 	/* add precision to cover the atan2 + sin/cos operations */
 	int prec = min(precision(x), precision(y));
-	int iprec = prec + abs(exponent(creal(x))) + abs(exponent(cimag(x)));
+	int iprec = prec + abs(part_exponent(creal(x))) + abs(part_exponent(cimag(x)));
 	complex xi = imprecise(x, iprec);
 	complex yi = imprecise(y, iprec);
 	return imprecise(exp(log(xi) * yi), prec);
@@ -80,14 +117,14 @@ extend namespace Complex {
     {
 	z = imprecise(z);
 	int		prec = precision(z);
-	int		e = exponent(cimag(z));
+	int		e = min_exponent(z);
 	int		iprec = prec + 64;
 	if (e < 0)
 		iprec -= 2*e;
 
 	complex	zp = imprecise(z, iprec);
 	complex i_over_2 = new(0, 0.5);
-	return imprecise(i_over_2 * log((i+z) / (i-z)), prec);
+	return imprecise(i_over_2 * log((i+zp) / (i-zp)), prec);
     }
 
     protected complex asin(complex z)
@@ -97,7 +134,7 @@ extend namespace Complex {
 
 	z = imprecise(z);
 	int	prec = precision(z);
-	int	e = min(exponent(creal(z)), exponent(cimag(z)));
+	int	e = min_exponent(z);
 	int	iprec = prec + 14;
 	if (e < 0)
 	    iprec -= 2*e;
@@ -173,31 +210,33 @@ extend namespace Complex {
 	z = imprecise(z);
 	int	prec = precision(z);
 	int	iprec = prec + 512;
-	int	e = min(exponent(creal(z)), exponent(cimag(z)));
+	int	e = min_exponent(z);
 	if (e < 0)
-	    iprec += e;
+	    iprec -= e;
 	complex	zp = imprecise(z, iprec);
 	return imprecise(0.5 * log((1 + zp)/(1 - zp)), prec);
     }
 
     protected complex asinh(complex z)
     {
+	z = imprecise(z);
 	int	prec = precision(z);
 	int	iprec = prec + 512;
-	int	e = min(exponent(creal(z)), exponent(cimag(z)));
+	int	e = min_exponent(z);
 	if (e < 0)
-	    iprec += e;
+	    iprec -= e;
 	complex	zp = imprecise(z, iprec);
 	return imprecise(log(zp + sqrt(zp*zp + 1)), prec);
     }
 
     protected complex acosh(complex z)
     {
+	z = imprecise(z);
 	int	prec = precision(z);
 	int	iprec = prec + 512;
-	int	e = min(exponent(creal(z)), exponent(cimag(z)));
+	int	e = min_exponent(z);
 	if (e < 0)
-	    iprec += e;
+	    iprec -= e;
 	complex	zp = imprecise(z, iprec);
 	return imprecise(log(zp + sqrt(zp + 1) * sqrt(zp - 1)), prec);
     }

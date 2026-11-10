@@ -1,0 +1,35 @@
+/*
+ * Nickle test suite
+ *
+ * Implicit array dimensions
+ *
+ * When sizing a dimension from nested initializers, rows were counted
+ * only once a non-empty row had been seen, so leading empty rows were
+ * left out and initializing them raised invalid_array_bounds.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+int[*,*] a = { {}, {1} };
+check ("{ {}, {1} }", dims (a), (int[*]) { 2, 1 });
+check ("{ {}, {1} }[1,0]", a[1,0], 1);
+
+int[*,*] b = { {}, {}, {1, 2} };
+check ("{ {}, {}, {1, 2} }", dims (b), (int[*]) { 3, 2 });
+check ("{ {}, {}, {1, 2} }[2,1]", b[2,1], 2);
+
+int[*,*] c = { {1}, {} };
+check ("{ {1}, {} }", dims (c), (int[*]) { 2, 1 });
+
+int[*,*,*] d = { { {} }, { {1} } };
+check ("{ { {} }, { {1} } }", dims (d), (int[*]) { 2, 1, 1 });
+
+/* Rows that are all empty make an empty array */
+int[*,*] e = { {}, {} };
+check ("{ {}, {} }", dims (e), (int[*]) { 0, 0 });

@@ -848,7 +848,7 @@ not exist.
 .IP "exception invalid_binop_values(string msg, poly arg1, poly arg2)"
 Attempt to evaluate a binary operator with args arg1 and arg2,
 where at least one of these values is invalid.
-.IP "exception invalid_unop_values(string msg, poly arg)"
+.IP "exception invalid_unop_value(string msg, poly arg)"
 Attempt to evaluate a unary operator with invalid argument arg.
 .LP
 .B "Builtin Namespaces:"

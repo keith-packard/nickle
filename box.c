@@ -110,7 +110,9 @@ BoxRewrite(BoxPtr box, int *ep)
      * at least prevent a seg fault.
      */
     if (e >= 0 && (unsigned long)e >= box->nvalues) {
-        RaiseStandardException(exception_invalid_array_bounds, 2, Void, NewInt(e));
+        RaiseStandardException(exception_invalid_array_bounds, 3,
+                               NewStrString("reference to storage removed by array resize"), Void,
+                               NewInt(e));
         e = 0;
         box = NewBox(True, False, 1, typePrim[rep_void]);
         BoxValueSet(box, 0, 0);

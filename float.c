@@ -536,7 +536,8 @@ FloatInteger(Value av)
             mag = NaturalLsl(mag, dist);
         av = Reduce(NewInteger(a->mant->sign, mag));
     } else {
-        RaiseStandardException(exception_invalid_unop_value, 1, av);
+        RaiseStandardException(exception_invalid_unop_value, 2,
+                               NewStrString("real is not an integer"), av);
     }
     RETURN(av);
 }

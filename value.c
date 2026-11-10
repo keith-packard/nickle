@@ -146,6 +146,54 @@ SignedDigitPart(Value av, char *error)
     return 0;
 }
 
+static char *
+BinaryOpMessage(BinaryOp operator)
+{
+    switch (operator) {
+    case PlusOp:
+        return "incompatible operands for +";
+    case MinusOp:
+        return "incompatible operands for -";
+    case TimesOp:
+        return "incompatible operands for *";
+    case DivideOp:
+        return "incompatible operands for /";
+    case DivOp:
+        return "incompatible operands for //";
+    case ModOp:
+        return "incompatible operands for %";
+    case LessOp:
+        return "incompatible operands for <";
+    case EqualOp:
+        return "incompatible operands for ==";
+    case LandOp:
+        return "incompatible operands for &";
+    case LorOp:
+        return "incompatible operands for |";
+    case LxorOp:
+        return "incompatible operands for ^";
+    case NumBinaryOp:
+        break;
+    }
+    return "incompatible operands";
+}
+
+static char *
+UnaryOpMessage(UnaryOp operator)
+{
+    switch (operator) {
+    case NegateOp:
+        return "incompatible operand for -";
+    case FloorOp:
+        return "incompatible operand for floor";
+    case CeilOp:
+        return "incompatible operand for ceil";
+    case NumUnaryOp:
+        break;
+    }
+    return "incompatible operand";
+}
+
 Value
 BinaryOperate(Value av, Value bv, BinaryOp operator)
 {
@@ -274,7 +322,8 @@ BinaryOperate(Value av, Value bv, BinaryOp operator)
         if (!rep || !rep->binary[operator]) {
             if (operator == EqualOp)
                 RETURN(FalseVal);
-            RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+            RaiseStandardException(exception_invalid_binop_values, 3,
+                                   NewStrString(BinaryOpMessage(operator)), av, bv);
             RETURN(Void);
         }
         if (aborting)
@@ -295,7 +344,8 @@ UnaryOperate(Value v, UnaryOp operator)
     ValueRep *rep = ValueRep(v);
 
     if (!rep->unary[operator]) {
-        RaiseStandardException(exception_invalid_unop_value, 1, v);
+        RaiseStandardException(exception_invalid_unop_value, 2,
+                               NewStrString(UnaryOpMessage(operator)), v);
         RETURN(Void);
     }
     if (aborting)
@@ -415,7 +465,8 @@ Factorial(Value av)
     StackPointer iref, tvref;
 
     if (!Integralp(ValueTag(av)) || Negativep(av)) {
-        RaiseStandardException(exception_invalid_unop_value, 1, av);
+        RaiseStandardException(exception_invalid_unop_value, 2,
+                               NewStrString("factorial requires a non-negative integer"), av);
         RETURN(Void);
     }
     /*
@@ -470,7 +521,8 @@ Pow(Value av, Value bv)
     Value result;
 
     if (!Numericp(ValueTag(av)) || !Numericp(ValueTag(bv))) {
-        RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+        RaiseStandardException(exception_invalid_binop_values, 3,
+                               NewStrString("** requires numbers"), av, bv);
         RETURN(Void);
     }
     switch (ValueTag(bv)) {
@@ -524,7 +576,8 @@ Pow(Value av, Value bv)
             result = Divide(One, result);
     } break;
     default:
-        RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+        RaiseStandardException(exception_invalid_binop_values, 3,
+                               NewStrString("invalid exponent for **"), av, bv);
         result = Void;
         break;
     }
@@ -536,7 +589,8 @@ ShiftL(Value av, Value bv)
 {
     ENTER();
     if (!Integralp(ValueTag(av)) || !Integralp(ValueTag(bv))) {
-        RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+        RaiseStandardException(exception_invalid_binop_values, 3,
+                               NewStrString("<< requires integers"), av, bv);
         RETURN(Void);
     }
     if (Negativep(bv))
@@ -571,7 +625,8 @@ ShiftR(Value av, Value bv)
 {
     ENTER();
     if (!Integralp(ValueTag(av)) || !Integralp(ValueTag(bv))) {
-        RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+        RaiseStandardException(exception_invalid_binop_values, 3,
+                               NewStrString(">> requires integers"), av, bv);
         RETURN(Void);
     }
     if (Negativep(bv))
@@ -603,7 +658,8 @@ Gcd(Value av, Value bv)
     ENTER();
 
     if (!Integralp(ValueTag(av)) || !Integralp(ValueTag(bv))) {
-        RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+        RaiseStandardException(exception_invalid_binop_values, 3,
+                               NewStrString("gcd requires integers"), av, bv);
         RETURN(Void);
     }
     RETURN(Reduce(NewInteger(
@@ -618,7 +674,8 @@ Bdivmod(Value av, Value bv)
     ENTER();
 
     if (!Integralp(ValueTag(av)) || !Integralp(ValueTag(bv))) {
-        RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+        RaiseStandardException(exception_invalid_binop_values, 3,
+                               NewStrString("bdivmod requires integers"), av, bv);
         RETURN(Void);
     }
     RETURN(Reduce(NewInteger(Positive,
@@ -632,7 +689,8 @@ KaryReduction(Value av, Value bv)
     ENTER();
 
     if (!Integralp(ValueTag(av)) || !Integralp(ValueTag(bv))) {
-        RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+        RaiseStandardException(exception_invalid_binop_values, 3,
+                               NewStrString("kary_reduction requires integers"), av, bv);
         RETURN(Void);
     }
     RETURN(Reduce(NewInteger(Positive,

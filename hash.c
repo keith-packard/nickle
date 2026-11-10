@@ -318,7 +318,8 @@ HashGet(Value hv, Value key)
     he = Find(ht, hash, key);
     if (!HashEltValid(he)) {
         if (!ht->def) {
-            RaiseStandardException(exception_uninitialized_value, 0);
+            RaiseStandardException(exception_uninitialized_value, 1,
+                                   NewStrString("key not in hash"));
             return (Void);
         }
         if (ht->count >= ht->hashSet->entries && ht->hashSet != &hashSets[NHASHSETS - 1]) {
@@ -331,7 +332,8 @@ HashGet(Value hv, Value key)
     }
     value = HashEltValue(he);
     if (!value) {
-        RaiseStandardException(exception_uninitialized_value, 0);
+        RaiseStandardException(exception_uninitialized_value, 1,
+                               NewStrString("uninitialized hash value"));
         return (Void);
     }
     return value;

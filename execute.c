@@ -100,7 +100,8 @@ ThreadCall(Value thread, Bool tail, InstPtr *next, int *stack)
         func = argc ? CStack(argc - 1) : value;
     if (!ValueIsFunc(func)) {
         ThreadStackDump(thread);
-        RaiseStandardException(exception_invalid_unop_value, 1, func);
+        RaiseStandardException(exception_invalid_unop_value, 2,
+                               NewStrString("call of non-function"), func);
         RETURN(Void);
     }
     code = func->func.code;
@@ -242,11 +243,15 @@ ThreadAssign(Value ref, Value v, Bool initialize)
 {
     ENTER();
     if (!ValueIsRef(ref))
-        RaiseStandardException(exception_invalid_binop_values, 2, ref, v);
+        RaiseStandardException(exception_invalid_binop_values, 3,
+                               NewStrString("assignment to non-reference"), ref, v);
     else if (RefConstant(ref) && !initialize)
-        RaiseStandardException(exception_readonly_box, 1, v);
+        RaiseStandardException(exception_readonly_box, 2,
+                               NewStrString("assignment to const storage"), v);
     else if (ref->ref.element < 0 || (unsigned long)ref->ref.element >= ref->ref.box->nvalues)
-        RaiseStandardException(exception_invalid_array_bounds, 2, NewInt(ref->ref.element), v);
+        RaiseStandardException(exception_invalid_array_bounds, 3,
+                               NewStrString("assignment outside of array"),
+                               NewInt(ref->ref.element), v);
     else if (!TypeCompatibleAssign(RefType(ref), v)) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("Incompatible types in assignment"),
@@ -334,7 +339,8 @@ ThreadArrayIndex(Value array, Value thread, int ndim, Value last, int off, Bool 
                 else
                     ArrayResize(array, dim, part + 1);
             } else if (except) {
-                RaiseStandardException(exception_invalid_array_bounds, 2, array, d);
+                RaiseStandardException(exception_invalid_array_bounds, 3,
+                                       NewStrString("array index out of bounds"), array, d);
                 return 0;
             }
         }
@@ -724,11 +730,14 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
     switch (ValueTag(v)) {
     case rep_string:
         if (!fetch) {
-            RaiseStandardException(exception_invalid_binop_values, 2, v, value);
+            RaiseStandardException(exception_invalid_binop_values, 3,
+                                   NewStrString("strings are read-only"), v, value);
             break;
         }
         if (stack != 1) {
-            RaiseStandardException(exception_invalid_binop_values, 2, NewInt(stack), v);
+            RaiseStandardException(exception_invalid_binop_values, 3,
+                                   NewStrString("wrong number of string indices"), NewInt(stack),
+                                   v);
             break;
         }
         i = IntPart(value, "Invalid string index");
@@ -736,14 +745,16 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
             break;
         s = StringChars(&v->string);
         if (i < 0 || StringLength(s, v->string.length) <= i) {
-            RaiseStandardException(exception_invalid_binop_values, 2, v, value);
+            RaiseStandardException(exception_invalid_binop_values, 3,
+                                   NewStrString("string index out of bounds"), v, value);
             break;
         }
         value = NewInt(StringGet(s, v->string.length, i));
         break;
     case rep_array:
         if (stack != v->array.ndim) {
-            RaiseStandardException(exception_invalid_binop_values, 2, NewInt(stack), v);
+            RaiseStandardException(exception_invalid_binop_values, 3,
+                                   NewStrString("wrong number of array indices"), NewInt(stack), v);
             break;
         }
         i = ThreadArrayIndex(v, thread, stack, value, 0, True, !fetch);
@@ -760,7 +771,8 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
         break;
     case rep_hash:
         if (stack != 1) {
-            RaiseStandardException(exception_invalid_binop_values, 2, NewInt(stack), v);
+            RaiseStandardException(exception_invalid_binop_values, 3,
+                                   NewStrString("wrong number of hash indices"), NewInt(stack), v);
             break;
         }
         if (fetch)
@@ -769,7 +781,9 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
             value = HashRef(v, value);
         break;
     default:
-        RaiseStandardException(exception_invalid_unop_value, 1, v);
+        RaiseStandardException(
+            exception_invalid_unop_value, 2,
+            NewStrString("indexing a value that is not an array, string or hash"), v);
         break;
     }
     return value;
@@ -783,7 +797,9 @@ ThreadOpDot(Value thread, Value value, Atom atom, Bool fetch)
     (void)thread;
     switch (ValueTag(value)) {
     default:
-        RaiseStandardException(exception_invalid_unop_value, 1, value);
+        RaiseStandardException(
+            exception_invalid_unop_value, 2,
+            NewStrString("member access on a value that is not a struct or union"), value);
         break;
     case rep_struct:
         if (fetch)
@@ -1205,11 +1221,15 @@ ThreadsRun(Value thread, Value lex)
                     break;
                 case OpVarActual:
                     if (!ValueIsArray(value)) {
-                        RaiseStandardException(exception_invalid_unop_value, 1, value);
+                        RaiseStandardException(
+                            exception_invalid_unop_value, 2,
+                            NewStrString("variable argument list is not an array"), value);
                         break;
                     }
                     if (value->array.ndim != 1) {
-                        RaiseStandardException(exception_invalid_unop_value, 1, value);
+                        RaiseStandardException(
+                            exception_invalid_unop_value, 2,
+                            NewStrString("variable argument list is not one-dimensional"), value);
                         break;
                     }
                     for (i = 0; i < ArrayLimits(&value->array)[0]; i++) {
@@ -1233,7 +1253,9 @@ ThreadsRun(Value thread, Value lex)
                 case OpArrowRef:
                 case OpArrowRefStore:
                     if (!ValueIsRef(value)) {
-                        RaiseStandardException(exception_invalid_unop_value, 1, value);
+                        RaiseStandardException(exception_invalid_unop_value, 2,
+                                               NewStrString("arrow operator on a non-reference"),
+                                               value);
                         break;
                     }
                     value = RefValueGet(value);

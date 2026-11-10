@@ -29,7 +29,8 @@ RefPlus(Value av, Value bv, int expandOk)
     i = i + ref->element;
     if (i < 0 || (unsigned long)i >= ref->box->nvalues
         || (!ref->box->homogeneous && i != ref->element)) {
-        RaiseStandardException(exception_invalid_array_bounds, 2, av, bv);
+        RaiseStandardException(exception_invalid_array_bounds, 3,
+                               NewStrString("pointer arithmetic outside of array"), av, bv);
         RETURN(Void);
     }
     RETURN(NewRef(ref->box, i));
@@ -60,7 +61,9 @@ RefMinus(Value av, Value bv, int expandOk)
         ref = &av->ref;
         bref = &bv->ref;
         if (ref->box != bref->box) {
-            RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+            RaiseStandardException(exception_invalid_binop_values, 3,
+                                   NewStrString("subtracting pointers to different arrays"), av,
+                                   bv);
             RETURN(Void);
         }
         RETURN(NewInt(ref->element - bref->element));
@@ -68,7 +71,8 @@ RefMinus(Value av, Value bv, int expandOk)
     i = i + element;
     if (i < 0 || (unsigned long)i >= ref->box->nvalues
         || (!ref->box->homogeneous && i != ref->element)) {
-        RaiseStandardException(exception_invalid_array_bounds, 2, av, bv);
+        RaiseStandardException(exception_invalid_array_bounds, 3,
+                               NewStrString("pointer arithmetic outside of array"), av, bv);
         RETURN(Void);
     }
     RETURN(NewRef(ref->box, i));
@@ -81,7 +85,8 @@ RefLess(Value av, Value bv, int expandOk)
 
     (void)expandOk;
     if (aref->box != bref->box || (!aref->box->homogeneous && aref->element != bref->element)) {
-        RaiseStandardException(exception_invalid_binop_values, 2, av, bv);
+        RaiseStandardException(exception_invalid_binop_values, 3,
+                               NewStrString("comparing pointers to different arrays"), av, bv);
         return FalseVal;
     }
     if (aref->element < bref->element)

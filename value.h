@@ -1009,13 +1009,13 @@ ValueTag(Value v)
 static inline Natural *
 IntegerMag(Value i)
 {
-    return (Natural *)((long)(i->integer.magn) & ~1);
+    return (Natural *)((uintptr_t)(i->integer.magn) & ~(uintptr_t)1);
 }
 
 static inline Sign
 IntegerSign(Value i)
 {
-    return (Sign)((long)(i->integer.magn) & 1);
+    return (Sign)((uintptr_t)(i->integer.magn) & 1);
 }
 
 typedef struct _boxReplace {

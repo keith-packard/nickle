@@ -12,8 +12,8 @@
 
 #include "nickle.h"
 
-#define IMag(i)  ((Natural *)((long)((i)->magn) & ~1))
-#define ISign(i) ((Sign)((long)((i)->magn) & 1))
+#define IMag(i)  ((Natural *)((uintptr_t)((i)->magn) & ~(uintptr_t)1))
+#define ISign(i) ((Sign)((uintptr_t)((i)->magn) & 1))
 
 int
 IntegerToInt(Integer *i)
@@ -525,7 +525,7 @@ NewInteger(Sign sign, Natural *mag)
         RETURN(ret);
     }
     ret = ALLOCATE(&IntegerRep.data, sizeof(Integer));
-    ret->integer.magn = (Natural *)(((long)mag) | (long)sign);
+    ret->integer.magn = (Natural *)(((uintptr_t)mag) | (uintptr_t)sign);
     *re = ret;
     RETURN(ret);
 }

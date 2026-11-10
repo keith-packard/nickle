@@ -4,25 +4,25 @@
  * for licensing information.
  */
 
-#include	"nickle.h"
+#include "nickle.h"
 
 static Value
-IntPlus (Value av, Value bv, int expandOk)
+IntPlus(Value av, Value bv, int expandOk)
 {
-    int	    r = ValueInt(av) + ValueInt(bv);
-    
+    int r = ValueInt(av) + ValueInt(bv);
+
     if (expandOk && NICKLE_INT_CARRIED(r))
-	return Plus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
+        return Plus(NewIntInteger(ValueInt(av)), NewIntInteger(ValueInt(bv)));
     return NewInt(r);
 }
 
 static Value
-IntMinus (Value av, Value bv, int expandOk)
+IntMinus(Value av, Value bv, int expandOk)
 {
-    int	    r = ValueInt(av) - ValueInt(bv);
-    
+    int r = ValueInt(av) - ValueInt(bv);
+
     if (expandOk && NICKLE_INT_CARRIED(r))
-	return Minus (NewIntInteger (ValueInt(av)), NewIntInteger(ValueInt(bv)));
+        return Minus(NewIntInteger(ValueInt(av)), NewIntInteger(ValueInt(bv)));
     return NewInt(r);
 }
 
@@ -32,95 +32,91 @@ logbase2(int a)
     int log = 0;
 
     if (a < 0)
-	a = -a;
-    while (a & (~ 0xff)) {
-	log += 8;
-	a >>= 8;
+        a = -a;
+    while (a & (~0xff)) {
+        log += 8;
+        a >>= 8;
     }
     if (a & (~0xf)) {
-	log += 4;
-	a >>= 4;
+        log += 4;
+        a >>= 4;
     }
     if (a & (~0x3)) {
-	log += 2;
-	a >>= 2;
+        log += 2;
+        a >>= 2;
     }
     if (a & (~0x1))
-	log += 1;
+        log += 1;
     return log;
 }
 
-#define HALF_BITS   (NICKLE_INT_BITS>>1)
-#define HALF_MAX    (1 << (NICKLE_INT_BITS>>1))
+#define HALF_BITS (NICKLE_INT_BITS >> 1)
+#define HALF_MAX  (1 << (NICKLE_INT_BITS >> 1))
 
 static Value
-IntTimes (Value av, Value bv, int expandOk)
+IntTimes(Value av, Value bv, int expandOk)
 {
-    int		    a = ValueInt(av), b = ValueInt(bv);
-    signed_digit    rd = (signed_digit) a * (signed_digit) b;
+    int          a = ValueInt(av), b = ValueInt(bv);
+    signed_digit rd = (signed_digit)a * (signed_digit)b;
 
-    (void) expandOk;
-    if (rd > (signed_digit) MAX_NICKLE_INT || rd < (signed_digit) MIN_NICKLE_INT)
-	return NewSignedDigitInteger (rd);
-    return NewInt ((int) rd);
+    (void)expandOk;
+    if (rd > (signed_digit)MAX_NICKLE_INT || rd < (signed_digit)MIN_NICKLE_INT)
+        return NewSignedDigitInteger(rd);
+    return NewInt((int)rd);
 }
 
 static Value
-IntDivide (Value av, Value bv, int expandOk)
+IntDivide(Value av, Value bv, int expandOk)
 {
-    ENTER ();
-    int		a = ValueInt(av), b = ValueInt(bv);
-    Value	ret;
+    ENTER();
+    int   a = ValueInt(av), b = ValueInt(bv);
+    Value ret;
 
-    if (b == 0)
-    {
-	RaiseStandardException (exception_divide_by_zero, 2,
-				av, bv);
-	RETURN (Void);
+    if (b == 0) {
+        RaiseStandardException(exception_divide_by_zero, 2, av, bv);
+        RETURN(Void);
     }
     if (expandOk && a % b != 0)
-	ret = Divide (NewIntRational (a), NewIntRational (b));
+        ret = Divide(NewIntRational(a), NewIntRational(b));
     else
-	ret = NewInt (a/b);
-    RETURN (ret);
+        ret = NewInt(a / b);
+    RETURN(ret);
 }
 
 static Value
-IntDiv (Value av, Value bv, int expandOk)
+IntDiv(Value av, Value bv, int expandOk)
 {
-    ENTER ();
-    int		a = ValueInt(av), b = ValueInt(bv);
-    int		d;
-    Value	ret;
+    ENTER();
+    int   a = ValueInt(av), b = ValueInt(bv);
+    int   d;
+    Value ret;
 
-    (void) expandOk;
-    if (b == 0)
-    {
-	RaiseStandardException (exception_divide_by_zero, 2,
-				av, bv);
-	RETURN (Void);
+    (void)expandOk;
+    if (b == 0) {
+        RaiseStandardException(exception_divide_by_zero, 2, av, bv);
+        RETURN(Void);
     }
-    switch (catagorize_signs (IntSign(a), IntSign(b))) {
+    switch (catagorize_signs(IntSign(a), IntSign(b))) {
     case BothPositive:
-	d = a / b;
-	break;
+        d = a / b;
+        break;
     case FirstPositive:
-	d = - (a / -b);
-	break;
+        d = -(a / -b);
+        break;
     case SecondPositive:
-	d = -(a / -b);
-	if (a % -b)
-	    d--;
-	break;
+        d = -(a / -b);
+        if (a % -b)
+            d--;
+        break;
     case BothNegative:
     default:
-	d = -a / -b;
-	if (-a % -b)
-	    d++;
-	break;
+        d = -a / -b;
+        if (-a % -b)
+            d++;
+        break;
     }
-    ret = NewInt (d);
-    RETURN (ret);
+    ret = NewInt(d);
+    RETURN(ret);
 }
 
 /*
@@ -129,248 +125,226 @@ IntDiv (Value av, Value bv, int expandOk)
  * IntSign(quotient) = IntSign (dividend) * IntSign (divisor)
  * 0 <= remainder < abs (dividend)
  */
- 
-static Value
-IntMod (Value av, Value bv, int expandOk)
-{
-    ENTER ();
-    int		a = ValueInt(av), b = ValueInt(bv);
-    int		r;
 
-    (void) expandOk;
-    if (b == 0)
-    {
-	RaiseStandardException (exception_divide_by_zero, 2,
-				av, bv);
-	RETURN (Void);
+static Value
+IntMod(Value av, Value bv, int expandOk)
+{
+    ENTER();
+    int a = ValueInt(av), b = ValueInt(bv);
+    int r;
+
+    (void)expandOk;
+    if (b == 0) {
+        RaiseStandardException(exception_divide_by_zero, 2, av, bv);
+        RETURN(Void);
     }
-    switch (catagorize_signs (IntSign(a), IntSign(b))) {
+    switch (catagorize_signs(IntSign(a), IntSign(b))) {
     case BothPositive:
-	r = a % b;
-	break;
+        r = a % b;
+        break;
     case FirstPositive:
-	r = a % -b;
-	break;
+        r = a % -b;
+        break;
     case SecondPositive:
-	r = -a % b;
-	if (r)
-	    r = b - r;
-	break;
+        r = -a % b;
+        if (r)
+            r = b - r;
+        break;
     case BothNegative:
     default:
-	r = -a % -b;
-	if (r)
-	    r = -b - r;
-	break;
+        r = -a % -b;
+        if (r)
+            r = -b - r;
+        break;
     }
-    RETURN (NewInt (r));
+    RETURN(NewInt(r));
 }
 
 static Value
-IntEqual (Value av, Value bv, int expandOk)
+IntEqual(Value av, Value bv, int expandOk)
 {
-    int		a = ValueInt(av), b = ValueInt(bv);
+    int a = ValueInt(av), b = ValueInt(bv);
 
-    (void) expandOk;
+    (void)expandOk;
     if (a == b)
-	return TrueVal;
+        return TrueVal;
     return FalseVal;
 }
 
 static Value
-IntLess (Value av, Value bv, int expandOk)
+IntLess(Value av, Value bv, int expandOk)
 {
-    int		a = ValueInt(av), b = ValueInt(bv);
+    int a = ValueInt(av), b = ValueInt(bv);
 
-    (void) expandOk;
+    (void)expandOk;
     if (a < b)
-	return TrueVal;
+        return TrueVal;
     return FalseVal;
 }
 
 static Value
-IntLand (Value av, Value bv, int expandOk)
+IntLand(Value av, Value bv, int expandOk)
 {
-    ENTER ();
+    ENTER();
 
-    (void) expandOk;
-    int		a = ValueInt(av), b = ValueInt(bv);
-    RETURN (NewInt (a & b));
+    (void)expandOk;
+    int a = ValueInt(av), b = ValueInt(bv);
+    RETURN(NewInt(a & b));
 }
 
 static Value
-IntLor (Value av, Value bv, int expandOk)
+IntLor(Value av, Value bv, int expandOk)
 {
-    ENTER ();
-    int		a = ValueInt(av), b = ValueInt(bv);
+    ENTER();
+    int a = ValueInt(av), b = ValueInt(bv);
 
-    (void) expandOk;
-    RETURN (NewInt (a | b));
+    (void)expandOk;
+    RETURN(NewInt(a | b));
 }
 
 static Value
-IntNegate (Value av, int expandOk)
+IntNegate(Value av, int expandOk)
 {
-    ENTER ();
-    int	    a = ValueInt(av);
+    ENTER();
+    int a = ValueInt(av);
 
-    (void) expandOk;
+    (void)expandOk;
     if (-(-a) != a)
-	RETURN (Negate (NewIntInteger (a)));
-    RETURN (NewInt (-a));
+        RETURN(Negate(NewIntInteger(a)));
+    RETURN(NewInt(-a));
 }
 
 static Value
-IntFloor (Value av, int expandOk)
+IntFloor(Value av, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     return av;
 }
 
 static Value
-IntCeil (Value av, int expandOk)
+IntCeil(Value av, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     return av;
 }
 
 static Bool
-IntPrint (Value f, Value av, char format, int base, int width, int prec, int fill)
+IntPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
 {
-    int	    a = ValueInt(av);
-    int	    digit;
-    int	    w;
-    int	    fraction_width;
-    char    space[64], *s;
-    char    letter;
-    int	    neg;
-    long    len;
+    int  a = ValueInt(av);
+    int  digit;
+    int  w;
+    int  fraction_width;
+    char space[64], *s;
+    char letter;
+    int  neg;
+    long len;
 
     if (format == 'a') {
-	Value fv = NewIntFloat(a, DEFAULT_FLOAT_PREC);
-	ValueRep *rep = ValueRep(fv);
-	return (*rep->print)(f, fv, format, base, width, DEFAULT_OUTPUT_PRECISION, fill);
+        Value     fv = NewIntFloat(a, DEFAULT_FLOAT_PREC);
+        ValueRep *rep = ValueRep(fv);
+        return (*rep->print)(f, fv, format, base, width, DEFAULT_OUTPUT_PRECISION, fill);
     }
 
     if ('A' <= format && format <= 'Z')
-	letter = 'A';
+        letter = 'A';
     else
-	letter = 'a';
+        letter = 'a';
     if (base == 0)
-	base = 10;
+        base = 10;
     switch (format) {
     case 'c':
-	space[StringPutChar (a, space)] = '\0';
-	s = space;
-	break;
+        space[StringPutChar(a, space)] = '\0';
+        s = space;
+        break;
     default:
-	s = space + sizeof (space);
-	*--s = '\0';
-	neg = 0;
-	if (a < 0)
-	{
-	    a = -a;
-	    neg = 1;
-	}
-	if (!a)
-	    *--s = '0';
-	else
-	{
-	    while (a)
-	    {
-		digit = a % base;
-		if (digit <= 9) 
-		    digit = '0' + digit;
-		else
-		    digit = letter + digit - 10;
-		*--s = digit;
-		a /= base;
-	    }
-	    if (neg)
-		*--s = '-';
-	}
+        s = space + sizeof(space);
+        *--s = '\0';
+        neg = 0;
+        if (a < 0) {
+            a = -a;
+            neg = 1;
+        }
+        if (!a)
+            *--s = '0';
+        else {
+            while (a) {
+                digit = a % base;
+                if (digit <= 9)
+                    digit = '0' + digit;
+                else
+                    digit = letter + digit - 10;
+                *--s = digit;
+                a /= base;
+            }
+            if (neg)
+                *--s = '-';
+        }
     }
-    len = strlen (s);
-    w = StringLength (s, len);
+    len = strlen(s);
+    w = StringLength(s, len);
     fraction_width = 0;
-    if (prec >= 0)
-    {
-	int avail_width;
-	
-	if (width > 0)
-	    avail_width = width;
-	else
-	    avail_width = -width;
+    if (prec >= 0) {
+        int avail_width;
+
+        if (width > 0)
+            avail_width = width;
+        else
+            avail_width = -width;
         fraction_width = prec + 1;
-	if (avail_width > 0)
-	{
-	    if (w + fraction_width > avail_width)
-	    {
-		fraction_width = avail_width - w;
-		if (fraction_width < 0)
-		    fraction_width = 0;
-	    }
-	}
+        if (avail_width > 0) {
+            if (w + fraction_width > avail_width) {
+                fraction_width = avail_width - w;
+                if (fraction_width < 0)
+                    fraction_width = 0;
+            }
+        }
     }
     w += fraction_width;
-    while (width > w)
-    {
-	FileOutchar (f, fill);
-	width--;
+    while (width > w) {
+        FileOutchar(f, fill);
+        width--;
     }
-    FilePutsc (f, s, len);
-    if (fraction_width)
-    {
-	FileOutput (f, '.');
-	--fraction_width;
-	while (fraction_width)
-	{
-	    FileOutput (f, '0');
-	    --fraction_width;
-	}
+    FilePutsc(f, s, len);
+    if (fraction_width) {
+        FileOutput(f, '.');
+        --fraction_width;
+        while (fraction_width) {
+            FileOutput(f, '0');
+            --fraction_width;
+        }
     }
-    while (-width > w)
-    {
-	FileOutchar (f, fill);
-	width++;
+    while (-width > w) {
+        FileOutchar(f, fill);
+        width++;
     }
     return True;
 }
 
 static HashValue
-IntHash (Value av)
+IntHash(Value av)
 {
-    return (HashValue) ValueInt (av);;
+    return (HashValue)ValueInt(av);
+    ;
 }
 
 ValueRep IntRep = {
-    { 0, 0, "IntRep" },	    /* data */
-    rep_int,	    /* tag */
-    {		    /* binary */
-	IntPlus,
-	IntMinus,
-	IntTimes,
-	IntDivide,
-	IntDiv,
-	IntMod,
-	IntLess,
-	IntEqual,
-	IntLand,
-	IntLor
-    },
+    { 0, 0, "IntRep" }, /* data */
+    rep_int, /* tag */
+    {                   /* binary */
+      IntPlus, IntMinus, IntTimes, IntDivide, IntDiv, IntMod, IntLess, IntEqual, IntLand, IntLor },
     {
-	IntNegate,
-	IntFloor,
-	IntCeil,
-    },
-    0, 0,
+     IntNegate, IntFloor,
+     IntCeil, },
+    0,
+    0,
     IntPrint,
     0,
     IntHash,
 };
 
 int
-IntInit (void)
+IntInit(void)
 {
     return 1;
 }

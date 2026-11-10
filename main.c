@@ -10,21 +10,21 @@
  *	main routine for nick
  */
 
-#define __USE_UNIX98 /* Get sigignore() and sigrelse()
-			prototype for Linux */
-#include	"nickle.h"
-#include	"gram.h"
+#define __USE_UNIX98    /* Get sigignore() and sigrelse() \
+                           prototype for Linux */
+#include "nickle.h"
+#include "gram.h"
 
-#include	<setjmp.h>
-#include	<signal.h>
-#include	<stdio.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdio.h>
 
 #ifdef HAVE_SYS_TIME_H
-#include	<sys/time.h>
+#include <sys/time.h>
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
-#include	<sys/resource.h>
+#include <sys/resource.h>
 #endif
 
 #ifdef HAVE_LIBREADLINE
@@ -36,50 +36,51 @@
 #endif
 #endif
 
-int	stdin_interactive;
+int stdin_interactive;
 
 static void
-setArgv (int argc, char **argv)
+setArgv(int argc, char **argv)
 {
-    ENTER ();
-    Value   args;
-    int	    i;
+    ENTER();
+    Value args;
+    int   i;
 
-    args = NewArray (True, True, typePrim[rep_string], 1, &argc);
+    args = NewArray(True, True, typePrim[rep_string], 1, &argc);
     for (i = 0; i < argc; i++)
-	ArrayValueSet (&args->array, i, NewStrString (argv[i]));
-    setVar (GlobalNamespace, "argv", args,
-	    NewTypeArray (typePrim[rep_string],
-			   NewExprTree (COMMA, 0, 0), False));
-    EXIT ();
+        ArrayValueSet(&args->array, i, NewStrString(argv[i]));
+    setVar(GlobalNamespace, "argv", args,
+           NewTypeArray(typePrim[rep_string], NewExprTree(COMMA, 0, 0), False));
+    EXIT();
 }
 
 static Bool
-try_nicklestart (void)
+try_nicklestart(void)
 {
-    char    *nicklestart;
+    char *nicklestart;
 
-    if ((nicklestart = getenv ("NICKLESTART")) == 0)
-	nicklestart = NICKLELIBDIR "/builtin.5c";
-    return LexFile (nicklestart, True, False);
+    if ((nicklestart = getenv("NICKLESTART")) == 0)
+        nicklestart = NICKLELIBDIR "/builtin.5c";
+    return LexFile(nicklestart, True, False);
 }
 
-void	intr(int), ferr(int);
-void	stop (int), die (int), segv (int);
+void intr(int), ferr(int);
+void stop(int), die(int), segv(int);
 
 static void
-ignoreSignal(int sig) {
-    catchSignal (sig, SIG_IGN);
+ignoreSignal(int sig)
+{
+    catchSignal(sig, SIG_IGN);
 }
 
 static void
-releaseSignal(int sig) {
-    catchSignal (sig, SIG_DFL);
+releaseSignal(int sig)
+{
+    catchSignal(sig, SIG_DFL);
 }
 
 /*ARGSUSED*/
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
 #if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT)
     /*
@@ -87,161 +88,160 @@ main (int argc, char **argv)
      * crashes during recursive datastructure marking in the
      * garbage collector
      */
-    struct rlimit   lim;
+    struct rlimit lim;
 
-    if (getrlimit (RLIMIT_STACK, &lim) == 0)
-    {
-	lim.rlim_cur = lim.rlim_max;
-	(void) setrlimit (RLIMIT_STACK, &lim);
+    if (getrlimit(RLIMIT_STACK, &lim) == 0) {
+        lim.rlim_cur = lim.rlim_max;
+        (void)setrlimit(RLIMIT_STACK, &lim);
     }
 #endif
-    (void) catchSignal (SIGHUP, die);
-    (void) catchSignal (SIGINT, intr);
-    (void) catchSignal (SIGQUIT, die);
-    (void) catchSignal (SIGILL, die);
-    (void) catchSignal (SIGABRT, die);
-    (void) catchSignal (SIGSEGV, segv);
-    (void) ignoreSignal (SIGPIPE);
-    (void) catchSignal (SIGTERM, die);
-    (void) catchSignal (SIGTSTP, stop);
-    (void) ignoreSignal (SIGTTIN);
-    (void) ignoreSignal (SIGTTOU);
+    (void)catchSignal(SIGHUP, die);
+    (void)catchSignal(SIGINT, intr);
+    (void)catchSignal(SIGQUIT, die);
+    (void)catchSignal(SIGILL, die);
+    (void)catchSignal(SIGABRT, die);
+    (void)catchSignal(SIGSEGV, segv);
+    (void)ignoreSignal(SIGPIPE);
+    (void)catchSignal(SIGTERM, die);
+    (void)catchSignal(SIGTSTP, stop);
+    (void)ignoreSignal(SIGTTIN);
+    (void)ignoreSignal(SIGTTOU);
     stdin_interactive = isatty(0);
-    init ();
-    setArgv (argc - 1, argv + 1);
+    init();
+    setArgv(argc - 1, argv + 1);
     if (!try_nicklestart()) {
-	fprintf(stderr, "nickle: NICKLESTART environment var points at bad code\n");
-	exit(1);
+        fprintf(stderr, "nickle: NICKLESTART environment var points at bad code\n");
+        exit(1);
     }
-    (void) yyparse ();
+    (void)yyparse();
     /* Wait for any running threads to execute */
-    ThreadsRun (0, 0);
-    IoFini ();
-    FileFini ();
+    ThreadsRun(0, 0);
+    IoFini();
+    FileFini();
     return lastThreadError;
 }
 
 void
-init (void)
+init(void)
 {
-    MemInitialize ();
-    TypeInit ();
-    ValueInit ();
-    IoInit ();
-    LexInit ();
-    NamespaceInit ();
-    SymbolInit ();
-    BuiltinInit ();
-    ThreadInit ();
-    TimerInit ();
+    MemInitialize();
+    TypeInit();
+    ValueInit();
+    IoInit();
+    LexInit();
+    NamespaceInit();
+    SymbolInit();
+    BuiltinInit();
+    ThreadInit();
+    TimerInit();
 }
 
 void
-catchSignal (int sig, void (*func) (int sig))
+catchSignal(int sig, void (*func)(int sig))
 {
 #ifdef HAVE_SIGACTION
     struct sigaction sa;
 
-    memset (&sa, '\0', sizeof (struct sigaction));
+    memset(&sa, '\0', sizeof(struct sigaction));
     sa.sa_handler = func;
     sa.sa_flags = SA_RESTART;
-    sigaction (sig, &sa, 0);
+    sigaction(sig, &sa, 0);
 #else
-    signal (sig, func);
+    signal(sig, func);
 #endif
 }
 
 void
-resetSignal (int sig, void (*func) (int sig))
+resetSignal(int sig, void (*func)(int sig))
 {
 #ifndef HAVE_SIGACTION
-    signal (sig, func);
+    signal(sig, func);
 #else
-    (void) sig;
-    (void) func;
+    (void)sig;
+    (void)func;
 #endif
 }
 
-volatile Bool	signalInterrupt;
+volatile Bool signalInterrupt;
 
 void
-intr (int sig)
+intr(int sig)
 {
-    (void) sig;
-    resetSignal (SIGINT, intr);
+    (void)sig;
+    resetSignal(SIGINT, intr);
     if (signalInterrupt) {
-	int ret = write(2,"Double interrupt, exiting\n", 26);
-	(void) ret;
+        int ret = write(2, "Double interrupt, exiting\n", 26);
+        (void)ret;
 #ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
-	if (stdin_in_readline)
-	    rl_cleanup_after_signal();
+        if (stdin_in_readline)
+            rl_cleanup_after_signal();
 #endif
-	exit(1);
+        exit(1);
     }
-    SetSignalInterrupt ();
+    SetSignalInterrupt();
 }
 
 void
-stop (int sig)
+stop(int sig)
 {
-    sigset_t	set, oset;
+    sigset_t set, oset;
 
 #ifdef HAVE_LIBREADLINE
     if (stdin_in_readline) {
 #ifdef HAVE_RL_ECHO_SIGNAL_CHAR
-	rl_echo_signal_char(sig);
+        rl_echo_signal_char(sig);
 #endif
 #ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
-	rl_cleanup_after_signal();
+        rl_cleanup_after_signal();
 #endif
     }
 #endif
 
-    IoStop ();
-    releaseSignal (sig);
-    killpg (0, sig);
+    IoStop();
+    releaseSignal(sig);
+    killpg(0, sig);
     sigemptyset(&set);
     sigaddset(&set, sig);
-    sigprocmask (SIG_UNBLOCK, &set, &oset);
+    sigprocmask(SIG_UNBLOCK, &set, &oset);
 
     /* stopped ... */
 
-    sigprocmask (SIG_SETMASK, &oset, NULL);
-    catchSignal (sig, stop);
-    IoStart ();
+    sigprocmask(SIG_SETMASK, &oset, NULL);
+    catchSignal(sig, stop);
+    IoStart();
 
 #ifdef HAVE_RL_RESET_AFTER_SIGNAL
     if (stdin_in_readline)
-	rl_reset_after_signal();
+        rl_reset_after_signal();
 #endif
 }
 
 void
-die (int sig)
+die(int sig)
 {
 #ifdef HAVE_LIBREADLINE
     if (stdin_in_readline) {
 #ifdef HAVE_RL_FREE_LINE_STATE
-	rl_free_line_state();
+        rl_free_line_state();
 #endif
 #ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
-	rl_cleanup_after_signal();
+        rl_cleanup_after_signal();
 #endif
     }
 #endif
-    IoStop ();
-    _exit (sig);
+    IoStop();
+    _exit(sig);
 }
 
 void
-segv (int sig)
+segv(int sig)
 {
-    (void) sig;
-    IoStop ();
+    (void)sig;
+    IoStop();
 #ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
     if (stdin_in_readline)
-	rl_cleanup_after_signal();
+        rl_cleanup_after_signal();
 #endif
-    releaseSignal (SIGSEGV);
+    releaseSignal(SIGSEGV);
     /* return and reexecute the fatal instruction */
 }

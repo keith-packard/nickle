@@ -4,37 +4,33 @@
  * for licensing information.
  */
 
-#include	"nickle.h"
+#include "nickle.h"
 
 static void
-FrameMark (void *object)
+FrameMark(void *object)
 {
-    Frame   *frame = object;
+    Frame *frame = object;
 
-    do
-    {
-	MemReference (frame->staticLink);
-	MemReference (frame->function);
-	MemReference (frame->frame);
-	MemReference (frame->statics);
-	MemReference (frame->saveObj);
-	frame = frame->previous;
-    } while (MemReferenceNoRecurse (frame) == 0);
+    do {
+        MemReference(frame->staticLink);
+        MemReference(frame->function);
+        MemReference(frame->frame);
+        MemReference(frame->statics);
+        MemReference(frame->saveObj);
+        frame = frame->previous;
+    } while (MemReferenceNoRecurse(frame) == 0);
 }
 
 DataType FrameType = { FrameMark, 0, "FrameType" };
 
 FramePtr
-NewFrame (Value		function,
-	  FramePtr	previous,
-	  FramePtr	staticLink,
-	  BoxTypesPtr	dynamics,
-	  BoxPtr	statics)
+NewFrame(Value function, FramePtr previous, FramePtr staticLink, BoxTypesPtr dynamics,
+         BoxPtr statics)
 {
-    ENTER ();
-    FramePtr	frame;
+    ENTER();
+    FramePtr frame;
 
-    frame = ALLOCATE (&FrameType, sizeof (Frame));
+    frame = ALLOCATE(&FrameType, sizeof(Frame));
     frame->previous = previous;
     frame->staticLink = staticLink;
     frame->function = function;
@@ -43,6 +39,6 @@ NewFrame (Value		function,
     frame->statics = statics;
     frame->frame = 0;
     if (dynamics)
-	frame->frame = NewTypedBox (False, dynamics);
-    RETURN (frame);
+        frame->frame = NewTypedBox(False, dynamics);
+    RETURN(frame);
 }

@@ -4,17 +4,17 @@
  * for licensing information.
  */
 
-#include	"nickle.h"
-#include	"gram.h"
+#include "nickle.h"
+#include "gram.h"
 
-Bool	signalError;
+Bool signalError;
 
 void
-PrintError (char *s, ...)
+PrintError(char *s, ...)
 {
     va_list args;
 
-    va_start (args, s);
-    FileVPrintf (FileStderr, s, args);
-    va_end (args);
+    va_start(args, s);
+    FileVPrintf(FileStderr, s, args);
+    va_end(args);
 }

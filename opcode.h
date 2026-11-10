@@ -85,6 +85,6 @@ typedef enum _OpCode {
     OpHasMember,
     OpEnd,
     OpDrop
-} __attribute__ ((packed)) OpCode;
+} __attribute__((packed)) OpCode;
 
 #endif /* _CODE_H_ */

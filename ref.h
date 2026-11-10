@@ -6,4 +6,4 @@
 
 typedef struct _reference *ReferencePtr;
 
-ReferencePtr	NewReference (void **object);
+ReferencePtr               NewReference(void **object);

@@ -4,31 +4,31 @@
  * for licensing information.
  */
 
-#include	"nickle-config.h"
-#include	"mem.h"
-#include	"ref.h"
+#include "nickle-config.h"
+#include "mem.h"
+#include "ref.h"
 
 typedef struct _reference {
-    DataType	*data;
-    void	**object;
+    DataType *data;
+    void    **object;
 } Reference;
 
 static void
-ReferenceMark (void *object)
+ReferenceMark(void *object)
 {
-    ReferencePtr    reference = object;
+    ReferencePtr reference = object;
 
-    MemReference (*reference->object);
+    MemReference(*reference->object);
 }
 
 static DataType referenceType = { ReferenceMark, 0, "referenceType" };
 
 ReferencePtr
-NewReference (void **object)
+NewReference(void **object)
 {
-    ReferencePtr    reference;
+    ReferencePtr reference;
 
-    reference = MemAllocate (&referenceType, sizeof (Reference));
+    reference = MemAllocate(&referenceType, sizeof(Reference));
     reference->object = object;
     return reference;
 }

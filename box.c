@@ -4,103 +4,102 @@
  * for licensing information.
  */
 
-#include	"nickle.h"
+#include "nickle.h"
 
 static void
-BoxMark (void *object)
+BoxMark(void *object)
 {
-    BoxPtr	box = object;
-    Value	*elements;
-    unsigned long	i;
+    BoxPtr        box = object;
+    Value        *elements;
+    unsigned long i;
 
     elements = BoxElements(box);
     if (box->replace)
-	MemReference (box->u.replace);
+        MemReference(box->u.replace);
     else if (box->homogeneous)
-	MemReference (box->u.type);
+        MemReference(box->u.type);
     else
-	MemReference (box->u.types);
+        MemReference(box->u.types);
     for (i = 0; i < box->nvalues; i++)
-	MemReference (elements[i]);
+        MemReference(elements[i]);
 }
 
 DataType BoxType = { BoxMark, 0, "BoxType" };
 
 BoxPtr
-NewBox (Bool constant, Bool array, int nvalues, TypePtr type)
+NewBox(Bool constant, Bool array, int nvalues, TypePtr type)
 {
-    ENTER ();
-    BoxPtr  box;
-    int	    i;
+    ENTER();
+    BoxPtr box;
+    int    i;
 
-    (void) array;
-    box = ALLOCATE (&BoxType, sizeof (Box) + nvalues * sizeof (Value));
+    (void)array;
+    box = ALLOCATE(&BoxType, sizeof(Box) + nvalues * sizeof(Value));
     box->constant = constant;
     box->homogeneous = True;
     box->replace = False;
     box->nvalues = nvalues;
     box->u.type = type;
     for (i = 0; i < nvalues; i++)
-	BoxValueSet(box, i, 0);
-    RETURN (box);
+        BoxValueSet(box, i, 0);
+    RETURN(box);
 }
 
 BoxPtr
-NewTypedBox (Bool array, BoxTypesPtr bt)
+NewTypedBox(Bool array, BoxTypesPtr bt)
 {
-    ENTER ();
-    BoxPtr  box;
-    int	    i;
+    ENTER();
+    BoxPtr box;
+    int    i;
 
-    (void) array;
-    box = ALLOCATE (&BoxType, sizeof (Box) + bt->count * sizeof (Value));
+    (void)array;
+    box = ALLOCATE(&BoxType, sizeof(Box) + bt->count * sizeof(Value));
     box->constant = False;
     box->homogeneous = False;
     box->replace = False;
     box->nvalues = bt->count;
     box->u.types = bt;
     for (i = 0; i < bt->count; i++)
-	BoxValueSet (box, i, 0);
-    RETURN (box);
+        BoxValueSet(box, i, 0);
+    RETURN(box);
 }
 
 static void
-MarkBoxReplace (void *object)
+MarkBoxReplace(void *object)
 {
-    BoxReplacePtr   replace = object;
+    BoxReplacePtr replace = object;
 
-    MemReference (replace->new);
+    MemReference(replace->new);
 }
 
-DataType    BoxReplaceType = { MarkBoxReplace, 0, "BoxReplaceType" };
+DataType BoxReplaceType = { MarkBoxReplace, 0, "BoxReplaceType" };
 
 void
-BoxSetReplace (BoxPtr old, BoxPtr new, int oldstride, int newstride)
+BoxSetReplace(BoxPtr old, BoxPtr new, int oldstride, int newstride)
 {
-    ENTER ();
-    BoxReplacePtr   r = ALLOCATE (&BoxReplaceType, sizeof (BoxReplace));
+    ENTER();
+    BoxReplacePtr r = ALLOCATE(&BoxReplaceType, sizeof(BoxReplace));
     r->new = new;
     r->oldstride = oldstride;
     r->newstride = newstride;
     old->replace = True;
     old->u.replace = r;
-    EXIT ();
+    EXIT();
 }
 
 BoxPtr
-BoxRewrite (BoxPtr box, int *ep)
+BoxRewrite(BoxPtr box, int *ep)
 {
-    int	e = *ep;
-    
-    while (box->replace)
-    {
-	BoxReplacePtr	r = box->u.replace;
-	int		chunk, off;
+    int e = *ep;
 
-	chunk = e / r->oldstride;
-	off = e % r->oldstride;
-	e = chunk * r->newstride + off;
-	box = r->new;
+    while (box->replace) {
+        BoxReplacePtr r = box->u.replace;
+        int           chunk, off;
+
+        chunk = e / r->oldstride;
+        off = e % r->oldstride;
+        e = chunk * r->newstride + off;
+        box = r->new;
     }
     /*
      * XXX oops.  References to previously available storage
@@ -110,78 +109,71 @@ BoxRewrite (BoxPtr box, int *ep)
      * was resized.  But, that's "hard".  This check will
      * at least prevent a seg fault.
      */
-    if (e >= 0 && (unsigned long) e >= box->nvalues)
-    {
-	RaiseStandardException (exception_invalid_array_bounds, 2,
-				Void, NewInt (e));
-	e = 0;
-	box = NewBox (True, False, 1, typePrim[rep_void]);
-	BoxValueSet (box, 0, 0);
+    if (e >= 0 && (unsigned long)e >= box->nvalues) {
+        RaiseStandardException(exception_invalid_array_bounds, 2, Void, NewInt(e));
+        e = 0;
+        box = NewBox(True, False, 1, typePrim[rep_void]);
+        BoxValueSet(box, 0, 0);
     }
     *ep = e;
     return box;
 }
 
-static void MarkBoxTypes (void *object)
+static void
+MarkBoxTypes(void *object)
 {
-    BoxTypesPtr	bt = object;
-    int		i;
+    BoxTypesPtr bt = object;
+    int         i;
 
     for (i = 0; i < bt->count; i++)
-	MemReference (BoxTypesValue(bt,i));
+        MemReference(BoxTypesValue(bt, i));
 }
 
-DataType    BoxTypesType = { MarkBoxTypes, 0, "BoxTypesType" };
+DataType BoxTypesType = { MarkBoxTypes, 0, "BoxTypesType" };
 
-#define BT_INCR	4
+#define BT_INCR 4
 
 BoxTypesPtr
-NewBoxTypes (int size)
+NewBoxTypes(int size)
 {
-    ENTER ();
-    BoxTypesPtr    bt;
+    ENTER();
+    BoxTypesPtr bt;
 
-    bt = ALLOCATE (&BoxTypesType, sizeof (BoxTypes) + size * sizeof (Type *));
+    bt = ALLOCATE(&BoxTypesType, sizeof(BoxTypes) + size * sizeof(Type *));
     bt->size = size;
     bt->count = 0;
-    RETURN (bt);
+    RETURN(bt);
 }
 
 int
-AddBoxType (BoxTypesPtr *btp, Type *t)
+AddBoxType(BoxTypesPtr *btp, Type *t)
 {
-    ENTER ();
+    ENTER();
     BoxTypesPtr bt, new;
-    int		count, size;
-    int		position;
-    
+    int         count, size;
+    int         position;
+
     bt = *btp;
-    if (!bt)
-    {
-	count = 0;
-	size = 0;
+    if (!bt) {
+        count = 0;
+        size = 0;
+    } else {
+        count = bt->count;
+        size = bt->size;
     }
-    else
-    {
-	count = bt->count;
-	size = bt->size;
-    }
-    if (count == size)
-    {
-	size = size + BT_INCR;
-	new = NewBoxTypes (size);
-	if (count)
-	{
-	    memcpy (BoxTypesElements (new), BoxTypesElements (bt),
-		    count * sizeof (Type *));
-	}
-	new->size = size;
-	new->count = count;
-	*btp = new;
-	bt = new;
+    if (count == size) {
+        size = size + BT_INCR;
+        new = NewBoxTypes(size);
+        if (count) {
+            memcpy(BoxTypesElements(new), BoxTypesElements(bt), count * sizeof(Type *));
+        }
+        new->size = size;
+        new->count = count;
+        *btp = new;
+        bt = new;
     }
     position = bt->count++;
-    BoxTypesValueSet(bt,position,t);
-    EXIT ();
+    BoxTypesValueSet(bt, position, t);
+    EXIT();
     return position;
 }

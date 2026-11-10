@@ -4,149 +4,149 @@
  * for licensing information.
  */
 
-#include	"nickle.h"
+#include "nickle.h"
 
 static void
-SymbolTypeMark (void *object)
+SymbolTypeMark(void *object)
 {
-    SymbolType	    *st = object;
+    SymbolType *st = object;
 
-    MemReference (st->symbol.next);
-    MemReference (st->symbol.type);
+    MemReference(st->symbol.next);
+    MemReference(st->symbol.type);
 }
 
 static void
-SymbolGlobalMark (void *object)
+SymbolGlobalMark(void *object)
 {
-    SymbolGlobal    *sg = object;
+    SymbolGlobal *sg = object;
 
-    MemReference (sg->symbol.next);
-    MemReference (sg->symbol.type);
-    MemReference (sg->value);
+    MemReference(sg->symbol.next);
+    MemReference(sg->symbol.type);
+    MemReference(sg->value);
 }
 
 static void
-SymbolLocalMark (void *object)
+SymbolLocalMark(void *object)
 {
-    SymbolLocal	    *sl = object;
+    SymbolLocal *sl = object;
 
-    MemReference (sl->symbol.next);
-    MemReference (sl->symbol.type);
-    MemReference (sl->code);
+    MemReference(sl->symbol.next);
+    MemReference(sl->symbol.type);
+    MemReference(sl->code);
 }
 
 static void
-SymbolNamespaceMark (void *object)
+SymbolNamespaceMark(void *object)
 {
     SymbolNamespace *sn = object;
 
-    MemReference (sn->symbol.next);
-    MemReference (sn->symbol.type);
-    MemReference (sn->namespace);
+    MemReference(sn->symbol.next);
+    MemReference(sn->symbol.type);
+    MemReference(sn->namespace);
 }
 
 static void
-SymbolExceptionMark (void *object)
+SymbolExceptionMark(void *object)
 {
     SymbolException *se = object;
 
-    MemReference (se->symbol.next);
-    MemReference (se->symbol.type);
-    MemReference (se->doc);
+    MemReference(se->symbol.next);
+    MemReference(se->symbol.type);
+    MemReference(se->doc);
 }
 
-DataType    SymbolTypeType = { SymbolTypeMark, 0, "SymbolTypeType" };
-DataType    SymbolGlobalType = { SymbolGlobalMark, 0, "SymbolGlobalType" };
-DataType    SymbolLocalType = { SymbolLocalMark, 0, "SymbolLocalType" };
-DataType    SymbolNamespaceType = { SymbolNamespaceMark, 0, "SymbolNamespaceType" };
-DataType    SymbolExceptionType = { SymbolExceptionMark, 0, "SymbolExceptionType" };
+DataType SymbolTypeType = { SymbolTypeMark, 0, "SymbolTypeType" };
+DataType SymbolGlobalType = { SymbolGlobalMark, 0, "SymbolGlobalType" };
+DataType SymbolLocalType = { SymbolLocalMark, 0, "SymbolLocalType" };
+DataType SymbolNamespaceType = { SymbolNamespaceMark, 0, "SymbolNamespaceType" };
+DataType SymbolExceptionType = { SymbolExceptionMark, 0, "SymbolExceptionType" };
 
 SymbolPtr
-NewSymbolType (Atom name, Type *type)
+NewSymbolType(Atom name, Type *type)
 {
-    ENTER ();
-    SymbolPtr	s;
+    ENTER();
+    SymbolPtr s;
 
-    s = ALLOCATE (&SymbolTypeType, sizeof (SymbolType));
+    s = ALLOCATE(&SymbolTypeType, sizeof(SymbolType));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_typedef;
     s->symbol.type = type;
     s->symbol.forward = False;
-    RETURN (s);
+    RETURN(s);
 }
 
 SymbolPtr
-NewSymbolException (Atom name, Type *type, Value doc)
+NewSymbolException(Atom name, Type *type, Value doc)
 {
-    ENTER ();
-    SymbolPtr	s;
+    ENTER();
+    SymbolPtr s;
 
-    s = ALLOCATE (&SymbolExceptionType, sizeof (SymbolException));
+    s = ALLOCATE(&SymbolExceptionType, sizeof(SymbolException));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_exception;
     s->symbol.type = type;
     s->symbol.forward = False;
     s->exception.doc = doc;
-    RETURN (s);
+    RETURN(s);
 }
 
 SymbolPtr
-NewSymbolConst (Atom name, Type *type)
+NewSymbolConst(Atom name, Type *type)
 {
-    ENTER ();
-    SymbolPtr	s;
+    ENTER();
+    SymbolPtr s;
 
-    s = ALLOCATE (&SymbolGlobalType, sizeof (SymbolGlobal));
+    s = ALLOCATE(&SymbolGlobalType, sizeof(SymbolGlobal));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_const;
     s->symbol.type = type;
     s->symbol.forward = False;
-    s->global.value = NewBox (True, False, 1, type);
-    RETURN (s);
+    s->global.value = NewBox(True, False, 1, type);
+    RETURN(s);
 }
 
 SymbolPtr
-NewSymbolGlobal (Atom name, Type *type)
+NewSymbolGlobal(Atom name, Type *type)
 {
-    ENTER ();
-    SymbolPtr	s;
+    ENTER();
+    SymbolPtr s;
 
-    s = ALLOCATE (&SymbolGlobalType, sizeof (SymbolGlobal));
+    s = ALLOCATE(&SymbolGlobalType, sizeof(SymbolGlobal));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_global;
     s->symbol.type = type;
     s->symbol.forward = False;
-    s->global.value = NewBox (False, False, 1, type);
-    RETURN (s);
+    s->global.value = NewBox(False, False, 1, type);
+    RETURN(s);
 }
 
 SymbolPtr
-NewSymbolGlobalValue (Atom name, BoxPtr value)
+NewSymbolGlobalValue(Atom name, BoxPtr value)
 {
-    ENTER ();
-    SymbolPtr	s;
+    ENTER();
+    SymbolPtr s;
 
-    s = ALLOCATE (&SymbolGlobalType, sizeof (SymbolGlobal));
+    s = ALLOCATE(&SymbolGlobalType, sizeof(SymbolGlobal));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_global;
     s->symbol.type = value->u.type;
     s->symbol.forward = False;
     s->global.value = value;
-    RETURN (s);
+    RETURN(s);
 }
 
 SymbolPtr
-NewSymbolArg (Atom name, Type *type)
+NewSymbolArg(Atom name, Type *type)
 {
-    ENTER ();
-    SymbolPtr	s;
+    ENTER();
+    SymbolPtr s;
 
-    s = ALLOCATE (&SymbolLocalType, sizeof (SymbolLocal));
+    s = ALLOCATE(&SymbolLocalType, sizeof(SymbolLocal));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_arg;
@@ -154,16 +154,16 @@ NewSymbolArg (Atom name, Type *type)
     s->symbol.forward = False;
     s->local.element = 0;
     s->local.code = 0;
-    RETURN (s);
+    RETURN(s);
 }
 
 SymbolPtr
-NewSymbolAuto (Atom name, Type *type)
+NewSymbolAuto(Atom name, Type *type)
 {
-    ENTER ();
-    SymbolPtr	s;
+    ENTER();
+    SymbolPtr s;
 
-    s = ALLOCATE (&SymbolLocalType, sizeof (SymbolLocal));
+    s = ALLOCATE(&SymbolLocalType, sizeof(SymbolLocal));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_auto;
@@ -171,16 +171,16 @@ NewSymbolAuto (Atom name, Type *type)
     s->symbol.forward = False;
     s->local.element = -1;
     s->local.code = 0;
-    RETURN (s);
+    RETURN(s);
 }
 
 SymbolPtr
-NewSymbolStatic (Atom name, Type *type)
+NewSymbolStatic(Atom name, Type *type)
 {
-    ENTER ();
-    SymbolPtr	s;
+    ENTER();
+    SymbolPtr s;
 
-    s = ALLOCATE (&SymbolLocalType, sizeof (SymbolLocal));
+    s = ALLOCATE(&SymbolLocalType, sizeof(SymbolLocal));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_static;
@@ -188,26 +188,26 @@ NewSymbolStatic (Atom name, Type *type)
     s->symbol.forward = False;
     s->local.element = -1;
     s->local.code = 0;
-    RETURN (s);
+    RETURN(s);
 }
 
 SymbolPtr
-NewSymbolNamespace (Atom name, NamespacePtr namespace)
+NewSymbolNamespace(Atom name, NamespacePtr namespace)
 {
-    ENTER ();
-    SymbolPtr	s;
+    ENTER();
+    SymbolPtr s;
 
-    s = ALLOCATE (&SymbolNamespaceType, sizeof (SymbolNamespace));
+    s = ALLOCATE(&SymbolNamespaceType, sizeof(SymbolNamespace));
     s->symbol.next = 0;
     s->symbol.name = name;
     s->symbol.class = class_namespace;
     s->symbol.type = 0;
     s->symbol.forward = False;
     s->namespace.namespace = namespace;
-    RETURN (s);
+    RETURN(s);
 }
 
 void
-SymbolInit (void)
+SymbolInit(void)
 {
 }

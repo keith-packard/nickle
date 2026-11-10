@@ -4,56 +4,53 @@
  * for licensing information.
  */
 
-#include	<math.h>
-#include	"nickle.h"
+#include <math.h>
+#include "nickle.h"
 
 static Value
-ComplexPlus (Value av, Value bv, int expandOk)
+ComplexPlus(Value av, Value bv, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     ENTER();
-    Value ret = NewValueComplex(Plus(av->complex.r, bv->complex.r),
-				Plus(av->complex.i, bv->complex.i));
+    Value ret
+        = NewValueComplex(Plus(av->complex.r, bv->complex.r), Plus(av->complex.i, bv->complex.i));
     RETURN(ret);
 }
 
 static Value
-ComplexMinus (Value av, Value bv, int expandOk)
+ComplexMinus(Value av, Value bv, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     ENTER();
-    Value ret = NewValueComplex(Minus(av->complex.r, bv->complex.r),
-				Minus(av->complex.i, bv->complex.i));
+    Value ret
+        = NewValueComplex(Minus(av->complex.r, bv->complex.r), Minus(av->complex.i, bv->complex.i));
     RETURN(ret);
 }
 
 static Value
-ComplexTimes (Value av, Value bv, int expandOk)
+ComplexTimes(Value av, Value bv, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     ENTER();
-    Value ret = NewValueComplex(Minus(Times(av->complex.r, bv->complex.r),
-				      Times(av->complex.i, bv->complex.i)),
-				Plus(Times(av->complex.r, bv->complex.i),
-				     Times(av->complex.i, bv->complex.r)));
+    Value ret = NewValueComplex(
+        Minus(Times(av->complex.r, bv->complex.r), Times(av->complex.i, bv->complex.i)),
+        Plus(Times(av->complex.r, bv->complex.i), Times(av->complex.i, bv->complex.r)));
     RETURN(ret);
 }
 
 static Value
-ComplexRecip (Value av)
+ComplexRecip(Value av)
 {
     ENTER();
-    Value modsq = Plus(Times(av->complex.r, av->complex.r),
-		       Times(av->complex.i, av->complex.i));
-    Value ret = NewValueComplex(Divide(av->complex.r, modsq),
-				Divide(Negate(av->complex.i), modsq));
+    Value modsq = Plus(Times(av->complex.r, av->complex.r), Times(av->complex.i, av->complex.i));
+    Value ret = NewValueComplex(Divide(av->complex.r, modsq), Divide(Negate(av->complex.i), modsq));
     RETURN(ret);
 }
 
 static Value
-ComplexDivide (Value av, Value bv, int expandOk)
+ComplexDivide(Value av, Value bv, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     ENTER();
     Value recip = ComplexRecip(bv);
     Value ret = ComplexTimes(av, recip, expandOk);
@@ -61,128 +58,123 @@ ComplexDivide (Value av, Value bv, int expandOk)
 }
 
 static Value
-ComplexLess (Value av, Value bv, int expandOk)
+ComplexLess(Value av, Value bv, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     /* Dictionary ordering is at least consistent */
     if (True(Less(av->complex.r, bv->complex.r)))
-	return TrueVal;
+        return TrueVal;
     if (True(Equal(av->complex.r, bv->complex.r)))
-	return Less(av->complex.i, bv->complex.i);
+        return Less(av->complex.i, bv->complex.i);
     return FalseVal;
 }
 
 static Value
-ComplexEqual (Value av, Value bv, int expandOk)
+ComplexEqual(Value av, Value bv, int expandOk)
 {
-    (void) expandOk;
-    Value	ret;
+    (void)expandOk;
+    Value ret;
     ret = Equal(av->complex.r, bv->complex.r);
     if (True(ret))
-	ret = Equal(av->complex.i, bv->complex.i);
+        ret = Equal(av->complex.i, bv->complex.i);
     return ret;
 }
 
 static Value
-ComplexNegate (Value av, int expandOk)
+ComplexNegate(Value av, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     ENTER();
     Value ret = NewValueComplex(Negate(av->complex.r), Negate(av->complex.i));
     RETURN(ret);
 }
 
 static Value
-ComplexFloor (Value av, int expandOk)
+ComplexFloor(Value av, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     ENTER();
     Value ret = NewValueComplex(Floor(av->complex.r), Floor(av->complex.i));
     RETURN(ret);
 }
 
 static Value
-ComplexCeil (Value av, int expandOk)
+ComplexCeil(Value av, int expandOk)
 {
-    (void) expandOk;
+    (void)expandOk;
     ENTER();
     Value ret = NewValueComplex(Ceil(av->complex.r), Ceil(av->complex.i));
     RETURN(ret);
 }
 
 static Value
-ComplexPromote (Value av, Value bv)
+ComplexPromote(Value av, Value bv)
 {
-    (void) bv;
-    ENTER ();
+    (void)bv;
+    ENTER();
     if (!ValueIsComplex(av))
-	av = NewComplex(av, Zero);
+        av = NewComplex(av, Zero);
     RETURN(av);
 }
 
 static Value
-ComplexReduce (Value av)
+ComplexReduce(Value av)
 {
     if (Zerop(av->complex.i))
-	return av->complex.r;
+        return av->complex.r;
     return av;
 }
 
 static Bool
 ComplexPrint(Value f, Value fv, char format, int base, int width, int prec, int fill)
 {
-    Bool	    value = format == 'v';
+    Bool value = format == 'v';
 
     if (value)
-	FilePuts(f, "cmplx(");
+        FilePuts(f, "cmplx(");
     if (!Print(f, fv->complex.r, format, base, width, prec, fill))
-	return False;
+        return False;
     if (value)
-	FilePuts(f, ", ");
+        FilePuts(f, ", ");
     else
-	FilePuts(f, "+i");
+        FilePuts(f, "+i");
     if (!Print(f, fv->complex.i, format, base, width, prec, fill))
-	return False;
+        return False;
     if (value)
-	FilePuts(f, ")");
+        FilePuts(f, ")");
     return True;
 }
 
 static HashValue
-ComplexHash (Value av)
+ComplexHash(Value av)
 {
     return ValueInt(ValueHash(av->complex.r)) ^ ValueInt(ValueHash(av->complex.i));
 }
 
 static void
-ComplexMark (void *object)
+ComplexMark(void *object)
 {
-    ComplexVal	*c = object;
+    ComplexVal *c = object;
 
     MemReference(c->r);
     MemReference(c->i);
 }
 
-ValueRep   ComplexRep = {
-    { ComplexMark, 0, "ComplexRep" },	/* base */
-    rep_complex,	/* tag */
-    {			/* binary */
-	ComplexPlus,
-	ComplexMinus,
-	ComplexTimes,
-	ComplexDivide,
-	NumericDiv,
-	NumericMod,
-	ComplexLess,
-	ComplexEqual,
-	0,
-	0,
-    },
-    {			/* unary */
-	ComplexNegate,
-	ComplexFloor,
-	ComplexCeil,
-    },
+ValueRep ComplexRep = {
+    { ComplexMark, 0, "ComplexRep" }, /* base */
+    rep_complex, /* tag */
+    {
+     /* binary */
+        ComplexPlus, ComplexMinus,
+     ComplexTimes, ComplexDivide,
+     NumericDiv, NumericMod,
+     ComplexLess, ComplexEqual,
+     0, 0,
+     },
+    {
+     /* unary */
+        ComplexNegate, ComplexFloor,
+     ComplexCeil, },
     ComplexPromote,
     ComplexReduce,
     ComplexPrint,
@@ -191,21 +183,21 @@ ValueRep   ComplexRep = {
 };
 
 Value
-NewComplex (Value r, Value i)
+NewComplex(Value r, Value i)
 {
     ENTER();
-    Value	ret;
+    Value ret;
 
-    ret = ALLOCATE (&ComplexRep.data, sizeof (ComplexVal));
+    ret = ALLOCATE(&ComplexRep.data, sizeof(ComplexVal));
     ret->complex.r = r;
     ret->complex.i = i;
-    RETURN (ret);
+    RETURN(ret);
 }
 
 Value
-NewValueComplex (Value r, Value i)
+NewValueComplex(Value r, Value i)
 {
     if (!Zerop(i))
-	r = NewComplex(r, i);
+        r = NewComplex(r, i);
     return r;
 }

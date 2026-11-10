@@ -56,13 +56,24 @@ extend namespace Complex {
 
     protected complex sqrt(complex z)
     {
-	if (cimag(z) == 0)
-	    return Math::sqrt(creal(z));
+	real	x = creal(z), y = cimag(z);
 
-	real	mod = abs(z);
-	real	sgn = cimag(z) > 0 ? 1 : -1;
-	return new(Math::sqrt((mod + creal(z)) / 2),
-		   sgn * Math::sqrt((mod - creal(z)) / 2));
+	if (y == 0) {
+	    if (x >= 0)
+		return Math::sqrt(x);
+	    return new(0, Math::sqrt(-x));
+	}
+
+	/*
+	 * Compute the larger part from |z| + |x|, then the smaller as
+	 * y / (2 * larger), avoiding the cancellation in |z| - |x|
+	 */
+	real	t = Math::sqrt((abs(z) + Math::abs(x)) / 2);
+	if (x >= 0)
+	    return new(t, y / (2 * t));
+	if (y > 0)
+	    return new(y / (2 * t), t);
+	return new(-y / (2 * t), -t);
     }
 
     protected complex atan(complex z)

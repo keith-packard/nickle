@@ -1,0 +1,46 @@
+/*
+ * Nickle test suite
+ *
+ * Hyperbolic functions and their inverses
+ *
+ * sinh, tanh, asinh and atanh lost every bit to cancellation for
+ * small arguments, and acosh for arguments near 1. Compare each
+ * result with the same function evaluated at 2048 bits.
+ */
+
+exception bad_result (string name, real x, real got, real want);
+
+int[*] precs = { 24, 53, 113, 256 };
+
+void function check (string name, real(real) f, rational a)
+{
+    for (int i = 0; i < dim (precs); i++) {
+	int	p = precs[i];
+	real	x = imprecise (a, p);
+	real	got = f (x);
+	real	want = f (imprecise (x, 2048));
+
+	if (precision (got) != p ||
+	    abs (got - want) > abs (want) * 2 ** (1 - p))
+	    raise bad_result (name, x, got, want);
+    }
+}
+
+rational[*] small = { 1/10**30, -1/10**8, 1/1000, -1/2, 3, -40 };
+
+for (int i = 0; i < dim (small); i++) {
+    check ("sinh", sinh, small[i]);
+    check ("cosh", cosh, small[i]);
+    check ("tanh", tanh, small[i]);
+    check ("asinh", asinh, small[i]);
+}
+
+rational[*] unit = { 1/10**30, -1/10**8, 1/2, -999999/1000000 };
+
+for (int i = 0; i < dim (unit); i++)
+    check ("atanh", atanh, unit[i]);
+
+rational[*] above_one = { 1 + 1/10**60, 1 + 1/10**8, 3/2, 1000 };
+
+for (int i = 0; i < dim (above_one); i++)
+    check ("acosh", acosh, above_one[i]);

@@ -1,0 +1,42 @@
+/*
+ * Nickle test suite
+ *
+ * Error functions
+ *
+ * The series lost all precision for arguments past about 19,
+ * erfc(1) returned 0, and erfc(0) never returned. Compare each
+ * result with the same function evaluated at 2048 bits.
+ */
+
+exception bad_result (string name, real x, real got, real want);
+
+int[*] precs = { 24, 53, 113, 256 };
+
+void function check (string name, real(real) f, rational a)
+{
+    for (int i = 0; i < dim (precs); i++) {
+	int	p = precs[i];
+	real	x = imprecise (a, p);
+	real	got = f (x);
+	real	want = f (imprecise (x, 2048));
+
+	if (precision (got) != p ||
+	    abs (got - want) > abs (want) * 2 ** (1 - p))
+	    raise bad_result (name, x, got, want);
+    }
+}
+
+rational[*] erf_args = { 1/10**30, 1/10, -3/2, 4, 19, 25, -30 };
+
+for (int i = 0; i < dim (erf_args); i++)
+    check ("erf", erf, erf_args[i]);
+
+rational[*] erfc_args = { 1/10**20, 1/2, 1, 3, 10, 20, 27, -2, -30 };
+
+for (int i = 0; i < dim (erfc_args); i++)
+    check ("erfc", erfc, erfc_args[i]);
+
+if (erf (0) != 0)
+    raise bad_result ("erf", 0, erf (0), 0);
+if (erfc (0) != 1)
+    raise bad_result ("erfc", 0, erfc (0), 1);

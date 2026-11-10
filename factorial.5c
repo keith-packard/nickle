@@ -23,6 +23,8 @@ extend namespace Math {
 		 * Return the factorial of 'n'
 		 */
 	{
+		if (n < 0)
+			raise invalid_unop_value("factorial requires a non-negative integer", n);
 
 		/* For small values, just do it the naïve way */
 		if (n < 20) {

@@ -499,6 +499,14 @@ ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, int *stack, 
         ndim = ValueInt(Stack(0));
         array = Stack(ndim + 1);
         value = FalseVal;
+        /* An array with an empty dimension has no elements to compute */
+        for (dim = 0; dim < ndim; dim++)
+            if (ArrayDims(&array->array)[dim] == 0)
+                break;
+        if (dim < ndim) {
+            value = TrueVal;
+            break;
+        }
         /* Done with this row? */
         if (ValueInt(Stack(1)) == ArrayDims(&array->array)[0]) {
             /* Find dim with space */

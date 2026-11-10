@@ -1,0 +1,66 @@
+/*
+ * Nickle test suite
+ *
+ * Union member types
+ *
+ * The box holding a union's value had no type, so values of any type
+ * could be stored in any member, and selecting a different member left
+ * the old member's value in place under the new tag.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+typedef union { int i; string s; } U;
+
+poly str = "x";
+
+void function rejected (string what, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, int n, poly v) {
+    }
+}
+
+void function uninitialized (string what, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch uninitialized_value (string m) {
+    }
+}
+
+/* Values must match the member's type */
+rejected ("assign", void func () { U u; u.i = str; });
+rejected ("reassign", void func () { U u = { i = 1 }; u.i = str; });
+rejected ("initialize", void func () { U u = { i = str }; });
+
+/* Selecting another member doesn't expose the old member's value */
+uninitialized ("other member", void func () {
+    U u = { i = 1 };
+    *string r = &u.s;
+    poly x = *r;
+});
+
+/* A rejected assignment leaves the member uninitialized */
+uninitialized ("union switch", void func () {
+    U u;
+    try { u.i = str; } catch invalid_argument (string m, int n, poly v) { }
+    union switch (u) {
+    case i x: break;
+    case s y: break;
+    }
+});
+
+/* Valid uses still work */
+U u = { i = 1 };
+u.s = "ok";
+if (u.s != "ok")
+    raise wrong ("u.s", u.s, "ok");
+U c = u;
+c.s = "copy";
+if (u.s != "ok" || c.s != "copy")
+    raise wrong ("copy", c, u);

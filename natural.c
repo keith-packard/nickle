@@ -501,12 +501,41 @@ DigitsKaratsuba(digit *x, ptrdiff_t xlen, digit *y, ptrdiff_t ylen, digit *resul
     return rlen;
 }
 
+/*
+ * Check that a natural of 'len' digits can be represented, raising
+ * out_of_memory when it can't
+ */
+static Bool
+NaturalLengthOk(ptrdiff_t len)
+{
+    if (len <= NATURAL_MAX_LENGTH)
+        return True;
+    RaiseStandardException(exception_out_of_memory, 1, NewStrString("integer too large"));
+    return False;
+}
+
+/*
+ * Check that an integer of 'bits' bits can be represented, raising
+ * out_of_memory when it can't
+ */
+Bool
+NaturalBitsOk(Natural *bits)
+{
+    if (NaturalLength(bits) <= 2
+        && NaturalToDoubleDigit(bits) <= (double_digit)NATURAL_MAX_LENGTH * LBASE2)
+        return True;
+    RaiseStandardException(exception_out_of_memory, 1, NewStrString("integer too large"));
+    return False;
+}
+
 Natural *
 NaturalPlus(Natural *a, Natural *b)
 {
     ENTER();
     Natural *result;
 
+    if (!NaturalLengthOk(max(length(a), length(b)) + 1))
+        RETURN(zero_natural);
     result = AllocNatural(max(length(a), length(b)) + 1);
     result->length = DigitsAdd(data(a), length(a), data(b), length(b), data(result));
     RETURN(result);
@@ -555,6 +584,8 @@ NaturalTimes(Natural *a, Natural *b)
     digit    *tmp;
     size_t    tmp_len;
 
+    if (!NaturalLengthOk(length(a) + length(b)))
+        RETURN(zero_natural);
     if (length(a) < KARATSUBA_LIMIT || length(b) < KARATSUBA_LIMIT) {
         if (zeroNp(a) || zeroNp(b))
             RETURN(zero_natural);
@@ -1080,6 +1111,8 @@ NaturalLsl(Natural *v, ptrdiff_t shift)
             last = 1;
         }
     }
+    if (!NaturalLengthOk(length))
+        RETURN(zero_natural);
     r = AllocNatural(length);
     rt = NaturalDigits(r);
     while (dshift--)

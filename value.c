@@ -560,6 +560,10 @@ Pow(Value av, Value bv)
         i = IntegerMag(bv);
         if (IntegerSign(bv) == Negative)
             flip = 1;
+        /* An exact base other than 0, 1 or -1 needs a bit per unit of exponent */
+        if ((unsigned)ValueTag(av) <= (unsigned)rep_rational && !Zerop(av) && !True(Equal(av, One))
+            && !True(Equal(av, Negate(One))) && !NaturalBitsOk(i))
+            RETURN(Void);
         two = NewNatural(2);
         p = av;
         result = One;
@@ -584,10 +588,33 @@ Pow(Value av, Value bv)
     RETURN(result);
 }
 
+/*
+ * Return the shift count in 'bv', a non-negative integer, or -1 when
+ * it doesn't fit in a ptrdiff_t
+ */
+static ptrdiff_t
+ShiftCount(Value bv)
+{
+    Natural     *n;
+    double_digit dd;
+
+    if (ValueIsInt(bv))
+        return ValueInt(bv);
+    n = IntegerMag(bv);
+    if (NaturalLength(n) > 2)
+        return -1;
+    dd = NaturalToDoubleDigit(n);
+    if (dd > (double_digit)PTRDIFF_MAX)
+        return -1;
+    return (ptrdiff_t)dd;
+}
+
 Value
 ShiftL(Value av, Value bv)
 {
     ENTER();
+    ptrdiff_t b;
+
     if (!Integralp(ValueTag(av)) || !Integralp(ValueTag(bv))) {
         RaiseStandardException(exception_invalid_binop_values, 3,
                                NewStrString("<< requires integers"), av, bv);
@@ -595,27 +622,26 @@ ShiftL(Value av, Value bv)
     }
     if (Negativep(bv))
         RETURN(ShiftR(av, Negate(bv)));
-    if (Zerop(bv))
+    if (Zerop(bv) || Zerop(av))
         RETURN(av);
-    if (ValueIsInt(bv)) {
-        Sign sign = Positive;
-        int  b = ValueInt(bv);
+    b = ShiftCount(bv);
+    if (b < 0) {
+        RaiseStandardException(exception_out_of_memory, 1, NewStrString("integer too large"));
+        RETURN(Void);
+    }
+    if (ValueIsInt(av) && b < (ptrdiff_t)NICKLE_INT_BITS) {
+        signed_digit rd = (signed_digit)ValueInt(av) << b;
 
-        if (ValueIsInt(av) && b >= 0 && (unsigned)b < NICKLE_INT_BITS) {
-            signed_digit rd = (signed_digit)ValueInt(av) << b;
-
-            if (rd > (signed_digit)MAX_NICKLE_INT || rd < (signed_digit)MIN_NICKLE_INT)
-                av = NewSignedDigitInteger(rd);
-            else
-                av = NewInt((int)rd);
-        } else {
-            if (Negativep(av))
-                sign = Negative;
-            av = Reduce(
-                NewInteger(sign, NaturalLsl(IntegerMag(IntegerRep.promote(av, 0)), ValueInt(bv))));
-        }
+        if (rd > (signed_digit)MAX_NICKLE_INT || rd < (signed_digit)MIN_NICKLE_INT)
+            av = NewSignedDigitInteger(rd);
+        else
+            av = NewInt((int)rd);
     } else {
-        av = Times(av, Pow(NewInt(2), bv));
+        Sign sign = Positive;
+
+        if (Negativep(av))
+            sign = Negative;
+        av = Reduce(NewInteger(sign, NaturalLsl(IntegerMag(IntegerRep.promote(av, 0)), b)));
     }
     RETURN(av);
 }
@@ -624,6 +650,8 @@ Value
 ShiftR(Value av, Value bv)
 {
     ENTER();
+    ptrdiff_t b;
+
     if (!Integralp(ValueTag(av)) || !Integralp(ValueTag(bv))) {
         RaiseStandardException(exception_invalid_binop_values, 3,
                                NewStrString(">> requires integers"), av, bv);
@@ -633,21 +661,21 @@ ShiftR(Value av, Value bv)
         RETURN(ShiftL(av, Negate(bv)));
     if (Zerop(bv))
         RETURN(av);
-    if (ValueIsInt(bv)) {
-        Sign sign = Positive;
-        int  b = ValueInt(bv);
-
-        if (ValueIsInt(av) && b >= 0 && (unsigned)b < NICKLE_INT_BITS) {
-            av = NewInt(ValueInt(av) >> b);
-        } else {
-            if (Negativep(av)) {
-                av = Minus(av, Minus(ShiftL(One, bv), One));
-                sign = Negative;
-            }
-            av = Reduce(NewInteger(sign, NaturalRsl(IntegerMag(IntegerRep.promote(av, 0)), b)));
-        }
+    b = ShiftCount(bv);
+    if (ValueIsInt(av) && b >= 0 && b < (ptrdiff_t)NICKLE_INT_BITS) {
+        av = NewInt(ValueInt(av) >> b);
     } else {
-        av = Div(av, Pow(NewInt(2), bv));
+        Natural *mag = IntegerMag(IntegerRep.promote(av, 0));
+        Sign     sign = Positive;
+
+        /* Shifting out every bit leaves 0, or -1 for negative values */
+        if (b < 0 || b > NaturalWidth(mag))
+            RETURN(Negativep(av) ? NewInt(-1) : Zero);
+        if (Negativep(av)) {
+            av = Minus(av, Minus(ShiftL(One, bv), One));
+            sign = Negative;
+        }
+        av = Reduce(NewInteger(sign, NaturalRsl(IntegerMag(IntegerRep.promote(av, 0)), b)));
     }
     RETURN(av);
 }

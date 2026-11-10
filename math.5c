@@ -1408,6 +1408,9 @@ extend namespace Math {
 	return round_correctly (precision (v), compute);
     }
 
+    /* The builtin, which checks that exact results can be represented */
+    real(real, int) _int_pow = pow;
+
     /*
      * These two are used for the '**' and '**=' operators
      */
@@ -1428,7 +1431,9 @@ extend namespace Math {
 
 	if (is_int (b))
 	{
-	    if (!is_int (a) && is_rational (a))
+	    if (is_int (a))
+		return _int_pow (a, b);
+	    if (is_rational (a))
 		return pow (numerator(a), b) / pow (denominator (a), b);
 	    bool flip = false;
 

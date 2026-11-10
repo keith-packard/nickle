@@ -185,6 +185,13 @@ typedef struct _natural {
     digit     digits[];
 } Natural;
 
+/*
+ * The longest natural, in digits. This keeps every bit count, and the
+ * byte size of every natural and of the Karatsuba scratch space,
+ * representable
+ */
+#define NATURAL_MAX_LENGTH ((PTRDIFF_MAX / LBASE2) >> 4)
+
 static inline ptrdiff_t
 NaturalLength(Natural *n)
 {
@@ -231,6 +238,7 @@ void            NaturalAddOffset(Natural *a, Natural *b, ptrdiff_t offset);
 Natural        *NaturalBdivmod(Natural *u_orig, Natural *v);
 Natural        *NaturalKaryReduction(Natural *u_orig, Natural *v);
 ptrdiff_t       NaturalWidth(Natural *u);
+Bool            NaturalBitsOk(Natural *bits);
 digit           DigitBmod(digit u, digit v, int s);
 int             IntWidth(int i);
 int             DoubleDigitWidth(double_digit i);

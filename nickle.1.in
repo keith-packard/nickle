@@ -851,6 +851,10 @@ Attempt to evaluate a binary operator with args arg1 and arg2,
 where at least one of these values is invalid.
 .IP "exception invalid_unop_value(string msg, poly arg)"
 Attempt to evaluate a unary operator with invalid argument arg.
+.IP "exception out_of_memory(string msg)"
+A result is too large to represent, such as an integer with more
+than about 2**59 bits on 64-bit systems.  Results that can be
+represented but don't fit in memory make Nickle exit instead.
 .LP
 .B "Builtin Namespaces:"
 .IP Math

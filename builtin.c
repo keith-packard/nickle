@@ -101,6 +101,12 @@ static const struct ebuiltin excepts[] = {
       "\n"
       " 'value' isn't compatible with a unary operator.\n"
       " 'message' indicates which operator is problematic.\n"            },
+    { "out_of_memory",         exception_out_of_memory,         "s",
+     "\n"
+      " out_of_memory (string message)\n"
+      "\n"
+      " A result is too large to represent.\n"
+      " 'message' describes the result.\n"                               },
     { 0,                       0,                               0,     0 },
 };
 

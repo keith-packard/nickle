@@ -16,7 +16,13 @@ UnionRef(Value uv, Atom name)
 
     for (i = 0; i < st->nelements; i++)
         if (StructTypeAtoms(st)[i] == name) {
-            u->tag = name;
+            /* Selecting a different member discards the old member's value */
+            if (u->tag != name) {
+                u->tag = name;
+                BoxValueSet(u->value, 0, 0);
+            }
+            /* Check values stored through the reference against the member type */
+            u->value->u.type = BoxTypesElements(st->types)[i];
             RETURN(NewRef(u->value, 0));
         }
     RETURN(0);

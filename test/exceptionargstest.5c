@@ -62,3 +62,40 @@ try {
 } catch uninitialized_value (string m) {
     check_message ("hash key", m);
 }
+
+typedef struct { int x; string s; } partial;
+partial ps = { x = 1 };
+
+try {
+    poly x = ps.s;
+    raise missing ("uninitialized struct member");
+} catch uninitialized_value (string m) {
+    check_message ("uninitialized struct member", m);
+}
+
+int unset;
+
+try {
+    poly x = unset;
+    raise missing ("uninitialized variable");
+} catch uninitialized_value (string m) {
+    check_message ("uninitialized variable", m);
+}
+
+*int unset_ref = &unset;
+
+try {
+    poly x = *unset_ref;
+    raise missing ("dereferencing uninitialized storage");
+} catch uninitialized_value (string m) {
+    check_message ("dereferencing uninitialized storage", m);
+}
+
+poly notref = 1;
+
+try {
+    poly x = *notref;
+    raise missing ("dereferencing a non-reference");
+} catch invalid_unop_value (string m, poly v) {
+    check_message ("dereferencing a non-reference", m);
+}

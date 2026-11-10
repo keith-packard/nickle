@@ -15,6 +15,7 @@ tests = [
   'hyperbolictest.5c',
   'erftest.5c',
   'intmathtest.5c',
+  'powtest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

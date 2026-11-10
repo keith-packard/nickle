@@ -1,0 +1,36 @@
+/*
+ * Nickle test suite
+ *
+ * Powers of zero
+ *
+ * pow returned 0 for 0 ** b whatever the sign of b, so 0 ** -1 was 0
+ * rather than raising divide_by_zero as 1 / 0 does.
+ */
+
+exception bad_pow (real a, real b, poly got);
+
+real[*] zeros = { 0, imprecise (0), imprecise (0, 53) };
+real[*] positive = { 1, 2, 1/2, 1/3, imprecise (0.75, 53) };
+
+for (int i = 0; i < dim (zeros); i++) {
+    real z = zeros[i];
+
+    if (z ** 0 != 1 || pow (z, 0) != 1)
+	raise bad_pow (z, 0, z ** 0);
+    for (int j = 0; j < dim (positive); j++) {
+	real b = positive[j];
+
+	if (z ** b != 0 || pow (z, b) != 0)
+	    raise bad_pow (z, b, z ** b);
+	try {
+	    real r = z ** -b;
+	    raise bad_pow (z, -b, r);
+	} catch divide_by_zero (real num, real den) {
+	}
+	try {
+	    real r = pow (z, -b);
+	    raise bad_pow (z, -b, r);
+	} catch divide_by_zero (real num, real den) {
+	}
+    }
+}

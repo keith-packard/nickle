@@ -1,0 +1,121 @@
+/*
+ * Nickle test suite
+ *
+ * Complex elementary functions
+ *
+ * Several functions took the exponent of an exact zero part and
+ * failed for every real or purely imaginary argument, atan ignored
+ * the extra precision it computed, and atanh, asinh and acosh
+ * reduced their precision for small arguments. Compare each result
+ * with the same function evaluated at 2048 bits.
+ */
+
+exception bad_result (string name, complex z, complex got, complex want);
+
+int[*] precs = { 53, 113 };
+
+real function modulus (complex z)
+{
+    return Math::sqrt (Complex::creal (z) ** 2 + Complex::cimag (z) ** 2);
+}
+
+complex function c (real re, real im)
+{
+    return Complex::new (re, im);
+}
+
+void function check_value (string name, complex z, complex got, complex want,
+			   int p)
+{
+    if (modulus (got - want) > modulus (want) * 2 ** (4 - p))
+	raise bad_result (name, z, got, want);
+}
+
+void function check (string name, complex(complex) f, complex[*] args)
+{
+    for (int i = 0; i < dim (args); i++)
+	for (int j = 0; j < dim (precs); j++) {
+	    complex z = imprecise (args[i], precs[j]);
+
+	    check_value (name, z, f (z), f (imprecise (z, 2048)), precs[j]);
+	}
+}
+
+/* Away from the branch cuts of every function */
+complex[*] general = {
+    c (0.3, -1.2), c (-2.5, 0.75), c (1e-30, 1e-30), c (1e-10, -2e-10),
+};
+
+complex[*] tiny = { c (1e-200, 1e-200), c (-1e-200, 3e-200) };
+
+check ("sqrt", Complex::sqrt, general);
+check ("sqrt", Complex::sqrt, (complex[*]) { 0.5, 3, c (0, 2) });
+check ("log", Complex::log, general);
+check ("log", Complex::log, (complex[*]) { 0.5, 3, c (0, 2) });
+check ("exp", Complex::exp, general);
+check ("exp", Complex::exp, (complex[*]) { 0.5, -3, c (0, 2) });
+check ("sin", Complex::sin, general);
+check ("sin", Complex::sin, (complex[*]) { 0.5, -3, c (0, 2) });
+check ("cos", Complex::cos, general);
+check ("cos", Complex::cos, (complex[*]) { 0.5, -3, c (0, 2) });
+check ("sinh", Complex::sinh, general);
+check ("sinh", Complex::sinh, (complex[*]) { 0.5, -3, c (0, 2) });
+check ("cosh", Complex::cosh, general);
+check ("cosh", Complex::cosh, (complex[*]) { 0.5, -3, c (0, 2) });
+check ("tan", Complex::tan, general);
+check ("tan", Complex::tan, (complex[*]) { 0.5, -3, c (0, 2) });
+check ("tanh", Complex::tanh, general);
+check ("tanh", Complex::tanh, (complex[*]) { 0.5, -3, c (0, 2) });
+check ("atan", Complex::atan, general);
+check ("atan", Complex::atan, (complex[*]) { 0.5, -3, 1e-30, c (0, 0.5) });
+check ("asin", Complex::asin, general);
+check ("asin", Complex::asin, (complex[*]) { 0.5, -0.25, 1e-30, c (0, 2) });
+check ("acos", Complex::acos, general);
+check ("acos", Complex::acos, (complex[*]) { 0.5, -0.25, 1e-30, c (0, 2) });
+check ("atanh", Complex::atanh, general);
+check ("atanh", Complex::atanh, tiny);
+check ("atanh", Complex::atanh, (complex[*]) { 0.5, -0.25, 1e-30, c (0, 3) });
+check ("asinh", Complex::asinh, general);
+check ("asinh", Complex::asinh, tiny);
+check ("asinh", Complex::asinh, (complex[*]) { 0.5, -3, 1e-30, c (0, 0.5) });
+check ("acosh", Complex::acosh, general);
+check ("acosh", Complex::acosh, (complex[*]) { 2, 1000, c (0, 2) });
+
+complex[*][2] pow_args = {
+    { 2, 2 }, { 2, 0.5 }, { 3, -1.5 }, { c (0.3, -1.2), c (2.5, 0.5) },
+    { c (1e-30, 1e-30), 2 }, { c (0, 2), 3 },
+};
+
+for (int i = 0; i < dim (pow_args); i++)
+    for (int j = 0; j < dim (precs); j++) {
+	complex x = imprecise (pow_args[i][0], precs[j]);
+	complex y = imprecise (pow_args[i][1], precs[j]);
+
+	check_value ("pow", x, Complex::pow (x, y),
+		     Complex::pow (imprecise (x, 2048), imprecise (y, 2048)),
+		     precs[j]);
+    }
+
+if (Complex::pow (0, 2) != 0)
+    raise bad_result ("pow", 0, Complex::pow (0, 2), 0);
+if (Complex::pow (0, 0) != 1)
+    raise bad_result ("pow", 0, Complex::pow (0, 0), 1);
+try {
+    Complex::pow (0, -1);
+    raise bad_result ("pow", 0, 0, 0);
+} catch divide_by_zero (real num, real den) {
+}
+
+/* Division by real and complex values, exactly with rational parts */
+complex[*][3] divisions = {
+    { c (0, 2), 2, c (0, 1) },
+    { c (1, 2), 5/2, c (2/5, 4/5) },
+    { c (3, 4), c (0, 1), c (4, -3) },
+    { c (1, 2), c (5/2, 1/2), c (7/13, 9/13) },
+    { 5/2, c (0, 2), c (0, -5/4) },
+};
+
+for (int i = 0; i < dim (divisions); i++)
+    if (divisions[i][0] / divisions[i][1] != divisions[i][2])
+	raise bad_result ("/", divisions[i][0],
+			  divisions[i][0] / divisions[i][1], divisions[i][2]);

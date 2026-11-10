@@ -1,0 +1,61 @@
+/*
+ * Nickle test suite
+ *
+ * Conversion of rationals to reals
+ *
+ * imprecise (a, p) must give the p-bit real nearest a, with ties
+ * going to an even mantissa. Converting the numerator and
+ * denominator separately and then dividing rounded twice.
+ */
+
+autoimport PRNG;
+
+exception bad_imprecise (rational a, int p, rational got);
+
+void function check (rational a, int p)
+{
+    real	x = imprecise (a, p);
+    rational	m = mantissa (x);
+    int		e = exponent (x);
+    rational	xr = m * 2 ** e;
+    rational	ulp = 2 ** (e - p);
+    rational	down = ulp;
+    rational	up_neighbor, down_neighbor;
+    rational	err = abs (xr - a);
+
+    /* Below a power of two, the spacing halves */
+    if (abs (m) == 1/2)
+	down = ulp / 2;
+    if (xr > 0) {
+	up_neighbor = xr + ulp;
+	down_neighbor = xr - down;
+    } else {
+	up_neighbor = xr + down;
+	down_neighbor = xr - ulp;
+    }
+
+    if (precision (x) != p ||
+	err > abs (up_neighbor - a) || err > abs (down_neighbor - a))
+	raise bad_imprecise (a, p, xr);
+    /* On a tie, the integer mantissa must be even */
+    if ((err == abs (up_neighbor - a) || err == abs (down_neighbor - a)) &&
+	(m * 2 ** p) % 2 != 0)
+	raise bad_imprecise (a, p, xr);
+}
+
+/* Exactly halfway between two 24-bit values */
+check (1 + 1/2**24, 24);
+check (1 + 3/2**24, 24);
+check (-(1 + 3/2**24), 24);
+
+int[*] precs = { 24, 53, 64, 113, 256 };
+
+for (int i = 0; i < 2000; i++) {
+    int num = randbits (randint (600) + 1) + 1;
+    int den = randbits (randint (600) + 1) + 1;
+    rational a = num / den * 2 ** (randint (200) - 100);
+
+    if (randint (2) == 0)
+	a = -a;
+    check (a, precs[randint (dim (precs))]);
+}

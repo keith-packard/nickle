@@ -9,6 +9,7 @@ tests = [
   'gcdtest.5c',
   'bitwisetest.5c',
   'remaindertest.5c',
+  'imprecisetest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

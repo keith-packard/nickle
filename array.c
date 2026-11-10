@@ -18,7 +18,7 @@ ArrayNextI(Array *a, ptrdiff_t i)
 {
     ptrdiff_t step = 1;
     ptrdiff_t sub_size = 1;
-    int       d;
+    int32_t   d;
     ptrdiff_t dim, lim;
     ptrdiff_t j = i + 1;
 
@@ -39,7 +39,7 @@ ArrayLimit(Value av)
     Array     *a = &av->array;
     ptrdiff_t *limits = ArrayLimits(a);
     ptrdiff_t *dims = ArrayDims(a);
-    int        d;
+    int32_t    d;
     ptrdiff_t  limit;
 
     limit = limits[a->ndim - 1];
@@ -54,7 +54,7 @@ ArrayEqual(Value av, Value bv, int expandOk)
     Array    *a = &av->array, *b = &bv->array;
     ptrdiff_t ai, bi;
     ptrdiff_t alimit = ArrayLimit(av), blimit = ArrayLimit(bv);
-    int       d;
+    int32_t   d;
 
     (void)expandOk;
     if (a->ndim != b->ndim)
@@ -81,8 +81,8 @@ ArrayPrint(Value f, Value av, char format, int base, int width, int prec, int fi
     ptrdiff_t *limits = ArrayLimits(a);
     ptrdiff_t *dims = ArrayDims(a);
     ptrdiff_t  i, j;
-    int        d, k;
-    int        ndone;
+    int32_t    d, k;
+    int32_t    ndone;
     ptrdiff_t  limit = ArrayLimit(av);
     Bool       ret = True;
     Bool       pretty = format == 'v' || format == 'g' || format == 'G';
@@ -238,10 +238,10 @@ FillBoxVector(BoxVectorPtr bv, BoxPtr *boxes, ptrdiff_t n)
  * raising out_of_memory when it can't
  */
 Bool
-ArrayDimsOk(int ndim, ptrdiff_t *dims)
+ArrayDimsOk(int32_t ndim, ptrdiff_t *dims)
 {
     ptrdiff_t ents = 1;
-    int       d;
+    int32_t   d;
 
     for (d = 0; d < ndim; d++) {
         if (dims[d] && ents > ARRAY_MAX_VALUES / dims[d]) {
@@ -254,12 +254,12 @@ ArrayDimsOk(int ndim, ptrdiff_t *dims)
 }
 
 Value
-NewArray(Bool constant, Bool resizable, TypePtr type, int ndim, ptrdiff_t *dims)
+NewArray(Bool constant, Bool resizable, TypePtr type, int32_t ndim, ptrdiff_t *dims)
 {
     ENTER();
     Value     ret;
     ptrdiff_t ents;
-    int       dim;
+    int32_t   dim;
 
     if (ndim) {
         ents = 1;
@@ -267,7 +267,7 @@ NewArray(Bool constant, Bool resizable, TypePtr type, int ndim, ptrdiff_t *dims)
             ents *= dims[dim];
     } else
         ents = 0;
-    ret = ALLOCATE(&ArrayRep.data, sizeof(Array) + (ndim * 2) * sizeof(ptrdiff_t));
+    ret = ALLOCATE(&ArrayRep.data, sizeof(Array) + (size_t)ndim * 2 * sizeof(ptrdiff_t));
     ret->array.ndim = ndim;
     for (dim = 0; dim < ndim; dim++)
         ArrayLimits(&ret->array)[dim] = ArrayDims(&ret->array)[dim] = dims[dim];
@@ -284,7 +284,7 @@ NewArray(Bool constant, Bool resizable, TypePtr type, int ndim, ptrdiff_t *dims)
 }
 
 void
-ArrayResize(Value av, int dim, ptrdiff_t size)
+ArrayResize(Value av, int32_t dim, ptrdiff_t size)
 {
     ENTER();
     Array     *a = &av->array;
@@ -292,7 +292,7 @@ ArrayResize(Value av, int dim, ptrdiff_t size)
     ptrdiff_t *limits = ArrayLimits(a);
     ptrdiff_t  odim = dims[dim];
     ptrdiff_t  ents;
-    int        d;
+    int32_t    d;
     ptrdiff_t  stride; /* size of each chunk */
     ptrdiff_t  nchunk; /* number of chunks */
     ptrdiff_t  c;
@@ -374,7 +374,7 @@ ArrayResize(Value av, int dim, ptrdiff_t size)
         o = BoxVectorBoxes(a->u.resize);
         n = BoxVectorBoxes(nboxes);
         for (c = 0; c < nchunk; c++) {
-            memcpy(n, o, good * sizeof(BoxPtr));
+            memcpy(n, o, (size_t)good * sizeof(BoxPtr));
             if (nstride > good)
                 FillBoxVector(nboxes, n + good, nstride - good);
             o += ostride;
@@ -409,15 +409,15 @@ ArrayResize(Value av, int dim, ptrdiff_t size)
 void
 ArraySetDimensions(Value av, ptrdiff_t *dims)
 {
-    Array *a = &av->array;
-    int    i;
+    Array  *a = &av->array;
+    int32_t i;
 
     for (i = 0; i < a->ndim && !aborting; i++)
         ArrayResize(av, i, dims[i]);
 }
 
 Type *
-BuildArrayType(Type *subtype, int ndim, ...)
+BuildArrayType(Type *subtype, int32_t ndim, ...)
 {
     ENTER();
     Expr     *dims = 0;

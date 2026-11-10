@@ -517,9 +517,9 @@ Value
 do_dims(Value av)
 {
     ENTER();
-    Value     ret;
-    ptrdiff_t i;
-    int       ndim = av->array.ndim;
+    Value   ret;
+    int32_t i;
+    int32_t ndim = av->array.ndim;
 
     ret = NewArray(True, False, typePrim[rep_int], 1, &(ptrdiff_t) { ndim });
     for (i = 0; i < ndim; i++) {
@@ -537,9 +537,11 @@ do_setdims(Value av, Value dv)
     Array *d = &dv->array;
 #define DIM_LOCAL 32
     ptrdiff_t  dimLocal[DIM_LOCAL];
-    ptrdiff_t *dims = a->ndim < DIM_LOCAL ? dimLocal : AllocateTemp(a->ndim * sizeof(ptrdiff_t));
-    ptrdiff_t  i;
+    ptrdiff_t *dims = dimLocal;
+    int32_t    i;
 
+    if (a->ndim >= DIM_LOCAL)
+        dims = AllocateTemp((size_t)a->ndim * sizeof(ptrdiff_t));
     if (a->ndim != ArrayNvalues(d)) {
         RaiseStandardException(
             exception_invalid_argument, 3,
@@ -553,7 +555,7 @@ do_setdims(Value av, Value dv)
         RETURN(Void);
     }
     for (i = 0; i < a->ndim; i++) {
-        int j = a->ndim - 1 - i;
+        int32_t j = a->ndim - 1 - i;
         dims[j] = PtrdiffPart(ArrayValue(d, i), "setdims: invalid dimension");
         if (aborting)
             RETURN(Void);

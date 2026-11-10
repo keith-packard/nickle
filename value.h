@@ -487,7 +487,7 @@ typedef struct _typeArray {
     TypeBase   base;
     TypePtr    type;
     ExprPtr    dimensions;
-    int        dims;
+    int32_t    dims;
     DimStorage storage;
     Bool       resizable;
     union {
@@ -574,7 +574,7 @@ Type        *TypeCombineUnary(Type *down, int tag);
 Type        *TypeCombineStruct(Type *type, int tag, Atom atom);
 Type        *TypeCombineReturn(Type *type);
 Type        *TypeCombineFunction(Type *type);
-Type        *TypeCombineArray(Type *array, int ndim, Bool lvalue);
+Type        *TypeCombineArray(Type *array, int32_t ndim, Bool lvalue);
 /* can assign value 'v' to variable of type 'dest' */
 Bool         TypeCompatibleAssign(Type *dest, Value v);
 /* is value 'v' a subtype of 't' */
@@ -590,9 +590,9 @@ Bool         TypeIsCotype(Type *a, Type *b);
 #define TypeBool(t)   ((t)->base.tag == type_prim && (t)->prim.prim == rep_bool)
 #define TypeString(t) ((t)->base.tag == type_prim && (t)->prim.prim == rep_string)
 
-Bool TypeNumeric(Type *t);
-Bool TypeIntegral(Type *t);
-int  TypeCountDimensions(ExprPtr dims);
+Bool    TypeNumeric(Type *t);
+Bool    TypeIntegral(Type *t);
+int32_t TypeCountDimensions(ExprPtr dims);
 
 /*
  * storage classes
@@ -698,9 +698,9 @@ BoxVectorBoxes(BoxVector *v)
 }
 
 typedef struct _array {
-    BaseValue    base;
-    unsigned int resizable : 1;
-    unsigned int ndim      : (sizeof(int) * 8 - 1);
+    BaseValue base;
+    Bool      resizable;
+    int32_t   ndim;
     union {
         BoxPtr       fix;
         BoxVectorPtr resize;
@@ -1236,9 +1236,9 @@ Value               NewCharString(int c);
 /* The most elements an array may have, keeping its byte size representable */
 #define ARRAY_MAX_VALUES (PTRDIFF_MAX / (ptrdiff_t)sizeof(Value))
 
-Bool      ArrayDimsOk(int ndim, ptrdiff_t *dims);
-Value     NewArray(Bool constant, Bool resizable, TypePtr type, int ndim, ptrdiff_t *dims);
-void      ArrayResize(Value av, int dim, ptrdiff_t size);
+Bool      ArrayDimsOk(int32_t ndim, ptrdiff_t *dims);
+Value     NewArray(Bool constant, Bool resizable, TypePtr type, int32_t ndim, ptrdiff_t *dims);
+void      ArrayResize(Value av, int32_t dim, ptrdiff_t size);
 void      ArraySetDimensions(Value av, ptrdiff_t *dims);
 Value     NewHash(Bool constant, TypePtr keyType, TypePtr valueType);
 Value     HashGet(Value hv, Value key);
@@ -1284,7 +1284,7 @@ Type       *BuildUnionType(int nelements, ...);
 Type       *BuildEnumType(int nelements, ...);
 Value       UnionValue(Value uv, Atom name);
 Value       UnionRef(Value uv, Atom name);
-Type       *BuildArrayType(Type *type, int ndim, ...);
+Type       *BuildArrayType(Type *type, int32_t ndim, ...);
 
 Value       BinaryOperate(Value av, Value bv, BinaryOp operator);
 Value       UnaryOperate(Value v, UnaryOp operator);

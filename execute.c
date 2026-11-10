@@ -270,7 +270,7 @@ ThreadAssign(Value ref, Value v, Bool initialize)
 }
 
 static Value
-ThreadArray(Value thread, Bool resizable, int ndim, Type *type)
+ThreadArray(Value thread, Bool resizable, int32_t ndim, Type *type)
 {
     ENTER();
     ptrdiff_t  i;
@@ -297,11 +297,16 @@ ThreadArrayInd(Value thread, Bool resizable, Value dim, Type *type)
     ENTER();
     Array     *a = &dim->array;
     ptrdiff_t  i;
-    int        ndim = (int)ArrayLimits(a)[0];
+    int32_t    ndim;
     ptrdiff_t *dims;
 
     (void)thread;
-    dims = AllocateTemp(ndim * sizeof(ptrdiff_t));
+    if (ArrayLimits(a)[0] > INT32_MAX) {
+        RaiseStandardException(exception_out_of_memory, 1, NewStrString("too many dimensions"));
+        RETURN(0);
+    }
+    ndim = (int32_t)ArrayLimits(a)[0];
+    dims = AllocateTemp((size_t)ndim * sizeof(ptrdiff_t));
     for (i = 0; i < ndim; i++) {
         Value d = ArrayValue(a, i);
         dims[i] = PtrdiffPart(d, "Invalid array dimension");
@@ -317,11 +322,11 @@ ThreadArrayInd(Value thread, Bool resizable, Value dim, Type *type)
 }
 
 static ptrdiff_t
-ThreadArrayIndex(Value array, Value thread, int ndim, Value last, ptrdiff_t off, Bool except,
+ThreadArrayIndex(Value array, Value thread, int32_t ndim, Value last, ptrdiff_t off, Bool except,
                  Bool resize)
 {
     ptrdiff_t  i;
-    int        dim;
+    int32_t    dim;
     ptrdiff_t  part;
     Value      d;
     ptrdiff_t *dims = ArrayDims(&array->array);
@@ -390,10 +395,10 @@ ThreadArrayIndex(Value array, Value thread, int ndim, Value last, ptrdiff_t off,
  */
 
 static void
-ThreadArrayReplicate(Value thread, Value array, int dim, ptrdiff_t start)
+ThreadArrayReplicate(Value thread, Value array, int32_t dim, ptrdiff_t start)
 {
     ptrdiff_t dimsize = 1;
-    int       d;
+    int32_t   d;
     ptrdiff_t i;
     ptrdiff_t total;
     Value    *elements;
@@ -412,7 +417,7 @@ ThreadArrayReplicate(Value thread, Value array, int dim, ptrdiff_t start)
     } else {
         elements = BoxElements(array->array.u.fix);
         for (i = start + dimsize; i % total; i += dimsize)
-            memmove(elements + i, elements + start, dimsize * sizeof(elements[0]));
+            memmove(elements + i, elements + start, (size_t)dimsize * sizeof(elements[0]));
     }
 }
 
@@ -431,12 +436,13 @@ InitIndex(Value v)
 }
 
 static Value
-ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, ptrdiff_t *stack, InstPtr *next)
+ThreadArrayInit(Value thread, Value value, AInitMode mode, int32_t dim, ptrdiff_t *stack,
+                InstPtr *next)
 {
     ENTER();
     Value     array;
     ptrdiff_t i;
-    int       ndim;
+    int32_t   ndim;
 
     (void)next;
     if (aborting)
@@ -450,13 +456,13 @@ ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, ptrdiff_t *s
         STACK_PUSH(thread->thread.continuation.stack, NewInt(dim));
         break;
     case AInitModeRepeat:
-        ndim = ValueInt(Stack(0));
+        ndim = (int32_t)ValueInt(Stack(0));
         array = Stack(ndim + 1);
         if (InitIndex(Stack(dim + 1)) == ArrayDims(&array->array)[dim])
             break;
         __NICKLE_FALLTHROUGH;
     case AInitModeElement:
-        ndim = ValueInt(Stack(0));
+        ndim = (int32_t)ValueInt(Stack(0));
         array = Stack(ndim + 1);
         /*
          * Check and see if we're done
@@ -518,7 +524,7 @@ ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, ptrdiff_t *s
         }
         break;
     case AInitModeFuncDone:
-        ndim = ValueInt(Stack(0));
+        ndim = (int32_t)ValueInt(Stack(0));
         value = Stack(ndim + 1);
         *stack = ndim + 3;
         break;
@@ -526,7 +532,7 @@ ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, ptrdiff_t *s
         if (aborting)
             break;
         complete = True;
-        ndim = ValueInt(Stack(0));
+        ndim = (int32_t)ValueInt(Stack(0));
         array = Stack(ndim + 1);
         value = FalseVal;
         /* An array with an empty dimension has no elements to compute */
@@ -802,7 +808,7 @@ ThreadOpArray(Value thread, Value value, ptrdiff_t stack, Bool fetch, Bool typeC
                                    NewPtrdiffInteger(stack), v);
             break;
         }
-        i = ThreadArrayIndex(v, thread, stack, value, 0, True, !fetch);
+        i = ThreadArrayIndex(v, thread, v->array.ndim, value, 0, True, !fetch);
         if (!aborting) {
             BoxPtr    box = ArrayValueBox(&v->array, i);
             ptrdiff_t elt = ArrayValueElt(&v->array, i);
@@ -1195,7 +1201,8 @@ ThreadsRun(Value thread, Value lex)
                     break;
                 case OpBuildArray:
                     stack = inst->array.ndim;
-                    value = ThreadArray(thread, inst->array.resizable, stack, inst->array.type);
+                    value = ThreadArray(thread, inst->array.resizable, inst->array.ndim,
+                                        inst->array.type);
                     break;
                 case OpBuildArrayInd:
                     value = ThreadArrayInd(thread, inst->array.resizable, value, inst->array.type);

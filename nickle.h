@@ -427,8 +427,8 @@ typedef struct _instStruct {
 
 typedef struct _instArray {
     InstBase inst;
-    short    ndim;
-    short    resizable;
+    int32_t  ndim;
+    Bool     resizable;
     TypePtr  type;
 } InstArray;
 
@@ -443,7 +443,7 @@ typedef enum _aInitMode {
 
 typedef struct _instAInit {
     InstBase  inst;
-    int       dim;
+    int32_t   dim;
     AInitMode mode;
 } InstAInit;
 

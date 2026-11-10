@@ -343,10 +343,10 @@ TypeIntegral(Type *t)
     return False;
 }
 
-int
+int32_t
 TypeCountDimensions(ExprPtr dims)
 {
-    int ndim = 0;
+    int32_t ndim = 0;
     while (dims) {
         ndim++;
         dims = dims->tree.right;
@@ -1114,7 +1114,7 @@ TypeCombineUnary(Type *type, int tag)
 }
 
 Type *
-TypeCombineArray(Type *type, int ndim, Bool lvalue)
+TypeCombineArray(Type *type, int32_t ndim, Bool lvalue)
 {
     ENTER();
     Type *ret = 0;
@@ -1140,7 +1140,7 @@ TypeCombineArray(Type *type, int ndim, Bool lvalue)
             ret = TypeAdd(ret, typePoly);
 
         if (type->base.tag == type_array) {
-            int n = TypeCountDimensions(type->array.dimensions);
+            int32_t n = TypeCountDimensions(type->array.dimensions);
             if (n == 0 || n == ndim)
                 ret = TypeAdd(ret, type->array.type);
         } else if (type->base.tag == type_hash) {
@@ -1214,8 +1214,8 @@ TypeCombineFunction(Type *type)
 Bool
 TypeCompatibleAssign(TypePtr a, Value b)
 {
-    int adim, bdim;
-    int n;
+    int32_t adim, bdim;
+    int     n;
 
     if (!a || !b)
         return True;
@@ -1345,8 +1345,8 @@ TypeCompatibleAssign(TypePtr a, Value b)
 Bool
 ValueIsType(Value b, TypePtr a)
 {
-    int adim, bdim;
-    int n;
+    int32_t adim, bdim;
+    int     n;
 
     if (!a || !b)
         return True;

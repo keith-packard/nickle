@@ -223,7 +223,7 @@ ObjPtr CompileAssignOp(ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, Code
 ObjPtr CompileAssignFunc(ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr code,
                          char *name);
 ObjPtr CompileArrayIndex(ObjPtr obj, ExprPtr expr, TypePtr indexType, ExprPtr stat, CodePtr code,
-                         int *ndimp);
+                         int32_t *ndimp);
 ObjPtr CompileCall(ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code,
                    Bool auto_reference);
 ObjPtr _CompileExpr(ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code);
@@ -448,7 +448,7 @@ CompileLvalue(ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createI
     InstPtr   inst = 0;
     SymbolPtr s;
     ptrdiff_t depth;
-    int       ndim;
+    int32_t   ndim;
     TypePtr   t;
     Bool      flipTypes = False;
 
@@ -1175,10 +1175,10 @@ CompileTwixt(ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code)
 
 ObjPtr
 CompileArrayIndex(ObjPtr obj, ExprPtr expr, TypePtr indexType, ExprPtr stat, CodePtr code,
-                  int *ndimp)
+                  int32_t *ndimp)
 {
     ENTER();
-    int ndim;
+    int32_t ndim;
 
     ndim = 0;
     while (expr) {
@@ -1206,10 +1206,10 @@ CompileArrayIndex(ObjPtr obj, ExprPtr expr, TypePtr indexType, ExprPtr stat, Cod
  * Calculate the number of dimensions in an array by looking at
  * the initializers
  */
-static int
+static int32_t
 CompileCountInitDimensions(TypePtr type, ExprPtr expr)
 {
-    int ndimMax, ndimSub, ndim;
+    int32_t ndimMax, ndimSub, ndim;
 
     switch (expr->base.tag) {
     case ANONINIT:
@@ -1242,10 +1242,10 @@ CompileCountInitDimensions(TypePtr type, ExprPtr expr)
     return ndim;
 }
 
-static int
+static int32_t
 CompileCountDeclDimensions(ExprPtr expr)
 {
-    int ndim;
+    int32_t ndim;
 
     ndim = 0;
     while (expr) {
@@ -1255,7 +1255,7 @@ CompileCountDeclDimensions(ExprPtr expr)
     return ndim;
 }
 
-static int
+static int32_t
 CompileCountImplicitDimensions(ExprPtr expr)
 {
     switch (expr->base.tag) {
@@ -1271,7 +1271,7 @@ CompileCountImplicitDimensions(ExprPtr expr)
 }
 
 static ObjPtr
-CompileBuildArray(ObjPtr obj, ExprPtr expr, TypePtr type, ExprPtr dim, int ndim, ExprPtr stat,
+CompileBuildArray(ObjPtr obj, ExprPtr expr, TypePtr type, ExprPtr dim, int32_t ndim, ExprPtr stat,
                   CodePtr code)
 {
     ENTER();
@@ -1296,9 +1296,9 @@ CompileBuildArray(ObjPtr obj, ExprPtr expr, TypePtr type, ExprPtr dim, int ndim,
 }
 
 static void
-CompileSizeDimensions(ExprPtr expr, int *dims, int ndims)
+CompileSizeDimensions(ExprPtr expr, ptrdiff_t *dims, int32_t ndims)
 {
-    int dim;
+    ptrdiff_t dim;
 
     if (!expr)
         dim = 0;
@@ -1331,20 +1331,20 @@ CompileSizeDimensions(ExprPtr expr, int *dims, int ndims)
             dim = 1;
             break;
         }
-    if (abs(dim) > *dims || dim > *dims)
+    if (dim > *dims || -dim > *dims)
         *dims = dim;
 }
 
 static ExprPtr
-CompileImplicitArray(ObjPtr obj, ExprPtr stat, ExprPtr inits, int ndim)
+CompileImplicitArray(ObjPtr obj, ExprPtr stat, ExprPtr inits, int32_t ndim)
 {
     ENTER();
-    ExprPtr sub;
-    int    *dims;
-    int     n;
+    ExprPtr    sub;
+    ptrdiff_t *dims;
+    int32_t    n;
 
-    dims = AllocateTemp(ndim * sizeof(int));
-    memset(dims, '\0', ndim * sizeof(int));
+    dims = AllocateTemp((size_t)ndim * sizeof(ptrdiff_t));
+    memset(dims, '\0', (size_t)ndim * sizeof(ptrdiff_t));
     CompileSizeDimensions(inits, dims, ndim);
     for (n = 0; n < ndim; n++) {
         if (dims[n] < 0) {
@@ -1354,7 +1354,7 @@ CompileImplicitArray(ObjPtr obj, ExprPtr stat, ExprPtr inits, int ndim)
     }
     sub = 0;
     for (n = ndim - 1; n >= 0; n--) {
-        sub = NewExprTree(COMMA, NewExprConst(TEN_NUM, NewInt(dims[n])), sub);
+        sub = NewExprTree(COMMA, NewExprConst(TEN_NUM, NewPtrdiffInteger(dims[n])), sub);
     }
     RETURN(sub);
 }
@@ -1429,7 +1429,7 @@ CompileInit(ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr code)
 }
 
 static ObjPtr
-CompileArrayInits(ObjPtr obj, ExprPtr expr, TypePtr type, int ndim, ExprPtr stat, CodePtr code,
+CompileArrayInits(ObjPtr obj, ExprPtr expr, TypePtr type, int32_t ndim, ExprPtr stat, CodePtr code,
                   AInitMode mode)
 {
     ENTER();
@@ -1471,7 +1471,7 @@ CompileArrayInits(ObjPtr obj, ExprPtr expr, TypePtr type, int ndim, ExprPtr stat
 }
 
 static ExprPtr
-CompileArrayInitArgs(int ndim)
+CompileArrayInitArgs(int32_t ndim)
 {
     ExprPtr a = NewExprConst(TEN_NUM, One);
 
@@ -1560,9 +1560,9 @@ static ObjPtr
 CompileArrayInit(ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr code)
 {
     ENTER();
-    int   ndim;
-    Type *sub = type->array.type;
-    Expr *dimensions;
+    int32_t ndim;
+    Type   *sub = type->array.type;
+    Expr   *dimensions;
 
     ndim = CompileCountDeclDimensions(type->array.dimensions);
     if (!ndim) {
@@ -1659,7 +1659,7 @@ CompileArrayInit(ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodePtr cod
             inst->ainit.dim = ndim;
             inst->ainit.mode = AInitModeFuncDone;
         } else {
-            int ninitdim;
+            int32_t ninitdim;
             if (expr->base.tag != ARRAY && expr->base.tag != ANONINIT) {
                 CompileError(obj, stat, "Non array initializer");
                 RETURN(obj);
@@ -1744,7 +1744,7 @@ CompileImplicitInit(Type *type)
     ENTER();
     ExprPtr       init = 0;
     Type         *sub;
-    int           dim;
+    int32_t       dim;
     StructTypePtr structs;
     TypePtr      *types;
     Atom         *atoms;
@@ -2043,7 +2043,7 @@ ObjPtr
 _CompileExpr(ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code)
 {
     ENTER();
-    int       ndim;
+    int32_t   ndim;
     ptrdiff_t top_inst, test_inst, middle_inst;
     InstPtr   inst;
     SymbolPtr s;

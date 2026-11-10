@@ -52,10 +52,10 @@ static Value *
 Find(HashTablePtr ht, Value hash, Value key)
 {
     HashSetPtr hs = ht->hashSet;
-    HashValue  size = hs->size;
+    ptrdiff_t  size = hs->size;
     HashValue  h = ValueInt(hash);
-    HashValue  elt = h % size;
-    HashValue  step = 0;
+    ptrdiff_t  elt = h % size;
+    ptrdiff_t  step = 0;
     Value     *elts = BoxElements(ht->elts);
     Value     *er, *del = 0;
 
@@ -94,7 +94,7 @@ static void
 Rehash(BoxPtr old, HashTablePtr ht)
 {
     Value    *o, *n;
-    HashValue h;
+    ptrdiff_t h;
 
     o = BoxElements(old);
     ht->count = 0;
@@ -172,7 +172,7 @@ HashEqual(Value av, Value bv, int expandOk)
 {
     HashTable *at = &av->hash;
     HashTable *bt = &bv->hash;
-    HashValue  i;
+    ptrdiff_t  i;
     Value     *ae, *be;
 
     (void)expandOk;
@@ -197,7 +197,7 @@ static Bool
 HashPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
 {
     HashTable *ht = &av->hash;
-    HashValue  h;
+    ptrdiff_t  h;
     Value     *e;
     Bool       first = True;
     Bool       pretty = format == 'v' || format == 'g';
@@ -248,7 +248,7 @@ static HashValue
 HashHash(Value av)
 {
     HashTable *ht = &av->hash;
-    HashValue  h;
+    ptrdiff_t  h;
     Value     *e;
     HashValue  hash = 0;
 
@@ -422,7 +422,7 @@ HashKeys(Value hv)
     HashTablePtr ht = &hv->hash;
     ptrdiff_t    dim = ht->count;
     Value        keys = NewArray(False, True, ht->keyType, 1, &dim);
-    HashValue    h;
+    ptrdiff_t    h;
     ptrdiff_t    i = 0;
     Value       *e = BoxElements(ht->elts);
 

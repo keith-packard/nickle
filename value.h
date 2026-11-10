@@ -902,9 +902,9 @@ void ThreadCatches(Value thread);
  */
 
 typedef const struct _HashSet {
-    HashValue entries;
-    HashValue size;
-    HashValue rehash;
+    ptrdiff_t entries;
+    ptrdiff_t size;
+    ptrdiff_t rehash;
 } HashSetRec, *HashSetPtr;
 
 /*
@@ -936,7 +936,7 @@ typedef const struct _HashSet {
 typedef struct _hashTable {
     BaseValue   base;
     HashSetRec *hashSet;
-    HashValue   count;
+    ptrdiff_t   count;
     TypePtr     type;
     TypePtr     keyType;
     BoxPtr      elts;

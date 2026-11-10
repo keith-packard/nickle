@@ -1272,12 +1272,8 @@ NaturalAddOffset(Natural *a, Natural *b, int offset)
     }
     if (carry)
         *at = *at + carry;
-    if (at == NaturalDigits(a) + a->length - 1) {
-        while (a->length && *at == 0) {
-            at--;
-            a->length--;
-        }
-    }
+    while (a->length && NaturalDigits(a)[a->length - 1] == 0)
+        a->length--;
 }
 
 Bool

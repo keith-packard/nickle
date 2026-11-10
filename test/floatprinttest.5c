@@ -1,0 +1,42 @@
+/*
+ * Nickle test suite
+ *
+ * Fixed-point printing of reals
+ *
+ * %f computed the integer part in floating point, so digits beyond
+ * the precision of the value were wrong. Every integer digit should
+ * be that of the exact value, mantissa (x) * 2 ** exponent (x).
+ */
+
+autoimport PRNG;
+
+exception bad_print (real x, string got, string want);
+
+void function check_integer (real x)
+{
+    int		exact = mantissa (x) * 2 ** exponent (x);
+    string	got = sprintf ("%f", x);
+    string	want = sprintf ("%d", exact);
+
+    if (got != want)
+	raise bad_print (x, got, want);
+}
+
+int[*] precs = { 24, 53, 64, 113, 256 };
+
+for (int i = 0; i < 300; i++) {
+    int bits = randint (340) + 60;
+    int v = randbits (bits) | 1 << (bits - 1);
+
+    if (randint (2) == 0)
+	v = -v;
+    real x = imprecise (v, precs[randint (dim (precs))]);
+    /* Only reals with no fraction */
+    if (exponent (x) >= precision (x))
+	check_integer (x);
+}
+
+/* The exact fraction is .9375, which rounds up to .938 */
+real y = imprecise (-183501306237052383.9375, 64);
+if (sprintf ("%.3f", y) != "-183501306237052383.938")
+    raise bad_print (y, sprintf ("%.3f", y), "-183501306237052383.938");

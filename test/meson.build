@@ -11,6 +11,7 @@ tests = [
   'remaindertest.5c',
   'imprecisetest.5c',
   'realstringtest.5c',
+  'floatprinttest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

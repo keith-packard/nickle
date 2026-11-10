@@ -1071,23 +1071,15 @@ The remainder of the Thread functions are fairly standard.
 Kills every running thread in the array list.  With
 no arguments, kills the currently running thread.
 Returns the number of threads killed.
-.IP "int function trace(poly list...)"
-Shows the state of
-every running thread in the array list.  With
-no arguments, traces the default continuation.
-Returns the number of threads traced.
-.IP "int function cont()"
-Continues execution of any interrupted threads,
-and returns the number of continued threads.
 .IP "thread function current()"
 Return the current thread.
-.IP "int function list()"
-Reports the currently running thread to stdout.
+.IP "void function list()"
+Reports the known threads and their states to stdout.
 .IP "int function get_priority(thread t)"
 Reports the priority of the given thread.
 .IP "thread function id_to_thread(int id)"
 Returns the thread with the given id,
-if found, and 0 otherwise.
+if found, and <> otherwise.
 .IP "poly function join(thread t)"
 Waits for thread t to terminate, and returns whatever
 it returns.
@@ -1097,6 +1089,11 @@ and returns the new priority.  Larger priorities
 mean more runtime: a task with higher priority will
 always run instead of a lower priority task.  Threads
 of equal highest priority will be pre-emptively multitasked.
+.IP "void function send_signal(thread t, int signal)"
+Raises the signal exception in thread t, passing signal
+as its argument.
+.IP "exception signal(int signal)"
+Raised by send_signal.
 .PP
 .IP Semaphore
 The Semaphore namespace encapsulates operations on the

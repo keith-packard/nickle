@@ -63,7 +63,7 @@ import_Thread_namespace(void)
           " Return 'priority.\n" },
         { do_Thread_signal, "send_signal", "v", "ti",
          "\n"
-          " void signal (thread t, int signal)\n"
+          " void send_signal (thread t, int signal)\n"
           "\n"
           " Raise the signal exception in thread 't'\n"
           " passing 'signal' as the argument\n" },

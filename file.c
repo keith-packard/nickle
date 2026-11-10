@@ -1679,6 +1679,9 @@ FilePutBinOp(Value f, BinaryOp o)
     case LorOp:
         FilePuts(f, "|");
         break;
+    case LxorOp:
+        FilePuts(f, "^");
+        break;
     default:
         break;
     }

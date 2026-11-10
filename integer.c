@@ -282,7 +282,10 @@ IntegerBitwise(Value av, Value bv, BinaryOp op)
     Natural   *m;
     TwosDigits at, bt;
 
-    if (op == LandOp) {
+    if (op == LxorOp) {
+        neg = aneg != bneg;
+        len = longer;
+    } else if (op == LandOp) {
         neg = aneg && bneg;
         if (aneg && bneg)
             len = longer;
@@ -313,7 +316,17 @@ IntegerBitwise(Value av, Value bv, BinaryOp op)
     for (i = 0; i < len; i++) {
         x = TwosDigitsNext(&at, i);
         y = TwosDigitsNext(&bt, i);
-        r[i] = op == LandOp ? x & y : x | y;
+        switch (op) {
+        case LandOp:
+            r[i] = x & y;
+            break;
+        case LorOp:
+            r[i] = x | y;
+            break;
+        default:
+            r[i] = x ^ y;
+            break;
+        }
     }
 
     /* Trim the sign extension */
@@ -347,6 +360,13 @@ IntegerLor(Value av, Value bv, int expandOk)
 {
     (void)expandOk;
     return IntegerBitwise(av, bv, LorOp);
+}
+
+static Value
+IntegerLxor(Value av, Value bv, int expandOk)
+{
+    (void)expandOk;
+    return IntegerBitwise(av, bv, LxorOp);
 }
 
 static Value
@@ -477,7 +497,7 @@ ValueRep IntegerRep = {
      IntegerDiv, IntegerMod,
      IntegerLess, IntegerEqual,
      IntegerLand, IntegerLor,
-     },
+     IntegerLxor, },
     {
      /* unary */
         IntegerNegate, IntegerFloor,

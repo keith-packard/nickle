@@ -244,6 +244,8 @@ BinaryOperate(Value av, Value bv, BinaryOp operator)
             return NewInt(ValueInt(av) & ValueInt(bv));
         case LorOp:
             return NewInt(ValueInt(av) | ValueInt(bv));
+        case LxorOp:
+            return NewInt(ValueInt(av) ^ ValueInt(bv));
         case NumBinaryOp:;
         }
         return Void;
@@ -366,13 +368,6 @@ Lnot(Value av)
 {
     ENTER();
     RETURN(Minus(Negate(av), One));
-}
-
-Value
-Lxor(Value av, Value bv)
-{
-    ENTER();
-    RETURN(Land(Lnot(Land(av, bv)), Lor(av, bv)));
 }
 
 Value

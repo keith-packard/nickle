@@ -2428,7 +2428,7 @@ _CompileExpr(ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code
         }
         break;
     case LXOR:
-        obj = CompileBinFunc(obj, expr, Lxor, stat, code, "^");
+        obj = CompileBinOp(obj, expr, LxorOp, stat, code);
         break;
     case LAND:
         obj = CompileBinOp(obj, expr, LandOp, stat, code);
@@ -2570,7 +2570,7 @@ _CompileExpr(ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr code
         obj = CompileAssignFunc(obj, expr, ShiftR, stat, code, ">>");
         break;
     case ASSIGNLXOR:
-        obj = CompileAssignFunc(obj, expr, Lxor, stat, code, "^");
+        obj = CompileAssignOp(obj, expr, LxorOp, stat, code);
         break;
     case ASSIGNLAND:
         obj = CompileAssignOp(obj, expr, LandOp, stat, code);
@@ -4045,7 +4045,6 @@ ObjBinFuncName(BinaryFunc func)
     } funcs[] = {
         { ShiftL,       "ShiftL"       },
         { ShiftR,       "ShiftR"       },
-        { Lxor,         "Lxor"         },
         { NotEqual,     "NotEqual"     },
         { Greater,      "Greater"      },
         { LessEqual,    "LessEqual"    },

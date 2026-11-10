@@ -272,6 +272,7 @@ typedef enum _binaryOp {
     EqualOp,
     LandOp,
     LorOp,
+    LxorOp,
     NumBinaryOp
 } BinaryOp;
 
@@ -1347,6 +1348,7 @@ typedef Value (*UnaryFunc)(Value);
 #define Equal(av, bv)  BinaryOperate(av, bv, EqualOp)
 #define Land(av, bv)   BinaryOperate(av, bv, LandOp)
 #define Lor(av, bv)    BinaryOperate(av, bv, LorOp)
+#define Lxor(av, bv)   BinaryOperate(av, bv, LxorOp)
 
 int   logbase2(int a);
 
@@ -1364,7 +1366,7 @@ Value Gcd(Value, Value);
 Value Bdivmod(Value av, Value bv);
 Value KaryReduction(Value av, Value bv);
 #endif
-Value     Lxor(Value, Value), Lnot(Value);
+Value     Lnot(Value);
 Value     Popcount(Value);
 Bool      Print(Value, Value, char format, int base, int width, int prec, int fill);
 void      PrintError(char *s, ...);

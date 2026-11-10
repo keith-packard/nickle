@@ -203,6 +203,16 @@ IntLor(Value av, Value bv, int expandOk)
 }
 
 static Value
+IntLxor(Value av, Value bv, int expandOk)
+{
+    ENTER();
+    int a = ValueInt(av), b = ValueInt(bv);
+
+    (void)expandOk;
+    RETURN(NewInt(a ^ b));
+}
+
+static Value
 IntNegate(Value av, int expandOk)
 {
     ENTER();
@@ -332,7 +342,8 @@ ValueRep IntRep = {
     { 0, 0, "IntRep" }, /* data */
     rep_int, /* tag */
     {                   /* binary */
-      IntPlus, IntMinus, IntTimes, IntDivide, IntDiv, IntMod, IntLess, IntEqual, IntLand, IntLor },
+      IntPlus, IntMinus, IntTimes, IntDivide, IntDiv, IntMod, IntLess, IntEqual, IntLand, IntLor,
+     IntLxor },
     {
      IntNegate, IntFloor,
      IntCeil, },

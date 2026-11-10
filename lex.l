@@ -324,335 +324,328 @@ unput(char c)
 #endif
 %}
 %%
-"/\052"		{   
-		    if (seeComment) 
-		    {
-			yylval.value = lexdoc ();
-			return COMMENT_CONST;
-		    }
-		    else
-			skipcomment (); 
-		}
-^[ \t]*#	skipline();
-auto		{ yylval.class = class_auto; return AUTO; }
-const		{ yylval.class = class_const; return CONST; }
-global		{ yylval.class = class_global; return GLOBAL; }
-static		{ yylval.class = class_static; return STATIC; }
-function	{ yylval.type = typePrim[rep_void]; return FUNCTION; }
-while		{ yylval.ints = WHILE; return WHILE; }
-for		{ yylval.ints = FOR; return FOR; }
-do		{ yylval.ints = DO; return DO; }
-if		{ yylval.ints = IF; return IF; }
-else		{ yylval.ints = ELSE; return ELSE; }
-switch		{ yylval.ints = SWITCH; return SWITCH; }
-break		{ yylval.ints = BREAK; return BREAK; }
-continue	{ yylval.ints = CONTINUE; return CONTINUE; }
-case		{ yylval.ints = CASE; return CASE; }
-default		{ yylval.ints = DEFAULT; return DEFAULT; }
-return		{ yylval.ints = RETURNTOK; return RETURNTOK; }
-try		{ yylval.ints = TRY; return TRY; }
-catch		{ yylval.ints = CATCH; return CATCH; }
-twixt		{ yylval.ints = TWIXT; return TWIXT; }
+"/\052"         {
+                    if (seeComment) {
+                        yylval.value = lexdoc();
+                        return COMMENT_CONST;
+                    } else
+                        skipcomment();
+                }
+^[ \t]*#        skipline();
+auto            { yylval.class = class_auto; return AUTO; }
+const           { yylval.class = class_const; return CONST; }
+global          { yylval.class = class_global; return GLOBAL; }
+static          { yylval.class = class_static; return STATIC; }
+function        { yylval.type = typePrim[rep_void]; return FUNCTION; }
+while           { yylval.ints = WHILE; return WHILE; }
+for             { yylval.ints = FOR; return FOR; }
+do              { yylval.ints = DO; return DO; }
+if              { yylval.ints = IF; return IF; }
+else            { yylval.ints = ELSE; return ELSE; }
+switch          { yylval.ints = SWITCH; return SWITCH; }
+break           { yylval.ints = BREAK; return BREAK; }
+continue        { yylval.ints = CONTINUE; return CONTINUE; }
+case            { yylval.ints = CASE; return CASE; }
+default         { yylval.ints = DEFAULT; return DEFAULT; }
+return          { yylval.ints = RETURNTOK; return RETURNTOK; }
+try             { yylval.ints = TRY; return TRY; }
+catch           { yylval.ints = CATCH; return CATCH; }
+twixt           { yylval.ints = TWIXT; return TWIXT; }
 
-poly		{ yylval.type = typePoly; return POLY; }
-bool		{ yylval.type = typePrim[rep_bool]; return BOOL; }
-int		{ yylval.type = typePrim[rep_integer]; return INTEGER; }
-rational    	{ yylval.type = typePrim[rep_rational]; return RATIONAL; }
-real		{ yylval.type = typePrim[rep_float]; return REAL; }
+poly            { yylval.type = typePoly; return POLY; }
+bool            { yylval.type = typePrim[rep_bool]; return BOOL; }
+int             { yylval.type = typePrim[rep_integer]; return INTEGER; }
+rational        { yylval.type = typePrim[rep_rational]; return RATIONAL; }
+real            { yylval.type = typePrim[rep_float]; return REAL; }
 complex         { yylval.type = typePrim[rep_complex]; return COMPLEX; }
-string		{ yylval.type = typePrim[rep_string]; return STRING; }
-file		{ yylval.type = typePrim[rep_file]; return FILET; }
-semaphore	{ yylval.type = typePrim[rep_semaphore]; return SEMAPHORE; }
-continuation	{ yylval.type = typePrim[rep_continuation]; return CONTINUATION; }
-thread		{ yylval.type = typePrim[rep_thread]; return THREAD; }
-struct		{ yylval.ints = STRUCT; return STRUCT; }
-union		{ yylval.ints = UNION; return UNION; }
-enum		{ yylval.ints = ENUM; return ENUM; }
-void		{ yylval.type = typePrim[rep_void]; return VOID; }
-foreign		{ yylval.type = typePrim[rep_foreign]; return FOREIGN; }
-true		{ yylval.value = TrueVal; return BOOLVAL; }
-false		{ yylval.value = FalseVal; return BOOLVAL; }
+string          { yylval.type = typePrim[rep_string]; return STRING; }
+file            { yylval.type = typePrim[rep_file]; return FILET; }
+semaphore       { yylval.type = typePrim[rep_semaphore]; return SEMAPHORE; }
+continuation    { yylval.type = typePrim[rep_continuation]; return CONTINUATION; }
+thread          { yylval.type = typePrim[rep_thread]; return THREAD; }
+struct          { yylval.ints = STRUCT; return STRUCT; }
+union           { yylval.ints = UNION; return UNION; }
+enum            { yylval.ints = ENUM; return ENUM; }
+void            { yylval.type = typePrim[rep_void]; return VOID; }
+foreign         { yylval.type = typePrim[rep_foreign]; return FOREIGN; }
+true            { yylval.value = TrueVal; return BOOLVAL; }
+false           { yylval.value = FalseVal; return BOOLVAL; }
 
-typedef		{ yylval.ints = TYPEDEF; return TYPEDEF; }
-func		{ yylval.ints = FUNC; return FUNC; }
-fork		{ yylval.ints = FORK; return FORK; }
-namespace    	{ yylval.ints = NAMESPACE; return NAMESPACE; }
-import		{ yylval.ints = IMPORT; return IMPORT; }
-exception	{ yylval.ints = EXCEPTION; return EXCEPTION; }
-raise		{ yylval.ints = RAISE; return RAISE; }
-protected	{ yylval.publish = publish_protected; return PROTECTED; }
-public		{ yylval.publish = publish_public; return PUBLIC; }
-extend		{ yylval.publish = publish_extend; return EXTEND; }
-is_type		{ yylval.ints = ISTYPE; return ISTYPE; }
-has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
-";"		{ yylval.ints = SEMI; return SEMI; }
-","		{ yylval.ints = COMMA; return COMMA; }
-"$"		{ yylval.ints = DOLLAR; return DOLLAR; }
-"..."		{ yylval.ints = DOTDOTDOT; return DOTDOTDOT; }
-"…"		{ yylval.ints = DOTDOTDOT; return DOTDOTDOT; }
-"."		{ yylval.ints = DOT; return DOT; }
-"->"		{ yylval.ints = ARROW; return ARROW; }
-"→"		{ yylval.ints = ARROW; return ARROW; }
-"=>"		{ yylval.ints = DARROW; return DARROW; }
-"⇒"		{ yylval.ints = DARROW; return DARROW; }
-"<>"		{ yylval.value = Void; return VOIDVAL; }
-"◊"		{ yylval.value = Void; return VOIDVAL; }
-\n		{ 
-		    if (lexInput->at_eof) { strcpy (yytext, "EOF"); yylval.ints = ENDFILE; return ENDFILE; }
-		    if (!ignorenl) { yylval.ints = NL; return NL; } 
-		}
-"("		{ yylval.ints = OP; ++ignorenl; return OP; }
-")"		{ yylval.ints = CP; if (ignorenl > 0) --ignorenl; return CP; }
-"*["		{ yylval.ints = STAROS; ++ignorenl; return STAROS; }
-"["		{ yylval.ints = OS; ++ignorenl; return OS; }
-"]"		{ yylval.ints = CS; if (ignorenl > 0) --ignorenl; return CS; }
-"{"		{ yylval.ints = OC; ++ignorenl; return OC; }
-"}"		{ yylval.ints = CC; if (ignorenl > 0) --ignorenl; return CC; }
-"+="		{ yylval.ints = ASSIGNPLUS; return ASSIGNPLUS; }
-"-="		{ yylval.ints = ASSIGNMINUS; return ASSIGNMINUS; }
-"*="		{ yylval.ints = ASSIGNTIMES; return ASSIGNTIMES; }
-"×="		{ yylval.ints = ASSIGNTIMES; return ASSIGNTIMES; }
-"/="		{ yylval.ints = ASSIGNDIVIDE; return ASSIGNDIVIDE; }
-"÷="		{ yylval.ints = ASSIGNDIVIDE; return ASSIGNDIVIDE; }
-"//="		{ yylval.ints = ASSIGNDIV; return ASSIGNDIV; }
-"⫽="		{ yylval.ints = ASSIGNDIV; return ASSIGNDIV; }
-"%="		{ yylval.ints = ASSIGNMOD; return ASSIGNMOD; }
-"**="		{ yylval.ints = ASSIGNPOW; return ASSIGNPOW; }
-"↑="		{ yylval.ints = ASSIGNPOW; return ASSIGNPOW; }
-"<<="		{ yylval.ints = ASSIGNSHIFTL; return ASSIGNSHIFTL; }
-"⪡="		{ yylval.ints = ASSIGNSHIFTL; return ASSIGNSHIFTL; }
-">>="		{ yylval.ints = ASSIGNSHIFTR; return ASSIGNSHIFTR; }
-"⪢="		{ yylval.ints = ASSIGNSHIFTR; return ASSIGNSHIFTR; }
-"^="		{ yylval.ints = ASSIGNLXOR; return ASSIGNLXOR; }
+typedef         { yylval.ints = TYPEDEF; return TYPEDEF; }
+func            { yylval.ints = FUNC; return FUNC; }
+fork            { yylval.ints = FORK; return FORK; }
+namespace       { yylval.ints = NAMESPACE; return NAMESPACE; }
+import          { yylval.ints = IMPORT; return IMPORT; }
+exception       { yylval.ints = EXCEPTION; return EXCEPTION; }
+raise           { yylval.ints = RAISE; return RAISE; }
+protected       { yylval.publish = publish_protected; return PROTECTED; }
+public          { yylval.publish = publish_public; return PUBLIC; }
+extend          { yylval.publish = publish_extend; return EXTEND; }
+is_type         { yylval.ints = ISTYPE; return ISTYPE; }
+has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
+";"             { yylval.ints = SEMI; return SEMI; }
+","             { yylval.ints = COMMA; return COMMA; }
+"$"             { yylval.ints = DOLLAR; return DOLLAR; }
+"..."           { yylval.ints = DOTDOTDOT; return DOTDOTDOT; }
+"…"             { yylval.ints = DOTDOTDOT; return DOTDOTDOT; }
+"."             { yylval.ints = DOT; return DOT; }
+"->"            { yylval.ints = ARROW; return ARROW; }
+"→"             { yylval.ints = ARROW; return ARROW; }
+"=>"            { yylval.ints = DARROW; return DARROW; }
+"⇒"             { yylval.ints = DARROW; return DARROW; }
+"<>"            { yylval.value = Void; return VOIDVAL; }
+"◊"             { yylval.value = Void; return VOIDVAL; }
+\n              {
+                    if (lexInput->at_eof) {
+                        strcpy(yytext, "EOF");
+                        yylval.ints = ENDFILE;
+                        return ENDFILE;
+                    }
+                    if (!ignorenl) {
+                        yylval.ints = NL;
+                        return NL;
+                    }
+                }
+"("             { yylval.ints = OP; ++ignorenl; return OP; }
+")"             { yylval.ints = CP; if (ignorenl > 0) --ignorenl; return CP; }
+"*["            { yylval.ints = STAROS; ++ignorenl; return STAROS; }
+"["             { yylval.ints = OS; ++ignorenl; return OS; }
+"]"             { yylval.ints = CS; if (ignorenl > 0) --ignorenl; return CS; }
+"{"             { yylval.ints = OC; ++ignorenl; return OC; }
+"}"             { yylval.ints = CC; if (ignorenl > 0) --ignorenl; return CC; }
+"+="            { yylval.ints = ASSIGNPLUS; return ASSIGNPLUS; }
+"-="            { yylval.ints = ASSIGNMINUS; return ASSIGNMINUS; }
+"*="            { yylval.ints = ASSIGNTIMES; return ASSIGNTIMES; }
+"×="            { yylval.ints = ASSIGNTIMES; return ASSIGNTIMES; }
+"/="            { yylval.ints = ASSIGNDIVIDE; return ASSIGNDIVIDE; }
+"÷="            { yylval.ints = ASSIGNDIVIDE; return ASSIGNDIVIDE; }
+"//="           { yylval.ints = ASSIGNDIV; return ASSIGNDIV; }
+"⫽="            { yylval.ints = ASSIGNDIV; return ASSIGNDIV; }
+"%="            { yylval.ints = ASSIGNMOD; return ASSIGNMOD; }
+"**="           { yylval.ints = ASSIGNPOW; return ASSIGNPOW; }
+"↑="            { yylval.ints = ASSIGNPOW; return ASSIGNPOW; }
+"<<="           { yylval.ints = ASSIGNSHIFTL; return ASSIGNSHIFTL; }
+"⪡="            { yylval.ints = ASSIGNSHIFTL; return ASSIGNSHIFTL; }
+">>="           { yylval.ints = ASSIGNSHIFTR; return ASSIGNSHIFTR; }
+"⪢="            { yylval.ints = ASSIGNSHIFTR; return ASSIGNSHIFTR; }
+"^="            { yylval.ints = ASSIGNLXOR; return ASSIGNLXOR; }
 "&&="           { yylval.ints = ASSIGNAND; return ASSIGNAND; }
 "||="           { yylval.ints = ASSIGNOR; return ASSIGNOR; }
-"&="		{ yylval.ints = ASSIGNLAND; return ASSIGNLAND; }
-"|="		{ yylval.ints = ASSIGNLOR; return ASSIGNLOR; }
-"="		{ yylval.ints = ASSIGN; return ASSIGN; }
+"&="            { yylval.ints = ASSIGNLAND; return ASSIGNLAND; }
+"|="            { yylval.ints = ASSIGNLOR; return ASSIGNLOR; }
+"="             { yylval.ints = ASSIGN; return ASSIGN; }
 
-"+"		{ yylval.ints = PLUS; return PLUS; }
-"-"		{ yylval.ints = MINUS; return MINUS; }
-"*"		{ yylval.ints = TIMES; return TIMES; }
-"×"		{ yylval.ints = TIMES; return TIMES; }
-"/"		{ yylval.ints = DIVIDE; return DIVIDE; }
-"÷"		{ yylval.ints = DIVIDE; return DIVIDE; }
-"//"		{ yylval.ints = DIV; return DIV; }
-"⫽"		{ yylval.ints = DIV; return DIV; }
-"**"		{ yylval.ints = STARSTAR; return STARSTAR; }
-"↑"		{ yylval.ints = STARSTAR; return STARSTAR; }
-"%"		{ yylval.ints = MOD; return MOD; }
-"!"		{ yylval.ints = BANG; return BANG; }
-"#"		{ yylval.ints = POUND; return POUND; }
-"&"		{ yylval.ints = LAND; return LAND; }
-"|"		{ yylval.ints = LOR; return LOR; }
-"^"		{ yylval.ints = LXOR; return LXOR; }
-"~"		{ yylval.ints = LNOT; return LNOT; }
-"¬"		{ yylval.ints = LNOT; return LNOT; }
-"++"		{ yylval.ints = INC; return INC; }
-"⧺"		{ yylval.ints = INC; return INC; }
-"--"		{ yylval.ints = DEC; return DEC; }
-"=="		{ yylval.ints = EQ; return EQ; }
-"!="		{ yylval.ints = NE; return NE; }
-"≠"		{ yylval.ints = NE; return NE; }
-"<"		{ yylval.ints = LT; return LT; }
-">"		{ yylval.ints = GT; return GT; }
-"<="		{ yylval.ints = LE; return LE; }
-"≤"		{ yylval.ints = LE; return LE; }
-">="		{ yylval.ints = GE; return GE; }
-"≥"		{ yylval.ints = GE; return GE; }
-"&&"		{ yylval.ints = AND; return AND; }
-"∧"		{ yylval.ints = AND; return AND; }
-"||"		{ yylval.ints = OR; return OR; }
-"∨"		{ yylval.ints = OR; return OR; }
-"<<"		{ yylval.ints = SHIFTL; return SHIFTL; }
-"⪡"		{ yylval.ints = SHIFTL; return SHIFTL; }
-">>"		{ yylval.ints = SHIFTR; return SHIFTR; }
-"⪢"		{ yylval.ints = SHIFTR; return SHIFTR; }
-"?"		{ yylval.ints = QUEST; return QUEST; }
-"::"		{ yylval.ints = COLONCOLON; return COLONCOLON; }
-":"		{ yylval.ints = COLON; return COLON; }
-"²"		{ yylval.ints = POW2; return POW2; }
-"³"		{ yylval.ints = POW3; return POW3; }
-" "		;
-"\t"		;
-"\r"		;
-\'([^\n\']|\\\')*\'	{
-			ENTER ();
-			char	    *s;
-			long	    len = yyleng - 1;
-			unsigned    c;
+"+"             { yylval.ints = PLUS; return PLUS; }
+"-"             { yylval.ints = MINUS; return MINUS; }
+"*"             { yylval.ints = TIMES; return TIMES; }
+"×"             { yylval.ints = TIMES; return TIMES; }
+"/"             { yylval.ints = DIVIDE; return DIVIDE; }
+"÷"             { yylval.ints = DIVIDE; return DIVIDE; }
+"//"            { yylval.ints = DIV; return DIV; }
+"⫽"             { yylval.ints = DIV; return DIV; }
+"**"            { yylval.ints = STARSTAR; return STARSTAR; }
+"↑"             { yylval.ints = STARSTAR; return STARSTAR; }
+"%"             { yylval.ints = MOD; return MOD; }
+"!"             { yylval.ints = BANG; return BANG; }
+"#"             { yylval.ints = POUND; return POUND; }
+"&"             { yylval.ints = LAND; return LAND; }
+"|"             { yylval.ints = LOR; return LOR; }
+"^"             { yylval.ints = LXOR; return LXOR; }
+"~"             { yylval.ints = LNOT; return LNOT; }
+"¬"             { yylval.ints = LNOT; return LNOT; }
+"++"            { yylval.ints = INC; return INC; }
+"⧺"             { yylval.ints = INC; return INC; }
+"--"            { yylval.ints = DEC; return DEC; }
+"=="            { yylval.ints = EQ; return EQ; }
+"!="            { yylval.ints = NE; return NE; }
+"≠"             { yylval.ints = NE; return NE; }
+"<"             { yylval.ints = LT; return LT; }
+">"             { yylval.ints = GT; return GT; }
+"<="            { yylval.ints = LE; return LE; }
+"≤"             { yylval.ints = LE; return LE; }
+">="            { yylval.ints = GE; return GE; }
+"≥"             { yylval.ints = GE; return GE; }
+"&&"            { yylval.ints = AND; return AND; }
+"∧"             { yylval.ints = AND; return AND; }
+"||"            { yylval.ints = OR; return OR; }
+"∨"             { yylval.ints = OR; return OR; }
+"<<"            { yylval.ints = SHIFTL; return SHIFTL; }
+"⪡"             { yylval.ints = SHIFTL; return SHIFTL; }
+">>"            { yylval.ints = SHIFTR; return SHIFTR; }
+"⪢"             { yylval.ints = SHIFTR; return SHIFTR; }
+"?"             { yylval.ints = QUEST; return QUEST; }
+"::"            { yylval.ints = COLONCOLON; return COLONCOLON; }
+":"             { yylval.ints = COLON; return COLON; }
+"²"             { yylval.ints = POW2; return POW2; }
+"³"             { yylval.ints = POW3; return POW3; }
+" "             ;
+"\t"            ;
+"\r"            ;
+\'([^\n\']|\\\')*\'     {
+                    ENTER();
+                    char    *s;
+                    long     len = yyleng - 1;
+                    unsigned c;
 
-			s = yytext + 1;
-			s = StringNextChar (s, &c, &len);
-			if (c == '\\')
-			{
-			    if (!(s = StringNextChar (s, &c, &len)))
-				c = 0;
-			    else if ('0' <= c && c <= '7')
-			    {
-				unsigned    ch;
-				char	    *ps = s;
+                    s = yytext + 1;
+                    s = StringNextChar(s, &c, &len);
+                    if (c == '\\') {
+                        if (!(s = StringNextChar(s, &c, &len)))
+                            c = 0;
+                        else if ('0' <= c && c <= '7') {
+                            unsigned ch;
+                            char    *ps = s;
 
-				c = c - '0';
-				while ((s = StringNextChar (s, &ch, &len)) &&
-				       '0' <= ch && ch <= '7')
-				{
-				    c = (c << 3) | (ch - '0');
-				    ps = s;
-				}
-				s = ps;
-			    }
-			    else
-				c = lexEscape (c);
-			}
-			yylval.value = NewInt (c);
-			EXIT ();
-			REFERENCE (yylval.value);
-			return CHAR_CONST;
-		}
-\"([^\n\"]|\\\")*\"	{
-			ENTER ();
-			char	    *d, *s;
-			unsigned    c;
-			long	    len = yyleng - 2;
+                            c = c - '0';
+                            while ((s = StringNextChar(s, &ch, &len)) && '0' <= ch && ch <= '7') {
+                                c = (c << 3) | (ch - '0');
+                                ps = s;
+                            }
+                            s = ps;
+                        } else
+                            c = lexEscape(c);
+                    }
+                    yylval.value = NewInt(c);
+                    EXIT();
+                    REFERENCE(yylval.value);
+                    return CHAR_CONST;
+                }
+\"([^\n\"]|\\\")*\"     {
+                    ENTER();
+                    char    *d, *s;
+                    unsigned c;
+                    long     len = yyleng - 2;
 
-			yylval.value = NewString (len);
-			d = StringChars (&yylval.value->string);
-			s = yytext + 1;
-			while ((s = StringNextChar (s, &c, &len)))
-			{
-			    if (c == '\\')
-			    {
-				if (!(s = StringNextChar (s, &c, &len)))
-				    break;
-				if ('0' <= c && c <= '7')
-				{
-				    unsigned	ch;
-    				    char	*ps = s;
-				    long	plen = len;
+                    yylval.value = NewString(len);
+                    d = StringChars(&yylval.value->string);
+                    s = yytext + 1;
+                    while ((s = StringNextChar(s, &c, &len))) {
+                        if (c == '\\') {
+                            if (!(s = StringNextChar(s, &c, &len)))
+                                break;
+                            if ('0' <= c && c <= '7') {
+                                unsigned ch;
+                                char    *ps = s;
+                                long     plen = len;
 
-				    c = c - '0';
-				    while ((s = StringNextChar (s, &ch, &len)) &&
-					   '0' <= ch && ch <= '7')
-				    {
-					c = (c << 3) | (ch - '0');
-					ps = s;
-					plen = len;
-				    }
-				    s = ps;
-				    len = plen;
-				}
-				else
-				    c = lexEscape (c);
-			    }
-			    d += StringPutChar (c, d);
-			}
-			*d = '\0';
-			yylval.value->string.length = d - StringChars(&yylval.value->string);
-			EXIT ();
-			REFERENCE (yylval.value);
-			return STRING_CONST;
-		}
-0		{
-		yylval.value = Zero;
-		return TEN_NUM;
-		}
-0[0-7_]+	{
-		yylval.value = atov(yytext+1, 8);
-		return OCTAL0_NUM;
-		}
-0o[0-7_]+	{
-		yylval.value = atov(yytext+2, 8);
-		return OCTAL_NUM;
-		}
+                                c = c - '0';
+                                while ((s = StringNextChar(s, &ch, &len)) && '0' <= ch
+                                       && ch <= '7') {
+                                    c = (c << 3) | (ch - '0');
+                                    ps = s;
+                                    plen = len;
+                                }
+                                s = ps;
+                                len = plen;
+                            } else
+                                c = lexEscape(c);
+                        }
+                        d += StringPutChar(c, d);
+                    }
+                    *d = '\0';
+                    yylval.value->string.length = d - StringChars(&yylval.value->string);
+                    EXIT();
+                    REFERENCE(yylval.value);
+                    return STRING_CONST;
+                }
+0               {
+                    yylval.value = Zero;
+                    return TEN_NUM;
+                }
+0[0-7_]+        {
+                    yylval.value = atov(yytext + 1, 8);
+                    return OCTAL0_NUM;
+                }
+0o[0-7_]+       {
+                    yylval.value = atov(yytext + 2, 8);
+                    return OCTAL_NUM;
+                }
 0o[0-7_]+\./\.\.\.   {
-		yylval.value = aetov(yytext);
-		return OCTAL_FLOAT;
-		}
-0o[0-7_]+/\.\.	{
-		yylval.value = atov(yytext+2, 8);
-		return OCTAL_NUM;
-		}
+                    yylval.value = aetov(yytext);
+                    return OCTAL_FLOAT;
+                }
+0o[0-7_]+/\.\.  {
+                    yylval.value = atov(yytext + 2, 8);
+                    return OCTAL_NUM;
+                }
 0o(([0-7_]+((\.[0-7_]*(\{[0-7_]+\})?)?))|(\.[0-7_]+)|(\.[0-7_]*\{[0-7_]+\}))(([Ee][-+]?[0-9_]+)?) {
-		yylval.value = aetov (yytext);
-		return OCTAL_FLOAT;
-		}
-0b[01_]+		{
-		yylval.value = atov(yytext+2, 2);
-		return BINARY_NUM;
-		}
+                    yylval.value = aetov(yytext);
+                    return OCTAL_FLOAT;
+                }
+0b[01_]+                {
+                    yylval.value = atov(yytext + 2, 2);
+                    return BINARY_NUM;
+                }
 0b[01_]+\./\.\.\.   {
-		yylval.value = aetov(yytext);
-		return BINARY_FLOAT;
-		}
-0b[01_]+/\.\.	{
-		yylval.value = atov(yytext+2, 2);
-		return BINARY_NUM;
-		}
+                    yylval.value = aetov(yytext);
+                    return BINARY_FLOAT;
+                }
+0b[01_]+/\.\.   {
+                    yylval.value = atov(yytext + 2, 2);
+                    return BINARY_NUM;
+                }
 0b(([01_]+((\.[01_]*(\{[01_]+\})?)?))|(\.[01_]+)|(\.[01_]*\{[01_]+\}))(([Ee][-+]?[0-9_]+)?) {
-		yylval.value = aetov (yytext);
-		return BINARY_FLOAT;
-		}
-0x[0-9a-fA-F_]+	{
-		yylval.value = atov(yytext+2, 16);
-		return HEX_NUM;
-		}
+                    yylval.value = aetov(yytext);
+                    return BINARY_FLOAT;
+                }
+0x[0-9a-fA-F_]+ {
+                    yylval.value = atov(yytext + 2, 16);
+                    return HEX_NUM;
+                }
 0x[0-9a-fA-F_]+\./\.\.\.   {
-		yylval.value = aetov(yytext);
-		return HEX_FLOAT;
-		}
-0x[0-9a-fA-F_]+/\.\.	{
-		yylval.value = atov(yytext+2, 16);
-		return HEX_NUM;
-		}
+                    yylval.value = aetov(yytext);
+                    return HEX_FLOAT;
+                }
+0x[0-9a-fA-F_]+/\.\.    {
+                    yylval.value = atov(yytext + 2, 16);
+                    return HEX_NUM;
+                }
 0x(([0-9a-fA-F_]+((\.[0-9a-fA-F_]*(\{[0-9a-fA-F_]+\})?)?))|(\.[0-9a-fA-F_]+)|(\.[0-9a-fA-F_]*\{[0-9a-fA-F_]+\}))(([Pp][-+]?[0-9_]+)?) {
-		yylval.value = aetov (yytext);
-		return HEX_FLOAT;
-		}
-[0-9][0-9_]*		{
-		yylval.value = atov(yytext, 10);
-		return TEN_NUM;
-		}
-[0-9][0-9_]*\./\.\.\.	{
-		yylval.value = aetov(yytext);
-		return TEN_FLOAT;
-		}
-[0-9][0-9_]*/\.\.	{
-		yylval.value = atov(yytext, 10);
-		return TEN_NUM;
-		}
+                    yylval.value = aetov(yytext);
+                    return HEX_FLOAT;
+                }
+[0-9][0-9_]*            {
+                    yylval.value = atov(yytext, 10);
+                    return TEN_NUM;
+                }
+[0-9][0-9_]*\./\.\.\.   {
+                    yylval.value = aetov(yytext);
+                    return TEN_FLOAT;
+                }
+[0-9][0-9_]*/\.\.       {
+                    yylval.value = atov(yytext, 10);
+                    return TEN_NUM;
+                }
 (([0-9][0-9_]*((\.[0-9_]*(\{[0-9_]+\})?)?))|(\.[0-9][0-9_]*)|(\.([0-9][0-9_]*)?\{[0-9_]+\}))(([Ee][-+]?[0-9_]+)?) {
-		yylval.value = aetov (yytext);
-		return TEN_FLOAT;
-		}
+                    yylval.value = aetov(yytext);
+                    return TEN_FLOAT;
+                }
 [a-zA-Z\200-\377_][0-9a-zA-Z\200-\377_]* {
-	        CommandPtr	c;
-		SymbolPtr	symbol;
-		yylval.atom = AtomId (yytext);
-		if (!notCommand && (c = CommandFind (CurrentCommands, yylval.atom)))
-		{
-		    if (c->names)
-			return NAMECOMMAND;
-		    return COMMAND;
-		}
-		if (LexNamespace)
-		    symbol = NamespaceFindName (LexNamespace, yylval.atom, False);
-	        else
-		    symbol = NamespaceFindName (CurrentNamespace, yylval.atom, True);
-		if (symbol)
-		{
-		    switch (symbol->symbol.class) {
-		    case class_namespace:
-			return NAMESPACENAME;
-		    case class_typedef:
-			return TYPENAME;
-		    default:
-			break;
-		    }
-		}
-		return NAME;
-		}
-.		FilePrintf (FileStderr, "character \\%o ignored\n", *yytext & 0xff);
+                    CommandPtr c;
+                    SymbolPtr  symbol;
+                    yylval.atom = AtomId(yytext);
+                    if (!notCommand && (c = CommandFind(CurrentCommands, yylval.atom))) {
+                        if (c->names)
+                            return NAMECOMMAND;
+                        return COMMAND;
+                    }
+                    if (LexNamespace)
+                        symbol = NamespaceFindName(LexNamespace, yylval.atom, False);
+                    else
+                        symbol = NamespaceFindName(CurrentNamespace, yylval.atom, True);
+                    if (symbol) {
+                        switch (symbol->symbol.class) {
+                        case class_namespace:
+                            return NAMESPACENAME;
+                        case class_typedef:
+                            return TYPENAME;
+                        default:
+                            break;
+                        }
+                    }
+                    return NAME;
+                }
+.               FilePrintf (FileStderr, "character \\%o ignored\n", *yytext & 0xff);
 %%
 
 int

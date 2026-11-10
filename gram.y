@@ -65,53 +65,53 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 %}
 
 %union {
-    int		    ints;
-    Value	    value;
-    Class	    class;
-    ArgType	    *argType;
-    Type	    *type;
-    Publish	    publish;
-    ExprPtr	    expr;
-    Atom	    atom;
-    DeclListPtr	    declList;
-    MemListPtr	    memList;
-    Fulltype	    fulltype;
-    ArgDecl	    argDecl;
-    SymbolPtr	    symbol;
-    NamespacePtr    namespace;
-    CodePtr	    code;
-    Bool	    boolean;
-    AtomListPtr	    atomList;
-    FuncDecl	    funcDecl;
+    int          ints;
+    Value        value;
+    Class        class;
+    ArgType     *argType;
+    Type        *type;
+    Publish      publish;
+    ExprPtr      expr;
+    Atom         atom;
+    DeclListPtr  declList;
+    MemListPtr   memList;
+    Fulltype     fulltype;
+    ArgDecl      argDecl;
+    SymbolPtr    symbol;
+    NamespacePtr namespace;
+    CodePtr      code;
+    Bool         boolean;
+    AtomListPtr  atomList;
+    FuncDecl     funcDecl;
 }
 
-%type  <expr>	    fullname fullnames
-%type  <expr>	    opt_rawnames rawname rawnames rawnamespace
-%type  <atom>	    rawatom
-%type  <expr>	    block opt_func_body func_body func_right catches catch
-%type  <expr>	    statements statement simple_statement
-%type  <expr>	    if_statement try_statement try_body_statement
-%type  <expr>	    block_or_expr
-%type  <expr>	    case_block cases case
-%type  <expr>	    union_case_block union_cases union_case
-%type  <expr>	    fulltype
-%type  <expr>	    namespace
-%type  <expr>	    comprehension compnames compname comparray
+%type  <expr>       fullname fullnames
+%type  <expr>       opt_rawnames rawname rawnames rawnamespace
+%type  <atom>       rawatom
+%type  <expr>       block opt_func_body func_body func_right catches catch
+%type  <expr>       statements statement simple_statement
+%type  <expr>       if_statement try_statement try_body_statement
+%type  <expr>       block_or_expr
+%type  <expr>       case_block cases case
+%type  <expr>       union_case_block union_cases union_case
+%type  <expr>       fulltype
+%type  <expr>       namespace
+%type  <expr>       comprehension compnames compname comparray
 %type  <atomList>   atoms
 %type  <declList>   initnames typenames
-%type  <symbol>	    name opt_name
+%type  <symbol>     name opt_name
 %type  <funcDecl>   func_decl func_name
-%type  <atom>	    typename 
-%type  <expr>	    opt_init
+%type  <atom>       typename
+%type  <expr>       opt_init
 %type  <fulltype>   decl next_decl
-%type  <type>	    opt_type type subscripts subtype
-%type  <expr>	    opt_stars stars dotdotdots
-%type  <type>	    basetype
-%type  <expr>	    dims
+%type  <type>       opt_type type subscripts subtype
+%type  <expr>       opt_stars stars dotdotdots
+%type  <type>       basetype
+%type  <expr>       dims
 %type  <memList>    struct_members union_members
-%type  <class>	    class opt_class
+%type  <class>      class opt_class
 %type  <publish>    opt_publish publish publish_extend
-%type  <atom>	    namespacename
+%type  <atom>       namespacename
 
 %type  <argType>    opt_argdecls argdecls
 %type  <argDecl>    argdecl
@@ -119,105 +119,105 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 %type  <argDecl>    argdefine
 %type  <boolean>    opt_dotdotdot
 
-%type  <expr>	    opt_expr for_exprs expr opt_exprs exprs simpleexpr
-%type  <expr>	    opt_actuals actuals
-%type  <expr>	    comma_expr
-%type  <ints>	    assignop
-%type  <value>	    opt_integer integer
-%type  <value>	    doc_string opt_comment
-%type  <expr>	    opt_arrayinit arrayinit arrayelts  arrayelt
-%type  <expr>	    opt_hashinit hashinit hashelts hashelt hashvalue
-%type  <expr>	    structinit structelts structelt
-%type  <expr>	    init
+%type  <expr>       opt_expr for_exprs expr opt_exprs exprs simpleexpr
+%type  <expr>       opt_actuals actuals
+%type  <expr>       comma_expr
+%type  <ints>       assignop
+%type  <value>      opt_integer integer
+%type  <value>      doc_string opt_comment
+%type  <expr>       opt_arrayinit arrayinit arrayelts  arrayelt
+%type  <expr>       opt_hashinit hashinit hashelts hashelt hashvalue
+%type  <expr>       structinit structelts structelt
+%type  <expr>       init
 
-%token		    VAR EXPR ARRAY STRUCT UNION ENUM COMP HASH
+%token              VAR EXPR ARRAY STRUCT UNION ENUM COMP HASH
 
-%token		    SEMI MOD OC CC DOLLAR DOTDOTDOT ENDFILE
-%token <class>	    GLOBAL AUTO STATIC CONST
-%token <type>	    POLY INTEGER NATURAL RATIONAL REAL COMPLEX STRING FOREIGN
-%token <type>	    FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID BOOL
-%token		    FUNCTION FUNC EXCEPTION RAISE
-%token		    TYPEDEF IMPORT NEW ANONINIT
+%token              SEMI MOD OC CC DOLLAR DOTDOTDOT ENDFILE
+%token <class>      GLOBAL AUTO STATIC CONST
+%token <type>       POLY INTEGER NATURAL RATIONAL REAL COMPLEX STRING FOREIGN
+%token <type>       FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID BOOL
+%token              FUNCTION FUNC EXCEPTION RAISE
+%token              TYPEDEF IMPORT NEW ANONINIT
 %token <namespace>  NAMESPACE
 %token <publish>    PUBLIC PROTECTED EXTEND
-%token		    WHILE DO FOR SWITCH
-%token		    BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
-%token		    TWIXT
-%token <atom>	    NAME TYPENAME NAMESPACENAME COMMAND NAMECOMMAND
-%token <value>	    TEN_NUM OCTAL0_NUM OCTAL_NUM BINARY_NUM HEX_NUM
-%token <value>	    TEN_FLOAT OCTAL0_FLOAT OCTAL_FLOAT BINARY_FLOAT HEX_FLOAT
-%token <value>	    CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
-%token <value>	    COMMENT_CONST
-%token <value>	    VOIDVAL BOOLVAL
-%token		    DARROW
-%token		    ISTYPE HASMEMBER
+%token              WHILE DO FOR SWITCH
+%token              BREAK CONTINUE RETURNTOK FORK CASE DEFAULT
+%token              TWIXT
+%token <atom>       NAME TYPENAME NAMESPACENAME COMMAND NAMECOMMAND
+%token <value>      TEN_NUM OCTAL0_NUM OCTAL_NUM BINARY_NUM HEX_NUM
+%token <value>      TEN_FLOAT OCTAL0_FLOAT OCTAL_FLOAT BINARY_FLOAT HEX_FLOAT
+%token <value>      CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
+%token <value>      COMMENT_CONST
+%token <value>      VOIDVAL BOOLVAL
+%token              DARROW
+%token              ISTYPE HASMEMBER
 
-%nonassoc 	POUND
-%right		COMMA
-%right <ints>	ASSIGN
-		ASSIGNPLUS ASSIGNMINUS ASSIGNTIMES ASSIGNDIVIDE 
-		ASSIGNDIV ASSIGNMOD ASSIGNPOW
-		ASSIGNSHIFTL ASSIGNSHIFTR
-		ASSIGNLXOR ASSIGNLAND ASSIGNLOR
+%nonassoc       POUND
+%right          COMMA
+%right <ints>   ASSIGN
+                ASSIGNPLUS ASSIGNMINUS ASSIGNTIMES ASSIGNDIVIDE
+                ASSIGNDIV ASSIGNMOD ASSIGNPOW
+                ASSIGNSHIFTL ASSIGNSHIFTR
+                ASSIGNLXOR ASSIGNLAND ASSIGNLOR
                 ASSIGNOR ASSIGNAND
-%right		FORK
-%right		QUEST COLON
-%left		OR
-%left		AND
-%left		LOR
-%left		LXOR
-%left		LAND
-%left		EQ NE
-%left		LT GT LE GE
-%left		SHIFTL SHIFTR
-%left		PLUS MINUS
-%left		TIMES DIVIDE DIV MOD
-%right		POW STARSTAR POW2 POW3
-%left		UNIONCAST
-%right		UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
-%left		OS CS DOT ARROW STAROS CALL OP CP
-%right		POINTER
-%right		COLONCOLON
+%right          FORK
+%right          QUEST COLON
+%left           OR
+%left           AND
+%left           LOR
+%left           LXOR
+%left           LAND
+%left           EQ NE
+%left           LT GT LE GE
+%left           SHIFTL SHIFTR
+%left           PLUS MINUS
+%left           TIMES DIVIDE DIV MOD
+%right          POW STARSTAR POW2 POW3
+%left           UNIONCAST
+%right          UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
+%left           OS CS DOT ARROW STAROS CALL OP CP
+%right          POINTER
+%right          COLONCOLON
 
 %left IF TRY NONL
 %left ELSE CATCH NL
 
 %%
-lines		: lines pcommand
-		|
-		;
-pcommand	: command
-		| error reset eend
-		;
-eend		: NL
-		    { yyerrok; }
-		| SEMI
-		    { yyerrok; }
-		| ENDFILE
-		    { yyerrok; }
-		;
+lines           : lines pcommand
+                |
+                ;
+pcommand        : command
+                | error reset eend
+                ;
+eend            : NL
+                    { yyerrok; }
+                | SEMI
+                    { yyerrok; }
+                | ENDFILE
+                    { yyerrok; }
+                ;
 
 /*
  * Sprinkled through the grammer to switch the lexer between reporting
  * and not reporting newlines
  */
-ignorenl	:
-		    { ignorenl++; }
-		;
-attendnl	:
-		    { if (ignorenl > 0) ignorenl--; }
-		;
-reset		:
-		    { 
-			ignorenl = 0; 
-			LexNamespace = 0; 
-			CurrentNamespace = TopNamespace; 
-			funcDepth = 0; 
-			notCommand = 0;
-			lastThreadError = True;
-		    }
+ignorenl        :
+                    { ignorenl++; }
+                ;
+attendnl        :
+                    { if (ignorenl > 0) ignorenl--; }
+                ;
+reset           :
+                    {
+                        ignorenl = 0;
+                        LexNamespace = 0;
+                        CurrentNamespace = TopNamespace;
+                        funcDepth = 0;
+                        notCommand = 0;
+                        lastThreadError = True;
+                    }
 
-		;
+                ;
 
 /*
  * To make commands only recognized as the first token on a line,
@@ -225,558 +225,516 @@ reset		:
  * As the parser will look one token ahead, this cleverly makes only
  * the first token on the line match commands
  */
-not_command	:
-		    { notCommand = 1; }
-		;
-opt_nl		: NL
-		|  %prec NONL
-		;
-opt_semi	: SEMI
-		|
-		;
-opt_comma	: COMMA
-		|
-		;
+not_command     :
+                    { notCommand = 1; }
+                ;
+opt_nl          : NL
+                |  %prec NONL
+                ;
+opt_semi        : SEMI
+                |
+                ;
+opt_comma       : COMMA
+                |
+                ;
 /*
  * Interpreter command level
  */
-command		: not_command expr reset NL
-		    {
-			ENTER ();
-			ExprPtr	e;
-			Value	t;
-			NamespacePtr	s;
-			FramePtr	f;
-			CodePtr		c;
-			
-			e = BuildCall ("Command", "display",
-				       1,NewExprTree (EXPR, $2, 0));
-			GetNamespace (&s, &f, &c);
-			t = NewThread (f, CompileExpr (e, c));
-			ThreadsRun (t, 0);
-			EXIT ();
-		    }
-		| not_command expr POUND expr reset NL
-		    {
-			ENTER ();
-			ExprPtr	e;
-			Value	t;
-			NamespacePtr	s;
-			FramePtr	f;
-			CodePtr		c;
+command         : not_command expr reset NL
+                    {
+                        ENTER();
+                        ExprPtr      e;
+                        Value        t;
+                        NamespacePtr s;
+                        FramePtr     f;
+                        CodePtr      c;
 
-			e = BuildCall("Command", "display_base",
-				      2, NewExprTree (EXPR, $2, 0), $4);
-			GetNamespace (&s, &f, &c);
-			t = NewThread (f, CompileExpr (e, c));
-			ThreadsRun (t, 0);
-			EXIT ();
-		    }
-		| not_command statement reset opt_nl
-		    { 
-			ENTER ();
-			NamespacePtr    s;
-			FramePtr	f;
-			CodePtr		c;
-			Value		t;
-			
-			GetNamespace (&s, &f, &c);
-			t = NewThread (f, CompileStat ($2, c));
-			ThreadsRun (t, 0);
-			EXIT ();
-		    }
-		| not_command COMMAND opt_exprs reset opt_semi NL
-		    {
-			ENTER();
-			ExprPtr	e;
-			Value	t;
-			NamespacePtr	s;
-			FramePtr	f;
-			CodePtr		c;
-			CommandPtr	cmd;
+                        e = BuildCall("Command", "display", 1, NewExprTree(EXPR, $2, 0));
+                        GetNamespace(&s, &f, &c);
+                        t = NewThread(f, CompileExpr(e, c));
+                        ThreadsRun(t, 0);
+                        EXIT();
+                    }
+                | not_command expr POUND expr reset NL
+                    {
+                        ENTER();
+                        ExprPtr      e;
+                        Value        t;
+                        NamespacePtr s;
+                        FramePtr     f;
+                        CodePtr      c;
 
-			cmd = CommandFind (CurrentCommands, $2);
-			if (!cmd)
-			    ParseError ("Undefined command \"%s\"", AtomName ($2));
-			else
-			{
-			    e = NewExprTree (OP, 
-					     NewExprConst (POLY_CONST, cmd->func),
-					     $3);
-			    GetNamespace (&s, &f, &c);
-			    t = NewThread (f, CompileExpr (e, c));
-			    ThreadsRun (t, 0);
-			}
-			EXIT ();
-		    }
-		| not_command NAMECOMMAND opt_rawnames reset opt_semi NL
-		    {
-			ENTER ();
-			ExprPtr e;
+                        e = BuildCall("Command", "display_base", 2, NewExprTree(EXPR, $2, 0),
+                                      $4);
+                        GetNamespace(&s, &f, &c);
+                        t = NewThread(f, CompileExpr(e, c));
+                        ThreadsRun(t, 0);
+                        EXIT();
+                    }
+                | not_command statement reset opt_nl
+                    {
+                        ENTER();
+                        NamespacePtr s;
+                        FramePtr     f;
+                        CodePtr      c;
+                        Value        t;
 
-			Value	t;
-			NamespacePtr	s;
-			FramePtr	f;
-			CodePtr		c;
-			CommandPtr	cmd;
+                        GetNamespace(&s, &f, &c);
+                        t = NewThread(f, CompileStat($2, c));
+                        ThreadsRun(t, 0);
+                        EXIT();
+                    }
+                | not_command COMMAND opt_exprs reset opt_semi NL
+                    {
+                        ENTER();
+                        ExprPtr      e;
+                        Value        t;
+                        NamespacePtr s;
+                        FramePtr     f;
+                        CodePtr      c;
+                        CommandPtr   cmd;
 
-			cmd = CommandFind (CurrentCommands, $2);
-			if (!cmd)
-			    ParseError ("Undefined command \"%s\"", AtomName ($2));
-			else
-			{
-			    e = NewExprTree (OP, 
-					     NewExprConst (POLY_CONST, cmd->func),
-					     $3);
-			    GetNamespace (&s, &f, &c);
-			    t = NewThread (f, CompileExpr (e, c));
-			    ThreadsRun (t, 0);
-			}
-			EXIT ();
-		    }
-		| NL
-		| ENDFILE
-		;
-opt_rawnames	: rawnames
-		|
-		    { $$ = 0; }
-		;
-rawnames	: rawname COMMA rawnames
-		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| rawname
-		    { $$ = NewExprTree (COMMA, $1, 0); }
-		;
-rawname		: rawnamespace rawatom
-		    { $$ = BuildRawname ($1, $2); }
-		;
-rawatom		: NAME
-		| NAMESPACENAME
-		| TYPENAME
-		;
-rawnamespace	: rawnamespace rawatom COLONCOLON
-		    { $$ = NewExprTree (COLONCOLON, $1, NewExprAtom ($2, 0, False)); }
-                |
-		    { $$ = 0; }
+                        cmd = CommandFind(CurrentCommands, $2);
+                        if (!cmd)
+                            ParseError("Undefined command \"%s\"", AtomName($2));
+                        else {
+                            e = NewExprTree(OP, NewExprConst(POLY_CONST, cmd->func), $3);
+                            GetNamespace(&s, &f, &c);
+                            t = NewThread(f, CompileExpr(e, c));
+                            ThreadsRun(t, 0);
+                        }
+                        EXIT();
+                    }
+                | not_command NAMECOMMAND opt_rawnames reset opt_semi NL
+                    {
+                        ENTER();
+                        ExprPtr      e;
+
+                        Value        t;
+                        NamespacePtr s;
+                        FramePtr     f;
+                        CodePtr      c;
+                        CommandPtr   cmd;
+
+                        cmd = CommandFind(CurrentCommands, $2);
+                        if (!cmd)
+                            ParseError("Undefined command \"%s\"", AtomName($2));
+                        else {
+                            e = NewExprTree(OP, NewExprConst(POLY_CONST, cmd->func), $3);
+                            GetNamespace(&s, &f, &c);
+                            t = NewThread(f, CompileExpr(e, c));
+                            ThreadsRun(t, 0);
+                        }
+                        EXIT();
+                    }
+                | NL
+                | ENDFILE
                 ;
-fulltype	: namespace TYPENAME
-		    { 
-			$$ = BuildFullname ($1, $2);
-			LexNamespace = 0;
-		    }
-		| TYPENAME
-		    { 
-			$$ = BuildFullname (0, $1);
-			LexNamespace = 0;
-		    }
-		;
-fullname	: namespace namespacename
-		    { 
-			$$ = BuildFullname ($1, $2);
-			LexNamespace = 0;
-		    }
-		| namespacename
-		    {
-			$$ = BuildFullname (0, $1);
-			LexNamespace = 0;
-		    }
-		;
-fullnames	: fullname
-		    {
-			$$ = $1;
-		    }
-		| fullname COMMA fullnames
-		    {
-			$$ = NewExprTree (COMMA, $1, $3);
-		    }
-		;
-namespace	: namespace NAMESPACENAME COLONCOLON
-		    { 
-			ExprPtr	    e;
-			SymbolPtr   symbol;
+opt_rawnames    : rawnames
+                |
+                    { $$ = 0; }
+                ;
+rawnames        : rawname COMMA rawnames
+                    { $$ = NewExprTree(COMMA, $1, $3); }
+                | rawname
+                    { $$ = NewExprTree(COMMA, $1, 0); }
+                ;
+rawname         : rawnamespace rawatom
+                    { $$ = BuildRawname($1, $2); }
+                ;
+rawatom         : NAME
+                | NAMESPACENAME
+                | TYPENAME
+                ;
+rawnamespace    : rawnamespace rawatom COLONCOLON
+                    { $$ = NewExprTree(COLONCOLON, $1, NewExprAtom($2, 0, False)); }
+                |
+                    { $$ = 0; }
+                ;
+fulltype        : namespace TYPENAME
+                    {
+                        $$ = BuildFullname($1, $2);
+                        LexNamespace = 0;
+                    }
+                | TYPENAME
+                    {
+                        $$ = BuildFullname(0, $1);
+                        LexNamespace = 0;
+                    }
+                ;
+fullname        : namespace namespacename
+                    {
+                        $$ = BuildFullname($1, $2);
+                        LexNamespace = 0;
+                    }
+                | namespacename
+                    {
+                        $$ = BuildFullname(0, $1);
+                        LexNamespace = 0;
+                    }
+                ;
+fullnames       : fullname
+                    {
+                        $$ = $1;
+                    }
+                | fullname COMMA fullnames
+                    {
+                        $$ = NewExprTree(COMMA, $1, $3);
+                    }
+                ;
+namespace       : namespace NAMESPACENAME COLONCOLON
+                    {
+                        ExprPtr   e;
+                        SymbolPtr symbol;
 
-			e = BuildFullname ($1, $2);
-			if (e->base.tag == COLONCOLON)
-			    symbol = e->tree.right->atom.symbol;
-			else
-			    symbol = e->atom.symbol;
-			if (!symbol)
-			{
-			    ParseError ("non-existant namespace \"%A\"", $2);
-			    YYERROR;
-			}
-			else if (symbol->symbol.class != class_namespace)
-			{
-			    ParseError ("%A is not a namespace", $2);
-			    YYERROR;
-			}
-			LexNamespace = symbol->namespace.namespace;
-			$$ = e;
-		    }
-		| NAMESPACENAME COLONCOLON
-		    { 
-			ExprPtr	    e;
-			SymbolPtr   symbol;
+                        e = BuildFullname($1, $2);
+                        if (e->base.tag == COLONCOLON)
+                            symbol = e->tree.right->atom.symbol;
+                        else
+                            symbol = e->atom.symbol;
+                        if (!symbol) {
+                            ParseError("non-existant namespace \"%A\"", $2);
+                            YYERROR;
+                        } else if (symbol->symbol.class != class_namespace) {
+                            ParseError("%A is not a namespace", $2);
+                            YYERROR;
+                        }
+                        LexNamespace = symbol->namespace.namespace;
+                        $$ = e;
+                    }
+                | NAMESPACENAME COLONCOLON
+                    {
+                        ExprPtr   e;
+                        SymbolPtr symbol;
 
-			e = BuildFullname (0, $1);
-			if (e->base.tag == COLONCOLON)
-			    symbol = e->tree.right->atom.symbol;
-			else
-			    symbol = e->atom.symbol;
-			if (!symbol)
-			{
-			    ParseError ("non-existant namespace \"%A\"", $1);
-			    YYERROR;
-			}
-			else if (symbol->symbol.class != class_namespace)
-			{
-			    ParseError ("%A is not a namespace", $1);
-			    YYERROR;
-			}
-			LexNamespace = symbol->namespace.namespace;
-			$$ = e;
-		    }
-		;
-namespacename	:   NAME
-		|   NAMESPACENAME
-		;
+                        e = BuildFullname(0, $1);
+                        if (e->base.tag == COLONCOLON)
+                            symbol = e->tree.right->atom.symbol;
+                        else
+                            symbol = e->atom.symbol;
+                        if (!symbol) {
+                            ParseError("non-existant namespace \"%A\"", $1);
+                            YYERROR;
+                        } else if (symbol->symbol.class != class_namespace) {
+                            ParseError("%A is not a namespace", $1);
+                            YYERROR;
+                        }
+                        LexNamespace = symbol->namespace.namespace;
+                        $$ = e;
+                    }
+                ;
+namespacename   :   NAME
+                |   NAMESPACENAME
+                ;
 /*
 * Statements
 */
-namespace_start	:
-		    { CurrentNamespace = NewNamespace (CurrentNamespace); }
-		;
-namespace_end	:
-		    { CurrentNamespace = CurrentNamespace->previous; }
-		;
-block		: block_start statements block_end
-		    { $$ = $2; }
-		;
-block_start	: OC namespace_start
-		;
-block_end	: namespace_end CC
-		;
-statements	: statement statements
-		    { $$ = NewExprTree(OC, $1, $2); }
-		|
-		    { $$ = NewExprTree(OC, 0, 0); }
-		;
-if_statement	: IF ignorenl namespace_start OP expr CP statement %prec IF
-		    { $$ = NewExprTree(IF, $5, $7); }
-		| IF ignorenl namespace_start OP expr CP statement ELSE statement
-		    { $$ = NewExprTree(ELSE, $5, NewExprTree(ELSE, $7, $9)); }
+namespace_start :
+                    { CurrentNamespace = NewNamespace(CurrentNamespace); }
+                ;
+namespace_end   :
+                    { CurrentNamespace = CurrentNamespace->previous; }
+                ;
+block           : block_start statements block_end
+                    { $$ = $2; }
+                ;
+block_start     : OC namespace_start
+                ;
+block_end       : namespace_end CC
+                ;
+statements      : statement statements
+                    { $$ = NewExprTree(OC, $1, $2); }
+                |
+                    { $$ = NewExprTree(OC, 0, 0); }
+                ;
+if_statement    : IF ignorenl namespace_start OP expr CP statement %prec IF
+                    { $$ = NewExprTree(IF, $5, $7); }
+                | IF ignorenl namespace_start OP expr CP statement ELSE statement
+                    { $$ = NewExprTree(ELSE, $5, NewExprTree(ELSE, $7, $9)); }
 
-statement:	simple_statement
-		| block
-		;
+statement:      simple_statement
+                | block
+                ;
 
 simple_statement: if_statement namespace_end attendnl
                     { $$ = $1; }
-		| WHILE ignorenl namespace_start OP expr CP statement namespace_end attendnl
-		    { $$ = NewExprTree(WHILE, $5, $7); }
-		| DO ignorenl namespace_start statement WHILE OP expr CP namespace_end attendnl
-		    { $$ = NewExprTree(DO, $4, $7); }
-		| FOR ignorenl namespace_start OP for_exprs CP statement namespace_end attendnl
-		    { Expr *expr = ParseCanonFor($5);
-		      if (!expr)
-                          YYERROR;
-		      $$ = NewExprTree(FOR, expr, $7); }
-		| SWITCH ignorenl namespace_start OP expr CP case_block namespace_end attendnl
-		    { $$ = NewExprTree (SWITCH, $5, $7); }
-		| union_or_enum SWITCH ignorenl namespace_start OP expr CP union_case_block namespace_end attendnl
-		    { $$ = NewExprTree (UNION, $6, $8); }
-		| BREAK SEMI
-		    { $$ = NewExprTree(BREAK, (Expr *) 0, (Expr *) 0); }
-		| CONTINUE SEMI
-		    { $$ = NewExprTree(CONTINUE, (Expr *) 0, (Expr *) 0); }
-		| RETURNTOK opt_expr SEMI
-		    { $$ = NewExprTree (RETURNTOK, (Expr *) 0, $2); }
-		| expr SEMI
-		    { $$ = NewExprTree(EXPR, $1, (Expr *) 0); }
-		| SEMI
-		    { $$ = NewExprTree(SEMI, (Expr *) 0, (Expr *) 0); }
-		| func_decl doc_string opt_func_body namespace_end
-		    { 
-			DeclList    *decl = $1.decl;
-			SymbolPtr   symbol = decl->symbol;
-			Class	    class = $1.type.class;
-			Publish	    publish = $1.type.publish;
-			TypePtr	    type = $1.type.type;
-			TypePtr	    ret = type->func.ret;
-			ArgType	    *argType = type->func.args;
+                | WHILE ignorenl namespace_start OP expr CP statement namespace_end attendnl
+                    { $$ = NewExprTree(WHILE, $5, $7); }
+                | DO ignorenl namespace_start statement WHILE OP expr CP namespace_end attendnl
+                    { $$ = NewExprTree(DO, $4, $7); }
+                | FOR ignorenl namespace_start OP for_exprs CP statement namespace_end attendnl
+                    {
+                        Expr *expr = ParseCanonFor($5);
+                        if (!expr)
+                            YYERROR;
+                        $$ = NewExprTree(FOR, expr, $7);
+                    }
+                | SWITCH ignorenl namespace_start OP expr CP case_block namespace_end attendnl
+                    { $$ = NewExprTree(SWITCH, $5, $7); }
+                | union_or_enum SWITCH ignorenl namespace_start OP expr CP union_case_block
+                  namespace_end attendnl
+                    { $$ = NewExprTree(UNION, $6, $8); }
+                | BREAK SEMI
+                    { $$ = NewExprTree(BREAK, (Expr *)0, (Expr *)0); }
+                | CONTINUE SEMI
+                    { $$ = NewExprTree(CONTINUE, (Expr *)0, (Expr *)0); }
+                | RETURNTOK opt_expr SEMI
+                    { $$ = NewExprTree(RETURNTOK, (Expr *)0, $2); }
+                | expr SEMI
+                    { $$ = NewExprTree(EXPR, $1, (Expr *)0); }
+                | SEMI
+                    { $$ = NewExprTree(SEMI, (Expr *)0, (Expr *)0); }
+                | func_decl doc_string opt_func_body namespace_end
+                    {
+                        DeclList *decl = $1.decl;
+                        SymbolPtr symbol = decl->symbol;
+                        Class     class = $1.type.class;
+                        Publish   publish = $1.type.publish;
+                        TypePtr   type = $1.type.type;
+                        TypePtr   ret = type->func.ret;
+                        ArgType  *argType = type->func.args;
 
-			if (symbol)
-			{
-			    if ($3)
-			    {
-				symbol->symbol.forward = False;
-				ParseCanonType (ret, False);
-				decl->init = NewExprCode (NewFuncCode (ret,
-								       argType,
-								       $3,
-								       $2),
-							  NewExprAtom (symbol->symbol.name, symbol, False));
-			    }
-			    else
-				symbol->symbol.forward = True;
-			}
-			$$ = NewExprDecl (FUNC, decl, class, type, publish);
-		    }
-		| opt_publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end doc_string SEMI attendnl
-		    { 
-			DeclListPtr decl;
+                        if (symbol) {
+                            if ($3) {
+                                symbol->symbol.forward = False;
+                                ParseCanonType(ret, False);
+                                decl->init
+                                    = NewExprCode(NewFuncCode(ret, argType, $3, $2),
+                                                  NewExprAtom(symbol->symbol.name, symbol, False));
+                            } else
+                                symbol->symbol.forward = True;
+                        }
+                        $$ = NewExprDecl(FUNC, decl, class, type, publish);
+                    }
+                | opt_publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end
+                  doc_string SEMI attendnl
+                    {
+                        DeclListPtr decl;
 
-			decl = NewDeclList ($4, 0, 0);
-			decl->symbol = ParseNewSymbol ($1, 
-						       class_exception, 
-						       typePoly, $4);
-			decl->symbol->exception.doc = $8;
-			$$ = NewExprDecl (EXCEPTION,
-					  decl,
-					  class_exception,
-					  NewTypeFunc (typePoly, $6),
-					  $1);
-		    }
-		| RAISE fullname OP opt_exprs CP SEMI
-		    { $$ = NewExprTree (RAISE, $2, $4); }
-		| opt_publish TYPEDEF ignorenl typenames SEMI attendnl
-		    { 
-			DeclListPtr decl;
+                        decl = NewDeclList($4, 0, 0);
+                        decl->symbol = ParseNewSymbol($1, class_exception, typePoly, $4);
+                        decl->symbol->exception.doc = $8;
+                        $$ = NewExprDecl(EXCEPTION, decl, class_exception,
+                                            NewTypeFunc(typePoly, $6), $1);
+                    }
+                | RAISE fullname OP opt_exprs CP SEMI
+                    { $$ = NewExprTree(RAISE, $2, $4); }
+                | opt_publish TYPEDEF ignorenl typenames SEMI attendnl
+                    {
+                        DeclListPtr decl;
 
-			for (decl = $4; decl; decl = decl->next)
-			    decl->symbol = ParseNewSymbol ($1, class_typedef,
-							   0, decl->name);
-			$$ = NewExprTree (TYPEDEF, NewExprDecl (TYPEDEF, $4, class_typedef, 0, $1), 0);
-		    }
-		| opt_publish TYPEDEF ignorenl type typenames SEMI attendnl
-		    { 
-			DeclListPtr decl;
+                        for (decl = $4; decl; decl = decl->next)
+                            decl->symbol = ParseNewSymbol($1, class_typedef, 0, decl->name);
+                        $$ = NewExprTree(
+                            TYPEDEF, NewExprDecl(TYPEDEF, $4, class_typedef, 0, $1), 0);
+                    }
+                | opt_publish TYPEDEF ignorenl type typenames SEMI attendnl
+                    {
+                        DeclListPtr decl;
 
-			for (decl = $5; decl; decl = decl->next)
-			    decl->symbol = ParseNewSymbol ($1, class_typedef,
-							   $4, decl->name);
-			$$ = NewExprTree (TYPEDEF, NewExprDecl (TYPEDEF, $5, class_typedef, $4, $1), 0);
-		    }
-		| publish_extend NAMESPACE ignorenl namespacename
-		    {
-			SymbolPtr   symbol;
-			Publish	    publish = $1;
-			
-			/*
-			 * this is a hack - save the current namespace
-			 * on the parser stack to be restored after
-			 * the block is compiled.
-			 */
-			$2 = CurrentNamespace;
-			if (publish == publish_extend)
-			{
-			    symbol = NamespaceFindName (CurrentNamespace, $4, True);
-			    if (!symbol)
-			    {
-				ParseError ("non-existant namespace %A", $4);
-				YYERROR;
-			    }
-			    else if (symbol->symbol.class != class_namespace)
-			    {
-				ParseError ("%A is not a namespace", $4);
-				YYERROR;
-			    }
-			    else
-				CurrentNamespace = symbol->namespace.namespace;
-			}
-			else
-			{
-			    symbol = ParseNewSymbol ($1, class_namespace,
-						     0, $4);
-			    CurrentNamespace = NewNamespace (CurrentNamespace);
-			    symbol->namespace.namespace = CurrentNamespace;
-			}
-			/*
-			 * Make all of the symbols visible while compiling within
-			 * the namespace
-			 */
-			if (CurrentNamespace != $2)
-			    CurrentNamespace->publish = publish_public;
-		    }
-			OC statements CC attendnl
-		    {
-			/*
-			 * close the namespace to non-public lookups
-			 */
-			if (CurrentNamespace != $2)
-			    CurrentNamespace->publish = publish_private;
-			/*
-			 * Restore to the namespace saved on
-			 * the parser stack
-			 */
-			CurrentNamespace = $2;
-			$$ = NewExprTree (NAMESPACE, NewExprAtom ($4, 0, False), $7);
-		    }
-		| opt_publish IMPORT ignorenl fullnames SEMI attendnl
-		    {
-			SymbolPtr	symbol;
-			ExprPtr		p, e, n;
+                        for (decl = $5; decl; decl = decl->next)
+                            decl->symbol
+                                = ParseNewSymbol($1, class_typedef, $4, decl->name);
+                        $$ = NewExprTree(
+                            TYPEDEF, NewExprDecl(TYPEDEF, $5, class_typedef, $4, $1),
+                            0);
+                    }
+                | publish_extend NAMESPACE ignorenl namespacename
+                    {
+                        SymbolPtr symbol;
+                        Publish   publish = $1;
 
-			p = $4;
-			for (p = $4; p; p = n)
-			{
-			    if (p->base.tag == COMMA)
-			    {
-				e = p->tree.left;
-				n = p->tree.right;
-			    }
-			    else
-			    {
-				e = p;
-				n = 0;
-			    }
-			    if (e->base.tag == COLONCOLON)
-				e = e->tree.right;
-			    symbol = e->atom.symbol;
-			    if (!symbol)
-			    {
-				ParseError ("non-existant namespace %A", e->atom.atom);
-				YYERROR;
-			    }
-			    else if (symbol->symbol.class != class_namespace)
-			    {
-				ParseError ("%A is not a namespace", e->atom.atom);
-				YYERROR;
-			    }
-			    NamespaceImport (CurrentNamespace, 
-					     symbol->namespace.namespace, $1);
-			}
-			$$ = NewExprTree (IMPORT, $4, NewExprDecl (IMPORT,
-								   0, 
-								   class_undef,
-								   0,
-								   $1));
-		    }
-		| try_statement attendnl
-		    { $$ = $1; }
-		| TWIXT ignorenl namespace_start OP opt_expr SEMI opt_expr CP statement namespace_end attendnl
-		    { $$ = NewExprTree (TWIXT, 
-					NewExprTree (TWIXT, $5, $7),
-					NewExprTree (TWIXT, $9, 0));
-		    }
-		;
+                        /*
+                         * this is a hack - save the current namespace
+                         * on the parser stack to be restored after
+                         * the block is compiled.
+                         */
+                        $2 = CurrentNamespace;
+                        if (publish == publish_extend) {
+                            symbol = NamespaceFindName(CurrentNamespace, $4, True);
+                            if (!symbol) {
+                                ParseError("non-existant namespace %A", $4);
+                                YYERROR;
+                            } else if (symbol->symbol.class != class_namespace) {
+                                ParseError("%A is not a namespace", $4);
+                                YYERROR;
+                            } else
+                                CurrentNamespace = symbol->namespace.namespace;
+                        } else {
+                            symbol = ParseNewSymbol($1, class_namespace, 0, $4);
+                            CurrentNamespace = NewNamespace(CurrentNamespace);
+                            symbol->namespace.namespace = CurrentNamespace;
+                        }
+                        /*
+                         * Make all of the symbols visible while compiling within
+                         * the namespace
+                         */
+                        if (CurrentNamespace != $2)
+                            CurrentNamespace->publish = publish_public;
+                    }
+                        OC statements CC attendnl
+                    {
+                        /*
+                         * close the namespace to non-public lookups
+                         */
+                        if (CurrentNamespace != $2)
+                            CurrentNamespace->publish = publish_private;
+                        /*
+                         * Restore to the namespace saved on
+                         * the parser stack
+                         */
+                        CurrentNamespace = $2;
+                        $$ = NewExprTree(NAMESPACE, NewExprAtom($4, 0, False), $7);
+                    }
+                | opt_publish IMPORT ignorenl fullnames SEMI attendnl
+                    {
+                        SymbolPtr symbol;
+                        ExprPtr   p, e, n;
+
+                        p = $4;
+                        for (p = $4; p; p = n) {
+                            if (p->base.tag == COMMA) {
+                                e = p->tree.left;
+                                n = p->tree.right;
+                            } else {
+                                e = p;
+                                n = 0;
+                            }
+                            if (e->base.tag == COLONCOLON)
+                                e = e->tree.right;
+                            symbol = e->atom.symbol;
+                            if (!symbol) {
+                                ParseError("non-existant namespace %A", e->atom.atom);
+                                YYERROR;
+                            } else if (symbol->symbol.class != class_namespace) {
+                                ParseError("%A is not a namespace", e->atom.atom);
+                                YYERROR;
+                            }
+                            NamespaceImport(CurrentNamespace, symbol->namespace.namespace, $1);
+                        }
+                        $$ = NewExprTree(IMPORT, $4,
+                                            NewExprDecl(IMPORT, 0, class_undef, 0, $1));
+                    }
+                | try_statement attendnl
+                    { $$ = $1; }
+                | TWIXT ignorenl namespace_start OP opt_expr SEMI opt_expr CP statement
+                  namespace_end attendnl
+                    {
+                        $$ = NewExprTree(TWIXT, NewExprTree(TWIXT, $5, $7),
+                                            NewExprTree(TWIXT, $9, 0));
+                    }
+                ;
 for_exprs       : opt_expr SEMI for_exprs
                     { $$ = NewExprTree(SEMI, $1, $3); }
-		| opt_expr
-		    { $$ = NewExprTree(SEMI, $1, 0); }
-		;
-
-try_body_statement:  simple_statement
-		| OC statements CC
-		    { $$ = $2; }
-
-try_statement:  TRY ignorenl try_body_statement catches
-		    { $$ = NewExprTree (CATCH, $4, $3); }
+                | opt_expr
+                    { $$ = NewExprTree(SEMI, $1, 0); }
                 ;
 
-catches		:   catches catch %prec TRY
-		    { $$ = NewExprTree (CATCH, $1, $2); }
-		|   
-		    { $$ = 0; }
-		;
-catch		: CATCH fullname namespace_start args doc_string block namespace_end
-		    { $$ = NewExprCode (NewFuncCode (typePrim[rep_void],
-						     $4, $6, $5),
-					$2); 
-		    }
-		;
-opt_func_body	: func_body
-		| SEMI
-		    { $$ = 0; }
-		;
-func_body    	: { ++funcDepth; } block_or_expr { --funcDepth; $$ = $2; }
-		;
-block_or_expr	: block
-		    { $$ = $1; }
-		| attendnl ASSIGN simpleexpr SEMI
-		    { 
-			$$ = NewExprTree (OC,
-					  NewExprTree (RETURNTOK, 0, $3),
-					  NewExprTree (OC, 0, 0));
-		    }
-		;
-union_or_enum	: UNION
-		| ENUM
-		;
-see_comment	:
-		    { seeComment = 1; }
-		;
-doc_string	: see_comment opt_comment 
-		    { seeComment = 0; $$ = $2; }
-		;
-opt_comment	: COMMENT_CONST
-		|
-		    { $$ = Void; }
-		;
-case_block	: block_start cases block_end
-		    { $$ = $2; }
-		;
-cases		: case cases
-		    { $$ = NewExprTree (CASE, $1, $2); }
-		|
-		    { $$ = 0; }
-		;
-case		: CASE expr COLON statements
-		    { $$ = NewExprTree (CASE, $2, $4); }
-		| DEFAULT COLON statements
-		    { $$ = NewExprTree (CASE, 0, $3); }
-		;
+try_body_statement:  simple_statement
+                | OC statements CC
+                    { $$ = $2; }
+
+try_statement:  TRY ignorenl try_body_statement catches
+                    { $$ = NewExprTree(CATCH, $4, $3); }
+                ;
+
+catches         :   catches catch %prec TRY
+                    { $$ = NewExprTree(CATCH, $1, $2); }
+                |
+                    { $$ = 0; }
+                ;
+catch           : CATCH fullname namespace_start args doc_string block namespace_end
+                    {
+                        $$ = NewExprCode(NewFuncCode(typePrim[rep_void], $4, $6, $5),
+                                            $2);
+                    }
+                ;
+opt_func_body   : func_body
+                | SEMI
+                    { $$ = 0; }
+                ;
+func_body       : { ++funcDepth; } block_or_expr { --funcDepth; $$ = $2; }
+                ;
+block_or_expr   : block
+                    { $$ = $1; }
+                | attendnl ASSIGN simpleexpr SEMI
+                    {
+                        $$ = NewExprTree(OC, NewExprTree(RETURNTOK, 0, $3),
+                                            NewExprTree(OC, 0, 0));
+                    }
+                ;
+union_or_enum   : UNION
+                | ENUM
+                ;
+see_comment     :
+                    { seeComment = 1; }
+                ;
+doc_string      : see_comment opt_comment
+                    { seeComment = 0; $$ = $2; }
+                ;
+opt_comment     : COMMENT_CONST
+                |
+                    { $$ = Void; }
+                ;
+case_block      : block_start cases block_end
+                    { $$ = $2; }
+                ;
+cases           : case cases
+                    { $$ = NewExprTree(CASE, $1, $2); }
+                |
+                    { $$ = 0; }
+                ;
+case            : CASE expr COLON statements
+                    { $$ = NewExprTree(CASE, $2, $4); }
+                | DEFAULT COLON statements
+                    { $$ = NewExprTree(CASE, 0, $3); }
+                ;
 union_case_block: block_start union_cases block_end
-		    { $$ = $2; }
-		;
-union_cases	: union_case union_cases
-		    { $$ = NewExprTree (CASE, $1, $2); }    
-		|
-		    { $$ = 0; }
-		;
-union_case	: CASE namespace_start NAME opt_name COLON statements namespace_end
-		    { 
-			SymbolPtr   sym = $4;
-			Atom	    sym_atom = sym ? sym->symbol.name : 0;
-			ExprPtr	    name = 0;
-			
-			if (sym)
-			    name = NewExprAtom (sym_atom, sym, False);
-			    
-			$$ = NewExprTree (CASE, 
-					  NewExprTree (CASE,
-						       NewExprAtom ($3, 0, False),
-						       name),
-					  $6);
-		    }
-		| DEFAULT COLON statements
-		    { $$ = NewExprTree (CASE, 0, $3); }
-		;
-opt_name	: NAME
-		    {
-			$$ = ParseNewSymbol (publish_private,
-					     class_undef,
-					     typePoly,
-					     $1);
-		    }
-		|
-		    { $$ = 0; }
-		;
+                    { $$ = $2; }
+                ;
+union_cases     : union_case union_cases
+                    { $$ = NewExprTree(CASE, $1, $2); }
+                |
+                    { $$ = 0; }
+                ;
+union_case      : CASE namespace_start NAME opt_name COLON statements namespace_end
+                    {
+                        SymbolPtr sym = $4;
+                        Atom      sym_atom = sym ? sym->symbol.name : 0;
+                        ExprPtr   name = 0;
+
+                        if (sym)
+                            name = NewExprAtom(sym_atom, sym, False);
+
+                        $$ = NewExprTree(
+                            CASE, NewExprTree(CASE, NewExprAtom($3, 0, False), name), $6);
+                    }
+                | DEFAULT COLON statements
+                    { $$ = NewExprTree(CASE, 0, $3); }
+                ;
+opt_name        : NAME
+                    {
+                        $$ = ParseNewSymbol(publish_private, class_undef, typePoly, $1);
+                    }
+                |
+                    { $$ = 0; }
+                ;
 /*
 * Identifiers
 */
-atoms		: NAME COMMA atoms
-		    { $$ = NewAtomList ($3, $1); }
-		| NAME
-		    { $$ = NewAtomList (0, $1); }
-		;
-typenames	: typename COMMA typenames
-		    { $$ = NewDeclList ($1, 0, $3); }
-		| typename
-		    { $$ = NewDeclList ($1, 0, 0); }
-		;
-typename	: TYPENAME
-		| NAME
-		;
+atoms           : NAME COMMA atoms
+                    { $$ = NewAtomList($3, $1); }
+                | NAME
+                    { $$ = NewAtomList(0, $1); }
+                ;
+typenames       : typename COMMA typenames
+                    { $$ = NewDeclList($1, 0, $3); }
+                | typename
+                    { $$ = NewDeclList($1, 0, 0); }
+                ;
+typename        : TYPENAME
+                | NAME
+                ;
 
 /*
  * Ok, a few cute hacks to fetch the fulltype from the
@@ -785,846 +743,801 @@ typename	: TYPENAME
  * type across the comma operator -- this means that name
  * will always find the fulltype at $0 as well
  */
-initnames	: name opt_init next_decl initnames
-		    { 
-			if ($1)
-			{
-			    $$ = NewDeclList ($1->symbol.name, $2, $4); 
-			    $$->symbol = $1;
-			}
-			else
-			    $$ = $4;
-		    }
-		| name opt_init
-		    { 
-			if ($1)
-			{
-			    $$ = NewDeclList ($1->symbol.name, $2, 0);
-			    $$->symbol = $1;
-			}
-			else
-			    $1 = 0;
-		    }
-		;
-name		: NAME
-		    {	
-			$$ = ParseNewSymbol ($<fulltype>0.publish,
-					     $<fulltype>0.class,
-					     $<fulltype>0.type,
-					     $1);
-		    }
-		;
-/* 
+initnames       : name opt_init next_decl initnames
+                    {
+                        if ($1) {
+                            $$ = NewDeclList($1->symbol.name, $2, $4);
+                            $$->symbol = $1;
+                        } else
+                            $$ = $4;
+                    }
+                | name opt_init
+                    {
+                        if ($1) {
+                            $$ = NewDeclList($1->symbol.name, $2, 0);
+                            $$->symbol = $1;
+                        } else
+                            $1 = 0;
+                    }
+                ;
+name            : NAME
+                    {
+                        $$ = ParseNewSymbol($<fulltype>0.publish, $<fulltype>0.class,
+                                               $<fulltype>0.type, $1);
+                    }
+                ;
+/*
  * next_decl -- look backwards three entries on the stack to
  * find the previous type
  */
-next_decl	: COMMA
-		    { $$ = $<fulltype>-2; }
-		;
+next_decl       : COMMA
+                    { $$ = $<fulltype>-2; }
+                ;
 /*
  * Declaration of a function
  */
-func_decl	: func_name namespace_start opt_argdefines CP
-		    {
-			NamespacePtr	save = CurrentNamespace;
-			SymbolPtr	symbol;
-			Type		*type = NewTypeFunc ($1.type.type, $3);
-			/*
-			 * namespace_start pushed a new namespace, make sure
-			 * this symbol is placed in the original namespace
-			 */
-			CurrentNamespace = save->previous;
-			symbol = NamespaceFindName (CurrentNamespace, $1.decl->name, True);
-			if (symbol && symbol->symbol.forward)
-			{
-			    if (!TypeIsSupertype (symbol->symbol.type, type))
-			    {
-				ParseError ("%A redefinition with different type",
-					    $1.decl->name);
-				symbol = 0;
-			    }
-			}
-			else
-			{
-			    symbol = ParseNewSymbol ($1.type.publish,
-						     $1.type.class, 
-						     type,
-						     $1.decl->name);
-			}
-			CurrentNamespace = save;
-			$$ = $1;
-			$$.decl->symbol = symbol;
-			$$.type.type = type;
-		    }
-		;
-func_name	: decl NAME OP
-		    { $$.type = $1; $$.decl = NewDeclList ($2, 0, 0); }
-		| decl FUNCTION NAME OP
-		    { $$.type = $1; $$.decl = NewDeclList ($3, 0, 0); }
-		| FUNCTION ignorenl NAME OP
-		    { 
-			$$.type.publish = publish_private;
-			$$.type.class = class_undef;
-			$$.type.type = typePoly;
-			$$.decl = NewDeclList ($3, 0, 0); 
-		    }
-		;
-opt_init	: ASSIGN simpleexpr
-		    { $$ = $2; }
-		| ASSIGN init
-		    { $$ = $2; }
-		|
-		    { $$ = 0; }
-		;
+func_decl       : func_name namespace_start opt_argdefines CP
+                    {
+                        NamespacePtr save = CurrentNamespace;
+                        SymbolPtr    symbol;
+                        Type        *type = NewTypeFunc($1.type.type, $3);
+                        /*
+                         * namespace_start pushed a new namespace, make sure
+                         * this symbol is placed in the original namespace
+                         */
+                        CurrentNamespace = save->previous;
+                        symbol = NamespaceFindName(CurrentNamespace, $1.decl->name, True);
+                        if (symbol && symbol->symbol.forward) {
+                            if (!TypeIsSupertype(symbol->symbol.type, type)) {
+                                ParseError("%A redefinition with different type",
+                                           $1.decl->name);
+                                symbol = 0;
+                            }
+                        } else {
+                            symbol = ParseNewSymbol($1.type.publish, $1.type.class, type,
+                                                    $1.decl->name);
+                        }
+                        CurrentNamespace = save;
+                        $$ = $1;
+                        $$.decl->symbol = symbol;
+                        $$.type.type = type;
+                    }
+                ;
+func_name       : decl NAME OP
+                    { $$.type = $1; $$.decl = NewDeclList($2, 0, 0); }
+                | decl FUNCTION NAME OP
+                    { $$.type = $1; $$.decl = NewDeclList($3, 0, 0); }
+                | FUNCTION ignorenl NAME OP
+                    {
+                        $$.type.publish = publish_private;
+                        $$.type.class = class_undef;
+                        $$.type.type = typePoly;
+                        $$.decl = NewDeclList($3, 0, 0);
+                    }
+                ;
+opt_init        : ASSIGN simpleexpr
+                    { $$ = $2; }
+                | ASSIGN init
+                    { $$ = $2; }
+                |
+                    { $$ = 0; }
+                ;
 /*
  * Full declaration including storage, type and publication
  */
-decl		: publish opt_class opt_type opt_nl
-		    { $$.publish = $1; $$.class = $2; $$.type = $3; }
-		| class opt_type opt_nl
-		    { $$.publish = publish_private; $$.class = $1; $$.type = $2; }
-		| type opt_nl
-		    { $$.publish = publish_private; $$.class = class_undef; $$.type = $1; }
-		;
+decl            : publish opt_class opt_type opt_nl
+                    { $$.publish = $1; $$.class = $2; $$.type = $3; }
+                | class opt_type opt_nl
+                    { $$.publish = publish_private; $$.class = $1; $$.type = $2; }
+                | type opt_nl
+                    { $$.publish = publish_private; $$.class = class_undef; $$.type = $1; }
+                ;
 /*
  * Type declarations
  */
-subscripts	: opt_argdecls subscripts	    %prec CALL
-		    { $$ = NewTypeFunc ($2, $1); }
-		| OS opt_stars CS subscripts    
-		    { $$ = NewTypeArray ($4, $2, False); }
-		| OS dotdotdots CS subscripts    
-		    { $$ = NewTypeArray ($4, $2, True); }
-		| OS dims CS subscripts
-		    { $$ = NewTypeArray ($4, $2, False); }
-		| OS type CS subscripts
-		    { $$ = NewTypeHash ($4, $2); }
-		|
-		    { $$ = 0; }
-		;
-type		: subtype subscripts	    %prec CALL
-		    {
-			Type	*top = $2;
-			Type	*t, **bot = &top;
+subscripts      : opt_argdecls subscripts           %prec CALL
+                    { $$ = NewTypeFunc($2, $1); }
+                | OS opt_stars CS subscripts
+                    { $$ = NewTypeArray($4, $2, False); }
+                | OS dotdotdots CS subscripts
+                    { $$ = NewTypeArray($4, $2, True); }
+                | OS dims CS subscripts
+                    { $$ = NewTypeArray($4, $2, False); }
+                | OS type CS subscripts
+                    { $$ = NewTypeHash($4, $2); }
+                |
+                    { $$ = 0; }
+                ;
+type            : subtype subscripts        %prec CALL
+                    {
+                        Type *top = $2;
+                        Type *t, **bot = &top;
 
-			/*
-			 * Walk down the type chain to hang the
-			 * base type off of the end.  This
-			 * makes int[]() be an array of functions
-			 * rather than a function returning an array
-			 */
-			while ((t = *bot))
-			    switch (t->base.tag) {
-			    case type_array:
-				bot = &t->array.type;
-				break;
-			    case type_hash:
-				bot = &t->hash.type;
-				break;
-			    case type_func:
-				bot = &t->func.ret;
-				break;
-			    default:
-				assert(0);
-			    }
-			*bot = $1;
-			$$ = top;
-		    }
-		| TIMES type			%prec POINTER
-		    { $$ = NewTypeRef ($2, True); }
-		| STARSTAR type			%prec POINTER
-		    { $$ = NewTypeRef (NewTypeRef ($2, True), True); }
-		| AND type			%prec POINTER
-		    { $$ = NewTypeRef (NewTypeRef ($2, False), False); }
-		| LAND type			%prec POINTER
-		    { $$ = NewTypeRef ($2, False); }
-		| type PLUS type
-		    { 
-			if (ParseCanonType ($1, False) != CanonTypeDefined)
-			    YYERROR;
-			if (ParseCanonType ($3, False) != CanonTypeDefined)
-			    YYERROR;
-			$$ = NewTypePlus ($1, $3); 
-			if (!$$)
-			    YYERROR;
-		    }
-		;
-subtype		: basetype
-		| STRUCT OC struct_members CC
-		    {
-			AtomListPtr	al;
-			StructType	*st;
-			MemListPtr	ml;
-			int		nelements;
+                        /*
+                         * Walk down the type chain to hang the
+                         * base type off of the end.  This
+                         * makes int[]() be an array of functions
+                         * rather than a function returning an array
+                         */
+                        while ((t = *bot))
+                            switch (t->base.tag) {
+                            case type_array:
+                                bot = &t->array.type;
+                                break;
+                            case type_hash:
+                                bot = &t->hash.type;
+                                break;
+                            case type_func:
+                                bot = &t->func.ret;
+                                break;
+                            default:
+                                assert(0);
+                            }
+                        *bot = $1;
+                        $$ = top;
+                    }
+                | TIMES type                    %prec POINTER
+                    { $$ = NewTypeRef($2, True); }
+                | STARSTAR type                 %prec POINTER
+                    { $$ = NewTypeRef(NewTypeRef($2, True), True); }
+                | AND type                      %prec POINTER
+                    { $$ = NewTypeRef(NewTypeRef($2, False), False); }
+                | LAND type                     %prec POINTER
+                    { $$ = NewTypeRef($2, False); }
+                | type PLUS type
+                    {
+                        if (ParseCanonType($1, False) != CanonTypeDefined)
+                            YYERROR;
+                        if (ParseCanonType($3, False) != CanonTypeDefined)
+                            YYERROR;
+                        $$ = NewTypePlus($1, $3);
+                        if (!$$)
+                            YYERROR;
+                    }
+                ;
+subtype         : basetype
+                | STRUCT OC struct_members CC
+                    {
+                        AtomListPtr al;
+                        StructType *st;
+                        MemListPtr  ml;
+                        int         nelements;
 
-			nelements = 0;
-			for (ml = $3; ml; ml = ml->next)
-			{
-			    for (al = ml->atoms; al; al = al->next)
-				nelements++;
-			}
-			st = NewStructType (nelements);
-			nelements = 0;
-			for (ml = $3; ml; ml = ml->next)
-			{
-			    for (al = ml->atoms; al; al = al->next)
-			    {
-				AddBoxType (&st->types, ml->type);
-				StructTypeAtoms(st)[nelements] = al->atom;
-				nelements++;
-			    }
-			}
-			$$ = NewTypeStruct (st);
-		    }
-		| UNION OC union_members CC
-		    {
-			AtomListPtr	al;
-			StructType	*st;
-			MemListPtr	ml;
-			int		nelements;
+                        nelements = 0;
+                        for (ml = $3; ml; ml = ml->next) {
+                            for (al = ml->atoms; al; al = al->next)
+                                nelements++;
+                        }
+                        st = NewStructType(nelements);
+                        nelements = 0;
+                        for (ml = $3; ml; ml = ml->next) {
+                            for (al = ml->atoms; al; al = al->next) {
+                                AddBoxType(&st->types, ml->type);
+                                StructTypeAtoms(st)[nelements] = al->atom;
+                                nelements++;
+                            }
+                        }
+                        $$ = NewTypeStruct(st);
+                    }
+                | UNION OC union_members CC
+                    {
+                        AtomListPtr al;
+                        StructType *st;
+                        MemListPtr  ml;
+                        int         nelements;
 
-			nelements = 0;
-			for (ml = $3; ml; ml = ml->next)
-			{
-			    for (al = ml->atoms; al; al = al->next)
-				nelements++;
-			}
-			st = NewStructType (nelements);
-			nelements = 0;
-			for (ml = $3; ml; ml = ml->next)
-			{
-			    for (al = ml->atoms; al; al = al->next)
-			    {
-				AddBoxType (&st->types, ml->type);
-				StructTypeAtoms(st)[nelements] = al->atom;
-				nelements++;
-			    }
-			}
-			$$ = NewTypeUnion (st, False);
-		    }
-		| ENUM OC atoms CC
-		    {
-			AtomListPtr	al;
-			StructType	*st;
-			int		nelements;
+                        nelements = 0;
+                        for (ml = $3; ml; ml = ml->next) {
+                            for (al = ml->atoms; al; al = al->next)
+                                nelements++;
+                        }
+                        st = NewStructType(nelements);
+                        nelements = 0;
+                        for (ml = $3; ml; ml = ml->next) {
+                            for (al = ml->atoms; al; al = al->next) {
+                                AddBoxType(&st->types, ml->type);
+                                StructTypeAtoms(st)[nelements] = al->atom;
+                                nelements++;
+                            }
+                        }
+                        $$ = NewTypeUnion(st, False);
+                    }
+                | ENUM OC atoms CC
+                    {
+                        AtomListPtr al;
+                        StructType *st;
+                        int         nelements;
 
-			nelements = 0;
-			for (al = $3; al; al = al->next)
-			    nelements++;
-			
-			st = NewStructType (nelements);
-			nelements = 0;
-			for (al = $3; al; al = al->next)
-			{
-			    AddBoxType (&st->types, typePrim[rep_void]);
-			    StructTypeAtoms(st)[nelements] = al->atom;
-			    nelements++;
-			}
-			$$ = NewTypeUnion (st, True);
-		    }
-			    
-		| OP type CP
-		    { $$ = $2; }
-		| fulltype
-		    { $$ = NewTypeName ($1, 0); }
-		;
-opt_type	: type
-		|
-		    { $$ = typePoly; }
-		;
-basetype    	: POLY
-		| INTEGER
-		| RATIONAL
-		| REAL
+                        nelements = 0;
+                        for (al = $3; al; al = al->next)
+                            nelements++;
+
+                        st = NewStructType(nelements);
+                        nelements = 0;
+                        for (al = $3; al; al = al->next) {
+                            AddBoxType(&st->types, typePrim[rep_void]);
+                            StructTypeAtoms(st)[nelements] = al->atom;
+                            nelements++;
+                        }
+                        $$ = NewTypeUnion(st, True);
+                    }
+
+                | OP type CP
+                    { $$ = $2; }
+                | fulltype
+                    { $$ = NewTypeName($1, 0); }
+                ;
+opt_type        : type
+                |
+                    { $$ = typePoly; }
+                ;
+basetype        : POLY
+                | INTEGER
+                | RATIONAL
+                | REAL
                 | COMPLEX
-		| STRING
-		| FILET
-		| MUTEX
-		| SEMAPHORE
-		| CONTINUATION
-		| THREAD
-		| VOID
-		| BOOL
-		| FOREIGN
-		;
-opt_stars	: stars
-		|
-		    { $$ = 0; }
-		;
-stars		: stars COMMA TIMES
-		    { $$ = NewExprTree (COMMA, 0, $1); }
-		| TIMES
-		    { $$ = NewExprTree (COMMA, 0, 0); }
-		;
-dotdotdots	: dotdotdots COMMA DOTDOTDOT
-		    { $$ = NewExprTree (COMMA, 0, $1); }
-		| DOTDOTDOT
-		    { $$ = NewExprTree (COMMA, 0, 0); }
-		;
-dims		: simpleexpr COMMA dims
-		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| simpleexpr
-		    { $$ = NewExprTree (COMMA, $1, 0); }
-		;
+                | STRING
+                | FILET
+                | MUTEX
+                | SEMAPHORE
+                | CONTINUATION
+                | THREAD
+                | VOID
+                | BOOL
+                | FOREIGN
+                ;
+opt_stars       : stars
+                |
+                    { $$ = 0; }
+                ;
+stars           : stars COMMA TIMES
+                    { $$ = NewExprTree(COMMA, 0, $1); }
+                | TIMES
+                    { $$ = NewExprTree(COMMA, 0, 0); }
+                ;
+dotdotdots      : dotdotdots COMMA DOTDOTDOT
+                    { $$ = NewExprTree(COMMA, 0, $1); }
+                | DOTDOTDOT
+                    { $$ = NewExprTree(COMMA, 0, 0); }
+                ;
+dims            : simpleexpr COMMA dims
+                    { $$ = NewExprTree(COMMA, $1, $3); }
+                | simpleexpr
+                    { $$ = NewExprTree(COMMA, $1, 0); }
+                ;
 /*
 * Structure member declarations
 */
-struct_members	: opt_type atoms SEMI struct_members
-		    { $$ = NewMemList ($2, $1, $4); }
-		|
-		    { $$ = 0; }
-		;
-union_members	: opt_type atoms SEMI union_members
-		    { $$ = NewMemList ($2, $1, $4); }
-		|
-		    { $$ = 0; }
-		;
+struct_members  : opt_type atoms SEMI struct_members
+                    { $$ = NewMemList($2, $1, $4); }
+                |
+                    { $$ = 0; }
+                ;
+union_members   : opt_type atoms SEMI union_members
+                    { $$ = NewMemList($2, $1, $4); }
+                |
+                    { $$ = 0; }
+                ;
 /*
 * Declaration modifiers
 */
-opt_class	: class
-		|
-		    { $$ = class_undef; }
-		;
-class		: GLOBAL
-		| AUTO
-		| STATIC
-		| CONST
-		;
-opt_publish	: publish
-		|
-		    { $$ = publish_private; }
-		;
+opt_class       : class
+                |
+                    { $$ = class_undef; }
+                ;
+class           : GLOBAL
+                | AUTO
+                | STATIC
+                | CONST
+                ;
+opt_publish     : publish
+                |
+                    { $$ = publish_private; }
+                ;
 
-publish		: PUBLIC
-		| PROTECTED
-		;
-publish_extend	: opt_publish
-		| EXTEND
-		;
+publish         : PUBLIC
+                | PROTECTED
+                ;
+publish_extend  : opt_publish
+                | EXTEND
+                ;
 
 /*
 * Arguments in function declarations
 */
-opt_argdecls	: OP argdecls CP
-		    { $$ = $2; }
-		| OP CP
-		    { $$ = 0; }
-		;
-argdecls	: argdecl COMMA argdecls
-		    { $$ = NewArgType ($1.type, False, $1.name, 0, $3); }
-		| argdecl opt_dotdotdot
-		    { $$ = NewArgType ($1.type, $2, $1.name, 0, 0); }
-		;
-argdecl		: type NAME
-		    { 
-			ParseCanonType ($1, False);
-			$$.type = $1; 
-			$$.name = $2; 
-		    }
-		| type
-		    { 
-			ParseCanonType ($1, False);
-			$$.type = $1;
-			$$.name = 0; 
-		    }
-		;
+opt_argdecls    : OP argdecls CP
+                    { $$ = $2; }
+                | OP CP
+                    { $$ = 0; }
+                ;
+argdecls        : argdecl COMMA argdecls
+                    { $$ = NewArgType($1.type, False, $1.name, 0, $3); }
+                | argdecl opt_dotdotdot
+                    { $$ = NewArgType($1.type, $2, $1.name, 0, 0); }
+                ;
+argdecl         : type NAME
+                    {
+                        ParseCanonType($1, False);
+                        $$.type = $1;
+                        $$.name = $2;
+                    }
+                | type
+                    {
+                        ParseCanonType($1, False);
+                        $$.type = $1;
+                        $$.name = 0;
+                    }
+                ;
 
 /*
 * Arguments in function definitions
 */
-args		: OP opt_argdefines CP
-		    { $$ = $2; }
-		;
-opt_argdefines	: ignorenl argdefines
-		    {
-			ArgType	*args;
-			Type	*type;
+args            : OP opt_argdefines CP
+                    { $$ = $2; }
+                ;
+opt_argdefines  : ignorenl argdefines
+                    {
+                        ArgType *args;
+                        Type    *type;
 
-			for (args = $2; args; args = args->next)
-			{
-			    type = args->type;
-			    if (ParseCanonType (type, False) != CanonTypeDefined)
-				break;
-			    if (args->varargs)
-			    {
-				type = NewTypeArray (type,
-						     NewExprTree (COMMA,
-								  NewExprConst (TEN_NUM, 
-										NewInt (0)),
-								  0),
-						     False);
-			    }
-			    args->symbol = ParseNewSymbol (publish_private,
-							   class_arg, 
-							   type, args->name);
-			}
-			$$ = $2;
-		    }
-		| ignorenl
-		    { $$ = 0; }
-		;
-argdefines	: argdefine COMMA argdefines
-		    { $$ = NewArgType ($1.type, False, $1.name, 0, $3); }
-		| argdefine opt_dotdotdot
-		    { $$ = NewArgType ($1.type, $2, $1.name, 0, 0); }
-		;
-argdefine	: opt_type NAME
-		    { $$.type = $1; $$.name = $2; }
-		| type
-		    { $$.type = $1; $$.name = 0; }
-		;
-opt_dotdotdot	: DOTDOTDOT
-		    { $$ = True; }
-		|
-		    { $$ = False; }
-		;
+                        for (args = $2; args; args = args->next) {
+                            type = args->type;
+                            if (ParseCanonType(type, False) != CanonTypeDefined)
+                                break;
+                            if (args->varargs) {
+                                type = NewTypeArray(
+                                    type, NewExprTree(COMMA, NewExprConst(TEN_NUM, NewInt(0)), 0),
+                                    False);
+                            }
+                            args->symbol
+                                = ParseNewSymbol(publish_private, class_arg, type, args->name);
+                        }
+                        $$ = $2;
+                    }
+                | ignorenl
+                    { $$ = 0; }
+                ;
+argdefines      : argdefine COMMA argdefines
+                    { $$ = NewArgType($1.type, False, $1.name, 0, $3); }
+                | argdefine opt_dotdotdot
+                    { $$ = NewArgType($1.type, $2, $1.name, 0, 0); }
+                ;
+argdefine       : opt_type NAME
+                    { $$.type = $1; $$.name = $2; }
+                | type
+                    { $$.type = $1; $$.name = 0; }
+                ;
+opt_dotdotdot   : DOTDOTDOT
+                    { $$ = True; }
+                |
+                    { $$ = False; }
+                ;
 
 /*
 * Expressions, top level includes comma operator and declarations
 */
-opt_expr	: expr
-		|
-		    { $$ = 0; }
-		;
-expr		: comma_expr
-		| decl initnames
-		    { 
-			DeclList    *decl;
+opt_expr        : expr
+                |
+                    { $$ = 0; }
+                ;
+expr            : comma_expr
+                | decl initnames
+                    {
+                        DeclList *decl;
 
-			for (decl = $2; decl; decl = decl->next)
-			{
-			    if (decl->init)
-			    {
-				if (!decl->init->base.type)
-				    decl->init->base.type = $1.type;
-			    }
-			}
+                        for (decl = $2; decl; decl = decl->next) {
+                            if (decl->init) {
+                                if (!decl->init->base.type)
+                                    decl->init->base.type = $1.type;
+                            }
+                        }
 
-			$$ = NewExprDecl (VAR, $2, $1.class, $1.type, $1.publish); 
-		    }
-		;
-comma_expr	: simpleexpr
-		| comma_expr COMMA simpleexpr
-		    { $$ = NewExprTree(COMMA, $1, $3); }
-		;
+                        $$ = NewExprDecl(VAR, $2, $1.class, $1.type, $1.publish);
+                    }
+                ;
+comma_expr      : simpleexpr
+                | comma_expr COMMA simpleexpr
+                    { $$ = NewExprTree(COMMA, $1, $3); }
+                ;
 /*
 * Expression list, different use of commas for function arguments et al.
 */
-opt_exprs	: exprs
-		|
-		    { $$ = 0; }
-		;
-exprs		: simpleexpr COMMA exprs
-		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| simpleexpr
-		    { $$ = NewExprTree (COMMA, $1, 0); }
-		;
-opt_actuals	: actuals
-		|
-		    { $$ = 0; }
-		;
-actuals		: simpleexpr COMMA actuals
-		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| simpleexpr opt_dotdotdot
-		    {	
-			ExprPtr	arg = $2 ? NewExprTree (DOTDOTDOT, $1, 0) : $1;
-			$$ = NewExprTree (COMMA, arg, 0); 
-		    }
-		;
-func_right	: attendnl ASSIGN simpleexpr
-		    { 
-			$$ = NewExprTree (OC,
-					  NewExprTree (RETURNTOK, 0, $3),
-					  NewExprTree (OC, 0, 0));
-		    }
-		| { ++funcDepth; } block { --funcDepth; $$ = $2; }
-		;
+opt_exprs       : exprs
+                |
+                    { $$ = 0; }
+                ;
+exprs           : simpleexpr COMMA exprs
+                    { $$ = NewExprTree(COMMA, $1, $3); }
+                | simpleexpr
+                    { $$ = NewExprTree(COMMA, $1, 0); }
+                ;
+opt_actuals     : actuals
+                |
+                    { $$ = 0; }
+                ;
+actuals         : simpleexpr COMMA actuals
+                    { $$ = NewExprTree(COMMA, $1, $3); }
+                | simpleexpr opt_dotdotdot
+                    {
+                        ExprPtr arg = $2 ? NewExprTree(DOTDOTDOT, $1, 0) : $1;
+                        $$ = NewExprTree(COMMA, arg, 0);
+                    }
+                ;
+func_right      : attendnl ASSIGN simpleexpr
+                    {
+                        $$ = NewExprTree(OC, NewExprTree(RETURNTOK, 0, $3),
+                                            NewExprTree(OC, 0, 0));
+                    }
+                | { ++funcDepth; } block { --funcDepth; $$ = $2; }
+                ;
 /*
 * Fundemental expression production
 */
-simpleexpr	: simpleexpr assignop simpleexpr    		%prec ASSIGN
-		    { 
-			if ($2 == ASSIGNPOW)
-			    $$ = NewExprTree (ASSIGNPOW, 
-					      BuildName ("Math", "assign_pow"),
-					      NewExprTree (ASSIGNPOW, $1, $3));
-			else
-			{
-			    ExprPtr left = $1;
-			    /*
-			     * Automatically declare names used in
-			     * simple assignements at the top level
-			     */
-			    if ($2 == ASSIGN && 
-				funcDepth == 0 &&
-				left->base.tag == NAME && 
-				!(left->atom.symbol))
-			    {
-				$1->atom.symbol = ParseNewSymbol (publish_private,
-								  class_undef, 
-								  typePoly, 
-								  $1->atom.atom);
-			    }
-			    $$ = NewExprTree($2, $1, $3); 
-			}
-		    }
-		| opt_type FUNC namespace_start args doc_string func_right namespace_end	    	%prec ASSIGN
-		    {
-			ParseCanonType ($1, False);
-			$$ = NewExprCode (NewFuncCode ($1, $4, $6, $5), 0); 
-		    }
-		| MOD integer						%prec THREADID
-		    {   Value	t;
-			t = do_Thread_id_to_thread ($2);
-			if (t == Void)
-			{
-			    ParseError ("No thread %v", $2);
-			    YYERROR;
-			}
-			else
-			    $$ = NewExprConst(THREAD_CONST, t); 
-		    }
-		| TIMES simpleexpr					%prec STAR
-		    { $$ = NewExprTree(STAR, $2, (Expr *) 0); }
-		| STARSTAR simpleexpr					%prec STAR
-		    { $$ = NewExprTree(STAR, NewExprTree (STAR, $2, 0), 0); }
-		| LAND simpleexpr					%prec AMPER
-		    { $$ = NewExprTree(AMPER, $2, (Expr *) 0); }
-		| AND simpleexpr					%prec AMPER
-		    { $$ = NewExprTree(AMPER, 
-				       NewExprTree (AMPER, $2, (Expr *) 0), 
-				       (Expr *) 0); }
-		| MINUS simpleexpr					%prec UMINUS
-		    { $$ = NewExprTree(UMINUS, $2, (Expr *) 0); }
-		| LNOT simpleexpr
-		    { $$ = NewExprTree(LNOT, $2, (Expr *) 0); }
-		| BANG simpleexpr
-		    { $$ = NewExprTree(BANG, $2, (Expr *) 0); }
-		| simpleexpr BANG					%prec FACT
-		    { 
-			$$ = NewExprTree(FACT, 
-					 BuildName ("Math", "factorial"),
-					 $1);
-		    }
-		| INC simpleexpr
-		    { $$ = NewExprTree(INC, $2, (Expr *) 0); }
-		| simpleexpr INC
-		    { $$ = NewExprTree(INC, (Expr *) 0, $1); }
-		| DEC simpleexpr
-		    { $$ = NewExprTree(DEC, $2, (Expr *) 0); }
-		| simpleexpr DEC
-		    { $$ = NewExprTree(DEC, (Expr *) 0, $1); }
-		| FORK simpleexpr
-		    { $$ = NewExprTree (FORK, (Expr *) 0, $2); }
-		| simpleexpr PLUS simpleexpr
-		    { $$ = NewExprTree(PLUS, $1, $3); }
-		| simpleexpr MINUS simpleexpr
-		    { $$ = NewExprTree(MINUS, $1, $3); }
-		| simpleexpr TIMES simpleexpr
-		    { $$ = NewExprTree(TIMES, $1, $3); }
-		| simpleexpr DIVIDE simpleexpr
-		    { $$ = NewExprTree(DIVIDE, $1, $3); }
-		| simpleexpr DIV simpleexpr
-		    { $$ = NewExprTree(DIV, $1, $3); }
-		| simpleexpr MOD simpleexpr
-		    { $$ = NewExprTree(MOD, $1, $3); }
-		| simpleexpr STARSTAR simpleexpr			%prec POW
-		    { 
-			$$ = NewExprTree(POW, 
-					 BuildName ("Math", "pow"), 
-					 NewExprTree (POW, $1, $3)); 
-		    }
-		| simpleexpr POW2
-		    {
-			$$ = NewExprTree (POW,
-					  BuildName("Math", "pow"),
-					  NewExprTree (POW, $1,
-						       NewExprConst (TEN_NUM,
-								     NewInt(2))));
-		    }
-		| simpleexpr POW3
-		    {
-			$$ = NewExprTree (POW,
-					  BuildName("Math", "pow"),
-					  NewExprTree (POW, $1,
-						       NewExprConst (TEN_NUM,
-								     NewInt(3))));
-		    }
-		| simpleexpr SHIFTL simpleexpr
-		    { $$ = NewExprTree(SHIFTL, $1, $3); }
-		| simpleexpr SHIFTR simpleexpr
-		    { $$ = NewExprTree(SHIFTR, $1, $3); }
-		| simpleexpr QUEST simpleexpr COLON simpleexpr
-		    { $$ = NewExprTree(QUEST, $1, NewExprTree(COLON, $3, $5)); }
-		| simpleexpr LXOR simpleexpr
-		    { $$ = NewExprTree(LXOR, $1, $3); }
-		| simpleexpr LAND simpleexpr
-		    { $$ = NewExprTree(LAND, $1, $3); }
-		| simpleexpr LOR simpleexpr
-		    { $$ = NewExprTree(LOR, $1, $3); }
-		| simpleexpr AND simpleexpr
-		    { $$ = NewExprTree(AND, $1, $3); }
-		| simpleexpr OR simpleexpr
-		    { $$ = NewExprTree(OR, $1, $3); }
-		| simpleexpr EQ simpleexpr
-		    { $$ = NewExprTree(EQ, $1, $3); }
-		| simpleexpr NE simpleexpr
-		    { $$ = NewExprTree(NE, $1, $3); }
-		| simpleexpr LT simpleexpr
-		    { $$ = NewExprTree(LT, $1, $3); }
-		| simpleexpr GT simpleexpr
-		    { $$ = NewExprTree(GT, $1, $3); }
-		| simpleexpr LE simpleexpr
-		    { $$ = NewExprTree(LE, $1, $3); }
-		| simpleexpr GE simpleexpr
-		    { $$ = NewExprTree(GE, $1, $3); }
-		| fullname
-		| TEN_NUM
-		    { $$ = NewExprConst(TEN_NUM, $1); }
-		| OCTAL_NUM
-		    { $$ = NewExprConst(OCTAL_NUM, $1); }
-		| OCTAL0_NUM
-		    { $$ = NewExprConst(OCTAL0_NUM, $1); }
-		| BINARY_NUM
-		    { $$ = NewExprConst(BINARY_NUM, $1); }
-		| HEX_NUM
-		    { $$ = NewExprConst(HEX_NUM, $1); }
-		| TEN_FLOAT
-		    { $$ = NewExprConst(TEN_FLOAT, $1); }
-		| OCTAL_FLOAT
-		    { $$ = NewExprConst(OCTAL_FLOAT, $1); }
-		| OCTAL0_FLOAT
-		    { $$ = NewExprConst(OCTAL0_FLOAT, $1); }
-		| BINARY_FLOAT
-		    { $$ = NewExprConst(BINARY_FLOAT, $1); }
-		| HEX_FLOAT
-		    { $$ = NewExprConst(HEX_FLOAT, $1); }
-		| CHAR_CONST
-		    { $$ = NewExprConst(CHAR_CONST, $1); }
-		| STRING_CONST
-		    { $$ = NewExprConst(STRING_CONST, $1); }
-		| VOIDVAL
-		    { $$ = NewExprConst(VOIDVAL, $1); }
-		| BOOLVAL
-		    { $$ = NewExprConst(BOOLVAL, $1); }
-		| OS CS
-		    { 
-			$$ = BuildFullname (0, AtomId ("[]"));
-		    }
-		| OP type CP namespace_start init namespace_end
-		    { 
-			ParseCanonType ($2, False);
-			if ($5)
-			    $5->base.type = $2;
-			$$ = NewExprTree (NEW, $5, 0);
-			$$->base.type = $2;
-		    }
-		| OP OS stars CS CP namespace_start arrayinit namespace_end
-		    { 
-			$7->base.type = NewTypeArray (typePoly, $3, True); 
-			ParseCanonType ($7->base.type, False);
-			$$ = NewExprTree (NEW, $7, 0); 
-			$$->base.type = $7->base.type;
-		    }
-		| OP OS dims CS CP namespace_start opt_arrayinit namespace_end
-		    { 
-			TypePtr	t = NewTypeArray (typePoly, $3, False);
-			ParseCanonType (t, False);
-			$$ = NewExprTree (NEW, $7, 0); 
-			if ($7)
-			    $7->base.type = t;
-			$$->base.type = t;
-		    }
-		| OP OS type CS CP namespace_start opt_hashinit namespace_end
-		    {
-			TypePtr t = NewTypeHash (typePoly, $3);
-			ParseCanonType (t, False);
-			$$ = NewExprTree (NEW, $7, 0);
-			if ($7)
-			    $7->base.type = t;
-			$$->base.type = t;
-		    }
-		| type DOT NAME						%prec UNIONCAST
-		    {
-			ParseCanonType ($1, False);
-			$$ = NewExprTree (UNION, NewExprAtom ($3, 0, False), 0); 
-			$$->base.type = $1;
-		    }
-		| OP type DOT NAME CP simpleexpr 			%prec UNIONCAST
-		    { 
-			ParseCanonType ($2, False);
-			$$ = NewExprTree (UNION, NewExprAtom ($4, 0, False), $6); 
-			$$->base.type = $2;
-		    }
-		| DOLLAR opt_integer
-		    { $$ = BuildCall ("History", "fetch", 1, NewExprConst (TEN_NUM, $2)); }
-		| DOT
-		    { $$ = NewExprTree (DOLLAR, 0, 0); }
-		| OP expr CP
-		    { $$ = $2; }
-		| OP block CP
-		    { $$ = $2; }
-		| simpleexpr STAROS dims CS
-		    { $$ = NewExprTree (OS, NewExprTree (STAR, $1, (Expr *) 0), $3); }
-		| simpleexpr OS dims CS
-		    { $$ = NewExprTree(OS, $1, $3); }
-		| simpleexpr OP opt_actuals CP				%prec CALL
-		    { $$ = NewExprTree (OP, $1, $3); }
-		| ISTYPE OP simpleexpr COMMA type CP			%prec CALL
-		    {
-			TypePtr	type = $5;
-			ParseCanonType (type, False);
-			$$ = NewExprType (ISTYPE, $3, type);
-		    }
-		| HASMEMBER OP simpleexpr COMMA NAME CP			%prec CALL
-		    { $$ = NewExprTree (HASMEMBER, $3, NewExprAtom($5, 0, False)); }
-		| simpleexpr DOT NAME
-		    { $$ = NewExprTree(DOT, $1, NewExprAtom ($3, 0, False)); }
-		| simpleexpr ARROW NAME
-		    { $$ = NewExprTree(ARROW, $1, NewExprAtom ($3, 0, False)); }
-		;
-opt_integer	: integer
-		|
-		    { $$ = Zero; }
-assignop	: ASSIGNPLUS
-		| ASSIGNMINUS
-		| ASSIGNTIMES
-		| ASSIGNDIVIDE
-		| ASSIGNDIV
-		| ASSIGNMOD
-		| ASSIGNPOW
-		| ASSIGNSHIFTL
-		| ASSIGNSHIFTR
-		| ASSIGNLXOR
-		| ASSIGNLAND
-		| ASSIGNLOR
-		| ASSIGNOR
-		| ASSIGNAND
-		| ASSIGN
-		;
-integer		: TEN_NUM
-		| OCTAL_NUM
-		| OCTAL0_NUM
-		| BINARY_NUM
-		| HEX_NUM
-		;
+simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
+                    {
+                        if ($2 == ASSIGNPOW)
+                            $$ = NewExprTree(ASSIGNPOW, BuildName("Math", "assign_pow"),
+                                                NewExprTree(ASSIGNPOW, $1, $3));
+                        else {
+                            ExprPtr left = $1;
+                            /*
+                             * Automatically declare names used in
+                             * simple assignements at the top level
+                             */
+                            if ($2 == ASSIGN && funcDepth == 0 && left->base.tag == NAME
+                                && !(left->atom.symbol)) {
+                                $1->atom.symbol = ParseNewSymbol(publish_private, class_undef,
+                                                                     typePoly, $1->atom.atom);
+                            }
+                            $$ = NewExprTree($2, $1, $3);
+                        }
+                    }
+                | opt_type FUNC namespace_start args doc_string func_right namespace_end
+                  %prec ASSIGN
+                    {
+                        ParseCanonType($1, False);
+                        $$ = NewExprCode(NewFuncCode($1, $4, $6, $5), 0);
+                    }
+                | MOD integer                                           %prec THREADID
+                    {
+                        Value t;
+                        t = do_Thread_id_to_thread($2);
+                        if (t == Void) {
+                            ParseError("No thread %v", $2);
+                            YYERROR;
+                        } else
+                            $$ = NewExprConst(THREAD_CONST, t);
+                    }
+                | TIMES simpleexpr                                      %prec STAR
+                    { $$ = NewExprTree(STAR, $2, (Expr *)0); }
+                | STARSTAR simpleexpr                                   %prec STAR
+                    { $$ = NewExprTree(STAR, NewExprTree(STAR, $2, 0), 0); }
+                | LAND simpleexpr                                       %prec AMPER
+                    { $$ = NewExprTree(AMPER, $2, (Expr *)0); }
+                | AND simpleexpr                                        %prec AMPER
+                    {
+                        $$
+                            = NewExprTree(AMPER, NewExprTree(AMPER, $2, (Expr *)0), (Expr *)0);
+                    }
+                | MINUS simpleexpr                                      %prec UMINUS
+                    { $$ = NewExprTree(UMINUS, $2, (Expr *)0); }
+                | LNOT simpleexpr
+                    { $$ = NewExprTree(LNOT, $2, (Expr *)0); }
+                | BANG simpleexpr
+                    { $$ = NewExprTree(BANG, $2, (Expr *)0); }
+                | simpleexpr BANG                                       %prec FACT
+                    {
+                        $$ = NewExprTree(FACT, BuildName("Math", "factorial"), $1);
+                    }
+                | INC simpleexpr
+                    { $$ = NewExprTree(INC, $2, (Expr *)0); }
+                | simpleexpr INC
+                    { $$ = NewExprTree(INC, (Expr *)0, $1); }
+                | DEC simpleexpr
+                    { $$ = NewExprTree(DEC, $2, (Expr *)0); }
+                | simpleexpr DEC
+                    { $$ = NewExprTree(DEC, (Expr *)0, $1); }
+                | FORK simpleexpr
+                    { $$ = NewExprTree(FORK, (Expr *)0, $2); }
+                | simpleexpr PLUS simpleexpr
+                    { $$ = NewExprTree(PLUS, $1, $3); }
+                | simpleexpr MINUS simpleexpr
+                    { $$ = NewExprTree(MINUS, $1, $3); }
+                | simpleexpr TIMES simpleexpr
+                    { $$ = NewExprTree(TIMES, $1, $3); }
+                | simpleexpr DIVIDE simpleexpr
+                    { $$ = NewExprTree(DIVIDE, $1, $3); }
+                | simpleexpr DIV simpleexpr
+                    { $$ = NewExprTree(DIV, $1, $3); }
+                | simpleexpr MOD simpleexpr
+                    { $$ = NewExprTree(MOD, $1, $3); }
+                | simpleexpr STARSTAR simpleexpr                        %prec POW
+                    {
+                        $$ = NewExprTree(POW, BuildName("Math", "pow"),
+                                            NewExprTree(POW, $1, $3));
+                    }
+                | simpleexpr POW2
+                    {
+                        $$ = NewExprTree(
+                            POW, BuildName("Math", "pow"),
+                            NewExprTree(POW, $1, NewExprConst(TEN_NUM, NewInt(2))));
+                    }
+                | simpleexpr POW3
+                    {
+                        $$ = NewExprTree(
+                            POW, BuildName("Math", "pow"),
+                            NewExprTree(POW, $1, NewExprConst(TEN_NUM, NewInt(3))));
+                    }
+                | simpleexpr SHIFTL simpleexpr
+                    { $$ = NewExprTree(SHIFTL, $1, $3); }
+                | simpleexpr SHIFTR simpleexpr
+                    { $$ = NewExprTree(SHIFTR, $1, $3); }
+                | simpleexpr QUEST simpleexpr COLON simpleexpr
+                    { $$ = NewExprTree(QUEST, $1, NewExprTree(COLON, $3, $5)); }
+                | simpleexpr LXOR simpleexpr
+                    { $$ = NewExprTree(LXOR, $1, $3); }
+                | simpleexpr LAND simpleexpr
+                    { $$ = NewExprTree(LAND, $1, $3); }
+                | simpleexpr LOR simpleexpr
+                    { $$ = NewExprTree(LOR, $1, $3); }
+                | simpleexpr AND simpleexpr
+                    { $$ = NewExprTree(AND, $1, $3); }
+                | simpleexpr OR simpleexpr
+                    { $$ = NewExprTree(OR, $1, $3); }
+                | simpleexpr EQ simpleexpr
+                    { $$ = NewExprTree(EQ, $1, $3); }
+                | simpleexpr NE simpleexpr
+                    { $$ = NewExprTree(NE, $1, $3); }
+                | simpleexpr LT simpleexpr
+                    { $$ = NewExprTree(LT, $1, $3); }
+                | simpleexpr GT simpleexpr
+                    { $$ = NewExprTree(GT, $1, $3); }
+                | simpleexpr LE simpleexpr
+                    { $$ = NewExprTree(LE, $1, $3); }
+                | simpleexpr GE simpleexpr
+                    { $$ = NewExprTree(GE, $1, $3); }
+                | fullname
+                | TEN_NUM
+                    { $$ = NewExprConst(TEN_NUM, $1); }
+                | OCTAL_NUM
+                    { $$ = NewExprConst(OCTAL_NUM, $1); }
+                | OCTAL0_NUM
+                    { $$ = NewExprConst(OCTAL0_NUM, $1); }
+                | BINARY_NUM
+                    { $$ = NewExprConst(BINARY_NUM, $1); }
+                | HEX_NUM
+                    { $$ = NewExprConst(HEX_NUM, $1); }
+                | TEN_FLOAT
+                    { $$ = NewExprConst(TEN_FLOAT, $1); }
+                | OCTAL_FLOAT
+                    { $$ = NewExprConst(OCTAL_FLOAT, $1); }
+                | OCTAL0_FLOAT
+                    { $$ = NewExprConst(OCTAL0_FLOAT, $1); }
+                | BINARY_FLOAT
+                    { $$ = NewExprConst(BINARY_FLOAT, $1); }
+                | HEX_FLOAT
+                    { $$ = NewExprConst(HEX_FLOAT, $1); }
+                | CHAR_CONST
+                    { $$ = NewExprConst(CHAR_CONST, $1); }
+                | STRING_CONST
+                    { $$ = NewExprConst(STRING_CONST, $1); }
+                | VOIDVAL
+                    { $$ = NewExprConst(VOIDVAL, $1); }
+                | BOOLVAL
+                    { $$ = NewExprConst(BOOLVAL, $1); }
+                | OS CS
+                    {
+                        $$ = BuildFullname(0, AtomId("[]"));
+                    }
+                | OP type CP namespace_start init namespace_end
+                    {
+                        ParseCanonType($2, False);
+                        if ($5)
+                            $5->base.type = $2;
+                        $$ = NewExprTree(NEW, $5, 0);
+                        $$->base.type = $2;
+                    }
+                | OP OS stars CS CP namespace_start arrayinit namespace_end
+                    {
+                        $7->base.type = NewTypeArray(typePoly, $3, True);
+                        ParseCanonType($7->base.type, False);
+                        $$ = NewExprTree(NEW, $7, 0);
+                        $$->base.type = $7->base.type;
+                    }
+                | OP OS dims CS CP namespace_start opt_arrayinit namespace_end
+                    {
+                        TypePtr t = NewTypeArray(typePoly, $3, False);
+                        ParseCanonType(t, False);
+                        $$ = NewExprTree(NEW, $7, 0);
+                        if ($7)
+                            $7->base.type = t;
+                        $$->base.type = t;
+                    }
+                | OP OS type CS CP namespace_start opt_hashinit namespace_end
+                    {
+                        TypePtr t = NewTypeHash(typePoly, $3);
+                        ParseCanonType(t, False);
+                        $$ = NewExprTree(NEW, $7, 0);
+                        if ($7)
+                            $7->base.type = t;
+                        $$->base.type = t;
+                    }
+                | type DOT NAME                                         %prec UNIONCAST
+                    {
+                        ParseCanonType($1, False);
+                        $$ = NewExprTree(UNION, NewExprAtom($3, 0, False), 0);
+                        $$->base.type = $1;
+                    }
+                | OP type DOT NAME CP simpleexpr                        %prec UNIONCAST
+                    {
+                        ParseCanonType($2, False);
+                        $$ = NewExprTree(UNION, NewExprAtom($4, 0, False), $6);
+                        $$->base.type = $2;
+                    }
+                | DOLLAR opt_integer
+                    { $$ = BuildCall("History", "fetch", 1, NewExprConst(TEN_NUM, $2)); }
+                | DOT
+                    { $$ = NewExprTree(DOLLAR, 0, 0); }
+                | OP expr CP
+                    { $$ = $2; }
+                | OP block CP
+                    { $$ = $2; }
+                | simpleexpr STAROS dims CS
+                    { $$ = NewExprTree(OS, NewExprTree(STAR, $1, (Expr *)0), $3); }
+                | simpleexpr OS dims CS
+                    { $$ = NewExprTree(OS, $1, $3); }
+                | simpleexpr OP opt_actuals CP                          %prec CALL
+                    { $$ = NewExprTree(OP, $1, $3); }
+                | ISTYPE OP simpleexpr COMMA type CP                    %prec CALL
+                    {
+                        TypePtr type = $5;
+                        ParseCanonType(type, False);
+                        $$ = NewExprType(ISTYPE, $3, type);
+                    }
+                | HASMEMBER OP simpleexpr COMMA NAME CP                 %prec CALL
+                    { $$ = NewExprTree(HASMEMBER, $3, NewExprAtom($5, 0, False)); }
+                | simpleexpr DOT NAME
+                    { $$ = NewExprTree(DOT, $1, NewExprAtom($3, 0, False)); }
+                | simpleexpr ARROW NAME
+                    { $$ = NewExprTree(ARROW, $1, NewExprAtom($3, 0, False)); }
+                ;
+opt_integer     : integer
+                |
+                    { $$ = Zero; }
+assignop        : ASSIGNPLUS
+                | ASSIGNMINUS
+                | ASSIGNTIMES
+                | ASSIGNDIVIDE
+                | ASSIGNDIV
+                | ASSIGNMOD
+                | ASSIGNPOW
+                | ASSIGNSHIFTL
+                | ASSIGNSHIFTR
+                | ASSIGNLXOR
+                | ASSIGNLAND
+                | ASSIGNLOR
+                | ASSIGNOR
+                | ASSIGNAND
+                | ASSIGN
+                ;
+integer         : TEN_NUM
+                | OCTAL_NUM
+                | OCTAL0_NUM
+                | BINARY_NUM
+                | HEX_NUM
+                ;
 /*
  * Array initializers
  */
-opt_arrayinit	: arrayinit
-		| OC CC
-		    { $$ = 0; }
-		|
-		    { $$ = 0; }
-		;
-arrayinit    	: OC arrayelts opt_comma opt_dotdotdot CC
-		    { 
-			ExprPtr	elts = $2 ? ExprRehang ($2, 0) : 0;
-			if ($4)
-			{
-			    ExprPtr i = elts;
-			    while (i->tree.right)
-				i = i->tree.right;
-			    i->tree.right = NewExprTree (COMMA, 
-							 NewExprTree (DOTDOTDOT, 0, 0),
-							 0);
-			}
-			$$ = NewExprTree (ARRAY, elts, 0); 
-		    }
-		| OC OS namespace_start compnames comparray CS comprehension namespace_end CC
-		    {
-			$$ = NewExprTree (COMP, NewExprTree (COMP, $4, $5), $7);
-		    }
-		;
-comprehension	:   ASSIGN arrayelt
-		    { $$ = $2; }
-		|   block
-		;
-compnames	: compname COMMA compnames
-		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| compname
-		;
-compname	: NAME
-		    { 
-			SymbolPtr   s;
-			s = ParseNewSymbol (publish_private, class_arg, 
-					    typePrim[rep_integer], $1);
-			$$ = NewExprAtom ($1, s, False); 
-		    }
-		;
-comparray	:
-		    {
-			SymbolPtr   s;
-			Atom	    a = AtomId("[]");
-			s = ParseNewSymbol (publish_private, class_undef,
-					    typePoly, a);
-			$$ = NewExprAtom (a, s, False);
-		    }
-		;
-arrayelts	: arrayelts COMMA arrayelt
-		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| arrayelt
-		    { $$ = NewExprTree (COMMA, 0, $1); }
-		;
-arrayelt	: simpleexpr
-		| init
-		;
+opt_arrayinit   : arrayinit
+                | OC CC
+                    { $$ = 0; }
+                |
+                    { $$ = 0; }
+                ;
+arrayinit       : OC arrayelts opt_comma opt_dotdotdot CC
+                    {
+                        ExprPtr elts = $2 ? ExprRehang($2, 0) : 0;
+                        if ($4) {
+                            ExprPtr i = elts;
+                            while (i->tree.right)
+                                i = i->tree.right;
+                            i->tree.right = NewExprTree(COMMA, NewExprTree(DOTDOTDOT, 0, 0), 0);
+                        }
+                        $$ = NewExprTree(ARRAY, elts, 0);
+                    }
+                | OC OS namespace_start compnames comparray CS comprehension namespace_end CC
+                    {
+                        $$ = NewExprTree(COMP, NewExprTree(COMP, $4, $5), $7);
+                    }
+                ;
+comprehension   :   ASSIGN arrayelt
+                    { $$ = $2; }
+                |   block
+                ;
+compnames       : compname COMMA compnames
+                    { $$ = NewExprTree(COMMA, $1, $3); }
+                | compname
+                ;
+compname        : NAME
+                    {
+                        SymbolPtr s;
+                        s = ParseNewSymbol(publish_private, class_arg, typePrim[rep_integer],
+                                           $1);
+                        $$ = NewExprAtom($1, s, False);
+                    }
+                ;
+comparray       :
+                    {
+                        SymbolPtr s;
+                        Atom      a = AtomId("[]");
+                        s = ParseNewSymbol(publish_private, class_undef, typePoly, a);
+                        $$ = NewExprAtom(a, s, False);
+                    }
+                ;
+arrayelts       : arrayelts COMMA arrayelt
+                    { $$ = NewExprTree(COMMA, $1, $3); }
+                | arrayelt
+                    { $$ = NewExprTree(COMMA, 0, $1); }
+                ;
+arrayelt        : simpleexpr
+                | init
+                ;
 
 /*
  * Hash initializers
  */
-opt_hashinit	: hashinit
-		| OC CC
-		    { $$ = 0; }
-		|
-		    { $$ = 0; }
-		;
-hashinit	: OC hashelts opt_comma CC
-		    {
-			ExprPtr elts = $2 ? ExprRehang ($2, 0) : 0;
-			$$ = NewExprTree (HASH, elts, 0);
-		    }
-		;
-hashelts	: hashelts COMMA hashelt
-		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| hashelt
-		    { $$ = NewExprTree (COMMA, 0, $1); }
-		;
-hashelt		: simpleexpr DARROW hashvalue
-		    { $$ = NewExprTree (DARROW, $1, $3); }
-		| DARROW hashvalue
-		    { $$ = NewExprTree (DARROW, 0, $2); }
-		;
-hashvalue	: simpleexpr
-		| init
-		;
-/* 
+opt_hashinit    : hashinit
+                | OC CC
+                    { $$ = 0; }
+                |
+                    { $$ = 0; }
+                ;
+hashinit        : OC hashelts opt_comma CC
+                    {
+                        ExprPtr elts = $2 ? ExprRehang($2, 0) : 0;
+                        $$ = NewExprTree(HASH, elts, 0);
+                    }
+                ;
+hashelts        : hashelts COMMA hashelt
+                    { $$ = NewExprTree(COMMA, $1, $3); }
+                | hashelt
+                    { $$ = NewExprTree(COMMA, 0, $1); }
+                ;
+hashelt         : simpleexpr DARROW hashvalue
+                    { $$ = NewExprTree(DARROW, $1, $3); }
+                | DARROW hashvalue
+                    { $$ = NewExprTree(DARROW, 0, $2); }
+                ;
+hashvalue       : simpleexpr
+                | init
+                ;
+/*
 * Structure initializers
 */
-structinit    	: OC structelts opt_comma CC
-		    { $$ = NewExprTree (STRUCT, ExprRehang ($2, 0), 0); }
-		;
-structelts	: structelts COMMA structelt
-		    { $$ = NewExprTree (COMMA, $1, $3); }
-		| structelt
-		    { $$ = NewExprTree (COMMA, 0, $1); }
-		;
-structelt	: NAME ASSIGN simpleexpr
-		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0, False), $3); }
-		| NAME ASSIGN init
-		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($1, 0, False), $3); }
-		| DOT NAME ASSIGN simpleexpr
-		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($2, 0, False), $4); }
-		| DOT NAME ASSIGN init
-		    { $$ = NewExprTree (ASSIGN, NewExprAtom ($2, 0, False), $4); }
-		;
-init		: arrayinit
-		| structinit
-		| hashinit
-		| OC CC
-		    { $$ = NewExprTree (ANONINIT, 0, 0); }
-		;
+structinit      : OC structelts opt_comma CC
+                    { $$ = NewExprTree(STRUCT, ExprRehang($2, 0), 0); }
+                ;
+structelts      : structelts COMMA structelt
+                    { $$ = NewExprTree(COMMA, $1, $3); }
+                | structelt
+                    { $$ = NewExprTree(COMMA, 0, $1); }
+                ;
+structelt       : NAME ASSIGN simpleexpr
+                    { $$ = NewExprTree(ASSIGN, NewExprAtom($1, 0, False), $3); }
+                | NAME ASSIGN init
+                    { $$ = NewExprTree(ASSIGN, NewExprAtom($1, 0, False), $3); }
+                | DOT NAME ASSIGN simpleexpr
+                    { $$ = NewExprTree(ASSIGN, NewExprAtom($2, 0, False), $4); }
+                | DOT NAME ASSIGN init
+                    { $$ = NewExprTree(ASSIGN, NewExprAtom($2, 0, False), $4); }
+                ;
+init            : arrayinit
+                | structinit
+                | hashinit
+                | OC CC
+                    { $$ = NewExprTree(ANONINIT, 0, 0); }
+                ;
 %%
 
 static void

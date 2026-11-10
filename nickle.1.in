@@ -967,7 +967,9 @@ in this space.
 The real formats will take a pair of integer format modifiers
 indicating the field width and precision (number of chars
 after decimal point) of the formatted value.  Either integer
-may be omitted.
+may be omitted.  Imprecise reals print no more digits than
+their precision supports, so the precision may yield fewer
+chars after the decimal point.
 .IP "-"
 A precision value indicating infinite
 precision.

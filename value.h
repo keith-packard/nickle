@@ -205,8 +205,6 @@ Natural        *NaturalMinus(Natural *, Natural *);
 Natural        *NaturalTimes(Natural *, Natural *);
 Natural        *NaturalLand(Natural *, Natural *);
 Natural        *NaturalLor(Natural *, Natural *);
-Natural        *NaturalCompliment(Natural *, int len);
-Natural        *NaturalNegate(Natural *, int len);
 Natural        *NaturalDivide(Natural *a, Natural *b, Natural **remp);
 Natural        *NaturalGcd(Natural *a, Natural *b);
 char           *NaturalSprint(char *, Natural *, int base, int *width);

@@ -222,70 +222,131 @@ IntegerEqual(Value av, Value bv, int expandOk)
     return FalseVal;
 }
 
-#if 0
-#define DebugN(s, n) FilePrintf(FileStdout, "%s %N\n", s, n)
-#else
-#define DebugN(s, n)
-#endif
+/*
+ * Generate the two's complement digits of an integer from its
+ * magnitude, one at a time, starting at the least significant.
+ * Past the end of the magnitude, a non-negative value extends
+ * with zeros and a negative value with ones.
+ */
+typedef struct _twosDigits {
+    digit *digits;
+    int    length;
+    digit  carry;  /* set while every lower digit was zero */
+    digit  extend; /* 0 or ~0 */
+} TwosDigits;
+
+static void
+TwosDigitsInit(TwosDigits *t, Integer *i)
+{
+    t->digits = NaturalDigits(IMag(i));
+    t->length = NaturalLength(IMag(i));
+    t->carry = ISign(i) == Negative;
+    t->extend = ISign(i) == Negative ? ~(digit)0 : 0;
+}
+
+static digit
+TwosDigitsNext(TwosDigits *t, int i)
+{
+    digit d;
+
+    if (i >= t->length)
+        return t->extend;
+    d = t->digits[i];
+    if (t->extend) {
+        d = ~d + t->carry;
+        if (d)
+            t->carry = 0;
+    }
+    return d;
+}
+
+/*
+ * Bitwise operations on two's complement values. Digits past the
+ * end of the shorter operand are all zeros or all ones, so the walk
+ * stops once those force every remaining result digit to the
+ * result's sign extension.
+ */
+static Value
+IntegerBitwise(Value av, Value bv, BinaryOp op)
+{
+    ENTER();
+    Integer   *a = &av->integer, *b = &bv->integer;
+    Bool       aneg = ISign(a) == Negative, bneg = ISign(b) == Negative;
+    int        alen = NaturalLength(IMag(a)), blen = NaturalLength(IMag(b));
+    int        shorter = alen < blen ? alen : blen;
+    int        longer = alen < blen ? blen : alen;
+    int        len, i;
+    Bool       neg;
+    digit      extend, carry, x, y;
+    digit     *r;
+    Natural   *m;
+    TwosDigits at, bt;
+
+    if (op == LandOp) {
+        neg = aneg && bneg;
+        if (aneg && bneg)
+            len = longer;
+        else if (aneg)
+            len = blen;
+        else if (bneg)
+            len = alen;
+        else
+            len = shorter;
+    } else {
+        neg = aneg || bneg;
+        if (aneg && bneg)
+            len = shorter;
+        else if (aneg)
+            len = alen;
+        else if (bneg)
+            len = blen;
+        else
+            len = longer;
+    }
+    extend = neg ? ~(digit)0 : 0;
+
+    /* One more digit for the carry when negating the result */
+    m = AllocNatural(len + 1);
+    r = NaturalDigits(m);
+    TwosDigitsInit(&at, a);
+    TwosDigitsInit(&bt, b);
+    for (i = 0; i < len; i++) {
+        x = TwosDigitsNext(&at, i);
+        y = TwosDigitsNext(&bt, i);
+        r[i] = op == LandOp ? x & y : x | y;
+    }
+
+    /* Trim the sign extension */
+    while (len > 0 && r[len - 1] == extend)
+        len--;
+
+    /* Negate a negative result in place to get its magnitude */
+    if (neg) {
+        carry = 1;
+        for (i = 0; i < len; i++) {
+            r[i] = ~r[i] + carry;
+            if (r[i])
+                carry = 0;
+        }
+        if (carry)
+            r[len++] = carry;
+    }
+    m->length = len;
+    RETURN(NewInteger(neg ? Negative : Positive, m));
+}
 
 static Value
 IntegerLand(Value av, Value bv, int expandOk)
 {
-    ENTER();
-    Value    ret;
-    Integer *a = &av->integer, *b = &bv->integer;
-    Natural *am = IMag(a), *bm = IMag(b), *m;
-
     (void)expandOk;
-    DebugN("a", am);
-    if (ISign(a) == Negative) {
-        am = NaturalNegate(am, NaturalLength(bm));
-        DebugN("-a", am);
-    }
-    DebugN("b", bm);
-    if (ISign(b) == Negative) {
-        bm = NaturalNegate(bm, NaturalLength(am));
-        DebugN("-b", bm);
-    }
-    m = NaturalLand(am, bm);
-    DebugN("m", m);
-    if (ISign(a) == Negative && ISign(b) == Negative) {
-        m = NaturalNegate(m, 0);
-        DebugN("-m", m);
-        ret = NewInteger(Negative, m);
-    } else
-        ret = NewInteger(Positive, m);
-    RETURN(ret);
+    return IntegerBitwise(av, bv, LandOp);
 }
 
 static Value
 IntegerLor(Value av, Value bv, int expandOk)
 {
-    ENTER();
-    Value    ret;
-    Integer *a = &av->integer, *b = &bv->integer;
-    Natural *am = IMag(a), *bm = IMag(b), *m;
-
     (void)expandOk;
-    DebugN("a", am);
-    if (ISign(a) == Negative) {
-        am = NaturalNegate(am, NaturalLength(bm));
-        DebugN("-a", am);
-    }
-    DebugN("b", bm);
-    if (ISign(b) == Negative) {
-        bm = NaturalNegate(bm, NaturalLength(am));
-        DebugN("-b", bm);
-    }
-    m = NaturalLor(am, bm);
-    DebugN("m", m);
-    if (ISign(a) == Negative || ISign(b) == Negative) {
-        m = NaturalNegate(m, 0);
-        DebugN("-m", m);
-        ret = NewInteger(Negative, m);
-    } else
-        ret = NewInteger(Positive, m);
-    RETURN(ret);
+    return IntegerBitwise(av, bv, LorOp);
 }
 
 static Value

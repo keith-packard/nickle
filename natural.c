@@ -228,8 +228,10 @@ DigitsAddInPlace(digit *x_orig, int xlen, digit *y, int ylen, int off)
     xlen -= off;
     if (xlen < 0) {
         x += xlen;
-        while (xlen++)
+        while (xlen < 0) {
             *x++ = 0;
+            xlen++;
+        }
     }
     while (xlen && ylen) {
         xlen--;
@@ -450,9 +452,9 @@ DigitsKaratsuba(digit *x, int xlen, digit *y, int ylen, digit *result, digit *tm
      * Allocate temp space
      */
     m1 = tmp;
-    m2 = m1 + off + 1;
-    f = tmp; /* overlay first factor on minuends */
-    next_tmp = m2 + off + 1;
+    m2 = m1 + off + 2; /* x0 + x1 may take off + 2 digits */
+    f = tmp;           /* overlay first factor on minuends */
+    next_tmp = m2 + off + 2;
 
     /*
      * Generate middle factor first
@@ -472,26 +474,28 @@ DigitsKaratsuba(digit *x, int xlen, digit *y, int ylen, digit *result, digit *tm
     }
 
     /*
+     * Compute third factor. This comes before the first factor,
+     * and each factor is subtracted before it is added, so that
+     * every intermediate value lies between zero and the final
+     * product and fits in the result.
+     */
+    if (x0len && y0len) {
+        flen = DigitsKaratsuba(x0, x0len, y0, y0len, f, next_tmp);
+        if (aborting)
+            return rlen;
+        rlen = DigitsSubInPlace(result, rlen, f, flen, off);
+        rlen = DigitsAddInPlace(result, rlen, f, flen, 0);
+    }
+
+    /*
      * Compute first factor
      */
     if (x1len && y1len) {
         flen = DigitsKaratsuba(x1, x1len, y1, y1len, f, next_tmp);
         if (aborting)
             return rlen;
+        rlen = DigitsSubInPlace(result, rlen, f, flen, off);
         rlen = DigitsAddInPlace(result, rlen, f, flen, off2);
-        rlen = DigitsSubInPlace(result, rlen, f, flen, off);
-    }
-
-    /*
-     * Compute third factor
-     */
-
-    if (x0len && y0len) {
-        flen = DigitsKaratsuba(x0, x0len, y0, y0len, f, next_tmp);
-        if (aborting)
-            return rlen;
-        rlen = DigitsAddInPlace(result, rlen, f, flen, 0);
-        rlen = DigitsSubInPlace(result, rlen, f, flen, off);
     }
     return rlen;
 }

@@ -720,7 +720,9 @@ too low.
 Return the exponent of the imprecise real v.
 .IP "rational mantissa(real v)"
 Return the mantissa of the imprecise real
-v, as a rational m with 0 <= m <= 0.5 .
+v, as a rational m with the sign of v and 0.5 <= abs(m) < 1,
+so that v == m * 2**exponent(v).
+The mantissa of zero is 0.
 .IP "int numerator(rational v)"
 Return the numerator of the rational
 number v: i.e., if v = n/d in reduced form,

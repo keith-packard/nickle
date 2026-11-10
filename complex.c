@@ -38,22 +38,23 @@ ComplexTimes(Value av, Value bv, int expandOk)
     RETURN(ret);
 }
 
-static Value
-ComplexRecip(Value av)
-{
-    ENTER();
-    Value modsq = Plus(Times(av->complex.r, av->complex.r), Times(av->complex.i, av->complex.i));
-    Value ret = NewValueComplex(Divide(av->complex.r, modsq), Divide(Negate(av->complex.i), modsq));
-    RETURN(ret);
-}
-
+/*
+ * (a + bi) / (c + di) = ((ac + bd) + (bc - ad)i) / (c² + d²)
+ *
+ * Computing the reciprocal of bv first doesn't work: when bv is real,
+ * NewValueComplex reduces the reciprocal to a real, which
+ * ComplexTimes can't take apart
+ */
 static Value
 ComplexDivide(Value av, Value bv, int expandOk)
 {
     (void)expandOk;
     ENTER();
-    Value recip = ComplexRecip(bv);
-    Value ret = ComplexTimes(av, recip, expandOk);
+    Value a = av->complex.r, b = av->complex.i;
+    Value c = bv->complex.r, d = bv->complex.i;
+    Value modsq = Plus(Times(c, c), Times(d, d));
+    Value ret = NewValueComplex(Divide(Plus(Times(a, c), Times(b, d)), modsq),
+                                Divide(Minus(Times(b, c), Times(a, d)), modsq));
     RETURN(ret);
 }
 

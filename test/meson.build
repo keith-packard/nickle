@@ -7,6 +7,7 @@
 tests = [
   'scanf.5c',
   'gcdtest.5c',
+  'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',
   'orderofoptest.5c',

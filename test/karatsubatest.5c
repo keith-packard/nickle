@@ -1,0 +1,75 @@
+/*
+ * Nickle test suite
+ *
+ * Karatsuba multiplication tests
+ *
+ * Products of naturals of at least KARATSUBA_LIMIT (100) digits use
+ * Karatsuba multiplication. Check them against products built from
+ * pieces small enough to use grade-school multiplication.
+ */
+
+autoimport PRNG;
+
+exception bad_product (int a, int b);
+
+/* Pieces of 64 32-bit digits stay below KARATSUBA_LIMIT */
+int piece_bits = 2048;
+
+int function grade_school_times (int a, int b)
+{
+    int	r = 0;
+    int	mask = (1 << piece_bits) - 1;
+
+    for (int shift = 0; b != 0; shift += piece_bits) {
+	r += (a * (b & mask)) << shift;
+	b >>= piece_bits;
+    }
+    return r;
+}
+
+void function check_product (int a, int b)
+{
+    int	should = grade_school_times (a, b);
+
+    if (a * b != should || b * a != should)
+	raise bad_product (a, b);
+}
+
+void function check_ones (int abits, int bbits)
+{
+    int	a = (1 << abits) - 1;
+    int	b = (1 << bbits) - 1;
+
+    check_product (a, b);
+    if (a * b != (1 << (abits + bbits)) - (1 << abits) - (1 << bbits) + 1)
+	raise bad_product (a, b);
+}
+
+/*
+ * These operands crashed nickle with a heap buffer overflow: the
+ * longer one has an odd number of digits and its halves sum to
+ * more digits than the scratch space held.
+ */
+void function check_regression ()
+{
+    int a = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd83648254cc4529540000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000251a7dc9287839cb771fe0660f13b8155fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff09f465fe3d789033531c8b6df0a0e81f28ec0720ade733b4000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000263da446ad403df598211a4edea14e07dd6191b6be017d6c4f7680e2776a8cb1;
+    int b = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff60d9209533114a5500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002e611d3b7296483e54e7d880473ea6186c65fffcffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff684a152e96ad8bb512093cb61cadf8b167047f4b5957beb682b99d2e800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000075e547da0e21521cd8369ecaa5d7bff1bcc892d0a9a060be9ec2fb2dfeaba51a6dba984b4b663ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff69132b4a1dc41c7e03f4f88b6bcb24e097c4375530fc2cbdceb097f10d0f2e5d71c5f2a9e9d485591b4ec042000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002eea0192eb35ac3b2ceb5b3d8e4d88c29aeba3267680d01a46114de63368546a17e18447bbb9844e0945a71e376a707bde9f49d580268b0ccbffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa61df8f2a2d63ac775c5a03d9036df47b429976bc85b7ed9bab75fae650a1b631a323f79d55a03a6568e5e0799e1678c943d3956d32bea82cf9f68a9b7720000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006fc220b3caef214d6740dbe8452c6e9ee264bd325f2cd5e60dbf69055749368baf9e506788e2504e45cb70c81651287d9a9a771c430ef7463798bc60e4f5fb0022a87bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff614d4f61b25e31d6c72deb46df5ba26959323bcc223002c964dc942fdc7f5b336677e148b178de4756cf8f27c2cbd91150d5b1ad657e2b78546f41bbf1d983d6c6aec39a465bc200700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000450ff4e77b044b67e47bd6dfa644346700a71f259ac338a2d0cee39c8ed0ecff24f671a808ad264958382e68dd0cfb63e6136d18532c18dd34e6425588940f1c3b7e9eed35e6341a5ce6616421387c2a07fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe894b13a4575681a061609df3e7e7eaf5c032530c6c4d31842ed4d84453a143ec8c3ace9a58cb3875e172e69f509a4923d99758d48ec87de757c2722f55e3efef1d0b0afd479a08d45f4fec08a9da8eb08e005e3fb4a2199d000000000000000000000000000000000000000000000000000000000000061100747a40d299317662132e702fc274848496efe9a0934bf6bcfc6a7d7082141ab05adda96d06fca245e3610b64cfb0c1401c53d02ef520ee76cb7aaca91536841a6d29d5a5462f5b8c338622a01654e4dbaee14784ea29416b8815685894dbffffffffffffffffffffffffffffffffffffffffffffed6edd0b112b01de7a64fe6052d2b9faf8655d59931b84cd9685cfe5db476cfb9f04537eb58cdd6995291c3966918aadb2d54f4b1dc78892f8b30269a2665cd55d914dc2852d247684db636d8c16e2ba991e3cea23c8f831f0df943750de1f8be075a7d2fae7a28f00000000000000000000000000000027934d00885b00bc9429afce6182a858dc9d8001a8adc2334a6975307d1d101c5319f22f68910313e72b3daa89bcbab0e9ef5147d9401e73d6eb11d4cb16bd709df029750fae8a6a329f284f88fd617a00cde7867a58aa5032a74b35873d8ab4681f14e054a671a620e3731e73a47e37ffffffffffffffcb8334d85aa14c0b9b097ab4a5c44cf811c06a14745f5e4acda0dd861ffc9e8ac0138ebb9317b574db42770b9d5b31d4d2f33a86635070831111f62508bae83e231cedffe15f79260c92896e90284a2ae9e8606a7d9acc6770aace2d4a0acc957703d741c06d49718540692cc44920eb2c7755c32a48bd20a17a82624068733a96715f9b929ce592b1ababd54b1cc47646dab21bdf8f331223fc46ce79c992a102a3e198d3f4e57176e7291d914cf352b302e37d7e6e9c0ddaded398f10b6dd266509e14d7138bac58c2c3585501a586089fe10518f43bf13cdb812ff81d39fbeea8efc1815e7212192101dd74545bbec231819dc8c1;
+
+    check_product (a, b);
+}
+
+void function check_sizes ()
+{
+    /* Digit counts of both parities, balanced and unbalanced */
+    int[*] digits = { 100, 101, 127, 128, 199, 200, 253, 254, 506, 507 };
+
+    for (int i = 0; i < dim (digits); i++)
+	for (int j = 0; j < dim (digits); j++) {
+	    check_ones (digits[i] * 32, digits[j] * 32);
+	    check_product (randbits (digits[i] * 32) | 1 << (digits[i] * 32 - 1),
+			   randbits (digits[j] * 32) | 1 << (digits[j] * 32 - 1));
+	}
+}
+
+check_regression ();
+check_sizes ();

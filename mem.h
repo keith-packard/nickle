@@ -49,7 +49,7 @@ typedef unsigned long PtrInt;
 
 struct block {
     struct block *next;
-    int           sizeIndex;
+    size_t        sizeIndex; /* byte size for huge blocks */
 };
 
 /* make sure we can store doubles in blocks */

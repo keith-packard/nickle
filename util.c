@@ -28,7 +28,7 @@ double x0, y0, x1, y1;
 DataType TempType = { 0, 0, "TempType" };
 
 void *
-AllocateTemp(int size)
+AllocateTemp(size_t size)
 {
     DataType **b;
 

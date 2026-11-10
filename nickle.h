@@ -736,7 +736,7 @@ void  IoInterrupt(void);
 void  FileFini(void);
 void  ProcessInterrupt(void);
 
-void *AllocateTemp(int size);
+void *AllocateTemp(size_t size);
 
 typedef struct _ProfileData {
     double_digit sub;

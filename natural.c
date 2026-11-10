@@ -552,7 +552,7 @@ NaturalTimes(Natural *a, Natural *b)
     Natural *result;
     int      rlen;
     digit   *tmp;
-    int      tmp_len;
+    size_t   tmp_len;
 
     if (length(a) < KARATSUBA_LIMIT || length(b) < KARATSUBA_LIMIT) {
         if (zeroNp(a) || zeroNp(b))
@@ -569,7 +569,7 @@ NaturalTimes(Natural *a, Natural *b)
         else
             rlen = length(b) << 1;
         result = AllocNatural(rlen);
-        tmp_len = rlen << 3;
+        tmp_len = (size_t)rlen << 3;
         tmp = AllocateTemp(tmp_len * sizeof(digit));
         rlen = DigitsKaratsuba(data(a), length(a), data(b), length(b), data(result), tmp);
         if (aborting)

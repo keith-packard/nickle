@@ -876,7 +876,7 @@ ValueHash(Value v)
     rep = ValueRep(v);
     if (!rep->hash)
         return Zero;
-    return NewInt((*rep->hash)(v)&MAX_NICKLE_INT);
+    return NewInt((int)((*rep->hash)(v)&MAX_NICKLE_INT));
 }
 
 static Value

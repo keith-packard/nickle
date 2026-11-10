@@ -170,9 +170,9 @@ typedef unsigned short digit;
 #define ModBase(t) ((t) & (((double_digit)1 << LBASE2) - 1))
 #define DivBase(t) ((t) >> LBASE2)
 
-/* HashValues are stored in rep_int */
+/* Hash codes; ValueHash masks them to fit in rep_int */
 
-typedef int HashValue;
+typedef size_t HashValue;
 
 /*
  * Natural numbers form the basis for both the Integers and Rationals,
@@ -963,15 +963,15 @@ typedef union _value {
     HashTable    hash;
 } ValueRec;
 
-typedef Value (*Binary)(Value, Value, int);
+typedef Value     (*Binary)(Value, Value, int);
 
-typedef Value (*Unary)(Value, int);
+typedef Value     (*Unary)(Value, int);
 
-typedef Value (*Promote)(Value, Value);
+typedef Value     (*Promote)(Value, Value);
 
-typedef Value (*Coerce)(Value);
+typedef Value     (*Coerce)(Value);
 
-typedef int   (*Hash)(Value);
+typedef HashValue (*Hash)(Value);
 
 #define DEFAULT_OUTPUT_PRECISION  -1
 #define INFINITE_OUTPUT_PRECISION -2

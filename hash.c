@@ -53,8 +53,8 @@ Find(HashTablePtr ht, Value hash, Value key)
 {
     HashSetPtr hs = ht->hashSet;
     ptrdiff_t  size = hs->size;
-    HashValue  h = ValueInt(hash);
-    ptrdiff_t  elt = h % size;
+    HashValue  h = (HashValue)ValueInt(hash);
+    ptrdiff_t  elt = (ptrdiff_t)(h % (HashValue)size);
     ptrdiff_t  step = 0;
     Value     *elts = BoxElements(ht->elts);
     Value     *er, *del = 0;
@@ -79,7 +79,7 @@ Find(HashTablePtr ht, Value hash, Value key)
             break;
         }
         if (!step) {
-            step = h % hs->rehash;
+            step = (ptrdiff_t)(h % (HashValue)hs->rehash);
             if (!step)
                 step = 1;
         }

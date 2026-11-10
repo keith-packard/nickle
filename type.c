@@ -1296,7 +1296,7 @@ TypeCompatibleAssign(TypePtr a, Value b)
             if (TypePoly(a->hash.type))
                 return True;
             if (TypePoly(b->hash.type)) {
-                HashValue h;
+                ptrdiff_t h;
                 Value    *e = BoxElements(b->hash.elts);
 
                 for (h = 0; h < b->hash.hashSet->size; h++) {
@@ -1427,7 +1427,7 @@ ValueIsType(Value b, TypePtr a)
             if (TypePoly(a->hash.type))
                 return True;
             if (TypePoly(b->hash.type)) {
-                HashValue h;
+                ptrdiff_t h;
                 Value    *e = BoxElements(b->hash.elts);
 
                 for (h = 0; h < b->hash.hashSet->size; h++) {

@@ -30,7 +30,7 @@ ForeignPrint(Value f, Value av, char format, int base, int width, int prec, int 
 static HashValue
 ForeignHash(Value av)
 {
-    return (HashValue)(intptr_t)av->foreign.data;
+    return (HashValue)(uintptr_t)av->foreign.data;
 }
 
 static void

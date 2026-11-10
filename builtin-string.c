@@ -79,9 +79,10 @@ Value
 do_String_new(Value av)
 {
     ENTER();
-    Value ret;
-    int   len, i, size;
-    char *s;
+    Value     ret;
+    ptrdiff_t len, i;
+    long      size;
+    char     *s;
 
     if (ValueIsArray(av) && av->array.ndim == 1) {
         len = ArrayLimits(&av->array)[0];

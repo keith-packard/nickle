@@ -686,7 +686,7 @@ typedef struct _foreign {
 
 typedef struct _boxVector {
     DataType *data;
-    int       nvalues;
+    ptrdiff_t nvalues;
     TypePtr   type;
     BoxPtr    boxes[0];
 } BoxVector, *BoxVectorPtr;
@@ -705,7 +705,7 @@ typedef struct _array {
         BoxPtr       fix;
         BoxVectorPtr resize;
     } u;
-    int dims[0];
+    ptrdiff_t dims[0];
 } Array;
 
 typedef struct _io_chain {
@@ -783,7 +783,7 @@ extern int         AddBoxType(BoxTypesPtr *btp, TypePtr t);
 typedef struct _ref {
     BaseValue base;
     BoxPtr    box;
-    int       element;
+    ptrdiff_t element;
 } Ref;
 
 typedef struct _structType {
@@ -1021,8 +1021,8 @@ IntegerSign(Value i)
 typedef struct _boxReplace {
     DataType *data;
     BoxPtr new;
-    int oldstride;
-    int newstride;
+    ptrdiff_t oldstride;
+    ptrdiff_t newstride;
 } BoxReplace, *BoxReplacePtr;
 
 typedef struct _box {
@@ -1053,13 +1053,13 @@ BoxElements(Box *box)
 }
 
 static inline Value
-BoxValueSet(Box *box, long e, Value v)
+BoxValueSet(Box *box, ptrdiff_t e, Value v)
 {
     return BoxElements(box)[e] = v;
 }
 
 static inline Value
-BoxValueGet(Box *box, long e)
+BoxValueGet(Box *box, ptrdiff_t e)
 {
     return BoxElements(box)[e];
 }
@@ -1079,7 +1079,7 @@ _BoxReplace(Box *box)
 #define BoxReplace(box) _BoxReplace(box)
 
 static inline TypePtr
-_BoxType(Box *box, long e)
+_BoxType(Box *box, ptrdiff_t e)
 {
     BoxCheck(box);
     if (box->homogeneous)
@@ -1090,10 +1090,10 @@ _BoxType(Box *box, long e)
 
 #define BoxType(box, e) _BoxType(box, e)
 
-extern BoxPtr NewBox(Bool constant, Bool array, int nvalues, TypePtr type);
+extern BoxPtr NewBox(Bool constant, Bool array, ptrdiff_t nvalues, TypePtr type);
 extern BoxPtr NewTypedBox(Bool array, BoxTypesPtr types);
-void          BoxSetReplace(BoxPtr old, BoxPtr new, int oldstride, int newstride);
-BoxPtr        BoxRewrite(BoxPtr box, int *ep);
+void          BoxSetReplace(BoxPtr old, BoxPtr new, ptrdiff_t oldstride, ptrdiff_t newstride);
+BoxPtr        BoxRewrite(BoxPtr box, ptrdiff_t *ep);
 
 typedef struct {
     DataType *data;
@@ -1113,7 +1113,7 @@ DataCacheValues(DataCache *vc)
     return (void *)vc->values;
 }
 
-static inline int *
+static inline ptrdiff_t *
 ArrayDims(Array *a)
 {
     return a->dims;
@@ -1122,7 +1122,7 @@ ArrayDims(Array *a)
 #define ArrayLimits(a) (ArrayDims(a) + (a)->ndim)
 #define ArrayConstant
 
-static inline long
+static inline ptrdiff_t
 ArrayNvalues(Array *a)
 {
     if (a->resizable)
@@ -1132,7 +1132,7 @@ ArrayNvalues(Array *a)
 }
 
 static inline BoxPtr
-ArrayValueBox(Array *a, long i)
+ArrayValueBox(Array *a, ptrdiff_t i)
 {
     if (a->resizable)
         return BoxVectorBoxes(a->u.resize)[i];
@@ -1140,8 +1140,8 @@ ArrayValueBox(Array *a, long i)
         return a->u.fix;
 }
 
-static inline int
-ArrayValueElt(Array *a, long i)
+static inline ptrdiff_t
+ArrayValueElt(Array *a, ptrdiff_t i)
 {
     if (a->resizable)
         return 0;
@@ -1162,7 +1162,7 @@ ArrayType(Array *a)
 #define ArrayValueGet(a, i) (BoxValueGet(ArrayValueBox(a, i), ArrayValueElt(a, i)))
 
 static inline void
-ArrayValueSet(Array *a, long i, Value v)
+ArrayValueSet(Array *a, ptrdiff_t i, Value v)
 {
     BoxValueSet(ArrayValueBox(a, i), ArrayValueElt(a, i), v);
 }
@@ -1233,30 +1233,34 @@ extern DataCachePtr refCache;
 Value               NewString(long length);
 Value               NewStrString(const char *);
 Value               NewCharString(int c);
-Value               NewArray(Bool constant, Bool resizable, TypePtr type, int ndim, int *dims);
-void                ArrayResize(Value av, int dim, int size);
-void                ArraySetDimensions(Value av, int *dims);
-Value               NewHash(Bool constant, TypePtr keyType, TypePtr valueType);
-Value               HashGet(Value hv, Value key);
-void                HashSet(Value hv, Value key, Value value);
-void                HashSetDef(Value hv, Value def);
-Value               HashKeys(Value hv);
-Value               HashRef(Value hv, Value key);
-Value               HashTest(Value hv, Value key);
-void                HashDelete(Value hv, Value key);
-Value               HashCopy(Value hv);
+/* The most elements an array may have, keeping its byte size representable */
+#define ARRAY_MAX_VALUES (PTRDIFF_MAX / (ptrdiff_t)sizeof(Value))
 
-Value               NewFile(int fd);
-Value               NewRefReal(BoxPtr box, int element, Value *re);
-char               *StringNextChar(char *src, unsigned *dst, long *length);
-int                 StringPutChar(unsigned c, char *dest);
-int                 StringLength(char *src, long length);
-int                 StringCharSize(unsigned c);
-unsigned            StringGet(char *src, long len, int i);
-char               *StrzPart(Value, char *error);
+Bool     ArrayDimsOk(int ndim, ptrdiff_t *dims);
+Value    NewArray(Bool constant, Bool resizable, TypePtr type, int ndim, ptrdiff_t *dims);
+void     ArrayResize(Value av, int dim, ptrdiff_t size);
+void     ArraySetDimensions(Value av, ptrdiff_t *dims);
+Value    NewHash(Bool constant, TypePtr keyType, TypePtr valueType);
+Value    HashGet(Value hv, Value key);
+void     HashSet(Value hv, Value key, Value value);
+void     HashSetDef(Value hv, Value def);
+Value    HashKeys(Value hv);
+Value    HashRef(Value hv, Value key);
+Value    HashTest(Value hv, Value key);
+void     HashDelete(Value hv, Value key);
+Value    HashCopy(Value hv);
+
+Value    NewFile(int fd);
+Value    NewRefReal(BoxPtr box, ptrdiff_t element, Value *re);
+char    *StringNextChar(char *src, unsigned *dst, long *length);
+int      StringPutChar(unsigned c, char *dest);
+int      StringLength(char *src, long length);
+int      StringCharSize(unsigned c);
+unsigned StringGet(char *src, long len, int i);
+char    *StrzPart(Value, char *error);
 
 static inline Value
-NewRef(BoxPtr box, int element)
+NewRef(BoxPtr box, ptrdiff_t element)
 {
     int    c = (PtrToUInt(&BoxElements(box)[element])) % REF_CACHE_SIZE;
     Value *re = (Value *)(DataCacheValues(refCache)) + c;

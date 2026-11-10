@@ -1697,9 +1697,9 @@ ExprPtr
 BuildRawname(ExprPtr colonnames, Atom name)
 {
     ENTER();
-    int     len;
-    Value   array;
-    ExprPtr e;
+    ptrdiff_t len;
+    Value     array;
+    ExprPtr   e;
 
     len = 1;
     for (e = colonnames; e; e = e->tree.left)

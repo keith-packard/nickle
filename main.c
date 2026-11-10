@@ -42,10 +42,10 @@ static void
 setArgv(int argc, char **argv)
 {
     ENTER();
-    Value args;
-    int   i;
+    Value     args;
+    ptrdiff_t i;
 
-    args = NewArray(True, True, typePrim[rep_string], 1, &argc);
+    args = NewArray(True, True, typePrim[rep_string], 1, &(ptrdiff_t) { argc });
     for (i = 0; i < argc; i++)
         ArrayValueSet(&args->array, i, NewStrString(argv[i]));
     setVar(GlobalNamespace, "argv", args,

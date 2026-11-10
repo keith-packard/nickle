@@ -10,17 +10,17 @@ static Value
 RefPlus(Value av, Value bv, int expandOk)
 {
     ENTER();
-    int  i;
-    Ref *ref;
+    ptrdiff_t i;
+    Ref      *ref;
 
     (void)expandOk;
     if (ValueIsInt(av)) {
-        i = IntPart(av, "Attempt to add non-integer to reference type");
+        i = PtrdiffPart(av, "Attempt to add non-integer to reference type");
         if (aborting)
             RETURN(Void);
         ref = &bv->ref;
     } else if (ValueIsInt(bv)) {
-        i = IntPart(bv, "Attempt to add non-integer to reference type");
+        i = PtrdiffPart(bv, "Attempt to add non-integer to reference type");
         if (aborting)
             RETURN(Void);
         ref = &av->ref;
@@ -40,19 +40,19 @@ static Value
 RefMinus(Value av, Value bv, int expandOk)
 {
     ENTER();
-    int  i;
-    int  element;
-    Ref *ref, *bref;
+    ptrdiff_t i;
+    ptrdiff_t element;
+    Ref      *ref, *bref;
 
     (void)expandOk;
     if (ValueIsInt(av)) {
-        i = IntPart(av, "Attempt to subtract non-integer to reference type");
+        i = PtrdiffPart(av, "Attempt to subtract non-integer to reference type");
         if (aborting)
             RETURN(Void);
         ref = &bv->ref;
         element = -ref->element;
     } else if (ValueIsInt(bv)) {
-        i = -IntPart(bv, "Attempt to subtract non-integer to reference type");
+        i = -PtrdiffPart(bv, "Attempt to subtract non-integer to reference type");
         if (aborting)
             RETURN(Void);
         ref = &av->ref;
@@ -66,7 +66,7 @@ RefMinus(Value av, Value bv, int expandOk)
                                    bv);
             RETURN(Void);
         }
-        RETURN(NewInt(ref->element - bref->element));
+        RETURN(NewPtrdiffInteger(ref->element - bref->element));
     }
     i = i + element;
     if (i < 0 || (unsigned long)i >= ref->box->nvalues
@@ -173,7 +173,7 @@ ValueRep RefRep = {
 DataCachePtr refCache;
 
 Value
-NewRefReal(BoxPtr box, int element, Value *re)
+NewRefReal(BoxPtr box, ptrdiff_t element, Value *re)
 {
     ENTER();
     Value ret = ALLOCATE(&RefRep.data, sizeof(Ref));

@@ -854,7 +854,7 @@ ValueIncDec(Value v, BinaryOp o)
 }
 
 static inline Value
-BoxValue(BoxPtr box, int e)
+BoxValue(BoxPtr box, ptrdiff_t e)
 {
     Value v = BoxElements(box)[e];
     if (!v) {

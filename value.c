@@ -802,10 +802,10 @@ Value
 CopyMutable(Value v)
 {
     ENTER();
-    Value  nv;
-    int    i;
-    BoxPtr box, nbox;
-    int    n;
+    Value     nv;
+    ptrdiff_t i;
+    BoxPtr    box, nbox;
+    ptrdiff_t n;
 
     switch (ValueTag(v)) {
     case rep_array:
@@ -816,8 +816,8 @@ CopyMutable(Value v)
         for (i = 0; i < v->array.ndim; i++)
             ArrayLimits(&nv->array)[i] = ArrayLimits(&v->array)[i];
         if (v->array.resizable) {
-            BoxPtr *o, *n;
-            int     l = ArrayNvalues(&v->array);
+            BoxPtr   *o, *n;
+            ptrdiff_t l = ArrayNvalues(&v->array);
             o = BoxVectorBoxes(v->array.u.resize);
             n = BoxVectorBoxes(nv->array.u.resize);
             for (i = 0; i < l; i++) {

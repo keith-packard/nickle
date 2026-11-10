@@ -420,10 +420,10 @@ HashKeys(Value hv)
 {
     ENTER();
     HashTablePtr ht = &hv->hash;
-    int          dim = ht->count;
+    ptrdiff_t    dim = ht->count;
     Value        keys = NewArray(False, True, ht->keyType, 1, &dim);
     HashValue    h;
-    int          i = 0;
+    ptrdiff_t    i = 0;
     Value       *e = BoxElements(ht->elts);
 
     for (h = ht->hashSet->size; h > 0; h--) {

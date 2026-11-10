@@ -366,12 +366,12 @@ Value
 do_File_filter(Value path, Value argv, Value filev)
 {
     ENTER();
-    char  *p = StrzPart(path, "invalid program path");
-    char **args;
-    int    argc;
-    Value  arg;
-    Value  ret;
-    int    err;
+    char     *p = StrzPart(path, "invalid program path");
+    char    **args;
+    ptrdiff_t argc;
+    Value     arg;
+    Value     ret;
+    int       err;
 
     if (!p)
         RETURN(Void);

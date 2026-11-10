@@ -769,12 +769,12 @@ Value
 FileFilter(char *program, char *args[], Value filev, int *errp)
 {
     ENTER();
-    int pid;
-    int errcode, nread;
-    int i;
-    int errpipe[2];
-    int fdlimit;
-    int fds[3];
+    int       pid;
+    int       errcode, nread;
+    ptrdiff_t i;
+    int       errpipe[2];
+    int       fdlimit;
+    int       fds[3];
 
     /* set up process files */
     for (i = 0; i < 3; i++) {
@@ -782,19 +782,19 @@ FileFilter(char *program, char *args[], Value filev, int *errp)
         if (i == 0 && !(f->file.flags & FileReadable)) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("File::filter: process input not readable"),
-                                   NewInt(i), f);
+                                   NewPtrdiffInteger(i), f);
             RETURN(Void);
         }
         if (i == 1 && !(f->file.flags & FileWritable)) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("File::filter: process output not writable"),
-                                   NewInt(i), f);
+                                   NewPtrdiffInteger(i), f);
             RETURN(Void);
         }
         if (i == 2 && !(f->file.flags & FileWritable)) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("File::filter: process error not writable"),
-                                   NewInt(i), f);
+                                   NewPtrdiffInteger(i), f);
             RETURN(Void);
         }
         fds[i] = f->file.fd;
@@ -848,7 +848,6 @@ FileMakePipe(int *errp)
 {
     ENTER();
     Value file, files;
-    int   two = 2;
     int   fds[2];
 
     if (pipe(fds) < 0) {
@@ -857,7 +856,7 @@ FileMakePipe(int *errp)
     }
 
     /* gather and return results */
-    files = NewArray(False, False, typePrim[rep_file], 1, &two);
+    files = NewArray(False, False, typePrim[rep_file], 1, &(ptrdiff_t) { 2 });
     file = FileCreate(fds[0], FileReadable);
     file->file.flags |= FilePipe;
     ArrayValueSet(&files->array, 0, file);

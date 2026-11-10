@@ -509,7 +509,7 @@ do_dim(Value av)
                                NewInt(0), av);
         RETURN(Void);
     }
-    ret = NewInt(ArrayLimits(&av->array)[0]);
+    ret = NewPtrdiffInteger(ArrayLimits(&av->array)[0]);
     RETURN(ret);
 }
 
@@ -517,13 +517,13 @@ Value
 do_dims(Value av)
 {
     ENTER();
-    Value ret;
-    int   i;
-    int   ndim = av->array.ndim;
+    Value     ret;
+    ptrdiff_t i;
+    int       ndim = av->array.ndim;
 
-    ret = NewArray(True, False, typePrim[rep_int], 1, &ndim);
+    ret = NewArray(True, False, typePrim[rep_int], 1, &(ptrdiff_t) { ndim });
     for (i = 0; i < ndim; i++) {
-        Value d = NewInt(ArrayLimits(&av->array)[i]);
+        Value d = NewPtrdiffInteger(ArrayLimits(&av->array)[i]);
         ArrayValueSet(&ret->array, ndim - i - 1, d);
     }
     RETURN(ret);
@@ -536,9 +536,9 @@ do_setdims(Value av, Value dv)
     Array *a = &av->array;
     Array *d = &dv->array;
 #define DIM_LOCAL 32
-    int  dimLocal[DIM_LOCAL];
-    int *dims = a->ndim < DIM_LOCAL ? dimLocal : AllocateTemp(a->ndim * sizeof(int));
-    int  i;
+    ptrdiff_t  dimLocal[DIM_LOCAL];
+    ptrdiff_t *dims = a->ndim < DIM_LOCAL ? dimLocal : AllocateTemp(a->ndim * sizeof(ptrdiff_t));
+    ptrdiff_t  i;
 
     if (a->ndim != ArrayNvalues(d)) {
         RaiseStandardException(
@@ -554,16 +554,18 @@ do_setdims(Value av, Value dv)
     }
     for (i = 0; i < a->ndim; i++) {
         int j = a->ndim - 1 - i;
-        dims[j] = IntPart(ArrayValue(d, i), "setdims: invalid dimension");
+        dims[j] = PtrdiffPart(ArrayValue(d, i), "setdims: invalid dimension");
         if (aborting)
             RETURN(Void);
         if (dims[j] < 0) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("setdims: dimensions must be non-negative"),
-                                   NewInt(i), NewInt(dims[j]));
+                                   NewPtrdiffInteger(i), NewPtrdiffInteger(dims[j]));
             RETURN(Void);
         }
     }
+    if (!ArrayDimsOk(a->ndim, dims))
+        RETURN(Void);
     ArraySetDimensions(av, dims);
     RETURN(Void);
 }
@@ -572,7 +574,7 @@ Value
 do_setdim(Value av, Value dv)
 {
     ENTER();
-    int d = IntPart(dv, "setdim: invalid dimension");
+    ptrdiff_t d = PtrdiffPart(dv, "setdim: invalid dimension");
     if (aborting)
         RETURN(Void);
     if (d < 0) {

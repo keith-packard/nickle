@@ -1277,7 +1277,7 @@ TypeCompatibleAssign(TypePtr a, Value b)
                 if (TypePoly(a->array.type))
                     return True;
                 if (TypePoly(ArrayType(&b->array))) {
-                    int i;
+                    ptrdiff_t i;
 
                     for (i = 0; i < ArrayNvalues(&b->array); i++) {
                         Value v = ArrayValueGet(&b->array, i);
@@ -1408,7 +1408,7 @@ ValueIsType(Value b, TypePtr a)
                 if (TypePoly(a->array.type))
                     return True;
                 if (TypePoly(ArrayType(&b->array))) {
-                    int i;
+                    ptrdiff_t i;
 
                     for (i = 0; i < ArrayNvalues(&b->array); i++) {
                         Value v = ArrayValueGet(&b->array, i);

@@ -32,7 +32,7 @@ BuildFrame(Value thread, Value func, Value value, Bool staticInit, Bool tail, Bo
     CodePtr      code = func->func.code;
     FuncBodyPtr  body = staticInit ? &code->func.staticInit : &code->func.body;
     StackObject *cstack = thread->thread.continuation.stack;
-    int          fe;
+    ptrdiff_t    fe;
     FramePtr     frame;
 
 #ifdef DEBUG_FRAME
@@ -47,8 +47,8 @@ BuildFrame(Value thread, Value func, Value value, Bool staticInit, Bool tail, Bo
     for (fe = 0; fe < nformal; fe++)
         BoxValueSet(frame->frame, fe, Copy(Arg(fe)));
     if (varargs) {
-        int   extra = argc - nformal;
-        Value array;
+        ptrdiff_t extra = argc - nformal;
+        Value     array;
 
         array = NewArray(True, False, typePoly, 1, &extra);
         BoxValueSet(frame->frame, fe, array);
@@ -250,11 +250,11 @@ ThreadAssign(Value ref, Value v, Bool initialize)
     else if (ref->ref.element < 0 || (unsigned long)ref->ref.element >= ref->ref.box->nvalues)
         RaiseStandardException(exception_invalid_array_bounds, 3,
                                NewStrString("assignment outside of array"),
-                               NewInt(ref->ref.element), v);
+                               NewPtrdiffInteger(ref->ref.element), v);
     else if (!TypeCompatibleAssign(RefType(ref), v)) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("Incompatible types in assignment"),
-                               NewInt(ref->ref.element), v);
+                               NewPtrdiffInteger(ref->ref.element), v);
     } else {
         if (!v)
             abort();
@@ -271,19 +271,21 @@ static Value
 ThreadArray(Value thread, Bool resizable, int ndim, Type *type)
 {
     ENTER();
-    int  i;
-    int *dims;
+    int        i;
+    ptrdiff_t *dims;
 
-    dims = AllocateTemp(ndim * sizeof(int));
+    dims = AllocateTemp(ndim * sizeof(ptrdiff_t));
     for (i = 0; i < ndim; i++) {
         Value d = Stack(i);
-        dims[i] = IntPart(d, "Invalid array dimension");
+        dims[i] = PtrdiffPart(d, "Invalid array dimension");
         if (dims[i] < 0)
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("Negative array dimension"), NewInt(0), d);
         if (aborting)
             RETURN(0);
     }
+    if (!ArrayDimsOk(ndim, dims))
+        RETURN(0);
     RETURN(NewArray(False, resizable, type, ndim, dims));
 }
 
@@ -291,34 +293,36 @@ static Value
 ThreadArrayInd(Value thread, Bool resizable, Value dim, Type *type)
 {
     ENTER();
-    Array *a = &dim->array;
-    int    i;
-    int    ndim = ArrayLimits(a)[0];
-    int   *dims;
+    Array     *a = &dim->array;
+    ptrdiff_t  i;
+    int        ndim = (int)ArrayLimits(a)[0];
+    ptrdiff_t *dims;
 
     (void)thread;
-    dims = AllocateTemp(ndim * sizeof(int));
+    dims = AllocateTemp(ndim * sizeof(ptrdiff_t));
     for (i = 0; i < ndim; i++) {
         Value d = ArrayValue(a, i);
-        dims[i] = IntPart(d, "Invalid array dimension");
+        dims[i] = PtrdiffPart(d, "Invalid array dimension");
         if (dims[i] < 0)
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("Negative array dimension"), NewInt(0), d);
         if (aborting)
             RETURN(0);
     }
+    if (!ArrayDimsOk(ndim, dims))
+        RETURN(0);
     RETURN(NewArray(False, resizable, type, ndim, dims));
 }
 
-static int
+static ptrdiff_t
 ThreadArrayIndex(Value array, Value thread, int ndim, Value last, int off, Bool except, Bool resize)
 {
-    int   i;
-    int   dim;
-    int   part;
-    Value d;
-    int  *dims = ArrayDims(&array->array);
-    int  *limits = ArrayLimits(&array->array);
+    ptrdiff_t  i;
+    int        dim;
+    ptrdiff_t  part;
+    Value      d;
+    ptrdiff_t *dims = ArrayDims(&array->array);
+    ptrdiff_t *limits = ArrayLimits(&array->array);
 
     i = 0;
     for (dim = ndim - 1; dim >= 0; dim--) {
@@ -326,7 +330,14 @@ ThreadArrayIndex(Value array, Value thread, int ndim, Value last, int off, Bool 
             d = last;
         else
             d = Stack(dim + off - 1);
-        if (!ValueIsInt(d) || (part = ValueInt(d)) < 0) {
+        if (!ValueToPtrdiff(d, &part)) {
+            /* An integer too large for any array is out of bounds */
+            if (ValueIsInteger(d) && !Negativep(d))
+                part = ARRAY_MAX_VALUES;
+            else
+                part = -1;
+        }
+        if (part < 0) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("Array index not non-negative integer"), array, d);
             return 0;
@@ -335,8 +346,11 @@ ThreadArrayIndex(Value array, Value thread, int ndim, Value last, int off, Bool 
             if (resize && array->array.resizable) {
                 if (dims[dim] > part)
                     limits[dim] = part + 1;
-                else
+                else {
                     ArrayResize(array, dim, part + 1);
+                    if (aborting)
+                        return 0;
+                }
             } else if (except) {
                 RaiseStandardException(exception_invalid_array_bounds, 3,
                                        NewStrString("array index out of bounds"), array, d);
@@ -373,21 +387,22 @@ ThreadArrayIndex(Value array, Value thread, int ndim, Value last, int off, Bool 
  */
 
 static void
-ThreadArrayReplicate(Value thread, Value array, int dim, int start)
+ThreadArrayReplicate(Value thread, Value array, int dim, ptrdiff_t start)
 {
-    int    dimsize = 1;
-    int    i;
-    int    total;
-    Value *elements;
+    ptrdiff_t dimsize = 1;
+    int       d;
+    ptrdiff_t i;
+    ptrdiff_t total;
+    Value    *elements;
 
     (void)thread;
-    for (i = 0; i < dim; i++)
-        dimsize *= ArrayDims(&array->array)[i];
+    for (d = 0; d < dim; d++)
+        dimsize *= ArrayDims(&array->array)[d];
     start = start - dimsize;
     total = ArrayDims(&array->array)[dim] * dimsize;
     if (array->array.resizable) {
         for (i = start + dimsize; i % total; i += dimsize) {
-            int j;
+            ptrdiff_t j;
             for (j = 0; j < dimsize; j++)
                 ArrayValueSet(&array->array, i + j, ArrayValueGet(&array->array, start + j));
         }
@@ -400,13 +415,25 @@ ThreadArrayReplicate(Value thread, Value array, int dim, int start)
 
 void ThreadStackDump(Value thread);
 
+/*
+ * Initialization indices are integers, and may be larger than small ints
+ */
+static ptrdiff_t
+InitIndex(Value v)
+{
+    ptrdiff_t i = 0;
+
+    (void)ValueToPtrdiff(v, &i);
+    return i;
+}
+
 static Value
 ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, int *stack, InstPtr *next)
 {
     ENTER();
-    Value array;
-    int   i;
-    int   ndim;
+    Value     array;
+    ptrdiff_t i;
+    int       ndim;
 
     (void)next;
     if (aborting)
@@ -422,7 +449,7 @@ ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, int *stack, 
     case AInitModeRepeat:
         ndim = ValueInt(Stack(0));
         array = Stack(ndim + 1);
-        if (ValueInt(Stack(dim + 1)) == ArrayDims(&array->array)[dim])
+        if (InitIndex(Stack(dim + 1)) == ArrayDims(&array->array)[dim])
             break;
         __NICKLE_FALLTHROUGH;
     case AInitModeElement:
@@ -508,10 +535,10 @@ ThreadArrayInit(Value thread, Value value, AInitMode mode, int dim, int *stack, 
             break;
         }
         /* Done with this row? */
-        if (ValueInt(Stack(1)) == ArrayDims(&array->array)[0]) {
+        if (InitIndex(Stack(1)) == ArrayDims(&array->array)[0]) {
             /* Find dim with space */
             for (dim = 1; dim < ndim; dim++)
-                if (ValueInt(Stack(1 + dim)) < ArrayDims(&array->array)[dim] - 1)
+                if (InitIndex(Stack(1 + dim)) < ArrayDims(&array->array)[dim] - 1)
                     break;
             /* All done? */
             if (dim == ndim) {
@@ -556,7 +583,7 @@ ThreadRaise(Value thread, Value value, int argc, SymbolPtr exception, InstPtr *n
     ENTER();
     StackObject *cstack = thread->thread.continuation.stack;
     Value        args;
-    int          i;
+    ptrdiff_t    i;
     int          base = argc - 2;
 
 #ifdef DEBUG_JUMP
@@ -567,7 +594,7 @@ ThreadRaise(Value thread, Value value, int argc, SymbolPtr exception, InstPtr *n
      * Build and array to hold the arguments, this will end up
      * in the thread's value on entry to the catch block
      */
-    args = NewArray(False, False, typePoly, 1, &argc);
+    args = NewArray(False, False, typePoly, 1, &(ptrdiff_t) { argc });
     for (i = 0; i < argc; i++)
         ArrayValueSet(&args->array, i, Arg(i));
     if (!aborting) {
@@ -596,10 +623,10 @@ static Value
 ThreadExceptionCall(Value thread, InstPtr *next, int *stack)
 {
     ENTER();
-    Value args;
-    Value ret;
-    int   argc;
-    int   i;
+    Value     args;
+    Value     ret;
+    int       argc;
+    ptrdiff_t i;
 
     /*
      * The compiler places a Noop with the push flag set
@@ -693,7 +720,7 @@ typedef struct _TypeChain {
 } TypeChain;
 
 static void
-ThreadBoxSetDefault(BoxPtr box, int i, TypeChain *chain)
+ThreadBoxSetDefault(BoxPtr box, ptrdiff_t i, TypeChain *chain)
 {
     Type       *ctype = TypeCanon(BoxType(box, i));
     StructType *st = ctype->structs.structs;
@@ -729,9 +756,9 @@ ThreadBoxSetDefault(BoxPtr box, int i, TypeChain *chain)
 static Value
 ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
 {
-    Value v;
-    char *s;
-    int   i;
+    Value     v;
+    char     *s;
+    ptrdiff_t i;
 
     v = Stack(stack - 1);
     switch (ValueTag(v)) {
@@ -756,7 +783,7 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
                                    NewStrString("string index out of bounds"), v, value);
             break;
         }
-        value = NewInt(StringGet(s, v->string.length, i));
+        value = NewInt(StringGet(s, v->string.length, (int)i));
         break;
     case rep_array:
         if (stack != v->array.ndim) {
@@ -766,8 +793,8 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
         }
         i = ThreadArrayIndex(v, thread, stack, value, 0, True, !fetch);
         if (!aborting) {
-            BoxPtr box = ArrayValueBox(&v->array, i);
-            int    elt = ArrayValueElt(&v->array, i);
+            BoxPtr    box = ArrayValueBox(&v->array, i);
+            ptrdiff_t elt = ArrayValueElt(&v->array, i);
             if (typeCheck)
                 ThreadBoxCheck(box, elt);
             if (fetch)
@@ -1003,7 +1030,7 @@ ThreadsRun(Value thread, Value lex)
             StackObject *cstack;
             InstPtr      inst, next;
             FramePtr     fp;
-            int          i, j;
+            ptrdiff_t    i, j;
             int          stack;
             Value        value, v, w;
             BoxPtr       box;

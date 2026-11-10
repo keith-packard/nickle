@@ -60,16 +60,16 @@ static Value
 do_PID_getgroups(void)
 {
     ENTER();
-    int    n;
-    gid_t *list;
-    Value  ret;
-    int    i;
+    int       n;
+    gid_t    *list;
+    Value     ret;
+    ptrdiff_t i;
 
     n = getgroups(0, NULL);
     list = AllocateTemp(n * sizeof(gid_t));
     if (getgroups(n, list) < 0)
         RETURN(error(NewInt(n)));
-    ret = NewArray(False, False, typePrim[rep_integer], 1, &n);
+    ret = NewArray(False, False, typePrim[rep_integer], 1, &(ptrdiff_t) { n });
     for (i = 0; i < n; i++)
         ArrayValueSet(&ret->array, i, NewInt(list[i]));
     RETURN(ret);
@@ -142,9 +142,9 @@ static Value
 do_PID_setgroups(Value groups)
 {
     ENTER();
-    int    n;
-    int    i;
-    gid_t *g;
+    int       n;
+    ptrdiff_t i;
+    gid_t    *g;
 
     n = ArrayLimits(&groups->array)[0];
     g = AllocateTemp(n * sizeof(gid_t));

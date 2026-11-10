@@ -27,14 +27,14 @@ BoxMark(void *object)
 DataType BoxType = { BoxMark, 0, "BoxType" };
 
 BoxPtr
-NewBox(Bool constant, Bool array, int nvalues, TypePtr type)
+NewBox(Bool constant, Bool array, ptrdiff_t nvalues, TypePtr type)
 {
     ENTER();
-    BoxPtr box;
-    int    i;
+    BoxPtr    box;
+    ptrdiff_t i;
 
     (void)array;
-    box = ALLOCATE(&BoxType, sizeof(Box) + nvalues * sizeof(Value));
+    box = ALLOCATE(&BoxType, sizeof(Box) + (size_t)nvalues * sizeof(Value));
     box->constant = constant;
     box->homogeneous = True;
     box->replace = False;
@@ -75,7 +75,7 @@ MarkBoxReplace(void *object)
 DataType BoxReplaceType = { MarkBoxReplace, 0, "BoxReplaceType" };
 
 void
-BoxSetReplace(BoxPtr old, BoxPtr new, int oldstride, int newstride)
+BoxSetReplace(BoxPtr old, BoxPtr new, ptrdiff_t oldstride, ptrdiff_t newstride)
 {
     ENTER();
     BoxReplacePtr r = ALLOCATE(&BoxReplaceType, sizeof(BoxReplace));
@@ -88,13 +88,13 @@ BoxSetReplace(BoxPtr old, BoxPtr new, int oldstride, int newstride)
 }
 
 BoxPtr
-BoxRewrite(BoxPtr box, int *ep)
+BoxRewrite(BoxPtr box, ptrdiff_t *ep)
 {
-    int e = *ep;
+    ptrdiff_t e = *ep;
 
     while (box->replace) {
         BoxReplacePtr r = box->u.replace;
-        int           chunk, off;
+        ptrdiff_t     chunk, off;
 
         chunk = e / r->oldstride;
         off = e % r->oldstride;
@@ -112,7 +112,7 @@ BoxRewrite(BoxPtr box, int *ep)
     if (e >= 0 && (unsigned long)e >= box->nvalues) {
         RaiseStandardException(exception_invalid_array_bounds, 3,
                                NewStrString("reference to storage removed by array resize"), Void,
-                               NewInt(e));
+                               NewPtrdiffInteger(e));
         e = 0;
         box = NewBox(True, False, 1, typePrim[rep_void]);
         BoxValueSet(box, 0, 0);

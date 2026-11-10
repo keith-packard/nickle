@@ -213,7 +213,7 @@ Bool
 NamespaceLocate(Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publish *publishp,
                 Bool complain)
 {
-    int          i;
+    ptrdiff_t    i;
     NamespacePtr namespace;
     FramePtr     f;
     CodePtr      c;
@@ -249,7 +249,7 @@ NamespaceLocate(Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publi
         if (i != ArrayLimits(&names->array)[0] - 1) {
             if (symbol->symbol.class != class_namespace) {
                 RaiseStandardException(exception_invalid_argument, 3, NewStrString("not namespace"),
-                                       NewInt(i), string);
+                                       NewPtrdiffInteger(i), string);
                 return False;
             }
             namespace = symbol->namespace.namespace;

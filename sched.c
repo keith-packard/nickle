@@ -1061,8 +1061,8 @@ RaiseException(Value thread, SymbolPtr except, Value args, InstPtr *next)
     }
     /* unhandled exception -- build an empty continuation and jump to it */
     if (!continuation) {
-        int     i;
-        InstPtr pc = thread->thread.continuation.pc;
+        ptrdiff_t i;
+        InstPtr   pc = thread->thread.continuation.pc;
 
         PrintError("Unhandled exception %A (", except->symbol.name);
         if (args) {
@@ -1118,13 +1118,12 @@ void
 RaiseStandardException(StandardException se, int argc, ...)
 {
     ENTER();
-    Value   args;
-    int     i;
-    va_list va;
+    Value     args;
+    ptrdiff_t i;
+    va_list   va;
 
     va_start(va, argc);
-    i = argc;
-    args = NewArray(False, False, typePoly, 1, &i);
+    args = NewArray(False, False, typePoly, 1, &(ptrdiff_t) { argc });
     for (i = 0; i < argc; i++)
         ArrayValueSet(&args->array, i, va_arg(va, Value));
     standardException = se;
@@ -1152,8 +1151,7 @@ static void
 SignalThread(Value thread, Value signal, Bool executing)
 {
     ENTER();
-    int       i = 1;
-    Value     args = NewArray(False, False, typePoly, 1, &i);
+    Value     args = NewArray(False, False, typePoly, 1, &(ptrdiff_t) { 1 });
     SymbolPtr except = standardExceptions[exception_signal];
 
     ArrayValueSet(&args->array, 0, signal);

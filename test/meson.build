@@ -85,10 +85,13 @@ foreach test : tests
       )
 endforeach
 
-# Errors in input named on the command line must exit with an error status
+# Errors in input named on the command line, and unhandled exceptions,
+# must exit with an error status
 error_tests = [
   'syntax-error.5c',
   'compile-error.5c',
+  'unhandled-if.5c',
+  'unhandled-try.5c',
 ]
 
 foreach test : error_tests

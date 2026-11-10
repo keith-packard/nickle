@@ -1,0 +1,13 @@
+/*
+ * Nickle test suite
+ *
+ * An unhandled exception must stop the script with an error status.
+ * The parser reads ahead past a try looking for more catch clauses,
+ * and that next statement used to run and set the exit status; meson
+ * expects this test to fail
+ */
+
+exception boom ();
+exception other ();
+try { raise boom (); } catch other () { }
+exit (0);

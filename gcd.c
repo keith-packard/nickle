@@ -837,10 +837,11 @@ NaturalGcd(Natural *u0, Natural *v0)
     int      u_zeros, v_zeros;
     int      fix;
 
+    /* Every integer divides zero */
     if (NaturalZero(u0))
-        RETURN(zero_natural);
+        RETURN(v0);
     if (NaturalZero(v0))
-        RETURN(zero_natural);
+        RETURN(u0);
     u_zeros = NaturalZeroBits(u0);
     v_zeros = NaturalZeroBits(v0);
     normal = u_zeros;

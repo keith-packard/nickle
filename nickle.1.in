@@ -767,7 +767,8 @@ Type predicate.
 .IP "int is_void(poly v)"
 Type predicate.
 .IP "int gcd(int p, int q)"
-Return the GCD of p and q.  The result is always positive.
+Return the GCD of p and q.  The result is always non-negative:
+gcd(p, 0) is the absolute value of p, and gcd(0, 0) is 0.
 .IP "int xor(int a, int b)"
 Return a ^ b .  This is mostly a holdover from before
 Nickle had an xor operator.

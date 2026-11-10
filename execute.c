@@ -850,7 +850,8 @@ ThreadStackDump(Value thread)
             FilePrintf(FileStdout, "%d: %v\n", i++, (Value)*stackPointer++);
         }
         chunk = chunk->previous;
-        stackPointer = CHUNK_MIN(chunk);
+        if (chunk)
+            stackPointer = CHUNK_MIN(chunk);
     }
 }
 

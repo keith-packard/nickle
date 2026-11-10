@@ -660,7 +660,7 @@ typedef struct _complex {
 
 typedef struct _string {
     BaseValue base;
-    size_t    length;
+    ptrdiff_t length;
     char      chars[0];
 } String;
 
@@ -710,9 +710,9 @@ typedef struct _array {
 
 typedef struct _io_chain {
     struct _io_chain *next;
-    int               size;
-    int               used;
-    int               ptr;
+    ptrdiff_t         size;
+    ptrdiff_t         used;
+    ptrdiff_t         ptr;
     unsigned char     buffer[0];
 } FileChain, *FileChainPtr;
 
@@ -1230,34 +1230,34 @@ unsigned FpartLength(Fpart *a);
 
 extern DataCachePtr refCache;
 
-Value               NewString(long length);
+Value               NewString(ptrdiff_t length);
 Value               NewStrString(const char *);
 Value               NewCharString(int c);
 /* The most elements an array may have, keeping its byte size representable */
 #define ARRAY_MAX_VALUES (PTRDIFF_MAX / (ptrdiff_t)sizeof(Value))
 
-Bool     ArrayDimsOk(int ndim, ptrdiff_t *dims);
-Value    NewArray(Bool constant, Bool resizable, TypePtr type, int ndim, ptrdiff_t *dims);
-void     ArrayResize(Value av, int dim, ptrdiff_t size);
-void     ArraySetDimensions(Value av, ptrdiff_t *dims);
-Value    NewHash(Bool constant, TypePtr keyType, TypePtr valueType);
-Value    HashGet(Value hv, Value key);
-void     HashSet(Value hv, Value key, Value value);
-void     HashSetDef(Value hv, Value def);
-Value    HashKeys(Value hv);
-Value    HashRef(Value hv, Value key);
-Value    HashTest(Value hv, Value key);
-void     HashDelete(Value hv, Value key);
-Value    HashCopy(Value hv);
+Bool      ArrayDimsOk(int ndim, ptrdiff_t *dims);
+Value     NewArray(Bool constant, Bool resizable, TypePtr type, int ndim, ptrdiff_t *dims);
+void      ArrayResize(Value av, int dim, ptrdiff_t size);
+void      ArraySetDimensions(Value av, ptrdiff_t *dims);
+Value     NewHash(Bool constant, TypePtr keyType, TypePtr valueType);
+Value     HashGet(Value hv, Value key);
+void      HashSet(Value hv, Value key, Value value);
+void      HashSetDef(Value hv, Value def);
+Value     HashKeys(Value hv);
+Value     HashRef(Value hv, Value key);
+Value     HashTest(Value hv, Value key);
+void      HashDelete(Value hv, Value key);
+Value     HashCopy(Value hv);
 
-Value    NewFile(int fd);
-Value    NewRefReal(BoxPtr box, ptrdiff_t element, Value *re);
-char    *StringNextChar(char *src, unsigned *dst, long *length);
-int      StringPutChar(unsigned c, char *dest);
-int      StringLength(char *src, long length);
-int      StringCharSize(unsigned c);
-unsigned StringGet(char *src, long len, int i);
-char    *StrzPart(Value, char *error);
+Value     NewFile(int fd);
+Value     NewRefReal(BoxPtr box, ptrdiff_t element, Value *re);
+char     *StringNextChar(char *src, unsigned *dst, ptrdiff_t *length);
+int       StringPutChar(unsigned c, char *dest);
+ptrdiff_t StringLength(char *src, ptrdiff_t length);
+int       StringCharSize(unsigned c);
+unsigned  StringGet(char *src, ptrdiff_t len, ptrdiff_t i);
+char     *StrzPart(Value, char *error);
 
 static inline Value
 NewRef(BoxPtr box, ptrdiff_t element)
@@ -1309,21 +1309,21 @@ void          FileUnchar(Value, uint32_t);
 Value         FileCreate(int fd, int flags);
 int           FileFlush(Value, Bool block);
 int           FileClose(Value);
-Value         FileStringRead(char *string, int len);
+Value         FileStringRead(char *string, ptrdiff_t len);
 Value         FileStringWrite(void);
 Value         FileStringString(Value file);
 void          FileSetFd(int fd), FileResetFd(int fd);
 Bool          FileIsReadable(int fd);
 Bool          FileIsWritable(int fd);
-void          FilePutsc(Value, char *, long length);
+void          FilePutsc(Value, char *, ptrdiff_t length);
 void          FilePuts(Value, char *);
 void          FilePutDoubleDigitBase(Value file, double_digit a, int base);
 void          FilePutUIntBase(Value file, unsigned int a, int base);
 void          FilePutIntBase(Value file, int a, int base);
 void          FilePutInt(Value, int);
 void          FilePutPtrdiff(Value, ptrdiff_t);
-int           FileStringWidth(char *string, long length, char format);
-void          FilePutString(Value f, char *string, long length, char format);
+ptrdiff_t     FileStringWidth(char *string, ptrdiff_t length, char format);
+void          FilePutString(Value f, char *string, ptrdiff_t length, char format);
 void          FilePutRep(Value f, Rep tag, Bool minimal);
 void          FilePutClass(Value f, Class storage, Bool minimal);
 void          FilePutPublish(Value f, Publish publish, Bool minimal);
@@ -1386,7 +1386,7 @@ Value     Lnot(Value);
 Value     Popcount(Value);
 Bool      Print(Value, Value, char format, int base, int width, int prec, int fill);
 void      PrintError(char *s, ...);
-HashValue HashCrc32(unsigned char *bytes, int nbytes);
+HashValue HashCrc32(unsigned char *bytes, size_t nbytes);
 Value     CopyMutable(Value v);
 
 static inline Value

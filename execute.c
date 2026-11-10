@@ -774,16 +774,23 @@ ThreadOpArray(Value thread, Value value, int stack, Bool fetch, Bool typeCheck)
                                    v);
             break;
         }
-        i = IntPart(value, "Invalid string index");
-        if (aborting)
-            break;
+        if (!ValueToPtrdiff(value, &i)) {
+            /* An integer too large for any string is out of bounds */
+            if (ValueIsInteger(value) && !Negativep(value))
+                i = PTRDIFF_MAX;
+            else {
+                RaiseStandardException(exception_invalid_argument, 3,
+                                       NewStrString("Invalid string index"), NewInt(0), value);
+                break;
+            }
+        }
         s = StringChars(&v->string);
         if (i < 0 || StringLength(s, v->string.length) <= i) {
             RaiseStandardException(exception_invalid_binop_values, 3,
                                    NewStrString("string index out of bounds"), v, value);
             break;
         }
-        value = NewInt(StringGet(s, v->string.length, (int)i));
+        value = NewInt(StringGet(s, v->string.length, i));
         break;
     case rep_array:
         if (stack != v->array.ndim) {

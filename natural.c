@@ -1338,7 +1338,8 @@ NaturalGreaterEqualOffset(Natural *a, Natural *b, ptrdiff_t offset)
 HashValue
 NaturalHash(Natural *a)
 {
-    return HashCrc32((unsigned char *)&a->length, sizeof(a->length) + sizeof(digit) * a->length);
+    return HashCrc32((unsigned char *)&a->length,
+                     sizeof(a->length) + sizeof(digit) * (size_t)a->length);
 }
 
 int

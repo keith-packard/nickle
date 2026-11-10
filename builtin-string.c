@@ -71,7 +71,7 @@ do_String_length(Value av)
 {
     ENTER();
     Value ret;
-    ret = NewInt(StringLength(StringChars(&av->string), av->string.length));
+    ret = NewPtrdiffInteger(StringLength(StringChars(&av->string), av->string.length));
     RETURN(ret);
 }
 
@@ -81,7 +81,7 @@ do_String_new(Value av)
     ENTER();
     Value     ret;
     ptrdiff_t len, i;
-    long      size;
+    ptrdiff_t size;
     char     *s;
 
     if (ValueIsArray(av) && av->array.ndim == 1) {
@@ -110,10 +110,10 @@ Value
 do_String_index(Value av, Value bv)
 {
     ENTER();
-    char *a, *b, *p;
-    long  al;
-    Value ret;
-    int   i;
+    char     *a, *b, *p;
+    ptrdiff_t al;
+    Value     ret;
+    ptrdiff_t i;
     a = StringChars(&av->string);
     al = av->string.length;
     b = StringChars(&bv->string);
@@ -126,7 +126,7 @@ do_String_index(Value av, Value bv)
         a = StringNextChar(a, &c, &al);
         i++;
     }
-    ret = NewInt(i);
+    ret = NewPtrdiffInteger(i);
     RETURN(ret);
 }
 
@@ -134,26 +134,33 @@ Value
 do_String_substr(Value av, Value bv, Value cv)
 {
     ENTER();
-    char *a, *rchars, *e;
-    int   b, c, al, size;
-    Value ret;
-    long  alen = av->string.length;
-    long  elen;
+    char     *a, *rchars, *e;
+    ptrdiff_t b, c, al, size;
+    Value     ret;
+    ptrdiff_t alen = av->string.length;
+    ptrdiff_t elen;
 
     a = StringChars(&av->string);
     al = StringLength(a, alen);
-    b = IntPart(bv, "substr: index not integer");
-    c = IntPart(cv, "substr: count not integer");
-    if (c < 0) {
-        b += c;
-        c = -c;
-    }
-    if (b < 0 || b > al) {
+    b = PtrdiffPart(bv, "substr: index not integer");
+    c = PtrdiffPart(cv, "substr: count not integer");
+    if (aborting)
+        RETURN(av);
+    /*
+     * Check the index before using it, so that none of the arithmetic
+     * below can overflow. A negative count ends the substring at the
+     * index.
+     */
+    if (b < 0 || b > al || (c < 0 && c < -b)) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("substr: index out of range"), NewInt(1), bv);
         RETURN(av);
     }
-    if (b + c > al) {
+    if (c < 0) {
+        b += c;
+        c = -c;
+    }
+    if (c > al - b) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("substr: count out of range"), NewInt(2), cv);
         RETURN(av);
@@ -179,6 +186,6 @@ do_String_substr(Value av, Value bv, Value cv)
     size = e - a;
     ret = NewString(size);
     rchars = StringChars(&ret->string);
-    memcpy(rchars, a, size);
+    memcpy(rchars, a, (size_t)size);
     RETURN(ret);
 }

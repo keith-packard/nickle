@@ -887,10 +887,10 @@ PrintArgs(Value f, ArgType *args)
 static void
 PrettyDoc(Value f, int level, Value doc)
 {
-    char    *s = StringChars(&doc->string);
-    long     len = doc->string.length;
-    unsigned c;
-    Bool     newline = False;
+    char     *s = StringChars(&doc->string);
+    ptrdiff_t len = doc->string.length;
+    unsigned  c;
+    Bool      newline = False;
 
     PrettyIndent(f, 0, level);
     FilePuts(f,

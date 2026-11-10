@@ -508,9 +508,9 @@ has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
 "\r"            ;
 \'([^\n\']|\\\')*\'     {
                     ENTER();
-                    char    *s;
-                    long     len = yyleng - 1;
-                    unsigned c;
+                    char     *s;
+                    ptrdiff_t len = yyleng - 1;
+                    unsigned  c;
 
                     s = yytext + 1;
                     s = StringNextChar(s, &c, &len);
@@ -537,9 +537,9 @@ has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
                 }
 \"([^\n\"]|\\\")*\"     {
                     ENTER();
-                    char    *d, *s;
-                    unsigned c;
-                    long     len = yyleng - 2;
+                    char     *d, *s;
+                    unsigned  c;
+                    ptrdiff_t len = yyleng - 2;
 
                     yylval.value = NewString(len);
                     d = StringChars(&yylval.value->string);
@@ -549,9 +549,9 @@ has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
                             if (!(s = StringNextChar(s, &c, &len)))
                                 break;
                             if ('0' <= c && c <= '7') {
-                                unsigned ch;
-                                char    *ps = s;
-                                long     plen = len;
+                                unsigned  ch;
+                                char     *ps = s;
+                                ptrdiff_t plen = len;
 
                                 c = c - '0';
                                 while ((s = StringNextChar(s, &ch, &len)) && '0' <= ch

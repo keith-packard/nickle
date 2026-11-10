@@ -150,7 +150,7 @@ generate_crc32_table(void)
 }
 
 HashValue
-HashCrc32(unsigned char *bytes, int nbytes)
+HashCrc32(unsigned char *bytes, size_t nbytes)
 {
     crc32_t crc32 = ~0;
     if (crc32_table[1] == 0)

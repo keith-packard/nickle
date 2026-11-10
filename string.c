@@ -46,8 +46,8 @@ StringEqual(Value av, Value bv, int expandOk)
 static Value
 StringLess(Value av, Value bv, int expandOk)
 {
-    size_t len;
-    int    c;
+    ptrdiff_t len;
+    int       c;
 
     (void)expandOk;
     len = av->string.length;
@@ -64,9 +64,9 @@ StringLess(Value av, Value bv, int expandOk)
 static Bool
 StringPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
 {
-    char *string = StringChars(&av->string);
-    long  len = av->string.length;
-    int   print_width;
+    char     *string = StringChars(&av->string);
+    ptrdiff_t len = av->string.length;
+    ptrdiff_t print_width;
 
     (void)base;
     (void)prec;
@@ -84,7 +84,7 @@ StringPrint(Value f, Value av, char format, int base, int width, int prec, int f
 }
 
 char *
-StringNextChar(char *src, unsigned *dst, long *len)
+StringNextChar(char *src, unsigned *dst, ptrdiff_t *len)
 {
     unsigned result = *src++;
 
@@ -118,7 +118,7 @@ StringNextChar(char *src, unsigned *dst, long *len)
 }
 
 unsigned
-StringGet(char *src, long len, int i)
+StringGet(char *src, ptrdiff_t len, ptrdiff_t i)
 {
     unsigned c;
 
@@ -130,11 +130,11 @@ StringGet(char *src, long len, int i)
     return c;
 }
 
-int
-StringLength(char *src, long len)
+ptrdiff_t
+StringLength(char *src, ptrdiff_t len)
 {
-    int      l = 0;
-    unsigned c;
+    ptrdiff_t l = 0;
+    unsigned  c;
     while ((src = StringNextChar(src, &c, &len)))
         l++;
     return l;
@@ -195,7 +195,7 @@ StringCharSize(unsigned c)
 char *
 StrzPart(Value v, char *error)
 {
-    if (!ValueIsString(v) || strlen(StringChars(&v->string)) != v->string.length) {
+    if (!ValueIsString(v) || (ptrdiff_t)strlen(StringChars(&v->string)) != v->string.length) {
         RaiseStandardException(exception_invalid_argument, 3, NewStrString(error), NewInt(0), v);
         return 0;
     }
@@ -205,7 +205,7 @@ StrzPart(Value v, char *error)
 static HashValue
 StringHash(Value av)
 {
-    return HashCrc32((unsigned char *)StringChars(&av->string), av->string.length);
+    return HashCrc32((unsigned char *)StringChars(&av->string), (size_t)av->string.length);
 }
 
 ValueRep StringRep = {
@@ -229,12 +229,12 @@ ValueRep StringRep = {
 };
 
 Value
-NewString(long length)
+NewString(ptrdiff_t length)
 {
     ENTER();
     Value ret;
 
-    ret = ALLOCATE(&StringRep.data, sizeof(String) + length + 1);
+    ret = ALLOCATE(&StringRep.data, sizeof(String) + (size_t)length + 1);
     ret->string.length = length;
     StringChars(&ret->string)[length] = '\0';
     RETURN(ret);

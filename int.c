@@ -241,14 +241,14 @@ IntCeil(Value av, int expandOk)
 static Bool
 IntPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
 {
-    int  a = ValueInt(av);
-    int  digit;
-    int  w;
-    int  fraction_width;
-    char space[64], *s;
-    char letter;
-    int  neg;
-    long len;
+    int       a = ValueInt(av);
+    int       digit;
+    int       w;
+    int       fraction_width;
+    char      space[64], *s;
+    char      letter;
+    int       neg;
+    ptrdiff_t len;
 
     if (format == 'a') {
         Value     fv = NewIntFloat(a, DEFAULT_FLOAT_PREC);

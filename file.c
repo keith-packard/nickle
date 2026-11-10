@@ -474,11 +474,13 @@ ProcessInterrupt(void)
 }
 
 static FileChainPtr
-FileChainAlloc(FileChainPtr next, int size)
+FileChainAlloc(FileChainPtr next, ptrdiff_t size)
 {
     FileChainPtr ret;
 
-    ret = malloc(sizeof(FileChain) + size);
+    ret = malloc(sizeof(FileChain) + (size_t)size);
+    if (!ret)
+        MemExhausted();
     ret->next = next;
     ret->size = size;
     ret->used = 0;
@@ -880,7 +882,7 @@ FileClose(Value file)
 }
 
 Value
-FileStringRead(char *string, int len)
+FileStringRead(char *string, ptrdiff_t len)
 {
     ENTER();
     Value file;
@@ -888,7 +890,7 @@ FileStringRead(char *string, int len)
     file = NewFile(-1);
     file->file.flags |= FileString | FileReadable;
     file->file.input = FileChainAlloc(0, len);
-    memcpy(FileBuffer(file->file.input), string, len);
+    memcpy(FileBuffer(file->file.input), string, (size_t)len);
     file->file.input->used = len;
     RETURN(file);
 }
@@ -910,7 +912,7 @@ write_chain(char *s, FileChainPtr out)
     if (!out)
         return s;
     s = write_chain(s, out->next);
-    memcpy(s, FileBuffer(out), out->used);
+    memcpy(s, FileBuffer(out), (size_t)out->used);
     return s + out->used;
 }
 
@@ -918,7 +920,7 @@ Value
 FileStringString(Value file)
 {
     ENTER();
-    int          len;
+    ptrdiff_t    len;
     FileChainPtr out;
     Value        str;
     char        *s;
@@ -983,7 +985,8 @@ int
 FileInput(Value file)
 {
     ENTER();
-    int            c, n;
+    int            c;
+    ssize_t        n;
     unsigned char *buf;
     FileChainPtr   ic;
     int            err;
@@ -1027,7 +1030,7 @@ FileInput(Value file)
                     n = ic->size;
                     if (file->file.flags & FileUnBuf)
                         n = 1;
-                    n = read(file->file.fd, buf, n);
+                    n = read(file->file.fd, buf, (size_t)n);
                     err = errno;
                     file->file.flags &= ~FileEnd;
                 } else {
@@ -1090,12 +1093,12 @@ FileWaitForWriteable(Value file)
 static int
 FileFlushChain(Value file, FileChainPtr ic, Bool block)
 {
-    int n;
-    int err;
+    ssize_t n;
+    int     err;
 
     while (ic->ptr < ic->used) {
         if (FileIsWritable(file->file.fd)) {
-            n = write(file->file.fd, &FileBuffer(ic)[ic->ptr], ic->used - ic->ptr);
+            n = write(file->file.fd, &FileBuffer(ic)[ic->ptr], (size_t)(ic->used - ic->ptr));
             err = errno;
         } else {
             n = -1;
@@ -1211,7 +1214,7 @@ FilePuts(Value file, char *s)
 }
 
 void
-FilePutsc(Value file, char *s, long length)
+FilePutsc(Value file, char *s, ptrdiff_t length)
 {
     while (length--)
         FileOutput(file, *s++);
@@ -1275,14 +1278,14 @@ FilePutPtrdiff(Value file, ptrdiff_t a)
     FilePutDoubleDigitBase(file, m, 10);
 }
 
-int
-FileStringWidth(char *string, long length, char format)
+ptrdiff_t
+FileStringWidth(char *string, ptrdiff_t length, char format)
 {
     if (format == 's')
         return StringLength(string, length);
     else {
-        int      width = 2;
-        unsigned c;
+        ptrdiff_t width = 2;
+        unsigned  c;
         while ((string = StringNextChar(string, &c, &length))) {
             if (c < ' ' || '~' < c)
                 switch (c) {
@@ -1309,7 +1312,7 @@ FileStringWidth(char *string, long length, char format)
 }
 
 void
-FilePutString(Value f, char *string, long length, char format)
+FilePutString(Value f, char *string, ptrdiff_t length, char format)
 {
     if (format == 's')
         FilePutsc(f, string, length);

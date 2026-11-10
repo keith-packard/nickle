@@ -1,0 +1,120 @@
+/*
+ * Nickle test suite
+ *
+ * Integer functions in the Math namespace: choose, ilog and lsb
+ */
+
+autoimport PRNG;
+
+exception bad_choose (int n, int k, int got, int want);
+exception bad_ilog (int base, int n, int got);
+exception bad_lsb (int b, int got, int want);
+exception missing_exception (string what);
+
+/* Pascal's triangle by addition, with zero outside 0 <= k <= n */
+void function check_choose_small ()
+{
+    int[*] row = { 1 };
+
+    for (int n = 0; n <= 60; n++) {
+	for (int k = -2; k <= n + 2; k++) {
+	    int want = 0;
+
+	    if (0 <= k && k <= n)
+		want = row[k];
+
+	    if (choose (n, k) != want)
+		raise bad_choose (n, k, choose (n, k), want);
+	}
+	int[n + 2] next;
+	next[0] = 1;
+	next[n + 1] = 1;
+	for (int k = 1; k <= n; k++)
+	    next[k] = row[k - 1] + row[k];
+	row = next;
+    }
+    for (int k = -1; k <= 1; k++)
+	if (choose (-1, k) != 0)
+	    raise bad_choose (-1, k, choose (-1, k), 0);
+}
+
+/* Pascal's rule and symmetry for larger n */
+void function check_choose_large ()
+{
+    int[*] ns = { 100, 255, 256, 1000 };
+
+    for (int i = 0; i < dim (ns); i++) {
+	int n = ns[i];
+
+	for (int j = 0; j < 20; j++) {
+	    int k = randint (n - 1) + 1;
+	    int want = choose (n - 1, k - 1) + choose (n - 1, k);
+
+	    if (choose (n, k) != want)
+		raise bad_choose (n, k, choose (n, k), want);
+	    if (choose (n, n - k) != want)
+		raise bad_choose (n, n - k, choose (n, n - k), want);
+	}
+    }
+}
+
+void function check_ilog (int base, int n)
+{
+    int e = Math::ilog (base, n);
+
+    if (e < 0 || base ** e > n || base ** (e + 1) <= n)
+	raise bad_ilog (base, n, e);
+}
+
+void function check_ilogs ()
+{
+    int[*] bases = { 2, 3, 10, 16, 1000, 2**32, 2**32 + 1,
+		     randbits (100) | 1 };
+
+    for (int i = 0; i < dim (bases); i++) {
+	int base = bases[i];
+
+	for (int k = 0; k < 40; k++)
+	    for (int d = -1; d <= 1; d++)
+		if (base ** k + d > 0)
+		    check_ilog (base, base ** k + d);
+	for (int j = 0; j < 30; j++)
+	    check_ilog (base, randbits (randint (2000) + 1) + 1);
+    }
+
+    int[*][2] bad = { { 1, 5 }, { 0, 5 }, { -2, 5 }, { 2, 0 }, { 2, -4 } };
+
+    for (int i = 0; i < dim (bad); i++) {
+	try {
+	    Math::ilog (bad[i][0], bad[i][1]);
+	    raise missing_exception ("ilog");
+	} catch invalid_argument (string s, int n, poly v) {
+	}
+    }
+}
+
+void function check_lsbs ()
+{
+    int[*] odds = { 1, 3, 2**40 + 1, randbits (200) | 1 };
+
+    for (int k = 0; k < 140; k++)
+	for (int i = 0; i < dim (odds); i++) {
+	    int b = odds[i] << k;
+
+	    if (Math::lsb (b) != k)
+		raise bad_lsb (b, Math::lsb (b), k);
+	    if (Math::lsb (-b) != k)
+		raise bad_lsb (-b, Math::lsb (-b), k);
+	}
+
+    try {
+	Math::lsb (0);
+	raise missing_exception ("lsb");
+    } catch Math::lsb_0 () {
+    }
+}
+
+check_choose_small ();
+check_choose_large ();
+check_ilogs ();
+check_lsbs ();

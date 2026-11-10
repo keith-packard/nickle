@@ -55,7 +55,20 @@ void check_stirling(int rep) {
 	}
 }
 
+/* Negative arguments, below and above the small-value cutoff */
+void check_negative(int n) {
+	try {
+		int r = n!;
+		printf("check failed %d! (was %d should raise)\n", n, r);
+		++errors;
+	} catch invalid_unop_value (string m, poly v) {
+	}
+}
+
 check_stirling(10);
 check_factorial(1000);
+check_negative(-1);
+check_negative(-19);
+check_negative(-25);
 
 exit (errors);

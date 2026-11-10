@@ -1747,6 +1747,9 @@ FileVPrintf(Value file, char *fmt, va_list args)
             case 'D':
                 FilePutDoubleDigitBase(file, va_arg(args, double_digit), 10);
                 break;
+            case 'z':
+                FilePutPtrdiff(file, va_arg(args, ptrdiff_t));
+                break;
             case 'v':
             case 'g':
                 v = va_arg(args, Value);

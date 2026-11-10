@@ -291,12 +291,18 @@ subdir('examples')
 subdir('bench')
 subdir('doc')
 
-# 'ninja clang-format' formats all C code; this replaces Meson's
-# built-in target, which can't handle lex.l and gram.y
+# 'ninja clang-format' formats all C code, and 'ninja clang-format-check'
+# reports any that needs formatting; these replace Meson's built-in
+# targets, which can't handle lex.l and gram.y
 prog_clang_format = find_program('clang-format', required : false)
 if prog_clang_format.found()
+  prog_clang_format_generated = find_program('clang-format-generated')
   run_target('clang-format',
-	     command : [find_program('clang-format-generated'), '-i',
+	     command : [prog_clang_format_generated, '-i',
+			'--clang-format', prog_clang_format,
+			format_srcs, bench_srcs])
+  run_target('clang-format-check',
+	     command : [prog_clang_format_generated, '--check',
 			'--clang-format', prog_clang_format,
 			format_srcs, bench_srcs])
 endif

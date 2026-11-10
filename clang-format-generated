@@ -16,6 +16,7 @@ clang-format whole.
 """
 
 import argparse
+import difflib
 import subprocess
 import sys
 
@@ -49,31 +50,44 @@ def format_generated(prog, path, text):
             ''.join(lines[prologue_end:code + 1]) + tail)
 
 
+def format_file(prog, path, text):
+    if path.endswith(('.l', '.y')):
+        return format_generated(prog, path, text)
+    return clang_format(prog, text, path)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
-    parser.add_argument('-i', '--in-place', action='store_true',
-                        help='rewrite files instead of printing them')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('-i', '--in-place', action='store_true',
+                      help='rewrite files instead of printing them')
+    mode.add_argument('--check', action='store_true',
+                      help='print the changes formatting would make, and '
+                      'exit with status 1 if there are any')
     parser.add_argument('--clang-format', default='clang-format',
                         help='clang-format program to run')
     parser.add_argument('files', nargs='+')
     args = parser.parse_args()
 
-    whole = []
+    unformatted = 0
     for path in args.files:
-        if not path.endswith(('.l', '.y')):
-            whole.append(path)
-            continue
         with open(path, encoding='utf-8') as f:
             text = f.read()
-        formatted = format_generated(args.clang_format, path, text)
-        if not args.in_place:
+        formatted = format_file(args.clang_format, path, text)
+        if args.check:
+            if formatted != text:
+                unformatted += 1
+                sys.stdout.writelines(difflib.unified_diff(
+                    text.splitlines(keepends=True),
+                    formatted.splitlines(keepends=True),
+                    path, path + ' (formatted)'))
+        elif not args.in_place:
             sys.stdout.write(formatted)
         elif formatted != text:
             with open(path, 'w', encoding='utf-8') as f:
                 f.write(formatted)
-    if whole:
-        subprocess.run([args.clang_format] + (['-i'] if args.in_place else []) + whole,
-                       check=True)
+    if unformatted:
+        sys.exit('%d file%s need formatting' % (unformatted, '' if unformatted == 1 else 's'))
 
 
 if __name__ == '__main__':

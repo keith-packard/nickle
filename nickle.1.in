@@ -841,9 +841,9 @@ Attempt to change the value of a read-only quantity
 to val.
 .IP "exception invalid_array_bounds(string msg, poly a, poly i)"
 Attempt to access array a at index i is out of bounds.
-.IP "exception divide_by_zero(string msg, real num, real den)"
+.IP "exception divide_by_zero(real num, real den)"
 Attempt to divide num by den with den == 0.
-.IP "exception invalid_struct_member(string msg, poly struct, string name)"
+.IP "exception invalid_struct_member(poly struct, string name)"
 Attempt to refer to member name of the object struct, which does
 not exist.
 .IP "exception invalid_binop_values(string msg, poly arg1, poly arg2)"

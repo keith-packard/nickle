@@ -6,6 +6,16 @@
 
 extend namespace Math {
 
+    int small_bits(real x)
+	/*
+	 * Returns the number of bits lost to cancellation when 'x',
+	 * a difference from 1 or 0, is small
+	 */
+    {
+	int e = exponent(imprecise(x));
+	return e < 0 ? -e : 0;
+    }
+
     public real acosh(x)
 	/*
 	 * Returns inverse hyperbolic cosine of 'x'.
@@ -13,7 +23,11 @@ extend namespace Math {
     {
 	if (x < 1)
 	    raise invalid_argument("acosh arg < 1", 0, x);
-	return log(x + sqrt(x*x-1));
+	x = imprecise(x);
+	int bits = precision(x);
+	/* x*x-1 and the log cancel as x approaches 1 */
+	x = imprecise(x, bits + small_bits(x - 1) + 8);
+	return imprecise(log(x + sqrt(x*x-1)), bits);
     }
 
     public real asinh(x)
@@ -22,12 +36,16 @@ extend namespace Math {
 	 */
     {
 	if (x == 0) return 0;
+	x = imprecise(x);
+	int bits = precision(x);
 	real sign = 1;
 	if (x < 0) {
 	    sign = -1;
 	    x = -x;
 	}
-	return sign * log(x + sqrt(x*x+1));
+	/* The log cancels as x approaches 0 */
+	x = imprecise(x, bits + small_bits(x) + 8);
+	return imprecise(sign * log(x + sqrt(x*x+1)), bits);
     }
 
     public real atanh(x)
@@ -37,7 +55,11 @@ extend namespace Math {
     {
 	if (abs(x) > 1)
 	    raise invalid_argument("atanh arg > 1", 0, x);
-	return 0.5 * log((1 + x) / (1 - x));
+	x = imprecise(x);
+	int bits = precision(x);
+	/* The log cancels as x approaches 0 */
+	x = imprecise(x, bits + small_bits(x) + 8);
+	return imprecise(0.5 * log((1 + x) / (1 - x)), bits);
     }
 
     public real cosh(x)
@@ -53,7 +75,11 @@ extend namespace Math {
 	 * Returns hyperbolic sine of 'x'.
 	 */
     {
-	return (exp(x) - exp(-x)) / 2;
+	x = imprecise(x);
+	int bits = precision(x);
+	/* exp(x) - exp(-x) cancels as x approaches 0 */
+	x = imprecise(x, bits + small_bits(x) + 8);
+	return imprecise((exp(x) - exp(-x)) / 2, bits);
     }
 
     public real tanh(x)
@@ -61,27 +87,38 @@ extend namespace Math {
 	 * Returns hyperbolic tangent of 'x'.
 	 */
     {
-	return sinh(x) / cosh(x);
+	x = imprecise(x);
+	int bits = precision(x);
+	x = imprecise(x, bits + 8);
+	return imprecise(sinh(x) / cosh(x), bits);
     }
 
     real _erf(real x, real off)
     {
-	if (x == off)
-	    return 0;
 	x = imprecise(x);
 	int bits = precision(x);
-	int obits = bits + 512;
+	/*
+	 * The terms grow to about e**(x*x) before they cancel, and
+	 * erfc(x) shrinks to about e**-(x*x), so carry enough bits
+	 * for both, log2(e) being under 1.45
+	 */
+	int loss = ceil(imprecise(x, 64) ** 2 * 1.45);
+	if (off != 0)
+	    loss *= 2;
+	int obits = bits + loss + 64;
 	real factor = 2 / sqrt(pi_value(obits));
 
 	x = imprecise(x, obits);
-	off = imprecise(off, obits) / factor;
-	real val = x - off;
+	real x2 = x * x;
+	real t = x;
+	real val = x - imprecise(off, obits) / factor;
 
 	for (int n = 1; ; n++) {
-	    int f = 2 * n + 1;
-	    real a = imprecise(((-1)**n * x**f) / (n! * f), obits);
+	    /* t is (-1)**n * x**(2n+1) / n! */
+	    t = -t * x2 / n;
+	    real a = t / (2 * n + 1);
 	    val += a;
-	    if (exponent(val) - exponent(a) > obits)
+	    if (a == 0 || exponent(val) - exponent(a) > obits)
 		break;
 	}
 	return imprecise(val * factor, bits);

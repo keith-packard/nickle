@@ -8,6 +8,7 @@ tests = [
   'scanf.5c',
   'gcdtest.5c',
   'bitwisetest.5c',
+  'remaindertest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

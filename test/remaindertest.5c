@@ -1,0 +1,37 @@
+/*
+ * Nickle test suite
+ *
+ * Remainders of large integers
+ *
+ * Long division sometimes overestimates a quotient digit and adds the
+ * divisor back. That path left a leading zero digit in the remainder,
+ * so it compared unequal to the same value computed any other way.
+ */
+
+autoimport PRNG;
+
+exception bad_remainder (int a, int b, int r);
+
+void function check (int a, int b)
+{
+    int	r = a % b;
+    int	want = a - (a // b) * b;
+
+    if (r != want || hash (r) != hash (want) ||
+	bit_width (r) != bit_width (want) ||
+	r < 0 || r >= abs (b))
+	raise bad_remainder (a, b, r);
+}
+
+/* Divisors just above a power of two make the quotient estimate too big */
+for (int k = 32; k <= 3232; k += 32)
+    for (int c = 1; c <= 3; c++)
+	for (int m = k; m <= k + 200; m += 37) {
+	    check (2 ** m, 2 ** k + c);
+	    check (-(2 ** m), 2 ** k + c);
+	    check (2 ** m - 1, -(2 ** k + c));
+	}
+
+for (int i = 0; i < 500; i++)
+    check (randbits (randint (4000) + 1) - randbits (randint (4000) + 1),
+	   randbits (randint (2000) + 1) + 1);

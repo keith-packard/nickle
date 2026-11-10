@@ -27,6 +27,7 @@ tests = [
   'emptycomptest.5c',
   'bigarraytest.5c',
   'unionmembertest.5c',
+  'killtest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

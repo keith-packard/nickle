@@ -1,0 +1,31 @@
+/*
+ * Nickle test suite
+ *
+ * Thread::kill
+ *
+ * With no arguments, kill looked for a global named "thread", which
+ * the debugger stopped providing long ago, and always raised. It now
+ * kills the current thread, as documented.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+bool reached = false;
+
+void function killer ()
+{
+    Thread::kill ();
+    reached = true;
+}
+
+thread t = fork killer ();
+Thread::join (t);
+if (reached)
+    raise wrong ("code after kill ()", reached, false);
+
+/* Killing a thread counts it once */
+thread s = fork (sleep (100000));
+int first = Thread::kill (s);
+int second = Thread::kill (s);
+if (first != 1 || second != 0)
+    raise wrong ("kill counts", (int[*]) { first, second }, (int[*]) { 1, 0 });

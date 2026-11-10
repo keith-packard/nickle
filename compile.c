@@ -473,8 +473,7 @@ CompileLvalue(ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createI
         switch (s->symbol.class) {
         case class_const:
             if (!initialize) {
-                CompileError(obj, stat, "Attempt to assign to static variable \"%A\"",
-                             expr->atom.atom);
+                CompileError(obj, stat, "Attempt to assign to const \"%A\"", expr->atom.atom);
                 expr->base.type = typePoly;
                 break;
             }
@@ -581,6 +580,8 @@ CompileLvalue(ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createI
             obj = CompileCall(obj, expr, TailNever, stat, code, True);
             break;
         }
+        CompileError(obj, stat, "Invalid lvalue");
+        expr->base.type = typePoly;
         break;
     default:
         if (auto_reference) {

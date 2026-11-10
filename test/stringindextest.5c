@@ -1,0 +1,59 @@
+/*
+ * Nickle test suite
+ *
+ * String indices and lengths
+ *
+ * String lengths, character counts, and indices were ints and longs,
+ * and only small integers were accepted as indices, so an index past
+ * the small integer range was reported as not being an integer rather
+ * than as out of range.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function substr_error (string what, string message, poly() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, int i, poly v) {
+	check (what, m, message);
+    }
+}
+
+check ("substr", String::substr ("hello", 1, 3), "ell");
+check ("substr negative count", String::substr ("hello", 4, -3), "ell");
+check ("substr whole", String::substr ("hello", 0, 5), "hello");
+check ("substr empty", String::substr ("hello", 5, 0), "");
+check ("substr utf-8", String::substr ("héllo", 1, 2), "él");
+
+substr_error ("start before string", "substr: index out of range",
+	      poly func () { return String::substr ("hello", 2, -3); });
+substr_error ("index past end", "substr: index out of range",
+	      poly func () { return String::substr ("hello", 6, 0); });
+substr_error ("count past end", "substr: count out of range",
+	      poly func () { return String::substr ("hello", 1, 5); });
+substr_error ("huge index", "substr: index out of range",
+	      poly func () { return String::substr ("hello", 2**62, 1); });
+substr_error ("huge count", "substr: count out of range",
+	      poly func () { return String::substr ("hello", 1, 2**62); });
+substr_error ("huge negative count", "substr: index out of range",
+	      poly func () { return String::substr ("hello", 1, -(2**62)); });
+
+check ("index utf-8", "héllo"[1], 0xe9);
+check ("length utf-8", String::length ("héllo"), 5);
+check ("String::index utf-8", String::index ("héllo", "lo"), 3);
+
+try {
+    int c = "hello"[2**40];
+    raise not_raised ("huge string index");
+} catch invalid_binop_values (string m, poly s, poly i) {
+    check ("huge string index", i, 2**40);
+}

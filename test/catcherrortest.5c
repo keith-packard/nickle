@@ -1,0 +1,36 @@
+/*
+ * Nickle test suite
+ *
+ * Catching something that isn't an exception
+ *
+ * The compile error passed the name's expression node where the name
+ * was expected, printing garbage.
+ */
+
+exception wrong_message (string message);
+
+int notexc = 1;
+
+namespace N {
+    public int ne = 1;
+}
+
+void function check (string message, string name)
+{
+    if (String::index (message, "\"" + name + "\" as exception") < 0)
+	raise wrong_message (message);
+}
+
+Command::lex_exit_on_error (false);
+file save_stderr = stderr;
+stderr = File::string_write ();
+try { ; } catch notexc (int a) { ; }
+string unqualified = File::string_string (stderr);
+stderr = File::string_write ();
+try { ; } catch N::ne (int a) { ; }
+string qualified = File::string_string (stderr);
+stderr = save_stderr;
+Command::lex_exit_on_error (true);
+
+check (unqualified, "notexc");
+check (qualified, "ne");

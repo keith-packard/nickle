@@ -23,6 +23,7 @@ tests = [
   'hugeinttest.5c',
   'implicitdimtest.5c',
   'lvaluetest.5c',
+  'catcherrortest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

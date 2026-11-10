@@ -1134,11 +1134,29 @@ Value
 NewRationalFloat(Rational *r, unsigned prec)
 {
     ENTER();
-    Value num, den;
+    Fpart   *num = NewFpart(r->sign, r->num);
+    Fpart   *den = NewFpart(Positive, r->den);
+    Fpart   *mant;
+    Fpart   *exp = zero_fpart;
+    unsigned iprec, nlen;
+    Natural *rem;
 
-    num = NewNaturalFloat(r->sign, r->num, prec);
-    den = NewNaturalFloat(Positive, r->den, prec);
-    RETURN(FloatDivide(num, den, 1));
+    /*
+     * Divide the exact numerator by the exact denominator, as
+     * FloatDivide does, so the result is rounded only once
+     */
+    /* 2 guard bits */
+    iprec = prec + FpartLength(den) + 2;
+    nlen = FpartLength(num);
+    if (nlen < iprec) {
+        num = FpartLsl(num, iprec - nlen);
+        exp = FpartAdd(exp, NewIntFpart(iprec - nlen), True);
+    }
+    mant = FpartDivide(num, den, &rem);
+    /* set the low guard bit if there was a remainder */
+    if (!NaturalZero(rem))
+        NaturalDigits(mant->mag)[0] |= 1;
+    RETURN(NewFloat(mant, exp, prec));
 }
 
 #define SCALE_BITS 52

@@ -1105,6 +1105,8 @@ CheckStandardException(void)
     SymbolPtr except = standardExceptions[standardException];
 
     signalException = False;
+    /* Leave aborting set only if another signal still needs it */
+    aborting = signalInterrupt || signalSuspend || signalFinished || signalError;
     standardException = exception_none;
     standardExceptionArgs = 0;
     return except;

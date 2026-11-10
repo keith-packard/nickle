@@ -869,7 +869,7 @@ typedef struct _thread {
 
 typedef struct _semaphore {
     BaseValue value;
-    int       count;
+    ptrdiff_t count;
     int       id;
 } Semaphore;
 

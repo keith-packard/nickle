@@ -15,6 +15,11 @@ do_Semaphore_wait(Value s)
     if (aborting)
         RETURN(Void);
     if (!running->thread.partial) {
+        if (s->semaphore.count == PTRDIFF_MIN) {
+            RaiseStandardException(exception_invalid_argument, 3,
+                                   NewStrString("wait: semaphore count too small"), NewInt(0), s);
+            RETURN(Void);
+        }
         --s->semaphore.count;
         if (s->semaphore.count < 0) {
             running->thread.partial = 1;
@@ -40,7 +45,7 @@ Value
 do_Semaphore_count(Value s)
 {
     ENTER();
-    RETURN(NewInt(s->semaphore.count));
+    RETURN(NewPtrdiffInteger(s->semaphore.count));
 }
 
 Value
@@ -49,6 +54,11 @@ do_Semaphore_signal(Value s)
     ENTER();
     if (aborting)
         RETURN(Void);
+    if (s->semaphore.count == PTRDIFF_MAX) {
+        RaiseStandardException(exception_invalid_argument, 3,
+                               NewStrString("signal: semaphore count too large"), NewInt(0), s);
+        RETURN(Void);
+    }
     ++s->semaphore.count;
     if (s->semaphore.count <= 0)
         ThreadsWakeup(s, WakeOne);
@@ -64,7 +74,7 @@ SemaphorePrint(Value f, Value av, char format, int base, int width, int prec, in
     (void)width;
     (void)prec;
     (void)fill;
-    FilePrintf(f, "semaphore %d (%d)", av->semaphore.id, av->semaphore.count);
+    FilePrintf(f, "semaphore %d (%z)", av->semaphore.id, av->semaphore.count);
     return True;
 }
 
@@ -95,7 +105,7 @@ do_Semaphore_new(ptrdiff_t n, Value *value)
 {
     ENTER();
     Value      ret;
-    int        count;
+    ptrdiff_t  count;
     static int id;
 
     switch (n) {
@@ -103,7 +113,9 @@ do_Semaphore_new(ptrdiff_t n, Value *value)
         count = 0;
         break;
     case 1:
-        count = IntPart(value[0], "Illegal initial semaphore count");
+        count = PtrdiffPart(value[0], "Illegal initial semaphore count");
+        if (aborting)
+            RETURN(Void);
         break;
     default:
         RaiseStandardException(exception_invalid_argument, 3,

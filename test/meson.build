@@ -25,6 +25,7 @@ tests = [
   'lvaluetest.5c',
   'catcherrortest.5c',
   'emptycomptest.5c',
+  'bigarraytest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

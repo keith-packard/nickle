@@ -1,0 +1,60 @@
+/*
+ * Nickle test suite
+ *
+ * Array sizes and indices
+ *
+ * Array element counts and indices were ints, and only small integers
+ * were accepted as indices, so a product of dimensions over 2**31
+ * wrapped silently, building an array too small for its dimensions,
+ * and growing a multi-dimensional resizable array past that size
+ * corrupted memory. Counts and indices are now ptrdiff_t, and arrays
+ * too large to represent raise out_of_memory.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function too_large (string what, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch out_of_memory (string m) {
+    }
+}
+
+void function out_of_bounds (string what, poly index, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_array_bounds (string m, poly a, poly i) {
+	if (i != index)
+	    raise wrong (what, i, index);
+    }
+}
+
+/* Products of small dimensions past any representable size */
+too_large ("int[2**20, 2**20, 2**21]", void func () { int[2**20, 2**20, 2**21] a; });
+too_large ("int[2**62, 4]", void func () { int[2**62, 4] a; });
+
+/* Growing a resizable array past any representable size */
+too_large ("r[2**61, 0]", void func () { int[...,...] r = {}; r[2**61, 0] = 1; });
+too_large ("setdims", void func () {
+    int[...,...] r = {};
+    setdims (r, (int[*]) { 2**31, 2**31 });
+});
+
+/* Indices of any size report the index */
+int[3] small = { 1, 2, 3 };
+out_of_bounds ("small[2**40]", 2**40, void func () { poly x = small[2**40]; });
+out_of_bounds ("small[2**80]", 2**80, void func () { poly x = small[2**80]; });
+
+/* Multi-dimensional resizable arrays grow correctly */
+int[...,...] g = {};
+g[0, 2**10] = 1;
+g[2**10, 0] = 2;
+g[3, 5] = 7;
+if (dims (g) != (int[*]) { 2**10 + 1, 2**10 + 1 } || g[0, 2**10] != 1 || g[2**10, 0] != 2
+    || g[3, 5] != 7)
+    raise wrong ("grown array", dims (g), (int[*]) { 2**10 + 1, 2**10 + 1 });

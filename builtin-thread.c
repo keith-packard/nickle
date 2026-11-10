@@ -75,7 +75,7 @@ import_Thread_namespace(void)
          "\n"
           " int kill (thread t ...)\n"
           "\n"
-          " If no threads are provided, kill a thread being debugged.\n"
+          " If no threads are provided, kill the current thread.\n"
           " Otherwise, kill all of the threads provided.\n"
           " Return the number of threads killed that weren't already\n"
           " finished.\n" },

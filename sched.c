@@ -257,12 +257,10 @@ do_Thread_kill(int n, Value *p)
     Value thread;
     int   ret = 0;
 
+    /* With no threads, kill the current one */
     if (n == 0) {
-        thread = lookupVar(0, "thread");
-        if (!ValueIsThread(thread))
-            RaiseStandardException(exception_invalid_argument, 3,
-                                   NewStrString("kill: no default thread"), thread, Void);
-        else
+        thread = running;
+        if (thread)
             ret = KillThread(thread);
     } else {
         while (n--)

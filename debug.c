@@ -117,6 +117,15 @@ DebugStart(Value continuation)
     if (LexResetInteractive()) {
         if (DebugSetFrame(continuation, 0))
             DebugAddCommands();
+    } else {
+        /*
+         * With no interactive input to return to, stop now: the parser
+         * may already have read the next statement, which would
+         * otherwise run, and its result would set the exit status
+         */
+        IoFini();
+        FileFini();
+        exit(1);
     }
 }
 

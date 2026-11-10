@@ -1,0 +1,49 @@
+/*
+ * Nickle test suite
+ *
+ * Semaphore counts beyond an int
+ *
+ * Semaphore counts were ints: Semaphore::new refused initial counts
+ * beyond a small int, and signaling a semaphore enough times
+ * overflowed its count. Counts now cover the ptrdiff_t range, and
+ * signal and wait raise invalid_argument at its ends.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function rejected (string what, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, poly a, poly b) {
+    }
+}
+
+semaphore s = Semaphore::new (2**40);
+check ("new (2**40)", Semaphore::count (s), 2**40);
+Semaphore::signal (s);
+check ("signal", Semaphore::count (s), 2**40 + 1);
+Semaphore::wait (s);
+Semaphore::wait (s);
+check ("wait", Semaphore::count (s), 2**40 - 1);
+check ("test", Semaphore::test (s), true);
+check ("after test", Semaphore::count (s), 2**40 - 2);
+
+/* The ends of the range */
+semaphore top = Semaphore::new (2**63 - 1);
+rejected ("signal at the top", void func () { Semaphore::signal (top); });
+check ("top unchanged", Semaphore::count (top), 2**63 - 1);
+
+semaphore bottom = Semaphore::new (-(2**63));
+rejected ("wait at the bottom", void func () { Semaphore::wait (bottom); });
+check ("bottom unchanged", Semaphore::count (bottom), -(2**63));
+
+rejected ("new (2**70)", void func () { Semaphore::new (2**70); });

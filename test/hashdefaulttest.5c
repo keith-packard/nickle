@@ -1,0 +1,34 @@
+/*
+ * Nickle test suite
+ *
+ * Hash table growth
+ *
+ * Reading a missing key from a hash with a default inserts the key.
+ * When that insertion grew the table, the entry was written into the
+ * table's old storage and lost.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check_all (string what, int[int] h, int n)
+{
+    for (int i = 0; i < n; i++)
+	if (!hash_test (h, i))
+	    raise wrong (what, i, "missing");
+    if (dim (hash_keys (h)) != n)
+	raise wrong (what, dim (hash_keys (h)), n);
+}
+
+/* Insert by reading with a default */
+int[int] d = { => 0 };
+for (int i = 0; i < 1000; i++)
+    d[i];
+check_all ("default", d, 1000);
+
+/* Insert by assignment and by reference */
+int[int] h;
+for (int i = 0; i < 500; i++)
+    h[i] = i;
+for (int i = 500; i < 1000; i++)
+    &h[i];
+check_all ("assign and reference", h, 1000);

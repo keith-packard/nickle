@@ -853,12 +853,8 @@ ThreadOpDot(Value thread, Value value, Atom atom, Bool fetch)
         else
             v = UnionRef(value, atom);
         if (!v) {
-            if (StructMemType(value->unions.type, atom))
-                RaiseStandardException(exception_invalid_struct_member, 2, value,
-                                       NewStrString(AtomName(atom)));
-            else
-                RaiseStandardException(exception_invalid_struct_member, 2, value,
-                                       NewStrString(AtomName(atom)));
+            RaiseStandardException(exception_invalid_struct_member, 2, value,
+                                   NewStrString(AtomName(atom)));
             break;
         }
         value = v;
@@ -1098,12 +1094,8 @@ ThreadsRun(Value thread, Value lex)
                         next = inst + inst->tagcase.offset;
                         v = UnionValue(value, inst->tagcase.tag);
                         if (!v) {
-                            if (StructMemType(value->unions.type, inst->atom.atom))
-                                RaiseStandardException(exception_invalid_struct_member, 2, value,
-                                                       NewStrString(AtomName(inst->atom.atom)));
-                            else
-                                RaiseStandardException(exception_invalid_struct_member, 2, value,
-                                                       NewStrString(AtomName(inst->atom.atom)));
+                            RaiseStandardException(exception_invalid_struct_member, 2, value,
+                                                   NewStrString(AtomName(inst->tagcase.tag)));
                             break;
                         }
                         value = v;
@@ -1226,7 +1218,7 @@ ThreadsRun(Value thread, Value lex)
                     stack = 1;
                     v = StructMemRef(w, inst->atom.atom);
                     if (!v) {
-                        RaiseStandardException(exception_invalid_struct_member, 2, v,
+                        RaiseStandardException(exception_invalid_struct_member, 2, w,
                                                NewStrString(AtomName(inst->atom.atom)));
                         break;
                     }

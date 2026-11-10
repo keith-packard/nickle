@@ -10,6 +10,7 @@ tests = [
   'bitwisetest.5c',
   'remaindertest.5c',
   'imprecisetest.5c',
+  'realstringtest.5c',
   'karatsubatest.5c',
   'inttest.5c',
   'optest.5c',

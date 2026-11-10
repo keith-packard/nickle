@@ -1,0 +1,59 @@
+/*
+ * Nickle test suite
+ *
+ * Conversion of strings to reals
+ *
+ * The length of the fraction used to count every character to the
+ * end of the string, so trailing whitespace scaled it down:
+ * string_to_real ("1.5 ") was 1.05.
+ */
+
+autoimport PRNG;
+
+exception bad_string_to_real (string s, rational got, rational want);
+
+string[*] suffixes = { "", " ", "\n", "\t", "  \n" };
+
+void function check (string s, rational want)
+{
+    for (int i = 0; i < dim (suffixes); i++) {
+	rational got = string_to_real (s + suffixes[i]);
+
+	if (got != want)
+	    raise bad_string_to_real (s + suffixes[i], got, want);
+    }
+}
+
+check ("1.5", 3/2);
+check ("-2.25", -9/4);
+check ("12_345.6_7", 1234567/100);
+check ("0.1{3}", 2/15);
+check ("1.5e2", 150);
+check ("0x1.8", 3/2);
+check ("0x1.8p1", 3);
+check ("0b1.01", 5/4);
+
+for (int i = 0; i < 300; i++) {
+    int ipart = randint (100000);
+    int k = randint (20) + 1;
+    string frac = "";
+    int fval = 0;
+
+    for (int j = 0; j < k; j++) {
+	int d = randint (10);
+	frac += String::new (d + '0');
+	fval = fval * 10 + d;
+    }
+    rational want = ipart + fval / 10 ** k;
+    string s = sprintf ("%d.%s", ipart, frac);
+    if (randint (2) == 0) {
+	int e = randint (40) - 20;
+	s += sprintf ("e%d", e);
+	want *= 10 ** e;
+    }
+    if (randint (2) == 0) {
+	s = "-" + s;
+	want = -want;
+    }
+    check (s, want);
+}

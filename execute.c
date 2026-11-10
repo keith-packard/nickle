@@ -99,7 +99,6 @@ ThreadCall(Value thread, Bool tail, InstPtr *next, int *stack)
     } else
         func = argc ? CStack(argc - 1) : value;
     if (!ValueIsFunc(func)) {
-        ThreadStackDump(thread);
         RaiseStandardException(exception_invalid_unop_value, 2,
                                NewStrString("call of non-function"), func);
         RETURN(Void);

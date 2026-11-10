@@ -1748,7 +1748,7 @@ CompileImplicitInit(Type *type)
     StructTypePtr structs;
     TypePtr      *types;
     Atom         *atoms;
-    int           i;
+    ptrdiff_t     i;
 
     type = TypeCanon(type);
 
@@ -1824,7 +1824,7 @@ CompileStructUnionInit(ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodeP
     ExprPtr     inits = expr ? expr->tree.left : 0;
     ExprPtr     init;
     Type       *mem_type;
-    int         i;
+    ptrdiff_t   i;
     TypePtr    *types = BoxTypesElements(structs->types);
     Atom       *atoms = StructTypeAtoms(structs);
 
@@ -3273,9 +3273,9 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
          */
         test_inst = 0;
         if (expr->base.tag == UNION && st) {
-            Bool  missing = False;
-            int   i;
-            Atom *atoms = StructTypeAtoms(st);
+            Bool      missing = False;
+            ptrdiff_t i;
+            Atom     *atoms = StructTypeAtoms(st);
 
             /*
              * See if every member of the union has a case
@@ -3814,7 +3814,7 @@ CompileType(ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code)
     ArgType    *at, *aat;
     StructType *st;
     TypeElt    *et;
-    int         i, j;
+    ptrdiff_t   i, j;
 
     switch (type->base.tag) {
     case type_prim:

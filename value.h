@@ -788,7 +788,7 @@ typedef struct _ref {
 
 typedef struct _structType {
     DataType   *data;
-    int         nelements;
+    ptrdiff_t   nelements;
     BoxTypesPtr types;
     Atom        atoms[0];
 } StructType;
@@ -1274,14 +1274,14 @@ NewRef(BoxPtr box, ptrdiff_t element)
 }
 
 Value       NewStruct(StructType *type, Bool constant);
-StructType *NewStructType(int nelements);
-Type       *BuildStructType(int nelements, ...);
+StructType *NewStructType(ptrdiff_t nelements);
+Type       *BuildStructType(ptrdiff_t nelements, ...);
 Type       *StructMemType(StructType *st, Atom name);
 Value       StructMemRef(Value sv, Atom name);
 Value       StructMemValue(Value sv, Atom name);
 Value       NewUnion(StructType *type, Bool constant);
-Type       *BuildUnionType(int nelements, ...);
-Type       *BuildEnumType(int nelements, ...);
+Type       *BuildUnionType(ptrdiff_t nelements, ...);
+Type       *BuildEnumType(ptrdiff_t nelements, ...);
 Value       UnionValue(Value uv, Atom name);
 Value       UnionRef(Value uv, Atom name);
 Type       *BuildArrayType(Type *type, int32_t ndim, ...);

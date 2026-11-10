@@ -1586,7 +1586,7 @@ FilePutSubscriptType(Value f, Type *t, Bool minimal)
 void
 FilePutType(Value f, Type *t, Bool minimal)
 {
-    int         i;
+    ptrdiff_t   i;
     StructType *st;
     Bool        spaceit = minimal;
     TypeElt    *elt;

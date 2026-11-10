@@ -250,10 +250,10 @@ TypePlusPart(Type *type)
     return type;
 }
 
-static int
-AddPlusType(StructType *new, StructType *old, int pos)
+static ptrdiff_t
+AddPlusType(StructType *new, StructType *old, ptrdiff_t pos)
 {
-    int i;
+    ptrdiff_t i;
 
     for (i = 0; i < old->nelements; i++) {
         AddBoxType(&new->types, BoxTypesElements(old->types)[i]);
@@ -270,7 +270,7 @@ NewTypePlus(Type *left, Type *right)
     Type *t, *l, *r;
     ;
     StructType *st;
-    int         i;
+    ptrdiff_t   i;
 
     l = TypePlusPart(left);
     r = TypePlusPart(right);
@@ -364,7 +364,7 @@ int          TypeCheckLevel;
 Bool
 TypeIsSupertype(Type *super, Type *sub)
 {
-    int         n;
+    ptrdiff_t   n;
     Bool        ret;
     StructType *super_st;
     StructType *sub_st;
@@ -1214,8 +1214,8 @@ TypeCombineFunction(Type *type)
 Bool
 TypeCompatibleAssign(TypePtr a, Value b)
 {
-    int32_t adim, bdim;
-    int     n;
+    int32_t   adim, bdim;
+    ptrdiff_t n;
 
     if (!a || !b)
         return True;
@@ -1345,8 +1345,8 @@ TypeCompatibleAssign(TypePtr a, Value b)
 Bool
 ValueIsType(Value b, TypePtr a)
 {
-    int32_t adim, bdim;
-    int     n;
+    int32_t   adim, bdim;
+    ptrdiff_t n;
 
     if (!a || !b)
         return True;

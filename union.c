@@ -12,7 +12,7 @@ UnionRef(Value uv, Atom name)
     ENTER();
     Union      *u = &uv->unions;
     StructType *st = u->type;
-    int         i;
+    ptrdiff_t   i;
 
     for (i = 0; i < st->nelements; i++)
         if (StructTypeAtoms(st)[i] == name) {
@@ -122,11 +122,11 @@ NewUnion(StructType *type, Bool constant)
 }
 
 Type *
-BuildUnionType(int nelements, ...)
+BuildUnionType(ptrdiff_t nelements, ...)
 {
     ENTER();
     StructType *st;
-    int         i;
+    ptrdiff_t   i;
     char       *name;
     Type       *type;
     va_list     ap;
@@ -144,11 +144,11 @@ BuildUnionType(int nelements, ...)
 }
 
 Type *
-BuildEnumType(int nelements, ...)
+BuildEnumType(ptrdiff_t nelements, ...)
 {
     ENTER();
     StructType *st;
-    int         i;
+    ptrdiff_t   i;
     char       *name;
     va_list     ap;
 

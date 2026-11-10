@@ -901,7 +901,7 @@ subtype         : basetype
                         AtomListPtr al;
                         StructType *st;
                         MemListPtr  ml;
-                        int         nelements;
+                        ptrdiff_t   nelements;
 
                         nelements = 0;
                         for (ml = $3; ml; ml = ml->next) {
@@ -924,7 +924,7 @@ subtype         : basetype
                         AtomListPtr al;
                         StructType *st;
                         MemListPtr  ml;
-                        int         nelements;
+                        ptrdiff_t   nelements;
 
                         nelements = 0;
                         for (ml = $3; ml; ml = ml->next) {
@@ -946,7 +946,7 @@ subtype         : basetype
                     {
                         AtomListPtr al;
                         StructType *st;
-                        int         nelements;
+                        ptrdiff_t   nelements;
 
                         nelements = 0;
                         for (al = $3; al; al = al->next)
@@ -1806,7 +1806,7 @@ static CanonTypeResult
 ParseCanonType(TypePtr type, Bool forwardAllowed)
 {
     ArgType        *arg;
-    int             n;
+    ptrdiff_t       n;
     CanonTypeResult ret = CanonTypeDefined, t;
     Bool            anyResolved;
 

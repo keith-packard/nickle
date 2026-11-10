@@ -12,7 +12,7 @@ StructMemRef(Value sv, Atom name)
     ENTER();
     Struct     *s = &sv->structs;
     StructType *st = s->type;
-    int         i;
+    ptrdiff_t   i;
 
     for (i = 0; i < st->nelements; i++)
         if (StructTypeAtoms(st)[i] == name)
@@ -26,7 +26,7 @@ StructMemValue(Value sv, Atom name)
     ENTER();
     Struct     *s = &sv->structs;
     StructType *st = s->type;
-    int         i;
+    ptrdiff_t   i;
 
     for (i = 0; i < st->nelements; i++)
         if (StructTypeAtoms(st)[i] == name)
@@ -37,7 +37,7 @@ StructMemValue(Value sv, Atom name)
 Type *
 StructMemType(StructType *st, Atom name)
 {
-    int i;
+    ptrdiff_t i;
 
     for (i = 0; i < st->nelements; i++)
         if (StructTypeAtoms(st)[i] == name)
@@ -50,7 +50,7 @@ StructPrint(Value f, Value av, char format, int base, int width, int prec, int f
 {
     Struct     *s = &av->structs;
     StructType *st = s->type;
-    int         i;
+    ptrdiff_t   i;
     Bool        pretty = format == 'v' || format == 'g' || format == 'G';
     char        down_format = format == 'g' ? 'G' : format;
 
@@ -86,7 +86,7 @@ StructMark(void *object)
 static Value
 StructEqual(Value a, Value b, int expandOk)
 {
-    int         i;
+    ptrdiff_t   i;
     StructType *at = a->structs.type;
 
     (void)expandOk;
@@ -105,7 +105,7 @@ StructHash(Value a)
     Struct     *s = &a->structs;
     StructType *at = s->type;
     HashValue   h = 0;
-    int         i;
+    ptrdiff_t   i;
 
     for (i = 0; i < at->nelements; i++)
         h = h ^ ValueInt(ValueHash(BoxValue(a->structs.values, i)));
@@ -159,14 +159,14 @@ StructTypeMark(void *object)
 DataType StructTypeType = { StructTypeMark, 0, "StructTypeType" };
 
 StructType *
-NewStructType(int nelements)
+NewStructType(ptrdiff_t nelements)
 {
     ENTER();
     StructType *st;
-    int         i;
+    ptrdiff_t   i;
     Atom       *atoms;
 
-    st = ALLOCATE(&StructTypeType, sizeof(StructType) + nelements * sizeof(Atom));
+    st = ALLOCATE(&StructTypeType, sizeof(StructType) + (size_t)nelements * sizeof(Atom));
     st->nelements = nelements;
     st->types = NewBoxTypes(nelements);
     atoms = StructTypeAtoms(st);
@@ -192,11 +192,11 @@ StructInit(void)
 }
 
 Type *
-BuildStructType(int nelements, ...)
+BuildStructType(ptrdiff_t nelements, ...)
 {
     ENTER();
     StructType *st;
-    int         i;
+    ptrdiff_t   i;
     char       *name;
     Type       *type;
     va_list     ap;

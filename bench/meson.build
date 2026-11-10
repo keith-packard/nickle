@@ -10,7 +10,11 @@ gmp_dep = cc.find_library('gmp')
 
 bc = find_program('bc', required: false)
 
+bench_srcs = []
+
 foreach benchmark : benchmarks
+
+  bench_srcs += files(benchmark + '.c')
 
   benchmark('c-' + benchmark,
 	    executable('c-' + benchmark, benchmark + '.c',

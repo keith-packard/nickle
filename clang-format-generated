@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+#
+# Copyright © 2026 Keith Packard and Bart Massey.
+# All Rights Reserved.  See the file COPYING in this directory
+# for licensing information.
+#
+
+"""Format C sources with clang-format, including the C code in flex
+(.l) and bison (.y) input files.
+
+clang-format can't parse flex or bison input, so for those files only
+the C sections are formatted: the prologue between '%{' and '%}', and
+the code following the second '%%'. Everything else, including the C
+code in rule actions, is left alone. Other files are passed to
+clang-format whole.
+"""
+
+import argparse
+import subprocess
+import sys
+
+
+def clang_format(prog, text, assume):
+    return subprocess.run([prog, '--assume-filename=' + assume],
+                          input=text, capture_output=True, text=True,
+                          check=True).stdout
+
+
+def find_line(lines, marker, start, path):
+    for i in range(start, len(lines)):
+        if lines[i].rstrip('\n') == marker:
+            return i
+    sys.exit('%s: missing %s' % (path, marker))
+
+
+def format_generated(prog, path, text):
+    lines = text.splitlines(keepends=True)
+    prologue_start = find_line(lines, '%{', 0, path)
+    prologue_end = find_line(lines, '%}', prologue_start, path)
+    rules = find_line(lines, '%%', prologue_end, path)
+    code = find_line(lines, '%%', rules + 1, path)
+
+    # Name a .c file in the same directory so clang-format finds
+    # the same configuration and doesn't ignore the text
+    assume = path + '.c'
+    prologue = clang_format(prog, ''.join(lines[prologue_start + 1:prologue_end]), assume)
+    tail = clang_format(prog, ''.join(lines[code + 1:]), assume)
+    return (''.join(lines[:prologue_start + 1]) + prologue +
+            ''.join(lines[prologue_end:code + 1]) + tail)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
+    parser.add_argument('-i', '--in-place', action='store_true',
+                        help='rewrite files instead of printing them')
+    parser.add_argument('--clang-format', default='clang-format',
+                        help='clang-format program to run')
+    parser.add_argument('files', nargs='+')
+    args = parser.parse_args()
+
+    whole = []
+    for path in args.files:
+        if not path.endswith(('.l', '.y')):
+            whole.append(path)
+            continue
+        with open(path, encoding='utf-8') as f:
+            text = f.read()
+        formatted = format_generated(args.clang_format, path, text)
+        if not args.in_place:
+            sys.stdout.write(formatted)
+        elif formatted != text:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(formatted)
+    if whole:
+        subprocess.run([args.clang_format] + (['-i'] if args.in_place else []) + whole,
+                       check=True)
+
+
+if __name__ == '__main__':
+    main()

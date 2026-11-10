@@ -250,6 +250,11 @@ lex_c = custom_target(
   output : 'lex.c',
   command : [prog_flex, '-o', '@OUTPUT@', '@INPUT@'])
 
+# All C code, for the clang-format target, including sources outside
+# the build and the C sections of lex.l and gram.y
+format_srcs = files(nickle_srcs, 'builtin-bsdrandom.c', 'builtin-gcd.c',
+		    'test.c', 'lex.l', 'gram.y')
+
 nickle_srcs += [gram_ch, lex_c]
 
 configure_file(output : 'nickle-config.h',
@@ -285,6 +290,16 @@ subdir('test')
 subdir('examples')
 subdir('bench')
 subdir('doc')
+
+# 'ninja clang-format' formats all C code; this replaces Meson's
+# built-in target, which can't handle lex.l and gram.y
+prog_clang_format = find_program('clang-format', required : false)
+if prog_clang_format.found()
+  run_target('clang-format',
+	     command : [find_program('clang-format-generated'), '-i',
+			'--clang-format', prog_clang_format,
+			format_srcs, bench_srcs])
+endif
 
 nickle_spec_file = 'nickle-' + meson.project_version() + '.spec'
 

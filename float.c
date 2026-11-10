@@ -848,7 +848,12 @@ try_again_e:
     }
 
     if (format == 'f') {
-        m = Times(m, Pow(NewInt(base), expbase));
+        /*
+         * Use the exact value, mant * 2**exp, so that every integer
+         * digit is correct and not just those within the precision
+         */
+        m = Times(NewInteger(Positive, a->mant->mag),
+                  Pow(NewInt(2), NewInteger(a->exp->sign, a->exp->mag)));
         DPrintF("f format m", &m->floats);
         exp_width = 0;
         if (prec == INFINITE_OUTPUT_PRECISION) {

@@ -648,13 +648,18 @@ CompileLvalue(ObjPtr obj, ExprPtr expr, ExprPtr stat, CodePtr code, Bool createI
     RETURN(obj);
 }
 
-static void
-_CompileCheckException(ObjPtr obj, ExprPtr stat)
+/*
+ * When folding a constant operation raises an exception, discard the
+ * exception and leave the operation to run time, where it raises the
+ * exception only if executed, and where 'try' can catch it
+ */
+static Bool
+_CompileFoldRaised(void)
 {
-    SymbolPtr except = CheckStandardException();
-
-    if (except)
-        CompileError(obj, stat, "Exception \"%A\" raised during compilation", except->symbol.name);
+    if (!signalException)
+        return False;
+    (void)CheckStandardException();
+    return True;
 }
 
 /*
@@ -681,15 +686,20 @@ CompileBinOp(ObjPtr obj, ExprPtr expr, BinaryOp op, ExprPtr stat, CodePtr code)
         CompileError(obj, stat, "Incompatible types, left '%T', right '%T', for %O operation",
                      expr->tree.left->base.type, expr->tree.right->base.type, op);
         expr->base.type = typePoly;
-    } else if (obj->used == left + 2 && ObjCode(obj, left)->base.opCode == OpConst
-               && ObjCode(obj, right)->base.opCode == OpConst && !signalException) {
-        inst = ObjCode(obj, left);
-        inst->constant.constant = BinaryOperate(ObjCode(obj, left)->constant.constant,
-                                                ObjCode(obj, right)->constant.constant, op);
-        _CompileCheckException(obj, stat);
-        inst->base.flags &= ~InstPush;
-        obj->used = left + 1;
     } else {
+        if (obj->used == left + 2 && ObjCode(obj, left)->base.opCode == OpConst
+            && ObjCode(obj, right)->base.opCode == OpConst && !signalException) {
+            Value folded = BinaryOperate(ObjCode(obj, left)->constant.constant,
+                                         ObjCode(obj, right)->constant.constant, op);
+
+            if (!_CompileFoldRaised()) {
+                inst = ObjCode(obj, left);
+                inst->constant.constant = folded;
+                inst->base.flags &= ~InstPush;
+                obj->used = left + 1;
+                RETURN(obj);
+            }
+        }
         BuildInst(obj, OpBinOp, inst, stat);
         inst->binop.op = op;
     }
@@ -714,15 +724,20 @@ CompileBinFunc(ObjPtr obj, ExprPtr expr, BinaryFunc func, ExprPtr stat, CodePtr 
         CompileError(obj, stat, "Incompatible types, left '%T', right '%T', for %s operation",
                      expr->tree.left->base.type, expr->tree.right->base.type, name);
         expr->base.type = typePoly;
-    } else if (obj->used == left + 2 && ObjCode(obj, left)->base.opCode == OpConst
-               && ObjCode(obj, right)->base.opCode == OpConst && !signalException) {
-        inst = ObjCode(obj, left);
-        inst->constant.constant = (*func)(ObjCode(obj, left)->constant.constant,
-                                          ObjCode(obj, right)->constant.constant);
-        _CompileCheckException(obj, stat);
-        inst->base.flags &= ~InstPush;
-        obj->used = left + 1;
     } else {
+        if (obj->used == left + 2 && ObjCode(obj, left)->base.opCode == OpConst
+            && ObjCode(obj, right)->base.opCode == OpConst && !signalException) {
+            Value folded = (*func)(ObjCode(obj, left)->constant.constant,
+                                   ObjCode(obj, right)->constant.constant);
+
+            if (!_CompileFoldRaised()) {
+                inst = ObjCode(obj, left);
+                inst->constant.constant = folded;
+                inst->base.flags &= ~InstPush;
+                obj->used = left + 1;
+                RETURN(obj);
+            }
+        }
         BuildInst(obj, OpBinFunc, inst, stat);
         inst->binfunc.func = func;
     }
@@ -753,13 +768,18 @@ CompileUnOp(ObjPtr obj, ExprPtr expr, UnaryOp op, ExprPtr stat, CodePtr code)
         CompileError(obj, stat, "Incompatible type, value '%T', for %U operation", down->base.type,
                      op);
         expr->base.type = typePoly;
-    } else if (obj->used == d + 1 && ObjCode(obj, d)->base.opCode == OpConst && !signalException) {
-        inst = ObjCode(obj, d);
-        inst->constant.constant = UnaryOperate(ObjCode(obj, d)->constant.constant, op);
-        _CompileCheckException(obj, stat);
-        inst->base.flags &= ~InstPush;
-        obj->used = d + 1;
     } else {
+        if (obj->used == d + 1 && ObjCode(obj, d)->base.opCode == OpConst && !signalException) {
+            Value folded = UnaryOperate(ObjCode(obj, d)->constant.constant, op);
+
+            if (!_CompileFoldRaised()) {
+                inst = ObjCode(obj, d);
+                inst->constant.constant = folded;
+                inst->base.flags &= ~InstPush;
+                obj->used = d + 1;
+                RETURN(obj);
+            }
+        }
         BuildInst(obj, OpUnOp, inst, stat);
         inst->unop.op = op;
     }
@@ -785,13 +805,18 @@ CompileUnFunc(ObjPtr obj, ExprPtr expr, UnaryFunc func, ExprPtr stat, CodePtr co
         CompileError(obj, stat, "Incompatible type, value '%T', for %s operation", down->base.type,
                      name);
         expr->base.type = typePoly;
-    } else if (obj->used == d + 1 && ObjCode(obj, d)->base.opCode == OpConst && !signalException) {
-        inst = ObjCode(obj, d);
-        inst->constant.constant = (*func)(ObjCode(obj, d)->constant.constant);
-        _CompileCheckException(obj, stat);
-        inst->base.flags &= ~InstPush;
-        obj->used = d + 1;
     } else {
+        if (obj->used == d + 1 && ObjCode(obj, d)->base.opCode == OpConst && !signalException) {
+            Value folded = (*func)(ObjCode(obj, d)->constant.constant);
+
+            if (!_CompileFoldRaised()) {
+                inst = ObjCode(obj, d);
+                inst->constant.constant = folded;
+                inst->base.flags &= ~InstPush;
+                obj->used = d + 1;
+                RETURN(obj);
+            }
+        }
         BuildInst(obj, OpUnFunc, inst, stat);
         inst->unfunc.func = func;
     }

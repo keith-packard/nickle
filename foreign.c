@@ -23,7 +23,7 @@ ForeignPrint(Value f, Value av, char format, int base, int width, int prec, int 
     (void)width;
     (void)prec;
     (void)fill;
-    FilePrintf(f, "foreign %s (0x%x)", av->foreign.id, av->foreign.data);
+    FilePrintf(f, "foreign %s (0x%x)", av->foreign.id, (unsigned int)(uintptr_t)av->foreign.data);
     return True;
 }
 

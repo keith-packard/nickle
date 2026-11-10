@@ -889,13 +889,13 @@ ThreadStackDump(Value thread)
     StackObject *cstack = thread->thread.continuation.stack;
     StackChunk  *chunk;
     StackPointer stackPointer;
-    int          i = 0;
+    ptrdiff_t    i = 0;
 
     chunk = cstack->current;
     stackPointer = STACK_TOP(cstack);
     while (chunk) {
         while (stackPointer < CHUNK_MAX(chunk)) {
-            FilePrintf(FileStdout, "%d: %v\n", i++, (Value)*stackPointer++);
+            FilePrintf(FileStdout, "%z: %v\n", i++, (Value)*stackPointer++);
         }
         chunk = chunk->previous;
         if (chunk)

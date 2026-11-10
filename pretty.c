@@ -17,7 +17,7 @@
 #define PRETTY_NUM_WIDTH 10
 
 static int
-PrettyNumWidth(unsigned long i)
+PrettyNumWidth(double_digit i)
 {
     int w = 1;
     while (i >= 10) {
@@ -28,13 +28,13 @@ PrettyNumWidth(unsigned long i)
 }
 
 static void
-PrettyProfNum(Value f, unsigned long i, int pad_left)
+PrettyProfNum(Value f, double_digit i, int pad_left)
 {
     int spaces = PRETTY_NUM_WIDTH - PrettyNumWidth(i);
     if (pad_left)
         while (spaces-- > 0)
             FilePuts(f, " ");
-    FilePrintf(f, "%d", i);
+    FilePrintf(f, "%D", i);
     if (!pad_left)
         while (spaces-- > 0)
             FilePuts(f, " ");

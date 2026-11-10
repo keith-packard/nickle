@@ -243,8 +243,8 @@ IntPrint(Value f, Value av, char format, int base, int width, int prec, int fill
 {
     int       a = ValueInt(av);
     int       digit;
-    int       w;
-    int       fraction_width;
+    ptrdiff_t w;
+    ptrdiff_t fraction_width;
     char      space[64], *s;
     char      letter;
     int       neg;

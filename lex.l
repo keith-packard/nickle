@@ -6,12 +6,12 @@
  * for licensing information.
  */
 
-#include	"nickle.h"
-#include	"gram.h"
-#include	"ref.h"
-#include	<ctype.h>
-#include	<strings.h>
-#include	<errno.h>
+#include "nickle.h"
+#include "gram.h"
+#include "ref.h"
+#include <ctype.h>
+#include <strings.h>
+#include <errno.h>
 #ifdef HAVE_LIBREADLINE
 #ifdef HAVE_LIBEDIT
 #include <readline.h>
@@ -20,7 +20,7 @@
 #include <readline/history.h>
 #endif
 #endif
-    
+
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
@@ -28,60 +28,58 @@
 #endif
 
 typedef struct _lexInput {
-    DataType		data;
-    struct _lexInput	*next;
-    Value		file;
-    Atom		name;
-    int			lineno;
-    Bool		at_bol;
-    Bool		at_eof;
-    Bool		interactive;
+    DataType          data;
+    struct _lexInput *next;
+    Value             file;
+    Atom              name;
+    int               lineno;
+    Bool              at_bol;
+    Bool              at_eof;
+    Bool              interactive;
 } LexInput;
 
-LexInput    *lexInput;
-extern int  ignorenl;
-extern int  notCommand;
-extern int  seeComment;
-#define	    FILE_END_CHAR	-2
-    
-static void lexInputMark (void *object)
+LexInput  *lexInput;
+extern int ignorenl;
+extern int notCommand;
+extern int seeComment;
+#define FILE_END_CHAR -2
+
+static void
+lexInputMark(void *object)
 {
     LexInput *lex = object;
-    
-    MemReference (lex->next);
-    MemReference (lex->file);
+
+    MemReference(lex->next);
+    MemReference(lex->file);
 }
 
-static DataType lexInputType = {
-    lexInputMark, 0, "lexInputType"
-};
+static DataType lexInputType = { lexInputMark, 0, "lexInputType" };
 
 void
-NewLexInput (Value file, Atom name, Bool after, Bool interactive)
+NewLexInput(Value file, Atom name, Bool after, Bool interactive)
 {
-    ENTER ();
-    LexInput	*lex;
+    ENTER();
+    LexInput *lex;
 
-    lex = MemAllocate (&lexInputType, sizeof (*lex));
+    lex = MemAllocate(&lexInputType, sizeof(*lex));
     lex->file = file;
     lex->name = name;
     lex->lineno = 0;
     lex->at_bol = True;
     lex->at_eof = False;
     lex->interactive = interactive;
-    if (after)
-    {
-	LexInput **prev;
-	
-	for (prev = &lexInput; *prev; prev = &(*prev)->next)
-	    ;
-	lex->next = 0;
-	*prev = lex;
+    if (after) {
+        LexInput **prev;
+
+        for (prev = &lexInput; *prev; prev = &(*prev)->next)
+            ;
+        lex->next = 0;
+        *prev = lex;
     } else {
-	lex->next = lexInput;
-	lexInput = lex;
+        lex->next = lexInput;
+        lexInput = lex;
     }
-    EXIT ();
+    EXIT();
 }
 
 #ifdef HAVE_LIBREADLINE
@@ -102,234 +100,228 @@ my_deprep_terminal(void)
     stdin_in_readline = 0;
 }
 
-static int
-LexGetChar (void);
+static int LexGetChar(void);
 
 static int
-ReadlineGetChar (FILE *f)
+ReadlineGetChar(FILE *f)
 {
-    (void) f;
-    return LexGetChar ();
+    (void)f;
+    return LexGetChar();
 }
 #endif
 
-ReferencePtr	LexInputReference;
+ReferencePtr LexInputReference;
 
 void
-LexInit (void)
+LexInit(void)
 {
-    ENTER ();
+    ENTER();
 
 #ifdef HAVE_LIBREADLINE
     rl_getc_function = ReadlineGetChar;
-    rl_prep_term_function = (void *) my_prep_terminal;
+    rl_prep_term_function = (void *)my_prep_terminal;
     rl_deprep_term_function = my_deprep_terminal;
 #ifdef HAVE_RL_CATCH_SIGNALS
     rl_catch_signals = 0;
 #endif
 #endif
-    LexInputReference = NewReference ((void **) &lexInput);
-    MemAddRoot (LexInputReference);
-    EXIT ();
+    LexInputReference = NewReference((void **)&lexInput);
+    MemAddRoot(LexInputReference);
+    EXIT();
 }
 
 Atom
-LexFileName (void)
+LexFileName(void)
 {
     if (lexInput)
-	return lexInput->name;
-    return AtomId ("<initialization>");
+        return lexInput->name;
+    return AtomId("<initialization>");
 }
 
 int
-LexFileLine (void)
+LexFileLine(void)
 {
     if (lexInput)
-	return lexInput->lineno;
+        return lexInput->lineno;
     return 0;
 }
 
 Bool
-LexInteractive (void)
+LexInteractive(void)
 {
     if (lexInput)
-	return lexInput->interactive;
+        return lexInput->interactive;
     return False;
 }
 
 Bool
-LexResetInteractive (void)
+LexResetInteractive(void)
 {
-    while (lexInput->next && !lexInput->interactive)
-    {
-	FileClose (lexInput->file);
-	lexInput = lexInput->next;
+    while (lexInput->next && !lexInput->interactive) {
+        FileClose(lexInput->file);
+        lexInput = lexInput->next;
     }
     if (lexInput->interactive)
-	return True;
+        return True;
     return False;
 }
 
 Bool
-LexFile (char *s, Bool complain, Bool after)
+LexFile(char *s, Bool complain, Bool after)
 {
-    Value	f;
-    int		err;
+    Value f;
+    int   err;
 
-    f = FileFopen (s, "r", &err);
+    f = FileFopen(s, "r", &err);
     if (f == 0) {
-	if (complain)
-	    (void) FilePrintf (FileStderr, "%s: %s\n",
-			       s, StringChars (&FileGetErrorMessage (err)->string));
-	return False;
+        if (complain)
+            (void)FilePrintf(FileStderr, "%s: %s\n", s,
+                             StringChars(&FileGetErrorMessage(err)->string));
+        return False;
     }
-    (void) NewLexInput(f, AtomId (s), after, False);
+    (void)NewLexInput(f, AtomId(s), after, False);
     return True;
 }
 
 static int
-LexGetChar (void)
+LexGetChar(void)
 {
-    int	    c;
+    int c;
 
-    for (;;)
-    {
-	c = FileInput (lexInput->file);
-	if (c >= 0)
-	    return c;
-	if (c == FileBlocked)
-	    ThreadsRun (0, lexInput->file);
-	else
-	{
-	    if (!lexInput->next)
-		return FileEOF;
-	    lexInput->at_eof = True;
-	    return '\n';
-	}
+    for (;;) {
+        c = FileInput(lexInput->file);
+        if (c >= 0)
+            return c;
+        if (c == FileBlocked)
+            ThreadsRun(0, lexInput->file);
+        else {
+            if (!lexInput->next)
+                return FileEOF;
+            lexInput->at_eof = True;
+            return '\n';
+        }
     }
 }
 
 static Value
-prompt (void)
+prompt(void)
 {
-    Value	v;
-    
+    Value v;
+
     if (ignorenl)
-	v = lookupVar (0, "prompt2");
+        v = lookupVar(0, "prompt2");
     else if (CurrentFrame)
-	v = lookupVar (0, "prompt3");
+        v = lookupVar(0, "prompt3");
     else
-	v = lookupVar (0, "prompt");
+        v = lookupVar(0, "prompt");
     return v;
 }
 
 static int
-LexGetInteractiveChar (void)
+LexGetInteractiveChar(void)
 {
 #ifdef HAVE_LIBREADLINE
-    static char	*line, *line_base;
-    int	    c;
+    static char *line, *line_base;
+    int          c;
 
-    if (!line)
-    {
-	char    *p;
+    if (!line) {
+        char *p;
 
-	p = StrzPart (prompt (), "invalid prompt");
-	if (!p)
-	    p = "??? ";
-	for (;;)
-	{
-	    FileFlush (FileStdout, False);
-	    FileFlush (FileStderr, False);
-	    if (FileStdout->file.flags & FileOutputBlocked)
-		ThreadsRun (0, FileStdout);
-	    else if (FileStderr->file.flags & FileOutputBlocked)
-		ThreadsRun (0, FileStderr);
-	    else
-		break;
-	}
-	rl_inhibit_completion = 1;
-	line_base = readline (p);
-	line = line_base;
-	if (!line)
-	    return FileEOF;
-	add_history (line_base);
+        p = StrzPart(prompt(), "invalid prompt");
+        if (!p)
+            p = "??? ";
+        for (;;) {
+            FileFlush(FileStdout, False);
+            FileFlush(FileStderr, False);
+            if (FileStdout->file.flags & FileOutputBlocked)
+                ThreadsRun(0, FileStdout);
+            else if (FileStderr->file.flags & FileOutputBlocked)
+                ThreadsRun(0, FileStderr);
+            else
+                break;
+        }
+        rl_inhibit_completion = 1;
+        line_base = readline(p);
+        line = line_base;
+        if (!line)
+            return FileEOF;
+        add_history(line_base);
     }
     c = (*line++) & 0xff;
-    if (!c)
-    {
-	c = '\n';
-	free (line_base);
-	line = 0;
+    if (!c) {
+        c = '\n';
+        free(line_base);
+        line = 0;
     }
     return c;
 #else
-    if (lexInput->at_bol)
-    {
-	Value	v = prompt ();
-	Print (FileStdout, v, 's', 0, 0, 0, ' ');
-	FileFlush (FileStdout, True);
+    if (lexInput->at_bol) {
+        Value v = prompt();
+        Print(FileStdout, v, 's', 0, 0, 0, ' ');
+        FileFlush(FileStdout, True);
     }
-    return LexGetChar ();
+    return LexGetChar();
 #endif
 }
 
 #undef YY_INPUT
 #define YY_NO_UNPUT
 
-static int yy_input (char *buf, int max_size)
+static int
+yy_input(char *buf, int max_size)
 {
-    int	    c;
-    int	    result = 0;
-    
+    int c;
+    int result = 0;
+
     while (result < max_size) {
-	if (lexInput->at_eof)
-	{
-	    FileClose (lexInput->file);
-	    lexInput = lexInput->next;
-	}
-	if (lexInput->interactive)
-	    c = LexGetInteractiveChar ();
-	else
-	    c = LexGetChar ();
-	if (lexInput->at_bol) { lexInput->lineno++; }
-	lexInput->at_bol = False;
-	if (c < 0) 
-	    break;
-	buf[result++] = c;
-	if (c == '\n')
-	{
-	    lexInput->at_bol = True;
-	    break;
-	}
+        if (lexInput->at_eof) {
+            FileClose(lexInput->file);
+            lexInput = lexInput->next;
+        }
+        if (lexInput->interactive)
+            c = LexGetInteractiveChar();
+        else
+            c = LexGetChar();
+        if (lexInput->at_bol) {
+            lexInput->lineno++;
+        }
+        lexInput->at_bol = False;
+        if (c < 0)
+            break;
+        buf[result++] = c;
+        if (c == '\n') {
+            lexInput->at_bol = True;
+            break;
+        }
     }
     return result;
 }
 
-#define YY_INPUT(buf,result,max_size) ((result) = yy_input (buf, max_size))
-    
+#define YY_INPUT(buf, result, max_size) ((result) = yy_input(buf, max_size))
+
 #ifndef FLEX_SCANNER
-#undef		input
-#undef		unput
-int input (void)
+#undef input
+#undef unput
+int
+input(void)
 {
-    char    buf[1];
-    int	    r;
+    char buf[1];
+    int  r;
 
     YY_INPUT(buf, r, 1);
     if (r == 0)
-	return 0;
+        return 0;
     return buf[0];
 }
 
-void unput (char c)
+void
+unput(char c)
 {
     if (c == '\n')
-	lexInput->lineno--;
-    FileUnput (lexInput->file, c);
+        lexInput->lineno--;
+    FileUnput(lexInput->file, c);
 }
 #endif
-
 %}
 %%
 "/\052"		{   
@@ -664,139 +656,134 @@ has_member	{ yylval.ints = HASMEMBER; return HASMEMBER; }
 %%
 
 int
-lexEscape (int c)
+lexEscape(int c)
 {
     switch (c) {
     case '0':
-	return '\0';
-	break;
+        return '\0';
+        break;
     case 'b':
-	return '\b';
-	break;
+        return '\b';
+        break;
     case 'n':
-	return '\n';
-	break;
+        return '\n';
+        break;
     case 'r':
-	return '\r';
-	break;
+        return '\r';
+        break;
     case 't':
-	return '\t';
-	break;
+        return '\t';
+        break;
     case 'f':
-	return '\f';
-	break;
+        return '\f';
+        break;
     case 'v':
-	return '\v';
-	break;
+        return '\v';
+        break;
     default:
-	return c;
+        return c;
     }
 }
 
-
 Value
-lexdoc (void)
+lexdoc(void)
 {
-    int	    c;
-    Value   s = NewStrString ("");
+    int   c;
+    Value s = NewStrString("");
 
     c = input();
-    if (lexInput->at_eof)
-    {
-bail:	
-        yyerror ("Missing */ at end of file");
+    if (lexInput->at_eof) {
+    bail:
+        yyerror("Missing */ at end of file");
         return Void;
     }
     for (;;) {
-	Bool skip = False;
-	while (c != EOF && c != '*')
-	{
-	    if (skip && c != ' ' && c != '\t')
-		skip = False;
-	    if (!skip)
-		s = Plus (s, NewCharString (c));
-	    if (c == '\n')
-		skip = True;
-	    c = input();
-	    if (c == EOF || lexInput->at_eof)
-		goto bail;
-	}
-	c = input();
-	if (c == EOF || lexInput->at_eof)
-	    goto bail;
-	if (c == '/')
-	    break;
-	if (!skip)
-	    s = Plus (s, NewCharString ('*'));
+        Bool skip = False;
+        while (c != EOF && c != '*') {
+            if (skip && c != ' ' && c != '\t')
+                skip = False;
+            if (!skip)
+                s = Plus(s, NewCharString(c));
+            if (c == '\n')
+                skip = True;
+            c = input();
+            if (c == EOF || lexInput->at_eof)
+                goto bail;
+        }
+        c = input();
+        if (c == EOF || lexInput->at_eof)
+            goto bail;
+        if (c == '/')
+            break;
+        if (!skip)
+            s = Plus(s, NewCharString('*'));
     }
     return s;
 }
 
 void
-skipcomment (void)
+skipcomment(void)
 {
-    int	c;
+    int c;
 
     c = input();
-    if (lexInput->at_eof)
-    {
-bail:	
-        yyerror ("Missing */ at end of file");
+    if (lexInput->at_eof) {
+    bail:
+        yyerror("Missing */ at end of file");
         return;
     }
     for (;;) {
-	while (c != EOF && c != '*')
-	{
-	    c = input();
-	    if (c == EOF || lexInput->at_eof)
-		goto bail;
-	}
-	c = input();
-	if (c == EOF || lexInput->at_eof)
-	    goto bail;
-	if (c == '/')
-	    return;
+        while (c != EOF && c != '*') {
+            c = input();
+            if (c == EOF || lexInput->at_eof)
+                goto bail;
+        }
+        c = input();
+        if (c == EOF || lexInput->at_eof)
+            goto bail;
+        if (c == '/')
+            return;
     }
 }
 
 void
-skipline (void)
+skipline(void)
 {
-    int	    c;
+    int c;
 
     do {
-	c = input();
+        c = input();
     } while (c != EOF && c != '\n');
 }
 
 Value
-atov (char *s, int base)
+atov(char *s, int base)
 {
-    ENTER ();
-    Value	result;
-    Value	b;
-    char	c;
-    int		i;
+    ENTER();
+    Value result;
+    Value b;
+    char  c;
+    int   i;
 
-    b = NewInt (base);
-    result = NewInt (0);
+    b = NewInt(base);
+    result = NewInt(0);
     for (;;) {
-	c = *s++;
-	if ('0' <= c  && c <= '9')
-	    i = c - '0';
-	else if ('a' <= c && c <= 'z')
-	    i = c - 'a' + 10;
-	else if ('A' <= c && c <= 'Z')
-	    i = c - 'A' + 10;
-	else if (c == '_')
-	    continue;
-	else
-	    break;
-	if (i >= base)
-	    break;
-	result = Plus (NewInt (i), Times (result, b));
+        c = *s++;
+        if ('0' <= c && c <= '9')
+            i = c - '0';
+        else if ('a' <= c && c <= 'z')
+            i = c - 'a' + 10;
+        else if ('A' <= c && c <= 'Z')
+            i = c - 'A' + 10;
+        else if (c == '_')
+            continue;
+        else
+            break;
+        if (i >= base)
+            break;
+        result = Plus(NewInt(i), Times(result, b));
     }
-    RETURN (result);
+    RETURN(result);
 }
 
 static char *
@@ -804,90 +791,90 @@ scan_number(char *s, char needle, int *lenp)
 {
     int len = 0;
     for (;;) {
-	char c = *s;
-	if (tolower(c) == needle)
-	    break;
-	switch (c) {
-	case '\0':
-	    return NULL;
-	case '_':
-	    break;
-	default:
-	    len++;
-	    break;
-	}
-	s++;
+        char c = *s;
+        if (tolower(c) == needle)
+            break;
+        switch (c) {
+        case '\0':
+            return NULL;
+        case '_':
+            break;
+        default:
+            len++;
+            break;
+        }
+        s++;
     }
     if (lenp)
-	*lenp = len;
+        *lenp = len;
     return s;
 }
 
 static int
 number_len(char *s)
 {
-    int len = 0;
+    int  len = 0;
     char c;
     while ((c = *s++))
-	if (c != '_')
-	    len++;
+        if (c != '_')
+            len++;
     return len;
 }
 
 Value
-aetov (char *s)
+aetov(char *s)
 {
-    ENTER ();
-    char    *int_part, *frac_part, *rep_part, *exp_part, *next;
-    int	    sign, int_len = -1, frac_len = -1, rep_len = -1, exp_frac_len = -1, esign;
-    Value   v, sv;
-    char    exp_char;
-    int	    base = 10;
-    int	    exp_base;
+    ENTER();
+    char *int_part, *frac_part, *rep_part, *exp_part, *next;
+    int   sign, int_len = -1, frac_len = -1, rep_len = -1, exp_frac_len = -1, esign;
+    Value v, sv;
+    char  exp_char;
+    int   base = 10;
+    int   exp_base;
 
     if (s[0] == '0') {
-	switch (s[1]) {
-	case 'x':
-	    base = 16;
-	    s += 2;
-	    break;
-	case 'o':
-	    base = 8;
-	    s += 2;
-	    break;
-	case 'b':
-	    base = 2;
-	    s += 2;
-	    break;
-	}
+        switch (s[1]) {
+        case 'x':
+            base = 16;
+            s += 2;
+            break;
+        case 'o':
+            base = 8;
+            s += 2;
+            break;
+        case 'b':
+            base = 2;
+            s += 2;
+            break;
+        }
     }
 
     switch (base) {
     case 2:
-	exp_char = 'e';
-	exp_base = 2;
-	break;
+        exp_char = 'e';
+        exp_base = 2;
+        break;
     case 8:
-	exp_char = 'e';
-	exp_base = 2;
-	break;
+        exp_char = 'e';
+        exp_base = 2;
+        break;
     case 10:
     default:
-	exp_char = 'e';
-	exp_base = 10;
-	break;
+        exp_char = 'e';
+        exp_base = 10;
+        break;
     case 16:
-	exp_char = 'p';
-	exp_base = 2;
-	break;
+        exp_char = 'p';
+        exp_base = 2;
+        break;
     }
     int_part = s;
     sign = 1;
     if (*int_part == '+')
-	int_part++;
+        int_part++;
     else if (*int_part == '-') {
-	int_part++;
-	sign = -1;
+        int_part++;
+        sign = -1;
     }
     next = int_part;
     frac_part = scan_number(next, '.', &int_len);
@@ -896,59 +883,50 @@ aetov (char *s)
     rep_len = 0;
     esign = 1;
     if (frac_part) {
-	frac_part++;
-	next = frac_part;
-	rep_part = scan_number(next, '{', &frac_len);
-	if (rep_part)
-	{
-	    rep_part++;
-	    next = rep_part;
-	    next = scan_number(next, '}', &rep_len);
-	    if (!next)
-		RETURN(Void);	/* can't happen */
-	}
+        frac_part++;
+        next = frac_part;
+        rep_part = scan_number(next, '{', &frac_len);
+        if (rep_part) {
+            rep_part++;
+            next = rep_part;
+            next = scan_number(next, '}', &rep_len);
+            if (!next)
+                RETURN(Void); /* can't happen */
+        }
     }
     exp_part = scan_number(next, exp_char, &exp_frac_len);
     if (exp_part) {
-	if (frac_len < 0)
-	    frac_len = exp_frac_len;
-	exp_part++;
-	if (*exp_part == '+')
-	    exp_part++;
-	else if (*exp_part == '-') {
-	    esign = -1;
-	    exp_part++;
-	}
+        if (frac_len < 0)
+            frac_len = exp_frac_len;
+        exp_part++;
+        if (*exp_part == '+')
+            exp_part++;
+        else if (*exp_part == '-') {
+            esign = -1;
+            exp_part++;
+        }
     } else if (frac_len < 0 && frac_part)
-	frac_len = number_len(frac_part);
-    v = atov (int_part, base);
-    if (frac_part)
-    {
-	v = Plus (v, Divide (atov (frac_part, base),
-				 Pow (NewInt (base),
-				       NewInt (frac_len))));
+        frac_len = number_len(frac_part);
+    v = atov(int_part, base);
+    if (frac_part) {
+        v = Plus(v, Divide(atov(frac_part, base), Pow(NewInt(base), NewInt(frac_len))));
     }
-    if (rep_part)
-    {
-	Value	rep;
+    if (rep_part) {
+        Value rep;
 
-	rep = Divide (atov (rep_part, base), Minus (Pow (NewInt (base),
-						       NewInt (rep_len)),
-						  One));
-	if (frac_len)
-	    rep = Divide (rep, Pow (NewInt (base),
-				    NewInt (frac_len)));
-	v = Plus (v, rep);
+        rep = Divide(atov(rep_part, base), Minus(Pow(NewInt(base), NewInt(rep_len)), One));
+        if (frac_len)
+            rep = Divide(rep, Pow(NewInt(base), NewInt(frac_len)));
+        v = Plus(v, rep);
     }
-    if (exp_part)
-    {
-	sv = Pow (NewInt (exp_base), atov (exp_part, 10));
-	if (esign > 0)
-	    v = Times (v, sv);
-	else
-	    v = Divide (v, sv);
+    if (exp_part) {
+        sv = Pow(NewInt(exp_base), atov(exp_part, 10));
+        if (esign > 0)
+            v = Times(v, sv);
+        else
+            v = Divide(v, sv);
     }
     if (sign == -1)
-	v = Negate (v);
-    RETURN (v);
+        v = Negate(v);
+    RETURN(v);
 }

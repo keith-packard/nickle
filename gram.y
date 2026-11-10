@@ -6,15 +6,15 @@
  * for licensing information.
  */
 
-#include	"nickle.h"
-#include	<stdio.h>
+#include "nickle.h"
+#include <stdio.h>
 
 /*
  * This grammar generates 1 shift/reduce conflict and 4 reduce/reduce:
- * 
+ *
  * 2 reduce/reduce conflicts on:
  *
- *	    *int . func 
+ *	    *int . func
  *	    **int . func
  *
  *	Is the '*' a dereference operator or a pointer type modifier?
@@ -42,30 +42,26 @@
  *      with different precedence. --BCM)
  *
  */
-int ignorenl;
-int notCommand;
-int seeComment;
-NamespacePtr	LexNamespace;
-int funcDepth;
+int          ignorenl;
+int          notCommand;
+int          seeComment;
+NamespacePtr LexNamespace;
+int          funcDepth;
 
-void ParseError (char *fmt, ...);
-void yyerror (char *msg);
+void         ParseError(char *fmt, ...);
+void         yyerror(char *msg);
 
 typedef enum _CanonTypeResult {
     CanonTypeUndefined,
     CanonTypeForward,
     CanonTypeDefined,
 } CanonTypeResult;
-    
-static Expr *
-ParseCanonFor (Expr *expr);
 
-static CanonTypeResult
-ParseCanonType (TypePtr type, Bool forwardAllowed);
+static Expr           *ParseCanonFor(Expr *expr);
 
-static SymbolPtr
-ParseNewSymbol (Publish publish, Class class, Type *type, Atom name);
+static CanonTypeResult ParseCanonType(TypePtr type, Bool forwardAllowed);
 
+static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, Atom name);
 %}
 
 %union {
@@ -1632,267 +1628,251 @@ init		: arrayinit
 %%
 
 static void
-DeclListMark (void *object)
+DeclListMark(void *object)
 {
-    DeclListPtr	dl = object;
+    DeclListPtr dl = object;
 
-    MemReference (dl->next);
-    MemReference (dl->init);
+    MemReference(dl->next);
+    MemReference(dl->init);
 }
 
 DataType DeclListType = { DeclListMark, 0, "DeclListType" };
 
 DeclListPtr
-NewDeclList (Atom name, ExprPtr init, DeclListPtr next)
+NewDeclList(Atom name, ExprPtr init, DeclListPtr next)
 {
-    ENTER ();
-    DeclListPtr	dl;
+    ENTER();
+    DeclListPtr dl;
 
-    dl = ALLOCATE (&DeclListType, sizeof (DeclList));
+    dl = ALLOCATE(&DeclListType, sizeof(DeclList));
     dl->next = next;
     dl->name = name;
     dl->symbol = 0;
     dl->init = init;
-    RETURN (dl);
+    RETURN(dl);
 }
 
 static void
-MemListMark (void *object)
+MemListMark(void *object)
 {
-    MemListPtr	ml = object;
+    MemListPtr ml = object;
 
-    MemReference (ml->next);
-    MemReference (ml->type);
-    MemReference (ml->atoms);
+    MemReference(ml->next);
+    MemReference(ml->type);
+    MemReference(ml->atoms);
 }
 
 DataType MemListType = { MemListMark, 0, "MemListType" };
 
 MemListPtr
-NewMemList (AtomListPtr atoms, Type *type, MemListPtr next)
+NewMemList(AtomListPtr atoms, Type *type, MemListPtr next)
 {
-    ENTER ();
-    MemListPtr	ml;
+    ENTER();
+    MemListPtr ml;
 
-    ml = ALLOCATE (&MemListType, sizeof (MemList));
+    ml = ALLOCATE(&MemListType, sizeof(MemList));
     ml->next = next;
     ml->type = type;
     ml->atoms = atoms;
-    RETURN (ml);
+    RETURN(ml);
 }
 
-
-extern NamespacePtr	CurrentNamespace;
-FramePtr	CurrentFrame;
+extern NamespacePtr CurrentNamespace;
+FramePtr            CurrentFrame;
 
 Value
-lookupVar (char *ns, char *n)
+lookupVar(char *ns, char *n)
 {
-    ENTER ();
-    Value	    v;
-    SymbolPtr	    symbol;
-    NamespacePtr    namespace;
-    Bool	    search;
+    ENTER();
+    Value        v;
+    SymbolPtr    symbol;
+    NamespacePtr namespace;
+    Bool         search;
 
     search = True;
     namespace = CurrentNamespace;
-    if (ns)
-    {
-	symbol = NamespaceFindName (CurrentNamespace, AtomId (ns), True);
-	if (symbol && symbol->symbol.class == class_namespace)
-	    namespace = symbol->namespace.namespace;
-	else
-	    namespace = 0;
+    if (ns) {
+        symbol = NamespaceFindName(CurrentNamespace, AtomId(ns), True);
+        if (symbol && symbol->symbol.class == class_namespace)
+            namespace = symbol->namespace.namespace;
+        else
+            namespace = 0;
     }
     if (namespace)
-	symbol = NamespaceFindName (namespace, AtomId (n), search);
+        symbol = NamespaceFindName(namespace, AtomId(n), search);
     else
-	symbol = 0;
+        symbol = 0;
     if (symbol && symbol->symbol.class == class_global)
-	v = BoxValue (symbol->global.value, 0);
+        v = BoxValue(symbol->global.value, 0);
     else
-	v = Void;
-    RETURN (v);
+        v = Void;
+    RETURN(v);
 }
 
 void
-setVar (NamespacePtr namespace, char *n, Value v, Type *type)
+setVar(NamespacePtr namespace, char *n, Value v, Type *type)
 {
-    ENTER ();
-    Atom	atom;
-    SymbolPtr	symbol;
+    ENTER();
+    Atom      atom;
+    SymbolPtr symbol;
 
-    atom = AtomId (n);
-    symbol = NamespaceFindName (namespace, atom, True);
+    atom = AtomId(n);
+    symbol = NamespaceFindName(namespace, atom, True);
     if (!symbol)
-	symbol = NamespaceAddName (namespace,
-				   NewSymbolGlobal (atom, type),
-				   publish_private);
+        symbol = NamespaceAddName(namespace, NewSymbolGlobal(atom, type), publish_private);
     if (symbol->symbol.class == class_global)
-	BoxValueSet (symbol->global.value, 0, v);
-    EXIT ();
+        BoxValueSet(symbol->global.value, 0, v);
+    EXIT();
 }
 
 void
-GetNamespace (NamespacePtr *scope, FramePtr *fp, CodePtr *cp)
+GetNamespace(NamespacePtr *scope, FramePtr *fp, CodePtr *cp)
 {
     *scope = CurrentNamespace;
     *fp = CurrentFrame;
     if (CurrentFrame)
-	*cp = CurrentFrame->function->func.code;
+        *cp = CurrentFrame->function->func.code;
     else
-	*cp = 0;
+        *cp = 0;
 }
 
 ExprPtr
-BuildName (char *ns, char *n)
+BuildName(char *ns, char *n)
 {
-    ENTER ();
-    SymbolPtr	    symbol, ns_symbol = 0;
-    Atom	    atom, ns_atom = 0;
-    Bool	    search = True;
-    NamespacePtr    namespace = CurrentNamespace;
-    ExprPtr	    e;
-    Bool	    ns_privateFound = False;
-    Bool	    privateFound = False;
+    ENTER();
+    SymbolPtr    symbol, ns_symbol = 0;
+    Atom         atom, ns_atom = 0;
+    Bool         search = True;
+    NamespacePtr namespace = CurrentNamespace;
+    ExprPtr      e;
+    Bool         ns_privateFound = False;
+    Bool         privateFound = False;
 
-    if (ns)
-    {
-	ns_atom = AtomId (ns);
-	ns_symbol = NamespaceFindName (namespace, ns_atom, search);
-	if (ns_symbol && ns_symbol->symbol.class == class_namespace)
-	    namespace = ns_symbol->namespace.namespace;
-	else
-	{
-	    if (!ns_symbol)
-		ns_privateFound = NamespaceIsNamePrivate (namespace, ns_atom, search);
-	    namespace = 0;
-	}
-	search = False;
+    if (ns) {
+        ns_atom = AtomId(ns);
+        ns_symbol = NamespaceFindName(namespace, ns_atom, search);
+        if (ns_symbol && ns_symbol->symbol.class == class_namespace)
+            namespace = ns_symbol->namespace.namespace;
+        else {
+            if (!ns_symbol)
+                ns_privateFound = NamespaceIsNamePrivate(namespace, ns_atom, search);
+            namespace = 0;
+        }
+        search = False;
     }
-    atom = AtomId (n);
-    if (namespace)
-    {
-	symbol = NamespaceFindName (namespace, atom, search);
-	if (!symbol)
-	    privateFound = NamespaceIsNamePrivate (namespace, atom, search);
-    }
-    else
-	symbol = 0;
-    e = NewExprAtom (atom, symbol, privateFound);
+    atom = AtomId(n);
+    if (namespace) {
+        symbol = NamespaceFindName(namespace, atom, search);
+        if (!symbol)
+            privateFound = NamespaceIsNamePrivate(namespace, atom, search);
+    } else
+        symbol = 0;
+    e = NewExprAtom(atom, symbol, privateFound);
     if (ns_atom)
-	e = NewExprTree (COLONCOLON, NewExprAtom (ns_atom, ns_symbol, ns_privateFound), e);
-    RETURN (e);
+        e = NewExprTree(COLONCOLON, NewExprAtom(ns_atom, ns_symbol, ns_privateFound), e);
+    RETURN(e);
 }
 
 static Value
-AtomString (Atom id)
+AtomString(Atom id)
 {
-    ENTER ();
-    RETURN (NewStrString (AtomName (id)));
+    ENTER();
+    RETURN(NewStrString(AtomName(id)));
 }
 
 ExprPtr
-BuildRawname (ExprPtr colonnames, Atom name)
+BuildRawname(ExprPtr colonnames, Atom name)
 {
-    ENTER ();
+    ENTER();
     int     len;
     Value   array;
     ExprPtr e;
 
     len = 1;
     for (e = colonnames; e; e = e->tree.left)
-	len++;
-    array = NewArray (False, False, typePrim[rep_string], 1, &len);
+        len++;
+    array = NewArray(False, False, typePrim[rep_string], 1, &len);
     len--;
-    ArrayValueSet (&array->array, len, AtomString (name));
+    ArrayValueSet(&array->array, len, AtomString(name));
     e = colonnames;
-    while (--len >= 0)
-    {
-	ArrayValueSet (&array->array, len, AtomString (e->tree.right->atom.atom));
-	e = e->tree.left;
+    while (--len >= 0) {
+        ArrayValueSet(&array->array, len, AtomString(e->tree.right->atom.atom));
+        e = e->tree.left;
     }
-    e = NewExprConst (POLY_CONST, array);
-    RETURN (e);
+    e = NewExprConst(POLY_CONST, array);
+    RETURN(e);
 }
 
-	    
 ExprPtr
-BuildFullname (ExprPtr left, Atom atom)
+BuildFullname(ExprPtr left, Atom atom)
 {
-    ENTER ();
-    NamespacePtr    namespace;
-    SymbolPtr	    symbol;
-    Bool	    search;
-    ExprPtr	    nameExpr;
-    Bool	    privateFound = False;
+    ENTER();
+    NamespacePtr namespace;
+    SymbolPtr    symbol;
+    Bool         search;
+    ExprPtr      nameExpr;
+    Bool         privateFound = False;
 
-    if (left)
-    {
-	if (left->base.tag == COLONCOLON)
-	    symbol = left->tree.right->atom.symbol;
-	else
-	    symbol = left->atom.symbol;
-	if (symbol && symbol->symbol.class == class_namespace)
-	    namespace = symbol->namespace.namespace;
-	else
-	    namespace = 0;
+    if (left) {
+        if (left->base.tag == COLONCOLON)
+            symbol = left->tree.right->atom.symbol;
+        else
+            symbol = left->atom.symbol;
+        if (symbol && symbol->symbol.class == class_namespace)
+            namespace = symbol->namespace.namespace;
+        else
+            namespace = 0;
         search = False;
+    } else {
+        namespace = CurrentNamespace;
+        search = True;
     }
-    else
-    {
-	namespace = CurrentNamespace;
-	search = True;
-    }
-    if (namespace)
-    {
-	symbol = NamespaceFindName (namespace, atom, search);
-	if (!symbol)
-	    privateFound = NamespaceIsNamePrivate (namespace, atom, search);
-    }
-    else
-	symbol = 0;
-    nameExpr = NewExprAtom (atom, symbol, privateFound);
+    if (namespace) {
+        symbol = NamespaceFindName(namespace, atom, search);
+        if (!symbol)
+            privateFound = NamespaceIsNamePrivate(namespace, atom, search);
+    } else
+        symbol = 0;
+    nameExpr = NewExprAtom(atom, symbol, privateFound);
     if (left)
-	nameExpr = NewExprTree (COLONCOLON, left, nameExpr);
-    RETURN (nameExpr);
+        nameExpr = NewExprTree(COLONCOLON, left, nameExpr);
+    RETURN(nameExpr);
 }
 
 ExprPtr
-BuildCall (char *scope, char *name, int nargs, ...)
+BuildCall(char *scope, char *name, int nargs, ...)
 {
-    ENTER ();
-    va_list	    alist;
-    ExprPtr	    args, *prev;
-    ExprPtr	    f;
-    ExprPtr	    e;
+    ENTER();
+    va_list alist;
+    ExprPtr args, *prev;
+    ExprPtr f;
+    ExprPtr e;
 
-    va_start (alist, nargs);
+    va_start(alist, nargs);
     prev = &args;
     args = 0;
-    while (nargs--)
-    {
-	*prev = NewExprTree (COMMA, va_arg (alist, ExprPtr), 0);
-	prev = &(*prev)->tree.right;
+    while (nargs--) {
+        *prev = NewExprTree(COMMA, va_arg(alist, ExprPtr), 0);
+        prev = &(*prev)->tree.right;
     }
-    va_end (alist);
-    f = BuildName (scope, name);
-    e = NewExprTree (OP, f, args);
+    va_end(alist);
+    f = BuildName(scope, name);
+    e = NewExprTree(OP, f, args);
 #ifdef DEBUG
-    printExpr (stdout, e, -1, 0);
-    printf ("\n");
+    printExpr(stdout, e, -1, 0);
+    printf("\n");
 #endif
-    RETURN (e);
+    RETURN(e);
 }
 
 /*
  * Walk for() loop arguments and normalize the list
  */
 static Expr *
-ParseCanonFor (Expr *expr)
+ParseCanonFor(Expr *expr)
 {
     if (!expr || !expr->tree.right) {
-        ParseError ("Too few exprs in for()\n");
+        ParseError("Too few exprs in for()\n");
         return 0;
     }
     if (!expr->tree.right->tree.right) {
@@ -1900,7 +1880,7 @@ ParseCanonFor (Expr *expr)
         expr = NewExprTree(FOR, 0, expr);
     }
     if (expr->tree.right->tree.right->tree.right) {
-        ParseError ("Too many exprs in for()\n");
+        ParseError("Too many exprs in for()\n");
         return 0;
     }
     return expr;
@@ -1910,212 +1890,190 @@ ParseCanonFor (Expr *expr)
  * Walk a type structure and resolve any type names
  */
 static CanonTypeResult
-ParseCanonType (TypePtr type, Bool forwardAllowed)
+ParseCanonType(TypePtr type, Bool forwardAllowed)
 {
-    ArgType	    *arg;
-    int		    n;
+    ArgType        *arg;
+    int             n;
     CanonTypeResult ret = CanonTypeDefined, t;
-    Bool	    anyResolved;
+    Bool            anyResolved;
 
-    if (!type)
-    {
-	ParseError ("Type missing inside compiler");
-	return CanonTypeUndefined;
+    if (!type) {
+        ParseError("Type missing inside compiler");
+        return CanonTypeUndefined;
     }
     switch (type->base.tag) {
     case type_prim:
-	break;
+        break;
     case type_name:
-	if (!TypeNameType(type))
-	{
-	    if (!type->name.name)
-	    {
-		ExprPtr e;
-		e = type->name.expr;
-		if (e->base.tag == COLONCOLON)
-		    e = e->tree.right;
-		type->name.name = e->atom.symbol;
-		if (!type->name.name)
-		{
-		    ParseError ("No typedef \"%A\" in namespace",
-				e->atom.atom);
-		    ret = CanonTypeUndefined;
-		    break;
-		}
-	    }
-	    if (type->name.name->symbol.class != class_typedef)
-	    {
-		ParseError ("Symbol \"%A\" not a typedef", 
-			    type->name.name->symbol.name);
-		ret = CanonTypeUndefined;
-	    }
-	    else if (!TypeNameType(type))
-	    {
-		if (!forwardAllowed)
-		    ParseError ("Typedef \"%A\" not defined yet", 
-				type->name.name->symbol.name);
-		ret = CanonTypeForward;
-	    }
-	    else
-	    {
-		ret = ParseCanonType (TypeNameType(type), forwardAllowed);
-	    }
-	}
-	break;
+        if (!TypeNameType(type)) {
+            if (!type->name.name) {
+                ExprPtr e;
+                e = type->name.expr;
+                if (e->base.tag == COLONCOLON)
+                    e = e->tree.right;
+                type->name.name = e->atom.symbol;
+                if (!type->name.name) {
+                    ParseError("No typedef \"%A\" in namespace", e->atom.atom);
+                    ret = CanonTypeUndefined;
+                    break;
+                }
+            }
+            if (type->name.name->symbol.class != class_typedef) {
+                ParseError("Symbol \"%A\" not a typedef", type->name.name->symbol.name);
+                ret = CanonTypeUndefined;
+            } else if (!TypeNameType(type)) {
+                if (!forwardAllowed)
+                    ParseError("Typedef \"%A\" not defined yet", type->name.name->symbol.name);
+                ret = CanonTypeForward;
+            } else {
+                ret = ParseCanonType(TypeNameType(type), forwardAllowed);
+            }
+        }
+        break;
     case type_ref:
-	ret = ParseCanonType (type->ref.ref, True);
-	if (ret == CanonTypeForward)
-	    ret = CanonTypeDefined;
-	break;
+        ret = ParseCanonType(type->ref.ref, True);
+        if (ret == CanonTypeForward)
+            ret = CanonTypeDefined;
+        break;
     case type_func:
-	if (type->func.ret)
-	    ret = ParseCanonType (type->func.ret, forwardAllowed);
-	for (arg = type->func.args; arg; arg = arg->next)
-	{
-	    t = ParseCanonType (arg->type, forwardAllowed);
-	    if (t < ret)
-		ret = t;
-	}
-	break;
+        if (type->func.ret)
+            ret = ParseCanonType(type->func.ret, forwardAllowed);
+        for (arg = type->func.args; arg; arg = arg->next) {
+            t = ParseCanonType(arg->type, forwardAllowed);
+            if (t < ret)
+                ret = t;
+        }
+        break;
     case type_array:
-	ret = ParseCanonType (type->array.type, forwardAllowed);
-	break;
+        ret = ParseCanonType(type->array.type, forwardAllowed);
+        break;
     case type_hash:
-	ret = ParseCanonType (type->hash.type, forwardAllowed);
-	t = ParseCanonType (type->hash.keyType, forwardAllowed);
-	if (t < ret)
-	    ret = t;
-	break;
+        ret = ParseCanonType(type->hash.type, forwardAllowed);
+        t = ParseCanonType(type->hash.keyType, forwardAllowed);
+        if (t < ret)
+            ret = t;
+        break;
     case type_struct:
-	for (n = 0; n < type->structs.structs->nelements; n++)
-	{
-	    StructType   *st = type->structs.structs;
+        for (n = 0; n < type->structs.structs->nelements; n++) {
+            StructType *st = type->structs.structs;
 
-	    t = ParseCanonType (BoxTypesElements(st->types)[n], forwardAllowed);
-	    if (t < ret)
-		ret = t;
-	}
-	break;
+            t = ParseCanonType(BoxTypesElements(st->types)[n], forwardAllowed);
+            if (t < ret)
+                ret = t;
+        }
+        break;
     case type_union:
-	anyResolved = False;
-	for (n = 0; n < type->structs.structs->nelements; n++)
-	{
-	    StructType   *st = type->structs.structs;
+        anyResolved = False;
+        for (n = 0; n < type->structs.structs->nelements; n++) {
+            StructType *st = type->structs.structs;
 
-	    t = ParseCanonType (BoxTypesElements(st->types)[n], True);
-	    if (t < ret)
-		ret = t;
-	    if (t == CanonTypeDefined)
-		anyResolved = True;
-	}
-	if (ret == CanonTypeForward)
-	{
-	    if (anyResolved)
-		ret = CanonTypeDefined;
-	    else if (!forwardAllowed)
-		ParseError ("No member of '%T' defined yet", type);
-	}
-	break;
+            t = ParseCanonType(BoxTypesElements(st->types)[n], True);
+            if (t < ret)
+                ret = t;
+            if (t == CanonTypeDefined)
+                anyResolved = True;
+        }
+        if (ret == CanonTypeForward) {
+            if (anyResolved)
+                ret = CanonTypeDefined;
+            else if (!forwardAllowed)
+                ParseError("No member of '%T' defined yet", type);
+        }
+        break;
     case type_types:
-	break;
+        break;
     }
     return ret;
 }
 
 static SymbolPtr
-ParseNewSymbol (Publish publish, Class class, Type *type, Atom name)
+ParseNewSymbol(Publish publish, Class class, Type *type, Atom name)
 {
-    ENTER ();
-    SymbolPtr	s = 0;
-    
-    if (class == class_undef)
-	class = funcDepth ? class_auto : class_global;
+    ENTER();
+    SymbolPtr s = 0;
 
-    if (class == class_namespace || 
-	(class == class_typedef && type == 0) || 	
-	ParseCanonType (type, False) == CanonTypeDefined)
-    {
-	switch (class) {
-	case class_const:
-	    s = NewSymbolConst (name, type);
-	    break;
-	case class_global:
-	    s = NewSymbolGlobal (name, type);
-	    break;
-	case class_static:
-	    s = NewSymbolStatic (name, type);
-	    break;
-	case class_arg:
-	    s = NewSymbolArg (name, type);
-	    break;
-	case class_auto:
-	    s = NewSymbolAuto (name, type);
-	    break;
-	case class_exception:
-	    s = NewSymbolException (name, type, Void);
-	    break;
-	case class_typedef:
-	    /*
-	     * Special case for typedefs --
-	     * allow forward declaration of untyped
-	     * typedef names, then hook the
-	     * new type to the old name
-	     */
-	    if (type)
-	    {
-		s = NamespaceFindName (CurrentNamespace, name, False);
-		if (s && s->symbol.class == class_typedef && !s->symbol.type)
-		{
-		    s->symbol.type = type;
-		    RETURN (s);
-		}
-	    }
-	    s = NewSymbolType (name, type);
-	    break;
-	case class_namespace:
-	    s = NewSymbolNamespace (name, NewNamespace (CurrentNamespace));
-	    break;
-	case class_undef:
-	    break;
-	}
-	if (s)
-	    NamespaceAddName (CurrentNamespace, s, publish);
+    if (class == class_undef)
+        class = funcDepth ? class_auto : class_global;
+
+    if (class == class_namespace || (class == class_typedef && type == 0)
+        || ParseCanonType(type, False) == CanonTypeDefined) {
+        switch (class) {
+        case class_const:
+            s = NewSymbolConst(name, type);
+            break;
+        case class_global:
+            s = NewSymbolGlobal(name, type);
+            break;
+        case class_static:
+            s = NewSymbolStatic(name, type);
+            break;
+        case class_arg:
+            s = NewSymbolArg(name, type);
+            break;
+        case class_auto:
+            s = NewSymbolAuto(name, type);
+            break;
+        case class_exception:
+            s = NewSymbolException(name, type, Void);
+            break;
+        case class_typedef:
+            /*
+             * Special case for typedefs --
+             * allow forward declaration of untyped
+             * typedef names, then hook the
+             * new type to the old name
+             */
+            if (type) {
+                s = NamespaceFindName(CurrentNamespace, name, False);
+                if (s && s->symbol.class == class_typedef && !s->symbol.type) {
+                    s->symbol.type = type;
+                    RETURN(s);
+                }
+            }
+            s = NewSymbolType(name, type);
+            break;
+        case class_namespace:
+            s = NewSymbolNamespace(name, NewNamespace(CurrentNamespace));
+            break;
+        case class_undef:
+            break;
+        }
+        if (s)
+            NamespaceAddName(CurrentNamespace, s, publish);
     }
-    RETURN (s);
+    RETURN(s);
 }
 
 int
-yywrap (void)
+yywrap(void)
 {
     if (LexInteractive())
-	printf ("\n");
-    if (CurrentFrame)
-    {
-	do_Debug_done ();
-	return 0;
+        printf("\n");
+    if (CurrentFrame) {
+        do_Debug_done();
+        return 0;
     }
     return 1;
 }
 
-extern	char *yytext;
+extern char *yytext;
 
 void
-ParseError (char *fmt, ...)
+ParseError(char *fmt, ...)
 {
-    va_list	args;
+    va_list args;
 
-    if (LexFileName ())
-	FilePrintf (FileStderr, "%A:%d: ",
-		    LexFileName (), LexFileLine ());
-    va_start (args, fmt);
-    FileVPrintf (FileStderr, fmt, args);
-    FilePrintf (FileStderr, "\n");
-    va_end (args);
+    if (LexFileName())
+        FilePrintf(FileStderr, "%A:%d: ", LexFileName(), LexFileLine());
+    va_start(args, fmt);
+    FileVPrintf(FileStderr, fmt, args);
+    FilePrintf(FileStderr, "\n");
+    va_end(args);
 }
 
 void
-yyerror (char *msg)
+yyerror(char *msg)
 {
     ignorenl = 0;
-    ParseError ("%s before %S", msg, yytext);
+    ParseError("%s before %S", msg, yytext);
 }

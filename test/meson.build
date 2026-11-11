@@ -67,7 +67,8 @@ tests = [
   'datelimittest.5c',
   'reopentest.5c',
   'millistest.5c',
-  'charrangetest.5c'
+  'charrangetest.5c',
+  'socketaddrtest.5c'
 ]
 
 extra_files = [

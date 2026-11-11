@@ -1,0 +1,34 @@
+/*
+ * Nickle test suite
+ *
+ * Socket addresses bind and connect can't use
+ *
+ * When an address couldn't be used, Socket::bind and Socket::connect
+ * returned without doing anything and without raising an exception.
+ */
+
+exception not_raised (string what);
+
+void function rejected (string what, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, poly a, poly b) {
+    }
+}
+
+file s = Socket::create (Socket::AF_INET, Socket::SOCK_STREAM);
+
+rejected ("port 0", void func () { Socket::connect (s, "localhost", 0); });
+rejected ("port 70000", void func () { Socket::connect (s, "localhost", 70000); });
+rejected ("port \"70000\"", void func () { Socket::bind (s, "localhost", "70000"); });
+rejected ("unknown service",
+	  void func () { Socket::connect (s, "localhost", "no-such-service"); });
+rejected ("empty host", void func () { Socket::connect (s, "", 80); });
+rejected ("empty port", void func () { Socket::bind (s, "localhost", ""); });
+File::close (s);
+
+file u = Socket::create (Socket::AF_UNIX, Socket::SOCK_STREAM);
+rejected ("empty local socket", void func () { Socket::connect (u, ""); });
+File::close (u);

@@ -78,6 +78,7 @@ add_project_arguments(cc.get_supported_arguments(
     '-Wcast-qual',
     '-Wformat=2',
     '-Wredundant-decls',
+    '-Wmissing-variable-declarations',
   ]),
 		      language: 'c')
 

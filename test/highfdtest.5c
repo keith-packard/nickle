@@ -1,0 +1,40 @@
+/*
+ * Nickle test suite
+ *
+ * Blocking I/O on file descriptors past 1024
+ *
+ * Waiting for files used select, whose fd_set holds descriptors below
+ * FD_SETSIZE (1024); larger ones wrote past it.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* Push the pipe's descriptors past 1024 */
+file[1100] spare;
+for (int i = 0; i < dim (spare); i++)
+    spare[i] = File::open ("/dev/null", "r");
+
+file[*] p = File::mkpipe ();
+int n = 200000;
+
+/* The reader blocks waiting for input, the writer for room in the pipe */
+thread reader = fork func () {
+    int count = 0;
+    while (!File::end (p[0])) {
+	File::getb (p[0]);
+	count++;
+    }
+    return count;
+} ();
+
+for (int i = 0; i < n; i++)
+    File::putb ('x', p[1]);
+File::close (p[1]);
+
+check ("bytes read", Thread::join (reader), n);

@@ -592,7 +592,7 @@ do_File_putc(Value v, Value f)
         ThreadSleep(running, f, PriorityIo);
     else {
         if (!aborting) {
-            if (FileOutchar(f, IntPart(v, "putc non integer")) == FileError) {
+            if (FileOutchar(f, CharPart(v, "putc: not a character")) == FileError) {
                 RaiseStandardException(exception_io_error, 3,
                                        FileGetErrorMessage(f->file.output_errno),
                                        FileGetError(f->file.output_errno), f);
@@ -625,7 +625,7 @@ do_File_ungetc(Value v, Value f)
     else {
         if (!aborting) {
             complete = True;
-            FileUnchar(f, IntPart(v, "ungetc: non integer"));
+            FileUnchar(f, CharPart(v, "ungetc: not a character"));
         }
     }
     RETURN(v);

@@ -811,7 +811,7 @@ NaturalBottom(char *result, digit partial, int base, ptrdiff_t digits, Bool fill
             dig = '0' + dig;
         else
             dig = 'a' + dig - 10;
-        *--result = dig;
+        *--result = (char)dig;
         digits--;
         partial = partial / base;
     } while (partial);

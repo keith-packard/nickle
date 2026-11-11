@@ -799,7 +799,7 @@ ThreadOpArray(Value thread, Value value, ptrdiff_t stack, Bool fetch, Bool typeC
                                    NewStrString("string index out of bounds"), v, value);
             break;
         }
-        value = NewInt(StringGet(s, v->string.length, i));
+        value = NewCharInteger(StringGet(s, v->string.length, i));
         break;
     case rep_array:
         if (stack != v->array.ndim) {

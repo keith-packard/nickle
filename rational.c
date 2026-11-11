@@ -706,7 +706,8 @@ CheckDecimalLength(int prec, Natural *nden, int ibase, ptrdiff_t *initial, ptrdi
 }
 
 static Bool
-RationalDecimalPrint(Value f, Value rv, char format, int base, int width, int prec, int fill)
+RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, int prec,
+                     uint32_t fill)
 {
     ENTER();
     Rational *r = &rv->rational;
@@ -957,7 +958,7 @@ RationalDecimalPrint(Value f, Value rv, char format, int base, int width, int pr
 }
 
 static Bool
-RationalPrint(Value f, Value rv, char format, int base, int width, int prec, int fill)
+RationalPrint(Value f, Value rv, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     Rational *r = &rv->rational;
     char     *num, *num_base, *den, *den_base;

@@ -114,6 +114,31 @@ Evenp(Value av)
     return False;
 }
 
+/*
+ * Return 'av' as a code point, raising invalid_argument when it isn't an
+ * integer UTF-8 can encode
+ */
+uint32_t
+CharPart(Value av, char *error)
+{
+    ptrdiff_t c;
+
+    if (!ValueToPtrdiff(av, &c) || c < 0 || c > NICKLE_CHAR_MAX) {
+        RaiseStandardException(exception_invalid_argument, 3, NewStrString(error), NewInt(0), av);
+        return 0;
+    }
+    return (uint32_t)c;
+}
+
+/*
+ * Return code point 'c' as a value
+ */
+Value
+NewCharInteger(uint32_t c)
+{
+    return NewPtrdiffInteger((ptrdiff_t)c);
+}
+
 int
 IntPart(Value av, char *error)
 {
@@ -768,7 +793,7 @@ StackObject *ValuePrintStack;
 int          ValuePrintLevel;
 
 Bool
-Print(Value f, Value v, char format, int base, int width, int prec, int fill)
+Print(Value f, Value v, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     int       i;
     Bool      ret;
@@ -889,7 +914,7 @@ UnitEqual(Value av, Value bv, int expandOk)
 }
 
 static Bool
-UnitPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+UnitPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     (void)av;
     (void)format;
@@ -942,7 +967,7 @@ BoolEqual(Value av, Value bv, int expandOk)
 }
 
 static Bool
-BoolPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+BoolPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     (void)format;
     (void)base;

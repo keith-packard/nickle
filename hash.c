@@ -194,7 +194,7 @@ HashEqual(Value av, Value bv, int expandOk)
 }
 
 static Bool
-HashPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+HashPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     HashTable *ht = &av->hash;
     ptrdiff_t  h;

@@ -573,7 +573,7 @@ FileFree(void *object)
 }
 
 static Bool
-FilePrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+FilePrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     (void)av;
     (void)format;
@@ -1064,7 +1064,7 @@ FileInput(Value file)
 }
 
 void
-FileUnput(Value file, unsigned char c)
+FileUnput(Value file, int c)
 {
     ENTER();
     FileChainPtr ic;
@@ -1074,7 +1074,7 @@ FileUnput(Value file, unsigned char c)
         ic = file->file.input = FileChainAlloc(file->file.input, FileBufferSize);
         ic->ptr = ic->used = ic->size;
     }
-    FileBuffer(ic)[--ic->ptr] = c;
+    FileBuffer(ic)[--ic->ptr] = (unsigned char)c;
     EXIT();
 }
 
@@ -1168,7 +1168,7 @@ FileFlush(Value file, Bool block)
 }
 
 int
-FileOutput(Value file, char c)
+FileOutput(Value file, int c)
 {
     ENTER();
     FileChainPtr ic;
@@ -1198,7 +1198,7 @@ FileOutput(Value file, char c)
             ic = file->file.output = FileChainAlloc(file->file.output, FileBufferSize);
     }
     ic = file->file.output;
-    FileBuffer(ic)[ic->used++] = c;
+    FileBuffer(ic)[ic->used++] = (unsigned char)c;
     if ((c == '\n' && file->file.flags & FileLineBuf) || file->file.flags & FileUnBuf) {
         if (FileFlush(file, False) == FileError) {
             EXIT();
@@ -1235,13 +1235,13 @@ FilePutDoubleDigitBase(Value file, double_digit a, int base)
         *--s = '0';
     else {
         while (a) {
-            digit = a % base;
+            digit = (int)(a % (double_digit)base);
             if (digit <= 9)
                 digit = '0' + digit;
             else
                 digit = 'a' + digit - 10;
-            *--s = digit;
-            a /= base;
+            *--s = (char)digit;
+            a /= (double_digit)base;
         }
     }
     FilePuts(file, s);
@@ -1282,13 +1282,13 @@ FilePutPtrdiff(Value file, ptrdiff_t a)
 }
 
 ptrdiff_t
-FileStringWidth(char *string, ptrdiff_t length, char format)
+FileStringWidth(char *string, ptrdiff_t length, uint32_t format)
 {
     if (format == 's')
         return StringLength(string, length);
     else {
         ptrdiff_t width = 2;
-        unsigned  c;
+        uint32_t  c;
         while ((string = StringNextChar(string, &c, &length))) {
             if (c < ' ' || '~' < c)
                 switch (c) {
@@ -1315,12 +1315,12 @@ FileStringWidth(char *string, ptrdiff_t length, char format)
 }
 
 void
-FilePutString(Value f, char *string, ptrdiff_t length, char format)
+FilePutString(Value f, char *string, ptrdiff_t length, uint32_t format)
 {
     if (format == 's')
         FilePutsc(f, string, length);
     else {
-        unsigned c;
+        uint32_t c;
         FileOutput(f, '"');
         while ((string = StringNextChar(string, &c, &length))) {
             if (c < ' ')
@@ -1348,7 +1348,7 @@ FilePutString(Value f, char *string, ptrdiff_t length, char format)
                     break;
                 default:
                     FileOutput(f, '\\');
-                    Print(f, NewInt(c), 'o', 8, 3, -1, '0');
+                    Print(f, NewCharInteger(c), 'o', 8, 3, -1, '0');
                     break;
                 }
             else if (c == '"')
@@ -1356,8 +1356,8 @@ FilePutString(Value f, char *string, ptrdiff_t length, char format)
             else if (c == '\\')
                 FilePuts(f, "\\\\");
             else {
-                char dest[7];
-                int  l = StringPutChar(c, dest);
+                char      dest[7];
+                ptrdiff_t l = StringPutChar(c, dest);
                 dest[l] = '\0';
                 FilePuts(f, dest);
             }
@@ -1759,7 +1759,7 @@ FileVPrintf(Value file, char *fmt, va_list args)
                 if (!v)
                     (void)FilePuts(file, "<uninit>");
                 else
-                    Print(file, v, *fmt, 0, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+                    Print(file, v, (uint32_t)*fmt, 0, 0, DEFAULT_OUTPUT_PRECISION, ' ');
                 break;
             case 'G':
                 v = va_arg(args, Value);
@@ -1815,7 +1815,7 @@ FileVPrintf(Value file, char *fmt, va_list args)
                 FilePutUnaryOp(file, va_arg(args, UnaryOp));
                 break;
             case 'c':
-                (void)FileOutchar(file, va_arg(args, int));
+                (void)FileOutchar(file, (uint32_t)va_arg(args, int));
                 break;
             default:
                 (void)FileOutput(file, *fmt);
@@ -1982,26 +1982,26 @@ FileSetBuffer(Value file, int mode)
 int
 FileOutchar(Value file, uint32_t c)
 {
-    char d;
-    int  bits;
+    int d;
+    int bits;
 
     if (c < 0x80UL) {
-        d = c;
+        d = (int)c;
         bits = -6;
     } else if (c < 0x800UL) {
-        d = ((c >> 6) & 0x1F) | 0xC0;
+        d = (int)(((c >> 6) & 0x1F) | 0xC0);
         bits = 0;
     } else if (c < 0x10000UL) {
-        d = ((c >> 12) & 0x0F) | 0xE0;
+        d = (int)(((c >> 12) & 0x0F) | 0xE0);
         bits = 6;
     } else if (c < 0x200000UL) {
-        d = ((c >> 18) & 0x07) | 0xF0;
+        d = (int)(((c >> 18) & 0x07) | 0xF0);
         bits = 12;
     } else if (c < 0x4000000UL) {
-        d = ((c >> 24) & 0x03) | 0xF8;
+        d = (int)(((c >> 24) & 0x03) | 0xF8);
         bits = 18;
     } else if (c < 0x80000000UL) {
-        d = ((c >> 30) & 0x01) | 0xFC;
+        d = (int)(((c >> 30) & 0x01) | 0xFC);
         bits = 24;
     } else
         return FileError;
@@ -2010,7 +2010,7 @@ FileOutchar(Value file, uint32_t c)
         return FileError;
 
     for (; bits >= 0; bits -= 6)
-        if (FileOutput(file, ((c >> bits) & 0x3F) | 0x80) < 0)
+        if (FileOutput(file, (int)(((c >> bits) & 0x3F) | 0x80)) < 0)
             return FileError;
 
     return 0;
@@ -2019,11 +2019,11 @@ FileOutchar(Value file, uint32_t c)
 int
 FileInchar(Value file)
 {
-    char buf[6];
-    int  n = 0;
-    int  result;
-    int  mask;
-    int  extra;
+    int buf[6];
+    int n = 0;
+    int result;
+    int mask;
+    int extra;
 
     result = FileInput(file);
     if (result < 0)
@@ -2064,32 +2064,32 @@ FileInchar(Value file)
 void
 FileUnchar(Value file, uint32_t c)
 {
-    char d;
-    int  bits;
+    int d;
+    int bits;
 
     if (c < 0x80) {
-        d = c;
+        d = (int)c;
         bits = -6;
     } else if (c < 0x800) {
-        d = ((c >> 6) & 0x1F) | 0xC0;
+        d = (int)(((c >> 6) & 0x1F) | 0xC0);
         bits = 0;
     } else if (c < 0x10000) {
-        d = ((c >> 12) & 0x0F) | 0xE0;
+        d = (int)(((c >> 12) & 0x0F) | 0xE0);
         bits = 6;
     } else if (c < 0x200000) {
-        d = ((c >> 18) & 0x07) | 0xF0;
+        d = (int)(((c >> 18) & 0x07) | 0xF0);
         bits = 12;
     } else if (c < 0x4000000) {
-        d = ((c >> 24) & 0x03) | 0xF8;
+        d = (int)(((c >> 24) & 0x03) | 0xF8);
         bits = 18;
     } else if (c < 0x80000000) {
-        d = ((c >> 30) & 0x01) | 0xFC;
+        d = (int)(((c >> 30) & 0x01) | 0xFC);
         bits = 24;
     } else
         return;
 
     for (; bits >= 0; bits -= 6) {
-        FileUnput(file, (c & 0x3F) | 0x80);
+        FileUnput(file, (int)((c & 0x3F) | 0x80));
         c >>= 6;
     }
     FileUnput(file, d);

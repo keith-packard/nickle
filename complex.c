@@ -127,7 +127,7 @@ ComplexReduce(Value av)
 }
 
 static Bool
-ComplexPrint(Value f, Value fv, char format, int base, int width, int prec, int fill)
+ComplexPrint(Value f, Value fv, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     Bool value = format == 'v';
 

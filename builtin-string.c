@@ -89,15 +89,15 @@ do_String_new(Value av)
         size = 0;
         for (i = 0; i < len; i++)
             size += StringCharSize(
-                IntPart(ArrayValue(&av->array, i), "new: array element not integer"));
+                CharPart(ArrayValue(&av->array, i), "new: array element not a character"));
         ret = NewString(size);
         s = StringChars(&ret->string);
         for (i = 0; i < len; i++) {
-            s += StringPutChar(IntPart(ArrayValue(&av->array, i), "new: array element not integer"),
-                               s);
+            s += StringPutChar(
+                CharPart(ArrayValue(&av->array, i), "new: array element not a character"), s);
         }
     } else {
-        int c = IntPart(av, "new: argument not integer");
+        uint32_t c = CharPart(av, "new: argument not a character");
         size = StringCharSize(c);
         ret = NewString(size);
         s = StringChars(&ret->string);
@@ -122,7 +122,7 @@ do_String_index(Value av, Value bv)
         RETURN(NewInt(-1));
     i = 0;
     while (a < p) {
-        unsigned c;
+        uint32_t c;
         a = StringNextChar(a, &c, &al);
         i++;
     }
@@ -169,7 +169,7 @@ do_String_substr(Value av, Value bv, Value cv)
      * Find start of substring
      */
     while (b > 0) {
-        unsigned ch;
+        uint32_t ch;
         a = StringNextChar(a, &ch, &alen);
         b--;
     }
@@ -179,7 +179,7 @@ do_String_substr(Value av, Value bv, Value cv)
     e = a;
     elen = alen;
     while (c > 0) {
-        unsigned ch;
+        uint32_t ch;
         e = StringNextChar(e, &ch, &elen);
         c--;
     }

@@ -119,7 +119,7 @@ FuncMark(void *object)
 void printCode(Value f, CodePtr code, int level);
 
 static Bool
-FuncPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+FuncPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     Bool nest = False;
 

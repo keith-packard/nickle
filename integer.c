@@ -416,7 +416,7 @@ IntegerReduce(Value av)
 }
 
 static Bool
-IntegerPrint(Value f, Value iv, char format, int base, int width, int prec, int fill)
+IntegerPrint(Value f, Value iv, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     ENTER();
     Integer  *i = &iv->integer;

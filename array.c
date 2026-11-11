@@ -74,7 +74,7 @@ ArrayEqual(Value av, Value bv, int expandOk)
 }
 
 static Bool
-ArrayPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+ArrayPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     ENTER();
     Array     *a = &av->array;
@@ -86,7 +86,7 @@ ArrayPrint(Value f, Value av, char format, int base, int width, int prec, int fi
     ptrdiff_t  limit = ArrayLimit(av);
     Bool       ret = True;
     Bool       pretty = format == 'v' || format == 'g' || format == 'G';
-    char       down_format = format == 'g' ? 'G' : format;
+    uint32_t   down_format = format == 'g' ? 'G' : format;
 
     if (pretty) {
         FilePuts(f, "(");

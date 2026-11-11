@@ -784,7 +784,7 @@ extern int   ignorenl;
 void         skipcomment(void);
 Value        lexdoc(void);
 void         skipline(void);
-int          lexEscape(int);
+uint32_t     lexEscape(uint32_t);
 
 extern void  init(void);
 extern int   yyparse(void);

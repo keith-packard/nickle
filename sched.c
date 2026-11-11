@@ -373,7 +373,7 @@ ThreadMark(void *object)
 }
 
 static Bool
-ThreadPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+ThreadPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     (void)format;
     (void)base;
@@ -625,7 +625,7 @@ ContinuationMark(void *object)
 }
 
 static Bool
-ContinuationPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+ContinuationPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     (void)av;
     (void)format;

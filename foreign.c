@@ -16,7 +16,7 @@ ForeignEqual(Value av, Value bv, int expandOk)
 }
 
 static Bool
-ForeignPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+ForeignPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     (void)format;
     (void)base;

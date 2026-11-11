@@ -313,7 +313,7 @@ yy_input(char *buf, int max_size)
         lexInput->at_bol = False;
         if (c < 0)
             break;
-        buf[result++] = c;
+        buf[result++] = (char)c;
         if (c == '\n') {
             lexInput->at_bol = True;
             break;
@@ -510,7 +510,7 @@ has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
                     ENTER();
                     char     *s;
                     ptrdiff_t len = yyleng - 1;
-                    unsigned  c;
+                    uint32_t  c;
 
                     s = yytext + 1;
                     s = StringNextChar(s, &c, &len);
@@ -518,7 +518,7 @@ has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
                         if (!(s = StringNextChar(s, &c, &len)))
                             c = 0;
                         else if ('0' <= c && c <= '7') {
-                            unsigned ch;
+                            uint32_t ch;
                             char    *ps = s;
 
                             c = c - '0';
@@ -530,7 +530,7 @@ has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
                         } else
                             c = lexEscape(c);
                     }
-                    yylval.value = NewInt(c);
+                    yylval.value = NewCharInteger(c);
                     EXIT();
                     REFERENCE(yylval.value);
                     return CHAR_CONST;
@@ -538,7 +538,7 @@ has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
 \"([^\n\"]|\\\")*\"     {
                     ENTER();
                     char     *d, *s;
-                    unsigned  c;
+                    uint32_t  c;
                     ptrdiff_t len = yyleng - 2;
 
                     yylval.value = NewString(len);
@@ -549,7 +549,7 @@ has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
                             if (!(s = StringNextChar(s, &c, &len)))
                                 break;
                             if ('0' <= c && c <= '7') {
-                                unsigned  ch;
+                                uint32_t  ch;
                                 char     *ps = s;
                                 ptrdiff_t plen = len;
 
@@ -673,8 +673,8 @@ has_member      { yylval.ints = HASMEMBER; return HASMEMBER; }
 .               FilePrintf (FileStderr, "character \\%o ignored\n", *yytext & 0xff);
 %%
 
-int
-lexEscape(int c)
+uint32_t
+lexEscape(uint32_t c)
 {
     switch (c) {
     case '0':
@@ -721,7 +721,7 @@ lexdoc(void)
             if (skip && c != ' ' && c != '\t')
                 skip = False;
             if (!skip)
-                s = Plus(s, NewCharString(c));
+                s = Plus(s, NewCharString((uint32_t)c));
             if (c == '\n')
                 skip = True;
             c = input();

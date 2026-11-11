@@ -62,7 +62,7 @@ StringLess(Value av, Value bv, int expandOk)
 }
 
 static Bool
-StringPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+StringPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     char     *string = StringChars(&av->string);
     ptrdiff_t len = av->string.length;
@@ -84,24 +84,24 @@ StringPrint(Value f, Value av, char format, int base, int width, int prec, int f
 }
 
 char *
-StringNextChar(char *src, unsigned *dst, ptrdiff_t *len)
+StringNextChar(char *src, uint32_t *dst, ptrdiff_t *len)
 {
-    unsigned result = *src++;
+    uint32_t result = (unsigned char)*src++;
 
     if (!*len)
         return 0;
     (*len)--;
 
     if (result & 0x80) {
-        int m = 0x20;
-        int extra = 1;
+        uint32_t m = 0x20;
+        int      extra = 1;
         while (result & m) {
             extra++;
             m >>= 1;
         }
         result &= (m - 1);
         while (extra--) {
-            char c = *src++;
+            uint32_t c = (unsigned char)*src++;
 
             (*len)--;
             if ((c & 0x80) == 0) {
@@ -117,10 +117,10 @@ StringNextChar(char *src, unsigned *dst, ptrdiff_t *len)
     return src;
 }
 
-unsigned
+uint32_t
 StringGet(char *src, ptrdiff_t len, ptrdiff_t i)
 {
-    unsigned c;
+    uint32_t c;
 
     do {
         src = StringNextChar(src, &c, &len);
@@ -134,47 +134,47 @@ ptrdiff_t
 StringLength(char *src, ptrdiff_t len)
 {
     ptrdiff_t l = 0;
-    unsigned  c;
+    uint32_t  c;
     while ((src = StringNextChar(src, &c, &len)))
         l++;
     return l;
 }
 
-int
-StringPutChar(unsigned c, char *dest)
+ptrdiff_t
+StringPutChar(uint32_t c, char *dest)
 {
     int   bits;
     char *d = dest;
 
     if (c < 0x80) {
-        *d++ = c;
+        *d++ = (char)c;
         bits = -6;
     } else if (c < 0x800) {
-        *d++ = ((c >> 6) & 0x1F) | 0xC0;
+        *d++ = (char)(((c >> 6) & 0x1F) | 0xC0);
         bits = 0;
     } else if (c < 0x10000) {
-        *d++ = ((c >> 12) & 0x0F) | 0xE0;
+        *d++ = (char)(((c >> 12) & 0x0F) | 0xE0);
         bits = 6;
     } else if (c < 0x200000) {
-        *d++ = ((c >> 18) & 0x07) | 0xF0;
+        *d++ = (char)(((c >> 18) & 0x07) | 0xF0);
         bits = 12;
     } else if (c < 0x4000000) {
-        *d++ = ((c >> 24) & 0x03) | 0xF8;
+        *d++ = (char)(((c >> 24) & 0x03) | 0xF8);
         bits = 18;
     } else if (c < 0x80000000) {
-        *d++ = ((c >> 30) & 0x01) | 0xFC;
+        *d++ = (char)(((c >> 30) & 0x01) | 0xFC);
         bits = 24;
     } else
         return 0;
 
     for (; bits >= 0; bits -= 6) {
-        *d++ = ((c >> bits) & 0x3F) | 0x80;
+        *d++ = (char)(((c >> bits) & 0x3F) | 0x80);
     }
     return d - dest;
 }
 
-int
-StringCharSize(unsigned c)
+ptrdiff_t
+StringCharSize(uint32_t c)
 {
     if (c < 0x80)
         return 1;
@@ -252,11 +252,11 @@ NewStrString(const char *str)
 }
 
 Value
-NewCharString(int c)
+NewCharString(uint32_t c)
 {
     ENTER();
-    int   size = StringCharSize(c);
-    Value ret = NewString(size);
+    ptrdiff_t size = StringCharSize(c);
+    Value     ret = NewString(size);
 
     StringPutChar(c, StringChars(&ret->string));
     RETURN(ret);

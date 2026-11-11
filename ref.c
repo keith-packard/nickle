@@ -132,7 +132,7 @@ RefTypeCheck(BinaryOp op, Value av, Value bv, int expandOk)
 }
 
 static Bool
-RefPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+RefPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     FileOutput(f, '&');
     return Print(f, RefValueGet(av), format, base, width ? width - 1 : 0, prec, fill);

@@ -229,7 +229,7 @@ PrettyStructInit(Value f, Expr *e, int level, Bool nest)
 }
 
 static void
-PrettyChar(Value f, int c)
+PrettyChar(Value f, uint32_t c)
 {
     FileOutput(f, '\'');
     if (c < ' ' || '~' < c)
@@ -251,7 +251,7 @@ PrettyChar(Value f, int c)
             break;
         default:
             FileOutput(f, '\\');
-            Print(f, NewInt(c), 'o', 8, 3, 0, '0');
+            Print(f, NewCharInteger(c), 'o', 8, 3, 0, '0');
             break;
         }
     else if (c == '\'')
@@ -419,7 +419,7 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
         FilePrintf(f, "%v", e->constant.constant);
         break;
     case CHAR_CONST:
-        PrettyChar(f, IntPart(e->constant.constant, "malformed character constant"));
+        PrettyChar(f, CharPart(e->constant.constant, "malformed character constant"));
         break;
     case FUNC:
         PrettyCode(f, e->code.code, 0, class_undef, publish_private, level + 1, nest);
@@ -889,7 +889,7 @@ PrettyDoc(Value f, int level, Value doc)
 {
     char     *s = StringChars(&doc->string);
     ptrdiff_t len = doc->string.length;
-    unsigned  c;
+    uint32_t  c;
     Bool      newline = False;
 
     PrettyIndent(f, 0, level);

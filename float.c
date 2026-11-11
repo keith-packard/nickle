@@ -754,7 +754,7 @@ FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
 }
 
 static Bool
-FloatPrint(Value f, Value fv, char format, int base, int width, int print_prec, int fill)
+FloatPrint(Value f, Value fv, uint32_t format, int base, int width, int print_prec, uint32_t fill)
 {
     ENTER();
     Float    *a = &fv->floats;

@@ -239,7 +239,7 @@ IntCeil(Value av, int expandOk)
 }
 
 static Bool
-IntPrint(Value f, Value av, char format, int base, int width, int prec, int fill)
+IntPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     int       a = ValueInt(av);
     int       digit;
@@ -264,7 +264,7 @@ IntPrint(Value f, Value av, char format, int base, int width, int prec, int fill
         base = 10;
     switch (format) {
     case 'c':
-        space[StringPutChar(a, space)] = '\0';
+        space[StringPutChar(CharPart(av, "Illegal character"), space)] = '\0';
         s = space;
         break;
     default:
@@ -284,7 +284,7 @@ IntPrint(Value f, Value av, char format, int base, int width, int prec, int fill
                     digit = '0' + digit;
                 else
                     digit = letter + digit - 10;
-                *--s = digit;
+                *--s = (char)digit;
                 a /= base;
             }
             if (neg)

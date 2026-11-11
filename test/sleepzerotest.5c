@@ -1,0 +1,11 @@
+/*
+ * Nickle test suite
+ *
+ * sleep (0)
+ *
+ * A timer due immediately set the interval timer to zero, which
+ * disarms it, so sleep (0) never woke when no other timer was pending.
+ */
+
+sleep (0);
+sleep (-5);

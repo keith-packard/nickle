@@ -1777,11 +1777,19 @@ FileVPrintf(Value file, char *fmt, va_list args)
                 }
                 break;
             case 'n':
-                FilePuts(file, NaturalSprint(0, va_arg(args, Natural *), 10, 0));
+            case 'N': {
+                int base = 16;
+
+                if (*fmt == 'n')
+                    base = 10;
+
+                char *s = NaturalSprint(0, va_arg(args, Natural *), base, 0);
+
+                /* NaturalSprint returns 0 when interrupted or out of memory */
+                if (s)
+                    FilePuts(file, s);
                 break;
-            case 'N':
-                FilePuts(file, NaturalSprint(0, va_arg(args, Natural *), 16, 0));
-                break;
+            }
             case 's':
                 (void)FilePuts(file, va_arg(args, char *));
                 break;

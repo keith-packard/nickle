@@ -518,7 +518,7 @@ do_File_getc(Value f)
             RETURN(Void);
         default:
             complete = True;
-            RETURN(NewInt(c));
+            RETURN(NewCharInteger((uint32_t)c));
         }
     }
     RETURN(Void);

@@ -3,6 +3,12 @@
  *
  * Running programs with File::filter
  *
+ * filter read three files from its array without checking its length,
+ * and gave the process the descriptors of string and closed files,
+ * which have none. The child placed its files on descriptors 0, 1,
+ * and 2 in order, so when stdout and stderr traded places, placing
+ * the first replaced the second.
+ *
  * The child sent exec's errno as the first byte of an int, which is
  * the high byte on big-endian machines, and the parent read it into an
  * uninitialized int.
@@ -32,3 +38,42 @@ try {
 } catch File::open_error (string m, File::error_type e, string name) {
     check ("error", e, File::error_type.NOENT);
 }
+
+void function rejected (string what, file[*] files)
+{
+    try {
+	File::filter ("echo", (string[*]) { "echo" }, files);
+	raise not_raised (what);
+    } catch invalid_argument (string m, int i, poly v) {
+    }
+}
+
+rejected ("short", (file[*]) { stdin });
+rejected ("string file", (file[*]) { stdin, File::string_write (), stderr });
+file closed = File::open ("/dev/null", "w");
+File::close (closed);
+rejected ("closed file", (file[*]) { stdin, closed, stderr });
+
+/* Swap stdout and stderr, each sent to a file of its own */
+string out = "filtertest-out.tmp";
+string err = "filtertest-err.tmp";
+File::reopen (out, "w", stdout);
+File::reopen (err, "w", stderr);
+File::filter ("sh", (string[*]) { "sh", "-c", "echo OUT; echo ERR >&2" },
+	      (file[3]) { stdin, stderr, stdout });
+
+/* Wait up to five seconds for the process to write both lines */
+string function contents (string name)
+{
+    file f = File::open (name, "r");
+    string s = File::end (f) ? "" : File::fgets (f);
+    File::close (f);
+    return s;
+}
+
+for (int i = 0; i < 500 && (contents (out) == "" || contents (err) == ""); i++)
+    sleep (10);
+check ("stdout", contents (out), "ERR");
+check ("stderr", contents (err), "OUT");
+File::unlink (out);
+File::unlink (err);

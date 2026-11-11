@@ -73,6 +73,11 @@ add_project_arguments(cc.get_supported_arguments(
     '-Wnull-dereference',
     '-Wconversion',
     '-Wsign-conversion',
+    '-Wshadow',
+    '-Wundef',
+    '-Wcast-qual',
+    '-Wformat=2',
+    '-Wredundant-decls',
   ]),
 		      language: 'c')
 

@@ -1,11 +1,12 @@
 /*
  * Nickle test suite
  *
- * Printing union switch cases and raise statements
+ * Printing union switch cases, raise statements, and declarations
  *
  * Union switch case labels printed blank, losing the member and the
  * name bound to its value, and raise of an exception qualified by a
- * namespace printed whatever followed the name's node.
+ * namespace printed whatever followed the name's node. const ran into
+ * its type, and global was dropped from declarations inside functions.
  */
 
 exception wrong (string what, poly got, poly want);
@@ -64,3 +65,24 @@ Command::lex_string ("int function pick_again " + again + "\n" +
 		     "check (\"i\", pick_again ((U) { .i = 5 }), pick ((U) { .i = 5 }));\n" +
 		     "check (\"s\", pick_again ((U) { .s = \"abc\" }), 3);\n" +
 		     "check (\"v\", pick_again (U.v), 0);\n");
+
+/* Declaration qualifiers print with their types, and global persists */
+int function quals ()
+{
+    const int c = 9;
+    const k = 3;
+    global int gg = 5;
+    static int s = 2;
+    return c + k + gg++ + s;
+}
+
+string q = printed ("quals");
+has ("const", q, "const int c = 9;");
+has ("const poly", q, "const k = 3;");
+has ("global", q, "global int gg = 5;");
+has ("static", q, "static int s = 2;");
+int qstart = String::index (q, "(");
+Command::lex_string ("int function quals_again " +
+		     String::substr (q, qstart, String::length (q) - qstart) + "\n" +
+		     "check (\"first call\", quals_again (), 19);\n" +
+		     "check (\"second call\", quals_again (), 20);\n");

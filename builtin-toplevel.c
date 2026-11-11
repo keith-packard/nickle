@@ -349,6 +349,10 @@ do_string_to_integer(ptrdiff_t n, Value *p)
         break;
     }
     ibase = IntPart(base, "string_to_integer: invalid base");
+    /* Digits run from 0-9 then a-z, which covers bases up to 36 */
+    if (!aborting && ibase != 0 && (ibase < 2 || ibase > 36))
+        RaiseStandardException(exception_invalid_argument, 3,
+                               NewStrString("string_to_integer: invalid base"), NewInt(1), base);
     if (!aborting) {
         if (ibase == 0) {
             if (!strncmp(s, "0x", 2) || !strncmp(s, "0X", 2))

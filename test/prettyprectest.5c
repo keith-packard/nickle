@@ -44,6 +44,10 @@ string[*][2] cases = {
     { "~(a | b)", "~(a | b)" },
     { "!(t && u)", "!(t && u)" },
     { "a - -b", "a - -b" },
+    { "(a ^ b) & c", "(a ^ b) & c" },
+    { "a ^ (b & c)", "a ^ b & c" },
+    { "(a | b) ^ c", "(a | b) ^ c" },
+    { "is_type (a, int) || has_member (a, x)", "is_type (a, int) || has_member (a, x)" },
 };
 
 for (int i = 0; i < dim (cases); i++) {
@@ -79,3 +83,16 @@ for (int i = 0; i < dim (cases); i++) {
 		      cases[i][0], i, cases[i][1]);
 }
 Command::lex_string (again);
+
+/* Statements whose values can't be compared print as written */
+void function statements ()
+{
+    int x = 7;
+    x //= 3;
+    thread t = fork x + 1;
+}
+file f = File::string_write ();
+Command::pretty_print (f, (string[*]) { "statements" });
+string printed = File::string_string (f);
+check ("//=", String::index (printed, "x //= 3;") >= 0, true);
+check ("fork", String::index (printed, "thread t = fork x + 1;") >= 0, true);

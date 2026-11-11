@@ -553,7 +553,7 @@ do_setdims(Value av, Value dv)
     }
     if (!av->array.resizable) {
         RaiseStandardException(exception_invalid_argument, 3,
-                               NewStrString("setdims: array must be resizable"), av, Void);
+                               NewStrString("setdims: array must be resizable"), NewInt(0), av);
         RETURN(Void);
     }
     for (i = 0; i < a->ndim; i++) {
@@ -583,12 +583,13 @@ do_setdim(Value av, Value dv)
         RETURN(Void);
     if (d < 0) {
         RaiseStandardException(exception_invalid_argument, 3,
-                               NewStrString("setdim: dimension must be non-negative"), dv, Void);
+                               NewStrString("setdim: dimension must be non-negative"), NewInt(1),
+                               dv);
         RETURN(Void);
     }
     if (!av->array.resizable) {
         RaiseStandardException(exception_invalid_argument, 3,
-                               NewStrString("setdim: array must be resizable"), av, Void);
+                               NewStrString("setdim: array must be resizable"), NewInt(0), av);
         RETURN(Void);
     }
     ArrayResize(av, 0, d);

@@ -655,7 +655,7 @@ typedef enum _wakeKind { WakeAll, WakeOne } WakeKind;
 extern Bool  lastThreadError;
 
 Value        NewThread(FramePtr frame, ObjPtr code);
-void         ThreadSleep(Value thread, Value sleep, int priority);
+void         ThreadSleep(Value thread, Value sleep);
 void         ThreadStepped(Value thread);
 void         ThreadsWakeup(Value sleep, WakeKind wake);
 void         ThreadsRun(Value until, Value lex);

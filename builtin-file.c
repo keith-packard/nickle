@@ -285,7 +285,7 @@ do_File_print(Value file, Value value, Value format, Value base, Value width, Va
     if (aborting)
         return Void;
     if (file->file.flags & FileOutputBlocked)
-        ThreadSleep(running, file, PriorityIo);
+        ThreadSleep(running, file);
     else {
         Print(file, value, StringGet(StringChars(&format->string), format->string.length, 0), ibase,
               iwidth, iprec, StringGet(StringChars(&fill->string), fill->string.length, 0));
@@ -329,7 +329,7 @@ do_File_flush(Value f)
 {
     switch (FileFlush(f, False)) {
     case FileBlocked:
-        ThreadSleep(running, f, PriorityIo);
+        ThreadSleep(running, f);
         break;
     case FileError:
         RaiseStandardException(exception_io_error, 3, FileGetErrorMessage(f->file.output_errno),
@@ -346,7 +346,7 @@ do_File_close(Value f)
         return Void;
     switch (FileFlush(f, False)) {
     case FileBlocked:
-        ThreadSleep(running, f, PriorityIo);
+        ThreadSleep(running, f);
         break;
     case FileError:
         RaiseStandardException(exception_io_error, 3, FileGetErrorMessage(f->file.output_errno),
@@ -485,7 +485,7 @@ do_File_getb(Value f)
         c = FileInput(f);
         switch (c) {
         case FileBlocked:
-            ThreadSleep(running, f, PriorityIo);
+            ThreadSleep(running, f);
             RETURN(Void);
         case FileError:
             RaiseStandardException(exception_io_error, 3, FileGetErrorMessage(f->file.input_errno),
@@ -509,7 +509,7 @@ do_File_getc(Value f)
         c = FileInchar(f);
         switch (c) {
         case FileBlocked:
-            ThreadSleep(running, f, PriorityIo);
+            ThreadSleep(running, f);
             RETURN(Void);
         case FileError:
             RaiseStandardException(exception_io_error, 3, FileGetErrorMessage(f->file.input_errno),
@@ -572,7 +572,7 @@ do_File_putb(Value v, Value f)
     ENTER();
 
     if (f->file.flags & FileOutputBlocked)
-        ThreadSleep(running, f, PriorityIo);
+        ThreadSleep(running, f);
     else if (!aborting) {
         int b = IntPart(v, "putb non integer");
 
@@ -598,7 +598,7 @@ do_File_putc(Value v, Value f)
     ENTER();
 
     if (f->file.flags & FileOutputBlocked)
-        ThreadSleep(running, f, PriorityIo);
+        ThreadSleep(running, f);
     else if (!aborting) {
         uint32_t c = CharPart(v, "putc: not a character");
 
@@ -641,7 +641,7 @@ do_File_ungetc(Value v, Value f)
     ENTER();
 
     if (f->file.flags & FileOutputBlocked)
-        ThreadSleep(running, f, PriorityIo);
+        ThreadSleep(running, f);
     else {
         if (!aborting) {
             uint32_t c = CharPart(v, "ungetc: not a character");

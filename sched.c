@@ -69,9 +69,8 @@ ThreadSetState(Value thread, ThreadState state)
 }
 
 void
-ThreadSleep(Value thread, Value sleep, int priority)
+ThreadSleep(Value thread, Value sleep)
 {
-    thread->thread.priority = priority;
     thread->thread.sleep = sleep;
     SetSignalSuspend();
 }
@@ -125,7 +124,7 @@ do_Thread_join(Value target)
         RETURN(Void);
     }
     if (target->thread.state != ThreadFinished) {
-        ThreadSleep(running, target, PrioritySync);
+        ThreadSleep(running, target);
         RETURN(Void);
     }
     RETURN(target->thread.continuation.value);

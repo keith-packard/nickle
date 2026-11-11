@@ -862,11 +862,6 @@ typedef struct _thread {
     Value        next;
 } Thread;
 
-#define PriorityMin   0
-#define PriorityStart 100
-#define PrioritySync  200
-#define PriorityIo    300
-
 typedef struct _semaphore {
     BaseValue value;
     ptrdiff_t count;

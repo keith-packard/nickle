@@ -387,7 +387,7 @@ do_Socket_connect(ptrdiff_t num, Value *args)
         }
     }
     if (s->file.flags & FileOutputBlocked) {
-        ThreadSleep(running, s, PriorityIo);
+        ThreadSleep(running, s);
         RETURN(Void);
     }
 
@@ -483,7 +483,7 @@ do_Socket_accept(Value s)
         }
     }
     if (s->file.flags & FileInputBlocked) {
-        ThreadSleep(running, s, PriorityIo);
+        ThreadSleep(running, s);
         RETURN(Void);
     }
 

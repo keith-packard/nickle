@@ -21,7 +21,7 @@ do_Semaphore_wait(Value s)
         --s->semaphore.count;
         if (s->semaphore.count < 0) {
             running->thread.partial = 1;
-            ThreadSleep(running, s, PrioritySync);
+            ThreadSleep(running, s);
             RETURN(Void);
         }
     }

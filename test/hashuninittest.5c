@@ -1,0 +1,44 @@
+/*
+ * Nickle test suite
+ *
+ * Comparing hashes holding uninitialized elements
+ *
+ * Referencing a missing hash element creates it without a value, and
+ * comparing such a hash passed the missing value to Equal, which
+ * crashed. Arrays raise uninitialized_value for these, so hashes do too.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function uninit (string what, bool() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch uninitialized_value (string m) {
+    }
+}
+
+int[int] h = { 1 => 2 };
+int[int] g = { 1 => 2 };
+check ("equal", h == g, true);
+
+*int r = &h[3];
+uninit ("self", bool func () { return h == h; });
+
+*int q = &g[3];
+uninit ("both", bool func () { return h == g; });
+
+/* Once given values, the elements compare */
+*r = 4;
+*q = 4;
+check ("filled", h == g, true);
+*q = 5;
+check ("different", h == g, false);

@@ -1026,12 +1026,17 @@ typedef struct _boxReplace {
     ptrdiff_t newstride;
 } BoxReplace, *BoxReplacePtr;
 
+/* Box.nvalues shares a word with three flags */
+#define BOX_NVALUES_BITS ((sizeof(ptrdiff_t) * 8) - 3)
+/* The most values a box may hold, the largest Box.nvalues */
+#define BOX_MAX_VALUES ((ptrdiff_t)(((size_t)1 << (BOX_NVALUES_BITS - 1)) - 1))
+
 typedef struct _box {
     DataType     *data;
     unsigned long constant    : 1;
     unsigned long homogeneous : 1;
     unsigned long replace     : 1;
-    unsigned long nvalues     : (sizeof(unsigned long) * 8) - 3;
+    ptrdiff_t     nvalues     : BOX_NVALUES_BITS;
     union {
         BoxTypesPtr   types;
         TypePtr       type;
@@ -1240,8 +1245,14 @@ Value               NewStrString(const char *);
 Value               NewCharString(uint32_t c);
 /* The largest code point UTF-8 can encode */
 #define NICKLE_CHAR_MAX 0x7FFFFFFF
-/* The most elements an array may have, keeping its byte size representable */
-#define ARRAY_MAX_VALUES (PTRDIFF_MAX / (ptrdiff_t)sizeof(Value))
+/*
+ * The most elements an array may have, keeping its byte size
+ * representable and its count within a box
+ */
+#define ARRAY_MAX_VALUES                                     \
+    (PTRDIFF_MAX / (ptrdiff_t)sizeof(Value) < BOX_MAX_VALUES \
+         ? PTRDIFF_MAX / (ptrdiff_t)sizeof(Value)            \
+         : BOX_MAX_VALUES)
 
 Bool      ArrayDimsOk(int32_t ndim, ptrdiff_t *dims);
 Value     NewArray(Bool constant, Bool resizable, TypePtr type, int32_t ndim, ptrdiff_t *dims);

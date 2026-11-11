@@ -249,7 +249,7 @@ ThreadAssign(Value ref, Value v, Bool initialize)
     else if (RefConstant(ref) && !initialize)
         RaiseStandardException(exception_readonly_box, 2,
                                NewStrString("assignment to const storage"), v);
-    else if (ref->ref.element < 0 || (unsigned long)ref->ref.element >= ref->ref.box->nvalues)
+    else if (ref->ref.element < 0 || ref->ref.element >= ref->ref.box->nvalues)
         RaiseStandardException(exception_invalid_array_bounds, 3,
                                NewStrString("assignment outside of array"),
                                NewPtrdiffInteger(ref->ref.element), v);

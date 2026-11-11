@@ -9,9 +9,9 @@
 static void
 BoxMark(void *object)
 {
-    BoxPtr        box = object;
-    Value        *elements;
-    unsigned long i;
+    BoxPtr    box = object;
+    Value    *elements;
+    ptrdiff_t i;
 
     elements = BoxElements(box);
     if (box->replace)
@@ -38,7 +38,8 @@ NewBox(Bool constant, Bool array, ptrdiff_t nvalues, TypePtr type)
     box->constant = constant;
     box->homogeneous = True;
     box->replace = False;
-    box->nvalues = nvalues;
+    assert(0 <= nvalues && nvalues <= BOX_MAX_VALUES);
+    box->nvalues = nvalues & BOX_MAX_VALUES;
     box->u.type = type;
     for (i = 0; i < nvalues; i++)
         BoxValueSet(box, i, 0);
@@ -49,15 +50,16 @@ BoxPtr
 NewTypedBox(Bool array, BoxTypesPtr bt)
 {
     ENTER();
-    BoxPtr box;
-    int    i;
+    BoxPtr    box;
+    ptrdiff_t i;
 
     (void)array;
-    box = ALLOCATE(&BoxType, sizeof(Box) + bt->count * sizeof(Value));
+    assert(0 <= bt->count && bt->count <= BOX_MAX_VALUES);
+    box = ALLOCATE(&BoxType, sizeof(Box) + (size_t)bt->count * sizeof(Value));
     box->constant = False;
     box->homogeneous = False;
     box->replace = False;
-    box->nvalues = bt->count;
+    box->nvalues = bt->count & BOX_MAX_VALUES;
     box->u.types = bt;
     for (i = 0; i < bt->count; i++)
         BoxValueSet(box, i, 0);
@@ -109,7 +111,7 @@ BoxRewrite(BoxPtr box, ptrdiff_t *ep)
      * was resized.  But, that's "hard".  This check will
      * at least prevent a seg fault.
      */
-    if (e >= 0 && (unsigned long)e >= box->nvalues) {
+    if (e >= 0 && e >= box->nvalues) {
         RaiseStandardException(exception_invalid_array_bounds, 3,
                                NewStrString("reference to storage removed by array resize"), Void,
                                NewPtrdiffInteger(e));

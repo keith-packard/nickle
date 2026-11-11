@@ -27,8 +27,7 @@ RefPlus(Value av, Value bv, int expandOk)
     } else
         RETURN(Void);
     i = i + ref->element;
-    if (i < 0 || (unsigned long)i >= ref->box->nvalues
-        || (!ref->box->homogeneous && i != ref->element)) {
+    if (i < 0 || i >= ref->box->nvalues || (!ref->box->homogeneous && i != ref->element)) {
         RaiseStandardException(exception_invalid_array_bounds, 3,
                                NewStrString("pointer arithmetic outside of array"), av, bv);
         RETURN(Void);
@@ -69,8 +68,7 @@ RefMinus(Value av, Value bv, int expandOk)
         RETURN(NewPtrdiffInteger(ref->element - bref->element));
     }
     i = i + element;
-    if (i < 0 || (unsigned long)i >= ref->box->nvalues
-        || (!ref->box->homogeneous && i != ref->element)) {
+    if (i < 0 || i >= ref->box->nvalues || (!ref->box->homogeneous && i != ref->element)) {
         RaiseStandardException(exception_invalid_array_bounds, 3,
                                NewStrString("pointer arithmetic outside of array"), av, bv);
         RETURN(Void);

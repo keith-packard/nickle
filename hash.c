@@ -119,6 +119,9 @@ Resize(HashTablePtr ht, const HashSetPtr hs)
 
     ENTER();
     old = ht->elts;
+    /* Rehash compares keys, which may collect; keep the old elements until it's done */
+    if (old)
+        REFERENCE(old);
     ht->elts = NewBox(False, False, hs->size * HashEltSize, ht->type);
     ht->hashSet = hs;
     if (old)

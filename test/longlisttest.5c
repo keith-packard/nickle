@@ -1,0 +1,49 @@
+/*
+ * Nickle test suite
+ *
+ * Statement, case, and argument lists longer than 10000 entries
+ *
+ * These lists are right-recursive in the grammar, so the parser's
+ * stacks hold every entry until the list ends, and bison's default
+ * stack limit of 10000 made longer lists fail with "memory exhausted".
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+int n = 12000;
+
+file src = File::string_write ();
+
+/* A block of n statements */
+File::fprintf (src, "int long_block () {\nint s = 0;\n");
+for (int i = 0; i < n; i++)
+    File::fprintf (src, "s += %d;\n", i);
+File::fprintf (src, "return s;\n}\n");
+
+/* A switch of n cases */
+File::fprintf (src, "int long_switch (int x) {\nswitch (x) {\n");
+for (int i = 0; i < n; i++)
+    File::fprintf (src, "case %d: return %d;\n", i, 2 * i);
+File::fprintf (src, "}\nreturn -1;\n}\n");
+
+/* A call with n arguments */
+File::fprintf (src, "int count (int a ...) { return dim (a); }\n");
+File::fprintf (src, "int long_call () { return count (");
+for (int i = 0; i < n; i++) {
+    if (i != 0)
+	File::fprintf (src, ", ");
+    File::fprintf (src, "%d", i);
+}
+File::fprintf (src, "); }\n");
+
+Command::lex_input (File::string_read (File::string_string (src)), "longlists", false, false);
+
+check ("long_block", long_block (), n * (n - 1) // 2);
+check ("long_switch", long_switch (n - 1), 2 * (n - 1));
+check ("long_call", long_call (), n);

@@ -69,7 +69,8 @@ tests = [
   'millistest.5c',
   'charrangetest.5c',
   'socketaddrtest.5c',
-  'bignamespacetest.5c'
+  'bignamespacetest.5c',
+  'longlisttest.5c'
 ]
 
 extra_files = [

@@ -147,6 +147,12 @@ do_Thread_join(Value target)
                                NewStrString("join needs thread argument"), NewInt(0), target);
         RETURN(Void);
     }
+    if (target == running) {
+        RaiseStandardException(exception_invalid_argument, 3,
+                               NewStrString("join: a thread can't wait for itself"), NewInt(0),
+                               target);
+        RETURN(Void);
+    }
     if (target->thread.state != ThreadFinished) {
         ThreadSleep(running, target);
         RETURN(Void);

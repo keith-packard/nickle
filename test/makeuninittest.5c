@@ -1,0 +1,29 @@
+/*
+ * Nickle test suite
+ *
+ * make_uninit and const storage
+ *
+ * make_uninit cleared const storage, which assignment refuses, such as
+ * the array dims returns.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+int[*] d = dims ((int[2]) { 1, 2 });
+try {
+    make_uninit (&d[0]);
+    raise not_raised ("make_uninit const");
+} catch readonly_box (string m, poly v) {
+}
+check ("unchanged", d[0], 2);
+
+int[2] a = { 1, 2 };
+make_uninit (&a[0]);
+check ("cleared", is_uninit (&a[0]), true);

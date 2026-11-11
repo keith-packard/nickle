@@ -84,6 +84,7 @@ tests = [
   'atoibasetest.5c',
   'errortypetest.5c',
   'errordetailtest.5c',
+  'makeuninittest.5c',
   'bignamespacetest.5c',
   'longlisttest.5c',
   'commandreleasetest.5c'

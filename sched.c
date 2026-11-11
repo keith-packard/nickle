@@ -273,8 +273,11 @@ KillThread(Value thread)
     }
     if (thread->thread.state == ThreadFinished)
         ret = 0;
-    else
+    else {
         ret = 1;
+        /* A killed thread has no result for join to return */
+        thread->thread.continuation.value = Void;
+    }
     ThreadFinish(thread, False);
     return ret;
 }

@@ -36,8 +36,8 @@ static int           sinceGarbage;
 StackObject         *MemStack;
 void                *TemporaryData;
 static void        **Roots;
-static int           RootCount;
-static int           RootSize;
+static ptrdiff_t     RootCount;
+static ptrdiff_t     RootSize;
 
 #ifdef DEBUG
 int GCdebug;
@@ -256,11 +256,11 @@ MemAddRoot(void *object)
             RootSize = 128;
         else
             RootSize *= 2;
-        roots = malloc(sizeof(void *) * RootSize);
+        roots = malloc(sizeof(void *) * (size_t)RootSize);
         if (!roots)
             MemExhausted();
         if (Roots) {
-            memcpy(roots, Roots, RootCount * sizeof(void *));
+            memcpy(roots, Roots, (size_t)RootCount * sizeof(void *));
             free(Roots);
         }
         Roots = roots;
@@ -315,8 +315,8 @@ MemReferenceNoRecurse(void *object)
 static void
 mark(void)
 {
-    int    rootCount = RootCount;
-    void **roots = Roots;
+    ptrdiff_t rootCount = RootCount;
+    void    **roots = Roots;
 
     while (rootCount--)
         MemReference(*roots++);

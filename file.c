@@ -775,10 +775,12 @@ FileFilter(char *program, char *args[], Value filev, int *errp)
 {
     ENTER();
     int       pid;
-    int       errcode, nread;
+    int       errcode;
+    ssize_t   nread;
     ptrdiff_t i;
+    int       fd;
     int       errpipe[2];
-    int       fdlimit;
+    long      fdlimit;
     int       fds[3];
 
     /* set up process files */
@@ -818,17 +820,17 @@ FileFilter(char *program, char *args[], Value filev, int *errp)
     }
     if (pid == 0) {
         /* child */
-        for (i = 0; i < 3; i++)
-            dup2(fds[i], i);
+        for (fd = 0; fd < 3; fd++)
+            dup2(fds[fd], fd);
         fdlimit = sysconf(_SC_OPEN_MAX);
-        for (; i < fdlimit; i++)
-            if (i != errpipe[1])
-                close(i);
+        for (; fd < fdlimit; fd++)
+            if (fd != errpipe[1])
+                close(fd);
         fcntl(errpipe[1], F_SETFD, FD_CLOEXEC);
         execvp(program, args);
         errcode = errno & 0xff;
-        errcode = write(errpipe[1], &errcode, 1);
-        (void)errcode;
+        nread = write(errpipe[1], &errcode, 1);
+        (void)nread;
         exit(1);
     }
     /* parent */
@@ -1781,7 +1783,7 @@ FileVPrintf(Value file, char *fmt, va_list args)
                 break;
             case 'S': {
                 char *s = va_arg(args, char *);
-                FilePutString(file, s, strlen(s), 'v');
+                FilePutString(file, s, (ptrdiff_t)strlen(s), 'v');
                 break;
             }
             case 'A':

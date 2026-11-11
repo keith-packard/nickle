@@ -307,7 +307,7 @@ DigitTimes(const digit *x, ptrdiff_t xlen, digit y, digit *result)
     ptrdiff_t    rlen = xlen;
 
     if (y == 1) {
-        memcpy(result, x, xlen * sizeof(digit));
+        memcpy(result, x, (size_t)xlen * sizeof(digit));
         return xlen;
     }
     carry = 0;
@@ -341,7 +341,7 @@ DigitsGradeSchool(const digit *x_orig, ptrdiff_t xlen, const digit *y_orig, ptrd
         return DigitTimes(y_orig, ylen, *x_orig, result);
     if (ylen == 1)
         return DigitTimes(x_orig, xlen, *y_orig, result);
-    memset(result, 0, (xlen + ylen + 1) * sizeof(digit));
+    memset(result, 0, (size_t)(xlen + ylen + 1) * sizeof(digit));
     rbase = 0;
     x = x_orig;
     xindex = xlen;
@@ -469,7 +469,7 @@ DigitsKaratsuba(digit *x, ptrdiff_t xlen, digit *y, ptrdiff_t ylen, digit *resul
      */
     rlen = 0;
     if (m1len && m2len) {
-        memset(result, 0, off * sizeof(digit));
+        memset(result, 0, (size_t)off * sizeof(digit));
         rlen = DigitsKaratsuba(m1, m1len, m2, m2len, result + off, next_tmp) + off;
         if (aborting)
             return rlen;
@@ -876,7 +876,7 @@ NaturalSprint(char *result, Natural *a, int base, ptrdiff_t *width)
         if (naturalBufferSize < print_width) {
             if (naturalBuffer)
                 free(naturalBuffer);
-            naturalBuffer = malloc(print_width);
+            naturalBuffer = malloc((size_t)print_width);
             if (!naturalBuffer) {
                 naturalBufferSize = 0;
                 EXIT();

@@ -377,7 +377,7 @@ do_File_filter(Value path, Value argv, Value filev)
         RETURN(Void);
 
     /* set up arguments */
-    args = AllocateTemp((ArrayLimits(&argv->array)[0] + 1) * sizeof(char *));
+    args = AllocateTemp((size_t)(ArrayLimits(&argv->array)[0] + 1) * sizeof(char *));
     for (argc = 0; argc < ArrayLimits(&argv->array)[0]; argc++) {
         arg = ArrayValue(&argv->array, argc);
         args[argc] = StrzPart(arg, "invalid argument");
@@ -700,7 +700,7 @@ do_File_mkdir(Value name, Value mode)
     m = IntPart(mode, "invalid file mode");
     if (aborting)
         RETURN(Void);
-    ret = mkdir(n, m);
+    ret = mkdir(n, (mode_t)m);
     if (ret < 0) {
         int err = errno;
         RaiseStandardException(exception_name_error, 3, FileGetErrorMessage(err), FileGetError(err),

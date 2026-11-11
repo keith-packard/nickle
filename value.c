@@ -1037,19 +1037,20 @@ DataCacheMark(void *object)
 {
     DataCache *dc = object;
 
-    memset(DataCacheValues(dc), '\0', sizeof(void *) * dc->size);
+    memset(DataCacheValues(dc), '\0', sizeof(void *) * (size_t)dc->size);
 }
 
 static DataType DataCacheType = { DataCacheMark, 0, "DataCacheType" };
 
 DataCachePtr
-NewDataCache(int size)
+NewDataCache(ptrdiff_t size)
 {
     ENTER();
     DataCachePtr dc;
-    dc = (DataCachePtr)MemAllocate(&DataCacheType, sizeof(DataCache) + size * sizeof(void *));
+    dc = (DataCachePtr)MemAllocate(&DataCacheType,
+                                   sizeof(DataCache) + (size_t)size * sizeof(void *));
     dc->size = size;
-    memset(DataCacheValues(dc), '\0', size * sizeof(Value));
+    memset(DataCacheValues(dc), '\0', (size_t)size * sizeof(Value));
     MemAddRoot(dc);
     RETURN(dc);
 }

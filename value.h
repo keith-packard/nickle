@@ -1103,7 +1103,7 @@ BoxPtr        BoxRewrite(BoxPtr box, ptrdiff_t *ep);
 
 typedef struct {
     DataType *data;
-    int       size;
+    ptrdiff_t size;
     union {
         double       d;
         double_digit dd;
@@ -1111,7 +1111,7 @@ typedef struct {
     } values[0];
 } DataCache, *DataCachePtr;
 
-DataCachePtr NewDataCache(int size);
+DataCachePtr NewDataCache(ptrdiff_t size);
 
 static inline void *
 DataCacheValues(DataCache *vc)
@@ -1280,9 +1280,9 @@ char     *StrzPart(Value, char *error);
 static inline Value
 NewRef(BoxPtr box, ptrdiff_t element)
 {
-    int    c = (PtrToUInt(&BoxElements(box)[element])) % REF_CACHE_SIZE;
-    Value *re = (Value *)(DataCacheValues(refCache)) + c;
-    Value  ret = *re;
+    ptrdiff_t c = (ptrdiff_t)(PtrToUInt(&BoxElements(box)[element]) % REF_CACHE_SIZE);
+    Value    *re = (Value *)(DataCacheValues(refCache)) + c;
+    Value     ret = *re;
 
     if (ret && ret->ref.box == box && ret->ref.element == element) {
         REFERENCE(ret);

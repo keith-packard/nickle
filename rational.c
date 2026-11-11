@@ -808,7 +808,7 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
             if (!repeat_width && initial_width < min_prec)
                 initial_width = min_prec;
         }
-        initial = malloc(initial_width + 1);
+        initial = malloc((size_t)initial_width + 1);
         if (!initial) {
             EXIT();
             return False;
@@ -893,7 +893,7 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
         /*
          * allocate the output buffer; keep trying until this works
          */
-        while (!(repeat = malloc(rep_width + 1))) {
+        while (!(repeat = malloc((size_t)rep_width + 1))) {
             repeat_width = -1;
             rep_width >>= 1;
         }
@@ -976,7 +976,7 @@ RationalPrint(Value f, Value rv, uint32_t format, int base, int width, int prec,
     switch (format) {
     case 'v':
         num_width = NaturalEstimateLength(r->num, base);
-        num_base = malloc(num_width);
+        num_base = malloc((size_t)num_width);
         num = NaturalSprint(num_base + num_width, r->num, base, &num_width);
         if (!num) {
             free(num_base);
@@ -984,7 +984,7 @@ RationalPrint(Value f, Value rv, uint32_t format, int base, int width, int prec,
             break;
         }
         den_width = NaturalEstimateLength(r->den, base);
-        den_base = malloc(den_width);
+        den_base = malloc((size_t)den_width);
         den = NaturalSprint(den_base + den_width, r->den, base, &den_width);
         if (!den) {
             free(num_base);

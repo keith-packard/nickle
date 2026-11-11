@@ -26,9 +26,9 @@ StringPlus(Value av, Value bv, int expandOk)
 
     (void)expandOk;
     ret = NewString(av->string.length + bv->string.length);
-    (void)memcpy(StringChars(&ret->string), StringChars(&av->string), av->string.length);
+    (void)memcpy(StringChars(&ret->string), StringChars(&av->string), (size_t)av->string.length);
     (void)memcpy(StringChars(&ret->string) + av->string.length, StringChars(&bv->string),
-                 bv->string.length);
+                 (size_t)bv->string.length);
     RETURN(ret);
 }
 
@@ -38,7 +38,7 @@ StringEqual(Value av, Value bv, int expandOk)
     (void)expandOk;
     if (av->string.length != bv->string.length)
         return FalseVal;
-    if (!memcmp(StringChars(&av->string), StringChars(&bv->string), av->string.length))
+    if (!memcmp(StringChars(&av->string), StringChars(&bv->string), (size_t)av->string.length))
         return TrueVal;
     return FalseVal;
 }
@@ -53,7 +53,7 @@ StringLess(Value av, Value bv, int expandOk)
     len = av->string.length;
     if (len > bv->string.length)
         len = bv->string.length;
-    c = memcmp(StringChars(&av->string), StringChars(&bv->string), len);
+    c = memcmp(StringChars(&av->string), StringChars(&bv->string), (size_t)len);
     if (c < 0)
         return TrueVal;
     if (c == 0 && av->string.length < bv->string.length)
@@ -246,7 +246,7 @@ NewStrString(const char *str)
     ENTER();
     Value ret;
 
-    ret = NewString(strlen(str));
+    ret = NewString((ptrdiff_t)strlen(str));
     strcpy(StringChars(&ret->string), str);
     RETURN(ret);
 }

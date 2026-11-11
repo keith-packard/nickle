@@ -245,11 +245,14 @@ BuiltinType(char *format, Type **type, Bool arg)
         if (t)
             break;
         __NICKLE_FALLTHROUGH;
-    default:
+    default: {
+        ssize_t w;
+
         t = 0;
-        i = write(2, "Invalid builtin argument type\n", 30);
-        (void)i;
+        w = write(2, "Invalid builtin argument type\n", 30);
+        (void)w;
         break;
+    }
     }
     if (ref)
         t = NewTypeRef(t, arg ? False : True);

@@ -171,7 +171,7 @@ intr(int sig)
     (void)sig;
     resetSignal(SIGINT, intr);
     if (signalInterrupt) {
-        int ret = write(2, "Double interrupt, exiting\n", 26);
+        ssize_t ret = write(2, "Double interrupt, exiting\n", 26);
         (void)ret;
 #ifdef HAVE_RL_CLEANUP_AFTER_SIGNAL
         if (stdin_in_readline)

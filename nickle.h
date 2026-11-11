@@ -604,7 +604,6 @@ typedef struct _nonLocal {
     struct _nonLocal *prev;
     NonLocalKind      kind;   /* kind of non local object */
     int               target; /* what kind of targets */
-    ObjPtr            obj;
 } NonLocal, *NonLocalPtr;
 
 typedef struct _Stat {

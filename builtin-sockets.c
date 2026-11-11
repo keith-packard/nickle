@@ -257,9 +257,11 @@ address_lookup_af_unix(ptrdiff_t num, Value *args, struct sockaddr_un *addr, soc
 /* Supports the following args from both bind and connect:
  *	(File::file s, String host, String port)
  *	(File::file s, String host, int port)
+ * Port 0 asks bind for any free port, so only bind passes any_port
  */
 static Bool
-address_lookup_af_inet(ptrdiff_t num, Value *args, struct sockaddr_in *addr, socklen_t *len)
+address_lookup_af_inet(ptrdiff_t num, Value *args, struct sockaddr_in *addr, socklen_t *len,
+                       Bool any_port)
 {
     Value           host, port;
     char           *hostchars;
@@ -303,7 +305,7 @@ address_lookup_af_inet(ptrdiff_t num, Value *args, struct sockaddr_in *addr, soc
         if (aborting)
             return False;
     }
-    if (portnum <= 0 || portnum >= (1 << 16))
+    if (portnum < 0 || portnum >= (1 << 16) || (portnum == 0 && !any_port))
         return address_error("port out of range", port);
 
     addr->sin_family = (sa_family_t)s->file.sock_family;
@@ -327,7 +329,7 @@ address_lookup_af_inet(ptrdiff_t num, Value *args, struct sockaddr_in *addr, soc
  *	(File::file s, String local_socket)
  */
 static Bool
-address_lookup(ptrdiff_t num, Value *args, sockaddr_all_t *addr, socklen_t *len)
+address_lookup(ptrdiff_t num, Value *args, sockaddr_all_t *addr, socklen_t *len, Bool any_port)
 {
     Value s = args[0];
 
@@ -335,7 +337,7 @@ address_lookup(ptrdiff_t num, Value *args, sockaddr_all_t *addr, socklen_t *len)
     case AF_UNIX:
         return address_lookup_af_unix(num, args, &addr->un, len);
     case AF_INET:
-        return address_lookup_af_inet(num, args, &addr->in, len);
+        return address_lookup_af_inet(num, args, &addr->in, len, any_port);
 #ifdef AF_INET6
     case AF_INET6:
         /* FIXME */
@@ -357,7 +359,7 @@ do_Socket_connect(ptrdiff_t num, Value *args)
     socklen_t      len;
     Value          s = args[0];
 
-    if (!address_lookup(num, args, &addr, &len))
+    if (!address_lookup(num, args, &addr, &len, False))
         RETURN(Void);
 
     if (!running->thread.partial) {
@@ -423,7 +425,7 @@ do_Socket_bind(ptrdiff_t num, Value *args)
     socklen_t      len;
     Value          s = args[0];
 
-    if (!address_lookup(num, args, &addr, &len))
+    if (!address_lookup(num, args, &addr, &len, True))
         RETURN(Void);
 
 #ifdef SO_REUSEADDR

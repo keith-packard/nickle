@@ -1,0 +1,57 @@
+/*
+ * Nickle test suite
+ *
+ * Namespaces with many names
+ *
+ * Namespaces searched and added names by walking a list, so compiling
+ * a scope with n names took time proportional to n squared. Large
+ * namespaces are now indexed; check that names are still found,
+ * replaced, and removed correctly past the size where the index starts.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* A namespace with enough names to be indexed */
+namespace Big {
+    public int a0 = 0, a1 = 1, a2 = 2, a3 = 3, a4 = 4, a5 = 5, a6 = 6, a7 = 7;
+    public int a8 = 8, a9 = 9, a10 = 10, a11 = 11, a12 = 12, a13 = 13, a14 = 14;
+    public int a15 = 15, a16 = 16, a17 = 17, a18 = 18, a19 = 19, a20 = 20;
+    int hidden = 99;
+    /* Redefining a name replaces it */
+    public string a3 = "three";
+}
+
+check ("Big::a0", Big::a0, 0);
+check ("Big::a20", Big::a20, 20);
+check ("Big::a3", Big::a3, "three");
+
+/* Importing copies only public names */
+import Big;
+check ("imported a17", a17, 17);
+check ("imported a3", a3, "three");
+check ("hidden not imported", Command::valid_name ((string[*]) { "hidden" }), false);
+
+/* Local scopes with many names, shadowing outer ones */
+int f ()
+{
+    int a0 = 100, a1 = 101, a2 = 102, a3 = 103, a4 = 104, a5 = 105, a6 = 106;
+    int a7 = 107, a8 = 108, a9 = 109, a10 = 110, a11 = 111, a12 = 112, a13 = 113;
+    int a14 = 114, a15 = 115, a16 = 116, a17 = 117, a18 = 118, a19 = 119;
+    {
+	int a19 = 219;
+	check ("inner shadow", a19, 219);
+    }
+    return a0 + a19 + a20;
+}
+check ("locals", f (), 100 + 119 + 20);
+
+/* Removing a name from an indexed namespace */
+Command::undefine ((string[*]) { "a17" });
+check ("undefined a17", Command::valid_name ((string[*]) { "a17" }), false);
+check ("a18 remains", a18, 18);

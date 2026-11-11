@@ -68,7 +68,8 @@ tests = [
   'reopentest.5c',
   'millistest.5c',
   'charrangetest.5c',
-  'socketaddrtest.5c'
+  'socketaddrtest.5c',
+  'bignamespacetest.5c'
 ]
 
 extra_files = [

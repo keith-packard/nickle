@@ -1,0 +1,40 @@
+/*
+ * Nickle test suite
+ *
+ * Characters outside the range UTF-8 can encode
+ *
+ * Code points were read as ints and passed on unchecked, so negative or
+ * huge characters silently vanished: String::new (-1) was "", and the
+ * element was dropped from String::new ((int[*]) { 65, -1 }).
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function rejected (string what, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, poly a, poly b) {
+    }
+}
+
+rejected ("String::new (-1)", void func () { String::new (-1); });
+rejected ("String::new (2**31)", void func () { String::new (2**31); });
+rejected ("String::new array", void func () { String::new ((int[*]) { 65, -1 }); });
+rejected ("putc (-1)", void func () { File::putc (-1, stdout); });
+rejected ("printf (\"%c\", -5)", void func () { printf ("%c", -5); });
+
+/* Characters in range still work, including the largest */
+string s = String::new ((int[*]) { 65, 0x3b1, 0x1F600 });
+check ("length", String::length (s), 3);
+check ("alpha", s[1], 0x3b1);
+check ("emoji", s[2], 0x1F600);
+check ("largest", String::new (0x7FFFFFFF)[0], 0x7FFFFFFF);

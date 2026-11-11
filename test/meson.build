@@ -66,7 +66,8 @@ tests = [
   'semcounttest.5c',
   'datelimittest.5c',
   'reopentest.5c',
-  'millistest.5c'
+  'millistest.5c',
+  'charrangetest.5c'
 ]
 
 extra_files = [

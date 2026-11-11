@@ -1,0 +1,42 @@
+/*
+ * Nickle test suite
+ *
+ * Details of errors from ldexp, popcount, and reads of closed files
+ *
+ * Math::ldexp let a second exception replace Pow's out_of_memory,
+ * Math::popcount passed invalid_argument its value in place of the
+ * argument position, and reading a closed file reported a stale error.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+try {
+    Math::ldexp (3, 2**70);
+    raise not_raised ("ldexp");
+} catch out_of_memory (string m) {
+}
+check ("ldexp", Math::ldexp (3, 4), 48);
+
+try {
+    Math::popcount (-1);
+    raise not_raised ("popcount");
+} catch invalid_argument (string m, int i, poly v) {
+    check ("popcount position", i, 0);
+    check ("popcount value", v, -1);
+}
+
+file f = File::open ("/dev/null", "r");
+File::close (f);
+try {
+    File::getb (f);
+    raise not_raised ("getb");
+} catch File::io_error (string m, File::error_type e, file g) {
+    check ("closed", e, File::error_type.BADF);
+}

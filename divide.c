@@ -44,7 +44,7 @@ normalize(digit d)
     digit msb;
 
     n = 0;
-    msb = 1 << (LBASE2 - 1);
+    msb = (digit)1 << (LBASE2 - 1);
     while (!(d & msb)) {
         n++;
         d <<= 1;
@@ -178,9 +178,10 @@ NaturalDivide(Natural *a, Natural *b, Natural **remp)
                 temp = (temp << normal) | (dividend3 >> (LBASE2 - normal));
             }
             if ((digit)(temp >> LBASE2) == divisorc)
-                d = (digit)0xffffffffL;
+                d = MAXDIGIT;
             else
-                d = temp / divisorc;
+                /* temp's top digit is less than divisorc, so the quotient fits */
+                d = (digit)(temp / divisorc);
 #ifdef DEBUG
             printf("temp 0x%08x%08x divisorc 0x%08x d 0x%08x\n", (unsigned int)(temp >> 32),
                    (unsigned int)temp, divisorc, d);

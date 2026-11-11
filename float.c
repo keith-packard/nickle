@@ -881,6 +881,10 @@ try_again_e:
             EXIT();
             return True;
         }
+        if (!exp_string) {
+            EXIT();
+            return False;
+        }
         exp_width++;
         if (exp->sign == Negative)
             exp_width++;
@@ -906,9 +910,14 @@ try_again_f:
         int_width++;
 
     int_buffer = malloc((size_t)int_width + 1);
+    if (!int_buffer) {
+        EXIT();
+        return False;
+    }
     int_string = NaturalSprint(int_buffer + int_width + 1, int_n, base, &int_width);
 
     if (aborting) {
+        free(int_buffer);
         EXIT();
         return True;
     }
@@ -986,8 +995,15 @@ try_again_f:
             frac_n = NewNatural((double_digit)ValueInt(frac_part));
 
         frac_buffer = malloc((size_t)frac_width + 1);
+        if (!frac_buffer) {
+            free(int_buffer);
+            EXIT();
+            return False;
+        }
         frac_string = NaturalSprint(frac_buffer + frac_width + 1, frac_n, base, &frac_wrote);
         if (aborting) {
+            free(int_buffer);
+            free(frac_buffer);
             EXIT();
             return True;
         }

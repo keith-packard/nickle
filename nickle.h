@@ -655,9 +655,9 @@ typedef enum _wakeKind { WakeAll, WakeOne } WakeKind;
 extern Bool  lastThreadError;
 
 Value        NewThread(FramePtr frame, ObjPtr code);
-void         ThreadSleep(Value thread, Value sleep);
+void         ThreadSleep(Value thread, void *sleep);
 void         ThreadStepped(Value thread);
-void         ThreadsWakeup(Value sleep, WakeKind wake);
+void         ThreadsWakeup(void *sleep, WakeKind wake);
 void         ThreadsRun(Value until, Value lex);
 void         ThreadsInterrupt(void);
 void         ThreadsSignal(Value signal);
@@ -729,8 +729,11 @@ typedef Bool        (*TimerFunc)(void *closure);
 
 int64_t             TimeInMs(void);
 
+/* The DataType of timers, to recognize one with MemType */
+extern DataType     SleepQType;
 SleepQPtr           TimerCreate(void *closure, TimerFunc func);
 void                TimerStart(SleepQPtr timer, int64_t delta, int64_t incr);
+void                TimerCancel(SleepQPtr timer);
 void                TimerInsert(void *closure, TimerFunc func, int64_t delta, int64_t incr);
 void                TimerInterrupt(void);
 void                TimerInit(void);

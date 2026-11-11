@@ -150,6 +150,13 @@ MemReturn(StackPointer mark, void *v)
     return STACK_RETURN(MemStack, mark, v);
 }
 
+/* The DataType every allocated object begins with */
+static inline DataType *
+MemType(void *object)
+{
+    return *(DataType **)object;
+}
+
 #define REFERENCE(o)         STACK_PUSH(MemStack, (o))
 #define ENTER()              StackPointer __stackPointer = MemMark()
 #define ALLOCATE(type, size) MemAllocateRef(type, size)

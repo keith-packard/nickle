@@ -31,7 +31,7 @@ SleepQMark(void *object)
     MemReference(sleep->closure);
 }
 
-static DataType SleepQType = { SleepQMark, 0, "SleepQType" };
+DataType SleepQType = { SleepQMark, 0, "SleepQType" };
 
 int64_t
 TimeInMs(void)
@@ -107,6 +107,22 @@ TimerStart(SleepQPtr timer, int64_t delta, int64_t incr)
     _TimerInsert(timer, now);
 }
 
+/*
+ * Remove 'timer' from the queue, if it is there, so it won't fire
+ */
+void
+TimerCancel(SleepQPtr timer)
+{
+    SleepQPtr *prev;
+
+    for (prev = &sleeping; *prev; prev = &(*prev)->next)
+        if (*prev == timer) {
+            *prev = timer->next;
+            timer->next = 0;
+            break;
+        }
+}
+
 void
 TimerInsert(void *closure, TimerFunc func, int64_t delta, int64_t incr)
 {
@@ -158,10 +174,11 @@ do_sleep(Value ms)
     /* don't queue if instruction is aborting */
     if (aborting)
         RETURN(Void);
-    TimerInsert(running, _sleepDone, delta, 0);
+    /* Record the timer as the thread's sleep, so a kill or signal cancels it */
+    ThreadSleep(running, TimerCreate(running, _sleepDone));
+    TimerStart(running->thread.sleep, delta, 0);
     /* This primitive has been partially executed */
     running->thread.partial = 1;
-    SetSignalSuspend();
     RETURN(Void);
 }
 

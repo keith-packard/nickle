@@ -853,7 +853,8 @@ typedef struct _thread {
      */
     ThreadState  state;
     int          priority;
-    Value        sleep;
+    /* The object waited on: a file, thread, semaphore, or sleep's timer */
+    void        *sleep;
     ptrdiff_t    id;
     int          partial;
     /*

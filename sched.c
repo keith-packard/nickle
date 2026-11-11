@@ -69,7 +69,7 @@ ThreadSetState(Value thread, ThreadState state)
 }
 
 void
-ThreadSleep(Value thread, Value sleep)
+ThreadSleep(Value thread, void *sleep)
 {
     thread->thread.sleep = sleep;
     SetSignalSuspend();
@@ -87,7 +87,7 @@ ThreadStepped(Value thread)
 }
 
 void
-ThreadsWakeup(Value sleep, WakeKind kind)
+ThreadsWakeup(void *sleep, WakeKind kind)
 {
     Value thread, next;
 
@@ -110,21 +110,26 @@ Bool lastThreadError;
  * Undo whatever that instruction did before sleeping, and clear sleep
  * so nothing undoes it again. Semaphore::wait decremented the count: a
  * thread still asleep gives up its place, while one already woken by
- * Semaphore::signal passes that signal to the next sleeping thread
+ * Semaphore::signal passes that signal to the next sleeping thread.
+ * sleep queued a timer: cancel it, so it can't wake the thread from a
+ * later sleep
  */
 static void
 ThreadAbandonSleep(Value thread)
 {
-    Value s = thread->thread.sleep;
+    void *sleep = thread->thread.sleep;
 
-    if (!s)
+    if (!sleep)
         return;
     thread->thread.sleep = 0;
-    if (ValueIsSemaphore(s)) {
+    if (MemType(sleep) == &SemaphoreRep.data) {
+        Value s = sleep;
+
         ++s->semaphore.count;
         if (thread->thread.state != ThreadSuspended && s->semaphore.count <= 0)
             ThreadsWakeup(s, WakeOne);
-    }
+    } else if (MemType(sleep) == &SleepQType)
+        TimerCancel(sleep);
 }
 
 void
@@ -190,8 +195,15 @@ do_Thread_list(void)
     for (t = stopped; t; t = t->thread.next) {
         FilePrintf(FileStdout, "\t%%%z", t->thread.id);
         ThreadListState(t);
-        if (t->thread.sleep)
-            FilePrintf(FileStdout, " %g", t->thread.sleep);
+        if (t->thread.sleep) {
+            if (MemType(t->thread.sleep) == &SleepQType)
+                FilePuts(FileStdout, " sleep");
+            else {
+                Value sleep = t->thread.sleep;
+
+                FilePrintf(FileStdout, " %g", sleep);
+            }
+        }
         FileOutput(FileStdout, '\n');
     }
     RETURN(Void);

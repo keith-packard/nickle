@@ -5,7 +5,8 @@
  *
  * Shrinking an array to less than half its storage kept the values
  * past the new limit, so growing it again brought them back instead of
- * uninitialized elements.
+ * uninitialized elements, and emptying one dimension of an array emptied
+ * them all.
  */
 
 exception wrong (string what, poly got, poly want);
@@ -42,3 +43,14 @@ setdims (c, (int[*]) { 3, 2 });
 setdims (c, (int[*]) { 4, 2 });
 check ("outer kept", c[2,1], 21);
 check ("outer cleared", is_uninit (&c[3,0]), true);
+
+/* Emptying one dimension keeps the others' sizes */
+int[...,...] e = {};
+setdims (e, (int[*]) { 2, 3 });
+e[1,2] = 7;
+setdims (e, (int[*]) { 0, 3 });
+check ("emptied rows", dims (e), (int[*]) { 0, 3 });
+setdims (e, (int[*]) { 2, 3 });
+check ("regrown rows", is_uninit (&e[1,2]), true);
+setdims (e, (int[*]) { 2, 0 });
+check ("emptied columns", dims (e), (int[*]) { 2, 0 });

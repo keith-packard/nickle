@@ -94,7 +94,7 @@ ThreadsWakeup(Value sleep, WakeKind kind)
     for (thread = stopped; thread; thread = next) {
         next = thread->thread.next;
         if ((thread->thread.state == ThreadSuspended) && thread->thread.sleep == sleep) {
-            thread->thread.sleep = 0;
+            /* sleep stays set until the waiting instruction completes, for ThreadAbandonSleep */
             ThreadSetState(thread, ThreadRunning);
             if (kind == WakeOne)
                 break;
@@ -104,10 +104,34 @@ ThreadsWakeup(Value sleep, WakeKind kind)
 
 Bool lastThreadError;
 
+/*
+ * 'thread' stops sleeping before the instruction that put it to sleep
+ * has completed, because it was killed or interrupted by a signal.
+ * Undo whatever that instruction did before sleeping, and clear sleep
+ * so nothing undoes it again. Semaphore::wait decremented the count: a
+ * thread still asleep gives up its place, while one already woken by
+ * Semaphore::signal passes that signal to the next sleeping thread
+ */
+static void
+ThreadAbandonSleep(Value thread)
+{
+    Value s = thread->thread.sleep;
+
+    if (!s)
+        return;
+    thread->thread.sleep = 0;
+    if (ValueIsSemaphore(s)) {
+        ++s->semaphore.count;
+        if (thread->thread.state != ThreadSuspended && s->semaphore.count <= 0)
+            ThreadsWakeup(s, WakeOne);
+    }
+}
+
 void
 ThreadFinish(Value thread, Bool error)
 {
     if (thread->thread.state != ThreadFinished) {
+        ThreadAbandonSleep(thread);
         ThreadSetState(thread, ThreadFinished);
         ThreadsWakeup(thread, WakeAll);
         lastThreadError = error;
@@ -1159,13 +1183,13 @@ SignalThread(Value thread, Value signal, Bool executing)
     } else if (except) {
         InstPtr next;
 
+        ThreadAbandonSleep(thread);
+        thread->thread.partial = 0;
         RaiseException(thread, except, args, &next);
         thread->thread.continuation.value = args;
         thread->thread.continuation.pc = next;
-        if (thread->thread.state == ThreadSuspended) {
-            thread->thread.sleep = 0;
+        if (thread->thread.state == ThreadSuspended)
             ThreadSetState(thread, ThreadRunning);
-        }
     }
     EXIT();
 }

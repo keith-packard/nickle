@@ -1508,6 +1508,7 @@ ThreadsRun(Value until, Value lex)
                 }
                 /* this instruction has been completely executed */
                 thread->thread.partial = 0;
+                thread->thread.sleep = 0;
                 thread->thread.continuation.value = value;
                 cstack = thread->thread.continuation.stack;
                 if (stack)

@@ -2053,6 +2053,11 @@ FileInchar(Value file)
             extra++;
             mask >>= 1;
         }
+        /* 0xfe and 0xff would start sequences longer than buf holds */
+        if (extra > 5) {
+            file->file.input_errno = EUTF8;
+            return FileError;
+        }
         result &= (mask - 1);
         while (extra-- > 0) {
             int c = FileInput(file);

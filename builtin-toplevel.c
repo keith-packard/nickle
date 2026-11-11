@@ -92,22 +92,22 @@ import_Toplevel_namespace(void)
          "\n"
           " bool is_continuation (poly v)\n"
           "\n"
-          " Return whether 'v' is an continuation value.\n" },
+          " Return whether 'v' is a continuation value.\n" },
         { do_is_file, "is_file", "b", "p",
          "\n"
           " bool is_file (poly v)\n"
           "\n"
-          " Return whether 'v' is an file value.\n" },
+          " Return whether 'v' is a file value.\n" },
         { do_is_func, "is_func", "b", "p",
          "\n"
           " bool is_func (poly v)\n"
           "\n"
-          " Return whether 'v' is an func value.\n" },
+          " Return whether 'v' is a func value.\n" },
         { do_is_hash, "is_hash", "b", "p",
          "\n"
           " bool is_hash (poly v)\n"
           "\n"
-          " Return whether 'v' is an hash value.\n" },
+          " Return whether 'v' is a hash value.\n" },
         { do_is_int, "is_int", "b", "p",
          "\n"
           " bool is_int (poly v)\n"
@@ -117,47 +117,47 @@ import_Toplevel_namespace(void)
          "\n"
           " bool is_number (poly v)\n"
           "\n"
-          " Return whether 'v' is an numeric value.\n" },
+          " Return whether 'v' is a numeric value.\n" },
         { do_is_rational, "is_rational", "b", "p",
          "\n"
           " bool is_rational (poly v)\n"
           "\n"
-          " Return whether 'v' is an rational value.\n" },
+          " Return whether 'v' is a rational value.\n" },
         { do_is_ref, "is_ref", "b", "p",
          "\n"
           " bool is_ref (poly v)\n"
           "\n"
-          " Return whether 'v' is an ref value.\n" },
+          " Return whether 'v' is a ref value.\n" },
         { do_is_semaphore, "is_semaphore", "b", "p",
          "\n"
           " bool is_semaphore (poly v)\n"
           "\n"
-          " Return whether 'v' is an semaphore value.\n" },
+          " Return whether 'v' is a semaphore value.\n" },
         { do_is_string, "is_string", "b", "p",
          "\n"
           " bool is_string (poly v)\n"
           "\n"
-          " Return whether 'v' is an string value.\n" },
+          " Return whether 'v' is a string value.\n" },
         { do_is_struct, "is_struct", "b", "p",
          "\n"
           " bool is_struct (poly v)\n"
           "\n"
-          " Return whether 'v' is an struct value.\n" },
+          " Return whether 'v' is a struct value.\n" },
         { do_is_thread, "is_thread", "b", "p",
          "\n"
           " bool is_thread (poly v)\n"
           "\n"
-          " Return whether 'v' is an thread value.\n" },
+          " Return whether 'v' is a thread value.\n" },
         { do_is_bool, "is_bool", "b", "p",
          "\n"
           " bool is_bool (poly v)\n"
           "\n"
-          " Return whether 'v' is an bool value.\n" },
+          " Return whether 'v' is a bool value.\n" },
         { do_is_void, "is_void", "b", "p",
          "\n"
           " bool is_void (poly v)\n"
           "\n"
-          " Return whether 'v' is an void value.\n" },
+          " Return whether 'v' is a void value.\n" },
         { do_is_uninit, "is_uninit", "b", "*p",
          "\n"
           " bool is_uninit (*poly r)\n"
@@ -172,7 +172,9 @@ import_Toplevel_namespace(void)
          "\n"
           " rational mantissa (real r)\n"
           "\n"
-          " Return the mantissa of 'r' as a rational between 0 and 1.\n" },
+          " Return the mantissa m of 'r', a rational with the sign of 'r'\n"
+          " and 0.5 <= abs(m) < 1, so 'r' == m * 2 ** exponent('r').\n"
+          " The mantissa of 0 is 0.\n" },
         { do_numerator, "numerator", "i", "r",
          "\n"
           " int numerator (rational r)\n"
@@ -213,13 +215,13 @@ import_Toplevel_namespace(void)
          "\n"
           " int hash (poly p)\n"
           "\n"
-          " Return an integer based on 'p' such that any value equal\n"
-          " to 'p' will return the same integer.\n" },
+          " Return an integer based on 'p' such that any value of the\n"
+          " same type equal to 'p' will return the same integer.\n" },
         { do_hash_keys, "hash_keys", "Ap", "Hpp",
          "\n"
           " poly[] hash_keys (poly[poly] h)\n"
           "\n"
-          " Return an array containing all of the key in 'h'.\n"
+          " Return an array containing all of the keys in 'h'.\n"
           " The order within the array is undefined.\n" },
         { 0 }
     };
@@ -243,7 +245,7 @@ import_Toplevel_namespace(void)
           " void setdims (poly[] a, int[*] dimensions)\n"
           "\n"
           " Set the dimensions of resizable array 'a' to 'dimensions'.\n"
-          " dim(dimensionss) must be the same as dim(dims(a)).\n" },
+          " dim(dimensions) must be the same as dim(dims(a)).\n" },
         { do_setdim, "setdim", "v", "A.pi",
          "\n"
           " void setdim (poly[...] a, int dimension)\n"

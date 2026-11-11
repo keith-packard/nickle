@@ -70,7 +70,7 @@ import_Socket_namespace(void)
          "\n"
           " void listen (file socket, int length)\n"
           "\n"
-          " Establish a listen queue on 'f' of length 'i' (max 5).\n" },
+          " Establish a listen queue on 'socket' of length 'length'.\n" },
         { do_Socket_shutdown, "shutdown", "v", "fi",
          "\n"
           " void shutdown (file socket, int dir)\n"

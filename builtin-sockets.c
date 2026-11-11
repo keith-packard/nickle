@@ -491,8 +491,9 @@ Value
 do_Socket_accept(Value s)
 {
     ENTER();
-    int f, err;
-    int flags = fcntl(s->file.fd, F_GETFL);
+    int   f, err;
+    Value ret;
+    int   flags = fcntl(s->file.fd, F_GETFL);
     flags |= O_NONBLOCK;
     fcntl(s->file.fd, F_SETFL, flags);
     f = accept(s->file.fd, 0, 0);
@@ -515,7 +516,10 @@ do_Socket_accept(Value s)
     }
 
     complete = True;
-    RETURN(FileCreate(f, FileReadable | FileWritable));
+    ret = FileCreate(f, FileReadable | FileWritable);
+    /* The connection has the listening socket's family */
+    ret->file.sock_family = s->file.sock_family;
+    RETURN(ret);
 }
 
 /* void do_Socket_shutdown (File::file s, {SHUT_RD,SHUT_WR,SHUT_RDWR} how); */

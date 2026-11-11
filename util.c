@@ -51,14 +51,14 @@ AllocateTemp(size_t size)
  * non-varargs versions of these.  Contributed code welcome.
  */
 
-static int
-wait_write(int fd, char *buf, int len)
+static ptrdiff_t
+wait_write(int fd, const char *buf, ptrdiff_t len)
 {
-    int n;
-    int w = 0;
+    ssize_t   n;
+    ptrdiff_t w = 0;
 
-    while (len) {
-        n = write(fd, buf, len);
+    while (len > 0) {
+        n = write(fd, buf, (size_t)len);
         if (n < 0) {
             if (errno == EINTR) {
                 struct pollfd f;
@@ -91,6 +91,9 @@ debug(char *format, ...)
     va_start(ap, format);
     len = vsnprintf(buf, sizeof(buf), format, ap);
     va_end(ap);
+    /* vsnprintf returns the untruncated length */
+    if (len > (int)sizeof(buf) - 1)
+        len = (int)sizeof(buf) - 1;
     wait_write(2, buf, len);
 }
 
@@ -111,7 +114,7 @@ MemExhausted(void)
         FileFlush(FileStdout, True);
         FileFlush(FileStderr, True);
     }
-    wait_write(2, message, sizeof(message) - 1);
+    wait_write(2, message, (ptrdiff_t)sizeof(message) - 1);
     if (!finished) {
         finished = True;
         IoFini();
@@ -130,6 +133,9 @@ panic(char *format, ...)
     va_start(ap, format);
     len = vsnprintf(buf, sizeof(buf), format, ap);
     va_end(ap);
+    /* vsnprintf returns the untruncated length */
+    if (len > (int)sizeof(buf) - 1)
+        len = (int)sizeof(buf) - 1;
     wait_write(2, buf, len);
     abort();
 }

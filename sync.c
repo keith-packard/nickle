@@ -6,8 +6,6 @@
 
 #include "nickle.h"
 
-extern Bool complete;
-
 Value
 do_Semaphore_wait(Value s)
 {

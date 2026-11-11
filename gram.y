@@ -48,9 +48,6 @@ int          seeComment;
 NamespacePtr LexNamespace;
 int          funcDepth;
 
-void         ParseError(char *fmt, ...);
-void         yyerror(char *msg);
-
 typedef enum _CanonTypeResult {
     CanonTypeUndefined,
     CanonTypeForward,
@@ -1590,8 +1587,7 @@ NewMemList(AtomListPtr atoms, Type *type, MemListPtr next)
     RETURN(ml);
 }
 
-extern NamespacePtr CurrentNamespace;
-FramePtr            CurrentFrame;
+FramePtr CurrentFrame;
 
 Value
 lookupVar(char *ns, char *n)

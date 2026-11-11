@@ -300,14 +300,6 @@ RationalHash(Value av)
     return NaturalHash(a->den) ^ NaturalHash(a->num) ^ a->sign;
 }
 
-extern ValueRep IntegerRep;
-
-extern Natural *NaturalFactor(Natural *, Natural *);
-extern Natural *NaturalSqrt(Natural *);
-extern Natural *NaturalPow(Natural *, Natural *);
-extern Natural *NaturalPowMod(Natural *, Natural *, Natural *);
-extern Natural *two_natural;
-
 static Natural *
 NaturalPsi(Natural *a, Natural *max)
 {

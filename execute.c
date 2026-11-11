@@ -421,8 +421,6 @@ ThreadArrayReplicate(Value thread, Value array, int32_t dim, ptrdiff_t start)
     }
 }
 
-void ThreadStackDump(Value thread);
-
 /*
  * Initialization indices are integers, and may be larger than small ints
  */

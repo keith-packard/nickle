@@ -63,10 +63,6 @@ try_nicklestart(void)
     return LexFile(nicklestart, True, False);
 }
 
-void intr(int), ferr(int);
-void stop(int), segv(int);
-void die(int) __NICKLE_NORETURN;
-
 static void
 ignoreSignal(int sig)
 {

@@ -688,7 +688,6 @@ void ObjDump(ObjPtr obj, int indent);
 
 void SymbolInit(void);
 
-extern NamespacePtr DebugNamespace;
 extern NamespacePtr FileNamespace;
 extern NamespacePtr MathNamespace;
 #ifdef BSD_RANDOM
@@ -787,7 +786,6 @@ void         skipline(void);
 uint32_t     lexEscape(uint32_t);
 
 extern void  init(void);
-extern int   yyparse(void);
 extern int   stdin_interactive;
 
 void         intr(int);

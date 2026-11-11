@@ -165,8 +165,6 @@ PrettyParameters(Value f, Expr *e, Bool nest)
     }
 }
 
-static void PrettyArrayInit(Value f, Expr *e, int level, Bool nest);
-
 static void
 PrettyArrayInits(Value f, Expr *e, int level, Bool nest)
 {

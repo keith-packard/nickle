@@ -1497,7 +1497,6 @@ Bool         Negativep(Value);
 Bool         Evenp(Value);
 
 int          ArrayInit(void);
-int          AtomInit(void);
 int          FileInit(void);
 int          IntInit(void);
 int          HashInit(void);

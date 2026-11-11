@@ -10,6 +10,10 @@
 #include "gram.h"
 #include "ref.h"
 #include <ctype.h>
+
+/* nickle.h declares yylex and yywrap, so keep flex from declaring them again */
+#define YY_DECL int yylex(void)
+#define YY_SKIP_YYWRAP
 #include <strings.h>
 #include <errno.h>
 #ifdef HAVE_LIBREADLINE
@@ -40,7 +44,6 @@ typedef struct _lexInput {
 } LexInput;
 
 LexInput  *lexInput;
-extern int ignorenl;
 extern int notCommand;
 extern int seeComment;
 #define FILE_END_CHAR -2

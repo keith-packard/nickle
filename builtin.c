@@ -30,7 +30,6 @@ static const struct sbuiltin svars[] = {
     { 0,             0,         0 },
 };
 
-extern NamespacePtr            CommandNamespace;
 extern Type                   *typeSockaddr;
 
 static const struct envbuiltin envvars[] = {

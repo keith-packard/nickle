@@ -10,6 +10,13 @@
 #include <stdio.h>
 
 /*
+ * Lists such as statements, cases, and actuals are right-recursive, so
+ * the parser's stacks hold an entry for each element until the list
+ * ends; let them grow far past bison's default limit of 10000
+ */
+#define YYMAXDEPTH 10000000
+
+/*
  * This grammar generates 1 shift/reduce conflict and 4 reduce/reduce:
  *
  * 2 reduce/reduce conflicts on:

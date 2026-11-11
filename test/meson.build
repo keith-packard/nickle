@@ -70,7 +70,8 @@ tests = [
   'charrangetest.5c',
   'socketaddrtest.5c',
   'bignamespacetest.5c',
-  'longlisttest.5c'
+  'longlisttest.5c',
+  'commandreleasetest.5c'
 ]
 
 extra_files = [

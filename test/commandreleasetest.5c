@@ -1,0 +1,41 @@
+/*
+ * Nickle test suite
+ *
+ * Constants read as lookahead past the end of a command
+ *
+ * The parser releases what each command allocated once the command
+ * has run. A command like a block ends only when the parser has read
+ * the next token, so a constant starting the next command must
+ * survive the release.
+ */
+
+exception wrong (string what, int k);
+
+bool function fail (string what, int k)
+{
+    raise wrong (what, k);
+}
+
+int n = 2000;
+
+file src = File::string_write ();
+
+/*
+ * Each block is followed directly by a constant, which the parser
+ * reads before running the block
+ */
+File::fprintf (src, "int x;\n");
+for (int k = 0; k < n; k++) {
+    File::fprintf (src, "{ x = %d; } \"str%d\" + \"!\" == \"str%d!\" || fail (\"string\", %d);\n",
+		   k, k, k, k);
+    File::fprintf (src, "{ x = %d; } %d0000000000000000000 + x == %d0000000000000000000 + %d || fail (\"integer\", %d);\n",
+		   k, k, k, k, k);
+    File::fprintf (src, "{ x = %d; } 3.25 + x == 3.25 + %d || fail (\"float\", %d);\n",
+		   k, k, k);
+    File::fprintf (src, "{ x = %d; } 'a' + x == %d || fail (\"char\", %d);\n",
+		   k, 97 + k, k);
+}
+
+Command::lex_input (File::string_read (File::string_string (src)), "commands", false, false);
+
+x == n - 1 || fail ("last", x);

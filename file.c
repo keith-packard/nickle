@@ -1001,6 +1001,8 @@ FileInput(Value file)
     int            err;
 
     if (file->file.flags & FileClosed) {
+        file->file.flags |= FileInputError;
+        file->file.input_errno = EBADF;
         EXIT();
         return FileError;
     }

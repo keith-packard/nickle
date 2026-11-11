@@ -271,6 +271,9 @@ lex_c = custom_target(
 format_srcs = files(nickle_srcs, 'builtin-bsdrandom.c', 'builtin-gcd.c',
 		    'test.c', 'lex.l', 'gram.y')
 
+# Built sources, for check-memstack.py
+memstack_srcs = files(nickle_srcs, 'lex.l', 'gram.y')
+
 nickle_srcs += [gram_ch, lex_c]
 
 configure_file(output : 'nickle-config.h',
@@ -303,6 +306,9 @@ test_env = environment(
   )
 
 subdir('test')
+
+# Check that functions leave their MemStack scopes properly
+test('check-memstack', find_program('check-memstack.py'), args : memstack_srcs)
 subdir('examples')
 subdir('bench')
 subdir('doc')

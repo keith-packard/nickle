@@ -67,6 +67,7 @@ tests = [
   'semcounttest.5c',
   'datelimittest.5c',
   'reopentest.5c',
+  'openmodetest.5c',
   'millistest.5c',
   'charrangetest.5c',
   'utf8leadtest.5c',

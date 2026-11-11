@@ -1,0 +1,70 @@
+/*
+ * Nickle test suite
+ *
+ * File::open and File::reopen mode strings
+ *
+ * Modes were decoded from their first two characters alone, so
+ * unknown modes opened files neither readable nor writable, and "rb+"
+ * opened read-only. stdio's "b" is rejected: nickle never asks for
+ * binary mode.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+string name = "openmodetest.tmp";
+
+void function rejected (string mode)
+{
+    try {
+	File::open (name, mode);
+	raise not_raised ("open " + mode);
+    } catch File::open_error (string m, File::error_type e, string n) {
+	check ("open " + mode, e, File::error_type.INVAL);
+    }
+    file f = File::open (name, "r");
+    try {
+	File::reopen (name, mode, f);
+	raise not_raised ("reopen " + mode);
+    } catch File::open_error (string m, File::error_type e, string n) {
+	check ("reopen " + mode, e, File::error_type.INVAL);
+    }
+    File::close (f);
+}
+
+file f = File::open (name, "w");
+File::fprintf (f, "line\n");
+File::close (f);
+
+rejected ("");
+rejected ("q");
+rejected ("rw");
+rejected ("r+x");
+rejected ("+");
+rejected ("rb");
+rejected ("rb+");
+rejected ("r+b");
+
+/* "+" opens for reading and writing */
+f = File::open (name, "r+");
+check ("r+ reads", File::fgets (f), "line");
+File::fprintf (f, "more\n");
+File::close (f);
+
+f = File::open (name, "a+");
+File::fprintf (f, "last\n");
+File::close (f);
+
+f = File::open (name, "r");
+check ("first", File::fgets (f), "line");
+check ("second", File::fgets (f), "more");
+check ("third", File::fgets (f), "last");
+File::close (f);
+
+File::unlink (name);

@@ -27,6 +27,7 @@ tests = [
   'emptycomptest.5c',
   'bigarraytest.5c',
   'unionmembertest.5c',
+  'recursivetypetest.5c',
   'killtest.5c',
   'stringindextest.5c',
   'hashdefaulttest.5c',

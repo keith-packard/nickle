@@ -1,0 +1,51 @@
+/*
+ * Nickle test suite
+ *
+ * Comparing recursive types
+ *
+ * Comparing struct and union types compares their members, and two
+ * distinct recursive types lead back to the same comparison forever;
+ * only reference types were guarded against that.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+typedef list1;
+typedef union { void end; struct { int v; list1 next; } cons; } list1;
+typedef list2;
+typedef union { void end; struct { int v; list2 next; } cons; } list2;
+typedef list3;
+typedef union { void end; struct { string v; list3 next; } cons; } list3;
+
+list1 one = (list1) { .cons = { v = 1, next = list1.end } };
+
+/* Lists of the same shape are interchangeable */
+list2 two = one;
+check ("assigned", two.cons.v, 1);
+
+list1 function same (list2 l) { return l; }
+check ("passed", same (one).cons.v, 1);
+
+/* Lists with different members are not, checked as the value is stored */
+poly p = one;
+try {
+    list3 three = p;
+    raise not_raised ("list3");
+} catch invalid_argument (string m, poly a, poly b) {
+}
+
+/* Recursion through references still works */
+typedef node1;
+typedef struct { int v; *node1 next; } node1;
+typedef node2;
+typedef struct { int v; *node2 next; } node2;
+node1 n = { v = 2, next = &(node1) { v = 3 } };
+node2 m = n;
+check ("ref", m.next->v, 3);

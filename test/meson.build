@@ -31,6 +31,7 @@ tests = [
   'hashuninittest.5c',
   'hashresizetest.5c',
   'hashcopytest.5c',
+  'hashreftest.5c',
   'structequaltest.5c',
   'sleepzerotest.5c',
   'sleepsignaltest.5c',

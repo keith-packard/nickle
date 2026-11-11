@@ -1,0 +1,51 @@
+/*
+ * Nickle test suite
+ *
+ * References to hash elements
+ *
+ * Hash values lived in the table's own storage, so a reference to one
+ * pointed into storage that growing the table replaced: writes through
+ * the reference stopped reaching the hash. A poly hash holding a
+ * deleted entry also couldn't be assigned to a typed hash.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* A reference survives the table growing */
+int[int] h = { 0 => 10 };
+&int r = &h[0];
+for (int i = 1; i < 1000; i++)
+    h[i] = i;
+r = 42;
+check ("write through reference", h[0], 42);
+h[0] = 7;
+check ("read through reference", r, 7);
+
+/* A deleted element's reference no longer reaches the hash */
+&int d = &h[1];
+hash_del (h, 1);
+d = 99;
+check ("deleted", hash_test (h, 1), false);
+h[1] = 11;
+check ("re-added", h[1], 11);
+check ("old reference", d, 99);
+
+/* A copy's elements are its own */
+int[int] g = { 1 => 1 };
+int[int] g2 = g;
+&int c = &g2[1];
+c = 5;
+check ("original", g[1], 1);
+check ("copy", g2[1], 5);
+
+/* Deleted entries don't count when assigning a poly hash */
+poly[poly] p = { 1 => 1, 2 => 2 };
+hash_del (p, 2);
+int[int] q = p;
+check ("assigned", q[1], 1);

@@ -80,6 +80,7 @@ tests = [
   'socketconnecttest.5c',
   'threadprioritytest.5c',
   'semaphoreabandontest.5c',
+  'atoibasetest.5c',
   'bignamespacetest.5c',
   'longlisttest.5c',
   'commandreleasetest.5c'

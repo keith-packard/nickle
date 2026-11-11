@@ -1,0 +1,37 @@
+/*
+ * Nickle test suite
+ *
+ * string_to_integer bases
+ *
+ * Any base was passed on to the digit parser, which serves bases 2
+ * through 36, so other bases gave nonsense: string_to_integer ("12", 37)
+ * was 39.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function rejected (int base)
+{
+    try {
+	string_to_integer ("12", base);
+	raise not_raised (sprintf ("base %d", base));
+    } catch invalid_argument (string m, int i, poly v) {
+	check ("base", v, base);
+    }
+}
+
+rejected (1);
+rejected (-3);
+rejected (37);
+rejected (100);
+
+check ("base 0", string_to_integer ("0x1f", 0), 31);
+check ("base 2", string_to_integer ("101", 2), 5);
+check ("base 36", string_to_integer ("z", 36), 35);

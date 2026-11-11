@@ -5,7 +5,9 @@
  *
  * The length of the fraction used to count every character to the
  * end of the string, so trailing whitespace scaled it down:
- * string_to_real ("1.5 ") was 1.05.
+ * string_to_real ("1.5 ") was 1.05. Only spaces and tabs were skipped
+ * before the number, so a leading newline read as a digit, and an
+ * unclosed repeat group gave void.
  */
 
 autoimport PRNG;
@@ -57,3 +59,13 @@ for (int i = 0; i < 300; i++) {
     }
     check (s, want);
 }
+
+/* Any white space may precede the number */
+check ("\n2.5", 5/2);
+check (" \t\r\v\f-2.5", -5/2);
+
+/* An unclosed repeat group ends the number, as other stray characters do */
+check ("1.{", 1);
+check ("-1.{", -1);
+check ("1.2{3", 6/5);
+check ("1.2{3e5", 6/5);

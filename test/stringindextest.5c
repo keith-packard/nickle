@@ -6,7 +6,7 @@
  * String lengths, character counts, and indices were ints and longs,
  * and only small integers were accepted as indices, so an index past
  * the small integer range was reported as not being an integer rather
- * than as out of range.
+ * than as out of range. String::index stopped at a NUL in either string.
  */
 
 exception not_raised (string what);
@@ -50,6 +50,10 @@ substr_error ("huge negative count", "substr: index out of range",
 check ("index utf-8", "héllo"[1], 0xe9);
 check ("length utf-8", String::length ("héllo"), 5);
 check ("String::index utf-8", String::index ("héllo", "lo"), 3);
+string with_nul = String::new ((int[*]) { 'a', 0, 'b' });
+check ("String::index past NUL", String::index (with_nul, "b"), 2);
+check ("String::index NUL", String::index (with_nul, String::new (0)), 1);
+check ("String::index missing NUL", String::index ("ab", String::new (0)), -1);
 
 try {
     int c = "hello"[2**40];

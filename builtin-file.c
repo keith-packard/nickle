@@ -576,6 +576,9 @@ do_File_putb(Value v, Value f)
     else if (!aborting) {
         int b = IntPart(v, "putb non integer");
 
+        if (!aborting && (b < 0 || b > 255))
+            RaiseStandardException(exception_invalid_argument, 3,
+                                   NewStrString("putb: byte out of range"), NewInt(0), v);
         /* Write nothing for a rejected byte */
         if (!aborting) {
             if (FileOutput(f, b) == FileError) {
@@ -620,6 +623,9 @@ do_File_ungetb(Value v, Value f)
     if (!aborting) {
         int b = IntPart(v, "ungetb: non integer");
 
+        if (!aborting && (b < 0 || b > 255))
+            RaiseStandardException(exception_invalid_argument, 3,
+                                   NewStrString("ungetb: byte out of range"), NewInt(0), v);
         /* Push back nothing for a rejected byte */
         if (!aborting) {
             FileUnput(f, b);

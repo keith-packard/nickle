@@ -82,8 +82,9 @@ value_bool(Value s, Atom member, char *error, int def)
 }
 
 #ifdef HAVE_STRUCT_TM_TM_ZONE
-static const char *
-value_string(Value s, Atom member, char *error, const char *def)
+/* Returns char *, which tm_zone accepts whether or not it's const */
+static char *
+value_string(Value s, Atom member, char *error, char *def)
 {
     Value ref = StructMemRef(s, AtomId(member));
     Value mem;
@@ -145,7 +146,7 @@ from_date(Value date, struct tm *tm)
     tm->tm_gmtoff = (long)value_offset(date, "gmtoff", "invalid gmtoff", 0, 0, LONG_MIN, LONG_MAX);
 #endif
 #ifdef HAVE_STRUCT_TM_TM_ZONE
-    tm->tm_zone = (char *)value_string(date, "zone", "invalid zone", "NONE");
+    tm->tm_zone = value_string(date, "zone", "invalid zone", "NONE");
 #endif
 }
 

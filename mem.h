@@ -35,6 +35,15 @@ typedef const struct _DataType DataType;
 #define __NICKLE_NORETURN
 #endif
 
+/*
+ * Annotation, after the declarator, for functions taking printf formats
+ */
+#if defined(__GNUC__)
+#define __NICKLE_PRINTF(fmt, args) __attribute__((format(printf, fmt, args)))
+#else
+#define __NICKLE_PRINTF(fmt, args)
+#endif
+
 struct _DataType {
     void  (*Mark)(void *);
     int   (*Free)(void *);
@@ -103,9 +112,9 @@ void                 MemCollect(void);
  * These are used by the mem system and defined externally
  */
 
-void                 debug(char *, ...);
+void                 debug(char *, ...) __NICKLE_PRINTF(1, 2);
 
-void                 panic(char *, ...) __NICKLE_NORETURN;
+void                 panic(char *, ...) __NICKLE_NORETURN __NICKLE_PRINTF(1, 2);
 
 void                 MemExhausted(void) __NICKLE_NORETURN;
 

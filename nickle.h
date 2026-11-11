@@ -1032,10 +1032,11 @@ Value do_hash_keys(Value);
 /*
  * fall-through case statement annotations
  */
-#if __cplusplus >= 201703L || __STDC_VERSION__ > 201710L
+#if (defined(__cplusplus) && __cplusplus >= 201703L)             \
+    || (defined(__STDC_VERSION__) && __STDC_VERSION__ > 201710L)
 /* Standard C++17/C23 attribute */
 #define __NICKLE_FALLTHROUGH [[fallthrough]]
-#elif __has_attribute(fallthrough)
+#elif defined(__GNUC__)
 /* Non-standard but supported by at least gcc and clang */
 #define __NICKLE_FALLTHROUGH __attribute__((fallthrough))
 #else

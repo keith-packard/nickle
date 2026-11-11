@@ -715,18 +715,18 @@ void                ProfileInterrupt(Value thread);
 
 typedef Bool        (*TimerFunc)(void *closure);
 
-unsigned long       TimeInMs(void);
+int64_t             TimeInMs(void);
 
-void TimerInsert(void *closure, TimerFunc func, unsigned long delta, unsigned long incr);
-void TimerInterrupt(void);
-void TimerInit(void);
+void                TimerInsert(void *closure, TimerFunc func, int64_t delta, int64_t incr);
+void                TimerInterrupt(void);
+void                TimerInit(void);
 
-void IoInit(void);
-void IoStart(void);
-void IoStop(void);
-void IoFini(void);
-Bool IoTimeout(void *);
-void IoNoticeWriteBlocked(void);
+void                IoInit(void);
+void                IoStart(void);
+void                IoStop(void);
+void                IoFini(void);
+Bool                IoTimeout(void *);
+void                IoNoticeWriteBlocked(void);
 #ifdef NO_PIPE_SIGIO
 void IoNoticeReadBlocked(void);
 #endif

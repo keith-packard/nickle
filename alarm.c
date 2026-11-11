@@ -14,8 +14,8 @@ volatile Bool signalTimer; /* Timer signal received */
 typedef struct _sleepQ {
     DataType       *data;
     struct _sleepQ *next;
-    unsigned long   ms;
-    unsigned long   incr;
+    int64_t         ms;
+    int64_t         incr;
     void           *closure;
     TimerFunc       func;
 } SleepQ, *SleepQPtr;
@@ -33,20 +33,20 @@ SleepQMark(void *object)
 
 DataType SleepQType = { SleepQMark, 0, "SleepQType" };
 
-unsigned long
+int64_t
 TimeInMs(void)
 {
     struct timeval  tv;
     struct timezone tz;
 
     gettimeofday(&tv, &tz);
-    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    return (int64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
 static void
-_TimerSet(unsigned long when, unsigned long now)
+_TimerSet(int64_t when, int64_t now)
 {
-    long             delta;
+    int64_t          delta;
     struct itimerval it, ot;
 
     delta = when - now;
@@ -54,13 +54,13 @@ _TimerSet(unsigned long when, unsigned long now)
         delta = 1;
     it.it_interval.tv_sec = 0;
     it.it_interval.tv_usec = 0;
-    it.it_value.tv_sec = delta / 1000;
-    it.it_value.tv_usec = (delta % 1000) * 1000;
+    it.it_value.tv_sec = (time_t)(delta / 1000);
+    it.it_value.tv_usec = (suseconds_t)((delta % 1000) * 1000);
     setitimer(ITIMER_REAL, &it, &ot);
 }
 
 static void
-_TimerInsert(SleepQPtr new, unsigned long now)
+_TimerInsert(SleepQPtr new, int64_t now)
 {
     SleepQPtr *prev, s;
     for (prev = &sleeping; (s = *prev); prev = &s->next)
@@ -73,11 +73,11 @@ _TimerInsert(SleepQPtr new, unsigned long now)
 }
 
 void
-TimerInsert(void *closure, TimerFunc func, unsigned long delta, unsigned long incr)
+TimerInsert(void *closure, TimerFunc func, int64_t delta, int64_t incr)
 {
     ENTER();
-    unsigned long now, ms;
-    SleepQPtr     self;
+    int64_t   now, ms;
+    SleepQPtr self;
 
     self = ALLOCATE(&SleepQType, sizeof(SleepQ));
     now = TimeInMs();
@@ -95,11 +95,11 @@ void
 TimerInterrupt(void)
 {
     ENTER();
-    unsigned long now;
-    SleepQPtr     s;
+    int64_t   now;
+    SleepQPtr s;
 
     now = TimeInMs();
-    while ((s = sleeping) && (int)(now - s->ms) >= 0) {
+    while ((s = sleeping) && now >= s->ms) {
         sleeping = s->next;
         if ((*s->func)(s->closure) && s->incr) {
             s->ms += s->incr;
@@ -143,7 +143,7 @@ Value
 do_millis(void)
 {
     ENTER();
-    RETURN(NewInt(TimeInMs()));
+    RETURN(NewSignedDigitInteger(TimeInMs()));
 }
 
 ReferencePtr SleepingReference;

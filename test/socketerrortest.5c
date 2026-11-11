@@ -1,10 +1,11 @@
 /*
  * Nickle test suite
  *
- * Socket::listen and Socket::shutdown errors, and binding port 0
+ * Socket::create, Socket::listen and Socket::shutdown errors, and
+ * binding port 0
  *
- * listen and shutdown ignored failures from the system, and bind
- * rejected port 0, which asks for any free port.
+ * create, listen, and shutdown ignored failures from the system, and
+ * bind rejected port 0, which asks for any free port.
  */
 
 exception not_raised (string what);
@@ -25,6 +26,19 @@ void function io_fails (string what, File::error_type want, void() f)
 	check (what, e, want);
     }
 }
+
+void function bad_argument (string what, int want, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, int i, poly v) {
+	check (what, i, want);
+    }
+}
+
+bad_argument ("family", 0, void func () { Socket::create (9999, Socket::SOCK_STREAM); });
+bad_argument ("type", 1, void func () { Socket::create (Socket::AF_INET, 9999); });
 
 file null = File::open ("/dev/null", "r");
 io_fails ("listen on a file", File::error_type.NOTSOCK,

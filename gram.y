@@ -536,12 +536,13 @@ simple_statement: if_statement namespace_end attendnl
                   doc_string SEMI attendnl
                     {
                         DeclListPtr decl;
+                        /* Give the symbol its arguments, as builtin exceptions have */
+                        Type        *type = NewTypeFunc(typePoly, $6);
 
                         decl = NewDeclList($4, 0, 0);
-                        decl->symbol = ParseNewSymbol($1, class_exception, typePoly, $4);
+                        decl->symbol = ParseNewSymbol($1, class_exception, type, $4);
                         decl->symbol->exception.doc = $8;
-                        $$ = NewExprDecl(EXCEPTION, decl, class_exception,
-                                            NewTypeFunc(typePoly, $6), $1);
+                        $$ = NewExprDecl(EXCEPTION, decl, class_exception, type, $1);
                     }
                 | RAISE fullname OP opt_exprs CP SEMI
                     { $$ = NewExprTree(RAISE, $2, $4); }

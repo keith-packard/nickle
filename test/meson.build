@@ -77,6 +77,7 @@ tests = [
   'highfdtest.5c',
   'vwidthtest.5c',
   'socketaddrtest.5c',
+  'socketconnecttest.5c',
   'bignamespacetest.5c',
   'longlisttest.5c',
   'commandreleasetest.5c'

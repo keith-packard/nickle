@@ -1,0 +1,60 @@
+/*
+ * Nickle test suite
+ *
+ * Socket::connect to a port that refuses connections
+ *
+ * A connection that had to wait was reported as made once the socket
+ * became writable, without asking the socket whether it succeeded, so
+ * a refused connection raised its error at the first write instead.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* Bind 's' to some free local port and return it */
+int function bind_free (file s)
+{
+    for (int p = 40000; p < 41000; p++) {
+	try {
+	    Socket::bind (s, "localhost", p);
+	    return p;
+	} catch File::io_error (string m, File::error_type e, file f) {
+	}
+    }
+    raise wrong ("no free port", 0, 0);
+}
+
+/* A bound socket that isn't listening refuses connections */
+file closed = Socket::create (Socket::SOCK_STREAM);
+int refused = bind_free (closed);
+
+file c = Socket::create (Socket::SOCK_STREAM);
+try {
+    Socket::connect (c, "localhost", refused);
+    raise not_raised ("refused connect");
+} catch File::io_error (string m, File::error_type e, file f) {
+    check ("error", e, File::error_type.CONNREFUSED);
+}
+File::close (c);
+File::close (closed);
+
+/* A listening socket accepts */
+file l = Socket::create (Socket::SOCK_STREAM);
+int port = bind_free (l);
+Socket::listen (l, 1);
+thread t = fork Socket::accept (l);
+c = Socket::create (Socket::SOCK_STREAM);
+Socket::connect (c, "localhost", port);
+file a = Thread::join (t);
+File::fprintf (c, "hello\n");
+File::flush (c);
+check ("received", File::fgets (a), "hello");
+File::close (a);
+File::close (c);
+File::close (l);

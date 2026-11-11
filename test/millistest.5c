@@ -1,0 +1,23 @@
+/*
+ * Nickle test suite
+ *
+ * millis() and sleep
+ *
+ * millis() converted the millisecond clock to an int, so it returned
+ * a wrapped, often negative, value.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+int t = millis ();
+int s = time ();
+
+/* The two clocks agree to within a few seconds */
+if (abs (t - s * 1000) > 5000)
+    raise wrong ("millis () against time ()", t, s * 1000);
+
+/* A sleep takes at least as long as requested */
+sleep (100);
+int elapsed = millis () - t;
+if (elapsed < 100 || elapsed > 5000)
+    raise wrong ("sleep (100)", elapsed, 100);

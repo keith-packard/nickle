@@ -18,7 +18,7 @@ typedef struct _sleepQ {
     int64_t         incr;
     void           *closure;
     TimerFunc       func;
-} SleepQ, *SleepQPtr;
+} SleepQ;
 
 static SleepQPtr sleeping;
 
@@ -72,22 +72,45 @@ _TimerInsert(SleepQPtr new, int64_t now)
         _TimerSet(new->ms, now);
 }
 
+/*
+ * Make a timer to queue with TimerStart. It leaves the queue when it
+ * fires and 'func' returns False, after which it can be started again
+ */
+SleepQPtr
+TimerCreate(void *closure, TimerFunc func)
+{
+    ENTER();
+    SleepQPtr self;
+
+    self = ALLOCATE(&SleepQType, sizeof(SleepQ));
+    self->next = 0;
+    self->ms = 0;
+    self->incr = 0;
+    self->closure = closure;
+    self->func = func;
+    RETURN(self);
+}
+
+/*
+ * Queue 'timer' to fire in 'delta' ms, then every 'incr' ms while its
+ * function returns True. This allocates nothing, so it may be called
+ * while collecting
+ */
+void
+TimerStart(SleepQPtr timer, int64_t delta, int64_t incr)
+{
+    int64_t now = TimeInMs();
+
+    timer->ms = now + delta;
+    timer->incr = incr;
+    _TimerInsert(timer, now);
+}
+
 void
 TimerInsert(void *closure, TimerFunc func, int64_t delta, int64_t incr)
 {
     ENTER();
-    int64_t   now, ms;
-    SleepQPtr self;
-
-    self = ALLOCATE(&SleepQType, sizeof(SleepQ));
-    now = TimeInMs();
-    ms = now + delta;
-    self->next = 0;
-    self->ms = ms;
-    self->incr = incr;
-    self->closure = closure;
-    self->func = func;
-    _TimerInsert(self, now);
+    TimerStart(TimerCreate(closure, func), delta, incr);
     EXIT();
 }
 
@@ -101,6 +124,8 @@ TimerInterrupt(void)
     now = TimeInMs();
     while ((s = sleeping) && now >= s->ms) {
         sleeping = s->next;
+        /* A timer kept for reuse mustn't hold the rest of the queue */
+        s->next = 0;
         if ((*s->func)(s->closure) && s->incr) {
             s->ms += s->incr;
             _TimerInsert(s, now);

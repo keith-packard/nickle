@@ -107,12 +107,15 @@ IoTimeout(void *closure)
     return False;
 }
 
+/* Allocated once, so FileFlush can start it while collecting */
+static SleepQPtr ioTimer;
+
 static void
 IoSetupTimeout(void)
 {
     if (!ioTimeoutQueued) {
         ioTimeoutQueued = True;
-        TimerInsert(0, IoTimeout, 100, 100);
+        TimerStart(ioTimer, 100, 100);
     }
 }
 
@@ -153,6 +156,8 @@ IoInit(void)
 {
     ENTER();
     catchSignal(SIGIO, sigio);
+    ioTimer = TimerCreate(0, IoTimeout);
+    MemAddRoot(ioTimer);
     FileStdinBox = IoMakeFile(0, FileReadable);
     FileStdoutBox = IoMakeFile(1, FileWritable);
     FileStderrBox = IoMakeFile(2, FileWritable);

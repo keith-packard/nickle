@@ -20,6 +20,7 @@
 typedef struct _func      *FuncPtr;
 typedef struct _namespace *NamespacePtr;
 typedef struct _command   *CommandPtr;
+typedef struct _sleepQ    *SleepQPtr;
 
 typedef struct _symbolBase {
     DataType *data;
@@ -728,6 +729,8 @@ typedef Bool        (*TimerFunc)(void *closure);
 
 int64_t             TimeInMs(void);
 
+SleepQPtr           TimerCreate(void *closure, TimerFunc func);
+void                TimerStart(SleepQPtr timer, int64_t delta, int64_t incr);
 void                TimerInsert(void *closure, TimerFunc func, int64_t delta, int64_t incr);
 void                TimerInterrupt(void);
 void                TimerInit(void);

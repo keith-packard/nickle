@@ -73,9 +73,15 @@ do_Math_ldexp(Value a, Value e)
 {
     ENTER();
 
+    Value p;
+
     if (ValueIsFloat(a))
         RETURN(FloatLdexp(a, e));
-    RETURN(Times(a, Pow(NewInt(2), e)));
+    p = Pow(NewInt(2), e);
+    /* Keep Pow's exception, such as out_of_memory, from Times */
+    if (aborting)
+        RETURN(Void);
+    RETURN(Times(a, p));
 }
 
 Value

@@ -216,6 +216,16 @@ typedef union {
                                NewPtrdiffInteger(arg));                                       \
     }
 
+/*
+ * Raise invalid_argument for an address bind or connect can't use
+ */
+static Bool
+address_error(char *message, Value value)
+{
+    RaiseStandardException(exception_invalid_argument, 3, NewStrString(message), NewInt(0), value);
+    return False;
+}
+
 /* Supports the following args from both bind and connect:
  *	(File::file s, String local_socket)
  */
@@ -230,11 +240,12 @@ address_lookup_af_unix(ptrdiff_t num, Value *args, struct sockaddr_un *addr, soc
         return False;
 
     local_socket = StrzPart(args[1], "invalid local_socket");
-    if (!local_socket || *local_socket == '\0')
+    if (!local_socket)
         return False;
-
+    if (*local_socket == '\0')
+        return address_error("empty local_socket", args[1]);
     if (strlen(local_socket) > UN_SOCK_MAX)
-        return False;
+        return address_error("local_socket too long", args[1]);
 
     addr->sun_family = (sa_family_t)s->file.sock_family;
     strcpy(addr->sun_path, local_socket);
@@ -266,39 +277,42 @@ address_lookup_af_inet(ptrdiff_t num, Value *args, struct sockaddr_in *addr, soc
     port = args[2];
 
     hostchars = StrzPart(host, "invalid hostname");
-    if (!hostchars || *hostchars == '\0')
+    if (!hostchars)
         return False;
+    if (*hostchars == '\0')
+        return address_error("empty hostname", host);
 
     if (ValueIsString(port)) {
         char *portchars = StrzPart(port, "invalid port string");
-        if (!portchars || *portchars == '\0')
+        if (!portchars)
             return False;
+        if (*portchars == '\0')
+            return address_error("empty port", port);
         portnum = strtol(portchars, &endptr, /* base */ 10);
         if (*endptr != '\0') /* non-numeric port specification */
         {
             /* FIXME: this should not always be "tcp"! */
             portent = getservbyname(portchars, "tcp");
             if (portent == 0)
-                return False; /* FIXME: more here? */
+                return address_error("unknown service", port);
             /* s_port holds the port in network byte order */
             portnum = ntohs((uint16_t)portent->s_port);
         }
-        if (portnum <= 0 || portnum >= (1 << 16))
-            return False; /* FIXME: more here? */
     } else {
         portnum = IntPart(port, "invalid port value");
-        if (portnum <= 0 || portnum >= (1 << 16))
-            return False; /* FIXME: more here? */
+        if (aborting)
+            return False;
     }
+    if (portnum <= 0 || portnum >= (1 << 16))
+        return address_error("port out of range", port);
 
     addr->sin_family = (sa_family_t)s->file.sock_family;
     addr->sin_port = htons((uint16_t)portnum);
 
     /* host lookup */
     hostent = gethostbyname(hostchars);
-    if (hostent == 0) {
-        return False; /* FIXME: more here? */
-    }
+    if (hostent == 0)
+        return address_error("unknown host", host);
 
     *len = sizeof(*addr);
     memcpy(&addr->sin_addr.s_addr, hostent->h_addr_list[0], sizeof(addr->sin_addr.s_addr));
@@ -327,7 +341,7 @@ address_lookup(ptrdiff_t num, Value *args, sockaddr_all_t *addr, socklen_t *len)
         /* FIXME */
 #endif
     default:
-        return False;
+        return address_error("unsupported address family", s);
     }
 }
 

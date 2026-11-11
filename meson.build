@@ -71,6 +71,8 @@ add_project_arguments(cc.get_supported_arguments(
     '-Walloca',
     '-Wstrict-prototypes',
     '-Wnull-dereference',
+    '-Wconversion',
+    '-Wsign-conversion',
   ]),
 		      language: 'c')
 

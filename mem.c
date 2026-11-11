@@ -96,7 +96,7 @@ MemAllocateHunk(size_t sizeIndex)
     b = newBlock(sizeIndex);
     if (b) {
         unsigned char *data = HUNKS(b);
-        int            n = NUMHUNK(sizeIndex);
+        size_t         n = NUMHUNK(sizeIndex);
         /*
          * put the contents on the free list
          */

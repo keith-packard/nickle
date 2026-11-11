@@ -59,6 +59,7 @@ tests = [
   'jsontest.5c',
   'datetest.5c',
   'string-file.5c',
+  'filtertest.5c',
   'sorttest.5c',
   'chacha_test.5c',
   'manylocalstest.5c',

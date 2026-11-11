@@ -397,7 +397,10 @@ ArrayResize(Value av, int32_t dim, ptrdiff_t size)
         }
         a->u.resize = nboxes;
         dims[dim] = odim;
-        limits[dim] = size;
+        /*
+         * Shrinking copied whole rows, past the new limit; leave the
+         * old limit so the code below clears what's beyond it
+         */
         stride = nstride;
     }
     /*

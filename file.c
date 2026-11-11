@@ -827,6 +827,13 @@ FileFilter(char *program, char *args[], Value filev, int *errp)
     }
     if (pid == 0) {
         /* child */
+        /*
+         * Move the files above 2 first, so that placing one can't
+         * replace another still to be placed, as when stdout and
+         * stderr trade places. The loop below closes the copies
+         */
+        for (fd = 0; fd < 3; fd++)
+            fds[fd] = fcntl(fds[fd], F_DUPFD, 3);
         for (fd = 0; fd < 3; fd++)
             dup2(fds[fd], fd);
         fdlimit = sysconf(_SC_OPEN_MAX);

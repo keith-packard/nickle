@@ -1408,6 +1408,7 @@ Copy(Value v)
 Value                ValueEqual(Value a, Value b, int expandOk);
 
 Value                ValueHash(Value a);
+HashValue            ValueHashValue(Value a);
 
 /*
  * There are two kinds of signals:

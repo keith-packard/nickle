@@ -149,7 +149,7 @@ ComplexPrint(Value f, Value fv, uint32_t format, int base, int width, int prec, 
 static HashValue
 ComplexHash(Value av)
 {
-    return ValueInt(ValueHash(av->complex.r)) ^ ValueInt(ValueHash(av->complex.i));
+    return ValueHashValue(av->complex.r) ^ ValueHashValue(av->complex.i);
 }
 
 static void

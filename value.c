@@ -904,6 +904,23 @@ ValueHash(Value v)
     return NewInt((int)((*rep->hash)(v)&MAX_NICKLE_INT));
 }
 
+/*
+ * Return the hash of 'v' as a HashValue, for combining the hashes of
+ * the elements of composite values
+ */
+HashValue
+ValueHashValue(Value v)
+{
+    ValueRep *rep;
+
+    if (!v)
+        return 0;
+    rep = ValueRep(v);
+    if (!rep->hash)
+        return 0;
+    return (*rep->hash)(v);
+}
+
 static Value
 UnitEqual(Value av, Value bv, int expandOk)
 {

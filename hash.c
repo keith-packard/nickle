@@ -255,7 +255,7 @@ HashHash(Value av)
     e = BoxElements(ht->elts);
     for (h = ht->hashSet->size; h-- > 0;) {
         if (HashEltValue(e))
-            hash ^= ValueInt(HashEltHash(e));
+            hash ^= ValueHashValue(HashEltKey(e));
         HashEltStep(e);
     }
     return hash;

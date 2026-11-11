@@ -108,7 +108,7 @@ StructHash(Value a)
     ptrdiff_t   i;
 
     for (i = 0; i < at->nelements; i++)
-        h = h ^ ValueInt(ValueHash(BoxValue(a->structs.values, i)));
+        h = h ^ ValueHashValue(BoxValue(a->structs.values, i));
     return h;
 }
 

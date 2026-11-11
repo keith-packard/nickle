@@ -160,7 +160,7 @@ ArrayHash(Value av)
     ptrdiff_t limit = ArrayLimit(av);
 
     for (i = 0; i < limit; i = ArrayNextI(a, i))
-        h = hrot(h) ^ ValueInt(ValueHash(ArrayValueGet(a, i)));
+        h = hrot(h) ^ ValueHashValue(ArrayValueGet(a, i));
     return h;
 }
 

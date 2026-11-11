@@ -559,19 +559,25 @@ Value
 do_Socket_getsockname(Value s)
 {
     ENTER();
-    struct sockaddr_in addr;
-    socklen_t          len = sizeof(addr);
-    Value              ret;
-    BoxPtr             box;
+    sockaddr_all_t addr;
+    socklen_t      len = sizeof(addr);
+    Value          ret;
+    BoxPtr         box;
 
-    if (getsockname(s->file.fd, (struct sockaddr *)&addr, &len) == -1) {
+    if (getsockname(s->file.fd, &addr.addr, &len) == -1) {
         RaiseStandardException(exception_io_error, 3, FileGetErrorMessage(errno),
                                FileGetError(errno), s);
         RETURN(Void);
     }
+    /* sockaddr holds an AF_INET address and port; other families have neither */
+    if (addr.addr.sa_family != AF_INET) {
+        RaiseStandardException(exception_invalid_argument, 3,
+                               NewStrString("getsockname: not an AF_INET socket"), NewInt(0), s);
+        RETURN(Void);
+    }
     ret = NewStruct(TypeCanon(typeSockaddr)->structs.structs, False);
     box = ret->structs.values;
-    BoxValueSet(box, 0, NewInteger(Positive, NewNatural(ntohl(addr.sin_addr.s_addr))));
-    BoxValueSet(box, 1, NewInt(ntohs(addr.sin_port)));
+    BoxValueSet(box, 0, NewInteger(Positive, NewNatural(ntohl(addr.in.sin_addr.s_addr))));
+    BoxValueSet(box, 1, NewInt(ntohs(addr.in.sin_port)));
     RETURN(ret);
 }

@@ -81,10 +81,16 @@ tests = [
   'threadprioritytest.5c',
   'semaphoreabandontest.5c',
   'atoibasetest.5c',
+  'errortypetest.5c',
   'bignamespacetest.5c',
   'longlisttest.5c',
   'commandreleasetest.5c'
 ]
+
+# Foreign::load exists only where nickle can load shared libraries
+if have_extern_syms and have_dlfcn_h and have_dlopen and have_dlsym
+  tests += ['foreignloadtest.5c']
+endif
 
 extra_files = [
   'math-bits.5c'

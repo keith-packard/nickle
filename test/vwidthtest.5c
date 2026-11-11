@@ -1,0 +1,37 @@
+/*
+ * Nickle test suite
+ *
+ * Padding strings printed with %v
+ *
+ * The width counted for %v disagreed with what was printed: characters
+ * past '~' counted as four-character escapes, and backslashes as one
+ * character.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* Padding s to a width adds spaces until the printed form fills it */
+void function padded (string s)
+{
+    string plain = sprintf ("%v", s);
+    int width = String::length (plain);
+
+    check (s + " right", sprintf (sprintf ("%%%dv", width + 3), s), "   " + plain);
+    check (s + " left", sprintf (sprintf ("%%-%dv", width + 3), s), plain + "   ");
+    check (s + " exact", sprintf (sprintf ("%%%dv", width), s), plain);
+}
+
+padded ("plain");
+padded ("a\\b");
+padded ("quote\"");
+padded ("é");
+padded ("αβγ");
+padded ("del" + String::new (0x7f));
+padded ("tab\t");
+padded ("ctl\001");

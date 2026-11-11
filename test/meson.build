@@ -70,6 +70,7 @@ tests = [
   'charrangetest.5c',
   'utf8leadtest.5c',
   'highfdtest.5c',
+  'vwidthtest.5c',
   'socketaddrtest.5c',
   'bignamespacetest.5c',
   'longlisttest.5c',

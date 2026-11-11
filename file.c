@@ -749,7 +749,7 @@ FileReopen(char *name, char *mode, Value file, int *errp)
             flags |= FileReadable;
         } else
             oflags = 1;
-        oflags |= O_TRUNC | O_CREAT | O_APPEND;
+        oflags |= O_CREAT | O_APPEND;
         flags |= FileWritable;
         break;
     }
@@ -764,6 +764,9 @@ FileReopen(char *name, char *mode, Value file, int *errp)
         RETURN(0);
     }
     close(fd);
+    /* The file now has the new mode, and no end or errors yet */
+    file->file.flags &= ~(FileReadable | FileWritable | FileEnd | FileInputError | FileOutputError);
+    file->file.flags |= flags;
     RETURN(file);
 }
 

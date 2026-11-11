@@ -50,7 +50,8 @@ _TimerSet(int64_t when, int64_t now)
     struct itimerval it, ot;
 
     delta = when - now;
-    if (delta < 0)
+    /* A zero time disarms the timer rather than firing it at once */
+    if (delta <= 0)
         delta = 1;
     it.it_interval.tv_sec = 0;
     it.it_interval.tv_usec = 0;

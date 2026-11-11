@@ -70,6 +70,7 @@ add_project_arguments(cc.get_supported_arguments(
     '-Wnested-externs',
     '-Walloca',
     '-Wstrict-prototypes',
+    '-Wnull-dereference',
   ]),
 		      language: 'c')
 

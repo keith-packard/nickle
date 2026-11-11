@@ -26,6 +26,15 @@ typedef const struct _DataType DataType;
 #include <nickle/stack.h>
 #endif
 
+/*
+ * Annotation, after the declarator, for functions which never return
+ */
+#if defined(__GNUC__)
+#define __NICKLE_NORETURN __attribute__((noreturn))
+#else
+#define __NICKLE_NORETURN
+#endif
+
 struct _DataType {
     void  (*Mark)(void *);
     int   (*Free)(void *);
@@ -96,9 +105,9 @@ void                 MemCollect(void);
 
 void                 debug(char *, ...);
 
-void                 panic(char *, ...);
+void                 panic(char *, ...) __NICKLE_NORETURN;
 
-void                 MemExhausted(void);
+void                 MemExhausted(void) __NICKLE_NORETURN;
 
 extern StackObject  *MemStack;
 extern void         *TemporaryData;

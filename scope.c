@@ -255,6 +255,9 @@ NamespaceLocate(Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publi
             namespace = symbol->namespace.namespace;
         }
     }
+    /* names is non-empty, so the loop has found a namelist */
+    if (!namelist)
+        return False;
     *namespacep = namespace;
     *symbolp = namelist->symbol;
     *publishp = namelist->publish;

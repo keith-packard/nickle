@@ -791,7 +791,8 @@ extern int   yyparse(void);
 extern int   stdin_interactive;
 
 void         intr(int);
-void         stop(int), die(int), segv(int);
+void         stop(int), segv(int);
+void         die(int) __NICKLE_NORETURN;
 
 void         catchSignal(int sig, void (*func)(int sig));
 

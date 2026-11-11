@@ -64,7 +64,8 @@ try_nicklestart(void)
 }
 
 void intr(int), ferr(int);
-void stop(int), die(int), segv(int);
+void stop(int), segv(int);
+void die(int) __NICKLE_NORETURN;
 
 static void
 ignoreSignal(int sig)

@@ -239,6 +239,8 @@ static Type *
 TypePlusPart(Type *type)
 {
     type = TypeCanon(type);
+    if (!type)
+        return NULL;
     switch (type->base.tag) {
     case type_struct:
     case type_union:
@@ -1179,6 +1181,8 @@ TypeCombineStruct(Type *type, int tag, Atom atom)
 Type *
 TypeCombineReturn(Type *type)
 {
+    if (!type)
+        return 0;
     if (TypePoly(type))
         return typePoly;
 
@@ -1194,6 +1198,8 @@ TypeCombineReturn(Type *type)
 Type *
 TypeCombineFunction(Type *type)
 {
+    if (!type)
+        return 0;
     if (TypePoly(type))
         return typePoly;
 

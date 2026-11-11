@@ -810,6 +810,11 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
     }
     quo = NaturalDivide(r->num, r->den, &partial);
     whole = NaturalSprint(0, quo, base, &whole_width);
+    if (!whole) {
+        free(initial);
+        EXIT();
+        return False;
+    }
     brace_width = 0;
     if (repeat_width) {
         brace_width++;
@@ -927,18 +932,18 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
         FileOutput(f, '-');
     FilePuts(f, whole);
     FileOutput(f, '.');
-    if (initial_width) {
+    if (initial_width)
         FilePuts(f, initial);
-        free(initial);
-    }
     if (rep_width) {
         if (use_braces)
             FileOutput(f, '{');
         FilePuts(f, repeat);
-        free(repeat);
         if (use_braces && repeat_width > 0)
             FileOutput(f, '}');
     }
+    /* Paring the output to fit may have dropped either part */
+    free(initial);
+    free(repeat);
     if (exponent) {
         FilePrintf(f, "e%d", exponent);
     }

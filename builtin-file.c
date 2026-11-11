@@ -641,17 +641,14 @@ do_File_ungetc(Value v, Value f)
 {
     ENTER();
 
-    if (f->file.flags & FileOutputBlocked)
-        ThreadSleep(running, f);
-    else {
-        if (!aborting) {
-            uint32_t c = CharPart(v, "ungetc: not a character");
+    /* Pushing back touches only the input buffer, so blocked output doesn't matter */
+    if (!aborting) {
+        uint32_t c = CharPart(v, "ungetc: not a character");
 
-            /* Push back nothing for a rejected character */
-            if (!aborting) {
-                FileUnchar(f, c);
-                complete = True;
-            }
+        /* Push back nothing for a rejected character */
+        if (!aborting) {
+            FileUnchar(f, c);
+            complete = True;
         }
     }
     RETURN(v);

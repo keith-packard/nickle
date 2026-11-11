@@ -1,0 +1,45 @@
+/*
+ * Nickle test suite
+ *
+ * Thread priorities after blocking
+ *
+ * Blocking raised a thread's priority so it would run promptly once
+ * woken, and nothing lowered it again. A thread that waited once and
+ * then computed ran ahead of every other thread forever, and
+ * get_priority reported the raised priority instead of the one set.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+semaphore s = Semaphore::new ();
+
+/* A waiting thread reports the priority it was given */
+thread w = fork Semaphore::wait (s);
+sleep (10);
+check ("waiting", Thread::get_priority (w), 0);
+Thread::set_priority (w, 5);
+Semaphore::signal (s);
+Thread::join (w);
+check ("set", Thread::get_priority (w), 5);
+
+/* A thread that waited and then computes doesn't starve the others */
+bool done = false;
+int na = 0, nb = 0;
+thread a = fork func () { Semaphore::wait (s); while (!done) na++; } ();
+thread b = fork func () { while (!done) nb++; } ();
+sleep (10);
+Semaphore::signal (s);
+int before = nb;
+sleep (100);
+check ("woken thread priority", Thread::get_priority (a), 0);
+if (nb == before)
+    raise wrong ("b starved", nb, before);
+done = true;
+Thread::join (a);
+Thread::join (b);

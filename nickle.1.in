@@ -706,6 +706,11 @@ Given an arbitrary array a, dims() returns an array
 of integers giving the size of each dimension of a.
 Thus, dim(dims(a)) is the number of dimensions
 of a.
+.IP "void setdim(poly[...] a, int n)"
+Resize the one-dimensional resizable array a to n elements.
+.IP "void setdims(poly[] a, int[*] dims)"
+Resize the resizable array a to the given dimensions.
+dim(dims) must equal dim(dims(a)).
 .IP "*poly reference(poly v)"
 Given an arbitrary value v, ``box'' that value
 into storage and return a pointer to
@@ -781,9 +786,34 @@ Type predicate.
 Type predicate.
 .IP "bool is_void(poly v)"
 Type predicate.
+.IP "bool is_bool(poly v)"
+Type predicate.
+.IP "bool is_hash(poly v)"
+Type predicate.
+.IP "bool is_uninit(&poly r)"
+Returns whether r references uninitialized storage.
+.IP "void make_uninit(&poly r)"
+Make r reference uninitialized storage.  Raises readonly_box if
+the storage is const.
 .IP "int gcd(int p, int q)"
 Return the GCD of p and q.  The result is always non-negative:
 gcd(p, 0) is the absolute value of p, and gcd(0, 0) is 0.
+.IP "int hash(poly v)"
+Return an integer derived from v, the same for equal values of the
+same type; values of different types, such as 1 and imprecise(1),
+may hash differently even when equal.
+.IP "poly[] hash_keys(poly[poly] h)"
+Return an array of the keys of hash h, in no particular order.
+.IP "void hash_del(poly[poly] h, poly key)"
+Remove key and its value from hash h.
+.IP "bool hash_test(poly[poly] h, poly key)"
+Returns whether hash h contains key.
+.IP "int func_args(poly f)"
+Return the number of arguments function f requires.
+.IP "int millis()"
+Return the current time in milliseconds.
+.IP "bool profile(bool enable)"
+Turn profiling on or off, and return whether it was on.
 .IP "poly setjmp(&continuation c, poly retval)"
 The setjmp() and longjmp() primitives together with the continuation type
 form an ADT useful for nearly arbitrary transfers of
@@ -939,6 +969,15 @@ in the range -pi..pi.
 Deals correctly with x == 0.
 .IP "real function pow(real a, real b)"
 The implementation of the ** operator.
+.IP "real function assign_pow(*real a, real b)"
+The implementation of the **= operator.
+.IP "int function factorial(int n)"
+Returns n!.  Raises invalid_unop_value if n is negative.
+.IP "real function ldexp(real r, int e)"
+Returns r * 2**e.  For imprecise r, this adjusts the exponent
+without computing 2**e.
+.IP "int function popcount(int i)"
+Returns the number of 1 bits in the non-negative integer i.
 .PP
 .IP File
 The namespace File provides operations on file values.
@@ -1028,10 +1067,21 @@ mode string, ala UNIX stdio fopen().  Permissible
 modes are as in stdio: "r", "w", "a", "r+", "w+"
 and "a+".
 Other modes raise open_error with the INVAL error.
+.IP "file function reopen(string path, string mode, file f)"
+Make f refer to the file at the given path, opened with mode as
+in open(), flushing output pending for the old file and discarding
+input buffered from it.  Returns f.
 .IP "int function putc(int c, file f)"
 Output the character c to the output file f in UTF-8, and return c.
 .IP "int function ungetc(int c, file f)"
 Push the character c back onto the input file f, and return c.
+.IP "int function getb(file f)"
+Return the next byte from file f, or -1 at the end of the file.
+.IP "int function putb(int b, file f)"
+Write the byte b, from 0 to 255, to file f, and return b.
+.IP "int function ungetb(int b, file f)"
+Push the byte b, from 0 to 255, back onto the input file f,
+and return b.
 .IP "int function setbuffer(file f, int mode)"
 Set the buffering of file f to mode: 0 for block buffering,
 1 for line buffering, and 2 for no buffering.  Return mode.
@@ -1051,6 +1101,11 @@ Raises open_error if the program can't be run.
 Like filter(), but each of the optional fds arguments,
 input(f), output(f), or error(f), names the file for one of the
 standard streams; the rest are connected to /dev/null.
+.IP "file[*] function mkpipe()"
+Return an array of the two ends of a new pipe: data written to
+element 1 can be read from element 0.
+.IP "bool function isatty(file f)"
+Returns whether f is a terminal.
 .IP "void function print (file f, poly v, string fmt, int base, int width, int prec, string fill)"
 Print value v to file f in format fmt with the given base, width,
 prec, and fill.  Used internally by File::fprintf();
@@ -1060,6 +1115,22 @@ taken from file f according to string fmt.  The format specifiers
 are much as in UNIX stdio scanf(): the "%d", "%e", "%f",
 "%c" and "%s" specifiers are supported with the expected
 modifiers.  Returns the number of values stored.
+.IP "void function unlink(string name)"
+.IP "void function rename(string old, string new)"
+.IP "void function mkdir(string name, int mode)"
+.IP "void function rmdir(string name)"
+Remove a file, rename a file, create a directory with the given
+permission bits, or remove a directory.  Each raises name_error
+on failure.
+.IP "exception open_error(string msg, error_type err, string name)"
+Raised when opening the file name fails.  The error_type union
+names the error, as in File::error_type.NOENT.
+.IP "exception io_error(string msg, error_type err, file f)"
+Raised when reading or writing f fails.
+.IP "exception name_error(string msg, error_type err, string name)"
+Raised when an operation on the file name, such as unlink, fails.
+.IP "exception io_eof(file f)"
+Raised by getc and functions built on it at the end of f.
 .PP
 .IP Thread
 The namespace Thread supports various operations
@@ -1206,6 +1277,13 @@ whether one was found.
 .IP "bool function lex_string(string code)"
 Make the Nickle code contained in the string code
 the next input, and return true.
+.IP "bool function lex_input(file f, string name, bool after, bool interactive)"
+Add f to the files the lexer reads, using name in error messages.
+If after is true, read f once the other input is exhausted rather
+than next.  If interactive is true, prompt as for a terminal.
+.IP "bool function valid_name(string[*] names)"
+Returns whether the path of namespace names leads to a defined
+name.
 .IP "void function lex_exit_on_error(bool exit)"
 Set whether a syntax or compile error in the current input, or in
 files it loads, makes Nickle exit with status 1.  This is set for
@@ -1267,6 +1345,72 @@ name, and returns whether it succeeded.
 .IP "bool function set(string name, string value)"
 Attempts to set the environment variable with the given
 name to the given value, and returns whether it succeeded.
+.PP
+.IP Socket
+The Socket namespace provides network sockets, which are files.
+Its constants include the address families AF_UNIX, AF_INET, and
+AF_INET6, the socket types SOCK_STREAM and SOCK_DGRAM, the
+shutdown directions SHUT_RD, SHUT_WR, and SHUT_RDWR, and the
+address strings INADDR_ANY, INADDR_LOOPBACK, and INADDR_BROADCAST.
+Only AF_INET and AF_UNIX addresses can be bound or connected,
+and unusable addresses raise invalid_argument.
+Other failures raise File::io_error unless noted.
+.IP "file function create([int family,] int type)"
+Create a socket of the given type in family, AF_INET by default.
+Raises invalid_argument if the system lacks the family or type,
+and PID::system_error for other failures.
+.IP "void function bind(file s, string host, poly port)"
+.IP "void function bind(file s, string path)"
+Bind AF_INET socket s to host and port, given as a number or
+service name, or AF_UNIX socket s to path.  Port 0 picks any
+free port.
+.IP "void function connect(file s, string host, poly port)"
+.IP "void function connect(file s, string path)"
+Connect s to host and port, or to path.
+.IP "void function listen(file s, int length)"
+Accept connections on s, queuing up to length of them.
+.IP "file function accept(file s)"
+Return a socket for the next connection to the listening socket s.
+.IP "void function shutdown(file s, int how)"
+Shut down reading, writing, or both on s.
+.IP "sockaddr function getsockname(file s)"
+Return the address and port of AF_INET socket s, as a
+struct { int addr; int port; }.
+.IP "string function gethostname()"
+Return the name of this host.
+.PP
+.IP PID
+The PID namespace reads and sets the process's identity.
+.IP "int function getpid()"
+.IP "int function getuid()"
+.IP "int function geteuid()"
+.IP "int function getgid()"
+.IP "int function getegid()"
+.IP "int[*] function getgroups()"
+Return the process id, user and group ids, or supplementary
+groups, as the C functions of the same names do.
+.IP "void function setuid(int uid)"
+.IP "void function seteuid(int uid)"
+.IP "void function setgid(int gid)"
+.IP "void function setegid(int gid)"
+.IP "void function setgroups(int[*] groups)"
+Set the user and group ids or supplementary groups.
+.IP "exception system_error(string msg, File::error_type err, poly val)"
+Raised when a system function fails; val is the value it failed on.
+.PP
+.IP Complex
+The Complex namespace holds functions on complex numbers,
+including:
+.IP "real function creal(complex c)"
+Returns the real part of c.
+.IP "real function cimag(complex c)"
+Returns the imaginary part of c.
+.PP
+.IP Foreign
+.IP "bool function load(string name)"
+Load the shared library name and call its nickle_init function,
+where the system supports it.  Raises File::open_error if the
+library can't be loaded or has no nickle_init.
 .\"
 .SH COMMANDS
 .PP
@@ -1284,8 +1428,21 @@ Load a file given by the string name E.
 Load a library given by the string name E.  See the discussion of the
 NICKLEPATH environment variable in ENVIRONMENT
 below, and the discussion of Command::nickle_path above.
+.IP "autoload NAME {,NAME}"
+Load the library for each namespace NAME, unless it is already
+defined.  The file name is NAME in lower case, with a dash before
+each capital letter that follows a lower-case one, and .5c
+appended: PRNG is prng.5c.
+.IP "autoimport NAME {,NAME}"
+As autoload, then import each namespace.
+.IP "reimport NAME {,NAME}"
+As autoimport, but load each library even if the namespace is
+already defined.
 .IP "E # E"
 Print expr1 in base expr2 .
+.IP "char E {,E}"
+Print each integer code point E in decimal and hexadecimal,
+with the character it encodes.
 .IP "print NAME"
 Display a formatted version of the object denoted by NAME.
 Comments and original formatting are lost.

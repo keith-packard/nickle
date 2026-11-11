@@ -52,8 +52,8 @@ struct _DataType {
     int       added;
     int       total;
     int       active;
-    long long total_bytes;
-    long long active_bytes;
+    size_t    total_bytes;
+    size_t    active_bytes;
     DataType *next;
 #endif
 };

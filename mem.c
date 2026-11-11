@@ -192,7 +192,7 @@ MemAddType(DataType *type)
 }
 
 static void
-activeReference(DataType *type, int size)
+activeReference(DataType *type, size_t size)
 {
     type->active++;
     type->active_bytes += size;
@@ -217,7 +217,7 @@ MemActiveDump(void)
     debug("Active memory dump\n");
     debug("%20.20s: %9s %12s %9s %12s\n", "name", "total", "bytes", "active", "bytes");
     for (type = allDataTypes; type; type = type->next) {
-        debug("%20.20s: %9d %12lld %9d %12lld\n", type->name, type->total, type->total_bytes,
+        debug("%20.20s: %9d %12zu %9d %12zu\n", type->name, type->total, type->total_bytes,
               type->active, type->active_bytes);
     }
 }

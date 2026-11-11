@@ -1,0 +1,44 @@
+/*
+ * Nickle test suite
+ *
+ * Reading characters that start with invalid UTF-8 lead bytes
+ *
+ * getc saved the bytes of a sequence in a six-entry buffer, and lead
+ * bytes 0xfe and 0xff announce seven and eight bytes, which overran it.
+ * It also returned characters as tagged ints, which read 0x7fffffff as -1.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* Read a character from the bytes in b */
+int function getc_bytes (int[*] b)
+{
+    file[*] p = File::mkpipe ();
+    for (int i = 0; i < dim (b); i++)
+	File::putb (b[i], p[1]);
+    File::close (p[1]);
+    return File::getc (p[0]);
+}
+
+void function rejected (int lead)
+{
+    try {
+	getc_bytes ((int[*]) { lead, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 });
+	raise not_raised (sprintf ("lead %x", lead));
+    } catch File::io_error (string m, File::error_type e, file f) {
+	check ("error", e, File::error_type.UTF8);
+    }
+}
+
+rejected (0xfe);
+rejected (0xff);
+
+/* The longest sequence, six bytes, still reads */
+check ("six bytes", getc_bytes ((int[*]) { 0xfd, 0xbf, 0xbf, 0xbf, 0xbf, 0xbf }), 0x7fffffff);

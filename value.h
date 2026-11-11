@@ -1336,7 +1336,6 @@ Bool          FileIsWritable(int fd);
 void          FilePutsc(Value, const char *, ptrdiff_t length);
 void          FilePuts(Value, const char *);
 void          FilePutDoubleDigitBase(Value file, double_digit a, int base);
-void          FilePutUIntBase(Value file, unsigned int a, int base);
 void          FilePutIntBase(Value file, int a, int base);
 void          FilePutInt(Value, int);
 void          FilePutPtrdiff(Value, ptrdiff_t);

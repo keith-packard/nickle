@@ -1248,19 +1248,16 @@ FilePutDoubleDigitBase(Value file, double_digit a, int base)
 }
 
 void
-FilePutUIntBase(Value file, unsigned int a, int base)
-{
-    FilePutDoubleDigitBase(file, (double_digit)a, base);
-}
-
-void
 FilePutIntBase(Value file, int a, int base)
 {
+    double_digit mag = (double_digit)a;
+
     if (a < 0) {
         FileOutput(file, '-');
-        a = -a;
+        /* Negate in two steps so the most negative int doesn't overflow */
+        mag = (double_digit) - (a + 1) + 1;
     }
-    FilePutUIntBase(file, a, base);
+    FilePutDoubleDigitBase(file, mag, base);
 }
 
 void
@@ -1739,13 +1736,13 @@ FileVPrintf(Value file, char *fmt, va_list args)
                 FilePutIntBase(file, va_arg(args, int), 10);
                 break;
             case 'u':
-                FilePutUIntBase(file, va_arg(args, unsigned int), 10);
+                FilePutDoubleDigitBase(file, va_arg(args, unsigned int), 10);
                 break;
             case 'o':
-                FilePutUIntBase(file, va_arg(args, unsigned int), 8);
+                FilePutDoubleDigitBase(file, va_arg(args, unsigned int), 8);
                 break;
             case 'x':
-                FilePutUIntBase(file, va_arg(args, unsigned int), 16);
+                FilePutDoubleDigitBase(file, va_arg(args, unsigned int), 16);
                 break;
             case 'D':
                 FilePutDoubleDigitBase(file, va_arg(args, double_digit), 10);

@@ -15,7 +15,6 @@
 #include "nickle.h"
 #include "gram.h"
 
-#include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
 

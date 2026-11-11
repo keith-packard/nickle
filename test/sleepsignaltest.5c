@@ -1,0 +1,57 @@
+/*
+ * Nickle test suite
+ *
+ * Waits after a sleep interrupted by a signal
+ *
+ * A sleep interrupted by a signal left its timer queued, and when the
+ * timer fired it woke the thread from whatever it was waiting on by
+ * then: a semaphore wait passed without a signal, and a later sleep
+ * ended early.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* The stale timer would fire 300ms after the first sleep began */
+semaphore s = Semaphore::new ();
+bool passed = false;
+int caught = 0;
+thread t = fork func () {
+    try {
+	sleep (300);
+    } catch Thread::signal (int n) {
+	caught = n;
+    }
+    Semaphore::wait (s);
+    passed = true;
+} ();
+sleep (50);
+Thread::send_signal (t, 3);
+sleep (500);
+check ("caught", caught, 3);
+check ("waiting", passed, false);
+Semaphore::signal (s);
+Thread::join (t);
+check ("released", passed, true);
+
+/* A later sleep lasts its full time */
+int elapsed = 0;
+t = fork func () {
+    try {
+	sleep (300);
+    } catch Thread::signal (int n) {
+    }
+    int start = millis ();
+    sleep (400);
+    elapsed = millis () - start;
+} ();
+sleep (50);
+Thread::send_signal (t, 3);
+Thread::join (t);
+if (elapsed < 400)
+    raise wrong ("later sleep", elapsed, 400);

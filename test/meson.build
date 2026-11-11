@@ -33,6 +33,7 @@ tests = [
   'hashcopytest.5c',
   'structequaltest.5c',
   'sleepzerotest.5c',
+  'sleepsignaltest.5c',
   'killtest.5c',
   'stringindextest.5c',
   'hashdefaulttest.5c',

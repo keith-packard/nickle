@@ -864,8 +864,8 @@ NaturalSprint(char *result, Natural *a, int base, ptrdiff_t *width)
     digit        partial;
     ptrdiff_t    print_width;
     Natural    **divisors;
-    int          ndivisors;
-    int          idivisor;
+    ptrdiff_t    ndivisors;
+    ptrdiff_t    idivisor;
 
     if (!result) {
         /*
@@ -927,12 +927,11 @@ NaturalSprint(char *result, Natural *a, int base, ptrdiff_t *width)
         do {
             if (idivisor >= ndivisors - 1) {
                 ndivisors += 128;
-                if (divisors)
-                    divisors = realloc(divisors, (size_t)ndivisors * sizeof(Natural *));
-                else
-                    divisors = malloc((size_t)ndivisors * sizeof(Natural *));
-                if (!divisors)
-                    return 0;
+                Natural **new = realloc(divisors, (size_t)ndivisors * sizeof(Natural *));
+
+                if (!new)
+                    MemExhausted();
+                divisors = new;
             }
             if (!idivisor)
                 divisors[idivisor++] = 0;

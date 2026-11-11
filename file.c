@@ -833,18 +833,20 @@ FileFilter(char *program, char *args[], Value filev, int *errp)
                 close(fd);
         fcntl(errpipe[1], F_SETFD, FD_CLOEXEC);
         execvp(program, args);
-        errcode = errno & 0xff;
-        nread = write(errpipe[1], &errcode, 1);
+        /* A pipe write this small arrives whole */
+        errcode = errno;
+        nread = write(errpipe[1], &errcode, sizeof(errcode));
         (void)nread;
-        exit(1);
+        /* Leave without running the parent's exit handlers or flushing its stdio */
+        _exit(1);
     }
     /* parent */
     close(errpipe[1]);
-    nread = read(errpipe[0], &errcode, 1);
+    nread = read(errpipe[0], &errcode, sizeof(errcode));
     close(errpipe[0]);
     if (nread != 0) {
         *errp = errcode;
-        assert(nread == 1);
+        assert(nread == sizeof(errcode));
         RETURN(0);
     }
     for (i = 0; i < 3; i++) {

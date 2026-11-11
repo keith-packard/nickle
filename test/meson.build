@@ -64,7 +64,8 @@ tests = [
   'manylocalstest.5c',
   'floatprectest.5c',
   'semcounttest.5c',
-  'datelimittest.5c'
+  'datelimittest.5c',
+  'reopentest.5c'
 ]
 
 extra_files = [

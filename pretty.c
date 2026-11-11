@@ -559,6 +559,7 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
     case ASSIGNTIMES:
     case ASSIGNDIVIDE:
     case ASSIGNMOD:
+    case ASSIGNDIV:
     case ASSIGNSHIFTL:
     case ASSIGNSHIFTR:
     case ASSIGNLXOR:
@@ -755,6 +756,21 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
         PrettyExpr(f, e->tree.right->tree.left, selfPrec, level, nest);
         FilePuts(f, " : ");
         PrettyExpr(f, e->tree.right->tree.right, selfPrec, level, nest);
+        break;
+    case FORK:
+        FilePuts(f, "fork ");
+        PrettyExpr(f, e->tree.right, selfPrec, level, nest);
+        break;
+    case ISTYPE:
+        /* Only a comma expression needs parentheses between the commas */
+        FilePuts(f, "is_type (");
+        PrettyExpr(f, e->type.left, tokenToPrecedence(COMMA) + 1, level, nest);
+        FilePrintf(f, ", %T)", e->type.type);
+        break;
+    case HASMEMBER:
+        FilePuts(f, "has_member (");
+        PrettyExpr(f, e->tree.left, tokenToPrecedence(COMMA) + 1, level, nest);
+        FilePrintf(f, ", %A)", e->tree.right->atom.atom);
         break;
     case DOLLAR:
         if (e->tree.left) {

@@ -468,9 +468,19 @@ Value
 HashCopy(Value hv)
 {
     ENTER();
-    Value new = NewHash(False, hv->hash.keyType, hv->hash.type);
+    Value     new = NewHash(False, hv->hash.keyType, hv->hash.type);
+    Value    *e;
+    ptrdiff_t h;
+
     new->hash.def = hv->hash.def;
     Resize(&new->hash, hv->hash.hashSet);
     Rehash(hv->hash.elts, &new->hash);
+    /* Copy the values as array copies copy their elements */
+    e = BoxElements(new->hash.elts);
+    for (h = new->hash.hashSet->size; h > 0; h--) {
+        if (HashEltValid(e) && HashEltValue(e))
+            HashEltValue(e) = Copy(HashEltValue(e));
+        HashEltStep(e);
+    }
     RETURN(new);
 }

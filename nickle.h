@@ -91,15 +91,25 @@ typedef struct _namelist *NamelistPtr;
 typedef struct _namelist {
     DataType   *data;
     NamelistPtr next;
+    NamelistPtr hashNext; /* next in its chain of the namespace's index */
     SymbolPtr   symbol;
     Publish     publish;
 } Namelist;
 
+/* An index of a namespace's names, by atom */
+typedef struct _namelistHash {
+    DataType   *data;
+    ptrdiff_t   size; /* number of chains, a power of two */
+    NamelistPtr chains[];
+} NamelistHash;
+
 typedef struct _namespace {
-    DataType    *data;
-    NamespacePtr previous;
-    NamelistPtr  names;
-    Publish      publish;
+    DataType     *data;
+    NamespacePtr  previous;
+    NamelistPtr   names;
+    Publish       publish;
+    ptrdiff_t     count; /* names in the list */
+    NamelistHash *hash;  /* index of the names, once there are many */
 } Namespace;
 
 NamespacePtr        NewNamespace(NamespacePtr previous);

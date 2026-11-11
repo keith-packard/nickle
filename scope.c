@@ -14,6 +14,7 @@ NamespaceMark(void *object)
 
     MemReference(namespace->previous);
     MemReference(namespace->names);
+    MemReference(namespace->hash);
 }
 
 static DataType namespaceType = { NamespaceMark, 0, "namespaceType" };
@@ -28,6 +29,8 @@ NewNamespace(NamespacePtr previous)
     namespace->previous = previous;
     namespace->names = 0;
     namespace->publish = publish_public;
+    namespace->count = 0;
+    namespace->hash = 0;
     RETURN(namespace);
 }
 
@@ -50,9 +53,110 @@ NewNamelist(NamelistPtr next, SymbolPtr symbol, Publish publish)
 
     namelist = ALLOCATE(&namelistType, sizeof(Namelist));
     namelist->next = next;
+    namelist->hashNext = 0;
     namelist->symbol = symbol;
     namelist->publish = publish;
     RETURN(namelist);
+}
+
+/*
+ * Namespaces with this many names get an index, so finding and adding
+ * names doesn't search the whole list
+ */
+#define NAMESPACE_HASH_MIN 16
+
+/* The chains reference names which are all in the list, so mark nothing */
+static DataType namelistHashType = { 0, 0, "namelistHashType" };
+
+static ptrdiff_t
+NamelistChain(NamelistHash *hash, Atom atom)
+{
+    /* Atoms are distinct pointers; mix their address bits */
+    HashValue h = (HashValue)(uintptr_t)atom;
+
+    h ^= h >> 7;
+    h *= 2654435761u;
+    h ^= h >> 13;
+    return (ptrdiff_t)(h & (HashValue)(hash->size - 1));
+}
+
+static void
+NamelistHashInsert(NamelistHash *hash, NamelistPtr namelist)
+{
+    NamelistPtr *chain = &hash->chains[NamelistChain(hash, namelist->symbol->symbol.name)];
+
+    namelist->hashNext = *chain;
+    *chain = namelist;
+}
+
+static void
+NamelistHashRemove(NamelistHash *hash, NamelistPtr namelist)
+{
+    NamelistPtr *prev;
+
+    for (prev = &hash->chains[NamelistChain(hash, namelist->symbol->symbol.name)]; *prev;
+         prev = &(*prev)->hashNext)
+        if (*prev == namelist) {
+            *prev = namelist->hashNext;
+            break;
+        }
+}
+
+/*
+ * Index the names of 'namespace' in a table of 'size' chains
+ */
+static void
+NamespaceRehash(NamespacePtr namespace, ptrdiff_t size)
+{
+    ENTER();
+    NamelistHash *hash;
+    NamelistPtr   namelist;
+
+    hash = ALLOCATE(&namelistHashType, sizeof(NamelistHash) + (size_t)size * sizeof(NamelistPtr));
+    hash->size = size;
+    memset(hash->chains, '\0', (size_t)size * sizeof(NamelistPtr));
+    for (namelist = namespace->names; namelist; namelist = namelist->next)
+        NamelistHashInsert(hash, namelist);
+    namespace->hash = hash;
+    EXIT();
+}
+
+/*
+ * Find the name 'atom' in 'namespace' alone
+ */
+static NamelistPtr
+NamespaceLookup(NamespacePtr namespace, Atom atom)
+{
+    NamelistPtr namelist;
+
+    if (namespace->hash)
+        namelist = namespace->hash->chains[NamelistChain(namespace->hash, atom)];
+    else
+        namelist = namespace->names;
+    while (namelist) {
+        if (namelist->symbol->symbol.name == atom)
+            return namelist;
+        namelist = namespace->hash ? namelist->hashNext : namelist->next;
+    }
+    return 0;
+}
+
+/*
+ * Remove 'old' from the names of 'namespace'
+ */
+static void
+NamespaceUnlink(NamespacePtr namespace, NamelistPtr old)
+{
+    NamelistPtr *prev;
+
+    for (prev = &namespace->names; *prev; prev = &(*prev)->next)
+        if (*prev == old) {
+            *prev = old->next;
+            break;
+        }
+    if (namespace->hash)
+        NamelistHashRemove(namespace->hash, old);
+    namespace->count--;
 }
 
 NamespacePtr        GlobalNamespace, TopNamespace, CurrentNamespace;
@@ -89,12 +193,13 @@ NamespaceFindNamelist(NamespacePtr namespace, Atom atom, Bool search, Bool allow
 {
     NamelistPtr namelist;
 
+    /* Each name appears at most once in a namespace */
     do {
-        for (namelist = namespace->names; namelist; namelist = namelist->next)
-            if (namelist->symbol->symbol.name == atom
-                && (allow_private || namespace->publish != publish_private
-                    || namelist->publish != publish_private))
-                return namelist;
+        namelist = NamespaceLookup(namespace, atom);
+        if (namelist
+            && (allow_private || namespace->publish != publish_private
+                || namelist->publish != publish_private))
+            return namelist;
         namespace = namespace->previous;
     } while (search && namespace);
     return 0;
@@ -120,35 +225,39 @@ NamespaceIsNamePrivate(NamespacePtr namespace, Atom atom, Bool search)
 SymbolPtr
 NamespaceAddName(NamespacePtr namespace, SymbolPtr symbol, Publish publish)
 {
-    NamelistPtr  namelist;
-    NamelistPtr *prev;
+    ENTER();
+    NamelistPtr namelist;
 
     /*
      * Remove old symbol
      */
-    for (prev = &namespace->names; (namelist = *prev); prev = &namelist->next)
-        if (namelist->symbol->symbol.name == symbol->symbol.name) {
-            *prev = namelist->next;
-            break;
-        }
+    namelist = NamespaceLookup(namespace, symbol->symbol.name);
+    if (namelist)
+        NamespaceUnlink(namespace, namelist);
 
     namelist = NewNamelist(namespace->names, symbol, publish);
     namespace->names = namelist;
+    namespace->count++;
+    if (namespace->hash) {
+        if (namespace->count > namespace->hash->size)
+            NamespaceRehash(namespace, namespace->hash->size * 2);
+        else
+            NamelistHashInsert(namespace->hash, namelist);
+    } else if (namespace->count >= NAMESPACE_HASH_MIN)
+        NamespaceRehash(namespace, NAMESPACE_HASH_MIN * 2);
+    EXIT();
     return symbol;
 }
 
 Bool
 NamespaceRemoveName(NamespacePtr namespace, Atom atom)
 {
-    NamelistPtr namelist, *prev;
+    NamelistPtr namelist = NamespaceLookup(namespace, atom);
 
-    for (prev = &namespace->names; (namelist = *prev); prev = &namelist->next)
-        if (namelist->symbol->symbol.name == atom) {
-            *prev = namelist->next;
-            return True;
-            break;
-        }
-    return False;
+    if (!namelist)
+        return False;
+    NamespaceUnlink(namespace, namelist);
+    return True;
 }
 
 void

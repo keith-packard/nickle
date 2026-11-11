@@ -42,18 +42,49 @@ extern StackElement StackElt(StackObject *stack, ptrdiff_t i);
 #define STACK_MIN(s) (CHUNK_MIN((s)->current))
 #define STACK_TOP(s) ((s)->stackPointer)
 
-#define STACK_POP(s) ((STACK_TOP(s) == STACK_MAX(s)) ? StackPop(s) : *STACK_TOP(s)++)
+/*
+ * Fast paths for operations within the current chunk, falling back to
+ * the functions in stack.c when they cross chunks
+ */
+static inline StackElement
+StackPopInline(StackObject *s)
+{
+    if (STACK_TOP(s) == STACK_MAX(s))
+        return StackPop(s);
+    return *STACK_TOP(s)++;
+}
+#define STACK_POP(s) StackPopInline(s)
 
-#define STACK_DROP(s, i)                                                                       \
-    ((STACK_TOP(s) + (i) <= STACK_MAX(s)) ? ((STACK_TOP(s) += (i)), 0) : (StackDrop(s, i), 0))
+static inline void
+StackDropInline(StackObject *s, ptrdiff_t i)
+{
+    if (STACK_TOP(s) + i <= STACK_MAX(s))
+        STACK_TOP(s) += i;
+    else
+        StackDrop(s, i);
+}
+#define STACK_DROP(s, i) StackDropInline(s, i)
 
-#define STACK_RESET(s, sp)                                                                \
-    (STACK_TOP(s) == (sp)                                                                 \
-         ? 0                                                                              \
-         : ((STACK_TOP(s) <= (sp) && (sp) <= STACK_MAX(s)) ? ((STACK_TOP(s) = (sp)), 0)   \
-                                                           : (StackReset((s), (sp)), 0)))
+static inline void
+StackResetInline(StackObject *s, StackPointer sp)
+{
+    if (STACK_TOP(s) == sp)
+        return;
+    if (STACK_TOP(s) <= sp && sp <= STACK_MAX(s))
+        STACK_TOP(s) = sp;
+    else
+        StackReset(s, sp);
+}
+#define STACK_RESET(s, sp) StackResetInline(s, sp)
 
-#define STACK_ELT(s, i) ((STACK_TOP(s) + (i) < STACK_MAX(s)) ? STACK_TOP(s)[i] : StackElt(s, i))
+static inline StackElement
+StackEltInline(StackObject *s, ptrdiff_t i)
+{
+    if (STACK_TOP(s) + i < STACK_MAX(s))
+        return STACK_TOP(s)[i];
+    return StackElt(s, i);
+}
+#define STACK_ELT(s, i) StackEltInline(s, i)
 
 #if 0
 #define STACK_VALID(s)                                                  \

@@ -125,11 +125,36 @@ extern void         *TemporaryData;
 
 extern struct bfree *freeList[NUMSIZES];
 
+/*
+ * Values allocated in a function stay referenced on MemStack, safe from
+ * collection, until the function releases them. MemMark records the
+ * stack position, MemRelease returns to it, and MemReturn returns to
+ * it and then references 'v' again, so a returned value stays safe in
+ * the caller's scope.
+ */
+static inline StackPointer
+MemMark(void)
+{
+    return STACK_TOP(MemStack);
+}
+
+static inline void
+MemRelease(StackPointer mark)
+{
+    STACK_RESET(MemStack, mark);
+}
+
+static inline void *
+MemReturn(StackPointer mark, void *v)
+{
+    return STACK_RETURN(MemStack, mark, v);
+}
+
 #define REFERENCE(o)         STACK_PUSH(MemStack, (o))
-#define ENTER()              StackPointer __stackPointer = STACK_TOP(MemStack)
+#define ENTER()              StackPointer __stackPointer = MemMark()
 #define ALLOCATE(type, size) MemAllocateRef(type, size)
-#define EXIT()               STACK_RESET(MemStack, __stackPointer)
-#define RETURN(r)            return (STACK_RETURN(MemStack, __stackPointer, (r)))
+#define EXIT()               MemRelease(__stackPointer)
+#define RETURN(r)            return MemReturn(__stackPointer, (r))
 #define NOREFRETURN(r)       return (EXIT(), (r))
 /*
  * Return 'r' and store 'o' through 'op', keeping both referenced in the

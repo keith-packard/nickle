@@ -667,6 +667,42 @@ FileCreate(int fd, int flags)
     RETURN(file);
 }
 
+/*
+ * Decode an fopen mode: "r", "w", or "a", then optionally "+"
+ */
+static Bool
+FileModeFlags(const char *mode, int *oflagsp, int *flagsp)
+{
+    int oflags, flags;
+
+    switch (mode[0]) {
+    case 'r':
+        oflags = O_RDONLY;
+        flags = FileReadable;
+        break;
+    case 'w':
+        oflags = O_WRONLY | O_TRUNC | O_CREAT;
+        flags = FileWritable;
+        break;
+    case 'a':
+        oflags = O_WRONLY | O_CREAT | O_APPEND;
+        flags = FileWritable;
+        break;
+    default:
+        return False;
+    }
+    if (mode[1] == '+') {
+        oflags = (oflags & ~O_ACCMODE) | O_RDWR;
+        flags = FileReadable | FileWritable;
+        mode++;
+    }
+    if (mode[1])
+        return False;
+    *oflagsp = oflags;
+    *flagsp = flags;
+    return True;
+}
+
 Value
 FileFopen(char *name, char *mode, int *errp)
 {
@@ -675,33 +711,9 @@ FileFopen(char *name, char *mode, int *errp)
     int flags = 0;
     int fd;
 
-    switch (mode[0]) {
-    case 'r':
-        if (mode[1] == '+') {
-            flags |= FileWritable;
-            oflags = 2;
-        } else
-            oflags = 0;
-        flags |= FileReadable;
-        break;
-    case 'w':
-        if (mode[1] == '+') {
-            oflags = 2;
-            flags |= FileReadable;
-        } else
-            oflags = 1;
-        oflags |= O_TRUNC | O_CREAT;
-        flags |= FileWritable;
-        break;
-    case 'a':
-        if (mode[1] == '+') {
-            oflags = 2;
-            flags |= FileReadable;
-        } else
-            oflags = 1;
-        oflags |= O_CREAT | O_APPEND;
-        flags |= FileWritable;
-        break;
+    if (!FileModeFlags(mode, &oflags, &flags)) {
+        *errp = EINVAL;
+        RETURN(0);
     }
     fd = open(name, oflags, 0666);
     if (fd < 0) {
@@ -725,33 +737,9 @@ FileReopen(char *name, char *mode, Value file, int *errp)
         RETURN(Void);
     }
 
-    switch (mode[0]) {
-    case 'r':
-        if (mode[1] == '+') {
-            flags |= FileWritable;
-            oflags = 2;
-        } else
-            oflags = 0;
-        flags |= FileReadable;
-        break;
-    case 'w':
-        if (mode[1] == '+') {
-            oflags = 2;
-            flags |= FileReadable;
-        } else
-            oflags = 1;
-        oflags |= O_TRUNC | O_CREAT;
-        flags |= FileWritable;
-        break;
-    case 'a':
-        if (mode[1] == '+') {
-            oflags = 2;
-            flags |= FileReadable;
-        } else
-            oflags = 1;
-        oflags |= O_CREAT | O_APPEND;
-        flags |= FileWritable;
-        break;
+    if (!FileModeFlags(mode, &oflags, &flags)) {
+        *errp = EINVAL;
+        RETURN(0);
     }
     fd = open(name, oflags, 0666);
     if (fd < 0) {

@@ -1020,8 +1020,9 @@ currently undefined.
 .IP "file function open(string path, string mode)"
 Open the file at the given path with the given
 mode string, ala UNIX stdio fopen().  Permissible
-modes are as in stdio: "r", "w", "x", "r+", "w+"
-and "x+".
+modes are as in stdio: "r", "w", "a", "r+", "w+"
+and "a+".
+Other modes raise open_error with the INVAL error.
 .IP "integer function fputc(integer c, file f)"
 Output the character c to the output file f, and return
 an indication of success.

@@ -899,8 +899,16 @@ PrettyStatement(Value f, Expr *e, int level, int blevel, Bool nest)
             while (block) {
                 PrettyIndent(f, 0, level);
                 if (block->tree.left->tree.left) {
+                    ExprPtr label = block->tree.left->tree.left;
+
                     FilePuts(f, "case ");
-                    PrettyExpr(f, block->tree.left->tree.left, -1, level, nest);
+                    /* A union case names the member, then any name bound to its value */
+                    if (e->base.tag == UNION) {
+                        FilePuts(f, AtomName(label->tree.left->atom.atom));
+                        if (label->tree.right)
+                            FilePrintf(f, " %A", label->tree.right->atom.atom);
+                    } else
+                        PrettyExpr(f, label, -1, level, nest);
                 } else
                     FilePuts(f, "default");
                 FilePuts(f, ":\n");

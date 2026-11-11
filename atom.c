@@ -119,13 +119,14 @@ AtomId(char *name)
     AtomEntry  *atomEntry = *slot;
 
     if (!atomEntry) {
-        ENTER();
+        StackPointer mark = MemMark();
+
         atomEntry = ALLOCATE(&AtomEntryType, sizeof(AtomEntry) + strlen(name) + 1);
         strcpy(AtomEntryName(atomEntry), name);
         *slot = atomEntry;
         if (++atomTable->count * 2 > atomTable->size)
             AtomTableGrow();
-        EXIT();
+        MemRelease(mark);
     }
     return AtomEntryName(atomEntry);
 }

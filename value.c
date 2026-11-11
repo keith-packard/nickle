@@ -360,10 +360,10 @@ BinaryOperate(Value av, Value bv, BinaryOp operator)
         }
         return Void;
     } else {
-        ENTER();
-        Value     ret;
-        ValueRep *arep = ValueRep(av), *brep = ValueRep(bv);
-        ValueRep *rep = 0;
+        StackPointer mark = MemMark();
+        Value        ret;
+        ValueRep    *arep = ValueRep(av), *brep = ValueRep(bv);
+        ValueRep    *rep = 0;
 
         if (arep->typecheck)
             rep = (*arep->typecheck)(operator, av, bv, 1);
@@ -383,18 +383,18 @@ BinaryOperate(Value av, Value bv, BinaryOp operator)
             rep = brep;
         if (!rep || !rep->binary[operator]) {
             if (operator == EqualOp)
-                RETURN(FalseVal);
+                return MemReturn(mark, FalseVal);
             RaiseStandardException(exception_invalid_binop_values, 3,
                                    NewStrString(BinaryOpMessage(operator)), av, bv);
-            RETURN(Void);
+            return MemReturn(mark, Void);
         }
         if (aborting)
-            RETURN(Void);
+            return MemReturn(mark, Void);
         ret = (*rep->binary[operator])(av, bv, 1);
         rep = ValueRep(ret);
         if (rep->reduce)
             ret = (*rep->reduce)(ret);
-        RETURN(ret);
+        return MemReturn(mark, ret);
     }
 }
 
@@ -545,15 +545,15 @@ Factorial(Value av)
     iref = STACK_TOP(MemStack);
     for (;;) {
         /* Free each step's temporaries before the next */
-        StackPointer step = STACK_TOP(MemStack);
+        StackPointer step = MemMark();
 
         if (aborting || False(Less(i, av))) {
-            STACK_RESET(MemStack, step);
+            MemRelease(step);
             break;
         }
         i = Plus(i, One);
         tv = Times(i, tv);
-        STACK_RESET(MemStack, step);
+        MemRelease(step);
         *iref = i;
         *tvref = tv;
     }

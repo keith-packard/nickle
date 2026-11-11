@@ -1037,7 +1037,8 @@ ThreadsRun(Value until, Value lex)
                 break;
             ThreadsBlock();
         } else {
-            ENTER();
+            /* Release each pass's temporaries */
+            StackPointer mark = MemMark();
             Value        thread = running;
             StackObject *cstack;
             InstPtr      inst, next;
@@ -1521,7 +1522,7 @@ ThreadsRun(Value until, Value lex)
                 if (running != thread)
                     break;
             }
-            EXIT();
+            MemRelease(mark);
         }
     }
 }

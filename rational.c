@@ -185,7 +185,7 @@ RationalLess(Value av, Value bv, int expandOk)
     ENTER();
     Rational *a = &av->rational, *b = &bv->rational;
     Rational *t;
-    int       ret;
+    Bool      ret;
 
     (void)expandOk;
     switch (catagorize_signs(a->sign, b->sign)) {
@@ -201,10 +201,10 @@ RationalLess(Value av, Value bv, int expandOk)
             ret = NaturalLess(a->num, b->num);
         break;
     case FirstPositive:
-        ret = 0;
+        ret = False;
         break;
     case SecondPositive:
-        ret = 1;
+        ret = True;
         break;
     default:
         abort();

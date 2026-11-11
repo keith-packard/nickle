@@ -220,7 +220,7 @@ FpartRound(Fpart *a, ptrdiff_t shift)
             if (last & (((digit)1 << shift) - 1))
                 round |= 1;
         }
-        round |= (last >> shift) & 3;
+        round |= (int)((last >> shift) & 3);
     }
     return round;
 }

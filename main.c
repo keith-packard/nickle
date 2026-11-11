@@ -119,7 +119,7 @@ main(int argc, char **argv)
     ThreadsRun(0, 0);
     IoFini();
     FileFini();
-    return lastThreadError;
+    return lastThreadError ? 1 : 0;
 }
 
 void

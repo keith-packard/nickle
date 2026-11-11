@@ -40,15 +40,16 @@ DataCachePtr naturalCache;
 int
 NaturalToInt(Natural *n)
 {
-    int       i;
-    digit    *d;
-    ptrdiff_t index;
+    double_digit i;
+    digit       *d;
+    ptrdiff_t    index;
 
+    /* Callers only pass naturals that fit in an int */
     d = data(n) + length(n);
     i = 0;
     for (index = 0; index < length(n); index++)
-        i = i * BASE + (int)*--d;
-    return i;
+        i = i * BASE + *--d;
+    return (int)i;
 }
 
 double_digit
@@ -565,12 +566,12 @@ NaturalMinus(Natural *a, Natural *b)
                 - (signed_digit)(index < length(b) ? *bt++ : 0) - (signed_digit)carry);
         carry = 0;
         if (temp < 0) {
-            temp += BASE;
+            temp += (signed_digit)BASE;
             carry = 1;
         }
         if (temp > 0)
             len = index;
-        *rt++ = temp;
+        *rt++ = (digit)temp;
     }
     length(result) = len + 1;
     RETURN(result);
@@ -1146,7 +1147,7 @@ NaturalMask(Natural *v, ptrdiff_t bits)
     length = (bits + LBASE2) / LBASE2;
     mask = bits % LBASE2;
 #endif
-    mask = (1 << mask) - 1;
+    mask = ((digit)1 << mask) - 1;
     if (length > v->length) {
         length = v->length;
         mask = (digit)~0;

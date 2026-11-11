@@ -168,7 +168,8 @@ typedef unsigned short digit;
 #define TwoDigits(n, i)                                                                     \
     ((double_digit)NaturalDigits(n)[i - 1] | ((double_digit)NaturalDigits(n)[i] << LBASE2))
 #define ModBase(t) ((t) & (((double_digit)1 << LBASE2) - 1))
-#define DivBase(t) ((t) >> LBASE2)
+/* The high digit of a double_digit, which always fits in a digit */
+#define DivBase(t) ((digit)((t) >> LBASE2))
 
 /* Hash codes; ValueHash masks them to fit in rep_int */
 
@@ -373,7 +374,7 @@ IntSign(int i)
  *
  * So, the two 'naughty' ones end up with the high bit set
  */
-#define NICKLE_INT_CARRIED(r) (((r) + NICKLE_INT_SIGN) & NICKLE_INT_CARRY)
+#define NICKLE_INT_CARRIED(r) (((unsigned)(r) + NICKLE_INT_SIGN) & NICKLE_INT_CARRY)
 
 #define MAX_NICKLE_INT        ((int)((unsigned)NICKLE_INT_SIGN - 1))
 #define MIN_NICKLE_INT        (-MAX_NICKLE_INT - 1)

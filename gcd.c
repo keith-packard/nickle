@@ -109,7 +109,7 @@ DigitBmod(digit u, digit v, int s)
     if (s == DIGITBITS)
         smask = MAXDIGIT;
     else
-        smask = (1 << s) - 1;
+        smask = ((digit)1 << s) - 1;
     for (i = 0; i < s; i++) {
         umask |= imask;
         if (u & umask) {
@@ -573,7 +573,7 @@ ReducedRatMod(Natural *x, Natural *y, digit *np, digit *dp)
     n1 = c;
     d1 = 1;
     n2 = -n1;
-    d2 = -1;
+    d2 = (digit)-1;
 
     while ((w2 = DigitWidth(n2)) > DIGITBITS / 2) {
         int i = DigitWidth(n1) - w2;

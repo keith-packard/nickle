@@ -13,24 +13,39 @@ ArrayInit(void)
     return 1;
 }
 
+/*
+ * Return the first index at or after i holding an element within the
+ * limits. Storage runs past the limits in every dimension but the
+ * last, which ArrayLimit bounds; an index past a limit moves to the
+ * start of the next row in that dimension, which may in turn pass the
+ * next dimension's limit. With an empty inner dimension there are no
+ * elements, so return PTRDIFF_MAX, past any limit
+ */
+static ptrdiff_t
+ArrayValidI(Array *a, ptrdiff_t i)
+{
+    ptrdiff_t stride = 1;
+    int32_t   d;
+
+    for (d = 0; d < a->ndim - 1; d++) {
+        ptrdiff_t dim = ArrayDims(a)[d];
+        ptrdiff_t lim = ArrayLimits(a)[d];
+        ptrdiff_t idx;
+
+        if (lim == 0)
+            return PTRDIFF_MAX;
+        idx = i / stride % dim;
+        if (idx >= lim)
+            i += (dim - idx) * stride;
+        stride *= dim;
+    }
+    return i;
+}
+
 static ptrdiff_t
 ArrayNextI(Array *a, ptrdiff_t i)
 {
-    ptrdiff_t step = 1;
-    ptrdiff_t sub_size = 1;
-    int32_t   d;
-    ptrdiff_t dim, lim;
-    ptrdiff_t j = i + 1;
-
-    for (d = 0; d < a->ndim - 1; d++) {
-        dim = ArrayDims(a)[d];
-        lim = ArrayLimits(a)[d];
-        if (dim != lim && j % dim == lim)
-            step += (dim - lim) * sub_size;
-        sub_size *= ArrayDims(a)[d];
-        j /= dim;
-    }
-    return i + step;
+    return ArrayValidI(a, i + 1);
 }
 
 static ptrdiff_t
@@ -62,8 +77,8 @@ ArrayEqual(Value av, Value bv, int expandOk)
     for (d = 0; d < a->ndim; d++)
         if (ArrayLimits(a)[d] != ArrayLimits(b)[d])
             return FalseVal;
-    ai = 0;
-    bi = 0;
+    ai = ArrayValidI(a, 0);
+    bi = ArrayValidI(b, 0);
     while (ai < alimit && bi < blimit) {
         if (False(Equal(ArrayValue(a, ai), ArrayValue(b, bi))))
             return FalseVal;
@@ -114,7 +129,7 @@ ArrayPrint(Value f, Value av, uint32_t format, int base, int width, int prec, ui
         }
     }
     if (format != 'G') {
-        i = 0;
+        i = ArrayValidI(a, 0);
         while (i < limit) {
             if (!Print(f, ArrayValueGet(a, i), down_format, base, width, prec, fill)) {
                 ret = False;
@@ -159,7 +174,7 @@ ArrayHash(Value av)
     HashValue h = 0;
     ptrdiff_t limit = ArrayLimit(av);
 
-    for (i = 0; i < limit; i = ArrayNextI(a, i))
+    for (i = ArrayValidI(a, 0); i < limit; i = ArrayNextI(a, i))
         h = hrot(h) ^ ValueHashValue(ArrayValueGet(a, i));
     return h;
 }

@@ -187,8 +187,33 @@ do_Socket_create(ptrdiff_t num, Value *args)
     if (aborting)
         RETURN(Void);
     s = socket(ifamily, itype, 0);
-    if (s == -1)
+    if (s == -1) {
+        int err = errno;
+
+        /* Report a family or type the system lacks as a bad argument */
+        switch (err) {
+        case EAFNOSUPPORT:
+            RaiseStandardException(exception_invalid_argument, 3,
+                                   NewStrString("create: unsupported address family"), NewInt(0),
+                                   args[0]);
+            break;
+        case EINVAL:
+        case EPROTONOSUPPORT:
+        case EPROTOTYPE:
+#ifdef ESOCKTNOSUPPORT
+        case ESOCKTNOSUPPORT:
+#endif
+            RaiseStandardException(exception_invalid_argument, 3,
+                                   NewStrString("create: unsupported socket type"),
+                                   NewInt(type_index), args[type_index]);
+            break;
+        default:
+            RaiseStandardException(exception_system_error, 3, FileGetErrorMessage(err),
+                                   FileGetError(err), args[type_index]);
+            break;
+        }
         RETURN(Void);
+    }
     ret = FileCreate(s, FileReadable | FileWritable);
     ret->file.sock_family = ifamily;
     RETURN(ret);

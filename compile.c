@@ -4148,9 +4148,13 @@ InstDump(InstPtr inst, int indent, ptrdiff_t i, ptrdiff_t *branch, ptrdiff_t max
     FilePrintf(FileStdout, "%p: ", inst);
 #endif
     ObjIndent(indent);
-    FilePrintf(FileStdout, "%s%s %c ", OpNames[inst->base.opCode],
-               "              " + strlen(OpNames[inst->base.opCode]),
-               inst->base.flags & InstPush ? '^' : ' ');
+    FilePuts(FileStdout, OpNames[inst->base.opCode]);
+    for (j = (ptrdiff_t)strlen(OpNames[inst->base.opCode]); j < 14; j++)
+        FileOutput(FileStdout, ' ');
+    if (inst->base.flags & InstPush)
+        FilePuts(FileStdout, " ^ ");
+    else
+        FilePuts(FileStdout, "   ");
     switch (inst->base.opCode) {
     case OpTagCase:
         FilePrintf(FileStdout, "(%A) ", inst->tagcase.tag);

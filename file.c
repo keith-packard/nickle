@@ -1210,14 +1210,14 @@ FileOutput(Value file, char c)
 }
 
 void
-FilePuts(Value file, char *s)
+FilePuts(Value file, const char *s)
 {
     while (*s)
         FileOutput(file, *s++);
 }
 
 void
-FilePutsc(Value file, char *s, ptrdiff_t length)
+FilePutsc(Value file, const char *s, ptrdiff_t length)
 {
     while (length--)
         FileOutput(file, *s++);

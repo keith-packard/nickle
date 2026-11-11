@@ -25,7 +25,7 @@ do_Foreign_load(Value av)
     char *name = StrzPart(av, "invalid foreign module name");
     void *lib;
     Value (*init)(void);
-    Value ret = False;
+    Value ret;
 
     if (!name)
         RETURN(Void);

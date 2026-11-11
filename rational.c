@@ -604,7 +604,6 @@ FactorBump(FactorPtr f)
 static int
 RationalRepeatLength(int prec, Natural *nden, int ibase)
 {
-    ENTER();
     Natural  *nbase;
     Natural  *ndigits;
     FactorPtr factors;
@@ -614,6 +613,7 @@ RationalRepeatLength(int prec, Natural *nden, int ibase)
 
     if (NaturalEqual(nden, one_natural))
         return 0;
+    ENTER();
     if (prec > 0)
         max = NewNatural((double_digit)prec);
     nbase = NewNatural((double_digit)ibase);
@@ -632,8 +632,10 @@ RationalRepeatLength(int prec, Natural *nden, int ibase)
         }
     } else {
         factors = GenerateFactors(ndigits, max);
-        if (aborting)
+        if (aborting) {
+            EXIT();
             return 0;
+        }
         factor = one_natural;
         while (factor) {
             if (NaturalEqual(NaturalPowMod(nbase, factor, nden), one_natural))
@@ -957,11 +959,8 @@ RationalPrint(Value f, Value rv, uint32_t format, int base, int width, int prec,
     ptrdiff_t print_width;
     Bool      ret = True;
 
-    if (format == 'a') {
-        Value     fv = NewRationalFloat(r, DEFAULT_FLOAT_PREC);
-        ValueRep *rep = ValueRep(fv);
-        return (*rep->print)(f, fv, format, base, width, DEFAULT_OUTPUT_PRECISION, fill);
-    }
+    if (format == 'a')
+        return PrintAsFloat(f, rv, base, width, fill);
 
     if (base == 0)
         base = 10;

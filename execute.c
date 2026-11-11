@@ -230,8 +230,10 @@ ThreadStaticInit(Value thread, InstPtr *next)
 
     frame = BuildFrame(thread, value, Void, True, False, False, 0, 0, 0, *next,
                        thread->thread.continuation.obj);
-    if (aborting)
+    if (aborting) {
+        EXIT();
         return;
+    }
     complete = True;
     thread->thread.continuation.frame = frame;
     thread->thread.continuation.obj = code->func.staticInit.obj;

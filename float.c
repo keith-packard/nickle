@@ -169,11 +169,7 @@ FpartDivide(Fpart *a, Fpart *b, Natural **remp)
 
     quo = NaturalDivide(a->mag, b->mag, &rem);
     fquo = NewFpart(sign, quo);
-    EXIT();
-    REFERENCE(fquo);
-    REFERENCE(rem);
-    *remp = rem;
-    return fquo;
+    RETURN2(fquo, rem, remp);
 }
 
 static Fpart *
@@ -338,7 +334,6 @@ static Value FloatNegate(Value av, int expandOk);
 static Value
 FloatAdd(Value av, Value bv, int expandOk, Bool negate)
 {
-    ENTER();
     Value     ret;
     Float    *a = &av->floats, *b = &bv->floats;
     Fpart    *dist;
@@ -355,6 +350,7 @@ FloatAdd(Value av, Value bv, int expandOk, Bool negate)
     } else if (FpartZero(b->mant)) {
         return av;
     }
+    ENTER();
     dist = FpartAdd(a->exp, b->exp, True);
     ret = 0;
     if (NaturalLess(dist->mag, max_int_natural)) {
@@ -747,11 +743,7 @@ FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
     /*    r = Divide (pow2, Pow (base, Minus (mean, One)));*/
     r = Divide(Pow(two_f, exp2), Pow(base_f, mean));
     /*    r = Divide (pow2, Pow (base, mean)); */
-    EXIT();
-    REFERENCE(mean);
-    REFERENCE(r);
-    *ratio = r;
-    return mean;
+    RETURN2(mean, r, ratio);
 }
 
 static Bool
@@ -1265,6 +1257,21 @@ FloatDefaultPrecision(void)
     if (float_prec && FloatPrecisionPart(float_prec, &prec, "invalid float_precision") && prec > 1)
         return prec;
     return DEFAULT_FLOAT_PREC;
+}
+
+/*
+ * Print 'v' as an imprecise number in 'a' (hex float) format, freeing the
+ * converted value afterward
+ */
+Bool
+PrintAsFloat(Value f, Value v, int base, int width, uint32_t fill)
+{
+    ENTER();
+    Value fv = NewValueFloat(v, DEFAULT_FLOAT_PREC);
+    Bool  ret = (*ValueRep(fv)->print)(f, fv, 'a', base, width, DEFAULT_OUTPUT_PRECISION, fill);
+
+    EXIT();
+    return ret;
 }
 
 Value

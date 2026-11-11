@@ -418,17 +418,14 @@ IntegerReduce(Value av)
 static Bool
 IntegerPrint(Value f, Value iv, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
-    ENTER();
     Integer  *i = &iv->integer;
     char     *result;
     ptrdiff_t print_width;
     ptrdiff_t fraction_width;
 
-    if (format == 'a') {
-        Value     fv = NewIntegerFloat(i, DEFAULT_FLOAT_PREC);
-        ValueRep *rep = ValueRep(fv);
-        return (*rep->print)(f, fv, format, base, width, DEFAULT_OUTPUT_PRECISION, fill);
-    }
+    if (format == 'a')
+        return PrintAsFloat(f, iv, base, width, fill);
+    ENTER();
 
     if (base == 0)
         base = 10;

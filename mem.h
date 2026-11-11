@@ -131,5 +131,11 @@ extern struct bfree *freeList[NUMSIZES];
 #define EXIT()               STACK_RESET(MemStack, __stackPointer)
 #define RETURN(r)            return (STACK_RETURN(MemStack, __stackPointer, (r)))
 #define NOREFRETURN(r)       return (EXIT(), (r))
+/*
+ * Return 'r' and store 'o' through 'op', keeping both referenced in the
+ * caller's scope. The stack always has room to push back two values
+ * after a reset.
+ */
+#define RETURN2(r, o, op) return (EXIT(), REFERENCE(r), REFERENCE(o), *(op) = (o), (r))
 
 #endif /* _MEM_H_ */

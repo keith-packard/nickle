@@ -112,12 +112,12 @@ Rehash(BoxPtr old, HashTablePtr ht)
 static void
 Resize(HashTablePtr ht, const HashSetPtr hs)
 {
-    ENTER();
     BoxPtr old;
 
     if (ht->hashSet == hs)
         return;
 
+    ENTER();
     old = ht->elts;
     ht->elts = NewBox(False, False, hs->size * HashEltSize, ht->type);
     ht->hashSet = hs;

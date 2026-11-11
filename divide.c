@@ -257,14 +257,5 @@ NaturalDivide(Natural *a, Natural *b, Natural **remp)
         }
     }
 #endif
-    EXIT();
-    /*
-     * Stack guaratees that this will work -- it saves a place
-     * for pushing at least as far as the previous StackReset, or
-     * a stack chunk, whichever is smaller.
-     */
-    REFERENCE(quo);
-    REFERENCE(rem);
-    *remp = rem;
-    return quo;
+    RETURN2(quo, rem, remp);
 }

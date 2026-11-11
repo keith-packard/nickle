@@ -468,10 +468,9 @@ do_File_string_string(Value f)
 Value
 do_File_isatty(Value file)
 {
-    ENTER();
     if (file->file.flags & FileString)
         return FalseVal;
-    RETURN(isatty(file->file.fd) ? TrueVal : FalseVal);
+    return isatty(file->file.fd) ? TrueVal : FalseVal;
 }
 
 Value

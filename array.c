@@ -286,7 +286,6 @@ NewArray(Bool constant, Bool resizable, TypePtr type, int32_t ndim, ptrdiff_t *d
 void
 ArrayResize(Value av, int32_t dim, ptrdiff_t size)
 {
-    ENTER();
     Array     *a = &av->array;
     ptrdiff_t *dims = ArrayDims(a);
     ptrdiff_t *limits = ArrayLimits(a);
@@ -305,6 +304,7 @@ ArrayResize(Value av, int32_t dim, ptrdiff_t size)
     if (size == limits[dim])
         return;
 
+    ENTER();
     ents = a->u.resize->nvalues;
 
     stride = 1;

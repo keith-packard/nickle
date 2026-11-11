@@ -1224,6 +1224,7 @@ Value     NewIntegerFloat(Integer *i, ptrdiff_t prec);
 Value     NewNaturalFloat(Sign sign, Natural *n, ptrdiff_t prec);
 Value     NewRationalFloat(Rational *r, ptrdiff_t prec);
 Value     NewValueFloat(Value av, ptrdiff_t prec);
+Bool      PrintAsFloat(Value f, Value v, int base, int width, uint32_t fill);
 Bool      FloatPrecisionPart(Value v, ptrdiff_t *precp, char *error);
 ptrdiff_t FloatDefaultPrecision(void);
 Value     FloatLdexp(Value av, Value ev);

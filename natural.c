@@ -826,12 +826,12 @@ NaturalBottom(char *result, digit partial, int base, ptrdiff_t digits, Bool fill
 static char *
 NaturalSplit(char *result, Natural *a, Natural **divisors, int base, ptrdiff_t digits, Bool fill)
 {
-    ENTER();
     Natural *q, *r;
     Bool     rfill;
 
     if (aborting)
         return 0;
+    ENTER();
     if (zerop(a)) {
         if (fill)
             while (digits--)

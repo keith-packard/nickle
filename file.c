@@ -777,8 +777,22 @@ FileFilter(char *program, char *args[], Value filev, int *errp)
     int       fds[3];
 
     /* set up process files */
+    if (ArrayNvalues(&filev->array) != 3) {
+        RaiseStandardException(exception_invalid_argument, 3,
+                               NewStrString("File::filter: need three files"), NewInt(2), filev);
+        RETURN(Void);
+    }
     for (i = 0; i < 3; i++) {
         Value f = ArrayValue(&filev->array, i);
+        if (aborting)
+            RETURN(Void);
+        /* String and closed files have no descriptor to give the process */
+        if (!ValueIsFile(f) || f->file.fd < 0) {
+            RaiseStandardException(exception_invalid_argument, 3,
+                                   NewStrString("File::filter: not an open system file"),
+                                   NewPtrdiffInteger(i), f);
+            RETURN(Void);
+        }
         if (i == 0 && !(f->file.flags & FileReadable)) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("File::filter: process input not readable"),

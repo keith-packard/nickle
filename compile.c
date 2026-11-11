@@ -2934,6 +2934,7 @@ _CompileNonLocal(ObjPtr obj, BranchMod mod, ExprPtr expr, CodePtr code)
             BuildInst(obj, OpBranch, inst, expr);
             inst->branch.offset = 0; /* filled in by PatchLoop */
             inst->branch.mod = mod;
+            break;
         case BranchModNone:
         case BranchModCatch:
             break;

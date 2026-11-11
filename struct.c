@@ -93,7 +93,12 @@ StructEqual(Value a, Value b, int expandOk)
     if (at->nelements != b->structs.type->nelements)
         return FalseVal;
     for (i = 0; i < at->nelements; i++) {
-        if (False(Equal(BoxValue(a->structs.values, i), StructMemValue(b, StructTypeAtoms(at)[i]))))
+        Value bv = StructMemValue(b, StructTypeAtoms(at)[i]);
+
+        /* Structs with different members aren't equal */
+        if (!bv)
+            return FalseVal;
+        if (False(Equal(BoxValue(a->structs.values, i), bv)))
             return FalseVal;
     }
     return TrueVal;

@@ -78,6 +78,7 @@ tests = [
   'vwidthtest.5c',
   'socketaddrtest.5c',
   'socketconnecttest.5c',
+  'socketerrortest.5c',
   'threadprioritytest.5c',
   'semaphoreabandontest.5c',
   'atoibasetest.5c',

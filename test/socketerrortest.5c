@@ -1,0 +1,55 @@
+/*
+ * Nickle test suite
+ *
+ * Socket::listen and Socket::shutdown errors, and binding port 0
+ *
+ * listen and shutdown ignored failures from the system, and bind
+ * rejected port 0, which asks for any free port.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function io_fails (string what, File::error_type want, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch File::io_error (string m, File::error_type e, file f) {
+	check (what, e, want);
+    }
+}
+
+file null = File::open ("/dev/null", "r");
+io_fails ("listen on a file", File::error_type.NOTSOCK,
+	  void func () { Socket::listen (null, 5); });
+File::close (null);
+
+file s = Socket::create (Socket::SOCK_STREAM);
+io_fails ("shutdown how", File::error_type.INVAL,
+	  void func () { Socket::shutdown (s, 99); });
+File::close (s);
+
+/* Port 0 binds some free port, which a connection can then reach */
+file l = Socket::create (Socket::SOCK_STREAM);
+Socket::bind (l, "localhost", 0);
+int port = Socket::getsockname (l).port;
+if (port <= 0)
+    raise wrong ("bound port", port, 0);
+Socket::listen (l, 1);
+thread t = fork Socket::accept (l);
+file c = Socket::create (Socket::SOCK_STREAM);
+Socket::connect (c, "localhost", port);
+file a = Thread::join (t);
+File::fprintf (c, "port 0\n");
+File::flush (c);
+check ("received", File::fgets (a), "port 0");
+File::close (a);
+File::close (c);
+File::close (l);

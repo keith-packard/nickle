@@ -89,6 +89,8 @@ NewBuiltinCode(Type *type, ArgType *args, ptrdiff_t argc, BuiltinFunc builtin, B
 {
     ENTER();
     CodePtr bc;
+    /* Allocate the doc string first, as BuiltinCodeType marks base.doc */
+    Value   docv = doc ? NewStrString(doc) : Void;
 
     bc = ALLOCATE(&BuiltinCodeType, sizeof(BuiltinCode));
     bc->base.builtin = True;
@@ -99,7 +101,7 @@ NewBuiltinCode(Type *type, ArgType *args, ptrdiff_t argc, BuiltinFunc builtin, B
     bc->base.name = 0;
     bc->base.previous = 0;
     bc->base.func = 0;
-    bc->base.doc = doc ? NewStrString(doc) : Void;
+    bc->base.doc = docv;
 
     bc->builtin.needsNext = needsNext;
     bc->builtin.b = builtin;

@@ -170,10 +170,12 @@ NewStructType(ptrdiff_t nelements)
     StructType *st;
     ptrdiff_t   i;
     Atom       *atoms;
+    /* Allocate the types first, as StructTypeType marks them */
+    BoxTypesPtr types = NewBoxTypes(nelements);
 
     st = ALLOCATE(&StructTypeType, sizeof(StructType) + (size_t)nelements * sizeof(Atom));
     st->nelements = nelements;
-    st->types = NewBoxTypes(nelements);
+    st->types = types;
     atoms = StructTypeAtoms(st);
     for (i = 0; i < nelements; i++)
         atoms[i] = 0;

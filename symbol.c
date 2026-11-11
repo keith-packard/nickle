@@ -97,6 +97,8 @@ NewSymbolConst(Atom name, Type *type)
 {
     ENTER();
     SymbolPtr s;
+    /* Allocate the box first, as SymbolGlobalType marks global.value */
+    BoxPtr    value = NewBox(True, False, 1, type);
 
     s = ALLOCATE(&SymbolGlobalType, sizeof(SymbolGlobal));
     s->symbol.next = 0;
@@ -104,7 +106,7 @@ NewSymbolConst(Atom name, Type *type)
     s->symbol.class = class_const;
     s->symbol.type = type;
     s->symbol.forward = False;
-    s->global.value = NewBox(True, False, 1, type);
+    s->global.value = value;
     RETURN(s);
 }
 
@@ -113,6 +115,8 @@ NewSymbolGlobal(Atom name, Type *type)
 {
     ENTER();
     SymbolPtr s;
+    /* Allocate the box first, as SymbolGlobalType marks global.value */
+    BoxPtr    value = NewBox(False, False, 1, type);
 
     s = ALLOCATE(&SymbolGlobalType, sizeof(SymbolGlobal));
     s->symbol.next = 0;
@@ -120,7 +124,7 @@ NewSymbolGlobal(Atom name, Type *type)
     s->symbol.class = class_global;
     s->symbol.type = type;
     s->symbol.forward = False;
-    s->global.value = NewBox(False, False, 1, type);
+    s->global.value = value;
     RETURN(s);
 }
 

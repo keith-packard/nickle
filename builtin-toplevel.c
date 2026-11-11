@@ -337,7 +337,7 @@ do_string_to_integer(ptrdiff_t n, Value *p)
     }
 
     s = StringChars(&str->string);
-    while (isspace((int)(*s)))
+    while (isspace((unsigned char)*s))
         s++;
     switch (*s) {
     case '-':
@@ -394,7 +394,7 @@ do_string_to_real(Value str)
 {
     ENTER();
     char *s = StringChars(&str->string);
-    while (isblank(*s))
+    while (isspace((unsigned char)*s))
         s++;
     int sign = 1;
     switch (*s) {

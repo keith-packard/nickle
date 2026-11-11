@@ -270,8 +270,7 @@ Type *
 NewTypePlus(Type *left, Type *right)
 {
     ENTER();
-    Type *t, *l, *r;
-    ;
+    Type       *t, *l, *r;
     StructType *st;
     ptrdiff_t   i;
 
@@ -286,11 +285,7 @@ NewTypePlus(Type *left, Type *right)
 
     st = NewStructType(l->structs.structs->nelements + r->structs.structs->nelements);
     i = AddPlusType(st, l->structs.structs, 0);
-    if (i < 0)
-        RETURN(NULL);
-    i = AddPlusType(st, r->structs.structs, i);
-    if (i < 0)
-        RETURN(NULL);
+    AddPlusType(st, r->structs.structs, i);
 
     t = ALLOCATE(&TypeStructType, sizeof(TypeStruct));
     t->base.tag = l->base.tag;
@@ -371,8 +366,8 @@ TypeIsSupertype(Type *super, Type *sub)
     Bool        ret;
     StructType *super_st;
     StructType *sub_st;
-    int         super_dim;
-    int         sub_dim;
+    int32_t     super_dim;
+    int32_t     sub_dim;
 
     if (super == sub)
         return True;

@@ -877,11 +877,7 @@ try_again_e:
         }
     } else {
         exp_string = NaturalSprint(0, exp->mag, base_exp, &exp_width);
-        if (aborting) {
-            EXIT();
-            return True;
-        }
-        if (!exp_string) {
+        if (aborting || !exp_string) {
             EXIT();
             return False;
         }
@@ -919,7 +915,7 @@ try_again_f:
     if (aborting) {
         free(int_buffer);
         EXIT();
-        return True;
+        return False;
     }
     frac_prec = mant_prec - int_width;
     if (*int_string == '0')
@@ -1005,7 +1001,7 @@ try_again_f:
             free(int_buffer);
             free(frac_buffer);
             EXIT();
-            return True;
+            return False;
         }
 
         while (frac_wrote < frac_width - 1) {

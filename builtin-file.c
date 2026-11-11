@@ -393,9 +393,11 @@ do_File_filter(Value path, Value argv, Value filev)
     if (!ret) {
         RaiseStandardException(exception_open_error, 3, FileGetErrorMessage(err), FileGetError(err),
                                path);
-        ret = Void;
+        RETURN(Void);
     }
-    complete = True;
+    /* Leave an instruction that raised incomplete, so the exception arrives at once */
+    if (!aborting)
+        complete = True;
     RETURN(ret);
 }
 

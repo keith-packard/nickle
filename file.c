@@ -1280,7 +1280,8 @@ FileStringWidth(char *string, ptrdiff_t length, uint32_t format)
         ptrdiff_t width = 2;
         uint32_t  c;
         while ((string = StringNextChar(string, &c, &length))) {
-            if (c < ' ' || '~' < c)
+            /* Match the escapes FilePutString writes */
+            if (c < ' ')
                 switch (c) {
                 case '\n':
                 case '\r':
@@ -1295,7 +1296,7 @@ FileStringWidth(char *string, ptrdiff_t length, uint32_t format)
                     width += 4;
                     break;
                 }
-            else if (c == '"')
+            else if (c == '"' || c == '\\')
                 width += 2;
             else
                 width++;

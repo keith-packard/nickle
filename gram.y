@@ -65,6 +65,22 @@ typedef enum _CanonTypeResult {
     CanonTypeDefined,
 } CanonTypeResult;
 
+/*
+ * Objects the parser allocates stay referenced on MemStack until the
+ * command that holds them has run. ParseReleaseCommand then releases
+ * them back to commandMark, taken as each command starts. The parser
+ * may already hold the next command's first token; lexValue keeps its
+ * value
+ */
+static StackPointer commandMark;
+
+static inline void
+ParseReleaseCommand(void)
+{
+    MemRelease(commandMark);
+    commandMark = MemMark();
+}
+
 static Expr           *ParseCanonFor(Expr *expr);
 
 static CanonTypeResult ParseCanonType(TypePtr type, Bool forwardAllowed);
@@ -192,7 +208,9 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 
 %%
 lines           : lines pcommand
+                    { ParseReleaseCommand(); }
                 |
+                    { commandMark = MemMark(); }
                 ;
 pcommand        : command
                 | error reset eend

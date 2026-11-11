@@ -363,26 +363,17 @@ ArrayResize(Value av, int32_t dim, ptrdiff_t size)
                 nstride <<= 1;
             }
             good = ostride;
-        } else if (size > 0) {
-            /* smaller */
-            while (odim > size * 2) {
+        } else {
+            /*
+             * smaller, keeping at least one row so the other dimensions
+             * keep their storage and limits even when this one is empty
+             */
+            while (odim > 1 && odim > size * 2) {
                 odim >>= 1;
                 ents >>= 1;
                 nstride >>= 1;
             }
             good = nstride;
-        } else {
-            /* empty */
-            ents = 0;
-            nstride = 0;
-            odim = 0;
-            size = 0;
-            nchunk = 0;
-            for (d = 0; d < a->ndim; d++) {
-                dims[d] = 0;
-                limits[d] = 0;
-            }
-            good = 0;
         }
 
         nboxes = NewBoxVector(ents, a->u.resize->type);

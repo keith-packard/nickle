@@ -1,0 +1,89 @@
+/*
+ * Nickle test suite
+ *
+ * Semaphore waits ended by Thread::kill or a signal
+ *
+ * Semaphore::wait decrements the count before blocking. A waiter
+ * killed or interrupted by a signal never undid that, so the count
+ * stayed one short and the next signal was lost. A waiter killed after
+ * being signaled, before it ran, also lost the signal it was given, and
+ * one interrupted by a signal and then killed gave it back twice.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* A killed waiter gives up its place */
+semaphore s = Semaphore::new ();
+thread t = fork Semaphore::wait (s);
+sleep (10);
+check ("waiting", Semaphore::count (s), -1);
+Thread::kill (t);
+check ("killed", Semaphore::count (s), 0);
+Semaphore::signal (s);
+check ("signaled", Semaphore::count (s), 1);
+
+/* So does a waiter interrupted by a signal */
+s = Semaphore::new ();
+int caught = 0;
+t = fork func () {
+    try {
+	Semaphore::wait (s);
+    } catch Thread::signal (int n) {
+	caught = n;
+    }
+} ();
+sleep (10);
+Thread::send_signal (t, 7);
+Thread::join (t);
+check ("caught", caught, 7);
+check ("interrupted", Semaphore::count (s), 0);
+
+/*
+ * A waiter killed after being signaled passes the signal on. The
+ * waiters run below main's priority, so the first can't run between
+ * the signal and the kill
+ */
+s = Semaphore::new ();
+bool second_done = false;
+thread first = fork Semaphore::wait (s);
+Thread::set_priority (first, -1);
+sleep (10);
+thread second = fork func () { Semaphore::wait (s); second_done = true; } ();
+Thread::set_priority (second, -1);
+sleep (10);
+check ("two waiting", Semaphore::count (s), -2);
+Semaphore::signal (s);
+Thread::kill (first);
+Thread::join (second);
+check ("second ran", second_done, true);
+check ("passed on", Semaphore::count (s), 0);
+
+/*
+ * A signaled waiter interrupted by a signal and then killed gives back
+ * its signal once. Main runs above the waiter's priority, so the
+ * waiter can't run in between; each top-level statement is a thread of
+ * its own, so this runs in one function
+ */
+void function signal_then_kill ()
+{
+    semaphore s = Semaphore::new ();
+    thread t = fork func () {
+	try {
+	    Semaphore::wait (s);
+	} catch Thread::signal (int n) {
+	}
+    } ();
+    sleep (10);
+    Thread::set_priority (Thread::current (), 10);
+    Semaphore::signal (s);
+    Thread::send_signal (t, 3);
+    Thread::kill (t);
+    check ("signaled then killed", Semaphore::count (s), 1);
+}
+signal_then_kill ();

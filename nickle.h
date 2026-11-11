@@ -882,6 +882,14 @@ BoxValue(BoxPtr box, ptrdiff_t e)
     return v;
 }
 
+/* Callers check the index; one out of range would read past the array */
+static inline Value
+ArrayValue(Array *a, ptrdiff_t i)
+{
+    assert(0 <= i && i < ArrayNvalues(a));
+    return BoxValue(ArrayValueBox(a, i), ArrayValueElt(a, i));
+}
+
 static inline Value
 Dereference(Value v)
 {

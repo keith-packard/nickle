@@ -1166,7 +1166,6 @@ ArrayType(Array *a)
         return a->u.fix->u.type;
 }
 
-#define ArrayValue(a, i)    (BoxValue(ArrayValueBox(a, i), ArrayValueElt(a, i)))
 #define ArrayValueGet(a, i) (BoxValueGet(ArrayValueBox(a, i), ArrayValueElt(a, i)))
 
 static inline void

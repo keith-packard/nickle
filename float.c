@@ -72,15 +72,16 @@ static Fpart *
 NewIntFpart(int i)
 {
     ENTER();
-    Sign          sign;
-    unsigned long mag;
+    Sign         sign;
+    double_digit mag;
 
     if (i < 0) {
         sign = Negative;
-        mag = -i;
+        /* Negate in two steps so the most negative int doesn't overflow */
+        mag = (double_digit) - (i + 1) + 1;
     } else {
         sign = Positive;
-        mag = i;
+        mag = (double_digit)i;
     }
     RETURN(NewFpart(sign, NewNatural(mag)));
 }
@@ -904,7 +905,7 @@ try_again_f:
     if (ValueIsInteger(int_part))
         int_n = IntegerMag(int_part);
     else
-        int_n = NewNatural(ValueInt(int_part));
+        int_n = NewNatural((double_digit)ValueInt(int_part));
 
     int_width = NaturalEstimateLength(int_n, base);
     if (leader)
@@ -990,7 +991,7 @@ try_again_f:
         if (ValueIsInteger(frac_part))
             frac_n = IntegerMag(frac_part);
         else
-            frac_n = NewNatural(ValueInt(frac_part));
+            frac_n = NewNatural((double_digit)ValueInt(frac_part));
 
         frac_buffer = malloc((size_t)frac_width + 1);
         frac_string = NaturalSprint(frac_buffer + frac_width + 1, frac_n, base, &frac_wrote);
@@ -1209,7 +1210,7 @@ NewDoubleFloat(double d)
     }
     e = e - SCALE_BITS;
     dd = (double_digit)(m * SCALE + 0.5);
-    RETURN(NewFloat(NewFpart(ms, NewDoubleDigitNatural(dd)), NewIntFpart(e), SCALE_BITS));
+    RETURN(NewFloat(NewFpart(ms, NewNatural(dd)), NewIntFpart(e), SCALE_BITS));
 }
 
 Value

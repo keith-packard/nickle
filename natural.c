@@ -920,7 +920,7 @@ NaturalSprint(char *result, Natural *a, int base, ptrdiff_t *width)
             r = NaturalBottom(r, partial, base, digits, len != 0);
         }
     } else {
-        divisor = NewNatural((unsigned)max_base);
+        divisor = NewNatural(max_base);
         divisors = 0;
         ndivisors = 0;
         idivisor = 0;
@@ -928,9 +928,9 @@ NaturalSprint(char *result, Natural *a, int base, ptrdiff_t *width)
             if (idivisor >= ndivisors - 1) {
                 ndivisors += 128;
                 if (divisors)
-                    divisors = realloc(divisors, ndivisors * sizeof(Natural *));
+                    divisors = realloc(divisors, (size_t)ndivisors * sizeof(Natural *));
                 else
-                    divisors = malloc(ndivisors * sizeof(Natural *));
+                    divisors = malloc((size_t)ndivisors * sizeof(Natural *));
                 if (!divisors)
                     return 0;
             }
@@ -970,7 +970,7 @@ static Natural *
 NewDoubleDigitNaturalReal(double_digit dd)
 {
     Natural     *result;
-    int          len;
+    ptrdiff_t    len;
     double_digit temp;
     digit       *d;
 
@@ -993,7 +993,7 @@ NewDoubleDigitNaturalReal(double_digit dd)
 #define NATURAL_CACHE_SIZE 8191
 
 Natural *
-NewDoubleDigitNatural(double_digit dd)
+NewNatural(double_digit dd)
 {
 
     switch (dd) {
@@ -1024,12 +1024,6 @@ NewDoubleDigitNatural(double_digit dd)
         return ret;
     }
     }
-}
-
-Natural *
-NewNatural(unsigned value)
-{
-    return NewDoubleDigitNatural((double_digit)value);
 }
 
 Natural *
@@ -1372,7 +1366,7 @@ NaturalInit(void)
 #ifdef DEBUG
     printf("max_tenpow: %d\n", max_tenpow);
 #endif
-    max_tenpow_natural = NewNatural(max_tenpow);
+    max_tenpow_natural = NewNatural((double_digit)max_tenpow);
     MemAddRoot(max_tenpow_natural);
 #endif
     EXIT();

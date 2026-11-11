@@ -538,14 +538,15 @@ Value
 NewIntInteger(int i)
 {
     ENTER();
-    Sign          sign = Positive;
-    unsigned long mag;
+    Sign         sign = Positive;
+    double_digit mag;
 
     if (i < 0) {
         sign = Negative;
-        mag = -i;
+        /* Negate in two steps so the most negative int doesn't overflow */
+        mag = (double_digit) - (i + 1) + 1;
     } else
-        mag = i;
+        mag = (double_digit)i;
     RETURN(NewInteger(sign, NewNatural(mag)));
 }
 
@@ -558,10 +559,11 @@ NewSignedDigitInteger(signed_digit d)
 
     if (d < 0) {
         sign = Negative;
-        dd = -d;
+        /* Negate in two steps so the most negative value doesn't overflow */
+        dd = (double_digit) - (d + 1) + 1;
     } else
-        dd = d;
-    RETURN(NewInteger(sign, NewDoubleDigitNatural(dd)));
+        dd = (double_digit)d;
+    RETURN(NewInteger(sign, NewNatural(dd)));
 }
 
 /*

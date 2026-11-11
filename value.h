@@ -204,8 +204,7 @@ NaturalDigits(Natural *n)
     return n->digits;
 }
 
-Natural        *NewNatural(unsigned value);
-Natural        *NewDoubleDigitNatural(double_digit dd);
+Natural        *NewNatural(double_digit value);
 Natural        *AllocNatural(ptrdiff_t size);
 Bool            NaturalEqual(Natural *, Natural *);
 Bool            NaturalLess(Natural *, Natural *);

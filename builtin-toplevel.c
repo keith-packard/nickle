@@ -309,7 +309,7 @@ Value
 do_time(void)
 {
     ENTER();
-    RETURN(Reduce(NewInteger(Positive, NewDoubleDigitNatural((double_digit)time(0)))));
+    RETURN(Reduce(NewInteger(Positive, NewNatural((double_digit)time(0)))));
 }
 
 Value

@@ -624,8 +624,8 @@ RationalRepeatLength(int prec, Natural *nden, int ibase)
     if (NaturalEqual(nden, one_natural))
         return 0;
     if (prec > 0)
-        max = NewNatural(prec);
-    nbase = NewNatural(ibase);
+        max = NewNatural((double_digit)prec);
+    nbase = NewNatural((double_digit)ibase);
     ndigits = NaturalPsi(nden, max);
     if (!ndigits) {
         factor = one_natural;
@@ -675,7 +675,7 @@ CheckDecimalLength(int prec, Natural *nden, int ibase, ptrdiff_t *initial, ptrdi
     int      offset;
     int      rep;
 
-    nbase = NewNatural(ibase);
+    nbase = NewNatural((double_digit)ibase);
     offset = 0;
     while (!NaturalEqual((g = NaturalGcd(nden, nbase)), one_natural)) {
         if (aborting) {
@@ -739,7 +739,7 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
         prec = 15;
     } else if (prec == INFINITE_OUTPUT_PRECISION)
         prec = -1;
-    dig = NewNatural(base);
+    dig = NewNatural((double_digit)base);
     /*
      * Check for small numbers for 'e' format
      */
@@ -1083,9 +1083,10 @@ NewIntRational(int i)
 {
     ENTER();
     if (i < 0)
-        RETURN(NewRational(Negative, NewNatural((unsigned)-i), one_natural));
+        /* Negate in two steps so the most negative int doesn't overflow */
+        RETURN(NewRational(Negative, NewNatural((double_digit) - (i + 1) + 1), one_natural));
     else
-        RETURN(NewRational(Positive, NewNatural((unsigned)i), one_natural));
+        RETURN(NewRational(Positive, NewNatural((double_digit)i), one_natural));
 }
 
 Value

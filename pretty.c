@@ -257,15 +257,25 @@ PrettyPostfixOperand(Value f, Expr *e, int selfPrec, int level, Bool nest)
         PrettyExpr(f, e, selfPrec, level, nest);
 }
 
+/*
+ * Print an item of a comma-separated list, such as an argument or an
+ * initializer, where only a comma expression needs parentheses
+ */
+static void
+PrettyListItem(Value f, Expr *e, int level, Bool nest)
+{
+    PrettyExpr(f, e, tokenToPrecedence(COMMA) + 1, level, nest);
+}
+
 static void
 PrettyParameters(Value f, Expr *e, Bool nest)
 {
     while (e) {
         if (e->tree.left->base.tag == DOTDOTDOT) {
-            PrettyExpr(f, e->tree.left->tree.left, -1, 0, nest);
+            PrettyListItem(f, e->tree.left->tree.left, 0, nest);
             FilePuts(f, "...");
         } else {
-            PrettyExpr(f, e->tree.left, -1, 0, nest);
+            PrettyListItem(f, e->tree.left, 0, nest);
         }
         e = e->tree.right;
         if (e)
@@ -303,7 +313,7 @@ PrettyArrayInit(Value f, Expr *e, int level, Bool nest)
         FilePuts(f, "...");
         break;
     default:
-        PrettyExpr(f, e, -1, level, nest);
+        PrettyListItem(f, e, level, nest);
         break;
     }
 }
@@ -312,9 +322,9 @@ static void
 PrettyHashInit(Value f, Expr *e, int level, Bool nest)
 {
     while (e) {
-        PrettyExpr(f, e->tree.left->tree.left, -1, level, nest);
+        PrettyListItem(f, e->tree.left->tree.left, level, nest);
         FilePuts(f, " => ");
-        PrettyExpr(f, e->tree.left->tree.right, -1, level, nest);
+        PrettyListItem(f, e->tree.left->tree.right, level, nest);
         e = e->tree.right;
         if (e)
             FilePuts(f, ", ");
@@ -327,7 +337,7 @@ PrettyStructInit(Value f, Expr *e, int level, Bool nest)
     while (e) {
         FilePuts(f, AtomName(e->tree.left->tree.left->atom.atom));
         FilePuts(f, " = ");
-        PrettyExpr(f, e->tree.left->tree.right, -1, level, nest);
+        PrettyListItem(f, e->tree.left->tree.right, level, nest);
         e = e->tree.right;
         if (e)
             FilePuts(f, ", ");
@@ -412,7 +422,7 @@ PrettyDecl(Value f, Expr *e, int level, Bool nest)
         FilePuts(f, AtomName(decl->name));
         if (decl->init) {
             FilePuts(f, " = ");
-            PrettyExpr(f, decl->init, -1, level, nest);
+            PrettyListItem(f, decl->init, level, nest);
         }
         if (decl->next)
             FilePuts(f, ",");
@@ -467,13 +477,14 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
     case COMP:
         FilePuts(f, "{ ");
         FilePuts(f, "[");
-        PrettyExpr(f, e->tree.left->tree.left, selfPrec, level, nest);
+        /* The index names are a comma list of their own */
+        PrettyExpr(f, e->tree.left->tree.left, -1, level, nest);
         FilePuts(f, "] ");
         if (e->tree.right->base.tag == OC)
             PrettyStatement(f, e->tree.right, level + 1, level, nest);
         else {
             FilePuts(f, "= ");
-            PrettyExpr(f, e->tree.right, selfPrec, level, nest);
+            PrettyListItem(f, e->tree.right, level, nest);
         }
         FilePuts(f, " }");
         break;

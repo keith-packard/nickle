@@ -353,7 +353,41 @@ TypeCountDimensions(ExprPtr dims)
 }
 
 static StackObject *TypeCheckStack;
-static int          TypeCheckLevel;
+static ptrdiff_t    TypeCheckLevel;
+
+/*
+ * Recursive types lead TypeIsSupertype back to a pair of types it is
+ * already comparing. TypeCheckStack holds those pairs, super below
+ * sub; a pair found there is assumed to hold, and the members of the
+ * outer comparison decide
+ */
+static Bool
+TypeCheckActive(Type *super, Type *sub)
+{
+    ptrdiff_t n;
+
+    for (n = 0; n < TypeCheckLevel; n++)
+        if (STACK_ELT(TypeCheckStack, 2 * n + 1) == super
+            && STACK_ELT(TypeCheckStack, 2 * n) == sub)
+            return True;
+    return False;
+}
+
+static void
+TypeCheckPush(Type *super, Type *sub)
+{
+    STACK_PUSH(TypeCheckStack, super);
+    STACK_PUSH(TypeCheckStack, sub);
+    ++TypeCheckLevel;
+}
+
+static void
+TypeCheckPop(void)
+{
+    STACK_POP(TypeCheckStack);
+    STACK_POP(TypeCheckStack);
+    --TypeCheckLevel;
+}
 
 /*
  * Return True if sup is a super type of sub
@@ -417,15 +451,12 @@ TypeIsSupertype(Type *super, Type *sub)
         /*
          * Avoid the infinite recursion, but don't unify type yet
          */
-        for (n = 0; n < TypeCheckLevel; n++)
-            if (STACK_ELT(TypeCheckStack, n) == super)
-                return True;
-        STACK_PUSH(TypeCheckStack, super);
-        ++TypeCheckLevel;
+        if (TypeCheckActive(super, sub))
+            return True;
+        TypeCheckPush(super, sub);
         /* XXX is this right? */
         ret = TypeIsSupertype(super->ref.ref, sub->ref.ref);
-        STACK_POP(TypeCheckStack);
-        --TypeCheckLevel;
+        TypeCheckPop();
         return ret;
     case type_func:
         if (TypeIsSupertype(super->func.ret, sub->func.ret)) {
@@ -456,8 +487,12 @@ TypeIsSupertype(Type *super, Type *sub)
                 && TypeIsOrdered(super->hash.keyType, sub->hash.keyType));
     case type_struct:
     case type_union:
+        if (TypeCheckActive(super, sub))
+            return True;
+        TypeCheckPush(super, sub);
         super_st = super->structs.structs;
         sub_st = sub->structs.structs;
+        ret = True;
         for (n = 0; n < super_st->nelements; n++) {
             Type *sub_mem;
 
@@ -466,12 +501,13 @@ TypeIsSupertype(Type *super, Type *sub)
              * of the super type members and those members are subtypes
              */
             sub_mem = StructMemType(sub_st, StructTypeAtoms(super_st)[n]);
-            if (!sub_mem)
-                return False;
-            if (!TypeIsSupertype(BoxTypesElements(super_st->types)[n], sub_mem))
-                return False;
+            if (!sub_mem || !TypeIsSupertype(BoxTypesElements(super_st->types)[n], sub_mem)) {
+                ret = False;
+                break;
+            }
         }
-        return True;
+        TypeCheckPop();
+        return ret;
     case type_name:
     case type_types:
         abort();

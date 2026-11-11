@@ -48,6 +48,10 @@ string[*][2] cases = {
     { "a ^ (b & c)", "a ^ b & c" },
     { "(a | b) ^ c", "(a | b) ^ c" },
     { "is_type (a, int) || has_member (a, x)", "is_type (a, int) || has_member (a, x)" },
+    { "max ((a, b), c)", "max ((a, b), c)" },
+    { "(int[3]) { (a, b), c, a = 4 }", "(int[3]) { (a, b), c, a = 4 }" },
+    { "(int[2, 2]) { [i, j] = i + j }", "(int[2, 2]) { [i, j] = i + j }" },
+    { "(int[int]) { (a, b) => (b, c) }", "(int[int]) { (a, b) => (b, c) }" },
 };
 
 for (int i = 0; i < dim (cases); i++) {
@@ -90,9 +94,11 @@ void function statements ()
     int x = 7;
     x //= 3;
     thread t = fork x + 1;
+    int y = (x, 3);
 }
 file f = File::string_write ();
 Command::pretty_print (f, (string[*]) { "statements" });
 string printed = File::string_string (f);
 check ("//=", String::index (printed, "x //= 3;") >= 0, true);
 check ("fork", String::index (printed, "thread t = fork x + 1;") >= 0, true);
+check ("declaration", String::index (printed, "int y = (x, 3);") >= 0, true);

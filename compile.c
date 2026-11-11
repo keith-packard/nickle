@@ -1860,14 +1860,14 @@ CompileStructUnionInit(ObjPtr obj, ExprPtr expr, Type *type, ExprPtr stat, CodeP
          * Implicitly initialize any remaining elements
          */
         for (i = 0; i < structs->nelements; i++) {
-            TypePtr type = TypeCanon(types[i]);
+            TypePtr elt_type = TypeCanon(types[i]);
 
             if (!inits || !CompileStructInitElementIncluded(inits, atoms[i])) {
-                ExprPtr init = CompileImplicitInit(type);
+                ExprPtr implicit = CompileImplicitInit(elt_type);
 
-                if (init) {
+                if (implicit) {
                     SetPush(obj);
-                    obj = CompileInit(obj, init, type, stat, code);
+                    obj = CompileInit(obj, implicit, elt_type, stat, code);
                     BuildInst(obj, OpInitStruct, inst, stat);
                     inst->atom.atom = atoms[i];
                 }
@@ -3195,7 +3195,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 
         /* glue b into place */
         if (bobj) {
-            ptrdiff_t middle_inst = obj->used;
+            middle_inst = obj->used;
             obj = AppendObj(obj, bobj);
             CompileMoveObj(obj, middle_inst, 0, middle_inst);
             if (obj->used == middle_inst + 1

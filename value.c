@@ -544,14 +544,16 @@ Factorial(Value av)
     REFERENCE(i);
     iref = STACK_TOP(MemStack);
     for (;;) {
-        ENTER();
+        /* Free each step's temporaries before the next */
+        StackPointer step = STACK_TOP(MemStack);
+
         if (aborting || False(Less(i, av))) {
-            EXIT();
+            STACK_RESET(MemStack, step);
             break;
         }
         i = Plus(i, One);
         tv = Times(i, tv);
-        EXIT();
+        STACK_RESET(MemStack, step);
         *iref = i;
         *tvref = tv;
     }
@@ -841,14 +843,14 @@ CopyMutable(Value v)
         for (i = 0; i < v->array.ndim; i++)
             ArrayLimits(&nv->array)[i] = ArrayLimits(&v->array)[i];
         if (v->array.resizable) {
-            BoxPtr   *o, *n;
+            BoxPtr   *ob, *nb;
             ptrdiff_t l = ArrayNvalues(&v->array);
-            o = BoxVectorBoxes(v->array.u.resize);
-            n = BoxVectorBoxes(nv->array.u.resize);
+            ob = BoxVectorBoxes(v->array.u.resize);
+            nb = BoxVectorBoxes(nv->array.u.resize);
             for (i = 0; i < l; i++) {
-                BoxValueSet(*n, 0, Copy(BoxValueGet(*o, 0)));
-                n++;
-                o++;
+                BoxValueSet(*nb, 0, Copy(BoxValueGet(*ob, 0)));
+                nb++;
+                ob++;
             }
             RETURN(nv);
         } else {

@@ -735,18 +735,18 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
      * Check for small numbers for 'e' format
      */
     if (NaturalLess(r->num, r->den) && !NaturalZero(r->num)) {
-        Natural  *quo, *rem;
+        Natural  *ratio, *rem;
         Natural  *mag;
         ptrdiff_t bits;
 
         if (format == 'e' || (format == 'g' && prec > 0)) {
-            quo = NaturalDivide(r->den, r->num, &rem);
-            bits = NaturalWidth(quo);
+            ratio = NaturalDivide(r->den, r->num, &rem);
+            bits = NaturalWidth(ratio);
             exponent = (int)((double)bits / (log((double)base) / log(2.0)));
             if (exponent < 0)
                 exponent = 0;
             mag = NaturalIntPow(dig, exponent);
-            while (NaturalLess(mag, quo)) {
+            while (NaturalLess(mag, ratio)) {
                 mag = NaturalTimes(mag, dig);
                 exponent++;
             }

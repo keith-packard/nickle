@@ -242,7 +242,7 @@ static Bool
 IntPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
     int       a = ValueInt(av);
-    int       digit;
+    int       dig;
     ptrdiff_t w;
     ptrdiff_t fraction_width;
     char      space[64], *s;
@@ -279,12 +279,12 @@ IntPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint
             *--s = '0';
         else {
             while (a) {
-                digit = a % base;
-                if (digit <= 9)
-                    digit = '0' + digit;
+                dig = a % base;
+                if (dig <= 9)
+                    dig = '0' + dig;
                 else
-                    digit = letter + digit - 10;
-                *--s = (char)digit;
+                    dig = letter + dig - 10;
+                *--s = (char)dig;
                 a /= base;
             }
             if (neg)

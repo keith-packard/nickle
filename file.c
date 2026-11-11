@@ -1228,7 +1228,7 @@ FilePutsc(Value file, const char *s, ptrdiff_t length)
 void
 FilePutDoubleDigitBase(Value file, double_digit a, int base)
 {
-    int  digit;
+    int  dig;
     char space[64], *s;
 
     s = space + sizeof(space);
@@ -1237,12 +1237,12 @@ FilePutDoubleDigitBase(Value file, double_digit a, int base)
         *--s = '0';
     else {
         while (a) {
-            digit = (int)(a % (double_digit)base);
-            if (digit <= 9)
-                digit = '0' + digit;
+            dig = (int)(a % (double_digit)base);
+            if (dig <= 9)
+                dig = '0' + dig;
             else
-                digit = 'a' + digit - 10;
-            *--s = (char)digit;
+                dig = 'a' + dig - 10;
+            *--s = (char)dig;
             a /= (double_digit)base;
         }
     }

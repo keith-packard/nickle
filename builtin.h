@@ -42,14 +42,14 @@ struct sbuiltin {
     NamespacePtr *namespace;
 };
 
-#define BuiltinStrings(s)                                                       \
-    do {                                                                        \
-        SymbolPtr              sym;                                             \
-        const struct sbuiltin *si;                                              \
-        for (si = (s); si->name; si++) {                                        \
-            sym = BuiltinSymbol(si->namespace, si->name, typePrim[rep_string]); \
-            BoxValueSet(sym->global.value, 0, NewStrString(si->value));         \
-        }                                                                       \
+#define BuiltinStrings(s)                                                               \
+    do {                                                                                \
+        SymbolPtr              builtin_sym;                                             \
+        const struct sbuiltin *si;                                                      \
+        for (si = (s); si->name; si++) {                                                \
+            builtin_sym = BuiltinSymbol(si->namespace, si->name, typePrim[rep_string]); \
+            BoxValueSet(builtin_sym->global.value, 0, NewStrString(si->value));         \
+        }                                                                               \
     } while (0)
 
 struct envbuiltin {
@@ -67,14 +67,14 @@ struct ibuiltin {
     NamespacePtr *namespace;
 };
 
-#define BuiltinIntegers(s)                                                       \
-    do {                                                                         \
-        SymbolPtr              sym;                                              \
-        const struct ibuiltin *ii;                                               \
-        for (ii = (s); ii->name; ii++) {                                         \
-            sym = BuiltinSymbol(ii->namespace, ii->name, typePrim[rep_integer]); \
-            BoxValueSet(sym->global.value, 0, Reduce(NewIntInteger(ii->value))); \
-        }                                                                        \
+#define BuiltinIntegers(s)                                                               \
+    do {                                                                                 \
+        SymbolPtr              builtin_sym;                                              \
+        const struct ibuiltin *ii;                                                       \
+        for (ii = (s); ii->name; ii++) {                                                 \
+            builtin_sym = BuiltinSymbol(ii->namespace, ii->name, typePrim[rep_integer]); \
+            BoxValueSet(builtin_sym->global.value, 0, Reduce(NewIntInteger(ii->value))); \
+        }                                                                                \
     } while (0)
 
 struct filebuiltin {

@@ -645,7 +645,7 @@ Value        NewThread(FramePtr frame, ObjPtr code);
 void         ThreadSleep(Value thread, Value sleep, int priority);
 void         ThreadStepped(Value thread);
 void         ThreadsWakeup(Value sleep, WakeKind wake);
-void         ThreadsRun(Value thread, Value lex);
+void         ThreadsRun(Value until, Value lex);
 void         ThreadsInterrupt(void);
 void         ThreadsSignal(Value signal);
 void         ThreadsContinue(void);

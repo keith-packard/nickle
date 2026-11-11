@@ -24,7 +24,7 @@ do_Foreign_load(Value av)
     ENTER();
     char *name = StrzPart(av, "invalid foreign module name");
     void *lib;
-    Value (*init)(void);
+    Value (*module_init)(void);
     Value ret;
 
     if (!name)
@@ -43,8 +43,8 @@ do_Foreign_load(Value av)
         RETURN(Void);
     }
 
-    init = (Value (*)(void))dlsym(lib, "nickle_init");
-    if (!init) {
+    module_init = (Value (*)(void))dlsym(lib, "nickle_init");
+    if (!module_init) {
         char *err = 0;
 #ifdef HAVE_DLERROR
         err = dlerror();
@@ -57,7 +57,7 @@ do_Foreign_load(Value av)
 #endif
         RETURN(Void);
     }
-    ret = (*init)();
+    ret = (*module_init)();
     RETURN(ret);
 }
 #endif

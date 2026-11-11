@@ -1001,7 +1001,7 @@ ExecRecord(Value thread)
 #endif
 
 void
-ThreadsRun(Value thread, Value lex)
+ThreadsRun(Value until, Value lex)
 {
     signalInterrupt = False;
     for (;;) {
@@ -1029,7 +1029,7 @@ ThreadsRun(Value thread, Value lex)
             }
             if (lex && !(lex->file.flags & (FileInputBlocked | FileOutputBlocked)))
                 break;
-        } else if (thread && thread->thread.state == ThreadFinished)
+        } else if (until && until->thread.state == ThreadFinished)
             break;
         else if (!running) {
             /* when all threads are done, and all input is read, time to go */

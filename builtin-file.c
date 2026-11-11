@@ -571,9 +571,12 @@ do_File_putb(Value v, Value f)
 
     if (f->file.flags & FileOutputBlocked)
         ThreadSleep(running, f, PriorityIo);
-    else {
+    else if (!aborting) {
+        int b = IntPart(v, "putb non integer");
+
+        /* Write nothing for a rejected byte */
         if (!aborting) {
-            if (FileOutput(f, IntPart(v, "putb non integer")) == FileError) {
+            if (FileOutput(f, b) == FileError) {
                 RaiseStandardException(exception_io_error, 3,
                                        FileGetErrorMessage(f->file.output_errno),
                                        FileGetError(f->file.output_errno), f);
@@ -591,9 +594,12 @@ do_File_putc(Value v, Value f)
 
     if (f->file.flags & FileOutputBlocked)
         ThreadSleep(running, f, PriorityIo);
-    else {
+    else if (!aborting) {
+        uint32_t c = CharPart(v, "putc: not a character");
+
+        /* Write nothing for a rejected character */
         if (!aborting) {
-            if (FileOutchar(f, CharPart(v, "putc: not a character")) == FileError) {
+            if (FileOutchar(f, c) == FileError) {
                 RaiseStandardException(exception_io_error, 3,
                                        FileGetErrorMessage(f->file.output_errno),
                                        FileGetError(f->file.output_errno), f);
@@ -610,8 +616,13 @@ do_File_ungetb(Value v, Value f)
     ENTER();
 
     if (!aborting) {
-        complete = True;
-        FileUnput(f, IntPart(v, "ungetb: non integer"));
+        int b = IntPart(v, "ungetb: non integer");
+
+        /* Push back nothing for a rejected byte */
+        if (!aborting) {
+            FileUnput(f, b);
+            complete = True;
+        }
     }
     RETURN(v);
 }
@@ -625,8 +636,13 @@ do_File_ungetc(Value v, Value f)
         ThreadSleep(running, f, PriorityIo);
     else {
         if (!aborting) {
-            complete = True;
-            FileUnchar(f, CharPart(v, "ungetc: not a character"));
+            uint32_t c = CharPart(v, "ungetc: not a character");
+
+            /* Push back nothing for a rejected character */
+            if (!aborting) {
+                FileUnchar(f, c);
+                complete = True;
+            }
         }
     }
     RETURN(v);

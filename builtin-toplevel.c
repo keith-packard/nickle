@@ -920,6 +920,10 @@ do_make_uninit(Value av)
     if (!av) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("do_make_uninit: invalid reference"), NewInt(0), av);
+    } else if (RefConstant(av)) {
+        /* Assignment refuses const storage, so uninitializing it must too */
+        RaiseStandardException(exception_readonly_box, 2,
+                               NewStrString("make_uninit: const storage"), av);
     } else {
         RefValueSet(av, 0);
     }

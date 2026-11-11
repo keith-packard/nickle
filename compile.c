@@ -81,6 +81,7 @@ NewObj(ptrdiff_t size, ptrdiff_t size_stat)
     obj->size_stat = size_stat;
     obj->used_stat = 0;
     obj->error = False;
+    obj->profiled = False;
     obj->nonLocal = 0;
     obj->ticks = 0;
     obj->sub_ticks = 0;

@@ -47,7 +47,7 @@ ProfileInterrupt(Value thread)
             stat->base.line = -stat->base.line - 1;
         }
         obj->ticks += ticks;
-        obj->error += 100;
+        obj->profiled = True;
     }
     for (frame = thread->thread.continuation.frame; frame; frame = frame->previous) {
         ObjPtr obj = frame->saveObj;
@@ -56,9 +56,9 @@ ProfileInterrupt(Value thread)
             stat->base.sub_ticks += ticks;
             stat->base.line = -stat->base.line - 1;
         }
-        if (obj->error < 100) {
+        if (!obj->profiled) {
             obj->sub_ticks += ticks;
-            obj->error += 100;
+            obj->profiled = True;
         }
     }
     for (frame = thread->thread.continuation.frame; frame; frame = frame->previous) {
@@ -66,8 +66,7 @@ ProfileInterrupt(Value thread)
         stat = ObjStatement(obj, frame->savePc);
         if (stat)
             stat->base.line = -stat->base.line + 1;
-        if (obj->error >= 100)
-            obj->error -= 100;
+        obj->profiled = False;
     }
     pc = thread->thread.continuation.pc;
     if (pc) {
@@ -75,8 +74,7 @@ ProfileInterrupt(Value thread)
         stat = ObjStatement(obj, pc);
         if (stat)
             stat->base.line = -stat->base.line + 1;
-        if (obj->error >= 100)
-            obj->error -= 100;
+        obj->profiled = False;
     }
 }
 

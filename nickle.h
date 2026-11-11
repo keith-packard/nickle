@@ -611,6 +611,7 @@ typedef struct _obj {
     double_digit ticks;
     double_digit sub_ticks;
     Bool         error;
+    Bool         profiled; /* counted in the current profile sample */
     NonLocal    *nonLocal;
     Inst         insts[0];
 } Obj;

@@ -757,12 +757,17 @@ FileReopen(char *name, char *mode, Value file, int *errp)
         *errp = errno;
         RETURN(0);
     }
+    /* Pending output belongs to the old file */
+    FileFlush(file, True);
     if (dup2(fd, file->file.fd) < 0) {
         *errp = errno;
         close(fd);
         RETURN(0);
     }
     close(fd);
+    /* Input buffered from the old file doesn't belong to the new one */
+    FileChainFree(file->file.input);
+    file->file.input = 0;
     /* The file now has the new mode, and no end or errors yet */
     file->file.flags &= ~(FileReadable | FileWritable | FileEnd | FileInputError | FileOutputError);
     file->file.flags |= flags;

@@ -54,3 +54,10 @@ thread t = fork sleep (1000);
 sleep (10);
 Thread::kill (t);
 check ("killed", Thread::join (t), <>);
+
+/* setdim and setdims name the argument at fault */
+int[3] fixed;
+bad_argument ("setdims fixed", 0, void func () { setdims (fixed, (int[*]) { 2 }); });
+bad_argument ("setdim fixed", 0, void func () { setdim (fixed, 2); });
+int[...] grow = {};
+bad_argument ("setdim negative", 1, void func () { setdim (grow, -1); });

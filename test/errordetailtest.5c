@@ -40,3 +40,27 @@ try {
 } catch File::io_error (string m, File::error_type e, file g) {
     check ("closed", e, File::error_type.BADF);
 }
+
+/*
+ * invalid_argument raised by the interpreter itself, not a builtin,
+ * passed a value where the argument position belongs, so handlers
+ * typed as the exception declares couldn't catch it
+ */
+void function typed (string what, poly want, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, int i, poly v) {
+	check (what + " position", i, 0);
+	check (what + " value", v, want);
+    }
+}
+
+poly one = 1;
+typed ("condition", 1, void func () { if (one) ; });
+int function returns (poly x) { return x; }
+typed ("return", 0.5, void func () { returns (0.5); });
+poly minus = -1;
+int[3] arr;
+typed ("index", -1, void func () { arr[minus] = 1; });

@@ -452,9 +452,9 @@ do_Socket_listen(Value s, Value backlog)
     if (aborting)
         RETURN(Void);
 
-    if (listen(s->file.fd, ibacklog) == -1) {
-        RETURN(Void); /* FIXME: more here? */
-    }
+    if (listen(s->file.fd, ibacklog) == -1)
+        RaiseStandardException(exception_io_error, 3, FileGetErrorMessage(errno),
+                               FileGetError(errno), s);
 
     RETURN(Void);
 }
@@ -502,9 +502,9 @@ do_Socket_shutdown(Value s, Value how)
     if (aborting)
         RETURN(Void);
 
-    if (shutdown(s->file.fd, ihow) == -1) {
-        RETURN(Void); /* FIXME: more here? */
-    }
+    if (shutdown(s->file.fd, ihow) == -1)
+        RaiseStandardException(exception_io_error, 3, FileGetErrorMessage(errno),
+                               FileGetError(errno), s);
 
     RETURN(Void);
 }

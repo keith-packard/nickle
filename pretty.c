@@ -130,23 +130,128 @@ tokenToPrecedence(int token)
         return 12;
     case POW:
         return 13;
+    /* The grammar puts every prefix and postfix unary operator on one level */
     case UMINUS:
     case BANG:
     case FACT:
     case LNOT:
-        return 14;
     case INC:
     case DEC:
-        return 15;
     case STAR:
     case AMPER:
-        return 16;
+        return 14;
     case OS:
     case CS:
+    case OP:
+    case DOT:
+    case ARROW:
         return 17;
     default:
         return 18;
     }
+}
+
+/*
+ * Whether operands of the same precedence group to the right, so that
+ * a op b op c means a op (b op c)
+ */
+static Bool
+tokenRightAssoc(int token)
+{
+    switch (token) {
+    case COMMA:
+    case ASSIGN:
+    case ASSIGNPLUS:
+    case ASSIGNMINUS:
+    case ASSIGNTIMES:
+    case ASSIGNDIVIDE:
+    case ASSIGNMOD:
+    case ASSIGNDIV:
+    case ASSIGNPOW:
+    case ASSIGNSHIFTL:
+    case ASSIGNSHIFTR:
+    case ASSIGNLXOR:
+    case ASSIGNLAND:
+    case ASSIGNLOR:
+    case ASSIGNAND:
+    case ASSIGNOR:
+    case QUEST:
+    case COLON:
+    case POW:
+        return True;
+    default:
+        return False;
+    }
+}
+
+/*
+ * Whether 'e' prints starting with a prefix operator, including a
+ * negative constant's sign. A postfix operator binds more loosely than
+ * these, so it needs parentheses around them, and a prefix minus needs
+ * a space before one starting with '-'
+ */
+static Bool
+PrettyPrefixed(Expr *e)
+{
+    switch (e->base.tag) {
+    case UMINUS:
+    case BANG:
+    case LNOT:
+    case STAR:
+    case AMPER:
+        return True;
+    case INC:
+    case DEC:
+        return e->tree.left != 0;
+    case TEN_NUM:
+    case TEN_FLOAT:
+    case OCTAL_NUM:
+    case OCTAL0_NUM:
+    case OCTAL_FLOAT:
+    case OCTAL0_FLOAT:
+    case BINARY_NUM:
+    case BINARY_FLOAT:
+    case HEX_NUM:
+    case HEX_FLOAT:
+        return Numericp(ValueTag(e->constant.constant)) && Negativep(e->constant.constant);
+    default:
+        return False;
+    }
+}
+
+/* Whether 'e' prints starting with '-' */
+static Bool
+PrettyMinus(Expr *e)
+{
+    switch (e->base.tag) {
+    case UMINUS:
+        return True;
+    case DEC:
+        return e->tree.left != 0;
+    case BANG:
+    case LNOT:
+    case STAR:
+    case AMPER:
+    case INC:
+        return False;
+    default:
+        return PrettyPrefixed(e);
+    }
+}
+
+/*
+ * Print the operand of postfix '!', '++', or '--', which binds more
+ * loosely than a prefix operator: (-a)! isn't -a!
+ */
+static void
+PrettyPostfixOperand(Value f, Expr *e, int selfPrec, int level, Bool nest)
+{
+    if (PrettyPrefixed(e)) {
+        FilePuts(f, "(");
+        PrettyExpr(f, e, selfPrec, level, nest);
+        FilePuts(f, ")");
+    } else
+        PrettyExpr(f, e, selfPrec, level, nest);
 }
 
 static void
@@ -317,7 +422,7 @@ PrettyDecl(Value f, Expr *e, int level, Bool nest)
 void
 PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
 {
-    int selfPrec;
+    int selfPrec, leftPrec, rightPrec;
 
     if (!e)
         return;
@@ -459,7 +564,17 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
     case ASSIGNAND:
     case ASSIGNOR:
     case COMMA:
-        PrettyExpr(f, e->tree.left, selfPrec, level, nest);
+        /*
+         * Parenthesize an operand of the same precedence only on the
+         * side the operator doesn't group toward: a - (b - c), but
+         * a - b - c, and (a ** b) ** c, but a ** b ** c
+         */
+        leftPrec = rightPrec = selfPrec;
+        if (tokenRightAssoc(e->base.tag))
+            leftPrec++;
+        else
+            rightPrec++;
+        PrettyExpr(f, e->tree.left, leftPrec, level, nest);
         switch (e->base.tag) {
         case PLUS:
             FilePuts(f, " + ");
@@ -570,10 +685,10 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
             FilePuts(f, ", ");
             break;
         }
-        PrettyExpr(f, e->tree.right, selfPrec, level, nest);
+        PrettyExpr(f, e->tree.right, rightPrec, level, nest);
         break;
     case FACT:
-        PrettyExpr(f, e->tree.right, selfPrec, level, nest);
+        PrettyPostfixOperand(f, e->tree.right, selfPrec, level, nest);
         FilePuts(f, "!");
         break;
     case LNOT:
@@ -582,7 +697,7 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
     case INC:
     case DEC:
         if (e->tree.right)
-            PrettyExpr(f, e->tree.right, selfPrec, level, nest);
+            PrettyPostfixOperand(f, e->tree.right, selfPrec, level, nest);
         switch (e->base.tag) {
         case LNOT:
             FilePuts(f, "~");
@@ -600,8 +715,12 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
             FilePuts(f, "--");
             break;
         }
-        if (e->tree.left)
+        if (e->tree.left) {
+            /* Keep - -a and - --a from reading as -- and --- */
+            if ((e->base.tag == UMINUS || e->base.tag == DEC) && PrettyMinus(e->tree.left))
+                FilePuts(f, " ");
             PrettyExpr(f, e->tree.left, selfPrec, level, nest);
+        }
         break;
     case STAR:
         FilePuts(f, "*");
@@ -627,7 +746,8 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
         FilePuts(f, AtomName(e->tree.right->atom.atom));
         break;
     case QUEST:
-        PrettyExpr(f, e->tree.left, selfPrec, level, nest);
+        /* ?: groups to the right, so a condition of the same precedence needs parentheses */
+        PrettyExpr(f, e->tree.left, selfPrec + 1, level, nest);
         FilePuts(f, " ? ");
         PrettyExpr(f, e->tree.right->tree.left, selfPrec, level, nest);
         FilePuts(f, " : ");

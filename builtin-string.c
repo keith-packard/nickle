@@ -117,7 +117,8 @@ do_String_index(Value av, Value bv)
     a = StringChars(&av->string);
     al = av->string.length;
     b = StringChars(&bv->string);
-    p = strstr(a, b);
+    /* Strings may hold NUL, so compare lengths rather than C strings */
+    p = memmem(a, (size_t)al, b, (size_t)bv->string.length);
     if (!p)
         RETURN(NewInt(-1));
     i = 0;

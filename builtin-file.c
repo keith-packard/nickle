@@ -539,7 +539,9 @@ do_File_end(Value f)
         if (b == Void)
             RETURN(Void);
 
-        do_File_ungetb(b, f);
+        /* getb returns -1 at the end, which isn't a byte to push back */
+        if (ValueInt(b) != FileEOF)
+            do_File_ungetb(b, f);
         if (f->file.flags & FileEnd)
             RETURN(TrueVal);
         RETURN(FalseVal);

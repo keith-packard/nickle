@@ -18,3 +18,13 @@ file f = File::string_write();
 File::fprintf(f, "hello, world");
 check("hello, world", File::string_string(f));
 
+
+/* Output spanning many buffer chunks comes back in order */
+string want = "";
+f = File::string_write();
+for (int i = 0; i < 5000; i++) {
+    string line = sprintf("%d\n", i);
+    File::fprintf(f, "%s", line);
+    want += line;
+}
+check(want, File::string_string(f));

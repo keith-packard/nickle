@@ -236,9 +236,9 @@ address_lookup_af_unix(ptrdiff_t num, Value *args, struct sockaddr_un *addr, soc
     if (strlen(local_socket) > UN_SOCK_MAX)
         return False;
 
-    addr->sun_family = s->file.sock_family;
+    addr->sun_family = (sa_family_t)s->file.sock_family;
     strcpy(addr->sun_path, local_socket);
-    *len = SUN_LEN(addr);
+    *len = (socklen_t)SUN_LEN(addr);
 
     return True;
 }
@@ -280,7 +280,8 @@ address_lookup_af_inet(ptrdiff_t num, Value *args, struct sockaddr_in *addr, soc
             portent = getservbyname(portchars, "tcp");
             if (portent == 0)
                 return False; /* FIXME: more here? */
-            addr->sin_port = portent->s_port;
+            /* s_port holds the port in network byte order */
+            portnum = ntohs((uint16_t)portent->s_port);
         }
         if (portnum <= 0 || portnum >= (1 << 16))
             return False; /* FIXME: more here? */
@@ -290,8 +291,8 @@ address_lookup_af_inet(ptrdiff_t num, Value *args, struct sockaddr_in *addr, soc
             return False; /* FIXME: more here? */
     }
 
-    addr->sin_family = s->file.sock_family;
-    addr->sin_port = htons(portnum);
+    addr->sin_family = (sa_family_t)s->file.sock_family;
+    addr->sin_port = htons((uint16_t)portnum);
 
     /* host lookup */
     hostent = gethostbyname(hostchars);

@@ -667,19 +667,17 @@ functions have associated builtin datatypes: their namespaces,
 together with their types, should be viewed as ADTs.
 .LP
 .B "Top-Level Builtins:"
-.IP "int printf(string fmt, poly args...)"
-Calls File::fprintf(stdout, fmt, args ...) and
-returns its result.
+.IP "void printf(string fmt, poly args...)"
+Calls File::fprintf(stdout, fmt, args ...).
 .IP "string function gets ()"
 Calls File::fgets(stdin) and returns its result.
-.IP "string function scanf (string fmt, *poly args...)"
-Calls File::vfscanf(stdin, fmt, args) and returns its result.
-.IP "string function vscanf (string fmt, (*poly)[*] args)"
-Calls File::vfscanf(stdin, fmt, args) and returns its result.
+.IP "int function scanf (string fmt, *poly args...)"
+Calls File::fscanf(stdin, fmt, args ...) and returns its result.
 .IP "real imprecise(rational value)"
 See the discussion of type real above.
 .IP "real imprecise(rational value, int prec)"
 See the discussion of type real above.
+Given a complex value, imprecise converts both its parts.
 .IP "int string_to_integer(string s)"
 .IP "int atoi(string s)"
 The argument s is a signed digit string, and
@@ -693,18 +691,17 @@ Treat s as a string of digits in the given base,
 from 2 to 36.
 A base of 0 acts as with no base argument.
 Otherwise, base specification syntax in the string is ignored.
-.IP "int putchar(int c)"
+.IP "void putchar(int c)"
 Place the given character on the standard output
-using File::putc(c, stdout), and return its result.
-.IP "int sleep(int msecs)"
+using File::putc(c, stdout).
+.IP "void sleep(int msecs)"
 Try to suspend the current thread for at least msecs milliseconds.
-Return 1 on early return, and 0 otherwise.
-.IP "int exit(int status)"
-Exit Nickle with the given status code.  Do not return anything.
+.IP "void exit(int status)"
+Exit Nickle with the given status code.
 .IP "int dim(poly[*] a)"
 Given a one-dimensional array a, dim() returns the number
 of elements of a.
-.IP "int[] dims(poly[] a)
+.IP "int[*] dims(poly[] a)"
 Given an arbitrary array a, dims() returns an array
 of integers giving the size of each dimension of a.
 Thus, dim(dims(a)) is the number of dimensions
@@ -713,11 +710,13 @@ of a.
 Given an arbitrary value v, ``box'' that value
 into storage and return a pointer to
 the box.
-.IP "rational string_to_real(string s)"
-.IP "rational atof(string s)"
+.IP "real string_to_real(string s)"
+.IP "real atof(string s)"
 Convert the real constant string s into
 its associated real number.
-.IP "number abs(real v)"
+Leading white space is skipped, and characters after the number are
+ignored.
+.IP "real abs(real v)"
 Return the absolute value of v.  The result type chosen
 will match the given context.
 .IP "int floor(real v)"
@@ -746,44 +745,46 @@ return d.
 .IP "int precision(real v)"
 Return the number of bits of precision
 of the mantissa of the imprecise real number v.
+Given a complex value, precision reports the larger of its parts'
+precisions; an exact value has precision 0.
 .IP "int sign(real v)"
-Return -1 or 1 as v is negative
-or nonnegative.
+Return -1, 0, or 1 as v is negative, zero,
+or positive.
 .IP "int bit_width(int v)"
 Return the number of bits required to represent abs(v)
 internally.
-.IP "int is_int(poly v)"
+.IP "bool is_int(poly v)"
 Type predicate.
-.IP "int is_rational(poly v)"
+.IP "bool is_rational(poly v)"
 Numeric type predicates are inclusive: e.g., is_rational(1)
-returns 1.
-.IP "int is_number(poly v)"
+returns true.
+.IP "bool is_number(poly v)"
 Type predicate.
-.IP "int is_string(poly v)"
+.IP "bool is_string(poly v)"
 Type predicate.
-.IP "int is_file(poly v)"
+.IP "bool is_file(poly v)"
 Type predicate.
-.IP "int is_thread(poly v)"
+.IP "bool is_thread(poly v)"
 Type predicate.
-.IP "int is_semaphore(poly v)"
+.IP "bool is_semaphore(poly v)"
 Type predicate.
-.IP "int is_continuation(poly v)"
+.IP "bool is_continuation(poly v)"
 Type predicate.
-.IP "int is_array(poly v)"
+.IP "bool is_array(poly v)"
 Type predicate.
-.IP "int is_ref(poly v)"
+.IP "bool is_ref(poly v)"
 Type predicate: checks for pointer type.  This
 is arguably a misfeature, and may change.
-.IP "int is_struct(poly v)"
+.IP "bool is_struct(poly v)"
 Type predicate.
-.IP "int is_func(poly v)"
+.IP "bool is_func(poly v)"
 Type predicate.
-.IP "int is_void(poly v)"
+.IP "bool is_void(poly v)"
 Type predicate.
 .IP "int gcd(int p, int q)"
 Return the GCD of p and q.  The result is always non-negative:
 gcd(p, 0) is the absolute value of p, and gcd(0, 0) is 0.
-.IP "poly setjmp(continuation *c, poly retval)"
+.IP "poly setjmp(&continuation c, poly retval)"
 The setjmp() and longjmp() primitives together with the continuation type
 form an ADT useful for nearly arbitrary transfers of
 flow-of-control.  The setjmp() and longjmp() builtins
@@ -793,7 +794,7 @@ a continuation saved via setjmp() never becomes invalid
 during the program lifetime.
 .IP
 The setjmp() builtin saves the current location and
-context into its continuation pointer argument, and
+context into its continuation reference argument, and
 then returns its second argument.
 .IP "void longjmp(continuation c, poly retval)"
 The longjmp() builtin
@@ -803,9 +804,6 @@ return value equal to the second argument of longjmp().
 .IP "string prompt"
 The prompt printed during interactive use when
 at top-level.  Default "> ".
-when waiting for the rest of a statement
-or expression, and when debugging, respectively.
-Default values are "> ", "+ ", and "- ".
 .IP "string prompt2"
 The prompt printed during interactive use when
 waiting for the rest of a statement or expression.
@@ -821,7 +819,7 @@ The version number of the Nickle implementation currently
 being executed.
 .IP "string build"
 The build date of the Nickle implementation currently
-being executed, in the form "yyyy/mm/dd", or "?" if
+being executed, in the form "yyyy-mm-dd", or "?" if
 the build date is unknown for some reason.
 .IP "file stdin"
 Bound to the standard input stream.
@@ -858,6 +856,11 @@ Attempt to evaluate a unary operator with invalid argument arg.
 A result is too large to represent, such as an integer with more
 than about 2**59 bits on 64-bit systems.  Results that can be
 represented but don't fit in memory make Nickle exit instead.
+.PP
+Other standard exceptions belong to namespaces:
+File::open_error, File::io_error, File::name_error, and File::io_eof
+are described with the File namespace, PID::system_error with the PID
+namespace, and Thread::signal with the Thread namespace.
 .LP
 .B "Builtin Namespaces:"
 .IP Math
@@ -930,15 +933,16 @@ Returns a such that sin(a) == v.
 Returns a such that cos(a) == v.
 .IP "real function atan(real v)"
 Returns a such that tan(a) == v.
-.IP "real function atan2(real x, y)"
-Returns a such that tan(a) == x / y.
-Deals correctly with y == 0.
+.IP "real function atan2(real y, real x)"
+Returns the angle a of the point (x, y), so that tan(a) == y / x,
+in the range -pi..pi.
+Deals correctly with x == 0.
 .IP "real function pow(real a, real b)"
 The implementation of the ** operator.
 .PP
 .IP File
 The namespace File provides operations on file values.
-.IP "int function fprintf(file f, string s, ....)"
+.IP "void function fprintf(file f, string s, ....)"
 Print formatted values to a file, as with
 UNIX stdio library fprintf().
 fprintf() and printf() accept a reasonable sub-set of the stdio
@@ -951,8 +955,8 @@ input and output formatting.
 .LP
 .B "Format Letters:"
 .IP "%c"
-Requires a small integer argument (0..255), and formats as
-an ASCII character.
+Requires a character (code point) argument, and formats it
+as UTF-8.
 .IP "%d"
 Requires an integer argument, and formats as an integer.
 .IP "%x"
@@ -996,20 +1000,20 @@ the field width or precision of the formatted value.
 .IP "file function string_write()"
 Return a file which collects written values
 into a string.
-.IP "int function close(file f)"
-Close file f and return an indication of success.
-.IP "int function flush(file f)"
-Flush the buffers of file f and return an indication of success.
+.IP "void function close(file f)"
+Close file f.  Raises io_error if pending output can't be written.
+.IP "void function flush(file f)"
+Flush the buffers of file f.  Raises io_error on failure.
 .IP "int function getc(file f)"
 Get the next character from file f and return it.
-.IP "int function end(file f)"
+Raises io_eof at the end of the file.
+.IP "bool function end(file f)"
 Returns true if file f is at EOF, else false.
-.IP "int function error(file f)"
+.IP "bool function error(file f)"
 Returns true if an error is pending on file f,
 else false.
-.IP "int function clear_error(file f)"
-Clears pending errors on file f, and
-returns an indication of success.
+.IP "void function clear_error(file f)"
+Clears pending errors on file f.
 .IP "file function string_read(string s)"
 Returns a virtual file whose contents are the
 string s.
@@ -1024,26 +1028,30 @@ mode string, ala UNIX stdio fopen().  Permissible
 modes are as in stdio: "r", "w", "a", "r+", "w+"
 and "a+".
 Other modes raise open_error with the INVAL error.
-.IP "integer function fputc(integer c, file f)"
-Output the character c to the output file f, and return
-an indication of success.
-.IP "integer function ungetc(integer c, file f)"
-Push the character c back onto the input file f, and return
-an indication of success.
-.IP "integer function setbuf(file f, integer n)"
-Set the size of the buffer associated with file f to
-n, and return n.
+.IP "int function putc(int c, file f)"
+Output the character c to the output file f in UTF-8, and return c.
+.IP "int function ungetc(int c, file f)"
+Push the character c back onto the input file f, and return c.
+.IP "int function setbuffer(file f, int mode)"
+Set the buffering of file f to mode: 0 for block buffering,
+1 for line buffering, and 2 for no buffering.  Return mode.
 .IP "string function fgets (file f)"
 Get a line of input from file f, and return the
 resulting string.
-.IP "file function pipe(string path, string[*] argv, string mode)"
-Start up the program at the given path, returning a file
-which is one end of a "pipe" to the given process. The
-mode argument can be "r" to read from the pipe or
-"w" to write to the pipe.  The argv argument is an array
+.IP "int function filter(string path, string[*] argv, file[3] files)"
+Start the program at the given path, searching PATH as execvp()
+does, with files[0], files[1], and files[2] as its standard
+input, output, and error, and return its process id.
+The argv argument is an array
 of strings giving the arguments to be passed to the program,
 with argv[0] conventionally being the program name.
-.IP "int function print (file f, poly v, string fmt, int base, int width, int prec, string fill)"
+The files must be open system files, not string files.
+Raises open_error if the program can't be run.
+.IP "int function mkchild(string path, string[*] argv, childfd fds...)"
+Like filter(), but each of the optional fds arguments,
+input(f), output(f), or error(f), names the file for one of the
+standard streams; the rest are connected to /dev/null.
+.IP "void function print (file f, poly v, string fmt, int base, int width, int prec, string fill)"
 Print value v to file f in format fmt with the given base, width,
 prec, and fill.  Used internally by File::fprintf();
 .IP "int function fscanf(file f, string fmt, *poly args...)"
@@ -1051,10 +1059,7 @@ Fill the locations pointed to by the array args with values
 taken from file f according to string fmt.  The format specifiers
 are much as in UNIX stdio scanf(): the "%d", "%e", "%f",
 "%c" and "%s" specifiers are supported with the expected
-modifiers.
-.IP "int function vfscanf (file f, string fmt, (*poly)[*] args)"
-Given the file f, the format fmt, and the array of arguments args,
-fscanf() appropriately.
+modifiers.  Returns the number of values stored.
 .PP
 .IP Thread
 The namespace Thread supports various operations
@@ -1114,18 +1119,19 @@ negative, it sets a count of threads which must be
 waiting on the semaphore before further waits will
 not block.
 .IP "semaphore function new()"
-Call semaphore(0) and return its result.
-.IP "int signal(semaphore s)"
+Same as new(0).
+.IP "void signal(semaphore s)"
 Increment semaphore s.  If s is non-positive, and
 some thread is blocked on s, release the least-recently-blocked
-thread.  Return 1 on success.
-.IP "int wait(semaphore s)"
+thread.
+.IP "void wait(semaphore s)"
 Decrement semaphore s.  If s is negative, block until released.
-Return 1 on success.
-.IP "int test(semaphore s)"
+A thread killed or interrupted by a signal while waiting gives
+back its place.
+.IP "bool test(semaphore s)"
 Test whether wait() on semaphore s would cause the current
-thread to block.  If so, return 0.  Otherwise,
-attempt to decrement s, and return 1 if successful.
+thread to block.  If so, return false.  Otherwise,
+decrement s and return true.
 .PP
 .IP String
 The String namespace contains a few basic operations
@@ -1168,7 +1174,7 @@ the range \fI0..(2**n)-1\fP.  Useful for things
 like RSA.
 .IP "int function randint(int n)"
 Returns a pseudo-random number in the range \fI0..n-1\fP.
-.IP "void function shuffle(*(poly[*]) a)"
+.IP "void function shuffle(&poly[*] a)"
 Performs an efficient in-place true shuffle (c.f. Knuth) of
 the array a.
 .PP
@@ -1176,47 +1182,44 @@ the array a.
 The Command namespace is used by the top-level commands
 as described below.  It is also occasionally useful in
 its own right.
-.IP "string library_path"
+.IP "string nickle_path"
 Contains the current library search path, a colon-separated
 list of directories to be searched for library files.
-.IP "int function undefine(string name)"
+.IP "void function undefine(string[*] names...)"
 Implements the top-level undefine
-command. Remove the name denoted by string name from the
-namespace.  This removes all visible definitions of
-the name.
-.IP "int function undefine(string[*] names)"
-Remove each of the names in the array names from the
-namespace.  This removes all visible definitions of
-each name.
-.IP "int function delete(string name)"
+command.  Each argument is a path of namespace names leading to
+a name, which is removed from its namespace.
+.IP "bool function delete(string name)"
 Attempt to remove the command with the given string name from the top-level
-command list, and return 1 if successful.
-.IP "int function lex_file(string path)"
-Attempt to make the file at the given path the current source of
-Nickle code, and return 1 if successful.  Note that this
+command list, and return true if successful.
+.IP "bool function lex_file(string path)"
+Make the file at the given path the current source of
+Nickle code, and return true.  Raises open_error if the file
+can't be opened.  Note that this
 effectively ``includes'' the file by pushing it onto a stack
 of files to be processed.
-.IP "int function lex_library(string filename)"
+.IP "bool function lex_library(string filename)"
 Like lex_file(), but searches the directories given by the
-.I library_path
-variable for the first file with the given filename.
-.IP "int function lex_string(string code)"
-Attempt to make the Nickle code contained in the string code be
-the next input.
+.I nickle_path
+variable for the first file with the given filename, and returns
+whether one was found.
+.IP "bool function lex_string(string code)"
+Make the Nickle code contained in the string code
+the next input, and return true.
 .IP "void function lex_exit_on_error(bool exit)"
 Set whether a syntax or compile error in the current input, or in
 files it loads, makes Nickle exit with status 1.  This is set for
 input named on the command line; clear it around code that is
 expected to produce compile errors.
-.IP "int function edit(string[*] names)"
+.IP "void function edit(string[*] names)"
 Implements the top-level edit command. The names in the
 array are a path of namespace names leading to the symbol
 name, which is last.
-.IP "int function new(string name, poly func)"
+.IP "void function new(string name, poly func)"
 Binds function func to the top-level command
 string name: i.e., makes it part of the
 top-level command vocabulary.
-.IP "int function new_names(string name, poly func)"
+.IP "void function new_names(string name, poly func)"
 Binds function func to the top-level command
 string name: i.e., makes it part of the
 top-level command vocabulary.  Unlike new(),
@@ -1224,46 +1227,46 @@ the string names given to func at the top
 level are passed unevaluated as an array of
 string names
 or as a single string name.
-.IP "int function pretty_print(file f, string[*] names)"
+.IP "void function pretty_print(file f, string[*] names...)"
 Implements the top-level print command.  Each
-of the passed name strings is looked up and the
-corresponding code printed to file f.
-.IP "int function display(string fmt, poly val)"
-Uses printf() to display the value val in
-format fmt.
+argument is a path of namespace names leading to a name, which
+is looked up and the corresponding code printed to file f.
+.IP "void function display(poly val)"
+Prints the value val with the format in the top-level
+format variable and adds it to the history.
 .PP
 .IP History
 Nickle maintains a top-level value history, useful as an adjunct
 to command-line editing when calculating.  The
 History namespace contains functions to access this history.
-.IP "int function show(string fmt)"
+.IP "void function show(string fmt)"
 Implements the history top-level command with no arguments.
 Show the most recent history values with format fmt.
-.IP "int function show(string fmt, int count)"
+.IP "void function show(string fmt, int count)"
 Implements the history top-level command with one argument.
 Show the last count history values with format fmt.
-.IP "int function show(string fmt, int first, int last)"
+.IP "void function show(string fmt, int first, int last)"
 Implements the history top-level command with two arguments.
-.IP "poly function insert(poly val)"
-Insert val in the history list, and return it.
+.IP "void function insert(poly val)"
+Insert val in the history list.
 .PP
 .IP Environ
 Many operating systems have some notion of ``environment variables.''
 The Environ namespace contains functions to manipulate these.
-.IP "int function check(string name)"
-Returns 1 if the variable with the given name is
-in the environment, and 0 otherwise.
+.IP "bool function check(string name)"
+Returns true if the variable with the given name is
+in the environment, and false otherwise.
 .IP "string function get(string name)"
 Attempts to retrieve and return the value of
 the environment variable with the given
 name.  Throws an invalid_argument exception if
 the variable is not available.
-.IP "int function unset(string name)"
+.IP "bool function unset(string name)"
 Attempts to unset the environment variable with the given
-name, and returns an indication of success.
-.IP "string function set(string name, string value)"
+name, and returns whether it succeeded.
+.IP "bool function set(string name, string value)"
 Attempts to set the environment variable with the given
-name to the given value, and returns an indication of success.
+name to the given value, and returns whether it succeeded.
 .\"
 .SH COMMANDS
 .PP
@@ -1280,7 +1283,7 @@ Load a file given by the string name E.
 .IP "library E"
 Load a library given by the string name E.  See the discussion of the
 NICKLEPATH environment variable in ENVIRONMENT
-below, and the discussion of Command::library_path above.
+below, and the discussion of Command::nickle_path above.
 .IP "E # E"
 Print expr1 in base expr2 .
 .IP "print NAME"

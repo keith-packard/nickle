@@ -74,6 +74,7 @@ PrettyBlock(Value f, Expr *e, int level, Bool nest)
     }
 }
 
+/* Precedence levels, in the order of gram.y's %left and %right lines */
 static int
 tokenToPrecedence(int token)
 {
@@ -96,40 +97,42 @@ tokenToPrecedence(int token)
     case ASSIGNAND:
     case ASSIGNOR:
         return 1;
+    case FORK:
+        return 2;
     case QUEST:
     case COLON:
-        return 2;
-    case OR:
         return 3;
-    case AND:
+    case OR:
         return 4;
-    case LOR:
+    case AND:
         return 5;
-    case LAND:
+    case LOR:
         return 6;
     case LXOR:
         return 7;
+    case LAND:
+        return 8;
     case EQ:
     case NE:
-        return 8;
+        return 9;
     case LT:
     case GT:
     case LE:
     case GE:
-        return 9;
+        return 10;
     case SHIFTL:
     case SHIFTR:
-        return 10;
+        return 11;
     case PLUS:
     case MINUS:
-        return 11;
+        return 12;
     case TIMES:
     case DIVIDE:
     case MOD:
     case DIV:
-        return 12;
-    case POW:
         return 13;
+    case POW:
+        return 14;
     /* The grammar puts every prefix and postfix unary operator on one level */
     case UMINUS:
     case BANG:
@@ -139,15 +142,15 @@ tokenToPrecedence(int token)
     case DEC:
     case STAR:
     case AMPER:
-        return 14;
+        return 15;
     case OS:
     case CS:
     case OP:
     case DOT:
     case ARROW:
-        return 17;
-    default:
         return 18;
+    default:
+        return 19;
     }
 }
 

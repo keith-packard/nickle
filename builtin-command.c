@@ -10,7 +10,6 @@
  *	provide builtin functions for the Command namespace
  */
 
-#include <ctype.h>
 #include <strings.h>
 #include <time.h>
 #include "builtin.h"
@@ -117,13 +116,15 @@ command_name(Value name)
 
     if (!cmd_base)
         return 0;
-    while ((c = *cmd++)) {
-        if (isupper(c) || islower(c))
+    /* Accept the names lex.l does: a letter, _, or byte past 0x7f, then those or digits */
+    while ((c = (unsigned char)*cmd++)) {
+        if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_' || c >= 0x80)
             continue;
-        if (cmd != cmd_base + 1) {
-            if (isdigit((int)c) || c == '_')
-                continue;
-        }
+        if (cmd != cmd_base + 1 && '0' <= c && c <= '9')
+            continue;
+        break;
+    }
+    if (c || cmd == cmd_base + 1) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("argument must be valid name"), NewInt(0), name);
         return 0;

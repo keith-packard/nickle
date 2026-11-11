@@ -19,32 +19,59 @@
 
 NamespacePtr PIDNamespace;
 
+/*
+ * Return user or group id 'id' as a value; ids may exceed an int
+ */
+static Value
+id_value(id_t id)
+{
+    ENTER();
+    RETURN(Reduce(NewInteger(Positive, NewNatural((double_digit)id))));
+}
+
+/*
+ * Store 'v' in '*idp', raising invalid_argument and returning False when
+ * it isn't a user or group id
+ */
+static Bool
+id_part(Value v, char *error, id_t *idp)
+{
+    ptrdiff_t p;
+
+    if (!ValueToPtrdiff(v, &p) || p < 0 || (ptrdiff_t)(id_t)p != p) {
+        RaiseStandardException(exception_invalid_argument, 3, NewStrString(error), NewInt(0), v);
+        return False;
+    }
+    *idp = (id_t)p;
+    return True;
+}
+
 static Value
 do_PID_getuid(void)
 {
     ENTER();
-    RETURN(NewInt(getuid()));
+    RETURN(id_value(getuid()));
 }
 
 static Value
 do_PID_geteuid(void)
 {
     ENTER();
-    RETURN(NewInt(geteuid()));
+    RETURN(id_value(geteuid()));
 }
 
 static Value
 do_PID_getgid(void)
 {
     ENTER();
-    RETURN(NewInt(getgid()));
+    RETURN(id_value(getgid()));
 }
 
 static Value
 do_PID_getegid(void)
 {
     ENTER();
-    RETURN(NewInt(getegid()));
+    RETURN(id_value(getegid()));
 }
 
 static Value
@@ -66,12 +93,14 @@ do_PID_getgroups(void)
     ptrdiff_t i;
 
     n = getgroups(0, NULL);
-    list = AllocateTemp(n * sizeof(gid_t));
+    if (n < 0)
+        RETURN(error(Void));
+    list = AllocateTemp((size_t)n * sizeof(gid_t));
     if (getgroups(n, list) < 0)
         RETURN(error(NewInt(n)));
     ret = NewArray(False, False, typePrim[rep_integer], 1, &(ptrdiff_t) { n });
     for (i = 0; i < n; i++)
-        ArrayValueSet(&ret->array, i, NewInt(list[i]));
+        ArrayValueSet(&ret->array, i, id_value(list[i]));
     RETURN(ret);
 }
 
@@ -86,11 +115,12 @@ static Value
 do_PID_setuid(Value uid)
 {
     ENTER();
-    int u = IntPart(uid, "Invalid uid");
-    if (aborting)
+    id_t u;
+
+    if (!id_part(uid, "Invalid uid", &u))
         RETURN(Void);
 
-    if (setuid(u) < 0)
+    if (setuid((uid_t)u) < 0)
         RETURN(error(uid));
 
     RETURN(Void);
@@ -100,11 +130,12 @@ static Value
 do_PID_seteuid(Value euid)
 {
     ENTER();
-    int u = IntPart(euid, "Invalid euid");
-    if (aborting)
+    id_t u;
+
+    if (!id_part(euid, "Invalid euid", &u))
         RETURN(Void);
 
-    if (seteuid(u) < 0)
+    if (seteuid((uid_t)u) < 0)
         RETURN(error(euid));
 
     RETURN(Void);
@@ -114,11 +145,12 @@ static Value
 do_PID_setgid(Value gid)
 {
     ENTER();
-    int u = IntPart(gid, "Invalid gid");
-    if (aborting)
+    id_t u;
+
+    if (!id_part(gid, "Invalid gid", &u))
         RETURN(Void);
 
-    if (setgid(u) < 0)
+    if (setgid((gid_t)u) < 0)
         RETURN(error(gid));
 
     RETURN(Void);
@@ -128,11 +160,12 @@ static Value
 do_PID_setegid(Value egid)
 {
     ENTER();
-    int u = IntPart(egid, "Invalid egid");
-    if (aborting)
+    id_t u;
+
+    if (!id_part(egid, "Invalid egid", &u))
         RETURN(Void);
 
-    if (setegid(u) < 0)
+    if (setegid((gid_t)u) < 0)
         RETURN(error(egid));
 
     RETURN(Void);
@@ -142,19 +175,21 @@ static Value
 do_PID_setgroups(Value groups)
 {
     ENTER();
-    int       n;
+    ptrdiff_t n;
     ptrdiff_t i;
     gid_t    *g;
 
     n = ArrayLimits(&groups->array)[0];
-    g = AllocateTemp(n * sizeof(gid_t));
+    g = AllocateTemp((size_t)n * sizeof(gid_t));
     for (i = 0; i < n; i++) {
-        g[i] = IntPart(ArrayValueGet(&groups->array, i), "Invalid gid");
-        if (aborting)
+        id_t id;
+
+        if (!id_part(ArrayValueGet(&groups->array, i), "Invalid gid", &id))
             RETURN(Void);
+        g[i] = (gid_t)id;
     }
 
-    if (setgroups(n, g) < 0)
+    if (setgroups((size_t)n, g) < 0)
         RETURN(error(groups));
 
     RETURN(Void);

@@ -1,0 +1,56 @@
+/*
+ * Nickle test suite
+ *
+ * Arguments the File, Command, and Thread builtins accept or reject
+ *
+ * File::print took bases above 36 and printed bytes past z,
+ * File::setbuffer took any mode and treated it as 0, Command names
+ * followed a rule stricter than the lexer's, Thread::join of the
+ * current thread hung, and joining a killed thread returned a stale
+ * value.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function bad_argument (string what, int want, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, int i, poly v) {
+	check (what, i, want);
+    }
+}
+
+/* Bases run from 2 to 36 */
+bad_argument ("base 37", 3,
+	      void func () { File::print (File::string_write (), 1, "d", 37, 0, -1, " "); });
+file f = File::string_write ();
+File::print (f, 35, "d", 36, 0, -1, " ");
+check ("base 36", File::string_string (f), "z");
+
+/* Buffer modes are 0, 1, and 2 */
+bad_argument ("setbuffer 7", 1, void func () { File::setbuffer (f, 7); });
+check ("setbuffer 2", File::setbuffer (f, 2), 2);
+
+/* Command names follow the lexer: a letter, _, or byte past 0x7f first */
+Command::new ("_builtinargtest", void func () { });
+Command::delete ("_builtinargtest");
+bad_argument ("command 1x", 0, void func () { Command::new ("1x", void func () { }); });
+bad_argument ("command empty", 0, void func () { Command::new ("", void func () { }); });
+
+/* A thread can't wait for itself */
+bad_argument ("join self", 0, void func () { Thread::join (Thread::current ()); });
+
+/* A killed thread has no result */
+thread t = fork sleep (1000);
+sleep (10);
+Thread::kill (t);
+check ("killed", Thread::join (t), <>);

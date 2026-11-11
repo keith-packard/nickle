@@ -5,7 +5,8 @@
  * binding port 0
  *
  * create, listen, and shutdown ignored failures from the system, and
- * bind rejected port 0, which asks for any free port.
+ * bind rejected port 0, which asks for any free port. getsockname read
+ * every socket as AF_INET, and sockets from accept had no family.
  */
 
 exception not_raised (string what);
@@ -64,6 +65,21 @@ file a = Thread::join (t);
 File::fprintf (c, "port 0\n");
 File::flush (c);
 check ("received", File::fgets (a), "port 0");
+
+/* An accepted socket has its listener's family, so bind reaches the system */
+try {
+    Socket::bind (a, "localhost", 0);
+    raise not_raised ("bind accepted");
+} catch File::io_error (string m, File::error_type e, file f) {
+}
 File::close (a);
 File::close (c);
 File::close (l);
+
+/* getsockname has no address to give for an AF_UNIX socket */
+string path = "socketerrortest.sock";
+file u = Socket::create (Socket::AF_UNIX, Socket::SOCK_STREAM);
+Socket::bind (u, path);
+bad_argument ("getsockname AF_UNIX", 0, void func () { Socket::getsockname (u); });
+File::close (u);
+File::unlink (path);

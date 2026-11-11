@@ -1,0 +1,51 @@
+/*
+ * Nickle test suite
+ *
+ * Walking resizable arrays with spare capacity
+ *
+ * Stepping from one element to the next skipped spare capacity in one
+ * dimension without carrying into the next, so arrays of three or more
+ * dimensions with spare room in more than one printed, compared, and
+ * hashed the wrong elements, and an empty inner dimension still
+ * showed an element.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+int function f (int i, int j, int k) = i * 100 + j * 10 + k;
+
+/* Grow each array large, then shrink it, leaving room in every dimension */
+void function shape (int d0, int d1, int d2)
+{
+    int[...,...,...] c = {};
+    setdims (c, (int[*]) { 5, 5, 5 });
+    setdims (c, (int[*]) { d0, d1, d2 });
+    for (int i = 0; i < d0; i++)
+	for (int j = 0; j < d1; j++)
+	    for (int k = 0; k < d2; k++)
+		c[i,j,k] = f (i, j, k);
+    int[d0,d1,d2] want = { [i,j,k] = f (i, j, k) };
+    string what = sprintf ("%d,%d,%d", d0, d1, d2);
+    check (what + " equal", c == want, true);
+    check (what + " hash", hash (c), hash (want));
+    int[...,...,...] d = c;
+    check (what + " copy", d == want, true);
+}
+
+shape (2, 1, 1);
+shape (1, 2, 1);
+shape (1, 1, 2);
+shape (2, 3, 4);
+shape (4, 3, 2);
+shape (3, 1, 2);
+
+/* An empty inner dimension leaves no elements */
+int[...,...] e = {};
+setdims (e, (int[*]) { 4, 0 });
+check ("empty inner", sprintf ("%v", e), "(int [..., ...]) {{}}");

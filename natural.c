@@ -719,7 +719,7 @@ NaturalFactor(Natural *n, Natural *max)
 }
 
 Natural *
-NaturalIntPow(Natural *n, int p)
+NaturalIntPow(Natural *n, ptrdiff_t p)
 {
     ENTER();
     Natural *result;
@@ -790,11 +790,11 @@ digit_width(digit d, digit base)
 }
 
 ptrdiff_t
-NaturalEstimateLength(Natural *a, digit base)
+NaturalEstimateLength(Natural *a, int base)
 {
     if (length(a) == 0)
         return 2;
-    return length(a) * digit_width(MAXDIGIT, base) + 1;
+    return length(a) * digit_width(MAXDIGIT, (digit)base) + 1;
 }
 
 char     *naturalBuffer;
@@ -803,17 +803,18 @@ ptrdiff_t naturalBufferSize;
 static char *
 NaturalBottom(char *result, digit partial, int base, ptrdiff_t digits, Bool fill)
 {
+    digit dbase = (digit)base;
     digit dig;
 
     do {
-        dig = partial % base;
+        dig = partial % dbase;
         if (dig < 10)
             dig = '0' + dig;
         else
             dig = 'a' + dig - 10;
         *--result = (char)dig;
         digits--;
-        partial = partial / base;
+        partial = partial / dbase;
     } while (partial);
     if (fill)
         while (digits-- > 0)
@@ -899,13 +900,13 @@ NaturalSprint(char *result, Natural *a, int base, ptrdiff_t *width)
      * Compute the number of base digits which can be
      * held in BASE
      */
-    max_base = base;
+    max_base = (double_digit)base;
     digits = 0;
     while (max_base <= BASE) {
-        max_base *= base;
+        max_base *= (double_digit)base;
         digits++;
     }
-    max_base /= base;
+    max_base /= (double_digit)base;
     t = 0;
     divisor = 0;
     if (max_base == BASE) {

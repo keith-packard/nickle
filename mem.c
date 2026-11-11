@@ -119,7 +119,7 @@ MemAllocateHunk(size_t sizeIndex)
 void *
 MemAllocate(DataType *type, size_t size)
 {
-    int           sizeIndex = 0;
+    size_t        sizeIndex = 0;
     struct bfree *new;
 
 #if NUMSIZES > 15

@@ -304,7 +304,6 @@ extern ValueRep IntegerRep;
 
 extern Natural *NaturalFactor(Natural *, Natural *);
 extern Natural *NaturalSqrt(Natural *);
-extern Natural *NaturalIntPow(Natural *, int);
 extern Natural *NaturalPow(Natural *, Natural *);
 extern Natural *NaturalPowMod(Natural *, Natural *, Natural *);
 extern Natural *two_natural;

@@ -515,7 +515,7 @@ ValueRep IntegerRep = {
 
 #define INTEGER_CACHE_SIZE 8191
 
-DataCachePtr integerCache;
+static DataCachePtr integerCache;
 
 Value
 NewInteger(Sign sign, Natural *mag)

@@ -471,7 +471,7 @@ PartialMark(void *object)
     MemReference(p->down);
 }
 
-DataType PartialType = { PartialMark, 0, "PartialType" };
+static DataType PartialType = { PartialMark, 0, "PartialType" };
 
 static PartialPtr
 NewPartial(Natural *partial)
@@ -506,7 +506,7 @@ FactorMark(void *object)
     MemReference(f->partials);
 }
 
-DataType FactorType = { FactorMark, 0, "FactorType" };
+static DataType FactorType = { FactorMark, 0, "FactorType" };
 
 static FactorPtr
 NewFactor(Natural *prime, int power, FactorPtr next)

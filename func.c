@@ -25,7 +25,7 @@ MarkFuncCode(void *object)
     MemReference(fc->statics);
 }
 
-DataType FuncCodeType = { MarkFuncCode, 0, "FuncCodeType" };
+static DataType FuncCodeType = { MarkFuncCode, 0, "FuncCodeType" };
 
 static Bool
 HasVarargs(ArgType *args)
@@ -81,7 +81,7 @@ MarkBuiltinCode(void *object)
     MemReference(bc->base.doc);
 }
 
-DataType BuiltinCodeType = { MarkBuiltinCode, 0, "BuiltinCodeType" };
+static DataType BuiltinCodeType = { MarkBuiltinCode, 0, "BuiltinCodeType" };
 
 CodePtr
 NewBuiltinCode(Type *type, ArgType *args, ptrdiff_t argc, BuiltinFunc builtin, Bool needsNext,

@@ -26,6 +26,8 @@ typedef const struct _DataType DataType;
 #include <nickle/stack.h>
 #endif
 
+extern DataType stackType, stackChunkType;
+
 /*
  * Annotation, after the declarator, for functions which never return
  */

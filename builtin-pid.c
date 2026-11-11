@@ -17,7 +17,7 @@
 
 #include "builtin.h"
 
-NamespacePtr PIDNamespace;
+static NamespacePtr PIDNamespace;
 
 /*
  * Return user or group id 'id' as a value; ids may exceed an int

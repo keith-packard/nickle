@@ -791,8 +791,8 @@ KaryReduction(Value av, Value bv)
 }
 #endif
 
-StackObject *ValuePrintStack;
-int          ValuePrintLevel;
+static StackObject *ValuePrintStack;
+static int          ValuePrintLevel;
 
 Bool
 Print(Value f, Value v, uint32_t format, int base, int width, int prec, uint32_t fill)

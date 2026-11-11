@@ -43,9 +43,7 @@ typedef struct _lexInput {
     Bool              exit_on_error; /* exit on parse and compile errors */
 } LexInput;
 
-LexInput  *lexInput;
-extern int notCommand;
-extern int seeComment;
+static LexInput *lexInput;
 #define FILE_END_CHAR -2
 
 static void
@@ -116,7 +114,7 @@ ReadlineGetChar(FILE *f)
 }
 #endif
 
-ReferencePtr LexInputReference;
+static ReferencePtr LexInputReference;
 
 void
 LexInit(void)

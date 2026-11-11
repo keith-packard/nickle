@@ -206,7 +206,7 @@ BoxVectorMark(void *object)
         MemReference(boxes[i]);
 }
 
-DataType BoxVectorType = { BoxVectorMark, 0, "BoxVectorType" };
+static DataType BoxVectorType = { BoxVectorMark, 0, "BoxVectorType" };
 
 static BoxVectorPtr
 NewBoxVector(ptrdiff_t nvalues, TypePtr type)

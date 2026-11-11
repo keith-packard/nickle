@@ -156,7 +156,7 @@ StructTypeMark(void *object)
     MemReference(st->types);
 }
 
-DataType StructTypeType = { StructTypeMark, 0, "StructTypeType" };
+static DataType StructTypeType = { StructTypeMark, 0, "StructTypeType" };
 
 StructType *
 NewStructType(ptrdiff_t nelements)
@@ -175,8 +175,8 @@ NewStructType(ptrdiff_t nelements)
     RETURN(st);
 }
 
-Value       Elementless;
-StructType *ElementlessType;
+Value              Elementless;
+static StructType *ElementlessType;
 
 int
 StructInit(void)

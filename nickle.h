@@ -170,6 +170,7 @@ typedef struct _frame {
     ObjPtr    saveObj;
 } Frame;
 
+extern DataType FrameType;
 extern FramePtr NewFrame(Value function, FramePtr previous, FramePtr staticLink,
                          BoxTypesPtr dynamics, BoxPtr statics);
 
@@ -633,9 +634,10 @@ ObjStat(Obj *obj, ptrdiff_t i)
     return &stats[i];
 }
 
-ObjPtr  CompileStat(ExprPtr expr, CodePtr code);
-ObjPtr  CompileExpr(ExprPtr expr, CodePtr code);
-ExprPtr ObjStatement(ObjPtr obj, InstPtr inst);
+extern DataType ObjType;
+ObjPtr          CompileStat(ExprPtr expr, CodePtr code);
+ObjPtr          CompileExpr(ExprPtr expr, CodePtr code);
+ExprPtr         ObjStatement(ObjPtr obj, InstPtr inst);
 
 typedef enum _wakeKind { WakeAll, WakeOne } WakeKind;
 
@@ -721,6 +723,7 @@ void                TimerInterrupt(void);
 void                TimerInit(void);
 
 void                IoInit(void);
+extern Bool         stdinOwned, stdinPolling;
 void                IoStart(void);
 void                IoStop(void);
 void                IoFini(void);
@@ -780,6 +783,8 @@ int          yylex(void);
 Bool         LexFile(char *file, Bool complain, Bool after);
 Value        atov(char *, int), aetov(char *);
 extern int   ignorenl;
+extern int   notCommand;
+extern int   seeComment;
 void         skipcomment(void);
 Value        lexdoc(void);
 void         skipline(void);

@@ -74,7 +74,7 @@ MarkBoxReplace(void *object)
     MemReference(replace->new);
 }
 
-DataType BoxReplaceType = { MarkBoxReplace, 0, "BoxReplaceType" };
+static DataType BoxReplaceType = { MarkBoxReplace, 0, "BoxReplaceType" };
 
 void
 BoxSetReplace(BoxPtr old, BoxPtr new, ptrdiff_t oldstride, ptrdiff_t newstride)
@@ -133,7 +133,7 @@ MarkBoxTypes(void *object)
         MemReference(BoxTypesValue(bt, i));
 }
 
-DataType BoxTypesType = { MarkBoxTypes, 0, "BoxTypesType" };
+static DataType BoxTypesType = { MarkBoxTypes, 0, "BoxTypesType" };
 
 #define BT_INCR 4
 

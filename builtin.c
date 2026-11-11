@@ -30,8 +30,6 @@ static const struct sbuiltin svars[] = {
     { 0,             0,         0 },
 };
 
-extern Type                   *typeSockaddr;
-
 static const struct envbuiltin envvars[] = {
 #ifdef CENVIRON
     { "NICKLEPATH", NICKLEPATH, "nickle_path", &CommandNamespace },

@@ -20,7 +20,7 @@ AtomEntryMark(void *object)
     ;
 }
 
-DataType AtomEntryType = { AtomEntryMark, 0, "AtomEntryType" };
+static DataType AtomEntryType = { AtomEntryMark, 0, "AtomEntryType" };
 
 #define HASHSIZE 63
 
@@ -41,9 +41,9 @@ AtomTableMark(void *object)
             MemReference(atom);
 }
 
-DataType   AtomTableType = { AtomTableMark, 0, "AtomTableType" };
+static DataType   AtomTableType = { AtomTableMark, 0, "AtomTableType" };
 
-AtomTable *atomTable;
+static AtomTable *atomTable;
 
 int
 AtomInit(void)
@@ -97,7 +97,7 @@ AtomListMark(void *object)
     MemReference(al->next);
 }
 
-DataType AtomListType = { AtomListMark, 0, "AtomListType" };
+static DataType AtomListType = { AtomListMark, 0, "AtomListType" };
 
 AtomListPtr
 NewAtomList(AtomListPtr next, Atom atom)

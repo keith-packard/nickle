@@ -7,7 +7,7 @@
 #include <math.h>
 #include "nickle.h"
 
-Fpart *zero_fpart, *one_fpart;
+static Fpart *zero_fpart, *one_fpart;
 
 #if 0
 #define DebugV(s, v) FilePrintf(FileStdout, "%s %v\n", s, v)
@@ -52,7 +52,7 @@ FpartMark(void *object)
     MemReference(f->mag);
 }
 
-DataType FpartType = { FpartMark, 0, "FpartType" };
+static DataType FpartType = { FpartMark, 0, "FpartType" };
 
 static Fpart *
 NewFpart(Sign sign, Natural *mag)

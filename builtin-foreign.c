@@ -10,7 +10,7 @@
 #include <errno.h>
 #include "builtin.h"
 
-NamespacePtr ForeignNamespace;
+static NamespacePtr ForeignNamespace;
 
 #ifdef HAVE_EXTERN_SYMS
 

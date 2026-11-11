@@ -907,8 +907,6 @@ int dump_inst = 0;
 
 #ifdef VALIDATE_EXECUTION
 
-extern DataType FrameType, BoxType, stackType, stackChunkType, ObjType;
-
 static void
 ObjValid(ObjPtr obj, InstPtr pc)
 {

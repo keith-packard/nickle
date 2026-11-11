@@ -994,7 +994,7 @@ MarkNonLocal(void *object)
     MemReference(nl->prev);
 }
 
-DataType NonLocalType = { MarkNonLocal, 0, "NonLocalType" };
+static DataType NonLocalType = { MarkNonLocal, 0, "NonLocalType" };
 
 static NonLocal *
 NewNonLocal(NonLocal *prev, NonLocalKind kind, int target)
@@ -3986,7 +3986,7 @@ CompileExpr(ExprPtr expr, CodePtr code)
     RETURN(obj);
 }
 
-const char * const OpNames[] = {
+static const char * const OpNames[] = {
     "Noop",
     /*
      * Statement op codes

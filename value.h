@@ -1097,10 +1097,11 @@ _BoxType(Box *box, ptrdiff_t e)
 
 #define BoxType(box, e) _BoxType(box, e)
 
-extern BoxPtr NewBox(Bool constant, Bool array, ptrdiff_t nvalues, TypePtr type);
-extern BoxPtr NewTypedBox(Bool array, BoxTypesPtr types);
-void          BoxSetReplace(BoxPtr old, BoxPtr new, ptrdiff_t oldstride, ptrdiff_t newstride);
-BoxPtr        BoxRewrite(BoxPtr box, ptrdiff_t *ep);
+extern DataType BoxType;
+extern BoxPtr   NewBox(Bool constant, Bool array, ptrdiff_t nvalues, TypePtr type);
+extern BoxPtr   NewTypedBox(Bool array, BoxTypesPtr types);
+void            BoxSetReplace(BoxPtr old, BoxPtr new, ptrdiff_t oldstride, ptrdiff_t newstride);
+BoxPtr          BoxRewrite(BoxPtr box, ptrdiff_t *ep);
 
 typedef struct {
     DataType *data;

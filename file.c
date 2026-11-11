@@ -27,9 +27,8 @@
 #endif
 #endif
 
-ReferencePtr fileBlockedReference;
-Value        fileBlocked;
-extern Bool  stdinOwned, stdinPolling;
+static ReferencePtr fileBlockedReference;
+static Value        fileBlocked;
 #ifdef NO_PIPE_SIGIO
 Bool anyPipeReadBlocked;
 #endif
@@ -43,7 +42,7 @@ typedef struct _FileErrorMap {
 
 #define EUTF8 -128
 
-const FileErrorMap fileErrorMap[] = {
+static const FileErrorMap fileErrorMap[] = {
 #ifdef EPERM
     { EPERM,           "PERM",           "Operation not permitted"                         },
 #endif

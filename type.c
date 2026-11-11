@@ -98,16 +98,15 @@ TypeTypesMark(void *object)
     MemReference(type->elt);
 }
 
-DataType TypePrimType = { 0, 0, "TypePrimType" };
-DataType TypeNameType = { TypeNameMark, 0, "TypeNameType" };
-DataType TypeRefType = { TypeRefMark, 0, "TypeRefType" };
-DataType ArgTypeType = { ArgTypeMark, 0, "ArgTypeType" };
-DataType TypeFuncType = { TypeFuncMark, 0, "TypeFuncType" };
-DataType TypeArrayType = { TypeArrayMark, 0, "TypeArrayType" };
-DataType TypeHashType = { TypeHashMark, 0, "TypeHashType" };
-DataType TypeStructType = { TypeStructMark, 0, "TypeStructType" };
-DataType TypeUnitType = { 0, 0, "TypeUnitType" };
-DataType TypeTypesType = { TypeTypesMark, 0, "TypeTypesType" };
+static DataType TypePrimType = { 0, 0, "TypePrimType" };
+static DataType TypeNameType = { TypeNameMark, 0, "TypeNameType" };
+static DataType TypeRefType = { TypeRefMark, 0, "TypeRefType" };
+static DataType ArgTypeType = { ArgTypeMark, 0, "ArgTypeType" };
+static DataType TypeFuncType = { TypeFuncMark, 0, "TypeFuncType" };
+static DataType TypeArrayType = { TypeArrayMark, 0, "TypeArrayType" };
+static DataType TypeHashType = { TypeHashMark, 0, "TypeHashType" };
+static DataType TypeStructType = { TypeStructMark, 0, "TypeStructType" };
+static DataType TypeTypesType = { TypeTypesMark, 0, "TypeTypesType" };
 
 static Type *
 NewTypePrim(Rep prim)
@@ -356,8 +355,8 @@ TypeCountDimensions(ExprPtr dims)
     return ndim;
 }
 
-StackObject *TypeCheckStack;
-int          TypeCheckLevel;
+static StackObject *TypeCheckStack;
+static int          TypeCheckLevel;
 
 /*
  * Return True if sup is a super type of sub
@@ -880,7 +879,7 @@ TypeEltMark(void *object)
     MemReference(elt->type);
 }
 
-DataType TypeEltType = { TypeEltMark, 0, "TypeEltType" };
+static DataType TypeEltType = { TypeEltMark, 0, "TypeEltType" };
 
 static TypeElt *
 NewTypeElt(Type *type, TypeElt *next)

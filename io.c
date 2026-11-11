@@ -15,7 +15,7 @@
 volatile Bool signalIo;
 Bool          stdinOwned;
 Bool          stdinPolling;
-Bool          ioTimeoutQueued;
+static Bool   ioTimeoutQueued;
 Bool          anyFileWriteBlocked;
 
 #ifdef HAVE_SIGACTION

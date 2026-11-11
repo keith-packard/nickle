@@ -25,17 +25,17 @@
 #include "builtin.h"
 #include <errno.h>
 
-NamespacePtr SocketNamespace;
-Type        *typeSockaddr;
+static NamespacePtr SocketNamespace;
+Type               *typeSockaddr;
 
-Value        do_Socket_create(ptrdiff_t num, Value *args);
-Value        do_Socket_connect(ptrdiff_t num, Value *args);
-Value        do_Socket_bind(ptrdiff_t num, Value *args);
-Value        do_Socket_listen(Value s, Value backlog);
-Value        do_Socket_accept(Value s);
-Value        do_Socket_shutdown(Value s, Value how);
-Value        do_Socket_gethostname(void);
-Value        do_Socket_getsockname(Value s);
+Value               do_Socket_create(ptrdiff_t num, Value *args);
+Value               do_Socket_connect(ptrdiff_t num, Value *args);
+Value               do_Socket_bind(ptrdiff_t num, Value *args);
+Value               do_Socket_listen(Value s, Value backlog);
+Value               do_Socket_accept(Value s);
+Value               do_Socket_shutdown(Value s, Value how);
+Value               do_Socket_gethostname(void);
+Value               do_Socket_getsockname(Value s);
 
 void
 import_Socket_namespace(void)

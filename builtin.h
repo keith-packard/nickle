@@ -52,6 +52,8 @@ struct sbuiltin {
         }                                                                               \
     } while (0)
 
+extern Type *typeSockaddr;
+
 struct envbuiltin {
 #ifdef CENVIRON
     char *var;

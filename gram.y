@@ -46,7 +46,11 @@ int          ignorenl;
 int          notCommand;
 int          seeComment;
 NamespacePtr LexNamespace;
-int          funcDepth;
+static int   funcDepth;
+
+/* bison defines these without declaring them first */
+extern int   yychar;
+extern int   yynerrs;
 
 typedef enum _CanonTypeResult {
     CanonTypeUndefined,
@@ -1546,7 +1550,7 @@ DeclListMark(void *object)
     MemReference(dl->init);
 }
 
-DataType DeclListType = { DeclListMark, 0, "DeclListType" };
+static DataType DeclListType = { DeclListMark, 0, "DeclListType" };
 
 DeclListPtr
 NewDeclList(Atom name, ExprPtr init, DeclListPtr next)
@@ -1572,7 +1576,7 @@ MemListMark(void *object)
     MemReference(ml->atoms);
 }
 
-DataType MemListType = { MemListMark, 0, "MemListType" };
+static DataType MemListType = { MemListMark, 0, "MemListType" };
 
 MemListPtr
 NewMemList(AtomListPtr atoms, Type *type, MemListPtr next)

@@ -453,7 +453,7 @@ BlockHandlerMark(void *object)
     MemReference(bh->next);
 }
 
-DataType             BlockHandlerType = { BlockHandlerMark, 0, "BlockHandlerType" };
+static DataType      BlockHandlerType = { BlockHandlerMark, 0, "BlockHandlerType" };
 
 static BlockHandler *blockHandlers;
 
@@ -502,8 +502,8 @@ ThreadsBlock(void)
         FileCheckBlocked(True);
 }
 
-ReferencePtr RunningReference, StoppedReference;
-ReferencePtr BlockHandlerReference;
+static ReferencePtr RunningReference, StoppedReference;
+static ReferencePtr BlockHandlerReference;
 
 void
 ThreadInit(void)
@@ -518,7 +518,7 @@ ThreadInit(void)
     EXIT();
 }
 
-DataType FarJumpType = { 0, 0, "FarJumpType" };
+static DataType FarJumpType = { 0, 0, "FarJumpType" };
 
 FarJumpPtr
 NewFarJump(ptrdiff_t inst, ptrdiff_t twixt, ptrdiff_t catch, ptrdiff_t frame)
@@ -775,7 +775,7 @@ MarkJump(void *object)
     MemReference(jump->ret);
 }
 
-DataType JumpType = { MarkJump, 0, "JumpType" };
+static DataType JumpType = { MarkJump, 0, "JumpType" };
 
 JumpPtr
 NewJump(TwixtPtr leave, TwixtPtr enter, TwixtPtr parent, ContinuationPtr continuation, Value ret)
@@ -982,7 +982,7 @@ CatchMark(void *object)
     MemReference(catch->exception);
 }
 
-DataType CatchType = { CatchMark, 0, "CatchType" };
+static DataType CatchType = { CatchMark, 0, "CatchType" };
 
 CatchPtr
 NewCatch(Value thread, SymbolPtr exception)
@@ -1005,7 +1005,7 @@ TwixtMark(void *object)
     ContinuationMark(&twixt->continuation);
 }
 
-DataType TwixtType = { TwixtMark, 0, "TwixtType" };
+static DataType TwixtType = { TwixtMark, 0, "TwixtType" };
 
 TwixtPtr
 NewTwixt(ContinuationPtr continuation, InstPtr enter, InstPtr leave)
@@ -1081,10 +1081,10 @@ RaiseException(Value thread, SymbolPtr except, Value args, InstPtr *next)
     EXIT();
 }
 
-SymbolPtr         standardExceptions[_num_standard_exceptions];
-StandardException standardException;
-Value             standardExceptionArgs;
-ReferencePtr      standardExceptionArgsRef;
+static SymbolPtr         standardExceptions[_num_standard_exceptions];
+static StandardException standardException;
+static Value             standardExceptionArgs;
+static ReferencePtr      standardExceptionArgsRef;
 
 void
 RegisterStandardException(StandardException se, SymbolPtr sym)

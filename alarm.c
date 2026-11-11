@@ -20,7 +20,7 @@ typedef struct _sleepQ {
     TimerFunc       func;
 } SleepQ, *SleepQPtr;
 
-SleepQPtr sleeping;
+static SleepQPtr sleeping;
 
 static void
 SleepQMark(void *object)
@@ -31,7 +31,7 @@ SleepQMark(void *object)
     MemReference(sleep->closure);
 }
 
-DataType SleepQType = { SleepQMark, 0, "SleepQType" };
+static DataType SleepQType = { SleepQMark, 0, "SleepQType" };
 
 int64_t
 TimeInMs(void)
@@ -146,7 +146,7 @@ do_millis(void)
     RETURN(NewSignedDigitInteger(TimeInMs()));
 }
 
-ReferencePtr SleepingReference;
+static ReferencePtr SleepingReference;
 
 static void
 _CatchAlarm(int sig)

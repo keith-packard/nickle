@@ -35,7 +35,7 @@ Natural *min_signed_digit_natural;
 static Natural *max_tenpow_natural;
 static int      tenpow_digits;
 #endif
-DataCachePtr naturalCache;
+static DataCachePtr naturalCache;
 
 int
 NaturalToInt(Natural *n)
@@ -798,8 +798,8 @@ NaturalEstimateLength(Natural *a, int base)
     return length(a) * digit_width(MAXDIGIT, (digit)base) + 1;
 }
 
-char     *naturalBuffer;
-ptrdiff_t naturalBufferSize;
+static char     *naturalBuffer;
+static ptrdiff_t naturalBufferSize;
 
 static char *
 NaturalBottom(char *result, digit partial, int base, ptrdiff_t digits, Bool fill)
@@ -955,7 +955,7 @@ NaturalSprint(char *result, Natural *a, int base, ptrdiff_t *width)
     return r;
 }
 
-DataType NaturalType = { 0, 0, "NaturalType" };
+static DataType NaturalType = { 0, 0, "NaturalType" };
 
 Natural *
 AllocNatural(ptrdiff_t size)

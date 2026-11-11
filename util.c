@@ -25,7 +25,7 @@ double x0, y0, x1, y1;
 }
 #endif
 
-DataType TempType = { 0, 0, "TempType" };
+static DataType TempType = { 0, 0, "TempType" };
 
 void *
 AllocateTemp(size_t size)

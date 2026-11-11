@@ -55,11 +55,11 @@ SymbolExceptionMark(void *object)
     MemReference(se->doc);
 }
 
-DataType SymbolTypeType = { SymbolTypeMark, 0, "SymbolTypeType" };
-DataType SymbolGlobalType = { SymbolGlobalMark, 0, "SymbolGlobalType" };
-DataType SymbolLocalType = { SymbolLocalMark, 0, "SymbolLocalType" };
-DataType SymbolNamespaceType = { SymbolNamespaceMark, 0, "SymbolNamespaceType" };
-DataType SymbolExceptionType = { SymbolExceptionMark, 0, "SymbolExceptionType" };
+static DataType SymbolTypeType = { SymbolTypeMark, 0, "SymbolTypeType" };
+static DataType SymbolGlobalType = { SymbolGlobalMark, 0, "SymbolGlobalType" };
+static DataType SymbolLocalType = { SymbolLocalMark, 0, "SymbolLocalType" };
+static DataType SymbolNamespaceType = { SymbolNamespaceMark, 0, "SymbolNamespaceType" };
+static DataType SymbolExceptionType = { SymbolExceptionMark, 0, "SymbolExceptionType" };
 
 SymbolPtr
 NewSymbolType(Atom name, Type *type)

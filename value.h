@@ -1022,15 +1022,8 @@ IntegerSign(Value i)
     return (Sign)((uintptr_t)(i->integer.magn) & 1);
 }
 
-typedef struct _boxReplace {
-    DataType *data;
-    BoxPtr new;
-    ptrdiff_t oldstride;
-    ptrdiff_t newstride;
-} BoxReplace, *BoxReplacePtr;
-
-/* Box.nvalues shares a word with three flags */
-#define BOX_NVALUES_BITS ((sizeof(ptrdiff_t) * 8) - 3)
+/* Box.nvalues shares a word with two flags */
+#define BOX_NVALUES_BITS ((sizeof(ptrdiff_t) * 8) - 2)
 /* The most values a box may hold, the largest Box.nvalues */
 #define BOX_MAX_VALUES ((ptrdiff_t)(((size_t)1 << (BOX_NVALUES_BITS - 1)) - 1))
 
@@ -1038,26 +1031,17 @@ typedef struct _box {
     DataType     *data;
     unsigned long constant    : 1;
     unsigned long homogeneous : 1;
-    unsigned long replace     : 1;
     ptrdiff_t     nvalues     : BOX_NVALUES_BITS;
     union {
-        BoxTypesPtr   types;
-        TypePtr       type;
-        BoxReplacePtr replace;
+        BoxTypesPtr types;
+        TypePtr     type;
     } u;
     Value values[0];
 } Box;
 
-#if 1
-#define BoxCheck(box) assert(!(box)->replace)
-#else
-#define BoxCheck(box)
-#endif
-
 static inline Value *
 BoxElements(Box *box)
 {
-    BoxCheck(box);
     return box->values;
 }
 
@@ -1079,18 +1063,9 @@ BoxConstant(Box *box)
     return box->constant;
 }
 
-static inline Bool
-_BoxReplace(Box *box)
-{
-    return box->replace;
-}
-
-#define BoxReplace(box) _BoxReplace(box)
-
 static inline TypePtr
 _BoxType(Box *box, ptrdiff_t e)
 {
-    BoxCheck(box);
     if (box->homogeneous)
         return box->u.type;
     else
@@ -1102,8 +1077,6 @@ _BoxType(Box *box, ptrdiff_t e)
 extern DataType BoxType;
 extern BoxPtr   NewBox(Bool constant, Bool array, ptrdiff_t nvalues, TypePtr type);
 extern BoxPtr   NewTypedBox(Bool array, BoxTypesPtr types);
-void            BoxSetReplace(BoxPtr old, BoxPtr new, ptrdiff_t oldstride, ptrdiff_t newstride);
-BoxPtr          BoxRewrite(BoxPtr box, ptrdiff_t *ep);
 
 typedef struct {
     DataType *data;
@@ -1176,33 +1149,21 @@ ArrayValueSet(Array *a, ptrdiff_t i, Value v)
     BoxValueSet(ArrayValueBox(a, i), ArrayValueElt(a, i), v);
 }
 
-void RefRewrite(Value r);
-
-static inline void
-RefCheck(Value r)
-{
-    if (BoxReplace(r->ref.box))
-        RefRewrite(r);
-}
-
 static inline void
 RefValueSet(Value r, Value v)
 {
-    RefCheck(r);
     BoxValueSet(r->ref.box, r->ref.element, v);
 }
 
 static inline Value
 RefValueGet(Value r)
 {
-    RefCheck(r);
     return BoxValueGet(r->ref.box, r->ref.element);
 }
 
 static inline TypePtr
 RefType(Value r)
 {
-    RefCheck(r);
     return BoxType(r->ref.box, r->ref.element);
 }
 

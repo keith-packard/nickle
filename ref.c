@@ -141,8 +141,6 @@ RefMark(void *object)
 {
     Ref *ref = object;
 
-    if (ref->box->replace)
-        ref->box = BoxRewrite(ref->box, &ref->element);
     MemReference(ref->box);
 }
 
@@ -179,16 +177,6 @@ NewRefReal(BoxPtr box, ptrdiff_t element, Value *re)
     ret->ref.element = element;
     *re = ret;
     RETURN(ret);
-}
-
-void
-RefRewrite(Value rv)
-{
-    Ref   *ref = &rv->ref;
-    BoxPtr box = ref->box;
-
-    if (box->replace)
-        ref->box = BoxRewrite(box, &ref->element);
 }
 
 int

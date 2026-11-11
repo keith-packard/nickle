@@ -14,9 +14,7 @@ BoxMark(void *object)
     ptrdiff_t i;
 
     elements = BoxElements(box);
-    if (box->replace)
-        MemReference(box->u.replace);
-    else if (box->homogeneous)
+    if (box->homogeneous)
         MemReference(box->u.type);
     else
         MemReference(box->u.types);
@@ -37,7 +35,6 @@ NewBox(Bool constant, Bool array, ptrdiff_t nvalues, TypePtr type)
     box = ALLOCATE(&BoxType, sizeof(Box) + (size_t)nvalues * sizeof(Value));
     box->constant = constant;
     box->homogeneous = True;
-    box->replace = False;
     assert(0 <= nvalues && nvalues <= BOX_MAX_VALUES);
     box->nvalues = nvalues & BOX_MAX_VALUES;
     box->u.type = type;
@@ -58,69 +55,11 @@ NewTypedBox(Bool array, BoxTypesPtr bt)
     box = ALLOCATE(&BoxType, sizeof(Box) + (size_t)bt->count * sizeof(Value));
     box->constant = False;
     box->homogeneous = False;
-    box->replace = False;
     box->nvalues = bt->count & BOX_MAX_VALUES;
     box->u.types = bt;
     for (i = 0; i < bt->count; i++)
         BoxValueSet(box, i, 0);
     RETURN(box);
-}
-
-static void
-MarkBoxReplace(void *object)
-{
-    BoxReplacePtr replace = object;
-
-    MemReference(replace->new);
-}
-
-static DataType BoxReplaceType = { MarkBoxReplace, 0, "BoxReplaceType" };
-
-void
-BoxSetReplace(BoxPtr old, BoxPtr new, ptrdiff_t oldstride, ptrdiff_t newstride)
-{
-    ENTER();
-    BoxReplacePtr r = ALLOCATE(&BoxReplaceType, sizeof(BoxReplace));
-    r->new = new;
-    r->oldstride = oldstride;
-    r->newstride = newstride;
-    old->replace = True;
-    old->u.replace = r;
-    EXIT();
-}
-
-BoxPtr
-BoxRewrite(BoxPtr box, ptrdiff_t *ep)
-{
-    ptrdiff_t e = *ep;
-
-    while (box->replace) {
-        BoxReplacePtr r = box->u.replace;
-        ptrdiff_t     chunk, off;
-
-        chunk = e / r->oldstride;
-        off = e % r->oldstride;
-        e = chunk * r->newstride + off;
-        box = r->new;
-    }
-    /*
-     * XXX oops.  References to previously available storage
-     * should do something sensible instead of cratering.
-     * The desired semantic is for them to persist, pointing
-     * to whatever storage was there before the underlying object
-     * was resized.  But, that's "hard".  This check will
-     * at least prevent a seg fault.
-     */
-    if (e >= 0 && e >= box->nvalues) {
-        RaiseStandardException(exception_invalid_array_bounds, 3,
-                               NewStrString("reference to storage removed by array resize"), Void,
-                               NewPtrdiffInteger(e));
-        e = 0;
-        box = NewBox(True, False, 1, typePrim[rep_void]);
-        BoxValueSet(box, 0, 0);
-    }
-    *ep = e;
-    return box;
 }
 
 static void

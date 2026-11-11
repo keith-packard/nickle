@@ -164,6 +164,7 @@ static ReferencePtr TopNamespaceReference;
 static ReferencePtr CurrentNamespaceReference;
 CommandPtr          CurrentCommands;
 static ReferencePtr CurrentCommandsReference;
+static ReferencePtr CurrentFrameReference;
 
 void
 NamespaceInit(void)
@@ -184,6 +185,9 @@ NamespaceInit(void)
     CurrentCommands = 0;
     CurrentCommandsReference = NewReference((void **)&CurrentCommands);
     MemAddRoot(CurrentCommandsReference);
+
+    CurrentFrameReference = NewReference((void **)&CurrentFrame);
+    MemAddRoot(CurrentFrameReference);
 
     EXIT();
 }

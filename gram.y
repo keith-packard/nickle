@@ -1554,6 +1554,7 @@ DeclListMark(void *object)
     DeclListPtr dl = object;
 
     MemReference(dl->next);
+    MemReference(dl->symbol);
     MemReference(dl->init);
 }
 

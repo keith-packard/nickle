@@ -90,6 +90,7 @@ import_Debug_namespace(void)
     };
 
     DebugNamespace = BuiltinNamespace(/*parent*/ 0, "Debug")->namespace.namespace;
+    MemAddRoot(DebugNamespace);
 
     BuiltinFuncs0(&DebugNamespace, funcs_0);
     BuiltinFuncs1(&DebugNamespace, funcs_1);

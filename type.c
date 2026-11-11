@@ -23,6 +23,7 @@ TypeNameMark(void *object)
 {
     TypeName *tn = object;
 
+    MemReference(tn->expr);
     MemReference(tn->name);
 }
 
@@ -40,6 +41,7 @@ ArgTypeMark(void *object)
     ArgType *at = object;
 
     MemReference(at->type);
+    MemReference(at->symbol);
     MemReference(at->next);
 }
 

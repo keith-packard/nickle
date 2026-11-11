@@ -664,6 +664,9 @@ do_File_setbuf(Value f, Value v)
     int i;
 
     i = IntPart(v, "setbuffer non integer");
+    if (!aborting && (i < 0 || i > 2))
+        RaiseStandardException(exception_invalid_argument, 3,
+                               NewStrString("setbuffer: mode not 0, 1, or 2"), NewInt(1), v);
     if (!aborting)
         FileSetBuffer(f, i);
     RETURN(v);

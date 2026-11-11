@@ -89,21 +89,17 @@ do_Math_assignpow(Value a, Value b)
     RETURN(ret);
 }
 
-static unsigned
-count_bits(unsigned n)
+/* Count the set bits of 'n', clearing the lowest one each step */
+static int
+count_bits(double_digit n)
 {
-    unsigned c3 = 0x0f0f0f0f;
-    unsigned c2 = c3 ^ (c3 << 2); /* c2 == 0x33333333 */
-    unsigned c1 = c2 ^ (c2 << 1); /* c1 == 0x55555555 */
-    unsigned left = (n >> 1) & c1;
-    n = left + (n & c1);
-    left = (n >> 2) & c2;
-    n = left + (n & c2);
-    left = (n >> 4) & c3;
-    n = left + (n & c3);
-    n += (n >> 8);
-    n += (n >> 16);
-    return (n & 0xff);
+    int c = 0;
+
+    while (n) {
+        n &= n - 1;
+        c++;
+    }
+    return c;
 }
 
 Value
@@ -114,7 +110,7 @@ Popcount(Value av)
     Value     ret;
     digit    *d;
     ptrdiff_t n;
-    unsigned  part;
+    int       part;
 
     if (!Integralp(ValueTag(av))) {
         RaiseStandardException(exception_invalid_argument, 3,
@@ -128,7 +124,7 @@ Popcount(Value av)
     }
     switch (ValueTag(av)) {
     case rep_int:
-        ret = NewInt(count_bits(ValueInt(av)));
+        ret = NewInt(count_bits((double_digit)ValueInt(av)));
         break;
     case rep_integer:
         i = IntegerMag(av);

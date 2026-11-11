@@ -1,0 +1,51 @@
+/*
+ * Nickle test suite
+ *
+ * Arguments rejected by putb, putc, ungetb, and ungetc
+ *
+ * These wrote or pushed back 0 for an argument they rejected, and the
+ * exception arrived an instruction late, so a raise right after the
+ * call replaced it. putb and ungetb also kept the low eight bits of
+ * values that aren't bytes, and File::end pushed back the -1 getb
+ * returns at the end of a file, which then read as 255.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function rejected (string what, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, int i, poly v) {
+    }
+}
+
+file f = File::string_write ();
+rejected ("putb 300", void func () { File::putb (300, f); });
+rejected ("putb -1", void func () { File::putb (-1, f); });
+rejected ("putb 2**40", void func () { File::putb (2**40, f); });
+rejected ("putc -1", void func () { File::putc (-1, f); });
+File::putb (65, f);
+check ("written", File::string_string (f), "A");
+
+file r = File::string_read ("bc");
+rejected ("ungetb 1000", void func () { File::ungetb (1000, r); });
+rejected ("ungetb 2**40", void func () { File::ungetb (2**40, r); });
+rejected ("ungetc -1", void func () { File::ungetc (-1, r); });
+File::ungetb ('a', r);
+string got = "";
+while (!File::end (r))
+    got += String::new (File::getb (r));
+check ("read back", got, "abc");
+
+/* Past the end, getb keeps returning -1 */
+check ("end", File::end (r), true);
+check ("after end", File::getb (r), -1);

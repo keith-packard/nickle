@@ -906,30 +906,36 @@ typedef const struct _HashSet {
 } HashSetRec, *HashSetPtr;
 
 /*
- * Hash elements are stored in boxes, with three elements
- * for each element (hash, key, value)
+ * Each hash element holds its value in a box of its own, so references
+ * to the value survive growing the table, which moves only the box.
  *
  * Hash element states:
  *
- *  key	    value
+ *  key	    box
  *  0	    0		    empty
- *  v	    0		    reference to uninitialized element
- *  0	    v		    deleted
- *  v	    v		    valid entry
+ *  0	    v		    deleted, the box kept to mark the chain
+ *  v	    v		    valid entry, its value perhaps uninitialized
  *
  *  So:
  *	key != 0		-> hash table includes
- *	value != 0		-> hash chain includes
+ *	box != 0		-> hash chain includes
  */
 
-#define HashEltHash(e)    ((e)[0])
-#define HashEltKey(e)     ((e)[1])
-#define HashEltValue(e)   ((e)[2])
-#define HashEltSize       3
-#define HashEltStep(e)    ((e) += HashEltSize)
-#define HashEltCopy(d, s) (((d)[0] = (s)[0]), ((d)[1] = (s)[1]), ((d)[2] = (s)[2]))
-#define HashEltValid(e)   (HashEltKey(e) != 0)
-#define HashEltChained(e) (HashEltValue(e) != 0)
+typedef struct _hashElt {
+    Value  hash;
+    Value  key;
+    BoxPtr box;
+} HashElt, *HashEltPtr;
+
+typedef struct _hashElts {
+    DataType *data;
+    ptrdiff_t size;
+    HashElt   elts[];
+} HashElts, *HashEltsPtr;
+
+#define HashEltValid(e)   ((e)->key != 0)
+#define HashEltChained(e) ((e)->box != 0)
+#define HashEltValue(e)   ((e)->box ? BoxValueGet((e)->box, 0) : 0)
 
 typedef struct _hashTable {
     BaseValue   base;
@@ -937,7 +943,7 @@ typedef struct _hashTable {
     ptrdiff_t   count;
     TypePtr     type;
     TypePtr     keyType;
-    BoxPtr      elts;
+    HashEltsPtr elts;
     Value       def;
 } HashTable, *HashTablePtr;
 

@@ -1333,16 +1333,18 @@ TypeCompatibleAssign(TypePtr a, Value b)
                 return True;
             if (TypePoly(b->hash.type)) {
                 ptrdiff_t h;
-                Value    *e = BoxElements(b->hash.elts);
 
-                for (h = 0; h < b->hash.hashSet->size; h++) {
+                for (h = 0; h < b->hash.elts->size; h++) {
+                    HashEltPtr e = &b->hash.elts->elts[h];
+
+                    if (!HashEltValid(e))
+                        continue;
                     if (!TypeCompatibleAssign(a->hash.type, HashEltValue(e))) {
                         return False;
                     }
-                    if (!TypeCompatibleAssign(a->hash.keyType, HashEltKey(e))) {
+                    if (!TypeCompatibleAssign(a->hash.keyType, e->key)) {
                         return False;
                     }
-                    HashEltStep(e);
                 }
                 return True;
             } else
@@ -1464,16 +1466,18 @@ ValueIsType(Value b, TypePtr a)
                 return True;
             if (TypePoly(b->hash.type)) {
                 ptrdiff_t h;
-                Value    *e = BoxElements(b->hash.elts);
 
-                for (h = 0; h < b->hash.hashSet->size; h++) {
+                for (h = 0; h < b->hash.elts->size; h++) {
+                    HashEltPtr e = &b->hash.elts->elts[h];
+
+                    if (!HashEltValid(e))
+                        continue;
                     if (!ValueIsType(HashEltValue(e), a->hash.type)) {
                         return False;
                     }
-                    if (!ValueIsType(HashEltKey(e), a->hash.keyType)) {
+                    if (!ValueIsType(e->key, a->hash.keyType)) {
                         return False;
                     }
-                    HashEltStep(e);
                 }
                 return True;
             } else

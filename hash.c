@@ -48,7 +48,46 @@ static HashSetRec hashSets[] = {
 
 #define NHASHSETS (sizeof(hashSets) / sizeof(hashSets[0]))
 
-static Value *
+static void
+HashEltsMark(void *object)
+{
+    HashEltsPtr elts = object;
+    ptrdiff_t   i;
+
+    for (i = 0; i < elts->size; i++) {
+        MemReference(elts->elts[i].hash);
+        MemReference(elts->elts[i].key);
+        MemReference(elts->elts[i].box);
+    }
+}
+
+static DataType HashEltsType = { HashEltsMark, 0, "HashEltsType" };
+
+static HashEltsPtr
+NewHashElts(ptrdiff_t size)
+{
+    ENTER();
+    HashEltsPtr elts;
+
+    elts = ALLOCATE(&HashEltsType, sizeof(HashElts) + (size_t)size * sizeof(HashElt));
+    elts->size = size;
+    memset(elts->elts, '\0', (size_t)size * sizeof(HashElt));
+    RETURN(elts);
+}
+
+/* Give a new element a box of its own holding 'value' */
+static void
+HashEltSetBox(HashTablePtr ht, HashEltPtr he, Value value)
+{
+    ENTER();
+    BoxPtr box = NewBox(False, False, 1, ht->type);
+
+    BoxValueSet(box, 0, value);
+    he->box = box;
+    EXIT();
+}
+
+static HashEltPtr
 Find(HashTablePtr ht, Value hash, Value key)
 {
     HashSetPtr hs = ht->hashSet;
@@ -56,14 +95,13 @@ Find(HashTablePtr ht, Value hash, Value key)
     HashValue  h = (HashValue)ValueInt(hash);
     ptrdiff_t  elt = (ptrdiff_t)(h % (HashValue)size);
     ptrdiff_t  step = 0;
-    Value     *elts = BoxElements(ht->elts);
-    Value     *er, *del = 0;
+    HashEltPtr er, del = 0;
 
     for (;;) {
-        er = &elts[elt * HashEltSize];
-        if (!HashEltKey(er)) {
+        er = &ht->elts->elts[elt];
+        if (!er->key) {
             /* check for a deleted entry */
-            if (HashEltValue(er)) {
+            if (HashEltChained(er)) {
                 /* save first deleted entry found */
                 if (!del)
                     del = er;
@@ -75,7 +113,7 @@ Find(HashTablePtr ht, Value hash, Value key)
                     er = del;
                 break;
             }
-        } else if (HashEltHash(er) == hash && Equal(HashEltKey(er), key) == TrueVal) {
+        } else if (er->hash == hash && Equal(er->key, key) == TrueVal) {
             break;
         }
         if (!step) {
@@ -90,29 +128,27 @@ Find(HashTablePtr ht, Value hash, Value key)
     return er;
 }
 
+/* Move the valid elements of 'old' into 'ht', boxes and all */
 static void
-Rehash(BoxPtr old, HashTablePtr ht)
+Rehash(HashEltsPtr old, HashTablePtr ht)
 {
-    Value    *o, *n;
     ptrdiff_t h;
 
-    o = BoxElements(old);
     ht->count = 0;
-    for (h = old->nvalues / HashEltSize; h > 0; h--) {
+    for (h = 0; h < old->size; h++) {
+        HashEltPtr o = &old->elts[h];
+
         if (HashEltValid(o)) {
-            /* XXX must rewrite references */
-            n = Find(ht, HashEltHash(o), HashEltKey(o));
-            HashEltCopy(n, o);
+            *Find(ht, o->hash, o->key) = *o;
             ht->count++;
         }
-        HashEltStep(o);
     }
 }
 
 static void
 Resize(HashTablePtr ht, const HashSetPtr hs)
 {
-    BoxPtr old;
+    HashEltsPtr old;
 
     if (ht->hashSet == hs)
         return;
@@ -122,7 +158,7 @@ Resize(HashTablePtr ht, const HashSetPtr hs)
     /* Rehash compares keys, which may collect; keep the old elements until it's done */
     if (old)
         REFERENCE(old);
-    ht->elts = NewBox(False, False, hs->size * HashEltSize, ht->type);
+    ht->elts = NewHashElts(hs->size);
     ht->hashSet = hs;
     if (old)
         Rehash(old, ht);
@@ -176,16 +212,16 @@ HashEqual(Value av, Value bv, int expandOk)
     HashTable *at = &av->hash;
     HashTable *bt = &bv->hash;
     ptrdiff_t  i;
-    Value     *ae, *be;
+    HashEltPtr ae, be;
 
     (void)expandOk;
     /* if they have different numbers of valid elements, they're not equal */
     if (at->count != bt->count)
         return FalseVal;
-    ae = BoxElements(at->elts);
-    for (i = 0; i < at->hashSet->size; i++) {
+    for (i = 0; i < at->elts->size; i++) {
+        ae = &at->elts->elts[i];
         if (HashEltValid(ae)) {
-            be = Find(bt, HashEltHash(ae), HashEltKey(ae));
+            be = Find(bt, ae->hash, ae->key);
             if (!be || !HashEltValid(be))
                 return FalseVal;
             /* An element made by referencing it has no value; arrays raise for these too */
@@ -197,7 +233,6 @@ HashEqual(Value av, Value bv, int expandOk)
             if (Equal(HashEltValue(be), HashEltValue(ae)) != TrueVal)
                 return FalseVal;
         }
-        HashEltStep(ae);
     }
     return TrueVal;
 }
@@ -207,7 +242,7 @@ HashPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uin
 {
     HashTable *ht = &av->hash;
     ptrdiff_t  h;
-    Value     *e;
+    HashEltPtr e;
     Bool       first = True;
     Bool       pretty = format == 'v' || format == 'g';
 
@@ -221,22 +256,21 @@ HashPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uin
         FilePutSubscriptType(f, ht->type, False);
         FilePuts(f, ") {");
     }
-    e = BoxElements(ht->elts);
-    for (h = ht->hashSet->size; h-- > 0;) {
+    for (h = 0; h < ht->elts->size; h++) {
+        e = &ht->elts->elts[h];
         if (HashEltValid(e)) {
             if (pretty) {
                 if (!first)
                     FilePuts(f, ", ");
                 else
                     FilePuts(f, " ");
-                Print(f, HashEltKey(e), format, base, width, prec, fill);
+                Print(f, e->key, format, base, width, prec, fill);
                 FilePuts(f, " => ");
             } else if (!first)
                 FilePuts(f, " ");
             Print(f, HashEltValue(e), format, base, width, prec, fill);
             first = False;
         }
-        HashEltStep(e);
     }
     if (pretty) {
         if (ht->def) {
@@ -258,14 +292,14 @@ HashHash(Value av)
 {
     HashTable *ht = &av->hash;
     ptrdiff_t  h;
-    Value     *e;
     HashValue  hash = 0;
 
-    e = BoxElements(ht->elts);
-    for (h = ht->hashSet->size; h-- > 0;) {
-        if (HashEltValue(e))
-            hash ^= ValueHashValue(HashEltKey(e));
-        HashEltStep(e);
+    for (h = 0; h < ht->elts->size; h++) {
+        HashEltPtr e = &ht->elts->elts[h];
+
+        /* Skip elements with no value, so arrays holding them can be keys */
+        if (HashEltValid(e) && HashEltValue(e))
+            hash ^= ValueHashValue(e->key);
     }
     return hash;
 }
@@ -322,7 +356,7 @@ NewHash(Bool constant, TypePtr keyType, TypePtr type)
  * Raise out_of_memory when the table is as large as it can get.
  */
 static Bool
-HashMakeRoom(HashTablePtr ht, Value **he, Value hash, Value key)
+HashMakeRoom(HashTablePtr ht, HashEltPtr *he, Value hash, Value key)
 {
     if (ht->count < ht->hashSet->entries)
         return True;
@@ -340,7 +374,7 @@ HashGet(Value hv, Value key)
 {
     HashTablePtr ht = &hv->hash;
     Value        hash = ValueHash(key);
-    Value       *he;
+    HashEltPtr   he;
     Value        value;
 
     he = Find(ht, hash, key);
@@ -353,9 +387,9 @@ HashGet(Value hv, Value key)
         if (!HashMakeRoom(ht, &he, hash, key))
             return (Void);
         ht->count++;
-        HashEltHash(he) = hash;
-        HashEltKey(he) = Copy(key);
-        HashEltValue(he) = Copy(ht->def);
+        he->hash = hash;
+        he->key = Copy(key);
+        HashEltSetBox(ht, he, Copy(ht->def));
     }
     value = HashEltValue(he);
     if (!value) {
@@ -371,17 +405,18 @@ HashSet(Value hv, Value key, Value value)
 {
     HashTablePtr ht = &hv->hash;
     Value        hash = ValueHash(key);
-    Value       *he;
+    HashEltPtr   he;
 
     he = Find(ht, hash, key);
     if (!HashEltValid(he)) {
         if (!HashMakeRoom(ht, &he, hash, key))
             return;
         ht->count++;
-    }
-    HashEltHash(he) = hash;
-    HashEltKey(he) = Copy(key);
-    HashEltValue(he) = Copy(value);
+        he->hash = hash;
+        he->key = Copy(key);
+        HashEltSetBox(ht, he, Copy(value));
+    } else
+        BoxValueSet(he->box, 0, Copy(value));
 }
 
 void
@@ -397,7 +432,7 @@ HashRef(Value hv, Value key)
 {
     ENTER();
     HashTablePtr ht = &hv->hash;
-    Value       *he;
+    HashEltPtr   he;
     Value        hash = ValueHash(key);
 
     he = Find(ht, hash, key);
@@ -405,19 +440,21 @@ HashRef(Value hv, Value key)
         if (!HashMakeRoom(ht, &he, hash, key))
             RETURN(Void);
         ht->count++;
-        HashEltHash(he) = hash;
-        HashEltKey(he) = Copy(key);
+        he->hash = hash;
+        he->key = Copy(key);
         if (ht->def)
-            HashEltValue(he) = Copy(ht->def);
+            HashEltSetBox(ht, he, Copy(ht->def));
+        else
+            HashEltSetBox(ht, he, 0);
     }
-    RETURN(NewRef(ht->elts, &HashEltValue(he) - BoxElements(ht->elts)));
+    RETURN(NewRef(he->box, 0));
 }
 
 Value
 HashTest(Value hv, Value key)
 {
     HashTablePtr ht = &hv->hash;
-    Value       *he;
+    HashEltPtr   he;
     Value        hash = ValueHash(key);
 
     he = Find(ht, hash, key);
@@ -428,15 +465,18 @@ void
 HashDelete(Value hv, Value key)
 {
     HashTablePtr ht = &hv->hash;
-    Value       *he;
+    HashEltPtr   he;
     Value        hash = ValueHash(key);
 
     he = Find(ht, hash, key);
     if (HashEltValid(he)) {
-        /* mark this entry as deleted -- value Void, key NULL */
-        HashEltHash(he) = 0;
-        HashEltKey(he) = 0;
-        HashEltValue(he) = Void;
+        /*
+         * Mark this entry as deleted: no key, but keeping the box, which
+         * references to the value may still hold. A key added here later
+         * gets a box of its own
+         */
+        he->hash = 0;
+        he->key = 0;
         --ht->count;
     }
 }
@@ -450,14 +490,14 @@ HashKeys(Value hv)
     Value        keys = NewArray(False, True, ht->keyType, 1, &dim);
     ptrdiff_t    h;
     ptrdiff_t    i = 0;
-    Value       *e = BoxElements(ht->elts);
 
-    for (h = ht->hashSet->size; h > 0; h--) {
+    for (h = 0; h < ht->elts->size; h++) {
+        HashEltPtr e = &ht->elts->elts[h];
+
         if (HashEltValid(e)) {
-            ArrayValueSet(&keys->array, i, HashEltKey(e));
+            ArrayValueSet(&keys->array, i, e->key);
             i++;
         }
-        HashEltStep(e);
     }
     if (i != dim)
         ArrayResize(keys, 0, i);
@@ -469,18 +509,25 @@ HashCopy(Value hv)
 {
     ENTER();
     Value     new = NewHash(False, hv->hash.keyType, hv->hash.type);
-    Value    *e;
     ptrdiff_t h;
 
     new->hash.def = hv->hash.def;
     Resize(&new->hash, hv->hash.hashSet);
     Rehash(hv->hash.elts, &new->hash);
-    /* Copy the values as array copies copy their elements */
-    e = BoxElements(new->hash.elts);
-    for (h = new->hash.hashSet->size; h > 0; h--) {
-        if (HashEltValid(e) && HashEltValue(e))
-            HashEltValue(e) = Copy(HashEltValue(e));
-        HashEltStep(e);
+    /*
+     * Rehash shared the boxes; give the copy boxes of its own, holding
+     * copies of the values as array copies copy their elements
+     */
+    for (h = 0; h < new->hash.elts->size; h++) {
+        HashEltPtr e = &new->hash.elts->elts[h];
+
+        if (HashEltValid(e)) {
+            Value v = HashEltValue(e);
+
+            if (v)
+                v = Copy(v);
+            HashEltSetBox(&new->hash, e, v);
+        }
     }
     RETURN(new);
 }

@@ -155,7 +155,6 @@ MemReturn(StackPointer mark, void *v)
 #define ALLOCATE(type, size) MemAllocateRef(type, size)
 #define EXIT()               MemRelease(__stackPointer)
 #define RETURN(r)            return MemReturn(__stackPointer, (r))
-#define NOREFRETURN(r)       return (EXIT(), (r))
 /*
  * Return 'r' and store 'o' through 'op', keeping both referenced in the
  * caller's scope. The stack always has room to push back two values

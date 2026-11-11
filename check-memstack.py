@@ -7,7 +7,7 @@
 # Check that C functions leave their MemStack scopes properly.
 #
 # A function opens a scope with ENTER() at the top level of its body,
-# and must leave through RETURN, RETURN2, NOREFRETURN, or EXIT()
+# and must leave through RETURN, RETURN2, or EXIT()
 # followed by return; a bare return leaves its temporaries referenced.
 # Scopes inside a function use an explicit mark from MemMark() and end
 # with MemRelease or MemReturn. A goto must not leave a scope.
@@ -20,8 +20,8 @@
 import re
 import sys
 
-LEAVE_ENTER = re.compile(r"\b(RETURN|RETURN2|NOREFRETURN)\s*\(")
-MACROS = re.compile(r"\b(RETURN|RETURN2|EXIT|NOREFRETURN)\s*\(")
+LEAVE_ENTER = re.compile(r"\b(RETURN|RETURN2)\s*\(")
+MACROS = re.compile(r"\b(RETURN|RETURN2|EXIT)\s*\(")
 RETURN = re.compile(r"\breturn\b")
 GOTO = re.compile(r"\bgoto\s+(\w+)")
 LABEL = re.compile(r"^\s*([A-Za-z_]\w*):\s*$")

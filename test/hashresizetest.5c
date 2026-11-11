@@ -1,0 +1,20 @@
+/*
+ * Nickle test suite
+ *
+ * Growing a hash whose keys collide
+ *
+ * Resizing held the old elements only in a C variable while comparing
+ * colliding keys, which may collect, so they could be freed in use.
+ * Rationals i/(i+1) collide often; 5000 of them crashed.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+rational[rational] h = {};
+for (int i = 1; i <= 5000; i++)
+    h[i / (i + 1)] = i;
+for (int i = 1; i <= 5000; i++)
+    if (h[i / (i + 1)] != i)
+	raise wrong ("value", h[i / (i + 1)], i);
+if (dim (hash_keys (h)) != 5000)
+    raise wrong ("count", dim (hash_keys (h)), 5000);

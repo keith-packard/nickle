@@ -1000,7 +1000,10 @@ PrettyStatement(Value f, Expr *e, int level, int blevel, Bool nest)
         break;
     case RAISE:
         PrettyIndent(f, e, level);
-        FilePrintf(f, "raise %A (", e->tree.left->atom.atom);
+        /* The exception may be a name qualified by namespaces */
+        FilePuts(f, "raise ");
+        PrettyExpr(f, e->tree.left, -1, level, nest);
+        FilePuts(f, " (");
         if (e->tree.right)
             PrettyParameters(f, e->tree.right, nest);
         FilePuts(f, ");\n");

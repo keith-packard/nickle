@@ -185,6 +185,12 @@ HashEqual(Value av, Value bv, int expandOk)
             be = Find(bt, HashEltHash(ae), HashEltKey(ae));
             if (!be || !HashEltValid(be))
                 return FalseVal;
+            /* An element made by referencing it has no value; arrays raise for these too */
+            if (!HashEltValue(ae) || !HashEltValue(be)) {
+                RaiseStandardException(exception_uninitialized_value, 1,
+                                       NewStrString("uninitialized value"));
+                return FalseVal;
+            }
             if (Equal(HashEltValue(be), HashEltValue(ae)) != TrueVal)
                 return FalseVal;
         }

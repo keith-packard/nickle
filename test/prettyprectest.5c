@@ -1,0 +1,81 @@
+/*
+ * Nickle test suite
+ *
+ * Printing expressions with the parentheses their grouping needs
+ *
+ * Printing parenthesized operands of the same precedence only on the
+ * left, and treating the unary operators as three levels where the
+ * grammar has one, printed a - (b - c) as a - b - c, (a ** b) ** c as
+ * a ** b ** c, (-a)! as -a!, and -(-a) as --a.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+int a = 9, b = 3, c = 2;
+bool t = true, u = false;
+
+/* Each source expression and how it prints */
+string[*][2] cases = {
+    { "a + b + c", "a + b + c" },
+    { "(a + b) + c", "a + b + c" },
+    { "a + (b + c)", "a + (b + c)" },
+    { "a - (b - c)", "a - (b - c)" },
+    { "a / (b * c)", "a / (b * c)" },
+    { "a * b / c", "a * b / c" },
+    { "a << (b << c)", "a << (b << c)" },
+    { "a // (b // c)", "a // (b // c)" },
+    { "(a ** b) ** c", "(a ** b) ** c" },
+    { "a ** (b ** c)", "a ** b ** c" },
+    { "(a + b) * c", "(a + b) * c" },
+    { "-(a ** 2)", "-(a ** 2)" },
+    { "(-a) ** 2", "-a ** 2" },
+    { "(t ? a : b) == a ? 4 : 5", "(t ? a : b) == a ? 4 : 5" },
+    { "t ? a : (u ? b : c)", "t ? a : u ? b : c" },
+    { "(t ? u : t) ? 4 : 5", "(t ? u : t) ? 4 : 5" },
+    { "(-b)!", "(-b)!" },
+    { "-(b!)", "-b!" },
+    { "-(-a)", "- -a" },
+    { "~(a | b)", "~(a | b)" },
+    { "!(t && u)", "!(t && u)" },
+    { "a - -b", "a - -b" },
+};
+
+for (int i = 0; i < dim (cases); i++) {
+    string name = sprintf ("prec_%d", i);
+    Command::lex_string (sprintf ("poly %s () { return %s; }\n", name, cases[i][0]));
+}
+
+/* What calling 'f' gives, or the name of the exception it raises */
+poly function result (poly() f)
+{
+    try {
+	return f ();
+    } catch invalid_unop_value (string m, poly v) {
+	return "invalid_unop_value";
+    }
+}
+
+/*
+ * Printed functions must say what's expected, and reading the printed
+ * expression back must compute the same result. Code given to
+ * lex_string runs after this statement, so queue it all at once
+ */
+string again = "";
+for (int i = 0; i < dim (cases); i++) {
+    string name = sprintf ("prec_%d", i);
+    file f = File::string_write ();
+    Command::pretty_print (f, (string[*]) { name });
+    string printed = File::string_string (f);
+    string want = "return " + cases[i][1] + ";";
+    if (String::index (printed, want) < 0)
+	raise wrong (cases[i][0], printed, want);
+    again += sprintf ("check (\"%s\", result (prec_%d), result (poly func () { return %s; }));\n",
+		      cases[i][0], i, cases[i][1]);
+}
+Command::lex_string (again);

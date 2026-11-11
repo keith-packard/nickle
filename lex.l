@@ -935,8 +935,15 @@ aetov(char *s)
             rep_part++;
             next = rep_part;
             next = scan_number(next, '}', &rep_len);
-            if (!next)
-                RETURN(Void); /* can't happen */
+            /*
+             * Constants from the lexer close their repeat groups, but
+             * string_to_real's needn't; like other stray characters, an
+             * unclosed group ends the number
+             */
+            if (!next) {
+                next = rep_part + strlen(rep_part);
+                rep_part = 0;
+            }
         }
     }
     exp_part = scan_number(next, exp_char, &exp_frac_len);

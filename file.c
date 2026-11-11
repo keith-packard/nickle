@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <assert.h>
+#include <poll.h>
 #include "nickle.h"
 #include "ref.h"
 #include "gram.h"
@@ -951,43 +952,37 @@ FileStringString(Value file)
 
 #define DontBlockIO (runnable && running)
 
+/*
+ * Poll one fd for 'events'. Errors and hangups count as ready, so the
+ * read or write that follows reports them
+ */
+static int
+FilePollFd(int fd, short events, int timeout)
+{
+    struct pollfd pfd = { .fd = fd, .events = events };
+    int           n;
+
+    do
+        n = poll(&pfd, 1, timeout);
+    while (n < 0 && errno == EINTR);
+    return n;
+}
+
 Bool
 FileIsReadable(int fd)
 {
-    fd_set         bits;
-    int            n;
-    struct timeval tv;
-
     if (fd == 0 && !stdinOwned) {
         if (!stdinPolling)
             IoNoticeTtyUnowned();
         return False;
     }
-    do {
-        FD_ZERO(&bits);
-        FD_SET(fd, &bits);
-        tv.tv_usec = 0;
-        tv.tv_sec = 0;
-        n = select(fd + 1, &bits, 0, 0, &tv);
-    } while (n < 0 && errno == EINTR);
-    return n > 0;
+    return FilePollFd(fd, POLLIN, 0) > 0;
 }
 
 Bool
 FileIsWritable(int fd)
 {
-    fd_set         bits;
-    int            n;
-    struct timeval tv;
-
-    do {
-        FD_ZERO(&bits);
-        FD_SET(fd, &bits);
-        tv.tv_usec = 0;
-        tv.tv_sec = 0;
-        n = select(fd + 1, 0, &bits, 0, &tv);
-    } while (n < 0 && errno == EINTR);
-    return n > 0;
+    return FilePollFd(fd, POLLOUT, 0) > 0;
 }
 
 int
@@ -1087,16 +1082,8 @@ FileUnput(Value file, int c)
 static void
 FileWaitForWriteable(Value file)
 {
-    int    n;
-    fd_set bits;
-
-    FD_ZERO(&bits);
-    for (;;) {
-        FD_SET(file->file.fd, &bits);
-        n = select(file->file.fd + 1, 0, &bits, 0, 0);
-        if (n > 0)
-            break;
-    }
+    while (FilePollFd(file->file.fd, POLLOUT, -1) <= 0)
+        ;
 }
 
 static int
@@ -1855,44 +1842,54 @@ void
 FileCheckBlocked(Bool block)
 {
     ENTER();
-    fd_set readable, writable;
-    int    n, fd;
-    Value  blocked, *prev;
-    Bool   ready;
-    Bool   writeBlocked;
+    struct pollfd *pfds = NULL;
+    ptrdiff_t      npfds, i;
+    int            n;
+    Value          blocked, *prev;
+    Bool           ready;
+    Bool           writeBlocked;
 #ifdef NO_PIPE_SIGIO
     Bool readPipeBlocked;
 #endif
 
-    FD_ZERO(&readable);
-    FD_ZERO(&writable);
-    n = 0;
+    /* Drop closed files, then poll one entry per remaining file, in list order */
+    npfds = 0;
     for (prev = &fileBlocked; (blocked = *prev);) {
-        fd = blocked->file.fd;
-        if (fd < 0) {
+        if (blocked->file.fd < 0) {
             *prev = blocked->file.next;
             continue;
         }
         prev = &blocked->file.next;
-        if (fd == 0 && !stdinOwned)
-            continue;
-        if (blocked->file.flags & FileInputBlocked)
-            FD_SET(fd, &readable);
-        if (blocked->file.flags & FileOutputBlocked)
-            FD_SET(fd, &writable);
-        if (fd >= n)
-            n = fd + 1;
+        npfds++;
+    }
+    n = 0;
+    if (npfds) {
+        pfds = malloc((size_t)npfds * sizeof(struct pollfd));
+        if (!pfds)
+            MemExhausted();
+        for (i = 0, blocked = fileBlocked; blocked; i++, blocked = blocked->file.next) {
+            /* poll skips negative fds; stdin waits until nickle owns the terminal */
+            pfds[i].fd = -1;
+            pfds[i].events = 0;
+            pfds[i].revents = 0;
+            if (blocked->file.fd == 0 && !stdinOwned)
+                continue;
+            pfds[i].fd = blocked->file.fd;
+            if (blocked->file.flags & FileInputBlocked)
+                pfds[i].events |= POLLIN;
+            if (blocked->file.flags & FileOutputBlocked)
+                pfds[i].events |= POLLOUT;
+            n++;
+        }
     }
     if (n > 0) {
-        struct timeval tv, *tvp;
+        int timeout = 0;
+
         if (block)
-            tvp = 0;
-        else {
-            tv.tv_usec = 0;
-            tv.tv_sec = 0;
-            tvp = &tv;
-        }
-        n = select(n, &readable, &writable, 0, tvp);
+            timeout = -1;
+        do
+            n = poll(pfds, (nfds_t)npfds, timeout);
+        while (n < 0 && errno == EINTR);
     } else {
         anyFileWriteBlocked = False;
 #ifdef NO_PIPE_SIGIO
@@ -1914,14 +1911,17 @@ FileCheckBlocked(Bool block)
 #endif
         if (block)
             signaling = True;
-        for (prev = &fileBlocked; (blocked = *prev);) {
-            fd = blocked->file.fd;
+        for (i = 0, prev = &fileBlocked; (blocked = *prev); i++) {
+            /* Errors and hangups wake both directions so they get reported */
+            short revents = pfds[i].revents;
+            short failed = POLLERR | POLLHUP | POLLNVAL;
+
             ready = False;
-            if (FD_ISSET(fd, &readable)) {
+            if ((pfds[i].events & POLLIN) && (revents & (POLLIN | failed))) {
                 ready = True;
                 blocked->file.flags &= ~FileInputBlocked;
             }
-            if (FD_ISSET(fd, &writable)) {
+            if ((pfds[i].events & POLLOUT) && (revents & (POLLOUT | failed))) {
                 if (FileFlush(blocked, False) != FileBlocked) {
                     blocked->file.flags &= ~FileOutputBlocked;
                     ready = True;
@@ -1945,6 +1945,7 @@ FileCheckBlocked(Bool block)
         anyPipeReadBlocked = readPipeBlocked;
 #endif
     }
+    free(pfds);
     EXIT();
 }
 

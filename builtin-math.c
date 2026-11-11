@@ -120,12 +120,12 @@ Popcount(Value av)
 
     if (!Integralp(ValueTag(av))) {
         RaiseStandardException(exception_invalid_argument, 3,
-                               NewStrString("Math::popcount: not an integer"), av, Void);
+                               NewStrString("Math::popcount: not an integer"), NewInt(0), av);
         RETURN(Void);
     }
     if (Negativep(av)) {
         RaiseStandardException(exception_invalid_argument, 3,
-                               NewStrString("Math::popcount: negative argument"), av, Void);
+                               NewStrString("Math::popcount: negative argument"), NewInt(0), av);
         RETURN(Void);
     }
     switch (ValueTag(av)) {
@@ -154,7 +154,7 @@ Popcount(Value av)
         break;
     default:
         RaiseStandardException(exception_invalid_argument, 3,
-                               NewStrString("Math::popcount: not an integer"), av, Void);
+                               NewStrString("Math::popcount: not an integer"), NewInt(0), av);
         RETURN(Void);
     }
     RETURN(ret);

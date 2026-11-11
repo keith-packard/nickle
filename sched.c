@@ -144,7 +144,7 @@ do_Thread_join(Value target)
     ENTER();
     if (!ValueIsThread(target)) {
         RaiseStandardException(exception_invalid_argument, 3,
-                               NewStrString("join needs thread argument"), target, Void);
+                               NewStrString("join needs thread argument"), NewInt(0), target);
         RETURN(Void);
     }
     if (target->thread.state != ThreadFinished) {
@@ -229,7 +229,7 @@ do_Thread_set_priority(Value thread, Value priority)
     int i;
     if (!ValueIsThread(thread)) {
         RaiseStandardException(exception_invalid_argument, 3,
-                               NewStrString("set_priority: not a thread"), thread, priority);
+                               NewStrString("set_priority: not a thread"), NewInt(0), thread);
         RETURN(Void);
     }
     i = IntPart(priority, "Invalid thread priority");
@@ -249,7 +249,7 @@ do_Thread_get_priority(Value thread)
     ENTER();
     if (!ValueIsThread(thread)) {
         RaiseStandardException(exception_invalid_argument, 3,
-                               NewStrString("get_priority: not a thread"), thread, Void);
+                               NewStrString("get_priority: not a thread"), NewInt(0), thread);
         RETURN(Void);
     }
     RETURN(NewInt(thread->thread.priority));

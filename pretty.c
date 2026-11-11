@@ -385,23 +385,14 @@ PrettyDecl(Value f, Expr *e, int level, Bool nest)
     /*    PrettyProf (f, e);*/
     FilePutPublish(f, e->decl.publish, True);
     switch (e->decl.class) {
-    case class_const:
-        FilePuts(f, "const");
-        if (e->decl.type)
-            FilePutType(f, e->decl.type, False);
-        break;
-    case class_global:
-        if (e->decl.type)
-            FilePutType(f, e->decl.type, False);
-        else
-            FilePuts(f, "global");
-        break;
     case class_auto:
         if (e->decl.type)
             FilePutType(f, e->decl.type, False);
         else
             FilePuts(f, "auto");
         break;
+    case class_const:
+    case class_global:
     case class_static:
     case class_typedef:
     case class_namespace:

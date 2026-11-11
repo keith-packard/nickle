@@ -96,6 +96,7 @@ tests = [
   'builtinargtest.5c',
   'exceptiondecltest.5c',
   'prettyprectest.5c',
+  'prettystmttest.5c',
   'bignamespacetest.5c',
   'longlisttest.5c',
   'commandreleasetest.5c'

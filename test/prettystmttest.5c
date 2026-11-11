@@ -1,0 +1,66 @@
+/*
+ * Nickle test suite
+ *
+ * Printing union switch cases and raise statements
+ *
+ * Union switch case labels printed blank, losing the member and the
+ * name bound to its value, and raise of an exception qualified by a
+ * namespace printed whatever followed the name's node.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* Return the printed form of the function 'name' */
+string function printed (string name)
+{
+    file f = File::string_write ();
+    Command::pretty_print (f, (string[*]) { name });
+    return File::string_string (f);
+}
+
+void function has (string what, string text, string want)
+{
+    if (String::index (text, want) < 0)
+	raise wrong (what, text, want);
+}
+
+typedef union { int i; string s; void v; } U;
+
+int function pick (U u)
+{
+    union switch (u) {
+    case i:
+	return 1;
+    case s x:
+	return String::length (x);
+    default:
+	return 0;
+    }
+}
+
+string p = printed ("pick");
+has ("member", p, "case i:");
+has ("bound name", p, "case s x:");
+
+namespace N { public exception nx (); }
+
+void function thrower ()
+{
+    raise N::nx ();
+}
+
+has ("qualified raise", printed ("thrower"), "raise N::nx ();");
+
+/* The printed union switch compiles and behaves the same */
+int start = String::index (p, "(");
+string again = String::substr (p, start, String::length (p) - start);
+Command::lex_string ("int function pick_again " + again + "\n" +
+		     "check (\"i\", pick_again ((U) { .i = 5 }), pick ((U) { .i = 5 }));\n" +
+		     "check (\"s\", pick_again ((U) { .s = \"abc\" }), 3);\n" +
+		     "check (\"v\", pick_again (U.v), 0);\n");

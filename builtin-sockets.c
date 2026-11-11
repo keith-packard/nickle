@@ -372,9 +372,9 @@ do_Socket_connect(ptrdiff_t num, Value *args)
         }
 #endif
         n = connect(s->file.fd, &addr.addr, len);
+        err = errno;
         flags &= ~O_NONBLOCK;
         fcntl(s->file.fd, F_SETFL, flags);
-        err = errno;
         if (n == -1) {
             if (err == EWOULDBLOCK || err == EINPROGRESS) {
                 FileSetBlocked(s, FileOutputBlocked);
@@ -389,6 +389,22 @@ do_Socket_connect(ptrdiff_t num, Value *args)
     if (s->file.flags & FileOutputBlocked) {
         ThreadSleep(running, s, PriorityIo);
         RETURN(Void);
+    }
+
+    /* A connection that had to wait reports how it ended through SO_ERROR */
+    if (running->thread.partial) {
+        int       err = 0;
+        socklen_t errlen = sizeof(err);
+
+        if (getsockopt(s->file.fd, SOL_SOCKET, SO_ERROR, &err, &errlen) < 0)
+            err = errno;
+        if (err) {
+            /* Only a completed instruction clears partial */
+            running->thread.partial = 0;
+            RaiseStandardException(exception_io_error, 3, FileGetErrorMessage(err),
+                                   FileGetError(err), s);
+            RETURN(Void);
+        }
     }
 
     complete = True;

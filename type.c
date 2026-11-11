@@ -823,9 +823,7 @@ TypeUnaryIntegral(Type *type)
 static Type *
 TypeUnaryString(Type *type)
 {
-    if (TypePoly(type))
-        return typePrim[rep_string];
-    if (TypeString(type))
+    if (TypePoly(type) || TypeString(type))
         return typePrim[rep_integer];
     return 0;
 }

@@ -30,16 +30,18 @@ do_Foreign_load(Value av)
     if (!name)
         RETURN(Void);
 
+    /* dlopen needn't set errno; dlerror's message has the details */
+    errno = 0;
     lib = dlopen(name, RTLD_NOW);
     if (!lib) {
         char *err = 0;
-        int   e = errno;
+        int   e = errno ? errno : EINVAL;
 #ifdef HAVE_DLERROR
         err = dlerror();
 #endif
         if (!err)
             err = "cannot open";
-        RaiseStandardException(exception_open_error, 3, NewStrString(err), NewInt(e), av);
+        RaiseStandardException(exception_open_error, 3, NewStrString(err), FileGetError(e), av);
         RETURN(Void);
     }
 
@@ -51,7 +53,8 @@ do_Foreign_load(Value av)
 #endif
         if (!err)
             err = "missing nickle_init";
-        RaiseStandardException(exception_open_error, 3, NewStrString(err), NewInt(0), av);
+        RaiseStandardException(exception_open_error, 3, NewStrString(err), FileGetError(EINVAL),
+                               av);
 #ifdef HAVE_DLCLOSE
         dlclose(lib);
 #endif

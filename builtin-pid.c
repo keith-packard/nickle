@@ -79,7 +79,8 @@ error(Value value)
 {
     int err = errno;
 
-    RaiseStandardException(exception_system_error, 3, FileGetErrorMessage(err), NewInt(err), value);
+    RaiseStandardException(exception_system_error, 3, FileGetErrorMessage(err), FileGetError(err),
+                           value);
     return Void;
 }
 

@@ -1,0 +1,30 @@
+/*
+ * Nickle test suite
+ *
+ * Copying hashes that hold mutable values
+ *
+ * Assigning a hash copied the table but shared its values, so changing
+ * an array held in the copy changed the original as well, unlike
+ * assigning an array of arrays.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+poly[int] g = { 1 => (int[*]) { 1, 2 }, 2 => 5 };
+poly[int] g2 = g;
+g2[1][0] = 99;
+check ("original", g[1][0], 1);
+check ("copy", g2[1][0], 99);
+check ("plain value", g2[2], 5);
+
+/* Arrays of arrays behave the same way */
+poly[*] a = { (int[*]) { 1, 2 } };
+poly[*] a2 = a;
+a2[0][0] = 99;
+check ("array original", a[0][0], 1);

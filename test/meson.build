@@ -30,6 +30,7 @@ tests = [
   'recursivetypetest.5c',
   'hashuninittest.5c',
   'hashresizetest.5c',
+  'hashcopytest.5c',
   'structequaltest.5c',
   'sleepzerotest.5c',
   'killtest.5c',

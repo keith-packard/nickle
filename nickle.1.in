@@ -866,7 +866,8 @@ and used internally by Nickle.
 Attempt to use an uninitialized value.
 .IP "exception invalid_argument(string msg, int arg, poly val)"
 The arg-th argument to a builtin function had invalid value
-val.
+val.  The interpreter's own checks, such as a condition that
+isn't a bool or a returned value of the wrong type, report arg 0.
 .IP "exception readonly_box(string msg, poly val)"
 Attempt to change the value of a read-only quantity
 to val.

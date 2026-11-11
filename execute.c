@@ -349,7 +349,8 @@ ThreadArrayIndex(Value array, Value thread, int32_t ndim, Value last, ptrdiff_t 
         }
         if (part < 0) {
             RaiseStandardException(exception_invalid_argument, 3,
-                                   NewStrString("Array index not non-negative integer"), array, d);
+                                   NewStrString("Array index not non-negative integer"), NewInt(0),
+                                   d);
             return 0;
         }
         if (limits[dim] <= part) {
@@ -479,7 +480,7 @@ ThreadArrayInit(Value thread, Value value, AInitMode mode, int32_t dim, ptrdiff_
             if (!TypeCompatibleAssign(ArrayType(&array->array), value)) {
                 RaiseStandardException(exception_invalid_argument, 3,
                                        NewStrString("Incompatible types in array initialization"),
-                                       array, value);
+                                       NewInt(0), value);
                 break;
             }
             i = ThreadArrayIndex(array, thread, ndim, Stack(1), 2, True, False);
@@ -1073,7 +1074,7 @@ ThreadsRun(Value until, Value lex)
                     if (!ValueIsBool(value)) {
                         RaiseStandardException(exception_invalid_argument, 3,
                                                NewStrString("conditional expression not bool"),
-                                               value, Void);
+                                               NewInt(0), value);
                         break;
                     }
                     if (!True(value))
@@ -1083,7 +1084,7 @@ ThreadsRun(Value until, Value lex)
                     if (!ValueIsBool(value)) {
                         RaiseStandardException(exception_invalid_argument, 3,
                                                NewStrString("conditional expression not bool"),
-                                               value, Void);
+                                               NewInt(0), value);
                         break;
                     }
                     if (True(value))
@@ -1104,7 +1105,7 @@ ThreadsRun(Value until, Value lex)
                     if (!ValueIsUnion(value)) {
                         RaiseStandardException(exception_invalid_argument, 3,
                                                NewStrString("union switch expression not union"),
-                                               value, Void);
+                                               NewInt(0), value);
                         break;
                     }
                     if (value->unions.tag == inst->tagcase.tag) {
@@ -1133,16 +1134,16 @@ ThreadsRun(Value until, Value lex)
                 case OpReturn:
                     if (!thread->thread.continuation.frame) {
                         RaiseStandardException(exception_invalid_argument, 3,
-                                               NewStrString("return outside of function"), Void,
-                                               Void);
+                                               NewStrString("return outside of function"),
+                                               NewInt(0), Void);
                         break;
                     }
                     if (!TypeCompatibleAssign(
                             thread->thread.continuation.frame->function->func.code->base.type,
                             value)) {
                         RaiseStandardException(exception_invalid_argument, 3,
-                                               NewStrString("Incompatible type in return"), value,
-                                               Void);
+                                               NewStrString("Incompatible type in return"),
+                                               NewInt(0), value);
                         break;
                     }
                     if (aborting)
@@ -1322,7 +1323,7 @@ ThreadsRun(Value until, Value lex)
                     if (!thread->thread.continuation.frame) {
                         RaiseStandardException(exception_invalid_argument, 3,
                                                NewStrString("StaticInitDone outside of function"),
-                                               Void, Void);
+                                               NewInt(0), Void);
                         break;
                     }
                     if (aborting)

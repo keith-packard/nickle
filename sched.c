@@ -273,14 +273,15 @@ do_Thread_get_priority(Value thread)
     RETURN(NewInt(thread->thread.priority));
 }
 
+/* Kill 'thread', argument 'i' of Thread::kill */
 static int
-KillThread(Value thread)
+KillThread(Value thread, ptrdiff_t i)
 {
     int ret;
 
     if (!ValueIsThread(thread)) {
         RaiseStandardException(exception_invalid_argument, 3, NewStrString("kill: not a thread"),
-                               thread, Void);
+                               NewPtrdiffInteger(i), thread);
         return 0;
     }
     if (thread->thread.state == ThreadFinished)
@@ -300,15 +301,16 @@ do_Thread_kill(ptrdiff_t n, Value *p)
     ENTER();
     Value     thread;
     ptrdiff_t ret = 0;
+    ptrdiff_t i;
 
     /* With no threads, kill the current one */
     if (n == 0) {
         thread = running;
         if (thread)
-            ret = KillThread(thread);
+            ret = KillThread(thread, 0);
     } else {
-        while (n--)
-            ret += KillThread(*p++);
+        for (i = 0; i < n; i++)
+            ret += KillThread(p[i], i);
     }
     RETURN(NewPtrdiffInteger(ret));
 }

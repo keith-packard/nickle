@@ -273,9 +273,10 @@ do_File_print(Value file, Value value, Value format, Value base, Value width, Va
     ibase = IntPart(base, "Illegal base");
     if (aborting)
         return Void;
-    if (ibase < 0 || ibase == 1) {
+    /* Base 0 picks a default; digits run 0-9 then a-z, which covers bases up to 36 */
+    if (ibase < 0 || ibase == 1 || ibase > 36) {
         RaiseStandardException(exception_invalid_argument, 3, NewStrString("Illegal base"),
-                               NewInt(0), base);
+                               NewInt(3), base);
         return Void;
     }
     iwidth = IntPart(width, "Illegal width");

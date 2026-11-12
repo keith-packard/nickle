@@ -1,0 +1,27 @@
+/*
+ * Nickle test suite
+ *
+ * sqrt and cbrt of values with large exponents
+ *
+ * Both seeded Newton's method with an exact power of two that had as
+ * many bits as the argument's exponent, taking time and memory in
+ * proportion to it, or raising out_of_memory
+ */
+
+exception bad_root (string name, real x, real r);
+
+for (int e = 2**20; e <= 2**80; e *= 2**60) {
+    for (int s = -1; s <= 1; s += 2) {
+	real	x = ldexp (imprecise (1.75, 64), s * e);
+	real	r = sqrt (x);
+
+	if (imprecise (r * r, 60) != imprecise (x, 60))
+	    raise bad_root ("sqrt", x, r);
+	r = cbrt (x);
+	if (imprecise (r * r * r, 60) != imprecise (x, 60))
+	    raise bad_root ("cbrt", x, r);
+	r = cbrt (-x);
+	if (imprecise (r * r * r, 60) != imprecise (-x, 60))
+	    raise bad_root ("cbrt", -x, r);
+    }
+}

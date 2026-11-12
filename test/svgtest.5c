@@ -1,0 +1,24 @@
+/*
+ * Nickle test suite
+ *
+ * SVG output declares the SVG namespace
+ *
+ * The <svg> root had no xmlns, so XML readers, including browsers
+ * opening the file directly, didn't take it as SVG
+ */
+
+autoload SVG;
+
+exception bad_svg (string got);
+
+file	f = File::string_write ();
+
+SVG::start (f, 100, 50);
+SVG::spot (f, "red", 10, 10, 5);
+SVG::stop (f);
+
+string	out = File::string_string (f);
+
+if (String::index (out, "<svg xmlns=\"http://www.w3.org/2000/svg\" ") < 0 ||
+    String::index (out, "version=\"1.1\"") < 0)
+    raise bad_svg (out);

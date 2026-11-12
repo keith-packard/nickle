@@ -1,0 +1,46 @@
+/*
+ * Nickle test suite
+ *
+ * A newline ends a command holding a func expression
+ *
+ * Argument lists left the lexer ignoring newlines after the closing
+ * parenthesis, so a function body on the next line would work, but only
+ * an expression body set it back. So the newline after a func
+ * expression's block was skipped, and the next line ran into the
+ * expression as a syntax error. Function definitions, forward
+ * declarations, function-keyword definitions, and catch blocks inside
+ * one did the same
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+poly f = func () { return 1; }
+check ("assigned", f (), 1)
+int n = (func () { return 2; }) ()
+check ("called", n, 2)
+n = 1 + (func (int x) { return x * 3; }) (1)
+check ("operand", n, 4)
+poly g = func (x) = x * 5
+check ("expression body", g (1), 5)
+
+poly a = func () { int h () { return 6; } return h (); }
+check ("nested definition", a (), 6)
+poly b = func () { int h (); int h () { return 7; } return h (); }
+check ("nested forward declaration", b (), 7)
+poly c = func () { function h (x) { return x; } return h (8); }
+check ("nested function keyword", c (), 8)
+poly d = func () {
+    try {
+	raise invalid_argument ("x", 0, 0);
+    } catch invalid_argument (string m, int i, poly v) {
+	return 9;
+    }
+    return 0;
+}
+check ("nested catch", d (), 9)

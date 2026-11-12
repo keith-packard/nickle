@@ -165,19 +165,19 @@ extend namespace Complex {
 	{
 	    /*
 	     * h has a relative error under 3 * 2**-wprec, which moves
-	     * log(h) by about that much. Near 1, where log would cancel,
-	     * h - 1 is exact and log1p keeps its bits
+	     * log(h) by under 4 * 2**-wprec. Near 1, where log would
+	     * cancel, h - 1 is exact and log1p keeps its bits
 	     */
 	    real	xw = imprecise(x, wprec), yw = imprecise(y, wprec);
 	    real	h = xw * xw + yw * yw;
 	    real	l;
 
 	    if (1/2 < h && h < 2)
-		l = Math::log1p(h - 1);
+		l = Math::log1p_w(h - 1, wprec, err);
 	    else
-		l = Math::log(h);
+		l = Math::log_w(h, wprec, err);
 
-	    *err = (2 + Math::abs(l)) * 2**-wprec;
+	    *err = (*err + 4 * 2**-wprec) / 2;
 	    return l / 2;
 	}
 
@@ -282,6 +282,152 @@ extend namespace Complex {
 	return new(-y / (2 * t), -t);
     }
 
+    real one_plus(real x, int wprec, *real err)
+	/*
+	 * Return 1 + x rounded to 'wprec' bits, setting 'err' to a bound
+	 * on its rounding error, which is 0 when 1 + x fits
+	 */
+    {
+	x = imprecise(x);
+
+	real	e = imprecise(x, precision(x) + Math::abs(part_exponent(x)) + 2) + 1;
+	real	r = imprecise(e, wprec);
+
+	*err = 0;
+	if (r != e)
+	    *err = Math::abs(r) * 2**-wprec;
+	return r;
+    }
+
+    complex sqrt_err(real p, real p_err, real q, int wprec,
+		     *real re_err, *real im_err)
+	/*
+	 * Return sqrt(p + iq), as sqrt does, to 'wprec' bits, setting
+	 * the errors in its parts given the error in 'p'. 'q' must be
+	 * exact, and so must 'p' when q is 0 and p is near 0, as its
+	 * sign then picks the result
+	 */
+    {
+	real	u = 2**-wprec;
+	real	p_rel = 0;
+
+	q = imprecise(q, wprec);
+
+	if (p_err != 0) {
+	    /* Too uncertain to bound; ask for more bits */
+	    if (Math::abs(p) <= 2 * p_err) {
+		*re_err = *im_err = Math::abs(p) + 1;
+		return 0;
+	    }
+	    p_rel = p_err / Math::abs(p);
+	}
+
+	if (q == 0) {
+	    real	s_rel;
+	    real	s = Math::sqrt_w(Math::abs(p), wprec, &s_rel);
+	    real	s_err = s * (p_rel + s_rel);
+
+	    if (p >= 0) {
+		*re_err = s_err;
+		*im_err = 0;
+		return s;
+	    }
+	    *re_err = 0;
+	    *im_err = s_err;
+	    return new(0, s);
+	}
+
+	/*
+	 * Each step adds positive values, so relative errors add up:
+	 * |z| from p**2 + q**2, then t from (|z| + |p|) / 2, and the
+	 * other part from |q| / 2t
+	 */
+	real	m_rel, t_rel;
+	real	m = Math::sqrt_w(p * p + q * q, wprec, &m_rel);
+	real	t = Math::sqrt_w((m + Math::abs(p)) / 2, wprec, &t_rel);
+	real	o = Math::abs(q) / (2 * t);
+
+	t_rel += p_rel + m_rel + 2 * u;
+	real	t_err = t * t_rel;
+	real	o_err = o * (t_rel + u);
+
+	if (q < 0)
+	    o = -o;
+	if (p >= 0) {
+	    *re_err = t_err;
+	    *im_err = o_err;
+	    return new(t, o);
+	}
+	*re_err = o_err;
+	*im_err = t_err;
+	if (q < 0)
+	    return new(-o, -t);
+	return new(o, t);
+    }
+
+    real atan2_err(real y, real y_err, real x, real x_err, int wprec, *real err)
+	/*
+	 * Return atan2(y, x) to 'wprec' bits, setting 'err' to a bound
+	 * on its error given the errors in 'y' and 'x'. An exact zero y
+	 * with x surely positive gives an exact 0
+	 */
+    {
+	if (y == 0 && y_err == 0 && x > x_err) {
+	    *err = 0;
+	    return 0;
+	}
+
+	real	ax = Math::abs(x), ay = Math::abs(y);
+	real	r = Math::max(ax - x_err, ay - y_err);
+
+	/*
+	 * Too uncertain to bound, either near the origin or where x
+	 * may be negative and y may take either sign, which crosses
+	 * the cut; ask for more bits
+	 */
+	if (r <= 0 || (x <= x_err && ay <= y_err && y_err != 0)) {
+	    *err = 8;
+	    return 0;
+	}
+
+	/*
+	 * Moving (x, y) by under x_err + y_err at a distance of at
+	 * least r turns it by under twice their ratio
+	 */
+	real	a = Math::atan2_w(y, x, wprec, err);
+
+	*err += 2 * (x_err + y_err) / r;
+	return a;
+    }
+
+    real product_err(real a, real a_err, real b, real b_err,
+		     real c, real c_err, real d, real d_err, int wprec,
+		     *real err)
+	/*
+	 * Return a b + c d rounded to 'wprec' bits, setting 'err' to a
+	 * bound on its error given the errors in each value
+	 */
+    {
+	real	v = a * b + c * d;
+
+	*err = mul_err(a, a_err, b, b_err, wprec) +
+	       mul_err(c, c_err, d, d_err, wprec) +
+	       2 * Math::abs(v) * 2**-wprec;
+	return v;
+    }
+
+    real asinh_err(real v, real v_err, int wprec, *real err)
+	/*
+	 * Return asinh(v) to 'wprec' bits, setting 'err' to a bound on
+	 * its error given the error in 'v'; asinh' <= 1
+	 */
+    {
+	real	a = Math::asinh_w(v, wprec, err);
+
+	*err += v_err;
+	return a;
+    }
+
     /*
      * The inverse functions follow C23 7.3 and Annex G: the branch
      * cuts and ranges are those of casin, cacos, catan, casinh,
@@ -295,26 +441,61 @@ extend namespace Complex {
 
     protected complex asin(complex z)
     {
+	if (z == 0)
+	    return 0;
 	int	prec = part_precision(z);
 	z = imprecise(z, prec);
-	complex	zp = imprecise(z, prec + guard_bits);
-	complex	a = sqrt(1 - zp);
-	complex	b = sqrt(1 + zp);
 
-	return imprecise(new(Math::atan2(creal(zp), creal(a * b)),
-			     Math::asinh(cimag(conj(a) * b))), prec);
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	x = creal(z), y = cimag(z);
+	    real	am_err, ap_err, ar_err, ai_err, br_err, bi_err, d_err;
+	    real	am = one_plus(-x, wprec, &am_err);
+	    real	ap = one_plus(x, wprec, &ap_err);
+	    complex	a = sqrt_err(am, am_err, -y, wprec, &ar_err, &ai_err);
+	    complex	b = sqrt_err(ap, ap_err, y, wprec, &br_err, &bi_err);
+	    real	ar = creal(a), ai = cimag(a), br = creal(b), bi = cimag(b);
+
+	    /* Re(a b) and Im(conj(a) b) */
+	    real	d = product_err(ar, ar_err, br, br_err, -ai, ai_err,
+					bi, bi_err, wprec, &d_err);
+	    real	re = atan2_err(x, 0, d, d_err, wprec, re_err);
+	    real	n = product_err(ar, ar_err, bi, bi_err, -ai, ai_err,
+					br, br_err, wprec, &d_err);
+	    real	im = asinh_err(n, d_err, wprec, im_err);
+
+	    return new(re, im);
+	}
+
+	return round_correctly(prec, compute);
     }
 
     protected complex acos(complex z)
     {
 	int	prec = part_precision(z);
 	z = imprecise(z, prec);
-	complex	zp = imprecise(z, prec + guard_bits);
-	complex	a = sqrt(1 - zp);
-	complex	b = sqrt(1 + zp);
 
-	return imprecise(new(2 * Math::atan2(creal(a), creal(b)),
-			     Math::asinh(cimag(conj(b) * a))), prec);
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	x = creal(z), y = cimag(z);
+	    real	am_err, ap_err, ar_err, ai_err, br_err, bi_err, n_err;
+	    real	am = one_plus(-x, wprec, &am_err);
+	    real	ap = one_plus(x, wprec, &ap_err);
+	    complex	a = sqrt_err(am, am_err, -y, wprec, &ar_err, &ai_err);
+	    complex	b = sqrt_err(ap, ap_err, y, wprec, &br_err, &bi_err);
+	    real	ar = creal(a), ai = cimag(a), br = creal(b), bi = cimag(b);
+
+	    /* 2 atan2(Re a, Re b) and Im(conj(b) a) */
+	    real	re = 2 * atan2_err(ar, ar_err, br, br_err, wprec, re_err);
+	    real	n = product_err(br, br_err, ai, ai_err, -bi, bi_err,
+					ar, ar_err, wprec, &n_err);
+	    real	im = asinh_err(n, n_err, wprec, im_err);
+
+	    *re_err *= 2;
+	    return new(re, im);
+	}
+
+	return round_correctly(prec, compute);
     }
 
     protected complex cos(complex z)
@@ -506,29 +687,62 @@ extend namespace Complex {
 	 */
 	if (x > 0)
 	    return -atanh(-z);
-
+	if (z == 0)
+	    return 0;
 	int	prec = part_precision(z);
 	z = imprecise(z, prec);
-	int	wprec = prec + guard_bits;
-	x = imprecise(x, wprec);
-	y = imprecise(y, wprec);
 
-	/*
-	 * Re = log(|1+z|**2 / |1-z|**2) / 4, the ratio being
-	 * 1 + 4x / |1-z|**2; log1p keeps the bits of small x, and
-	 * near the pole at -1 the ratio itself keeps those of 1+x.
-	 * Im = arg((1+z) * conj(1-z)) / 2
-	 */
-	real	d = (1 - x)**2 + y**2;
-	real	q = 4 * x / d;
-	real	re;
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	u = 2**-wprec;
+	    real	x = creal(z), y = cimag(z);
+	    real	yw = imprecise(y, wprec);
+	    real	m_err, p_err, d_err, q_err, e_err;
+	    real	m = one_plus(-x, wprec, &m_err);
+	    real	p = one_plus(x, wprec, &p_err);
 
-	if (q > -1/2)
-	    re = Math::log1p(q) / 4;
-	else
-	    re = Math::log(((1 + x)**2 + y**2) / d) / 4;
-	return imprecise(new(re, Math::atan2(2 * y, (1 - x) * (1 + x) - y**2) / 2),
-			 prec);
+	    /*
+	     * Re = log(|1+z|**2 / |1-z|**2) / 4, the ratio being
+	     * 1 + 4x / |1-z|**2; log1p keeps the bits of small x, and
+	     * near the pole at -1 the ratio itself keeps those of 1+x.
+	     * 1+x is exact there, and log1p' and log' are at most 2
+	     * and 1 / the ratio
+	     */
+	    real	d = product_err(m, m_err, m, m_err, yw, 0, yw, 0,
+					wprec, &d_err);
+	    real	q = 4 * imprecise(x, wprec) / d;
+	    real	re;
+
+	    q_err = div_err(4 * imprecise(x, wprec), 0, d, d_err, wprec);
+	    if (q > -1/2 && q_err < 1/4) {
+		re = Math::log1p_w(q, wprec, re_err) / 4;
+		*re_err = (*re_err + 4 * q_err) / 4;
+	    } else {
+		real	n_err;
+		real	n = product_err(p, p_err, p, p_err, yw, 0, yw, 0,
+					    wprec, &n_err);
+		real	r = n / d;
+		real	r_err = div_err(n, n_err, d, d_err, wprec);
+
+		if (r <= 2 * r_err) {
+		    *re_err = 8;
+		    re = 0;
+		} else {
+		    re = Math::log_w(r, wprec, re_err) / 4;
+		    *re_err = (*re_err + 2 * r_err / r) / 4;
+		}
+	    }
+
+	    /* Im = arg((1+z) conj(1-z)) / 2 = atan2(2y, (1-x)(1+x) - y**2) / 2 */
+	    real	e = product_err(m, m_err, p, p_err, -yw, 0, yw, 0,
+					wprec, &e_err);
+	    real	im = atan2_err(2 * yw, 0, e, e_err, wprec, im_err) / 2;
+
+	    *im_err /= 2;
+	    return new(re, im);
+	}
+
+	return round_correctly(prec, compute);
     }
 
     protected complex atan(complex z)
@@ -551,11 +765,27 @@ extend namespace Complex {
     {
 	int	prec = part_precision(z);
 	z = imprecise(z, prec);
-	complex	zp = imprecise(z, prec + guard_bits);
-	complex	a = sqrt(zp - 1);
-	complex	b = sqrt(zp + 1);
 
-	return imprecise(new(Math::asinh(creal(conj(a) * b)),
-			     2 * Math::atan2(cimag(a), creal(b))), prec);
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	x = creal(z), y = cimag(z);
+	    real	am_err, ap_err, ar_err, ai_err, br_err, bi_err, n_err;
+	    real	am = -one_plus(-x, wprec, &am_err);
+	    real	ap = one_plus(x, wprec, &ap_err);
+	    complex	a = sqrt_err(am, am_err, y, wprec, &ar_err, &ai_err);
+	    complex	b = sqrt_err(ap, ap_err, y, wprec, &br_err, &bi_err);
+	    real	ar = creal(a), ai = cimag(a), br = creal(b), bi = cimag(b);
+
+	    /* Re(conj(a) b) and 2 atan2(Im a, Re b) */
+	    real	n = product_err(ar, ar_err, br, br_err, ai, ai_err,
+					bi, bi_err, wprec, &n_err);
+	    real	re = asinh_err(n, n_err, wprec, re_err);
+	    real	im = 2 * atan2_err(ai, ai_err, br, br_err, wprec, im_err);
+
+	    *im_err *= 2;
+	    return new(re, im);
+	}
+
+	return round_correctly(prec, compute);
     }
 }

@@ -1434,6 +1434,12 @@ reached by going counterclockwise around the cut's finite endpoint,
 as C specifies for implementations without one:
 asin(2) is \(*p/2 \- 1.3169...i, and asin(\-2) is \-\(*p/2 + 1.3169...i.
 atanh raises divide_by_zero at 1 and \-1, and atan at i and \-i.
+.IP "complex function exp(complex z), log, sin, cos, tan, sinh, cosh, tanh"
+The exponential, logarithm, and trigonometric and hyperbolic functions.
+Each part of their results, and of those of the inverse functions
+and polar, is correctly rounded to the precision of the imprecise
+parts of their arguments, or to the default precision when all are
+exact.
 .PP
 .IP Foreign
 .IP "bool function load(string name)"

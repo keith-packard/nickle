@@ -1286,7 +1286,8 @@ list of directories to be searched for library files.
 .IP "void function undefine(string[*] names...)"
 Implements the top-level undefine
 command.  Each argument is a path of namespace names leading to
-a name, which is removed from its namespace.
+a name, which is removed from its namespace.  The first unknown
+name raises invalid_argument, leaving the names after it.
 .IP "bool function delete(string name)"
 Attempt to remove the command with the given string name from the top-level
 command list, and return true if successful.
@@ -1319,7 +1320,7 @@ expected to produce compile errors.
 .IP "void function edit(string[*] names)"
 Implements the top-level edit command. The names in the
 array are a path of namespace names leading to the symbol
-name, which is last.
+name, which is last.  An unknown name raises invalid_argument.
 .IP "void function new(string name, poly func)"
 Binds function func to the top-level command
 string name: i.e., makes it part of the
@@ -1336,6 +1337,7 @@ or as a single string name.
 Implements the top-level print command.  Each
 argument is a path of namespace names leading to a name, which
 is looked up and the corresponding code printed to file f.
+An unknown name raises invalid_argument.
 .IP "void function display(poly val)"
 Prints the value val with the format in the top-level
 format variable and adds it to the history.

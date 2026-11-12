@@ -195,7 +195,7 @@ do_Command_pretty_print(ptrdiff_t argc, Value *args)
     }
     for (i = 1; i < argc; i++) {
         names = args[i];
-        if (NamespaceLocate(names, &namespace, &symbol, &publish, False))
+        if (NamespaceLocate(names, &namespace, &symbol, &publish))
             PrettyPrint(f, publish, symbol);
         else
             RaiseStandardException(exception_invalid_argument, 3, NewStrString("name not found"),
@@ -213,9 +213,17 @@ do_Command_undefine(ptrdiff_t argc, Value *args)
     Publish      publish;
     ptrdiff_t    i;
 
-    for (i = 0; i < argc; i++)
-        if (NamespaceLocate(args[i], &namespace, &symbol, &publish, True))
-            NamespaceRemoveName(namespace, symbol->symbol.name);
+    /* Only one exception can be raised, so stop at the first unknown name */
+    for (i = 0; i < argc; i++) {
+        if (!NamespaceLocate(args[i], &namespace, &symbol, &publish)) {
+            if (!aborting)
+                RaiseStandardException(exception_invalid_argument, 3,
+                                       NewStrString("name not found"), NewPtrdiffInteger(i),
+                                       args[i]);
+            break;
+        }
+        NamespaceRemoveName(namespace, symbol->symbol.name);
+    }
     RETURN(Void);
 }
 
@@ -228,7 +236,7 @@ do_Command_valid_name(Value names)
     Publish      publish;
     Value        ret;
 
-    if (NamespaceLocate(names, &namespace, &symbol, &publish, False))
+    if (NamespaceLocate(names, &namespace, &symbol, &publish))
         ret = TrueVal;
     else
         ret = FalseVal;
@@ -243,8 +251,11 @@ do_Command_edit(Value names)
     SymbolPtr    symbol;
     Publish      publish;
 
-    if (NamespaceLocate(names, &namespace, &symbol, &publish, True))
+    if (NamespaceLocate(names, &namespace, &symbol, &publish))
         EditFunction(symbol, publish);
+    else if (!aborting)
+        RaiseStandardException(exception_invalid_argument, 3, NewStrString("name not found"),
+                               NewInt(0), names);
     RETURN(Void);
 }
 

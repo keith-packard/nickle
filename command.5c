@@ -90,6 +90,22 @@ extend namespace Command {
 	return result;
     }
 
+    void name_error (string msg, poly value)
+	/*
+	 * Report a name the print, edit, or undefine command
+	 * couldn't use: 'value' is the whole name or the part
+	 * that went wrong
+	 */
+    {
+	string	name;
+
+	if (is_type (value, string[*]))
+	    name = format_name (value);
+	else
+	    name = sprintf ("%s", value);
+	File::fprintf (stderr, "\"%s\": %s\n", name, msg);
+    }
+
     void do_pretty_print (string[*] names...)
 	/*
 	 * print		- pretty print all public names
@@ -99,16 +115,39 @@ extend namespace Command {
 	try {
 	    pretty_print (stdout, names ...);
 	} catch invalid_argument(string msg, int i, poly value) {
-	    File::fprintf (stderr, "\"%s\": %s\n",
-			   format_name(names[i - 1]), msg);
+	    name_error (msg, value);
 	}
     }
 
     new_names ("print", do_pretty_print);
 
-    new_names ("edit", edit);
+    void do_edit (string[*] name)
+	/*
+	 * edit name		- edit the definition of name
+	 */
+    {
+	try {
+	    edit (name);
+	} catch invalid_argument(string msg, int i, poly value) {
+	    name_error (msg, value);
+	}
+    }
 
-    new_names ("undefine", undefine);
+    new_names ("edit", do_edit);
+
+    void do_undefine (string[*] names...)
+	/*
+	 * undefine name ...	- remove the given names
+	 */
+    {
+	try {
+	    undefine (names ...);
+	} catch invalid_argument(string msg, int i, poly value) {
+	    name_error (msg, value);
+	}
+    }
+
+    new_names ("undefine", do_undefine);
 
     void do_load (string f)
 	/*

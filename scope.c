@@ -323,8 +323,7 @@ CommandRemove(CommandPtr command, Atom name)
 }
 
 Bool
-NamespaceLocate(Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publish *publishp,
-                Bool complain)
+NamespaceLocate(Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publish *publishp)
 {
     ptrdiff_t    i;
     NamespacePtr namespace;
@@ -353,11 +352,8 @@ NamespaceLocate(Value names, NamespacePtr *namespacep, SymbolPtr *symbolp, Publi
         namelist
             = NamespaceFindNamelist(namespace, AtomId(StringChars(&string->string)), search, True);
         search = False;
-        if (!namelist) {
-            if (complain)
-                FilePrintf(FileStdout, "No symbol %v in namespace\n", string);
+        if (!namelist)
             return False;
-        }
         symbol = namelist->symbol;
         if (i != ArrayLimits(&names->array)[0] - 1) {
             if (symbol->symbol.class != class_namespace) {

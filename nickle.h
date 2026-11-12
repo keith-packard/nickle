@@ -773,8 +773,7 @@ void    EditFile(Value file_name);
 Value   lookupVar(char *ns, char *n);
 void    setVar(NamespacePtr, char *, Value, Type *type);
 void    GetNamespace(NamespacePtr *, FramePtr *, CodePtr *);
-Bool    NamespaceLocate(Value names, NamespacePtr *s, SymbolPtr *symbol, Publish *publish,
-                        Bool complain);
+Bool    NamespaceLocate(Value names, NamespacePtr *s, SymbolPtr *symbol, Publish *publish);
 ExprPtr BuildName(char *ns_name, char *name);
 ExprPtr BuildCall(char *, char *, int, ...);
 ExprPtr BuildFullname(ExprPtr colonnames, Atom name);

@@ -766,7 +766,7 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
      * format, which uses 'e' format when they need few enough digits
      */
     if (!NaturalZero(r->num)
-        && (format == 'e' || (format == 'g' && prec > 0 && NaturalLess(r->num, r->den)))) {
+        && (format == 'e' || (format == 'g' && prec != 0 && NaturalLess(r->num, r->den)))) {
         Bool      small = NaturalLess(r->num, r->den);
         Natural  *big = small ? r->den : r->num;
         Natural  *little = small ? r->num : r->den;
@@ -795,8 +795,15 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
                 k++;
             }
         }
-        if (format == 'g' && prec - k < 3)
-            format = 'e';
+        if (format == 'g') {
+            /* At arbitrary precision, as C does, below base**-4 */
+            if (prec < 0) {
+                if (k > 4)
+                    format = 'e';
+            } else if (prec - k < 3) {
+                format = 'e';
+            }
+        }
         if (format == 'e') {
             if (small) {
                 rv = RationalTimes(rv, NewRational(Positive, mag, one_natural), True);

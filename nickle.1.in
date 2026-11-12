@@ -863,6 +863,9 @@ debugging.
 Default "- ".
 .IP "string format"
 The printf() format for printing top-level values.  Default "%g".
+Setting it to "%.-g" shows every value exactly: rationals with any
+repeating digits in braces, and imprecise values in the fewest digits
+that read back.
 .IP "string version"
 The version number of the Nickle implementation currently
 being executed.
@@ -1061,7 +1064,8 @@ precision. A repeating fraction prints with its repeating
 digits in braces, as in 0.{142857}, and an imprecise value with
 the fewest significant digits that read back as the same value.
 With %g, an imprecise value then prints in scientific notation when
-its exponent is below -4 or at least that number of digits.
+its exponent is below -4 or at least that number of digits, and a
+rational when it is below 1e-4.
 .IP "*"
 The next argument to fprintf() is an integer indicating
 the field width or precision of the formatted value.

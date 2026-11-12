@@ -229,7 +229,7 @@ nickle_srcs = [
   'builtin-semaphore.c', 'builtin-sockets.c', 'builtin-string.c',
   'builtin-thread.c', 'builtin-toplevel.c', 'builtin-pid.c',
   'builtin-date.c', 'builtin.c', 'builtin.h', 'builtin-foreign.c',
-  'builtin-complex.c',
+  'builtin-complex.c', 'builtin-ctype.c',
 ]
 
 nickle_files = [
@@ -328,6 +328,15 @@ if prog_clang_format.found()
 	     command : [prog_clang_format_generated, '--check',
 			'--clang-format', prog_clang_format,
 			format_srcs, bench_srcs])
+endif
+
+# 'ninja unicode-tables' regenerates Ctype's tables, ctype-class.h and
+# ctype-case.h, from the Unicode Character Database in
+# /usr/share/unicode; the generated files are committed
+prog_mkunicode = find_program('mkunicode.py', required : false)
+if prog_mkunicode.found()
+  run_target('unicode-tables',
+	     command : [prog_mkunicode, meson.current_source_dir()])
 endif
 
 nickle_spec_file = 'nickle-' + meson.project_version() + '.spec'

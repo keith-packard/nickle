@@ -25,3 +25,4 @@ extern void import_Foreign_namespace(void);
 extern void import_PID_namespace(void);
 extern void import_Date_namespace(void);
 extern void import_Complex_namespace(void);
+extern void import_Ctype_namespace(void);

@@ -1441,6 +1441,41 @@ and polar, is correctly rounded to the precision of the imprecise
 parts of their arguments, or to the default precision when all are
 exact.
 .PP
+.IP Ctype
+The Ctype namespace classifies characters and maps their case,
+following the Unicode Character Database, as picolibc's wide character
+functions do.  Each function takes any integer; one that is not a
+character, such as the \-1 getc returns at end of file, is in no
+class and has no case.
+.IP "bool function isalpha(int c)"
+Returns whether c is alphabetic, or a non-ASCII decimal digit.
+.IP "bool function isdigit(int c), isxdigit"
+Return whether c is an ASCII digit, or an ASCII hexadecimal digit.
+.IP "bool function isalnum(int c)"
+Returns whether c is alphabetic or an ASCII digit.
+.IP "bool function isupper(int c), islower"
+Return whether c is upper or lower case.  A title case letter, such as
+U+01C5, is both.
+.IP "bool function isspace(int c), isblank"
+Return whether c is white space, or a tab or space on a line.  Neither
+includes no-break spaces.
+.IP "bool function iscntrl(int c)"
+Returns whether c is a control character, or a line or paragraph
+separator.
+.IP "bool function isgraph(int c), isprint, ispunct"
+Return whether c is visible, visible or a space, or visible and
+neither alphabetic nor a digit.
+.IP "int function tolower(int c), toupper"
+Return the lower or upper case of c by its one-to-one Unicode
+mapping, or c when it has none.
+.IP "bool function isascii(int c)"
+Returns whether c is in the range 0 to 127.
+.IP "typedef bool[256] charset"
+.IP "charset function make_charset(bool(int) f)"
+.IP "bool function member(charset v, int c)"
+make_charset tabulates f over the first 256 characters, and member
+tests c in that table, returning false above 255.
+.PP
 .IP Foreign
 .IP "bool function load(string name)"
 Load the shared library name and call its nickle_init function,

@@ -377,6 +377,7 @@ BuiltinInit(void)
     import_PID_namespace();
     import_Date_namespace();
     import_Complex_namespace();
+    import_Ctype_namespace();
 
     /* Import builtin strings with predefined values */
     BuiltinStrings(svars);

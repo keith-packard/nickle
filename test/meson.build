@@ -178,8 +178,9 @@ foreach test : tests
 endforeach
 
 # Finding a fraction's period and writing its digits took minutes for
-# some fractions; fail quickly if they do again
-foreach test : ['repeatlengthtest.5c', 'repeatdigitstest.5c']
+# some fractions, and exit waited forever on a pipe nobody could read;
+# fail quickly if they do again
+foreach test : ['repeatlengthtest.5c', 'repeatdigitstest.5c', 'unreadpipetest.5c']
   test(test, nickle,
        args: files(test),
        env: test_env,

@@ -1,0 +1,75 @@
+/*
+ * Nickle test suite
+ *
+ * Exiting with output to a pipe only this process can read
+ *
+ * At exit, Nickle waits for buffered output to reach its files. A
+ * pipe from File::mkpipe whose read end the script still held, and
+ * never gave to another process, could never be read, so exit waited
+ * forever. It now drops that output, while output to a pipe another
+ * process reads still arrives.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+string	nickle = Environ::get ("NICKLE");
+
+/* Run 'script' in a child nickle, returning its exit status */
+string function run (string script)
+{
+    file[*]	status = File::mkpipe ();
+
+    File::filter ("sh",
+		  (string[*]) { "sh", "-c", "\"$0\" -e \"$1\" > /dev/null; echo $?",
+				nickle, script },
+		  (file[3]) { stdin, status[1], stderr });
+    File::close (status[1]);
+    string	got = File::fgets (status[0]);
+    File::close (status[0]);
+    return got;
+}
+
+/* Fill the pipe, then leave a little in nickle's own buffer */
+string	fill = ("string s = String::new ((int[65536]) { [i] = 'x' });\n" +
+		"File::fprintf (p[1], \"%s\", s);\n" +
+		"File::fprintf (p[1], \"tail\\n\");\n");
+
+check ("unread pipe", run ("file[*] p = File::mkpipe ();\n" + fill), "0");
+
+/* A child reading the pipe still gets everything */
+string	out = "unreadpipe.out";
+
+check ("read pipe",
+       run ("file[*] p = File::mkpipe ();\n" +
+	    "file o = File::open (\"" + out + "\", \"w\");\n" +
+	    "File::filter (\"cat\", (string[*]) { \"cat\" }, (file[3]) { p[0], o, stderr });\n" +
+	    fill),
+       "0");
+
+/* The contents of the file 'name' */
+string function contents (string name)
+{
+    file	f = File::open (name, "r");
+    string	got = "";
+
+    while (!File::end (f))
+	got += File::fgets (f) + "\n";
+    File::close (f);
+    return got;
+}
+
+/* cat finishes once the writer is gone; give it time */
+string	got = contents (out);
+
+for (int tries = 0; tries < 100 && String::length (got) != 65541; tries++) {
+    sleep (100);
+    got = contents (out);
+}
+check ("read pipe length", String::length (got), 65541);
+File::unlink (out);

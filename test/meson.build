@@ -98,6 +98,7 @@ tests = [
   'prettyprectest.5c',
   'prettystmttest.5c',
   'escapetest.5c',
+  'rationalprinttest.5c',
   'bignamespacetest.5c',
   'longlisttest.5c',
   'commandreleasetest.5c'

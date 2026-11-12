@@ -29,7 +29,11 @@ if prog_asciidoctor.found()
   custom_target('nickle-tutorial',
 		input : 'nickle-tutorial.adoc',
 		output: 'nickle-tutorial.pdf',
-		command: [ prog_asciidoctor, '-o', '@OUTPUT@', '@INPUT@' ],
+		# Mark the PDF with Nickle's version rather than dates, so the
+		# build is reproducible
+		command: [ prog_asciidoctor, '-a', 'reproducible',
+			   '-a', 'revnumber=' + meson.project_version(),
+			   '-o', '@OUTPUT@', '@INPUT@' ],
 		depend_files: files(adoc_files),
 		install: true,
 		install_dir: nickle_docdir)

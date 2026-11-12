@@ -9,6 +9,88 @@ extend namespace Complex {
 
     protected complex i = new(0,1);
 
+    /* Bits computed beyond the result precision */
+    int	guard_bits = 32;
+
+    complex round_correctly(int prec, complex(int, *real, *real) compute)
+	/*
+	 * As Math::round_correctly, for each part of the value from
+	 * compute(wprec, &re_err, &im_err). A part with no error must
+	 * be exact; an exact zero stays exact
+	 */
+    {
+	bool round_part(real v, real err, int wprec, *real r)
+	{
+	    if (err == 0 && v == 0) {
+		*r = 0;
+		return true;
+	    }
+
+	    /*
+	     * Form v ± err with the bits of both, as arithmetic would
+	     * use the fewer, widening err by an ulp of v for the
+	     * rounding of the sum
+	     */
+	    int		vp = max(precision(v), precision(err), wprec);
+	    real	vw = imprecise(v, vp);
+	    real	e = imprecise(err, vp) + Math::abs(vw) * 2**(1 - vp);
+
+	    *r = imprecise(vw - e, prec);
+	    return *r == imprecise(vw + e, prec);
+	}
+
+	for (int guard = guard_bits; ; guard *= 2) {
+	    int		wprec = prec + guard;
+	    real	re_err, im_err, re, im;
+	    complex	v = compute(wprec, &re_err, &im_err);
+
+	    if (round_part(creal(v), re_err, wprec, &re) &&
+		round_part(cimag(v), im_err, wprec, &im))
+		return new(re, im);
+	}
+    }
+
+    real mul_err(real a, real a_err, real b, real b_err, int wprec)
+	/*
+	 * Return a bound on the error in a * b rounded to 'wprec' bits,
+	 * given the errors in 'a' and 'b'
+	 */
+    {
+	return Math::abs(a) * b_err + Math::abs(b) * a_err + a_err * b_err +
+	       2 * Math::abs(a * b) * 2**-wprec;
+    }
+
+    real div_err(real n, real n_err, real d, real d_err, int wprec)
+	/*
+	 * Return a bound on the error in n / d rounded to 'wprec' bits,
+	 * given the errors in 'n' and 'd'
+	 */
+    {
+	if (n == 0 && n_err == 0)
+	    return 0;
+
+	real	q = Math::abs(n / d);
+
+	/* Too uncertain to bound; ask for more bits */
+	if (Math::abs(d) <= 2 * d_err)
+	    return q + 1;
+	return (n_err + q * d_err) / (Math::abs(d) - d_err) + 2 * q * 2**-wprec;
+    }
+
+    real twice_sum_squares(real a, real a_err, real b, real b_err, int wprec,
+			   *real err)
+	/*
+	 * Return 2 (a² + b²) rounded to 'wprec' bits, setting 'err' to a
+	 * bound on its error given the errors in 'a' and 'b'
+	 */
+    {
+	real	s = a * a + b * b;
+
+	*err = 2 * (mul_err(a, a_err, a, a_err, wprec) +
+		    mul_err(b, b_err, b, b_err, wprec) + 2 * s * 2**-wprec);
+	return 2 * s;
+    }
+
     public complex polar(real r, real t)
     {
 	return new(r * Math::cos(t), r * Math::sin(t));
@@ -80,9 +162,6 @@ extend namespace Complex {
 	return new(r * Math::cos(cimag(z)),
 		   r * Math::sin(cimag(z)));
     }
-
-    /* Bits computed beyond the result precision */
-    int	guard_bits = 32;
 
     int part_exponent(real x)
 	/*
@@ -189,17 +268,35 @@ extend namespace Complex {
     }
 
     protected complex tan(complex z)
-    {
 	/*
 	 * tan(x+iy) = (sin 2x + i sinh 2y) / (cos 2x + cosh 2y), avoiding
 	 * the cancellation in sin(z) / cos(z), which loses about
-	 * 2|y| log2(e) bits of the real part
+	 * 2|y| log2(e) bits of the real part. The denominator is
+	 * 2 (cos²x + sinh²y), whose terms can't cancel, as cos 2x and
+	 * cosh 2y do near the poles. Each part is correctly rounded
 	 */
-	real	x2 = 2 * creal(z);
-	real	y2 = 2 * cimag(z);
-	real	d = Math::cos(x2) + Math::cosh(y2);
+    {
+	if (z == 0)
+	    return 0;
+	z = imprecise(z);
 
-	return new(Math::sin(x2) / d, Math::sinh(y2) / d);
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	x = creal(z), y = cimag(z);
+	    real	c_err, s_rel, n_err, m_rel, d_err;
+	    real	c = Math::cos_w(x, wprec, &c_err);
+	    real	s = Math::sinh_w(y, wprec, &s_rel);
+	    real	n = Math::sin_w(2 * x, wprec, &n_err);
+	    real	m = Math::sinh_w(2 * y, wprec, &m_rel);
+	    real	d = twice_sum_squares(c, c_err, s, Math::abs(s) * s_rel,
+					      wprec, &d_err);
+
+	    *re_err = div_err(n, n_err, d, d_err, wprec);
+	    *im_err = div_err(m, Math::abs(m) * m_rel, d, d_err, wprec);
+	    return new(n / d, m / d);
+	}
+
+	return round_correctly(precision(z), compute);
     }
 
     protected complex cosh(complex z)
@@ -215,16 +312,33 @@ extend namespace Complex {
     }
 
     protected complex tanh(complex z)
-    {
 	/*
 	 * tanh(x+iy) = (sinh 2x + i sin 2y) / (cosh 2x + cos 2y), avoiding
-	 * the cancellation in sinh(z) / cosh(z)
+	 * the cancellation in sinh(z) / cosh(z). The denominator is
+	 * 2 (sinh²x + cos²y), as for tan. Each part is correctly rounded
 	 */
-	real	x2 = 2 * creal(z);
-	real	y2 = 2 * cimag(z);
-	real	d = Math::cosh(x2) + Math::cos(y2);
+    {
+	if (z == 0)
+	    return 0;
+	z = imprecise(z);
 
-	return new(Math::sinh(x2) / d, Math::sin(y2) / d);
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	x = creal(z), y = cimag(z);
+	    real	s_rel, c_err, n_rel, m_err, d_err;
+	    real	s = Math::sinh_w(x, wprec, &s_rel);
+	    real	c = Math::cos_w(y, wprec, &c_err);
+	    real	n = Math::sinh_w(2 * x, wprec, &n_rel);
+	    real	m = Math::sin_w(2 * y, wprec, &m_err);
+	    real	d = twice_sum_squares(s, Math::abs(s) * s_rel, c, c_err,
+					      wprec, &d_err);
+
+	    *re_err = div_err(n, Math::abs(n) * n_rel, d, d_err, wprec);
+	    *im_err = div_err(m, m_err, d, d_err, wprec);
+	    return new(n / d, m / d);
+	}
+
+	return round_correctly(precision(z), compute);
     }
 
     protected complex atanh(complex z)

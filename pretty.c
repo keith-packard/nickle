@@ -474,9 +474,13 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
         /* The index names are a comma list of their own */
         PrettyExpr(f, e->tree.left->tree.left, -1, level, nest);
         FilePuts(f, "] ");
-        if (e->tree.right->base.tag == OC)
-            PrettyStatement(f, e->tree.right, level + 1, level, nest);
-        else {
+        if (e->tree.right->base.tag == OC) {
+            /* The block opens on this line and closes at the statement's level */
+            FilePuts(f, "{\n");
+            PrettyBlock(f, e->tree.right, level + 1, nest);
+            PrettyIndent(f, 0, level);
+            FilePuts(f, "}");
+        } else {
             FilePuts(f, "= ");
             PrettyListItem(f, e->tree.right, level, nest);
         }

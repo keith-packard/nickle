@@ -27,7 +27,7 @@ extend namespace Math {
 	    int iprec = prec + 5 * bit_width(prec) + 10;
 	    real vi = imprecise(v, iprec);
 	    /* Initial estimate is 1/2 ** log2(v)/2 */
-	    cur = imprecise(0.5 * (2**(exponent(v) ⫽ 2)), iprec);
+	    cur = ldexp(imprecise(0.5, iprec), exponent(v) ⫽ 2);
 	    int iter = iprec + 100;
 	    do {
 		/*
@@ -90,7 +90,7 @@ extend namespace Math {
 	    int iprec = prec + 5 * bit_width(prec) + 10;
 	    v = imprecise (v, iprec);
 	    /* Initial estimate is 3/4 ** log2(v)/3 */
-	    cur = imprecise (0.75 * 2**(exponent(v) ⫽ 3), iprec);
+	    cur = ldexp (imprecise (0.75, iprec), exponent(v) ⫽ 3);
 	    int iter = iprec + 100;
 	    do {
 		prev = cur;

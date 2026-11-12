@@ -3,7 +3,7 @@
 
 $ nickle
 ----
-Arithmetic works as expected, with a rich set of operators. 
+Arithmetic works as expected, with a rich set of operators.
 ----
 
 > 1 + 1
@@ -13,13 +13,13 @@ Arithmetic works as expected, with a rich set of operators.
 > 5!
 120
 ----
-Rationals are represented exactly, but printed in decimal.
+Rationals are represented exactly, but printed as decimals rounded to 15 digits.
 Math is done with infinite precision.
-Notice that integer division (//) is different from rational division (/). Nickle provides some conveniences, such as `$$.$$` denoting the last value printed. 
+Notice that integer division (//) is different from rational division (/). Nickle provides some conveniences, such as `$$.$$` denoting the last value printed.
 ----
 
 > 1 / 3
-0.{3}
+0.333333333333333
 > . * 3
 1
 > 1 // 3
@@ -27,7 +27,7 @@ Notice that integer division (//) is different from rational division (/). Nickl
 ----
 Variables can be declared implicitly at the top level, as well as explicitly with type.
 The results of statements are not printed; terminating an expression with a semicolon makes it a simple statement.
-C-like control structures may also be used at the top level; the `+` prompt indicates an incomplete line to be continued. 
+C-like control structures may also be used at the top level; the `+` prompt indicates an incomplete line to be continued.
 ----
 
 > x = .
@@ -45,7 +45,8 @@ C-like control structures may also be used at the top level; the `+` prompt indi
 ----
 When performing square roots, Nickle will stay exact when possible.
 If the result is irrational, however, it will be stored as an inexact real.
-Imprecision is contagious; if a rational operator combines an imprecise variable with a precise one, the result will be imprecise. 
+Imprecision is contagious; if a rational operator combines an imprecise variable with a precise one, the result will be imprecise.
+Squaring the square root of 5 prints as 5, but subtracting 5 shows that it is off in the 77th decimal place.
 ----
 
 > sqrt(x)
@@ -55,14 +56,14 @@ Imprecision is contagious; if a rational operator combines an imprecise variable
 > .**2
 2
 > sqrt(5)
-2.236067977499789
+2.23606797749979
 > . ** 2
-4.999999999999999
-> . / 5
-0.999999999999999
+5
+> . - 5
+6.908934844075556e-77
 ----
 Functions can also be typed at the top level.
-Since functions, as most things, are first-class in Nickle, they may be declared and assigned as below. 
+Since functions, as most things, are first-class in Nickle, they may be declared and assigned as below.
 ----
 
 > real foo(real x, real y) {
@@ -78,61 +79,42 @@ Since functions, as most things, are first-class in Nickle, they may be declared
 >
 ----
 Nickle is guaranteed never to dump core; it has a simple yet powerful exception system it uses to handle all errors.
-An unhandled exception leads to the debugger, which uses a `-` prompt.
-The debugger can be used to trace the stack, move up and down on it, and check values of variables. 
+When Nickle reads commands from a terminal, an unhandled exception raised inside a function leads to the debugger, which uses a `-` prompt.
+The debugger can be used to trace the stack, move up and down on it, and check values of variables.
 ----
 
 > (-1) ** (1/2)
 Unhandled exception invalid_argument ("sqrt of negative number", 0, -1)
 /usr/share/nickle/math.5c:19:     raise invalid_argument ("sqrt of negative number", 0, v);
     sqrt (-1)
-/usr/share/nickle/math.5c:895:     result = sqrt (a);
+/usr/share/nickle/math.5c:1537:     result = sqrt (a);
     pow (-1, 0.5)
 <stdin>:1:     -1 ** (1 / 2);
 - done
 > quit
 $
 ----
-Large chunks of code can be placed in a separate text file and loaded when needed.
+Large chunks of code can be placed in a separate text file and loaded when needed: `load` reads a file by its name, and `library` searches Nickle's library directories, which hold the examples that come with Nickle.
 The `print` command can be used to inspect variables, functions, namespaces, and other names. ``import`` brings the names in a namespace into scope.
 The `::` operator can be used to view those names without importing them.
-(These can also be used with several namespaces built in to Nickle, such as Math and File.) 
+(These can also be used with several namespaces built in to Nickle, such as Math and File.)
 ----
 
 $ nickle
-> load "cribbage.5c"
+> library "examples/cribbage.5c"
 > print Cribbage
 namespace Cribbage {
-    public void handprint (int[*] hand);
-    public int scorehand (int[*] hand);
+    public int score (int[*] v);
 }
-> print Cribbage::handprint
-public void handprint (int[*] hand)
+> print Cribbage::score
+public int score (int[*] v)
 {
-    printf ("hand { ");
-    for (int i = 0; i  dim (hand); ++i)
-        switch (hand[i]) {
-        case 1:
-            printf ("A ");
-            break;
-        case 11:
-            printf ("J ");
-            break;
-        case 12:
-            printf ("Q ");
-            break;
-        case 13:
-            printf ("K ");
-            break;
-        default:
-            printf ("%d ", hand[i]);
-        }
-    printf ("} ");
+    int n = dim (v);
+    return 2 * countsum (15, v, n) + 2 * countpairs (v, n);
 }
 > import Cribbage;
-> int[5] hand = { 7, 8, 12, 10, 5 };
-> handprint(hand); printf(" has %d points.\n", scorehand(hand));
-hand { 7 8 Q 10 5 }  has 6 points.
+> score ((int[*]) { 5, 5, 10, 7, 8 })
+8
 > quit
 $
 ----

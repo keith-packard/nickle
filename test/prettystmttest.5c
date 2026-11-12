@@ -7,6 +7,8 @@
  * name bound to its value, and raise of an exception qualified by a
  * namespace printed whatever followed the name's node. const ran into
  * its type, and global was dropped from declarations inside functions.
+ * Uninitialized globals printed = <uninit>, and namespaces nested in a
+ * printed namespace printed without their bodies.
  */
 
 exception wrong (string what, poly got, poly want);
@@ -86,3 +88,23 @@ Command::lex_string ("int function quals_again " +
 		     String::substr (q, qstart, String::length (q) - qstart) + "\n" +
 		     "check (\"first call\", quals_again (), 19);\n" +
 		     "check (\"second call\", quals_again (), 20);\n");
+
+/* Printed globals and namespaces read back */
+namespace Outer {
+    public int x = 1;
+    public namespace Inner {
+	public int y = 2;
+    }
+}
+int unset;
+
+file nf = File::string_write ();
+Command::pretty_print (nf, (string[*]) { "Outer" });
+Command::pretty_print (nf, (string[*]) { "unset" });
+string ns = File::string_string (nf);
+has ("nested namespace", ns, "public namespace Inner {");
+has ("uninitialized", ns, "global int unset;");
+Command::lex_string ("namespace Again " + String::substr (ns, String::index (ns, "{"),
+							  String::length (ns) - String::index (ns, "{")) +
+		     "check (\"outer\", Again::x, 1);\n" +
+		     "check (\"inner\", Again::Inner::y, 2);\n");

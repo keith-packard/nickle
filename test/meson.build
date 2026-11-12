@@ -126,7 +126,8 @@ tests = [
   'rationalprinttest.5c',
   'bignamespacetest.5c',
   'longlisttest.5c',
-  'commandreleasetest.5c'
+  'commandreleasetest.5c',
+  'pipeexittest.5c'
 ]
 
 # Foreign::load exists only where nickle can load shared libraries

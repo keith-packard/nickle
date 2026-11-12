@@ -1,0 +1,35 @@
+/*
+ * Nickle test suite
+ *
+ * Exiting with output to a pipe whose reader is gone
+ *
+ * Closing stdout at exit failed with EPIPE but closed the descriptor
+ * anyway, leaving the output in the buffer. The collection that
+ * follows flushed it again, waiting forever for descriptor -1 to
+ * become writable, so "nickle script | head -1" never exited.
+ */
+
+exception bad_pipe_exit (string got);
+
+string	nickle = Environ::get ("NICKLE");
+file[*]	status = File::mkpipe ();
+
+/*
+ * The shell reports nickle's exit status on fd 3 once it exits, which
+ * a hang never does. Nickle closes its stderr before exiting, so
+ * reading that to its end wouldn't show it
+ */
+File::filter ("sh",
+	      (string[*]) { "sh", "-c",
+			    "exec 3>&1; { \"$0\" -e \"$1\" 2>/dev/null 3>&-; echo $? >&3; } | true",
+			    nickle,
+			    "for (int i = 0; i < 100000; i++) printf (\"%d\\n\", i);" },
+	      (file[3]) { stdin, status[1], stderr });
+File::close (status[1]);
+
+string	got = File::fgets (status[0]);
+File::close (status[0]);
+
+/* The broken pipe raises io_error, which goes unhandled */
+if (got != "1")
+    raise bad_pipe_exit (got);

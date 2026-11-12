@@ -1112,10 +1112,25 @@ Print value v to file f in format fmt with the given base, width,
 prec, and fill.  Used internally by File::fprintf();
 .IP "int function fscanf(file f, string fmt, *poly args...)"
 Fill the locations pointed to by the array args with values
-taken from file f according to string fmt.  The format specifiers
-are much as in UNIX stdio scanf(): the "%d", "%e", "%f",
-"%c" and "%s" specifiers are supported with the expected
-modifiers.  Returns the number of values stored.
+taken from file f according to string fmt, as C's scanf() does.
+Whitespace in fmt matches any whitespace in the input, other
+characters match themselves, and each conversion may give a
+maximum field width, or "*" to read a value without storing it.
+"%d", "%o", "%x", and "%b" read integers in base 10, 8, 16, and 2,
+with an optional sign and, for "%x" and "%b", an optional "0x" or
+"0b" prefix.
+"%a", "%e", "%f", and "%g" read decimal or "0x" hexadecimal numbers
+with optional exponents and Nickle's repeating fractions, such as
+"0.{3}" or "0x0.{5}".
+"%s" reads characters other than whitespace as a string, "%c" reads
+one character as an integer, "%\fIn\fPc" reads \fIn\fP characters as a
+string, and "%%" matches "%".
+Conversion letters may be upper case, as in "%X".
+Returns the number of values stored, stopping at the first input that
+doesn't match.
+Before reading, raises invalid_argument for an invalid fmt, and
+too_few_arguments or too_many_arguments unless args has one location
+for each value fmt stores.
 .IP "void function unlink(string name)"
 .IP "void function rename(string old, string new)"
 .IP "void function mkdir(string name, int mode)"

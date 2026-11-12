@@ -2,13 +2,120 @@
  * Scanf code.  Extend File namespace with reading code
  */
 extend namespace File {
+    typedef enum {
+	binary, octal, decimal, hex, number, character, word
+    } conversion_kind_t;
+
+    typedef struct {
+	conversion_kind_t   kind;
+	bool		    store;	/* false for '*' */
+	int		    width;	/* -1 when the format gives none */
+    } conversion_t;
+
+    typedef union {
+	void		space;
+	int		literal;
+	conversion_t	conversion;
+    } directive_t;
+
+    directive_t[...] scan_format (string format, *int stored)
+	/*
+	 * Return the directives in a scanf 'format', setting 'stored'
+	 * to the number of values they store
+	 */
+    {
+	directive_t[...]    ds = {};
+	int		    len = String::length (format);
+	int		    i = 0;
+
+	*stored = 0;
+	while (i < len) {
+	    int c = format[i++];
+
+	    if (Ctype::isspace (c)) {
+		ds[dim (ds)] = directive_t.space;
+		continue;
+	    }
+	    if (c != '%') {
+		ds[dim (ds)] = (directive_t) { .literal = c };
+		continue;
+	    }
+
+	    conversion_t cv = { .store = true, .width = -1 };
+
+	    if (i < len && format[i] == '*') {
+		cv.store = false;
+		i++;
+	    }
+	    while (i < len && Ctype::isdigit (format[i]))
+		cv.width = max (cv.width, 0) * 10 + format[i++] - '0';
+	    if (i == len || cv.width == 0)
+		raise invalid_argument ("invalid format", 1, format);
+	    switch (Ctype::tolower (format[i++])) {
+	    case '%':
+		/* Like the conversions, %% skips whitespace */
+		ds[dim (ds)] = directive_t.space;
+		ds[dim (ds)] = (directive_t) { .literal = '%' };
+		continue;
+	    case 'b':
+		cv.kind = conversion_kind_t.binary;
+		break;
+	    case 'o':
+		cv.kind = conversion_kind_t.octal;
+		break;
+	    case 'd':
+		cv.kind = conversion_kind_t.decimal;
+		break;
+	    case 'x':
+		cv.kind = conversion_kind_t.hex;
+		break;
+	    case 'a': case 'e': case 'f': case 'g':
+		cv.kind = conversion_kind_t.number;
+		break;
+	    case 'c':
+		cv.kind = conversion_kind_t.character;
+		break;
+	    case 's':
+		cv.kind = conversion_kind_t.word;
+		break;
+	    default:
+		raise invalid_argument ("invalid format", 1, format);
+	    }
+	    if (cv.store)
+		++*stored;
+	    ds[dim (ds)] = (directive_t) { .conversion = cv };
+	}
+	return ds;
+    }
+
     public int fscanf (file f, string format, *poly args ...)
 	/*
 	 * According to 'format', read from 'f' to 'args'
 	 */
     {
-	exception bad_conversion();
-	
+	exception matching_failure();
+
+	/* How many more characters the conversion may read, or -1 */
+	int	width = -1;
+
+	/* Return the next input character without reading it, or -1 */
+	int peek ()
+	{
+	    if (width == 0 || end (f))
+		return -1;
+	    int c = getc (f);
+	    ungetc (c, f);
+	    return c;
+	}
+
+	/* Read the character peek returned, as a string */
+	string next ()
+	{
+	    if (width > 0)
+		width--;
+	    return String::new (getc (f));
+	}
+
 	/* Skip whitespace */
 	void whitespace ()
 	{
@@ -21,186 +128,207 @@ extend namespace File {
 		}
 	}
 
-	bool isbinary (int c)
+	/* Match one character of input to 'c' */
+	void literal (int c)
 	{
-	    if ('0' <= c && c <= '1')
-		return true;
-	    if (c == '-')
-		return true;
-	    return false;
-	}
-	
-	bool isoctal (int c)
-	{
-	    if ('0' <= c && c <= '7')
-		return true;
-	    if (c == '-')
-		return true;
-	    return false;
-	}
-	
-	bool isdecimal (int c)
-	{
-	    if ('0' <= c && c <= '9')
-		return true;
-	    if (c == '-')
-		return true;
-	    return false;
+	    if (peek () != c)
+		raise matching_failure ();
+	    next ();
 	}
 
-	bool ishex (int c)
+	/* Return whether 'c' is a digit in 'base' */
+	bool isbasedigit (int c, int base)
 	{
-	    if ('0' <= c && c <= '9')
-		return true;
-	    if ('a' <= c && c <= 'f')
-		return true;
-	    if ('A' <= c && c <= 'F')
-		return true;
-	    if (c == '-')
-		return true;
-	    return false;
-	}
-
-	bool isfloat (int c)
-	{
-	    if ('0' <= c && c <= '9')
-		return true;
-	    if (c == 'e' || c == 'p' || c == 'x')
-		return true;
-	    if (c == '-')
-		return true;
-	    if (c == '.')
-		return true;
-	    if (c == '{' || c == '}')
-		return true;
-	    return false;
-	}
-
-	/* return next integer in input */
-	int integer (bool(int c) test, int base)
-	{
-	    int	    c;
-	    string  s = "";
-
-	    whitespace();
-	    while (!end (f)) {
-		if (!test (c = getc (f))) {
-		    ungetc (c, f);
-		    break;
-		}
-		s = s + String::new(c);
+	    switch (base) {
+	    case 16:
+		return Ctype::isxdigit (c);
+	    case 10:
+		return Ctype::isdigit (c);
+	    default:
+		return '0' <= c && c < '0' + base;
 	    }
-	    if (String::length(s) == 0)
-		raise bad_conversion();
+	}
+
+	/* Append any digits in 'base' to 's', returning how many */
+	int digits (*string s, int base)
+	{
+	    int n = 0;
+
+	    while (isbasedigit (peek (), base)) {
+		*s += next ();
+		n++;
+	    }
+	    return n;
+	}
+
+	/* Append a sign to 's' if there is one */
+	void sign (*string s)
+	{
+	    int c = peek ();
+
+	    if (c == '+' || c == '-')
+		*s += next ();
+	}
+
+	/*
+	 * Return the next integer in input: an optional sign, a 0x
+	 * prefix for base 16 or 0b for base 2, and at least one digit
+	 */
+	int integer (int base)
+	{
+	    string  s = "";
+	    int	    n = 0;
+
+	    sign (&s);
+	    if ((base == 16 || base == 2) && peek () == '0') {
+		int	prefix;
+
+		if (base == 16)
+		    prefix = 'x';
+		else
+		    prefix = 'b';
+		s += next ();
+		n++;
+		if (Ctype::tolower (peek ()) == prefix)
+		    next ();
+	    }
+	    n += digits (&s, base);
+	    if (n == 0)
+		raise matching_failure ();
 	    return string_to_integer (s, base);
 	}
 
-	/* return next number in input */
-	real number (bool(int c) test)
+	/*
+	 * Return the next number in input, in the syntax of C's
+	 * strtod without infinities and NaNs: decimal with an
+	 * optional e exponent, or 0x hexadecimal with an optional p
+	 * exponent, plus Nickle's repeating fraction, as in 0.{3}
+	 * or 0x0.{5}
+	 */
+	real number ()
 	{
-	    int	    c;
 	    string  s = "";
+	    int	    base = 10;
+	    int	    exponent_letter = 'e';
+	    int	    n = 0;
 
-	    whitespace();
-	    while (!end (f)) {
-		if (!test (c = getc (f))) {
-		    ungetc (c, f);
-		    break;
+	    sign (&s);
+	    if (peek () == '0') {
+		s += next ();
+		n++;
+		if (Ctype::tolower (peek ()) == 'x') {
+		    s += next ();
+		    base = 16;
+		    exponent_letter = 'p';
+		    n = 0;
 		}
-		s = s + String::new(c);
 	    }
-	    if (String::length(s) == 0)
-		raise bad_conversion();
+	    n += digits (&s, base);
+	    if (peek () == '.') {
+		s += next ();
+		n += digits (&s, base);
+		if (peek () == '{') {
+		    s += next ();
+		    int r = digits (&s, base);
+		    if (r == 0 || peek () != '}')
+			raise matching_failure ();
+		    s += next ();
+		    n += r;
+		}
+	    }
+	    if (n == 0)
+		raise matching_failure ();
+	    if (Ctype::tolower (peek ()) == exponent_letter) {
+		s += next ();
+		sign (&s);
+		if (digits (&s, 10) == 0)
+		    raise matching_failure ();
+	    }
 	    return string_to_real (s);
 	}
 
+	/* Return the next run of characters other than whitespace */
 	string word ()
 	{
-	    whitespace();
 	    string  s = "";
-	    while (!end (f)) {
-		int c = getc(f);
-		if (!Ctype::isgraph (c)) {
-		    ungetc (c, f);
-		    break;
-		}
-		s = s + String::new(c);
-	    }
-	    if (String::length(s) == 0)
-		raise bad_conversion();
+
+	    while (peek () >= 0 && !Ctype::isspace (peek ()))
+		s += next ();
+	    if (s == "")
+		raise matching_failure ();
 	    return s;
 	}
 
-	int	i = 0;
-	int	argc = 0;
-	int	c;
+	/* Check the whole format first, so errors don't depend on the input */
+	int			stored;
+	directive_t[...]	ds = scan_format (format, &stored);
 
-	while (i < String::length (format) && !end(f) && !error(f))
-	{
-	    try {
-		switch (format[i]) {
-		case ' ':
-		case '\t':
+	if (stored > dim (args))
+	    raise too_few_arguments (format, args);
+	if (stored < dim (args))
+	    raise too_many_arguments (format, args);
+
+	int	argc = 0;
+
+	try {
+	    for (int i = 0; i < dim (ds); i++) {
+		conversion_t	cv;
+		poly		value;
+
+		width = -1;
+		union switch (ds[i]) {
+		case space:
 		    whitespace ();
-		    break;
-		case '%':
-		    i++;
-		    switch (format[i]) {
-		    case 'b': case 'B':
-			*args[argc] = integer (isbinary, 2);
-			argc++;
-			break;
-		    case 'o': case 'O':
-			*args[argc] = integer (isoctal, 8);
-			argc++;
-			break;
-		    case 'd': case 'D':
-			*args[argc] = integer (isdecimal, 10);
-			argc++;
-			break;
-		    case 'x': case 'X':
-			*args[argc] = integer (ishex, 16);
-			argc++;
-			break;
-		    case 'a': case 'A':
-		    case 'e': case 'E':
-		    case 'f': case 'F':
-		    case 'g': case 'G':
-			*args[argc] = number(isfloat);
-			argc++;
-			break;
-		    case 'c':
-			*args[argc] = getc(f);
-			argc++;
-			break;
-		    case 's':
-			*args[argc] = word();
-			argc++;
-			break;
-		    default:
-			if (end (f))
-			    return argc;
-			c = getc(f);
-			if (c != format[i]) {
-			    ungetc (c, f);
-			    return argc;
-			}
-			break;
-		    }
-		    break;
-		default:
-		    if (end (f))
-			return argc;
-		    c = getc(f);
-		    if (c != format[i]) {
-			ungetc (c, f);
-			return argc;
-		    }
+		    continue;
+		case literal c:
+		    literal (c);
+		    continue;
+		case conversion d:
+		    cv = d;
 		    break;
 		}
-		i++;
-	    } catch bad_conversion() {
+		width = cv.width;
+		if (cv.kind != conversion_kind_t.character)
+		    whitespace ();
+		enum switch (cv.kind) {
+		case binary:
+		    value = integer (2);
+		    break;
+		case octal:
+		    value = integer (8);
+		    break;
+		case decimal:
+		    value = integer (10);
+		    break;
+		case hex:
+		    value = integer (16);
+		    break;
+		case number:
+		    value = number ();
+		    break;
+		case character:
+		    /* One character as an integer, or 'width' as a string */
+		    if (width < 0) {
+			if (peek () < 0)
+			    raise matching_failure ();
+			value = getc (f);
+		    } else {
+			string s = "";
+			while (peek () >= 0)
+			    s += next ();
+			if (width > 0)
+			    raise matching_failure ();
+			value = s;
+		    }
+		    break;
+		case word:
+		    value = word ();
+		    break;
+		}
+		if (cv.store)
+		    *args[argc++] = value;
 	    }
+	} catch matching_failure () {
 	}
 	return argc;
     }
@@ -217,7 +345,7 @@ extend namespace File {
     }
 
     public namespace ScanfGlobals {
-	
+
 	public int scanf (string format, *poly args...)
 	    /*
 	     * According to 'format', read from stdin to 'args'

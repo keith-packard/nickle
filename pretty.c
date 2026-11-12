@@ -866,7 +866,8 @@ PrettyStatement(Value f, Expr *e, int level, int blevel, Bool nest)
         PrettyIndent(f, e, level);
         FilePuts(f, "while (");
         PrettyExpr(f, e->tree.right, -1, level, nest);
-        FilePuts(f, ");\n");
+        /* The grammar ends do-while at the parenthesis; a ';' would be a statement of its own */
+        FilePuts(f, ")\n");
         break;
     case FOR:
         PrettyIndent(f, e, level);

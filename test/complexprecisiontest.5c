@@ -1,0 +1,51 @@
+/*
+ * Nickle test suite
+ *
+ * Complex functions return results with the precision of the imprecise
+ * parts of their arguments
+ *
+ * imprecise gives an exact part the default precision, so an
+ * argument with an exact part, as a purely imaginary one or one built
+ * from a real by atan or asinh, gave a 256-bit result
+ */
+
+import Complex;
+
+exception bad_precision (string name, complex z, int got);
+
+string[*]		names = {
+    "exp", "log", "sin", "cos", "tan", "sinh", "cosh", "tanh",
+    "asin", "acos", "atan", "asinh", "acosh", "atanh",
+};
+(complex(complex))[*]	funcs = {
+    Complex::exp, Complex::log, Complex::sin, Complex::cos, Complex::tan,
+    Complex::sinh, Complex::cosh, Complex::tanh, Complex::asin,
+    Complex::acos, Complex::atan, Complex::asinh, Complex::acosh,
+    Complex::atanh,
+};
+
+int cprecision (complex v) = max (precision (creal (v)), precision (cimag (v)));
+
+for (int prec = 24; prec <= 113; prec += 89) {
+    real	r = imprecise (0.375, prec);
+    complex[*]	args = {
+	r, -r, cmplx (0, r), cmplx (0, -r), cmplx (1, r), cmplx (r, 2),
+	cmplx (-1/3, r),
+    };
+
+    for (int f = 0; f < dim (funcs); f++)
+	for (int a = 0; a < dim (args); a++) {
+	    int	p = cprecision (funcs[f] (args[a]));
+
+	    if (p != prec)
+		raise bad_precision (names[f], args[a], p);
+	}
+
+    if (cprecision (Complex::pow (cmplx (0, r), 3)) != prec ||
+	cprecision (polar (2, r)) != prec || cprecision (polar (r, 1)) != prec)
+	raise bad_precision ("pow or polar", r, 0);
+}
+
+/* With no imprecise part, results take the default precision */
+if (cprecision (Complex::exp (cmplx (1, 2))) != precision (imprecise (0)))
+    raise bad_precision ("exp", cmplx (1, 2), 0);

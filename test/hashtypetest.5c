@@ -1,0 +1,50 @@
+/*
+ * Nickle test suite
+ *
+ * Checking the types of hash keys and values at run time
+ *
+ * A hash initializer stored its values and default without checking
+ * them against the hash's value type, so (int[string]) { "a" => 1/3 }
+ * held a rational, and no key was checked against the key type at run
+ * time, so a poly holding 3 could index a string-keyed hash.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* What 'f' returns, or the message of an invalid_argument it raises */
+poly function result (poly() f)
+{
+    try {
+	return f ();
+    } catch invalid_argument (string msg, int i, poly value) {
+	return msg;
+    }
+}
+
+poly	third = 1/3;
+poly	three = 3;
+
+check ("value", result (func () { return (int[string]) { "a" => third }; }),
+       "Incompatible types in assignment");
+check ("default", result (func () { return (int[string]) { => third }; }),
+       "Incompatible types in assignment");
+check ("initializer key", result (func () { return (int[string]) { three => 1 }; }),
+       "Incompatible type for hash index");
+
+int[string]	h = { "a" => 1 };
+
+check ("store key", result (func () { h[three] = 1; return 0; }),
+       "Incompatible type for hash index");
+check ("fetch key", result (func () { return h[three]; }), "Incompatible type for hash index");
+
+/* Values and keys of fitting types still go in */
+check ("fits", (real[int]) { 1 => 1/3 }[1], 1/3);
+check ("poly", (poly[poly]) { 1 => "x", "y" => 2 }["y"], 2);
+h["b"] = 2;
+check ("store", h["b"], 2);

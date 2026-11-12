@@ -1,0 +1,24 @@
+/*
+ * Nickle test suite
+ *
+ * String::dirname follows POSIX dirname
+ *
+ * dirname cut the path at its last slash, so "/foo" and "/" gave "",
+ * "/a/b/" gave "/a/b", and "a//b" gave "a/"
+ */
+
+exception bad_dirname (string path, string got, string want);
+
+string[*][2] cases = {
+    { "/foo", "/" }, { "/", "/" }, { "foo", "." }, { "foo/bar", "foo" },
+    { "/a/b/", "/a" }, { "a//b", "a" }, { "", "." }, { "//foo", "/" },
+    { "/a/b//", "/a" }, { "///", "/" }, { "a/", "." }, { "a/b/c", "a/b" },
+    { "/a", "/" }, { "./x", "." }, { "../x/", ".." },
+};
+
+for (int i = 0; i < dim (cases); i++) {
+    string	got = String::dirname (cases[i][0]);
+
+    if (got != cases[i][1])
+	raise bad_dirname (cases[i][0], got, cases[i][1]);
+}

@@ -1505,6 +1505,7 @@ Load a file given by the string name E.
 Load a library given by the string name E.  See the discussion of the
 NICKLEPATH environment variable in ENVIRONMENT
 below, and the discussion of Command::nickle_path above.
+A library not found there is reported, and execution continues.
 .IP "autoload NAME {,NAME}"
 Load the library for each namespace NAME, unless it is already
 defined.  The file name is NAME in lower case, with a dash before

@@ -113,7 +113,21 @@ extend namespace Command {
 	return Command::lex_input (File::string_read (s), s, false, false);
     }
 
-    new ("library", lex_library);
+    void do_library (string name)
+	/*
+	 * library "name"	- read commands from "name", found in
+	 *			  nickle_path
+	 */
+    {
+	/* printf isn't loaded yet, so report with the print builtin */
+	if (!lex_library (name))
+	    File::print (stderr,
+			 "Cannot load library \"" + name + "\": not found in \"" +
+			 nickle_path + "\"\n",
+			 "s", 10, 0, -1, " ");
+    }
+
+    new ("library", do_library);
 }
 
 

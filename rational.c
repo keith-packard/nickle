@@ -818,7 +818,7 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
                 }
             }
             scientific = True;
-            /* 'e', the sign of a negative exponent, and its decimal digits */
+            /* The label, the sign of a negative exponent, and its decimal digits */
             exponent_width = 2;
             if (exponent < 0)
                 exponent_width++;
@@ -1022,8 +1022,13 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
     /* Paring the output to fit may have dropped either part */
     free(initial);
     free(repeat);
-    if (scientific)
-        FilePrintf(f, "e%z", exponent);
+    if (scientific) {
+        /* Above base 10, 'e' is a digit; use '@' as GMP and MPFR do */
+        if (base > 10)
+            FilePrintf(f, "@%z", exponent);
+        else
+            FilePrintf(f, "e%z", exponent);
+    }
     while (-width > print_width) {
         FileOutchar(f, fill);
         width++;

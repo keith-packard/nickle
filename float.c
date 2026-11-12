@@ -779,7 +779,6 @@ FloatPrint(Value f, Value fv, uint32_t format, int base, int width, int print_pr
     char     *frac_string;
     char     *exp_string = 0;
     Bool      rounded = False;
-    int       base_exp;
     char     *exp_label = "e";
     Bool      leader = False;
     int       exp_scale;
@@ -789,7 +788,6 @@ FloatPrint(Value f, Value fv, uint32_t format, int base, int width, int print_pr
 
     if (format == 'a') {
         base = 16;
-        base_exp = 10;
         exp_scale = 2;
         leader = True;
         exp_label = "p";
@@ -803,8 +801,10 @@ FloatPrint(Value f, Value fv, uint32_t format, int base, int width, int print_pr
 
         if (prec == DEFAULT_OUTPUT_PRECISION)
             prec = 15;
-        base_exp = base;
         exp_scale = base;
+        /* Above base 10, 'e' is a digit; use '@' as GMP and MPFR do */
+        if (base > 10)
+            exp_label = "@";
     }
 
     mant_prec = (ptrdiff_t)ceil((double)a->prec * log(2) / log(base)) + 1;
@@ -880,7 +880,8 @@ try_again_e:
             }
         }
     } else {
-        exp_string = NaturalSprint(0, exp->mag, base_exp, &exp_width);
+        /* Exponents are decimal in every base, as in GMP and MPFR */
+        exp_string = NaturalSprint(0, exp->mag, 10, &exp_width);
         if (aborting || !exp_string) {
             EXIT();
             return False;

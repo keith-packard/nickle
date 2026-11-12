@@ -1012,6 +1012,9 @@ base-8 (octal) integer.
 .IP "%e"
 Requires a number argument, and formats in scientific
 notation.
+In another base, as with print() or the # operator, the exponent
+counts powers of that base and is written in decimal, after "@"
+instead of "e" above base 10, as GMP and MPFR do.
 .IP "%f"
 Requires a number argument, and formats in fixed-point
 notation.

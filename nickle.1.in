@@ -63,7 +63,9 @@ A syntax or compile error in a script, or in a file, library or
 expression given with these options, or in any file they load,
 makes Nickle exit with status 1.  Errors in input read from
 standard input, and in files it loads, are reported and Nickle
-continues.  An unhandled exception stops processing and exits
+continues.  A declaration in a command with such an error still
+declares its names, replacing any earlier declarations of them,
+but leaves them uninitialized.  An unhandled exception stops processing and exits
 with status 1, unless Nickle reads commands from a terminal, where
 it enters the debugger instead.  Running out of memory prints
 \fBOut of memory\fP and exits with status 1.

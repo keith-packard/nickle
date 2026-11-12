@@ -182,3 +182,11 @@ for (int base = 2; base <= 16; base++)
 		check_base (f (x), base, prec, sprint (x, base, prec));
 		check_base (f (x + 2**(sh - 40)), base, prec, sprint (x + 2**(sh - 40), base, prec));
 	    }
+
+/*
+ * A fixed-point float shows the digits its precision holds, counted
+ * from its first significant digit. The zeros after the point counted
+ * against the precision, so %.20f of 1e-10 stopped at 0.00000000010000000
+ */
+check ("%.20f", f (1e-10), "0.00000000010000000000");
+check ("%.20f", f (0.0025), "0.0025000000000000001");

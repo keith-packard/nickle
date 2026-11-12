@@ -81,6 +81,68 @@ check ("asinh", Complex::asinh, (complex[*]) { 0.5, -3, 1e-30, c (0, 0.5) });
 check ("acosh", Complex::acosh, general);
 check ("acosh", Complex::acosh, (complex[*]) { 2, 1000, c (0, 2) });
 
+/* Near the branch points and poles of the inverse functions */
+complex[*] near = {
+    c (1, 1e-30), c (1 - 2**-40, 0), c (1 + 2**-40, 0), c (-1 + 2**-40, 0),
+    c (-1, 1e-25), c (2**-40, 1), c (0, 1 + 1e-10), c (0.6, 0.8 + 1e-25),
+    c (1e30, 1e-30), c (-1e30, 2), c (1.5, 0), c (-7, 0), c (0, 5), c (0, -5),
+};
+
+check ("asin", Complex::asin, near);
+check ("acos", Complex::acos, near);
+check ("atan", Complex::atan, near);
+check ("asinh", Complex::asinh, near);
+check ("acosh", Complex::acosh, near);
+check ("atanh", Complex::atanh, near);
+
+/*
+ * On a branch cut, take the value reached going counterclockwise
+ * around the cut's finite endpoint (C23 7.3.3); asin and acos
+ * returned values whose sine or cosine wasn't the argument, and
+ * raised for 1 and -1
+ */
+real	pi2 = pi / 2;
+real	ac2 = Math::acosh (2);
+real	at2 = Math::atanh (1/2);
+
+complex[*][3] on_cuts = {
+    { 0, 2, c (pi2, -ac2) },	{ 0, -2, c (-pi2, ac2) },
+    { 0, 1, pi2 },		{ 0, -1, -pi2 },
+    { 1, 2, c (0, ac2) },	{ 1, -2, c (pi, -ac2) },
+    { 1, 1, 0 },		{ 1, -1, pi },
+    { 2, c (0, 2), c (pi2, at2) },	{ 2, c (0, -2), c (-pi2, -at2) },
+    { 3, c (0, 2), c (ac2, pi2) },	{ 3, c (0, -2), c (-ac2, -pi2) },
+    { 4, -2, c (ac2, pi) },	{ 4, 0, c (0, pi2) },	{ 4, 1, 0 },
+    { 5, 2, c (at2, -pi2) },	{ 5, -2, c (-at2, pi2) },
+};
+
+(complex(complex))[*] inverses = {
+    Complex::asin, Complex::acos, Complex::atan,
+    Complex::asinh, Complex::acosh, Complex::atanh,
+};
+string[*] inverse_names = { "asin", "acos", "atan", "asinh", "acosh", "atanh" };
+
+for (int i = 0; i < dim (on_cuts); i++) {
+    int f = on_cuts[i][0];
+    complex z = on_cuts[i][1];
+
+    check_value (inverse_names[f], z, inverses[f] (z), on_cuts[i][2], 53);
+}
+
+/* atanh has poles at 1 and -1, and atan at i and -i */
+complex[*][2] poles = { { 5, 1 }, { 5, -1 }, { 2, c (0, 1) }, { 2, c (0, -1) } };
+
+for (int i = 0; i < dim (poles); i++) {
+    int f = poles[i][0];
+    complex z = poles[i][1];
+
+    try {
+	complex w = inverses[f] (z);
+	raise bad_result (inverse_names[f], z, w, 0);
+    } catch divide_by_zero (real num, real den) {
+    }
+}
+
 complex[*][2] pow_args = {
     { 2, 2 }, { 2, 0.5 }, { 3, -1.5 }, { c (0.3, -1.2), c (2.5, 0.5) },
     { c (1e-30, 1e-30), 2 }, { c (0, 2), 3 },

@@ -218,7 +218,6 @@ Natural        *NaturalDivide(Natural *a, Natural *b, Natural **remp);
 Natural        *NaturalGcd(Natural *a, Natural *b);
 char           *NaturalSprint(char *, Natural *, int base, ptrdiff_t *width);
 Natural        *NaturalSqrt(Natural *);
-Natural        *NaturalFactor(Natural *n, Natural *max);
 Natural        *NaturalIntPow(Natural *n, ptrdiff_t p);
 Natural        *NaturalPow(Natural *n, Natural *);
 Natural        *NaturalPowMod(Natural *n, Natural *p, Natural *m);

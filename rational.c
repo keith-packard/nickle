@@ -300,362 +300,92 @@ RationalHash(Value av)
     return NaturalHash(a->den) ^ NaturalHash(a->num) ^ a->sign;
 }
 
+/* The most repeating digits that are printed; more are cut off */
+#define MAX_SENSIBLE 10000000
+
+/* b * c mod m */
 static Natural *
-NaturalPsi(Natural *a, Natural *max)
+NaturalTimesMod(Natural *b, Natural *c, Natural *m)
 {
     ENTER();
-    Natural *p;
-    int      n;
-    Natural *ret;
     Natural *rem;
-    Natural *next;
-    Natural *pow;
-    Natural *fact;
 
-    ret = one_natural;
-    while (!NaturalEqual(a, one_natural)) {
-        p = NaturalFactor(a, max);
-        if (!p) {
-            ret = 0;
-            break;
-        }
-        n = 0;
-        for (;;) {
-            next = NaturalDivide(a, p, &rem);
-            if (!NaturalZero(rem))
-                break;
-            a = next;
-            n++;
-        }
-        pow = NaturalIntPow(p, n - 1);
-        fact = NaturalMinus(NaturalTimes(pow, p), pow);
-        ret = NaturalTimes(ret, fact);
-        if (max && NaturalLess(max, fact))
-            break;
-    }
-    RETURN(ret);
+    (void)NaturalDivide(NaturalTimes(b, c), m, &rem);
+    RETURN(rem);
 }
 
-#if 0
+/*
+ * Return the number of digits that repeat in the fraction of 1/nden
+ * in base 'ibase', which shares no factor with nden: the least k > 0
+ * with ibase**k = 1 mod nden. Looking only as far as 'limit' (or
+ * MAX_SENSIBLE if 'limit' isn't positive), return -1 if the count is
+ * beyond it, or MAX_SENSIBLE + 1 if there is no limit, which the
+ * printer cuts off.
+ *
+ * This is a baby-step giant-step search, which needs no factoring.
+ * With m about sqrt(limit), the baby steps store ibase**j for j < m;
+ * if none of those is 1, they are all different, and the first giant
+ * step ibase**(i*m) to match a stored ibase**j gives the count,
+ * i*m - j, as any smaller count would have matched sooner
+ */
 static int
-IntSqrt (int a)
+RationalRepeatLength(int limit, Natural *nden, int ibase)
 {
-    int	    l, h, m;
-
-    l = 2;
-    h = a/2;
-    while ((h-l) > 1)
-    {
-	m = (h+l) >> 1;
-	if (m * m < a)
-	    l = m;
-	else
-	    h = m;
-    }
-    return h;
-}
-
-static int
-IntFactor (int a)
-{
-    int	    v, lim;
-
-    if (!a)
-	return 0;
-    if ((a & 1) == 0)
-	return 2;
-    lim = IntSqrt (a);
-    for (v = 3; v <= lim; v += 2)
-    {
-	if (a % v == 0)
-	    return v;
-    }
-    return a;
-}
-
-static int
-IntPow (int a, int p)
-{
-    int	result;
-
-    result = 1;
-    while (p)
-    {
-	if (p & 1)
-	    result = result * a;
-	p >>= 1;
-	if (p)
-	    a = a * a;
-    }
-    return result;
-}
-
-static int
-IntPowMod (int a, int p, int m)
-{
-    int	result;
-
-    if (m >= 32767)
-    {
-#if DIGITBITS == 32
-	signed_digit   la = a, lm = m, lr;
-	lr = 1;
-	while (p)
-	{
-	    if (p & 1)
-		lr = (lr * la) % lm;
-	    p >>= 1;
-	    if (p)
-		la = (la * la) % lm;
-	}
-	result = (int) lr;
-#else
-	ENTER ();
-	result = NaturalToInt (NaturalPowMod (NewNatural (a),
-					      NewNatural (p),
-					      NewNatural (m)));
-	EXIT ();
-#endif
-    }
-    else
-    {
-	result = 1;
-	while (p)
-	{
-	    if (p & 1)
-		result = (result * a) % m;
-	    p >>= 1;
-	    if (p)
-		a = (a * a) % m;
-	}
-    }
-    return result;
-}
-
-static int
-IntPsi (int a)
-{
-    int	    p;
-    int	    n;
-    int	    ret;
-
-    ret = 1;
-    while (a != 1)
-    {
-	p = IntFactor (a);
-	n = 0;
-	do
-	{
-	    n++;
-	    a /= p;
-	} while (a % p == 0);
-	ret = ret * (IntPow (p, n-1) * (p - 1));
-    }
-    return ret;
-}
-#endif
-
-typedef struct _partial {
-    DataType        *data;
-    struct _partial *down;
-    Natural         *partial;
-    int              power;
-} Partial, *PartialPtr;
-
-static void
-PartialMark(void *object)
-{
-    PartialPtr p = object;
-
-    MemReference(p->partial);
-    MemReference(p->down);
-}
-
-static DataType PartialType = { PartialMark, 0, "PartialType" };
-
-static PartialPtr
-NewPartial(Natural *partial)
-{
-    ENTER();
-    PartialPtr p;
-
-    if (!partial)
-        RETURN(0);
-    p = ALLOCATE(&PartialType, sizeof(Partial));
-    p->down = 0;
-    p->partial = partial;
-    p->power = 0;
-    RETURN(p);
-}
-
-typedef struct _factor {
-    DataType       *data;
-    struct _factor *next;
-    Natural        *prime;
-    int             power;
-    PartialPtr      partials;
-} Factor, *FactorPtr;
-
-static void
-FactorMark(void *object)
-{
-    FactorPtr f = object;
-
-    MemReference(f->prime);
-    MemReference(f->next);
-    MemReference(f->partials);
-}
-
-static DataType FactorType = { FactorMark, 0, "FactorType" };
-
-static FactorPtr
-NewFactor(Natural *prime, int power, FactorPtr next)
-{
-    ENTER();
-    FactorPtr f;
-
-    f = ALLOCATE(&FactorType, sizeof(Factor));
-    f->next = next;
-    f->prime = prime;
-    f->power = power;
-    f->partials = 0;
-    f->partials = NewPartial(prime);
-    f->partials->power = 0;
-    RETURN(f);
-}
-
-static FactorPtr
-GenerateFactors(Natural *n, Natural *max)
-{
-    ENTER();
-    FactorPtr f = 0;
-    Natural  *p;
-    Natural  *largest;
-    Natural  *d, *rem;
-
-    p = 0;
-    largest = NaturalSqrt(n);
-    while (!NaturalEqual(n, one_natural)) {
-        int power = 1;
-        for (;;) {
-            if (!p)
-                p = two_natural;
-            else if (NaturalEqual(p, two_natural))
-                p = NewNatural(3);
-            else
-                p = NaturalPlus(p, two_natural);
-
-            d = NaturalDivide(n, p, &rem);
-            if (NaturalZero(rem))
-                break;
-            if (max && NaturalLess(max, p))
-                RETURN(f);
-            if (NaturalLess(largest, p))
-                RETURN(NewFactor(n, 1, f));
-        }
-        n = d;
-        for (;;) {
-            d = NaturalDivide(n, p, &rem);
-            if (!NaturalZero(rem))
-                break;
-            n = d;
-            power++;
-        }
-        f = NewFactor(p, power, f);
-        largest = NaturalSqrt(n);
-    }
-    RETURN(f);
-}
-
-static Natural *
-FactorBump(FactorPtr f)
-{
-    PartialPtr p, minp;
-    Natural   *factor;
-
-    ENTER();
-    if (!f)
-        RETURN(0);
-    p = f->partials;
-    if (!p)
-        RETURN(0);
-    minp = p;
-    while (p->power) {
-        if (!p->down)
-            p->down = NewPartial(FactorBump(f->next));
-        p = p->down;
-        if (!p)
-            break;
-        if (NaturalLess(p->partial, minp->partial))
-            minp = p;
-    }
-    if (!minp)
-        RETURN(0);
-    factor = minp->partial;
-    if (minp->power < f->power) {
-        minp->partial = NaturalTimes(minp->partial, f->prime);
-        minp->power++;
-    } else {
-        f->partials = minp->down;
-    }
-    RETURN(factor);
-}
-
-static int
-RationalRepeatLength(int prec, Natural *nden, int ibase)
-{
-    Natural  *nbase;
-    Natural  *ndigits;
-    FactorPtr factors;
-    Natural  *factor;
-    int       digits;
-    Natural  *max = 0;
+    Natural  *nbase, *v, *step;
+    Natural **keys;
+    int      *vals;
+    size_t    size, mask, h;
+    int       bound = limit > 0 ? limit : MAX_SENSIBLE;
+    int       m, i, j, found = 0;
 
     if (NaturalEqual(nden, one_natural))
         return 0;
     ENTER();
-    if (prec > 0)
-        max = NewNatural((double_digit)prec);
-    nbase = NewNatural((double_digit)ibase);
-    ndigits = NaturalPsi(nden, max);
-    if (!ndigits) {
-        factor = one_natural;
-        for (factor = one_natural;; factor = NaturalPlus(factor, one_natural)) {
-            if (NaturalEqual(NaturalPowMod(nbase, factor, nden), one_natural))
-                break;
-            if (aborting)
-                break;
-            if (NaturalLess(max, factor)) {
-                EXIT();
-                return -1;
-            }
+    (void)NaturalDivide(NewNatural((double_digit)ibase), nden, &nbase);
+    m = (int)ceil(sqrt((double)bound));
+    for (size = 2; size < (size_t)m * 2; size *= 2)
+        ;
+    mask = size - 1;
+    keys = calloc(size, sizeof(Natural *));
+    vals = calloc(size, sizeof(int));
+    if (!keys || !vals)
+        MemExhausted();
+
+    /* Baby steps: ibase**j for j < m, stopping early at a short count */
+    v = one_natural;
+    for (j = 0; j < m && !found && !aborting; j++) {
+        if (j > 0 && NaturalEqual(v, one_natural)) {
+            found = j;
+            break;
         }
-    } else {
-        factors = GenerateFactors(ndigits, max);
-        if (aborting) {
-            EXIT();
-            return 0;
-        }
-        factor = one_natural;
-        while (factor) {
-            if (NaturalEqual(NaturalPowMod(nbase, factor, nden), one_natural))
-                break;
-            if (aborting)
-                break;
-            factor = FactorBump(factors);
-            if (max && factor && NaturalLess(max, factor)) {
-                EXIT();
-                return -1;
-            }
-        }
+        for (h = NaturalHash(v) & mask; keys[h]; h = (h + 1) & mask)
+            ;
+        keys[h] = v;
+        vals[h] = j;
+        v = NaturalTimesMod(v, nbase, nden);
     }
-    if (!factor)
-        factor = ndigits;
-    if (NaturalLess(max_int_natural, factor))
-        factor = max_int_natural;
-    digits = NaturalToInt(factor);
+
+    /* Giant steps: ibase**(i*m), which v now holds for i = 1 */
+    step = v;
+    for (i = 1; !found && !aborting && (ptrdiff_t)(i - 1) * m < bound; i++) {
+        for (h = NaturalHash(v) & mask; keys[h]; h = (h + 1) & mask) {
+            if (NaturalEqual(keys[h], v)) {
+                found = i * m - vals[h];
+                break;
+            }
+        }
+        v = NaturalTimesMod(v, step, nden);
+    }
+    free(keys);
+    free(vals);
+    if (!found || found > bound) {
+        if (limit > 0)
+            found = -1;
+        else
+            found = MAX_SENSIBLE + 1;
+    }
     EXIT();
-    return digits;
+    return found;
 }
 
 static void
@@ -960,7 +690,6 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
         }
     }
     if (rep_width) {
-#define MAX_SENSIBLE 10000000
         if (rep_width > MAX_SENSIBLE) {
             repeat_width = -1;
             rep_width = MAX_SENSIBLE;

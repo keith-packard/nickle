@@ -697,29 +697,6 @@ NaturalSqrt(Natural *n)
 }
 
 Natural *
-NaturalFactor(Natural *n, Natural *max)
-{
-    ENTER();
-    Natural *v, *lim, *rem;
-
-    if (zerop(n))
-        RETURN(zero_natural);
-    if ((data(n)[0] & 1) == 0)
-        RETURN(two_natural);
-    lim = NaturalSqrt(n);
-    for (v = NewNatural(3); !NaturalLess(lim, v); v = NaturalPlus(v, two_natural)) {
-        (void)NaturalDivide(n, v, &rem);
-        if (zerop(rem))
-            RETURN(v);
-        if (aborting)
-            break;
-        if (max && NaturalLess(max, v))
-            RETURN(0);
-    }
-    RETURN(n);
-}
-
-Natural *
 NaturalIntPow(Natural *n, ptrdiff_t p)
 {
     ENTER();

@@ -8,7 +8,7 @@
  * Implementation of Alleged RC4
  *
  * Bart 1999/2
- * 
+ *
  * Used primarily for PRNG, so interface is not too fancy
  */
 
@@ -17,22 +17,44 @@ namespace ARC4 {
   global int[256] state = {};
   global int p1, p2;
 
-  public void nsetkey(int nn, int k) 
+  public void nsetkey(int nn, int k)
     /*
      * First argument is number of times to iterate the
      * initial scramble.  10 seems good for most apps.
-     * Second argument is integer key: largest useful key is
-     * 8 * 62 bits.
+     * Second argument is integer key.  Keys of up to
+     * 8 * 252 bits each give their own stream.
      */
   {
     int i, j, n, ii;
-    int[64] key = {};
+    int[256] key = {};
 
+    /*
+     * RC4 repeats a short key to fill its schedule, so a key
+     * that repeats a shorter one would give the same stream.
+     * Holding the sign and the number of bytes in the key
+     * keeps every key distinct
+     */
     key[0] = 13;
     key[1] = 17;
-    for (n = 2; n < 64 && k > 0; n++) {
+    key[2] = 0;
+    if (k < 0) {
+      key[2] = 1;
+      k = -k;
+    }
+    for (n = 4; n < 256 && k > 0; n++) {
       key[n] = k & 0xff;
       k = k >> 8;
+    }
+    key[3] = n - 4;
+
+    /*
+     * Fold the bytes of a larger key into the 252 held, marking
+     * its length apart from every key that fits
+     */
+    for (i = 4; k > 0; i = i == 255 ? 4 : i + 1) {
+      key[i] ^= k & 0xff;
+      k = k >> 8;
+      key[3] = 253;
     }
 
     for (i = 0; i < 256; i++)
@@ -50,9 +72,9 @@ namespace ARC4 {
     p1 = p2 = 0;
   }
 
-  public int streambyte() 
+  public int streambyte()
     /*
-     * Get the next byte from the stream 
+     * Get the next byte from the stream
      */
   {
     p1 = (p1 + 1) & 0xff;
@@ -63,5 +85,5 @@ namespace ARC4 {
     int n = (state[p1] + state[p2]) & 0xff;
     return state[n];
   }
-  
+
 }

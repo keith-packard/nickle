@@ -1,0 +1,119 @@
+/*
+ * Nickle test suite
+ *
+ * Ctype character classes and case mappings
+ *
+ * Ctype was ASCII with part of Latin-1: × and ÷ were letters, ß and ÿ
+ * were not lower case, DEL and the C1 controls were not control
+ * characters, and nothing above U+00FF was in any class. It now
+ * follows Unicode
+ */
+
+exception bad_class (int c, string name, bool got);
+exception bad_case (int c, string name, int got, int want);
+
+typedef struct {
+    int		c;
+    string	classes;
+} class_case;
+
+string[*]	names = {
+    "alnum", "alpha", "blank", "cntrl", "digit", "graph",
+    "lower", "print", "punct", "space", "upper", "xdigit",
+};
+(bool(int))[*]	tests = {
+    Ctype::isalnum, Ctype::isalpha, Ctype::isblank, Ctype::iscntrl,
+    Ctype::isdigit, Ctype::isgraph, Ctype::islower, Ctype::isprint,
+    Ctype::ispunct, Ctype::isspace, Ctype::isupper, Ctype::isxdigit,
+};
+
+class_case[*] classes = {
+    { .c = 'A', .classes = "alnum alpha graph print upper xdigit" },
+    { .c = 'z', .classes = "alnum alpha graph lower print" },
+    { .c = '7', .classes = "alnum digit graph print xdigit" },
+    { .c = '~', .classes = "graph print punct" },
+    { .c = ' ', .classes = "blank print space" },
+    { .c = '\t', .classes = "blank cntrl space" },
+    { .c = '\n', .classes = "cntrl space" },
+    { .c = 0x7f, .classes = "cntrl" },				/* DEL */
+    /* NEL, a C1 control */
+    { .c = 0x85, .classes = "cntrl" },
+    /* no-break space */
+    { .c = 0xa0, .classes = "print graph punct" },
+    { .c = 0xd7, .classes = "graph print punct" },		/* × */
+    { .c = 0xf7, .classes = "graph print punct" },		/* ÷ */
+    { .c = 'é', .classes = "alnum alpha graph lower print" },
+    { .c = 'ß', .classes = "alnum alpha graph lower print" },
+    { .c = 'ÿ', .classes = "alnum alpha graph lower print" },
+    { .c = 'ª', .classes = "alnum alpha graph lower print" },
+    { .c = 'Σ', .classes = "alnum alpha graph print upper" },
+    /* title case */
+    { .c = 'ǅ', .classes = "alnum alpha graph lower print upper" },
+    { .c = 'Ж', .classes = "alnum alpha graph print upper" },
+    { .c = '٣', .classes = "alnum alpha graph print" },	/* Arabic-Indic three */
+    { .c = '中', .classes = "alnum alpha graph print" },
+    { .c = 0x2003, .classes = "blank print space" },		/* em space */
+    /* line separator */
+    { .c = 0x2028, .classes = "cntrl space" },
+    /* combining acute */
+    { .c = 0x0301, .classes = "graph print punct" },
+    { .c = '€', .classes = "graph print punct" },
+    /* math bold A */
+    { .c = 0x1d400, .classes = "alnum alpha graph print upper" },
+    /* Deseret */
+    { .c = 0x10428, .classes = "alnum alpha graph lower print" },
+    { .c = 0x1f600, .classes = "graph print punct" },		/* emoji */
+    /* private use */
+    { .c = 0xe000, .classes = "graph print punct" },
+    /* private use, plane 16 */
+    { .c = 0x10fffd, .classes = "graph print punct" },
+    { .c = 0x0378, .classes = "" },				/* unassigned */
+    { .c = 0xd800, .classes = "" },				/* surrogate */
+    /* beyond Unicode */
+    { .c = 0x110000, .classes = "" },
+    /* getc's end of file */
+    { .c = -1, .classes = "" },
+};
+
+for (int i = 0; i < dim (classes); i++) {
+    int	c = classes[i].c;
+
+    for (int n = 0; n < dim (names); n++) {
+	bool	want = String::index (" " + classes[i].classes + " ",
+				      " " + names[n] + " ") >= 0;
+
+	if (tests[n] (c) != want)
+	    raise bad_class (c, names[n], tests[n] (c));
+    }
+}
+
+/* Each kind of case run: offsets, alternating pairs, and title case */
+int[*][3] cases = {
+    /* c, lower, upper */
+    { 'A', 'a', 'A' }, { 'a', 'a', 'A' }, { 'À', 'à', 'À' },
+    { 'ÿ', 'ÿ', 'Ÿ' }, { 'ß', 'ß', 'ß' }, { 'µ', 'µ', 'Μ' },
+    { 'Ā', 'ā', 'Ā' }, { 'ā', 'ā', 'Ā' },	/* alternating, even capitals */
+    { 'Ĺ', 'ĺ', 'Ĺ' }, { 'ĺ', 'ĺ', 'Ĺ' },	/* alternating, odd capitals */
+    { 'İ', 'i', 'İ' }, { 'ı', 'ı', 'I' },
+    { 'Ǆ', 'ǆ', 'Ǆ' }, { 'ǅ', 'ǆ', 'Ǆ' }, { 'ǆ', 'ǆ', 'Ǆ' },
+    { 'Σ', 'σ', 'Σ' }, { 'ς', 'ς', 'Σ' }, { 'Ж', 'ж', 'Ж' },
+    { 0x10400, 0x10428, 0x10400 }, { 0x10428, 0x10428, 0x10400 },
+    { '×', '×', '×' }, { '7', '7', '7' }, { '中', '中', '中' },
+    { -1, -1, -1 }, { 0x110000, 0x110000, 0x110000 },
+};
+
+for (int i = 0; i < dim (cases); i++) {
+    int	c = cases[i][0];
+
+    if (Ctype::tolower (c) != cases[i][1])
+	raise bad_case (c, "tolower", Ctype::tolower (c), cases[i][1]);
+    if (Ctype::toupper (c) != cases[i][2])
+	raise bad_case (c, "toupper", Ctype::toupper (c), cases[i][2]);
+}
+
+/* The Latin-1 charsets still work */
+Ctype::charset	upper = Ctype::make_charset (Ctype::isupper);
+
+if (!Ctype::member (upper, 'Ö') || Ctype::member (upper, '×') ||
+    Ctype::member (upper, 'Ā'))
+    raise bad_class ('Ö', "charset", false);

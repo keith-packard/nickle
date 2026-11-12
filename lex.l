@@ -880,14 +880,17 @@ aetov(char *s)
     if (s[0] == '0') {
         switch (s[1]) {
         case 'x':
+        case 'X':
             base = 16;
             s += 2;
             break;
         case 'o':
+        case 'O':
             base = 8;
             s += 2;
             break;
         case 'b':
+        case 'B':
             base = 2;
             s += 2;
             break;

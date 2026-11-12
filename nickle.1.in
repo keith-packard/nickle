@@ -1058,7 +1058,10 @@ with no point.
 .IP "-"
 A precision value indicating arbitrary
 precision. A repeating fraction prints with its repeating
-digits in braces, as in 0.{142857}.
+digits in braces, as in 0.{142857}, and an imprecise value with
+the fewest significant digits that read back as the same value.
+With %g, an imprecise value then prints in scientific notation when
+its exponent is below -4 or at least that number of digits.
 .IP "*"
 The next argument to fprintf() is an integer indicating
 the field width or precision of the formatted value.

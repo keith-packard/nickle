@@ -1217,9 +1217,111 @@ try_again_f:
     return True;
 }
 
+/* Round 'v' to the nearest integer, a half to an even one */
+static Value
+FloatRoundEven(Value v)
+{
+    ENTER();
+    Value fl = Floor(v);
+    Value diff = Minus(v, fl);
+    Value half = Divide(One, NewInt(2));
+
+    if (True(Less(half, diff)) || (True(Equal(diff, half)) && True(Equal(Mod(fl, NewInt(2)), One))))
+        fl = Plus(fl, One);
+    RETURN(fl);
+}
+
+/*
+ * Find the fewest significant digits in 'base' that, correctly
+ * rounded, convert back to the float 'fv' at its precision. Printing
+ * that many shows the value exactly, without digits beyond what its
+ * precision holds. Sets '*expp' to the exponent of the leading digit.
+ * Returns 0 when the exponent is too large to search
+ */
+static ptrdiff_t
+FloatShortestDigits(Value fv, int base, ptrdiff_t *expp)
+{
+    ENTER();
+    Float    *a = &fv->floats;
+    Value     b = NewInt(base);
+    Value     mag = NewInteger(Positive, a->mant->mag);
+    Value     exact;
+    Value     target;
+    ptrdiff_t exp2;
+    ptrdiff_t e;
+    ptrdiff_t lo, hi;
+
+    if (!FpartToPtrdiff(a->exp, &exp2) || exp2 > 4000000 || exp2 < -4000000) {
+        EXIT();
+        return 0;
+    }
+    exact = Times(mag, Pow(NewInt(2), NewPtrdiffInteger(exp2)));
+    target = NewValueFloat(exact, a->prec);
+
+    /* Estimate the exponent from the bit length, then settle it exactly */
+    e = (ptrdiff_t)floor((double)(FpartLength(a->mant) + exp2 - 1) * log(2) / log(base));
+    while (True(Less(exact, Pow(b, NewPtrdiffInteger(e)))))
+        e--;
+    while (False(Less(exact, Pow(b, NewPtrdiffInteger(e + 1)))))
+        e++;
+
+    /* More digits only round closer, so search for the fewest */
+    lo = 1;
+    hi = (ptrdiff_t)ceil((double)a->prec * log(2) / log(base)) + 1;
+    while (lo < hi && !aborting) {
+        ptrdiff_t n = (lo + hi) / 2;
+        Value     scale = Pow(b, NewPtrdiffInteger(e - n + 1));
+        Value     near = Times(FloatRoundEven(Divide(exact, scale)), scale);
+
+        if (True(Equal(NewValueFloat(near, a->prec), target)))
+            hi = n;
+        else
+            lo = n + 1;
+    }
+    *expp = e;
+    EXIT();
+    return lo;
+}
+
 static Bool
 FloatPrint(Value f, Value fv, uint32_t format, int base, int width, int print_prec, uint32_t fill)
 {
+    ptrdiff_t n;
+    ptrdiff_t e;
+    ptrdiff_t frac;
+
+    /*
+     * Arbitrary precision shows the fewest digits that read back as
+     * the same value, as fixed or scientific notation like %g, with
+     * C's rule: scientific when the exponent is below -4 or at least
+     * the number of digits
+     */
+    if (base <= 0)
+        base = 10;
+    if (print_prec == INFINITE_OUTPUT_PRECISION && format != 'a' && !FpartZero(fv->floats.mant)
+        && (n = FloatShortestDigits(fv, base, &e))) {
+        frac = n - 1 - e;
+        if (frac < 0)
+            frac = 0;
+        switch (format) {
+        case 'e':
+        case 'E':
+            print_prec = (int)(n - 1);
+            break;
+        case 'f':
+            print_prec = (int)frac;
+            break;
+        default:
+            if (e < -4 || e >= n) {
+                format = 'e';
+                print_prec = (int)(n - 1);
+            } else {
+                format = 'f';
+                print_prec = (int)frac;
+            }
+            break;
+        }
+    }
     return FloatPrintPrec(f, fv, format, base, width, print_prec, fill, fv->floats.prec + 32);
 }
 

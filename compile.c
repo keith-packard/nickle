@@ -180,7 +180,7 @@ ResetInst(ObjPtr obj, ptrdiff_t i)
  * can never be the target for this instruction
  */
 #define NewInst(_o, _op, _i, _stat)    \
-    {                                  \
+    do {                               \
         InstPtr __inst__;              \
         (_o) = AddInst(_o, _stat);     \
         (_i) = ObjLast(_o);            \
@@ -188,16 +188,16 @@ ResetInst(ObjPtr obj, ptrdiff_t i)
         __inst__->base.opCode = (_op); \
         __inst__->base.flags = 0;      \
         __inst__->branch.offset = 0;   \
-    }
+    } while (0)
 
 #define BuildInst(_o, _op, _inst, _stat)    \
-    {                                       \
+    do {                                    \
         (_o) = AddInst(_o, _stat);          \
         (_inst) = ObjCode(_o, ObjLast(_o)); \
         (_inst)->base.opCode = (_op);       \
         (_inst)->base.flags = 0;            \
         (_inst)->branch.offset = 0;         \
-    }
+    } while (0)
 
 #define SetFlag(_o, _f) ((_o)->used ? (ObjCode((_o), ObjLast(_o))->base.flags |= (_f)) : 0)
 #define SetPush(_o)     SetFlag(_o, InstPush)

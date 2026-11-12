@@ -1286,8 +1286,15 @@ FileStringWidth(char *string, ptrdiff_t length, uint32_t format)
     else {
         ptrdiff_t width = 2;
         uint32_t  c;
+        Bool      octal = False;
+
         while ((string = StringNextChar(string, &c, &length))) {
             /* Match the escapes FilePutString writes */
+            if (octal && '0' <= c && c <= '7') {
+                width += 4;
+                continue;
+            }
+            octal = False;
             if (c < ' ')
                 switch (c) {
                 case '\n':
@@ -1296,11 +1303,15 @@ FileStringWidth(char *string, ptrdiff_t length, uint32_t format)
                 case '\b':
                 case '\f':
                 case '\v':
+                    width += 2;
+                    break;
                 case '\0':
                     width += 2;
+                    octal = True;
                     break;
                 default:
                     width += 4;
+                    octal = True;
                     break;
                 }
             else if (c == '"' || c == '\\')
@@ -1319,8 +1330,20 @@ FilePutString(Value f, char *string, ptrdiff_t length, uint32_t format)
         FilePutsc(f, string, length);
     else {
         uint32_t c;
+        /*
+         * The lexer reads every octal digit after a backslash, so a
+         * digit 0-7 following an octal escape is escaped too
+         */
+        Bool     octal = False;
+
         FileOutput(f, '"');
         while ((string = StringNextChar(string, &c, &length))) {
+            if (octal && '0' <= c && c <= '7') {
+                FileOutput(f, '\\');
+                Print(f, NewCharInteger(c), 'o', 8, 3, -1, '0');
+                continue;
+            }
+            octal = False;
             if (c < ' ')
                 switch (c) {
                 case '\n':
@@ -1343,10 +1366,12 @@ FilePutString(Value f, char *string, ptrdiff_t length, uint32_t format)
                     break;
                 case '\0':
                     FilePuts(f, "\\0");
+                    octal = True;
                     break;
                 default:
                     FileOutput(f, '\\');
                     Print(f, NewCharInteger(c), 'o', 8, 3, -1, '0');
+                    octal = True;
                     break;
                 }
             else if (c == '"')

@@ -1,0 +1,35 @@
+/*
+ * Nickle test suite
+ *
+ * Reading the script from standard input with "-"
+ *
+ * As in Python, "nickle - a b" reads the program from standard input
+ * with argv set to { "-", "a", "b" }. parseargs used to fail on a
+ * lone "-", and then nickle tried to load a file named "-".
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string[*] args, string want)
+{
+    string	nickle = Environ::get ("NICKLE");
+    file[*]	input = File::mkpipe ();
+    file[*]	output = File::mkpipe ();
+    string[dim (args) + 1] argv = { [i] = i == 0 ? nickle : args[i - 1] };
+
+    File::filter (nickle, argv, (file[3]) { input[0], output[1], stderr });
+    File::close (input[0]);
+    File::close (output[1]);
+    File::fprintf (input[1], "printf (\"%%v\\n\", argv);\n");
+    File::close (input[1]);
+
+    string got = File::fgets (output[0]);
+    File::close (output[0]);
+    if (got != want)
+	raise wrong (sprintf ("%v", args), got, want);
+}
+
+check ((string[*]) { "-" }, "(string [1]) {\"-\"}");
+check ((string[*]) { "-", "a", "b" }, "(string [3]) {\"-\", \"a\", \"b\"}");
+check ((string[*]) { "-", "-x", "" }, "(string [3]) {\"-\", \"-x\", \"\"}");
+check ((string[*]) {}, "(string [0]) {}");

@@ -301,7 +301,8 @@ install_man(manual)
 test_env = environment(
   {
     'NICKLESTART': meson.current_source_dir() / 'builtin.5c',
-    'NICKLEPATH': meson.current_source_dir()
+    'NICKLEPATH': meson.current_source_dir(),
+    'NICKLE': nickle.full_path()
   }
   )
 

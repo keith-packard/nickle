@@ -38,3 +38,13 @@ check ("%.-g", sprintf ("%.-g", 2/3), "0.{6}");
 check ("%.-e", sprintf ("%.-e", 1/3), "3.{3}e-1");
 check ("%.-f", sprintf ("%.-f", 1/4), "0.25");
 check ("%.-e", sprintf ("%.-e", 1/4), "2.5e-1");
+
+/*
+ * At arbitrary precision, %g writes a rational below 1e-4 in scientific
+ * notation, as it does at other precisions, rather than as a long run
+ * of zeros
+ */
+check ("%.-g", sprintf ("%.-g", 1/3e30), "3.{3}e-31");
+check ("%.-g", sprintf ("%.-g", 3e-30), "3e-30");
+check ("%.-g", sprintf ("%.-g", -1/300000), "-3.{3}e-6");
+check ("%.-g", sprintf ("%.-g", 1/3000), "0.000{3}");

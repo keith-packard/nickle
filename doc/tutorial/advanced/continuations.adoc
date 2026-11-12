@@ -1,7 +1,7 @@
 = Nickle Continuations
 
-`poly setjmp ( continuation *c, poly retval )` +
-`void lomgjmp ( continuation c, poly retval )`
+`poly setjmp ( &continuation c, poly retval )` +
+`noreturn longjmp ( continuation c, poly retval )`
 
 Arbitrary flow control is accomplished in Nickle with first-class
 continuations and the functions `setjmp` and `longjmp`.  These are
@@ -13,17 +13,15 @@ names in scope, in `c` and returns `retval`.
 Longjmp returns `retval` from the setjmp that set _c_.  There
 can be two distinctions from this jump and the initial call to setjmp:
 the return value may differ, and variables that have changed retain
-their new values.
+their new values.  Longjmp evaluates the leave expression of each
+`twixt` it jumps out of and the enter expression of each it jumps
+into.
 
 Continuations are often used to implement control structures that do
 not exist in the language, interpreters, and escaping from recursive
 algorithms.  For example, the following is a simple binary tree search
 that uses continuations to jump directly to the top instead of
 returning up each branch once the result is found.
-
-Here's a binary search function, but instead of unwinding the
-recursion once the item is found, it uses longjmp to escape
-in one call.
 
 [source,c]
 ----
@@ -53,13 +51,13 @@ poly search(tree t, int key) {
 
 tree t = { key = 2, data = "blah", left = reference ( <> ), right = reference ( <> ) };
 
-find(t, 2)
+search(t, 2)                    /* "blah" */
 ----
 
 This is a pretty normal binary tree search, but notice how it is run:
 a continuation is set; if setjmp returns `<>` (which it will the first
 time), a value is searched for. If an actual value is returned, it
-must be from the longjmp in search, and the value is returned.  This
+must be from the longjmp in `_search`, and the value is returned.  This
 optimizes the return from what can be a very deeply nested search.
 
 This sort of escape from a nested search can also be done with

@@ -1,25 +1,30 @@
 = Nickle Namespaces
 
-Namespaces collect related variable and function names and allow control over visibility.
-A number of Nickle builtins are gathered into builtin namespaces that may be used.
-The following builtin namespaces have sections in this tutorial: 
+Namespaces collect related variable and function names and allow control
+over visibility. A number of Nickle builtins are gathered into builtin
+namespaces that may be used. The following builtin namespaces have
+sections in this tutorial:
 
 `Math`::
 Useful mathematical functions.
 
 `File`::
-File input/output with the 'file' type.
+File input/output with the `file` type.
 
 `Thread`::
 Concurrent processing.
 
-`Semaphore and Mutex`::
+`Semaphore`::
 Synchronization of threads.
 
 `String`::
 Useful functions for strings.
 
-An example namespace might be declared like this: 
+Other namespaces come from libraries that are loaded when needed,
+such as `Mutex` for mutual exclusion and `Process` for running other
+programs; see <<_loading_libraries,Loading libraries>> below.
+
+An example namespace might be declared like this:
 
 ----
 namespace Example {
@@ -30,7 +35,7 @@ namespace Example {
         int function bar(int a) {
                 ...
         }
-        
+
         protected int function foo(int a) {
                 ...
         }
@@ -42,7 +47,7 @@ The keyword `namespace` is followed by the name of the namespace and a
 list of statements that declare names in the namespace.  The
 publication of those declarations, e.g. `public` or `protected`
 defines how visible they will be outside the namespace.  The namespace
-itself may be preceeded by publication information, _but this has no
+itself may be preceded by publication information, _but this has no
 bearing on the names within the namespace_; it defines the visibility
 of the name of the namespace.  If the example above had been declared
 
@@ -62,17 +67,17 @@ visibility of their own names important.
 
 `extend namespace` _name_ `{` _statement-list_ `}`
 
-Names may be added to a namespace after it is initially defined with the `extend` command.
-The namespace `name` is reopened and the new `statement-list` is added to the previous ones.
-For example, 
+Names may be added to a namespace after it is initially defined with the
+`extend` command. The namespace `name` is reopened and the new
+`statement-list` is added to the previous ones. For example,
 
 ----
 extend namespace Example {
-        string[*] greeting = [2]{ "hello", "world" };
+        string[*] greeting = { "hello", "world" };
 }
 ----
 
-Adds `greeting` to the names already defined in ``Example``. 
+Adds `greeting` to the names already defined in ``Example``.
 
 == Peering inside
 
@@ -86,7 +91,9 @@ namespace, its names too are visible this way.  Either `protected` or
 
 An `import` statement brings all the public names in `namespace` into
 scope, overshadowing conflicting names.  Thereafter, those names may
-be used normally.
+be used normally, and a name it overshadowed can still be reached with
+`::`.  A namespace inside another is imported by its full name, as in
+`import Example::Inner`.
 
 A variable is declared with one of three visibilities that defines how
 it is visible outside its namespace:
@@ -95,7 +102,7 @@ it is visible outside its namespace:
 * `protected` may be seen outside with `::` but not imported
 * if neither is specified, it may not be seen outside at all
 
-Thus, in our example namespace `Example`: 
+Thus, in our example namespace `Example`:
 
 * `blah`, `bar`, and `greeting` have no visibility specified and may
   only be used inside `Example`.
@@ -105,3 +112,25 @@ Thus, in our example namespace `Example`:
 
 * an `import` will only bring `a` into scope, as it is the only name
   that is public.
+
+== Loading libraries
+
+`autoload` _namespace_ `,` ... +
+`autoimport` _namespace_ `,` ... +
+`reimport` _namespace_ `,` ...
+
+Many namespaces live in library files, loaded only when a program
+asks for them.  `autoload` loads the library defining each namespace
+named, unless the namespace is already defined; `autoimport` also
+imports it, and `reimport` loads it again even if it is already
+defined.  The library's file name is the namespace's name in lower
+case, with a dash before each capital letter that follows a lower-case
+one, and `.5c` appended, so `Mutex` comes from `mutex.5c`.  The
+`library` command loads a file from the library path by its name.
+See <<_commands,Commands>>.
+
+----
+autoimport Mutex;
+
+mutex m = new ();
+----

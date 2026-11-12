@@ -37,22 +37,22 @@ namespace ParseArgs {
 	 * a printable representation
 	 */
     {
-	string stdarg() {
-	    if (is_uninit(&a.name))
-		return a.expr_name;
-	    string s = "";
-	    if (!is_uninit(&a.abbr))
-		s += sprintf("-%c,", a.abbr);
-	    s += sprintf("--%s", a.name);
-	    return s;
+	string s = "";
+	if (!is_uninit(&a.abbr))
+	    s = sprintf("-%c", a.abbr);
+	if (!is_uninit(&a.name)) {
+	    if (s != "")
+		s += ",";
+	    s += "--" + a.name;
 	}
 	union switch (a.var) {
 	case arg_flag:
-	    return stdarg();
+	    return s;
 	default:
-	    return sprintf("%s <%s>", stdarg(), a.expr_name);
+	    if (is_uninit(&a.expr_name))
+		return sprintf("%s <value>", s);
+	    return sprintf("%s <%s>", s, a.expr_name);
 	}
-	abort("internal error: unknown arg type");
     }
 
     public string basename(string path)
@@ -93,6 +93,13 @@ namespace ParseArgs {
 		    is_uninit(&argd.posn_args[i].optional))
 		    raise bad_argd("fixed after optional posn arg");
 
+	/* every option needs a way to give it */
+	if (!is_uninit(&argd.args))
+	    for (int i = 0; i < dim(argd.args); i++)
+		if (is_uninit(&argd.args[i].abbr) &&
+		    is_uninit(&argd.args[i].name))
+		    raise bad_argd("option with neither abbr nor name");
+
 	/* argument that is current focus */
 	int argind = 0;
 
@@ -121,12 +128,8 @@ namespace ParseArgs {
 	     */
 	{
 	    fprintf(f, "%s: usage: %s", argd.prog_name, argd.prog_name);
-	    if (!is_uninit(&argd.args)) {
+	    if (!is_uninit(&argd.args))
 		fprintf(f, " <options>");
-		for (int i = 0; i < dim(argd.args); i++)
-		    if (is_uninit(&argd.args[i].name))
-			fprintf(f, " %s", arg_string(argd.args[i]));
-	    }
 	    if (!is_uninit(&argd.posn_args)) {
 		for (int i = 0; i < dim(argd.posn_args); i++)
 		    if (is_uninit(&argd.posn_args[i].optional))
@@ -137,18 +140,12 @@ namespace ParseArgs {
 	    if (!is_uninit(&&argd.unknown))
 		fprintf(f, " [--] ...");
 	    fprintf(f, "\n");
-	    if (!is_uninit(&argd.args)) {
+	    if (!is_uninit(&argd.args))
 		for (int i = 0; i < dim(argd.args); i++)
-		    if (is_uninit(&argd.args[i].name))
-			fprintf(f, "    %s   %s\n",
-				argd.args[i].expr_name,
-				argd.args[i].desc);
-		for (int i = 0; i < dim(argd.args); i++)
-		    if (!is_uninit(&argd.args[i].name))
-			fprintf(f, "    %s   %s\n",
-				arg_string(argd.args[i]),
-				argd.args[i].desc);
-	    }
+		    fprintf(f, "    %s   %s\n",
+			    arg_string(argd.args[i]),
+			    is_uninit(&argd.args[i].desc) ?
+			    "" : argd.args[i].desc);
 	    exit(1);
 	}
 	usage = usagef;

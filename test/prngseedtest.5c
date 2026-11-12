@@ -1,0 +1,49 @@
+/*
+ * Nickle test suite
+ *
+ * Distinct PRNG seeds give distinct streams
+ *
+ * srandom used the seed's magnitude, so s and -s matched, and RC4
+ * repeats a short key, so seeds whose key bytes repeated a shorter
+ * seed's, as 0, 0x110d, and 0x110d110d, matched it
+ */
+
+autoimport PRNG;
+
+exception same_stream (int a, int b);
+
+int[...]	seeds = {};
+
+for (int s = -300; s <= 300; s++)
+    seeds[dim (seeds)] = s;
+for (int b = 1; b <= 300; b++) {
+    seeds[dim (seeds)] = 256 ** b - 1;
+    seeds[dim (seeds)] = 256 ** b;
+}
+seeds[dim (seeds)] = 0x110d;
+seeds[dim (seeds)] = 0x110d110d;
+seeds[dim (seeds)] = 0x110d110d110d;
+seeds[dim (seeds)] = -0x110d;
+seeds[dim (seeds)] = 2 ** 2016 + 1;
+seeds[dim (seeds)] = 2 ** 3000 + 7;
+seeds[dim (seeds)] = -(2 ** 3000 + 7);
+
+string stream (int s)
+{
+    srandom (s);
+    return sprintf ("%v", (int[8]) { [i] = randbits (8) });
+}
+
+(int[string])	first = {};
+
+for (int i = 0; i < dim (seeds); i++) {
+    string	st = stream (seeds[i]);
+
+    if (hash_test (first, st) && first[st] != seeds[i])
+	raise same_stream (first[st], seeds[i]);
+    first[st] = seeds[i];
+}
+
+/* The stream for a seed repeats */
+if (stream (12345) != stream (12345))
+    raise same_stream (12345, 12345);

@@ -248,8 +248,14 @@ extend namespace String {
 	    string curs = "";
 	    void consume() {
 		string t = chomp(curs);
-		if (t != "" && t[0] == q.oq[0])
-		    t = dq(t);
+		if (t != "" && t[0] == q.oq[0]) {
+		    /* A malformed quoted field is a malformed line */
+		    try {
+			t = dq(t);
+		    } catch invalid_argument (string msg, int arg, poly value) {
+			raise bad_csv_parse("parse_csv: " + msg, ss);
+		    }
+		}
 		ss[dim(ss)] = t;
 		curs = "";
 	    }

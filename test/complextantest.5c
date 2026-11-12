@@ -1,0 +1,44 @@
+/*
+ * Nickle test suite
+ *
+ * Complex tan and tanh near their poles
+ *
+ * Both divided by cos 2x + cosh 2y (cosh 2x + cos 2y for tanh), which
+ * cancels near the poles: tan of a value next to π/2 raised
+ * divide_by_zero, and others lost hundreds of ulps. Each part is
+ * now correctly rounded
+ */
+
+import Complex;
+
+exception bad_result (string name, complex z, complex got, complex want);
+
+complex c (real r, real i) = cmplx (r, i);
+
+void check (string name, complex(complex) f, complex z, int prec)
+{
+    z = imprecise (z, prec);
+
+    complex	got = f (z);
+    complex	want = imprecise (f (imprecise (z, prec + 600)), prec);
+
+    if (got != want)
+	raise bad_result (name, z, got, want);
+}
+
+real	half_pi = pi / 2;
+
+complex[*] near_pole = {
+    c (half_pi, 0), c (half_pi, 1e-10), c (-half_pi, -1e-20),
+    c (3 * half_pi, 2**-40), c (9 * half_pi, 0.01), c (half_pi, 30),
+    c (0.25, 14.1), c (-6.45, -0.94),
+};
+
+for (int i = 0; i < dim (near_pole); i++) {
+    complex	z = near_pole[i];
+
+    for (int prec = 53; prec <= 113; prec += 60) {
+	check ("tan", Complex::tan, z, prec);
+	check ("tanh", Complex::tanh, c (cimag (z), creal (z)), prec);
+    }
+}

@@ -42,3 +42,13 @@ file f = File::string_write ();
 Command::pretty_print (f, (string[*]) { "charfn" });
 string p = File::string_string (f);
 check ("printed chars", String::index (p, "return '\\\\' + '\\000' + '\\013' + '\\033';") >= 0, true);
+
+/*
+ * \x and hex digits give that character, as in C. Strings and
+ * characters read "\x41" as the three characters x41
+ */
+check ("string \\x", "\x41", "A");
+check ("char \\x", '\x41', 65);
+check ("unicode \\x", "\x263a", String::new (0x263a));
+check ("every hex digit", "\x41BC", String::new (0x41bc));
+check ("no hex digit", "\xg", "xg");

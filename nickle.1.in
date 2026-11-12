@@ -1042,7 +1042,8 @@ digit, as in arithmetic; precision 0 prints a whole number
 with no point.
 .IP "-"
 A precision value indicating infinite
-precision.
+precision. A repeating fraction prints with its repeating
+digits in braces, as in 0.{142857}.
 .IP "*"
 The next argument to fprintf() is an integer indicating
 the field width or precision of the formatted value.

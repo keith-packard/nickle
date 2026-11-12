@@ -755,8 +755,11 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
     if (prec == DEFAULT_OUTPUT_PRECISION) {
         min_prec = 0;
         prec = 15;
-    } else if (prec == INFINITE_OUTPUT_PRECISION)
+    } else if (prec == INFINITE_OUTPUT_PRECISION) {
         prec = -1;
+        /* Only braces can show every digit of a repeating fraction */
+        use_braces = True;
+    }
     dig = NewNatural((double_digit)base);
     /*
      * Scale to [1, base) for 'e' format, and for small numbers in 'g'

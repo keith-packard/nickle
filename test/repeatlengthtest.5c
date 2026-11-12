@@ -1,0 +1,59 @@
+/*
+ * Nickle test suite
+ *
+ * Finding how many digits of a fraction repeat
+ *
+ * The count is the order of the base modulo the denominator, without
+ * its factors in common with the base. It was found by factoring the
+ * denominator and a multiple of the order by trial division, so a
+ * denominator with a large prime factor took far too long: 1/(10**19-1),
+ * whose 19 digits repeat, ran for minutes. A baby-step giant-step search
+ * needs no factoring.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+check ("1/(10**19-1)", sprintf ("%.-g", 1/(10**19-1)), "1.{0000000000000000001}e-19");
+check ("1/(10**59-1)", sprintf ("%.-f", 1/(10**59-1)),
+       "0.{00000000000000000000000000000000000000000000000000000000001}");
+
+/* The order, by stepping, of 'b' modulo 'd' without their common factors */
+int function order (int d, int b)
+{
+    int	g;
+
+    while ((g = gcd (d, b)) != 1)
+	d //= g;
+    if (d == 1)
+	return 0;
+    int v = b % d, k = 1;
+    while (v != 1) {
+	v = v * b % d;
+	k++;
+    }
+    return k;
+}
+
+/* The number of digits in braces when 1/d prints in base 'b' */
+int function repeating (int d, int b)
+{
+    file	f = File::string_write ();
+
+    File::print (f, 1/d, "f", b, 0, -2, " ");
+    string	s = File::string_string (f);
+    int		open = String::index (s, "{");
+
+    if (open < 0)
+	return 0;
+    return String::index (s, "}") - open - 1;
+}
+
+for (int b = 2; b <= 16; b++)
+    for (int d = 2; d <= 300; d++)
+	check (sprintf ("1/%d in base %d", d, b), repeating (d, b), order (d, b));

@@ -1406,6 +1406,15 @@ including:
 Returns the real part of c.
 .IP "real function cimag(complex c)"
 Returns the imaginary part of c.
+.IP "complex function asin(complex z), acos, atan, asinh, acosh, atanh"
+The inverse trigonometric and hyperbolic functions, with the branch
+cuts and ranges of the C functions casin, cacos, catan, casinh,
+cacosh, and catanh.
+As Nickle has no negative zero, a point on a cut takes the value
+reached by going counterclockwise around the cut's finite endpoint,
+as C specifies for implementations without one:
+asin(2) is \(*p/2 \- 1.3169...i, and asin(\-2) is \-\(*p/2 + 1.3169...i.
+atanh raises divide_by_zero at 1 and \-1, and atan at i and \-i.
 .PP
 .IP Foreign
 .IP "bool function load(string name)"

@@ -42,28 +42,6 @@ extend namespace Complex {
 		   r * Math::sin(cimag(z)));
     }
 
-    int min_exponent(complex z)
-	/*
-	 * Returns the smaller exponent of the nonzero parts of 'z', or
-	 * 0 when there are none; a part may be an exact zero even in
-	 * an imprecise value
-	 */
-    {
-	int	e = 0;
-	bool	any = false;
-	real[2]	parts = { creal(z), cimag(z) };
-
-	for (int k = 0; k < 2; k++) {
-	    if (parts[k] == 0)
-		continue;
-	    int pe = exponent(imprecise(parts[k]));
-	    if (!any || pe < e)
-		e = pe;
-	    any = true;
-	}
-	return e;
-    }
-
     int part_exponent(real x)
 	/*
 	 * Returns the exponent of 'x', or 0 when 'x' is an exact zero
@@ -113,45 +91,41 @@ extend namespace Complex {
 	return new(-y / (2 * t), -t);
     }
 
-    protected complex atan(complex z)
-    {
-	z = imprecise(z);
-	int		prec = precision(z);
-	int		e = min_exponent(z);
-	int		iprec = prec + 64;
-	if (e < 0)
-		iprec -= 2*e;
+    /*
+     * The inverse functions follow C23 7.3 and Annex G: the branch
+     * cuts and ranges are those of casin, cacos, catan, casinh,
+     * cacosh, and catanh. Without signed zeros, a point on a cut
+     * takes the value reached by going counterclockwise around the
+     * cut's finite endpoint (C23 7.3.3), as sqrt and log already do.
+     * asin, acos, and acosh use Kahan's formulas from "Branch Cuts
+     * for Complex Elementary Functions", which keep their accuracy
+     * near the cuts and need no scaling for large arguments.
+     */
 
-	complex	zp = imprecise(z, iprec);
-	complex i_over_2 = new(0, 0.5);
-	return imprecise(i_over_2 * log((i+zp) / (i-zp)), prec);
-    }
+    int	guard_bits = 32;
 
     protected complex asin(complex z)
     {
-	if (Math::abs(creal(z)) == 1 && cimag(z) == 0)
-	    raise invalid_argument("complex asin of 1", 0, z);
-
 	z = imprecise(z);
 	int	prec = precision(z);
-	int	e = min_exponent(z);
-	int	iprec = prec + 14;
-	if (e < 0)
-	    iprec -= 2*e;
-	complex	zp = imprecise(z, iprec);
-	return imprecise(atan(zp / sqrt(1-zp*zp)), prec);
+	complex	zp = imprecise(z, prec + guard_bits);
+	complex	a = sqrt(1 - zp);
+	complex	b = sqrt(1 + zp);
+
+	return imprecise(new(Math::atan2(creal(zp), creal(a * b)),
+			     Math::asinh(cimag(conj(a) * b))), prec);
     }
 
     protected complex acos(complex z)
     {
-	if (Math::abs(creal(z)) == 1 && cimag(z) == 0)
-	    raise invalid_argument("complex acos of 1", 0, z);
-
 	z = imprecise(z);
 	int	prec = precision(z);
-	int	iprec = prec + 14;
-	complex	asp = asin(imprecise(z, iprec));
-	return imprecise(new(pi_value(iprec)/2 - creal(asp), -cimag(asp)), prec);
+	complex	zp = imprecise(z, prec + guard_bits);
+	complex	a = sqrt(1 - zp);
+	complex	b = sqrt(1 + zp);
+
+	return imprecise(new(2 * Math::atan2(creal(a), creal(b)),
+			     Math::asinh(cimag(conj(b) * a))), prec);
     }
 
     protected complex cos(complex z)
@@ -207,37 +181,67 @@ extend namespace Complex {
 
     protected complex atanh(complex z)
     {
+	real	x = creal(z), y = cimag(z);
+
+	if (Math::abs(x) == 1 && y == 0)
+	    raise divide_by_zero(x, 0);
+	/*
+	 * atanh is odd; computing with x <= 0 puts the cut on the
+	 * positive axis below it and the one on the negative axis
+	 * above it, as the counterclockwise rule asks
+	 */
+	if (x > 0)
+	    return -atanh(-z);
+
 	z = imprecise(z);
 	int	prec = precision(z);
-	int	iprec = prec + 512;
-	int	e = min_exponent(z);
-	if (e < 0)
-	    iprec -= e;
-	complex	zp = imprecise(z, iprec);
-	return imprecise(0.5 * log((1 + zp)/(1 - zp)), prec);
+	int	wprec = prec + guard_bits;
+	x = imprecise(x, wprec);
+	y = imprecise(y, wprec);
+
+	/*
+	 * Re = log(|1+z|**2 / |1-z|**2) / 4, the ratio being
+	 * 1 + 4x / |1-z|**2; log1p keeps the bits of small x, and
+	 * near the pole at -1 the ratio itself keeps those of 1+x.
+	 * Im = arg((1+z) * conj(1-z)) / 2
+	 */
+	real	d = (1 - x)**2 + y**2;
+	real	q = 4 * x / d;
+	real	re;
+
+	if (q > -1/2)
+	    re = Math::log1p(q) / 4;
+	else
+	    re = Math::log(((1 + x)**2 + y**2) / d) / 4;
+	return imprecise(new(re, Math::atan2(2 * y, (1 - x) * (1 + x) - y**2) / 2),
+			 prec);
+    }
+
+    protected complex atan(complex z)
+    {
+	/* atan(z) = -i atanh(iz) */
+	complex	w = atanh(new(-cimag(z), creal(z)));
+
+	return new(cimag(w), -creal(w));
     }
 
     protected complex asinh(complex z)
     {
-	z = imprecise(z);
-	int	prec = precision(z);
-	int	iprec = prec + 512;
-	int	e = min_exponent(z);
-	if (e < 0)
-	    iprec -= e;
-	complex	zp = imprecise(z, iprec);
-	return imprecise(log(zp + sqrt(zp*zp + 1)), prec);
+	/* asinh(z) = i asin(-iz) */
+	complex	w = asin(new(cimag(z), -creal(z)));
+
+	return new(-cimag(w), creal(w));
     }
 
     protected complex acosh(complex z)
     {
 	z = imprecise(z);
 	int	prec = precision(z);
-	int	iprec = prec + 512;
-	int	e = min_exponent(z);
-	if (e < 0)
-	    iprec -= e;
-	complex	zp = imprecise(z, iprec);
-	return imprecise(log(zp + sqrt(zp + 1) * sqrt(zp - 1)), prec);
+	complex	zp = imprecise(z, prec + guard_bits);
+	complex	a = sqrt(zp - 1);
+	complex	b = sqrt(zp + 1);
+
+	return imprecise(new(Math::asinh(creal(conj(a) * b)),
+			     2 * Math::atan2(cimag(a), creal(b))), prec);
     }
 }

@@ -60,3 +60,12 @@ check ("%012.3e", -1/7000, "-0001.429e-4");
 if (sprintf ("[%5%][%-3%][%.2%] %d", 7) != "[%][%][%] 7")
     raise bad_format ("%5%", 7, sprintf ("[%5%][%-3%][%.2%] %d", 7),
 		      "[%][%][%] 7");
+
+/* The type error names the format */
+try {
+    sprintf ("%d", "x");
+    raise bad_format ("%d", "x", "", "invalid_argument");
+} catch invalid_argument (string msg, int arg, poly value) {
+    if (msg != "int format with non-int")
+	raise bad_format ("%d", "x", msg, "int format with non-int");
+}

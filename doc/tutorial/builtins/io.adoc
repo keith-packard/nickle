@@ -1,18 +1,21 @@
 = Input and Output
 
-Input and output in Nickle are mostly accomplished through the File builtin namespace; some top-level builtins refer to those functions.
-Nickle's input and output are modeled, as much of the language is, on C, but many changes have been made. 
+Input and output in Nickle are mostly accomplished through the File
+builtin namespace; some top-level builtins refer to those functions.
+Nickle's input and output are modeled, as much of the language is, on C,
+but many changes have been made.
 
 == Opening and closing files
 
-The functions in the File namespace use the `file` primitive type to describe filehandles.
-Three are predefined, with their usual meanings: ``stdin``, ``stdout``, and ``stderr``.
-For many functions in File, there is a top-level builtin which assumes one of these standard streams.
-Other files may be read and written by opening them: 
+The functions in the File namespace use the `file` primitive type to
+describe filehandles. Three are predefined, with their usual meanings:
+``stdin``, ``stdout``, and ``stderr``. For many functions in File, there
+is a top-level builtin which assumes one of these standard streams.
+Other files may be read and written by opening them:
 
-`file open(string path, string mode)`
+`file File::open(string path, string mode)`
 
-The first string gives the path to the file to be opened; the second is one of: 
+The first string gives the path to the file to be opened; the second is one of:
 
 * `"r"` to open read-only, starting at the beginning of the file.
 * `"r+"` to open read-write, starting at the beginning of the file.
@@ -21,36 +24,42 @@ The first string gives the path to the file to be opened; the second is one of:
 * `"a"` to open write-only, appending to the end of the file.
 * `"a+"` to open read-write, appending to the end of the file.
 
-If successful, a filehandle will be returned that can then be used. 
+If successful, a filehandle will be returned that can then be used.
+Otherwise, `open` raises `File::open_error` with a message saying why.
 
-Nickle can also open pipes to other programs, reading or writing to
-their stdouts or stdins; these are also treated as ``file``s, and the
-difference is transparent to the functions that manipulate them.
-Pipes are opened with `pipe` rather than ``open``; otherwise they are
-treated identically to flat files.
+Nickle can also run other programs connected via pipes, reading their
+output or writing their input; these are also treated as ``file``s,
+and the difference is transparent to the functions that manipulate
+them.  The `Process` library's `popen` runs a program and returns a
+file connected to it:
 
-`file pipe(string path, string[*] argv, string mode)`
+`+file Process::popen(Process::popen_direction d, bool nullf, string cmd, string args ...)+`
 
-The first string refers to the program to be run; `argv` is an array
-of the arguments to pass to it.  By convention, `argv[0]` should be
-the name of the program.  Finally, `mode` is one of those for
-``open``; reading from the pipe reads from the program's stdout, and
-writing to the pipe writes to the program's stdin.  For example,
+`d` is `popen_direction.read` to read the program's standard output or
+`popen_direction.write` to write its standard input.  If `nullf` is
+true, the program's other standard stream is connected to
+`/dev/null` instead of Nickle's own.  `cmd` is the program to run,
+and `args` are its arguments; by convention, the first should be the
+name of the program.  For example,
 
 ----
-> string[*] args = {"-a"};
-> file ls = File::pipe ( "ls", args, "r" );
+> autoload Process
+> file ls = Process::popen ( Process::popen_direction.read, true, "ls", "ls", "-a" );
 > do printf ( "%s\n", File::fgets ( ls ) );
 + while ( ! File::end ( ls ) );
+.
+..
 bin
 man
-nickle
-share
 ----
 
-When a file is no longer needed, it should be closed. 
+For more control, `File::mkpipe` makes a pipe, returning its read and
+write ends as an array of two files, and `File::filter` runs a program
+with three given files as its standard input, output, and error.
 
-`void close(file f)`
+When a file is no longer needed, it should be closed.
+
+`void File::close(file f)`
 
 ----
 > File::close ( ls );
@@ -63,37 +72,41 @@ until an appropriate time.  Ordinarily, this is not noticed; if,
 however, it is important to know that all buffers have been written to
 a file, they can be flushed:
 
-`void flush (file f)`
+`void File::flush(file f)`
 
 == End
 
-Returns true if the file is at end-of-file, otherwise returns false. 
+Returns true if the file is at end-of-file, otherwise returns false.
 
-`bool end (file f)`
+`bool File::end(file f)`
 
 == Characters and strings
 
 Individual characters can be read and written using ``getc``,
 ``getchar``, ``putc``, and ``putchar``.
 
-`int getc(file f)` +
+`int File::getc(file f)` +
 `int getchar()` +
-`int putc(int c,file f)` +
+`int File::putc(int c, file f)` +
 `void putchar(int c)`
 
 A character can be pushed back onto the stream with `ungetc` or
 ``ungetchar``.
 
-`int ungetc(int c, file f)` +
-`int ungetchar(int c)`
+`int File::ungetc(int c, file f)` +
+`void ungetchar(int c)`
 
 Strings can be read, a line at a time, using `fgets` and ``gets``.
 
 `string fgets(file f)` +
 `string gets()`
 
-All of these are like their C counterparts, with the exception noted
-in the following section.
+These are like their C counterparts, with a few differences. At end of
+file, `getc` and `getchar` raise `File::io_eof` rather than returning a
+special value, so test with `File::end` before reading. `fgets` and
+`gets` return the line without its newline, and take no buffer or
+length. Characters are read and written as described in the following
+section.
 
 == Unicode and characters vs. bytes
 
@@ -106,21 +119,21 @@ advantages, and the possibility that it may become more standard than
 ASCII, and because there is no reason not to, Nickle reads and writes
 Unicode.  This is entirely transparent to the user/programmer.
 
-However, there is one situation in which the programmer will notice
-(disregarding the case where the programmer finds himself typing on a
-Sanskrit keyboard): extended characters that do not stand for
-themselves the same in ASCII and Unicode are _not_ one byte long; they
+However, there is one situation in which the programmer will notice:
+characters outside ASCII are _not_ one byte long; they
 can be as many as four for the really obscure characters.  Therefore,
 unlike in C, _characters cannot be counted on to be the same as
 bytes_.  For this reason, Nickle provides the following functions:
 
-`int putb(int c,file f)` +
-`int getb(file f)` +
-`int ungetb(file f)`
+`int File::putb(int b, file f)` +
+`int File::getb(file f)` +
+`int File::ungetb(int b, file f)` +
+`void putbyte(int b)` +
+`int getbyte()`
 
-These operate the same as ``putc``, ``getc``, and ``ungetc``, but will
-always read or write one byte at a time, regardless of character
-representation.
+These operate the same as ``putc``, ``getc``, ``ungetc``, ``putchar``,
+and ``getchar``, but will always read or write one byte at a time,
+regardless of character representation.
 
 == Formatted I/O
 
@@ -129,14 +142,20 @@ to perform formatted input and output.  These functions perform like
 their C counterparts, with the following exceptions:
 
 * The precision of a field in the format string may be specified to be
-  '-', which means infinite precision.
+  `-`, which means arbitrary precision.  The repeating digits of a
+  fraction are then shown in curly braces:
++
+----
+> printf("%.-f %.3f\n", 1/7, 1/7);
+0.{142857} 0.143
+----
 
-* The `%g` format specifier requires a number, and prints it in the best
-  way possible. For example:
+* The `%g` format specifier prints a number in the best way possible,
+  and any other value as `%v` does. For example:
 +
 ----
 > printf("%g %g %g\n", 1, 1/3, sqrt(2));
-1 0.{3} 1.414213562373095
+1 0.333333333333333 1.414213562373095
 ----
 
 * The `%v` format specifier will attempt to find the best way to print
@@ -149,7 +168,14 @@ their C counterparts, with the following exceptions:
 ----
 +
 Notice that it can even figure out difficult things like the thread
-returned by 'fork'.
+returned by `fork`.
+
+* `scanf` stores what it reads through pointers, as C's does:
++
+----
+> int n;
+> scanf("%d", &n);
+----
 
 == At the top level
 
@@ -157,40 +183,13 @@ Many functions in the File namespace have counterparts builtin at the
 top level; these do not need to be imported from File because they are
 automatically present.
 
-* `int printf(string fmt, poly args...)` is the same as `File::printf`.
-* `string printf(string fmt, poly args...)` is the same as `File::sprintf`.
-* `void putchar(int c)` is the same as `File::putchar`.
+* `+void printf(string fmt, poly args...)+` and `+string sprintf(string
+  fmt, poly args...)+`, from `File::PrintfGlobals`, are the same as
+  `File::fprintf` to `stdout` and `File::sprintf`.
+* `+int scanf(string fmt, *poly args...)+`, from `File::ScanfGlobals`,
+  is the same as `File::fscanf` from `stdin`.
+* `getchar`, `ungetchar`, `putchar`, `getbyte`, `putbyte`, `fgets`, and
+  `gets`, from `File::FileGlobals`, read and write `stdin` and `stdout`,
+  except `fgets`, which reads the file it is given.
 
-File also contains a namespace called FileGlobals, which is
-automatically imported.  It contains the following definitions:
-
-----
-public int scanf (string format, *poly args...)
-{
-        return File::vfscanf (stdin, format, args);
-}
-
-public int vscanf (string format, (*poly)[*] args)
-{
-        return File::vfscanf (stdin, format, args);
-}    
-
-public string gets ()
-{
-        return File::fgets (stdin);
-}
-
-public int getchar ()
-{
-        return File::getc (stdin);
-}
-
-public void ungetchar (int ch)
-{
-        File::ungetc (ch, stdin);
-}
-----
-
-Thus, `scanf`, `vscanf`, `gets`, `getchar`, and `ungetchar` call the
-appropriate functions in File and return their results.  The other
-functions in File must be imported as normal.
+The other functions in File must be called with `File::` or imported as normal.

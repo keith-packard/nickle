@@ -2,18 +2,19 @@
 
 Unlike in C, strings in Nickle are not arrays of or pointers to
 individual characters.  Consistent with its pattern of providing
-primitive datatypes for types for things that make sense (e.g. `file`
+primitive datatypes for things that make sense (e.g. `file`
 instead of integer file handles), Nickle provides the `string` type.
 This has several interesting differences from C-style strings:
 
 * In Nickle, strings are immutable--individual characters may not be changed.
-* Strings are, as with everything else, assigned and passed by-value. See the section on Copy semantics for details. 
+* Strings hold Unicode characters, not bytes, and may contain any of
+  them, including NUL.
 
 
 == Operators
 
-Two useful operators have been overloaded to allow sane manipulation
-of strings: `+` and array subscript (`[]`).
+Several operators have been overloaded to allow sane manipulation
+of strings: `+`, array subscript (`[]`), and the comparison operators.
 
 === Subscripting
 
@@ -36,16 +37,18 @@ has been overloaded to allow this.  For example:
 >
 ----
 
-Those are the integer representations of each character; they are most
-likely in ASCII, but not necessarily--see the section on Unicode in
-the I/O section.  The String namespace provides `new` to create a
-string from these integer character representations, regardless of
-ASCII or Unicode:
+Those are the Unicode code points of each character, which for ASCII
+characters are their ASCII codes.  Each element is a whole character,
+however many bytes it takes; see
+<<_unicode_and_characters_vs_bytes,Unicode and characters vs. bytes>>
+in the I/O section.  So `"héllo"[1]` is 233, and the string's length
+is 5.  The String namespace provides `new` to create a string from
+these code points:
 
 `string new(int c)` +
 `string new(int[*] cv)`
 
-For instance, 
+For instance,
 
 ----
 > String::new(s[0])
@@ -54,14 +57,26 @@ For instance,
 
 === Concatenation
 
-On strings, `+` is the concatenation operator. For example, 
+On strings, `+` is the concatenation operator. For example,
 
 ----
-> string s = "hello", t = "world"; 
+> string s = "hello", t = "world";
 > s = s + ", ";
 > t += "!";
 > s+t
 "hello, world!"
+----
+
+=== Comparison
+
+`==`, `!=`, `<`, `+<=+`, `>`, and `+>=+` compare strings character by
+character, as C's `strcmp` does:
+
+----
+> "abc" < "abd"
+true
+> "b" > "abc"
+true
 ----
 
 == String namespace
@@ -74,10 +89,10 @@ that facilitate using strings, including the following.
 `int length ( string s )`
 
 Returns the number of characters in ``s``.
-For example, 
+For example,
 
 ----
-> String::length ( "hello, world" ) 
+> String::length ( "hello, world" )
 12
 >
 ----
@@ -87,12 +102,12 @@ For example,
 `int index ( string t, string p )` +
 `int rindex ( string t, string p )`
 
-Returns the index of the first occurence of the substring `p` in
+Returns the index of the first occurrence of the substring `p` in
 ``t``, or -1 if `p` is not in ``t``; `rindex` returns the last
-occurance instead.  For example,
+occurrence instead.  For example,
 
 ----
-> String::index ( "hello, world", "or" ) 
+> String::index ( "hello, world", "or" )
 8
 > String::index ( "hello, world", "goodbye" )
 -1
@@ -104,14 +119,30 @@ occurance instead.  For example,
 
 `string substr ( string s, int i, int l )`
 
-Returns the substring of `s` which begins at index `i` and is `l` characters long.
-If `l` is negative, returns the substring of that length which preceeds `i` instead.
-For example, 
+Returns the substring of `s` which begins at index `i` and is `l`
+characters long. If `l` is negative, returns the substring of that
+length which precedes `i` instead. For example,
 
 ----
-> String::substr ( "hello, world", 8, 2 ) 
+> String::substr ( "hello, world", 8, 2 )
 "or"
 > String::substr ( "hello, world", 8, -4 )
 "o, w"
 >
+----
+
+=== Other functions
+
+The String namespace also provides `split` and `wordsplit`, which
+break a string into an array of strings at separator characters;
+`chomp`, which trims white space from both ends, and `chump`, which
+trims trailing newlines; `reverse`; `dirname`, which returns the
+directory part of a path; and `parse_csv`, which splits a line of
+comma-separated values.
+
+----
+> String::split ( "a,b,c", "," )
+(string [...]) {"a", "b", "c"}
+> String::chomp ( "  hi  " )
+"hi"
 ----

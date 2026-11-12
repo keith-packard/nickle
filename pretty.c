@@ -1098,8 +1098,14 @@ PrettyCode(Value f, CodePtr code, Atom name, Class class, Publish publish, int l
 {
     if (name)
         FilePrintf(f, "%p%k%T %A ", publish, class, code->base.type, name);
-    else
+    else {
         FilePrintf(f, "%tfunc", code->base.type);
+        /* Summarized in an expression, a function shows its arguments without a ';' */
+        if (!nest) {
+            PrintArgs(f, code->base.args);
+            return;
+        }
+    }
     PrettyBody(f, code, level, nest);
     if (!code->base.builtin && nest && profiling) {
         double_digit sub = 0, self = 0;

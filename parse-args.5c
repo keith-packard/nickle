@@ -220,8 +220,14 @@ namespace ParseArgs {
 		break;
 	    }
 
+	    /*
+	     * Like any argument not starting with '-', "" and "-" are
+	     * positional; "-" conventionally names standard input
+	     */
+	    bool flag = length(a) > 1 && a[0] == '-';
+
 	    /* process abbreviated (old-style) flags (maybe grouped) */
-	    if (a[0] == '-' && a[1] != '-') {
+	    if (flag && a[1] != '-') {
 		for (int i = 1; i < length(a); i++) {
 		    if (!hash_test(arg_abbr_hash, a[i])) {
 			fprintf(stderr, "%s: unknown flag char '-%c'\n",
@@ -235,7 +241,7 @@ namespace ParseArgs {
 	    }
 
 	    /* process a long flag */
-	    if (a[0] == '-' && a[1] == '-') {
+	    if (flag) {
 		string argname = substr(a, 2, length(a) - 2);
 		if (!hash_test(arg_name_hash, argname)) {
 			fprintf(stderr, "%s: unknown flag \"--%s\"\n",

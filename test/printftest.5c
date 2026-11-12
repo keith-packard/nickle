@@ -148,3 +148,37 @@ check_both (3 * 2**40, 16, "3.00@10");
 check_both (3 / 4 / 16**10, 16, "c.00@-11");
 check_both (35 * 36**12, 36, "z.00@12");
 check_both (-11 / 12**30, 11, "-8.99@-31");
+
+/*
+ * %e of a float rounds its exact value. It scaled the value by a
+ * rounded power of the base, so values at or near a half could round
+ * either way: 65 printed as 7e1, 1500 as 1e3, and -67/2 in base 7 as
+ * -5.0e1
+ */
+
+check ("%.0e", f (65), "6e1");
+check ("%.0e", f (1500), "2e3");
+check ("%.1e", f (105), "1.0e2");
+check ("%.1e", f (-69/2), "-3.4e1");
+check ("%.3g", f (13531/2), "6.766e3");
+check_base (f (-67/2), 7, 1, "-4.6e1");
+check_base (f (-69), 6, 1, "-2.0e2");
+
+/*
+ * These lie so near a half in their last digit, 2.7373862122447495
+ * 49999...e54 and 1.0263280850068802 49999...e-32, that printing them
+ * takes a second, more precise pass
+ */
+check ("%.17e", f (0x1.c9463a6ef709ap180), "2.7373862122447495e54");
+check ("%.17e", f (0x1.aa51ec0012becp-107), "1.0263280850068802e-32");
+
+/* Floats with exact ties and near misses print as the same rationals */
+for (int base = 2; base <= 16; base++)
+    for (int prec = 0; prec <= 3; prec++)
+	for (int k = 1; k < 100; k += 2)
+	    for (int sh = -6; sh <= 30; sh += 3) {
+		rational	x = k * 2**sh / 4;
+
+		check_base (f (x), base, prec, sprint (x, base, prec));
+		check_base (f (x + 2**(sh - 40)), base, prec, sprint (x + 2**(sh - 40), base, prec));
+	    }

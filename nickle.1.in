@@ -1040,7 +1040,8 @@ notation.
 Requires a string argument, and emits the string literally.
 .IP "%g"
 Formats a number in fixed-point or scientific notation, whichever
-is more readable, and any other value as %v does.
+is more readable; as in C, values below 1e-4 use scientific
+notation.  Any other value formats as %v does.
 .LP
 .B "Format Modifiers:"
 .IP "digits"

@@ -575,15 +575,9 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
                 k++;
             }
         }
-        if (format == 'g') {
-            /* At arbitrary precision, as C does, below base**-4 */
-            if (prec < 0) {
-                if (k > 4)
-                    format = 'e';
-            } else if (prec - k < 3) {
-                format = 'e';
-            }
-        }
+        /* As C does, and as floats do, below base**-4 */
+        if (format == 'g' && k > 4)
+            format = 'e';
         if (format == 'e') {
             if (small) {
                 rv = RationalTimes(rv, NewRational(Positive, mag, one_natural), True);

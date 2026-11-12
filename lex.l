@@ -567,7 +567,7 @@ has_member      { return yylvalInts(HASMEMBER); }
 " "             ;
 "\t"            ;
 "\r"            ;
-\'([^\n\']|\\\')*\'     {
+\'([^\n\'\\]|\\.)*\'    {
                     char     *s;
                     ptrdiff_t len = yyleng - 1;
                     uint32_t  c;

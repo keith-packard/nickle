@@ -11,7 +11,7 @@ extend namespace Complex {
 
     public complex polar(real r, real t)
     {
-	return new(r * cos(t), r * sin(t));
+	return new(r * Math::cos(t), r * Math::sin(t));
     }
 
     public complex conj(complex z)

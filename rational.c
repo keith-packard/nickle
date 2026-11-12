@@ -790,6 +790,9 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
                 rep_width = prec - initial_width;
         }
     }
+    /* A value with no fraction digits still gets the precision asked for, in zeros */
+    if (!initial_width && !repeat_width && min_prec > 0)
+        initial_width = min_prec;
     if (initial_width) {
         Natural *half_digit;
         if (initial_width < 0) {
@@ -921,7 +924,10 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
         }
     }
     fraction_width = initial_width + rep_width;
-    print_width = whole_width + 1 + fraction_width + exponent_width;
+    print_width = whole_width + fraction_width + exponent_width;
+    /* The point appears only before fraction digits */
+    if (fraction_width)
+        print_width = print_width + 1;
     if (r->sign == Negative)
         print_width = print_width + 1;
     while (width > print_width) {
@@ -931,7 +937,8 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
     if (r->sign == Negative)
         FileOutput(f, '-');
     FilePuts(f, whole);
-    FileOutput(f, '.');
+    if (fraction_width)
+        FileOutput(f, '.');
     if (initial_width)
         FilePuts(f, initial);
     if (rep_width) {

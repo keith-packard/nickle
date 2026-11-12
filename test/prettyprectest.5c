@@ -57,6 +57,7 @@ string[*][2] cases = {
     { "0x0.{5}", "0x0.{5}" },
     { "0o1.000000000000000000000001", "0o1.000000000000000000000001" },
     { "0b1.0000000000000000000000000000001", "0b1.0000000000000000000000000000001" },
+    { "([string])", "(poly[string]) {}" },
 };
 
 for (int i = 0; i < dim (cases); i++) {
@@ -100,6 +101,7 @@ void function statements ()
     x //= 3;
     thread t = fork x + 1;
     int y = (x, 3);
+    poly[*] z = ([3]);
 }
 file f = File::string_write ();
 Command::pretty_print (f, (string[*]) { "statements" });
@@ -107,3 +109,4 @@ string printed = File::string_string (f);
 check ("//=", String::index (printed, "x //= 3;") >= 0, true);
 check ("fork", String::index (printed, "thread t = fork x + 1;") >= 0, true);
 check ("declaration", String::index (printed, "int y = (x, 3);") >= 0, true);
+check ("uninitialized array", String::index (printed, "poly[*] z = (poly[3]) {};") >= 0, true);

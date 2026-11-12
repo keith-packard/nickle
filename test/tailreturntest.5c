@@ -59,3 +59,39 @@ int function count (int n)
 }
 
 check ("tail recursion", count (1000000), 0);
+
+/*
+ * A void call that ends a function of another type isn't a tail call,
+ * which hid that the function could reach its end and return <>
+ */
+string[*] read_lines (file f)
+{
+    string[...]	lines = {};
+
+    while (!File::end (f))
+	lines[dim (lines)] = File::fgets (f);
+    return lines;
+}
+
+string	nickle = Environ::get ("NICKLE");
+file[*]	errors = File::mkpipe ();
+
+File::filter (nickle,
+	      (string[*]) { nickle, "-e",
+			    "void g () { }\nint f () { g (); }\n" },
+	      (file[3]) { stdin, stdout, errors[1] });
+File::close (errors[1]);
+
+string[*]	err = read_lines (errors[0]);
+bool		reported = false;
+
+for (int i = 0; i < dim (err); i++)
+    if (String::index (err[i], "Control reaches end of function with type 'int'") >= 0)
+	reported = true;
+check ("void call ending int function", reported, true);
+
+/* Process::popen ends in abort, now noreturn, so it still compiles */
+autoload Process
+file echo = Process::popen (Process::popen_direction.read, true, "echo", "echo", "hi");
+check ("popen", File::fgets (echo), "hi");
+File::close (echo);

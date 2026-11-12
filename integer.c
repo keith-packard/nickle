@@ -441,7 +441,8 @@ IntegerPrint(Value f, Value iv, uint32_t format, int base, int width, int prec, 
         if (ISign(i) == Negative)
             print_width++;
         fraction_width = 0;
-        if (prec >= 0) {
+        /* Precision 0 prints no point */
+        if (prec > 0) {
             int avail_width;
 
             if (width > 0)

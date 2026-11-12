@@ -781,7 +781,7 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
             r = &rv->rational;
 
             /* Rounding to 'prec' digits may carry the mantissa to base */
-            if (prec > 0) {
+            if (prec >= 0) {
                 Natural *half = NaturalTimes(NaturalIntPow(dig, prec), two_natural);
                 Value    rounded
                     = RationalPlusHelper(Positive, &NewRational(Positive, r->num, r->den)->rational,
@@ -825,6 +825,13 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
             if (repeat_width < 0)
                 rep_width = prec - initial_width;
         }
+    }
+    /* Precision 0 rounds to a whole number, printed with no point */
+    if (!use_braces && prec == 0) {
+        rv = RationalPlusHelper(r->sign, r,
+                                &NewRational(Positive, one_natural, two_natural)->rational);
+        r = &rv->rational;
+        initial_width = repeat_width = rep_width = 0;
     }
     /* A value with no fraction digits still gets the precision asked for, in zeros */
     if (!initial_width && !repeat_width && min_prec > 0)
@@ -874,9 +881,9 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
         fraction_width = fraction_width - (whole_width + exponent_width);
         if (fraction_width < 0)
             fraction_width = 0;
-        if (prec > 0 && fraction_width > prec + dot_width)
+        if (prec >= 0 && fraction_width > prec + dot_width)
             fraction_width = prec + dot_width;
-    } else if (prec > 0)
+    } else if (prec >= 0)
         fraction_width = prec + dot_width;
     else
         fraction_width = -1;

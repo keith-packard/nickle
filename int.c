@@ -305,7 +305,8 @@ IntPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint
     len = (ptrdiff_t)strlen(s);
     w = StringLength(s, len);
     fraction_width = 0;
-    if (prec >= 0) {
+    /* Precision 0 prints no point */
+    if (prec > 0) {
         int avail_width;
 
         if (width > 0)

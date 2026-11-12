@@ -940,9 +940,8 @@ try_again_f:
             frac_width = width - int_width - exp_width;
         else
             frac_width = -width - int_width - exp_width;
-        if (prec > 0)
-            if (frac_width > prec + 1)
-                frac_width = prec + 1;
+        if (prec >= 0 && frac_width > prec + 1)
+            frac_width = prec + 1;
     } else {
         if (prec == INFINITE_OUTPUT_PRECISION)
             frac_width = frac_prec + 1;

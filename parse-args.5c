@@ -122,7 +122,7 @@ namespace ParseArgs {
 	    }
 	}
 
-	void usagef(file f)
+	noreturn usagef(file f)
 	    /*
 	     * Print a description of program usage on f
 	     */

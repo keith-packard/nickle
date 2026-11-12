@@ -41,7 +41,7 @@ extend namespace Command {
      * Now add a collection of useful commands
      */
 
-    void do_quit (int args...)
+    noreturn do_quit (int args...)
 	/*
 	 * quit	    - exit with code 0
 	 * quit N   - exit with code N
@@ -443,7 +443,7 @@ extend namespace Command {
 
 	/* now stack the other arguments, in reverse order */
 	for (int i = dim(lexables) - 1; i >=0; --i) {
-	    static void load_fail(string name, string msg) {
+	    static noreturn load_fail(string name, string msg) {
 		File::fprintf (stderr, "Cannot load \"%s\": %s\n",
 			       name, msg);
 		exit (1);

@@ -9,7 +9,7 @@ namespace Abort {
 
     public exception aborting(string);
 
-    public void abort(string reason, args ...) 
+    public noreturn abort(string reason, args ...)
 	/* Print a stack trace and raise aborting exception with message */
     {
 	Debug::trace(Thread::current(), trace_depth);
@@ -17,7 +17,7 @@ namespace Abort {
 	raise aborting(reasonmsg);
     }
 
-    public void assert(bool ok, string failure, args ...) 
+    public void assert(bool ok, string failure, args ...)
 	/* If 'ok' is false, abort (failure, args ...); */
     {
 	if (!ok)
@@ -26,7 +26,7 @@ namespace Abort {
 
     public bool do_debug = true;
 
-    public void debug(string fmt, args ...) 
+    public void debug(string fmt, args ...)
 	/* Print to stderr, controlled by 'do_debug' global */
     {
 	if (do_debug)

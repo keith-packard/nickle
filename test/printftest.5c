@@ -86,3 +86,29 @@ check ("%-5.0f", -13/5, "-3   ");
 check ("%05.0f", -13/5, "-0003");
 check ("%.0f", 3, "3");
 check ("%5.0f", -(2**70), "-1180591620717411303424");
+
+/*
+ * A tie rounds to an even last digit, as arithmetic and C do; ties
+ * rounded away from zero
+ */
+real f (real x) = imprecise (x, 53);
+
+check ("%.0f", 1/2, "0");
+check ("%.0f", 3/2, "2");
+check ("%.0f", -5/2, "-2");
+check ("%.2f", 1/8, "0.12");
+check ("%.2f", 3/8, "0.38");
+check ("%.2f", -1/8, "-0.12");
+check ("%.3f", 12345/10000, "1.234");
+check ("%.3f", 12355/10000, "1.236");
+check ("%.1f", 95/100, "1.0");
+check ("%.1e", 125/1000, "1.2e-1");
+check ("%.0e", 25, "2e1");
+check ("%.0e", 35, "4e1");
+check ("%.0f", f (0.5), "0");
+check ("%.0f", f (-2.5), "-2");
+check ("%.2f", f (0.125), "0.12");
+check ("%.2f", f (0.375), "0.38");
+check ("%.1e", f (0.125), "1.2e-1");
+check ("%.1e", f (1250), "1.2e3");
+check ("%.0e", f (35), "4e1");

@@ -1,0 +1,57 @@
+/*
+ * Nickle test suite
+ *
+ * Arbitrary precision prints a float in the fewest digits that read back
+ *
+ * %.-g printed every digit a float's precision could hold, plus one, so
+ * values typed as short decimals showed the binary rounding error, as
+ * 0.10000000000000001 for 0.1 at 53 bits and 1.000...0007e-30 for 1e-30
+ * at 256. It now prints the fewest significant digits that convert back
+ * to the same float at its precision.
+ */
+
+autoimport PRNG;
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+check ("0.1", sprintf ("%.-g", imprecise (0.1, 53)), "0.1");
+check ("1/3", sprintf ("%.-g", imprecise (1/3, 53)), "0.3333333333333333");
+check ("1e-30", sprintf ("%.-g", imprecise (1e-30)), "1e-30");
+check ("1e30", sprintf ("%.-g", imprecise (1e30)), "1e30");
+check ("2**100", sprintf ("%.-g", imprecise (2**100)), "1267650600228229401496703205376");
+check ("-2.5e-7", sprintf ("%.-g", imprecise (-2.5e-7, 53)), "-2.5e-7");
+check ("%.-e", sprintf ("%.-e", imprecise (1234.5, 53)), "1.2345e3");
+check ("%.-f", sprintf ("%.-f", imprecise (2.5e-10, 53)), "0.00000000025");
+
+/* Random floats read back exactly, and one fewer digit doesn't */
+int digits (string e)
+{
+    int point = String::index (e, ".");
+
+    if (point < 0)
+	return 1;
+    return String::index (e, "e") - point;
+}
+
+PRNG::srandom (7);
+int[*] precs = { 2, 24, 53, 113, 256 };
+for (int t = 0; t < 2000; t++) {
+    int p = precs[PRNG::randint (dim (precs))];
+    rational r = (PRNG::randint (2**80) + 1) * 2**(PRNG::randint (400) - 240) /
+		 (PRNG::randint (1000) + 1);
+    real v = imprecise (r, p);
+    string s = sprintf ("%.-g", v);
+    string e = sprintf ("%.-e", v);
+    int n = digits (e);
+
+    check ("reads back", imprecise (string_to_real (s), p), v);
+    if (n > 1)
+	check ("fewest digits",
+	       imprecise (string_to_real (sprintf ("%.*e", n - 2, v)), p) == v, false);
+}

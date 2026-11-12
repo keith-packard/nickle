@@ -500,22 +500,23 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
             FilePrintf(f, "%T.%A", e->base.type, e->tree.left->atom.atom);
         }
         break;
+    /* Precision -2 prints every digit the exact constant needs */
     case OCTAL_NUM:
     case OCTAL0_NUM:
     case OCTAL_FLOAT:
     case OCTAL0_FLOAT:
         FilePrintf(f, "0o");
-        Print(f, e->constant.constant, 'o', 8, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+        Print(f, e->constant.constant, 'o', 8, 0, -2, ' ');
         break;
     case BINARY_NUM:
     case BINARY_FLOAT:
         FilePrintf(f, "0b");
-        Print(f, e->constant.constant, 'b', 2, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+        Print(f, e->constant.constant, 'b', 2, 0, -2, ' ');
         break;
     case HEX_NUM:
     case HEX_FLOAT:
         FilePrintf(f, "0x");
-        Print(f, e->constant.constant, 'x', 16, 0, DEFAULT_OUTPUT_PRECISION, ' ');
+        Print(f, e->constant.constant, 'x', 16, 0, -2, ' ');
         break;
     case TEN_NUM:
     case TEN_FLOAT:

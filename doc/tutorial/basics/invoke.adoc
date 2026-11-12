@@ -24,8 +24,9 @@ $
 
 `script`::
 If Nickle encounters an unflagged argument, it assumes it to be the name of a script, which it runs.
-If a `.nicklerc` file is available, it will be evaluated first.
-No more arguments are processed; the rest of the line is given to the script as its arguments. 
+A script named `-` is read from standard input.
+No more arguments are processed; the rest of the line is given to the script as its arguments.
 
 Without `-e` or a script as an argument, Nickle runs interactively,
 accepting standard input and writing to standard output.
+When it reads commands from a terminal, it first loads the file named by `$NICKLERC`, or `~/.nicklerc` if that isn't set, as Python does with `PYTHONSTARTUP`.

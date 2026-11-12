@@ -374,18 +374,6 @@ extend namespace Command {
 
 	    /* we want stdin to be processed after all other lexables */
 	    lex_input (stdin, "<stdin>", false, File::isatty (stdin));
-
-	    /* if there's a .nicklerc, we apparently want that
-	       next-to-last? */
-	    try {
-		lex_file (Environ::get ("HOME") + "/.nicklerc");
-	    } catch invalid_argument (msg, int i, poly value) {
-		/* do nothing */;
-	    } catch File::open_error (string msg,
-				      File::error_type err,
-				      string name) {
-		/* do nothing */;
-	    }
 	}
 
 	/* now stack the other arguments, in reverse order */
@@ -423,6 +411,36 @@ extend namespace Command {
 	    }
 	    /* Errors in command-line input, unlike stdin, are fatal */
 	    lex_exit_on_error (true);
+	}
+
+	/*
+	 * As Python does with PYTHONSTARTUP, load $NICKLERC, else
+	 * ~/.nicklerc, only when reading commands from a terminal.
+	 * Stacked last, it runs first, and like stdin, its errors
+	 * are reported without exiting. A missing ~/.nicklerc is
+	 * fine, but a missing $NICKLERC gets a warning
+	 */
+	if (lex_stdin && File::isatty (stdin)) {
+	    bool   named = Environ::check ("NICKLERC") &&
+			   Environ::get ("NICKLERC") != "";
+	    string rc = "";
+
+	    if (named)
+		rc = Environ::get ("NICKLERC");
+	    else if (Environ::check ("HOME"))
+		rc = Environ::get ("HOME") + "/.nicklerc";
+	    if (rc != "") {
+		try {
+		    lex_file (rc);
+		    lex_exit_on_error (false);
+		} catch File::open_error (string msg,
+					  File::error_type err,
+					  string name) {
+		    if (named)
+			File::fprintf (stderr, "Cannot load \"%s\": %s\n",
+				       name, msg);
+		}
+	    }
 	}
     }
 }

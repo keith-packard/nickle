@@ -1522,11 +1522,12 @@ Print the compiled byte code for function.
 The editor used by the edit command,
 described in COMMANDS above.
 .IP NICKLERC
-The location of the user's .nicklerc
-file, which will be loaded at the beginning
-of nickle execution if possible.
+The location of the user's startup file, which Nickle loads
+before any other input when it reads commands from a terminal,
+as Python does with PYTHONSTARTUP.  Errors in it are reported,
+and Nickle continues.
 .IP HOME
-Used to find the user's .nicklerc
+Nickle loads $HOME/.nicklerc as the startup file
 if NICKLERC is not set.
 .IP NICKLEPATH
 A colon-separated path whose elements are directories

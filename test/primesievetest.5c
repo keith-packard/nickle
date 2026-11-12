@@ -1,0 +1,69 @@
+/*
+ * Nickle test suite
+ *
+ * PrimeSieve
+ *
+ * primes(max) left out 2 and raised for max below 1, primes_range
+ * included primes below min when every prime exceeded it, and both it
+ * and primorial indexed past the end of an empty list
+ */
+
+exception bad_sieve (string what, int a, int b);
+
+bool is_prime (int n)
+{
+    if (n < 2)
+	return false;
+    for (int d = 2; d * d <= n; d++)
+	if (n % d == 0)
+	    return false;
+    return true;
+}
+
+for (int max = -3; max <= 120; max++) {
+    int[*]	p = PrimeSieve::primes (max);
+    int		k = 0;
+
+    for (int n = -3; n <= max; n++)
+	if (is_prime (n)) {
+	    if (k >= dim (p) || p[k] != n)
+		raise bad_sieve ("primes", max, n);
+	    k++;
+	}
+    if (k != dim (p))
+	raise bad_sieve ("primes", max, dim (p));
+}
+
+if (dim (PrimeSieve::primes (10000)) != 1229)
+    raise bad_sieve ("primes", 10000, dim (PrimeSieve::primes (10000)));
+
+/* Ranges and primorials over every interval, on lists of every length */
+for (int max = 0; max <= 40; max += 7) {
+    int[*]	p = PrimeSieve::primes (max);
+
+    for (int lo = -2; lo <= 45; lo++)
+	for (int hi = lo - 2; hi <= 45; hi++) {
+	    PrimeSieve::range_t	r = PrimeSieve::primes_range (&p, lo, hi);
+	    int			want = 1;
+
+	    for (int i = 0; i < dim (p); i++) {
+		bool	inside = lo <= p[i] && p[i] <= hi;
+
+		if (inside != (r.start <= i && i < r.end))
+		    raise bad_sieve ("primes_range", lo, hi);
+		if (inside)
+		    want *= p[i];
+	    }
+	    if (PrimeSieve::primorial (&p, lo, hi) != want)
+		raise bad_sieve ("primorial", lo, hi);
+	}
+}
+
+/* factorial uses PrimeSieve from 20 on */
+int	f = 1;
+
+for (int n = 1; n <= 400; n++) {
+    f *= n;
+    if (factorial (n) != f)
+	raise bad_sieve ("factorial", n, 0);
+}

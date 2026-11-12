@@ -205,6 +205,10 @@ backslashed characters are special:
 * `\v` is vertical tab
 * `\` followed by octal digits is the character with that code, so
   `"\101"` is `"A"` and `"\0"` is a NUL character
+* `\x` followed by hexadecimal digits is the character with that code,
+  so `"\x41"` is also `"A"`
+
+As in C, a numeric escape takes every digit that follows it.
 
 
 == Variables

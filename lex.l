@@ -75,6 +75,15 @@ yylvalAtom(Atom atom, int token)
     return token;
 }
 
+/* The value of the hex digit 'c' */
+static uint32_t
+lexHexDigit(uint32_t c)
+{
+    if (c <= '9')
+        return c - '0';
+    return (c | 0x20) - 'a' + 10;
+}
+
 #include <strings.h>
 #include <errno.h>
 #ifdef HAVE_LIBREADLINE
@@ -588,6 +597,18 @@ has_member      { return yylvalInts(HASMEMBER); }
                                 ps = s;
                             }
                             s = ps;
+                        } else if (c == 'x' && len > 0 && isxdigit((unsigned char)*s)) {
+                            /* As in C, \x takes every hex digit that follows */
+                            uint32_t ch;
+                            char    *ps = s;
+
+                            c = 0;
+                            while ((s = StringNextChar(s, &ch, &len)) && ch < 0x80
+                                   && isxdigit((int)ch)) {
+                                c = (c << 4) | lexHexDigit(ch);
+                                ps = s;
+                            }
+                            s = ps;
                         } else
                             c = lexEscape(c);
                     }
@@ -615,6 +636,21 @@ has_member      { return yylvalInts(HASMEMBER); }
                                 while ((s = StringNextChar(s, &ch, &len)) && '0' <= ch
                                        && ch <= '7') {
                                     c = (c << 3) | (ch - '0');
+                                    ps = s;
+                                    plen = len;
+                                }
+                                s = ps;
+                                len = plen;
+                            } else if (c == 'x' && len > 0 && isxdigit((unsigned char)*s)) {
+                                /* As in C, \x takes every hex digit that follows */
+                                uint32_t  ch;
+                                char     *ps = s;
+                                ptrdiff_t plen = len;
+
+                                c = 0;
+                                while ((s = StringNextChar(s, &ch, &len)) && ch < 0x80
+                                       && isxdigit((int)ch)) {
+                                    c = (c << 4) | lexHexDigit(ch);
                                     ps = s;
                                     plen = len;
                                 }

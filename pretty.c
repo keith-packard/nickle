@@ -456,11 +456,12 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
         FilePuts(f, "]");
         break;
     case NEW:
-        FilePrintf(f, "(%T)", e->base.type);
-        if (e->tree.left) {
-            FilePuts(f, " ");
+        FilePrintf(f, "(%T) ", e->base.type);
+        /* A type in parentheses needs an initializer; {} leaves the value uninitialized */
+        if (e->tree.left)
             PrettyExpr(f, e->tree.left, selfPrec, level, nest);
-        }
+        else
+            FilePuts(f, "{}");
         break;
     case ARRAY:
         FilePuts(f, "{ ");

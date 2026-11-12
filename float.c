@@ -1016,6 +1016,13 @@ try_again_f:
         frac_width = 0;
 
     print_width = int_width + frac_width + exp_width;
+    /* A zero fill goes after the sign and any 0x, as in C */
+    if (fill == '0' && width > print_width) {
+        ptrdiff_t prefix = (negative ? 1 : 0) + (leader ? 2 : 0);
+
+        FilePutsc(f, int_string, prefix);
+        int_string += prefix;
+    }
     while (width > print_width) {
         FileOutchar(f, fill);
         width--;

@@ -451,11 +451,19 @@ IntegerPrint(Value f, Value iv, uint32_t format, int base, int width, int prec, 
             }
         }
         print_width += fraction_width;
+
+        Bool sign = ISign(i) == Negative;
+
+        /* A zero fill goes after the sign, as in C */
+        if (sign && fill == '0' && width > print_width) {
+            FileOutput(f, '-');
+            sign = False;
+        }
         while (width > print_width) {
             FileOutchar(f, fill);
             width--;
         }
-        if (ISign(i) == Negative)
+        if (sign)
             FileOutput(f, '-');
         FilePuts(f, result);
         if (fraction_width) {

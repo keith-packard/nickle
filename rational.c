@@ -930,11 +930,19 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
         print_width = print_width + 1;
     if (r->sign == Negative)
         print_width = print_width + 1;
+
+    Bool sign = r->sign == Negative;
+
+    /* A zero fill goes after the sign, as in C */
+    if (sign && fill == '0' && width > print_width) {
+        FileOutput(f, '-');
+        sign = False;
+    }
     while (width > print_width) {
         FileOutchar(f, fill);
         width--;
     }
-    if (r->sign == Negative)
+    if (sign)
         FileOutput(f, '-');
     FilePuts(f, whole);
     if (fraction_width)

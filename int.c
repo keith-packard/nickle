@@ -247,7 +247,7 @@ IntPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint
     ptrdiff_t fraction_width;
     char      space[64], *s;
     char      letter;
-    int       neg;
+    int       neg = 0;
     ptrdiff_t len;
 
     if (format == 'a')
@@ -308,6 +308,12 @@ IntPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint
         }
     }
     w += fraction_width;
+    /* A zero fill goes after the sign, as in C */
+    if (neg && fill == '0' && width > w) {
+        FileOutput(f, '-');
+        s++;
+        len--;
+    }
     while (width > w) {
         FileOutchar(f, fill);
         width--;

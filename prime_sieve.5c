@@ -9,12 +9,12 @@ public namespace PrimeSieve {
        int num_to_pos(int n) = (n - 3) // 2;
        int pos_to_num(int p) = (p * 2) + 3;
 
-       /* Generate a list of primes from a boolean array of composite
-	* test results
+       /* Generate a list of primes, 2 and those of a boolean array
+	* of composite test results
 	*/
        int[] sieve_to_array(&bool[] composite, int n_prime) {
-	       int[n_prime] primes;
-	       int p = 0;
+	       int[n_prime + 1] primes = { 2 ... };
+	       int p = 1;
 	       for (int i = 0; i < dim(composite); i++)
 		       if (!composite[i])
 			       primes[p++] = pos_to_num(i);
@@ -22,10 +22,16 @@ public namespace PrimeSieve {
        }
 
        /* Use the sieve of Eratosthenes to compute the set of
-	* primes <= max
+	* primes <= max, in increasing order
 	*/
        public int[] primes (int max)
        {
+	       if (max < 2)
+		       return (int[0]) {};
+	       if (max < 3)
+		       return (int[1]) { 2 };
+
+	       /* The sieve holds the odd numbers from 3 */
 	       int n = num_to_pos(max) + 1;
 	       bool[n] composite = { false ... };
 	       int n_prime = 0;
@@ -47,32 +53,31 @@ public namespace PrimeSieve {
 	       int	start, end;
        } range_t;
 
-       /* Binary search in a list of numbers for the value <= 'v' */
+       /* Binary search in an increasing list of numbers for the
+	* last one <= 'v', returning its index, or -1 when there is
+	* none
+	*/
        public int primes_search(&int[] primes, int v) {
-	       int min = 0, max = dim(primes);
-	       while (min < max) {
-		       int mid = (max + min) >> 1;
-		       int p = primes[mid];
-		       if (p == v)
-			       return mid;
-		       if (p > v)
-			       max = mid;
-		       else {
-			       if (min == mid)
-				       return mid;
-			       min = mid;
-		       }
+	       /* One past the answer lies in [lo, hi] */
+	       int lo = 0, hi = dim(primes);
+	       while (lo < hi) {
+		       int mid = (lo + hi) >> 1;
+		       if (primes[mid] <= v)
+			       lo = mid + 1;
+		       else
+			       hi = mid;
 	       }
-	       return min;
+	       return lo - 1;
        }
 
-       /* Return the indices within a list of primes such that
-	* primes[start] <= min && max < primes[end]
+       /* Return the indices within a list of primes of those in
+	* [min, max], from start up to but not including end
 	*/
        public range_t primes_range(&int[] primes, int min, int max) {
-	       int	start = primes_search(&primes, min);
-	       if (primes[start] < min) start++;
+	       int	start = primes_search(&primes, min - 1) + 1;
 	       int	end = primes_search(&primes, max) + 1;
+	       if (end < start)
+		       end = start;
 	       return (range_t) { start = start, end = end };
        }
 

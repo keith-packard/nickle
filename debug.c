@@ -115,7 +115,10 @@ void
 DebugStart(Value continuation)
 {
     if (LexResetInteractive()) {
-        if (DebugSetFrame(continuation, 0))
+        /* An exception raised while debugging already has the commands */
+        Bool debugging = CurrentFrame != 0;
+
+        if (DebugSetFrame(continuation, 0) && !debugging)
             DebugAddCommands();
     } else {
         /*

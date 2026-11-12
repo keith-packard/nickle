@@ -58,6 +58,10 @@ string[*][2] cases = {
     { "0o1.000000000000000000000001", "0o1.000000000000000000000001" },
     { "0b1.0000000000000000000000000000001", "0b1.0000000000000000000000000000001" },
     { "([string])", "(poly[string]) {}" },
+    /* A declaration as an operand keeps its parentheses */
+    { "(int u = 4) + 1", "(int u = 4) + 1" },
+    { "(int u = 2, v = 3) * 2", "(int u = 2, v = 3) * 2" },
+    { "-(int u = 5)", "-(int u = 5)" },
 };
 
 for (int i = 0; i < dim (cases); i++) {
@@ -102,6 +106,7 @@ void function statements ()
     thread t = fork x + 1;
     int y = (x, 3);
     poly[*] z = ([3]);
+    y = abs ((int w = -4));
 }
 file f = File::string_write ();
 Command::pretty_print (f, (string[*]) { "statements" });
@@ -110,3 +115,4 @@ check ("//=", String::index (printed, "x //= 3;") >= 0, true);
 check ("fork", String::index (printed, "thread t = fork x + 1;") >= 0, true);
 check ("declaration", String::index (printed, "int y = (x, 3);") >= 0, true);
 check ("uninitialized array", String::index (printed, "poly[*] z = (poly[3]) {};") >= 0, true);
+check ("declaration argument", String::index (printed, "y = abs ((int w = -4));") >= 0, true);

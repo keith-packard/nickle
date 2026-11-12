@@ -14,7 +14,7 @@ void json_test_val(poly val, string match) {
 }
 
 json_test_val(1, "1");
-json_test_val(1.1, "1.1000000000000");
+json_test_val(1.1, "1.10000000000000000");
 json_test_val("hello world", "\"hello world\"");
 json_test_val(true, "true");
 json_test_val(false, "false");
@@ -32,7 +32,7 @@ json_test_val((poly[string]) {
     },
     "{\n" +
     "\t\"false\": false,\n" +
-    "\t\"float\": 1.1000000000000,\n" +
+    "\t\"float\": 1.10000000000000000,\n" +
     "\t\"hash\": {\n" +
     "\t\t\"hashval\": 12\n" +
     "\t},\n" +
@@ -42,3 +42,46 @@ json_test_val((poly[string]) {
     "\t\"true\": true\n" +
     "}"
     );
+
+/* Strings with every kind of escape round-trip */
+json_test_val("tab\tcr\rbs\bff\fnl\n\"q\"\\" + String::new((int[*]){ 1, 0x1f, 0xe9, 0x1f600 }),
+	      "\"tab\\tcr\\rbs\\bff\\fnl\\n\\\"q\\\"\\\\\\u0001\\u001fé😀\"");
+
+/* Reals round-trip through 17 digits */
+json_test_val(1e-300, "1.00000000000000000e-300");
+
+exception wrong(string what, poly got, poly want);
+
+void check(string what, poly got, poly want) {
+    if (got != want)
+	raise wrong(what, got, want);
+}
+
+/* Valid JSON other writers produce */
+check("exponent sign", from_json("[1e+5, -12e-2]"), (poly[*]) { 100000, -3/25 });
+check("crlf", from_json("[1,\r\n2]"), (poly[*]) { 1, 2 });
+check("escapes", from_json("\"\\u0041\\/\\ud83d\\ude00\""), "A/😀");
+
+/* Invalid JSON is rejected */
+string[*] invalid = {
+    "", "\"abc", "tru", "@", "[,]", "[1,]", "{\"a\":1,}", "1 2", "[1-2]", "-",
+    "01", ".5", "1.", "1e", "\"\\x\"", "\"\\ud800\"", "\"a\tb\"", "[1", "{\"a\" 1}",
+};
+for (int i = 0; i < dim(invalid); i++) {
+    bool rejected = false;
+    try {
+	from_json(invalid[i]);
+    } catch json_parse_error(int line, string token) {
+	rejected = true;
+    }
+    check(invalid[i], rejected, true);
+}
+
+/* Values with no JSON form are refused */
+bool refused = false;
+try {
+    to_json((poly[*]) { (struct { int x; }) { x = 1 } });
+} catch invalid_argument(string m, int i, poly v) {
+    refused = true;
+}
+check("struct", refused, true);

@@ -1045,12 +1045,10 @@ CompileCall(ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code, Boo
         tail = TailNever;
     if ((tail == TailAlways && !TypePoly(expr->base.type)
          && TypeIsSupertype(code->base.type, expr->base.type))
-        || (tail == TailVoid && TypeCanon(expr->base.type) == typePrim[rep_void])) {
-        /*
-         * A poly function's return accepts whatever the callee
-         * returns, and a void call ending a function returns nothing
-         */
-        if (TypePoly(code->base.type) || tail == TailVoid)
+        || (tail == TailVoid && TypeCanon(expr->base.type) == typePrim[rep_void]
+            && TypeCanon(code->base.type) == typePrim[rep_void])) {
+        /* A poly function's return accepts whatever the callee returns */
+        if (TypePoly(code->base.type))
             BuildInst(obj, OpTailCall, inst, stat);
         else
             BuildInst(obj, OpCheckTailCall, inst, stat);

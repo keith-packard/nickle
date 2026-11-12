@@ -55,7 +55,7 @@ namespace ParseArgs {
 	abort("internal error: unknown arg type");
     }
 
-    public string basename(string path) 
+    public string basename(string path)
 	/*
 	 * Return the filename part of 'path'
 	 */
@@ -78,7 +78,7 @@ namespace ParseArgs {
      */
     public void(file f) usage;
 
-    public void parseargs(&argdesc argd, &(string[*]) argv) 
+    public void parseargs(&argdesc argd, &(string[*]) argv)
 	/*
 	 * Parse arguments in 'argv' according to 'argd'
 	 */
@@ -203,20 +203,17 @@ namespace ParseArgs {
 	if (argind < dim(argv) &&
 	    (argv[argind] == "--help" || argv[argind] == "--usage"))
 	    usagef(stdout);
-	
+
 	/* now walk the arguments */
 	while(argind < dim(argv)) {
 	    string a = argv[argind];
 
-	    /* we're done on a "user stop" */
+	    /*
+	     * As in Python, "--" ends the options; the arguments after
+	     * it are positional or unknown, even those starting with '-'
+	     */
 	    if (a == "--") {
-		if (is_uninit(&&argd.unknown)) {
-		    fprintf(stderr,
-			    "%s: don't know what to do with arg \"%s\"\n",
-			    argd.prog_name,
-			    a);
-			usagef(stderr);
-		}
+		argind++;
 		break;
 	    }
 
@@ -267,8 +264,7 @@ namespace ParseArgs {
 	/* process any positional arguments */
 	if (!is_uninit(&argd.posn_args)) {
 	    for (int i = 0; i < dim(argd.posn_args); i++) {
-		if (argind >= dim(argv) ||
-		    argv[argind] == "--") {
+		if (argind >= dim(argv)) {
 		    if (!is_uninit(&argd.posn_args[i].optional))
 			break;
 		    fprintf(stderr, "%s: missing required argument %s\n",
@@ -283,18 +279,14 @@ namespace ParseArgs {
 
 	/* process any unknown arguments */
 	if (argind < dim(argv)) {
-	    if (argv[argind] == "--")
-		argind++;
 	    if (!is_uninit(&&argd.unknown)) {
 		argd.unknown = argind;
 		return;
 	    }
-	    if (argind < dim(argv)) {
-	        fprintf(stderr, "%s: unknown or extra argument \"%s\"\n",
-			argd.prog_name,
-			argv[argind]);
-		usagef(stderr);
-	    }
+	    fprintf(stderr, "%s: unknown or extra argument \"%s\"\n",
+		    argd.prog_name,
+		    argv[argind]);
+	    usagef(stderr);
 	}
     }
 }

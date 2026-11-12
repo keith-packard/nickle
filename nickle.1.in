@@ -55,7 +55,8 @@ before beginning execution.
 Print the Nickle version and exit.
 .TP
 .B "--"
-Quit parsing arguments and pass the remainder, unevaluated, to
+End the options, as in Python: the next argument is the script,
+even if it starts with \fB\-\fP, and the rest go to
 .IR argv .
 .PP
 A syntax or compile error in a script, or in a file, library or

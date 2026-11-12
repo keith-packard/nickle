@@ -4,6 +4,8 @@
  * for licensing information.
  */
 
+/* For close_range */
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -763,6 +765,31 @@ FileReopen(char *name, char *mode, Value file, int *errp)
     RETURN(file);
 }
 
+/*
+ * Close every file descriptor from 'low' up except 'keep', in two
+ * calls where close_range exists, rather than one for each possible
+ * descriptor, which can number in the hundreds of thousands
+ */
+static void
+FileCloseFrom(int low, int keep)
+{
+    long fdlimit;
+
+#ifdef HAVE_CLOSE_RANGE
+    if (keep < low) {
+        if (close_range((unsigned)low, ~0U, 0) == 0)
+            return;
+    } else if ((keep == low || close_range((unsigned)low, (unsigned)keep - 1, 0) == 0)
+               && close_range((unsigned)keep + 1, ~0U, 0) == 0) {
+        return;
+    }
+#endif
+    fdlimit = sysconf(_SC_OPEN_MAX);
+    for (int fd = low; fd < fdlimit; fd++)
+        if (fd != keep)
+            close(fd);
+}
+
 Value
 FileFilter(char *program, char *args[], Value filev, int *errp)
 {
@@ -773,7 +800,6 @@ FileFilter(char *program, char *args[], Value filev, int *errp)
     ptrdiff_t i;
     int       fd;
     int       errpipe[2];
-    long      fdlimit;
     int       fds[3];
 
     /* set up process files */
@@ -836,10 +862,7 @@ FileFilter(char *program, char *args[], Value filev, int *errp)
             fds[fd] = fcntl(fds[fd], F_DUPFD, 3);
         for (fd = 0; fd < 3; fd++)
             dup2(fds[fd], fd);
-        fdlimit = sysconf(_SC_OPEN_MAX);
-        for (; fd < fdlimit; fd++)
-            if (fd != errpipe[1])
-                close(fd);
+        FileCloseFrom(3, errpipe[1]);
         fcntl(errpipe[1], F_SETFD, FD_CLOEXEC);
         execvp(program, args);
         /* A pipe write this small arrives whole */

@@ -101,6 +101,8 @@ getpgrp_void = cc.compiles('''#include <unistd.h>
 int func() { return (int) getpgrp(); }
 ''')
 
+have_close_range = cc.has_function('close_range',
+				    prefix: '#define _GNU_SOURCE\n#include <unistd.h>')
 have_dlclose = cc.has_function('dlclose')
 have_dlerror = cc.has_function('dlerror')
 have_dlfcn_h = cc.has_header('dlfcn.h')
@@ -163,6 +165,7 @@ sizeof_unsigned_short = cc.sizeof('unsigned short')
 
 conf_data = configuration_data({
 				 'GETPGRP_VOID' : getpgrp_void,
+				 'HAVE_CLOSE_RANGE' : have_close_range,
 				 'HAVE_DLCLOSE' : have_dlclose,
 				 'HAVE_DLERROR' : have_dlerror,
 				 'HAVE_DLFCN_H' : have_dlfcn_h,

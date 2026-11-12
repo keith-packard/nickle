@@ -20,16 +20,34 @@ namespace JSON {
 	    for (int i = 0; i < String::length(a); i++) {
 		int c = a[i];
 		switch (c) {
-		case '\n':
-		    c = 'n';
 		case '"':
 		case '\\':
 		    File::putc('\\', output);
+		    File::putc(c, output);
+		    break;
+		case '\b':
+		    File::fprintf(output, "\\b");
+		    break;
+		case '\f':
+		    File::fprintf(output, "\\f");
+		    break;
+		case '\n':
+		    File::fprintf(output, "\\n");
+		    break;
+		case '\r':
+		    File::fprintf(output, "\\r");
+		    break;
+		case '\t':
+		    File::fprintf(output, "\\t");
 		    break;
 		default:
+		    /* JSON strings can't hold other control characters */
+		    if (c < 0x20)
+			File::fprintf(output, "\\u%04x", c);
+		    else
+			File::putc(c, output);
 		    break;
 		}
-		File::putc(c, output);
 	    }
 	    File::putc('"', output);
 	}
@@ -84,8 +102,9 @@ namespace JSON {
 	    File::fprintf (output, "%d", arg);
 	}
 
+	/* 17 digits, as many as a double needs, for other JSON readers */
 	void json_float(real arg) {
-	    File::fprintf(output, "%.13g", arg);
+	    File::fprintf(output, "%.17g", arg);
 	}
 
 	void json_bool(bool arg) {
@@ -111,6 +130,7 @@ namespace JSON {
 		return json_bool(arg);
 	    if (is_void(arg))
 		return json_null(arg);
+	    raise invalid_argument("to_json: no JSON form", 0, arg);
 	};
 
 	json(arg, 0);

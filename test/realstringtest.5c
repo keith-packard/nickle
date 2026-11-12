@@ -7,7 +7,9 @@
  * end of the string, so trailing whitespace scaled it down:
  * string_to_real ("1.5 ") was 1.05. Only spaces and tabs were skipped
  * before the number, so a leading newline read as a digit, and an
- * unclosed repeat group gave void.
+ * unclosed repeat group gave void. Upper case base prefixes, which
+ * string_to_integer accepts, read as zero: string_to_real ("0X1P-2")
+ * was 0 and string_to_real ("0B1.1") was 0.1.
  */
 
 autoimport PRNG;
@@ -34,6 +36,10 @@ check ("1.5e2", 150);
 check ("0x1.8", 3/2);
 check ("0x1.8p1", 3);
 check ("0b1.01", 5/4);
+check ("0X1.8P1", 3);
+check ("-0XA.8", -21/2);
+check ("0B1.01", 5/4);
+check ("0O1.4", 3/2);
 
 for (int i = 0; i < 300; i++) {
     int ipart = randint (100000);

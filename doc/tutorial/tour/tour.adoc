@@ -14,7 +14,7 @@ Arithmetic works as expected, with a rich set of operators.
 120
 ----
 Rationals are represented exactly, but printed as decimals rounded to 15 digits.
-Math is done with infinite precision.
+Math is done with arbitrary precision.
 Notice that integer division (//) is different from rational division (/). Nickle provides some conveniences, such as `$$.$$` denoting the last value printed.
 ----
 

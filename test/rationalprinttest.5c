@@ -28,7 +28,7 @@ check ("%f", sprintf ("%f", 1/4), "0.25");
 check ("%g", sprintf ("%g", 1/3), "0.333333333333333");
 
 /*
- * Infinite precision shows a repeating fraction in braces. %.-f, %.-e,
+ * Arbitrary precision shows a repeating fraction in braces. %.-f, %.-e,
  * and %.-g printed one cycle of the digits without them, so 1/7
  * printed as 0.142857, which reads as a different number
  */

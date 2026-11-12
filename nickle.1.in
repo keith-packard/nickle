@@ -121,7 +121,7 @@ it is treated as a repeating decimal.
 `Floating point'' constants
 are currently represented internally as rationals:
 for floating constants with a given precision
-(and an infinite-precision exponent), use the
+(and an arbitrary-precision exponent), use the
 imprecise() builtin function described below.
 .IP "octal number"
 Start with a 0 (e.g., 014 is the same as 12).
@@ -1056,7 +1056,7 @@ Values round to the nearest digit, a tie going to an even
 digit, as in arithmetic; precision 0 prints a whole number
 with no point.
 .IP "-"
-A precision value indicating infinite
+A precision value indicating arbitrary
 precision. A repeating fraction prints with its repeating
 digits in braces, as in 0.{142857}.
 .IP "*"

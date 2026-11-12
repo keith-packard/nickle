@@ -1,11 +1,12 @@
 = Nickle Expressions
 
-See <<_precedence,Precedence>> at the end of this section for how the operators group.
+See <<_precedence,Precedence>> at the end of this section for how the
+operators group.
 
 == Variable declarations
 
-Variable declarations are expressions in Nickle; the value of a declaration is the value of the last variable it declares.
-For example,
+Variable declarations are expressions in Nickle; the value of a
+declaration is the value of the last variable it declares. For example,
 
 ----
 
@@ -15,7 +16,8 @@ For example,
 global int val = 3;
 ----
 
-If that variable has no initialization expression, it is an error to use the value of the expression.
+If that variable has no initialization expression, it is an error to use
+the value of the expression.
 
 ----
 
@@ -44,8 +46,9 @@ Functions may be declared anonymously and used immediately, e.g.
 5
 ----
 
-Any context available to the function at definition time will be available whenever it is executed.
-See <<_storage_classes,Storage classes>> in the section on Nickle Datatypes.
+Any context available to the function at definition time will be
+available whenever it is executed. See <<_storage_classes,Storage
+classes>> in the section on Nickle Datatypes.
 
 == Binary operators
 
@@ -139,9 +142,10 @@ Decrement::
 
 === Integer constants
 
-Integer constants with a leading zero or 0o are interpreted in octal, with a leading 0x in hexadecimal and with a leading 0b in binary.
-Underscores may separate digits, and a character in single quotes is its code point.
-Here are some examples:
+Integer constants with a leading zero or 0o are interpreted in octal,
+with a leading 0x in hexadecimal and with a leading 0b in binary.
+Underscores may separate digits, and a character in single quotes is its
+code point. Here are some examples:
 
 ----
 
@@ -156,12 +160,13 @@ Here are some examples:
 
 === Rational constants
 
-Rational constants are the combination of an integer part, a mantissa with an initial and repeating part, and an exponent.
-All of these pieces are optional, but at least one of the parts (other than the exponent) must be present.
-Curly braces mark the repeating part, so `.{56}` is exactly 56/99.
-If the value is a whole number, its type is int rather than rational.
-The values are exact, though Nickle displays them rounded to 15 decimal places.
-Some examples:
+Rational constants are the combination of an integer part, a mantissa
+with an initial and repeating part, and an exponent. All of these pieces
+are optional, but at least one of the parts (other than the exponent)
+must be present. Curly braces mark the repeating part, so `.{56}` is
+exactly 56/99. If the value is a whole number, its type is int rather
+than rational. The values are exact, though Nickle displays them rounded
+to 15 decimal places. Some examples:
 
 ----
 
@@ -181,7 +186,9 @@ true
 565656565656.565656565656566
 ----
 
-Hexadecimal, octal, and binary constants may have fractions and exponents too; the exponent of a hexadecimal constant follows `p` and is a power of two, as in C, so `0x1p4` is 16.
+Hexadecimal, octal, and binary constants may have fractions and
+exponents too; the exponent of a hexadecimal constant follows `p` and is
+a power of two, as in C, so `0x1p4` is 16.
 
 === String constants
 
@@ -196,7 +203,8 @@ backslashed characters are special:
 * `\t` is tab
 * `\f` is formfeed
 * `\v` is vertical tab
-* `\` followed by octal digits is the character with that code, so `"\101"` is `"A"` and `"\0"` is a NUL character
+* `\` followed by octal digits is the character with that code, so
+  `"\101"` is `"A"` and `"\0"` is a NUL character
 
 
 == Variables
@@ -229,7 +237,8 @@ square brace:
 
 _array_ `*[` _expr_ `]`
 
-This is, however, deprecated in favor of using references to arrays, which have no such problems.
+This is, however, deprecated in favor of using references to arrays,
+which have no such problems.
 
 == The fork operator
 
@@ -240,8 +249,8 @@ See the section on Concurrency.
 
 _expr_ `,` _expr_
 
-Evaluates each expression in turn, the resulting value is that of the right hand expression.
-For example,
+Evaluates each expression in turn, the resulting value is that of the
+right hand expression. For example,
 
 ----
 

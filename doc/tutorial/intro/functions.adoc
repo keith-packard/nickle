@@ -50,7 +50,8 @@ int sum (int a, int b ...)
 13
 ----
 
-Functions are called as in C, with their names followed by argument values in parentheses:
+Functions are called as in C, with their names followed by argument
+values in parentheses:
 
 ----
 foo ( "hello", 7.2 );

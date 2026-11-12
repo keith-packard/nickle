@@ -1,7 +1,7 @@
 = Commands
 
-The following are commands that the Nickle interpreter understands, not actual language constructs.
-They may be issued only at the top level.
+The following are commands that the Nickle interpreter understands, not
+actual language constructs. They may be issued only at the top level.
 
 == Expressions
 
@@ -22,10 +22,13 @@ $ nickle
 >
 ----
 
-Statements, from expressions terminated by semicolons to complicated control structures, are executed but have no value to print.
-Statements are not commands but actual syntax, so they may be used in scripts.
-A newline ends a command, except inside parentheses, brackets, or braces, or partway through a control statement such as `for` or `if`.
-There, Nickle reads more lines, prompting with `+`, until the command is complete, e.g.
+Statements, from expressions terminated by semicolons to complicated
+control structures, are executed but have no value to print. Statements
+are not commands but actual syntax, so they may be used in scripts. A
+newline ends a command, except inside parentheses, brackets, or braces,
+or partway through a control statement such as `for` or `if`. There,
+Nickle reads more lines, prompting with `+`, until the command is
+complete, e.g.
 
 ----
 
@@ -51,9 +54,9 @@ $
 
 == Print
 
-The `print` command provides information such as visibility, type, and value, about a name.
-It need not be the name of a variable; functions, namespaces, etc.
-may also be printed.
+The `print` command provides information such as visibility, type, and
+value, about a name. It need not be the name of a variable; functions,
+namespaces, etc. may also be printed.
 
 ----
 
@@ -79,8 +82,9 @@ void hello ()
 
 == Undefine
 
-A defined name can be undefined.
-The `undefine` command takes several names, separated by commas, and stops at the first one it can't find, e.g.
+A defined name can be undefined. The `undefine` command takes several
+names, separated by commas, and stops at the first one it can't find,
+e.g.
 
 ----
 
@@ -98,8 +102,10 @@ global int x = 0;
 
 == Loading files
 
-The `load` command evaluates the file it names, like the `-f` flag, and `library` finds the file in Nickle's library path, like the `-l` flag.
-Unlike those flags, an error in such a file, or a file that can't be found, is reported and Nickle continues.
+The `load` command evaluates the file it names, like the `-f` flag, and
+`library` finds the file in Nickle's library path, like the `-l` flag.
+Unlike those flags, an error in such a file, or a file that can't be
+found, is reported and Nickle continues.
 
 ----
 
@@ -111,9 +117,13 @@ Cannot load library "nosuch.5c": not found in "/usr/share/nickle"
 >
 ----
 
-The `autoload` command loads the library for each namespace it names, unless the namespace is already defined.
-The library's file name is the namespace's name in lower case, with a dash before each capital letter that follows a lower-case one, and `.5c` appended, so `PRNG` comes from `prng.5c`.
-The `autoimport` command does the same and then imports each namespace, and `reimport` loads the libraries even when the namespaces are already defined.
+The `autoload` command loads the library for each namespace it names,
+unless the namespace is already defined. The library's file name is the
+namespace's name in lower case, with a dash before each capital letter
+that follows a lower-case one, and `.5c` appended, so `PRNG` comes from
+`prng.5c`. The `autoimport` command does the same and then imports each
+namespace, and `reimport` loads the libraries even when the namespaces
+are already defined.
 
 ----
 
@@ -194,7 +204,8 @@ These history items may be named and used directly:
 
 == Char
 
-The `char` command prints each code point it is given in decimal and hexadecimal, with the character it encodes.
+The `char` command prints each code point it is given in decimal and
+hexadecimal, with the character it encodes.
 
 ----
 

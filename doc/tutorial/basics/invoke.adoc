@@ -12,9 +12,10 @@
 `-f` _file_, `--file` _file_::
 Evaluate _file_.
 
-`-l` _library_, `--library` _library_::
-Evaluate _library_ like `-f`, but find it in Nickle's library path, `Command::nickle_path`.
-That is `$NICKLEPATH` if it is set, and Nickle's installed library directory otherwise.
+`-l` _library_, `--library` _library_:: Evaluate _library_ like `-f`,
+but find it in Nickle's library path, `Command::nickle_path`. That is
+`$NICKLEPATH` if it is set, and Nickle's installed library directory
+otherwise.
 
 `-e` _expr_, `--expr` _expr_::
 Evaluate a Nickle expression, e.g.
@@ -34,15 +35,19 @@ Print a summary of these options and exit.
 `--`::
 End the options: the next argument is the script, even if it starts with `-`.
 
-`script`::
-If Nickle encounters an unflagged argument, it assumes it to be the name of a script, which it runs.
-A script named `-` is read from standard input.
-No more arguments are processed; the rest of the line is given to the script as its arguments.
-Nickle puts the script's directory at the front of its library path, so the script can load libraries kept beside it.
+`script`:: If Nickle encounters an unflagged argument, it assumes it to
+be the name of a script, which it runs. A script named `-` is read from
+standard input. No more arguments are processed; the rest of the line is
+given to the script as its arguments. Nickle puts the script's directory
+at the front of its library path, so the script can load libraries kept
+beside it.
 
-Options may be repeated, and run in the order given.
-A syntax or compile error in any of them, or in a script, makes Nickle exit with status 1.
+Options may be repeated, and run in the order given. A syntax or compile
+error in any of them, or in a script, makes Nickle exit with status 1.
 
 Without `-e` or a script as an argument, Nickle runs interactively,
-accepting standard input and writing to standard output, after evaluating any files given with `-f` or `-l`.
-When it reads commands from a terminal, it loads the file named by `$NICKLERC`, or `~/.nicklerc` if that isn't set, before anything else, as Python does with `PYTHONSTARTUP`.
+accepting standard input and writing to standard output, after
+evaluating any files given with `-f` or `-l`. When it reads commands
+from a terminal, it loads the file named by `$NICKLERC`, or
+`~/.nicklerc` if that isn't set, before anything else, as Python does
+with `PYTHONSTARTUP`.

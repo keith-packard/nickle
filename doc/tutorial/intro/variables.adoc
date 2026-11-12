@@ -2,9 +2,11 @@
 
 == Primitive datatypes
 
-Nickle has a large set of primitive datatypes.
-Instead of overloading existing datatypes to represent fundamentally distinct objects, Nickle provides additional primitive datatypes to allow for typechecking.
-For instance, instead of using small integers to identify file handles, Nickle provides a `file` datatype.
+Nickle has a large set of primitive datatypes. Instead of overloading
+existing datatypes to represent fundamentally distinct objects, Nickle
+provides additional primitive datatypes to allow for typechecking. For
+instance, instead of using small integers to identify file handles,
+Nickle provides a `file` datatype.
 
 === Numeric datatypes
 
@@ -15,8 +17,9 @@ Nickle has four numeric datatypes:
 * `real`
 * `complex`
 
-Int and rational values are represented exactly to arbitrary precision so that computations need not be concerned about values out of range or a loss of precision during computation.
-For example,
+Int and rational values are represented exactly to arbitrary precision
+so that computations need not be concerned about values out of range or
+a loss of precision during computation. For example,
 
 ----
 
@@ -26,8 +29,9 @@ true
 true
 ----
 
-As rationals are a superset of the integers, rational values with denominator of 1 are represented as ints.
-The builtin `is_int` demonstrates this by recognizing such rationals as integers:
+As rationals are a superset of the integers, rational values with
+denominator of 1 are represented as ints. The builtin `is_int`
+demonstrates this by recognizing such rationals as integers:
 
 ----
 
@@ -38,8 +42,11 @@ false
 true
 ----
 
-Real values are either represented as a precise int or rational value or as an imprecise value using a floating point representation with arbitrary precision mantissa and exponent values.
-Imprecision is a contagious property; computation among precise and imprecise values yields an imprecise result.
+Real values are either represented as a precise int or rational value or
+as an imprecise value using a floating point representation with
+arbitrary precision mantissa and exponent values. Imprecision is a
+contagious property; computation among precise and imprecise values
+yields an imprecise result.
 
 ----
 
@@ -52,8 +59,9 @@ false
 false
 ----
 
-Upward type conversion is handled automatically; divide an int by an int and the result is rational.
-Downward conversion only occurs through builtin functions which convert rational or real values to integers.
+Upward type conversion is handled automatically; divide an int by an int
+and the result is rational. Downward conversion only occurs through
+builtin functions which convert rational or real values to integers.
 
 ----
 
@@ -62,8 +70,9 @@ Downward conversion only occurs through builtin functions which convert rational
 false
 ----
 
-Complex values have real and imaginary parts, each of which may be any of the other numeric types.
-The `Complex` namespace holds the functions that work on them.
+Complex values have real and imaginary parts, each of which may be any
+of the other numeric types. The `Complex` namespace holds the functions
+that work on them.
 
 ----
 
@@ -74,8 +83,9 @@ The `Complex` namespace holds the functions that work on them.
 
 === Boolean datatype
 
-The `bool` datatype holds `true` or `false`, the results of comparisons and logical operators.
-The conditions of `if`, `while`, `for`, and `?:` must be bools; unlike C, Nickle doesn't treat numbers as truth values.
+The `bool` datatype holds `true` or `false`, the results of comparisons
+and logical operators. The conditions of `if`, `while`, `for`, and `?:`
+must be bools; unlike C, Nickle doesn't treat numbers as truth values.
 
 ----
 
@@ -86,10 +96,10 @@ true
 
 === String datatype
 
-A `string` holds a read-only sequence of Unicode characters.
-Several builtin functions accept and return this datatype.
-Elements of a string are accessible as integer code points by using the array index operators.
-See the section on Strings.
+A `string` holds a read-only sequence of Unicode characters. Several
+builtin functions accept and return this datatype. Elements of a string
+are accessible as integer code points by using the array index
+operators. See the section on Strings.
 
 ----
 
@@ -115,15 +125,17 @@ File::close(f);
 
 === Concurrency and control flow datatypes
 
-Nickle has builtin support for threading, mutual exclusion, and continuations, along with the associated types:
+Nickle has builtin support for threading, mutual exclusion, and
+continuations, along with the associated types:
 
 * `thread`
 * `semaphore`
 * `continuation`
 
-Threads are created with the `fork` expression, the result of which is a thread value.
-Semaphores are a synchronization datatype, and the `Mutex` library builds mutexes on them.
-See the section on Concurrency and Continuations.
+Threads are created with the `fork` expression, the result of which is a
+thread value. Semaphores are a synchronization datatype, and the `Mutex`
+library builds mutexes on them. See the section on Concurrency and
+Continuations.
 
 ----
 
@@ -140,10 +152,12 @@ point of ``setjmp``.  See the section on Continuations.
 
 === Poly datatype
 
-Non-polymorphic typechecking is occasionally insufficient to describe the semantics of an application.
-Nickle provides an 'escape hatch' through the `poly` datatype.
-Every value is compatible with poly; a variable with this type can be used in any circumstance.
-Nickle performs full run-time typechecking on poly datatypes to ensure that the program doesn't violate the type rules.
+Non-polymorphic typechecking is occasionally insufficient to describe
+the semantics of an application. Nickle provides an 'escape hatch'
+through the `poly` datatype. Every value is compatible with poly; a
+variable with this type can be used in any circumstance. Nickle performs
+full run-time typechecking on poly datatypes to ensure that the program
+doesn't violate the type rules.
 
 ----
 
@@ -163,9 +177,12 @@ hello
 
 === Void datatype
 
-To handle functions with no return value and other times when the value of an object isn't relevant, Nickle includes the `void` datatype.
-This is designed to operate in much the same way as the `unit` type does in ML.
-Void is a type that is compatible with only one value, `<>`. This value can be assigned and passed just like any other value, but it is not type compatible with any type other than void and poly.
+To handle functions with no return value and other times when the value
+of an object isn't relevant, Nickle includes the `void` datatype. This
+is designed to operate in much the same way as the `unit` type does in
+ML. Void is a type that is compatible with only one value, `<>`. This
+value can be assigned and passed just like any other value, but it is
+not type compatible with any type other than void and poly.
 
 == Composite datatypes
 
@@ -182,9 +199,10 @@ Nickle allows the basic datatypes to be combined in several ways.
 
 === Structs
 
-Structs work much like C structs; they composite several datatypes into an aggregate with names for each element of the structure.
-One unusual feature is that a struct value is compatible with a struct type if the struct value contains all of the entries in the type.
-For example:
+Structs work much like C structs; they composite several datatypes into
+an aggregate with names for each element of the structure. One unusual
+feature is that a struct value is compatible with a struct type if the
+struct value contains all of the entries in the type. For example:
 
 ----
 
@@ -204,16 +222,19 @@ just_i  i_value;
 i_value = i_and_r_value;
 ----
 
-The assignment is legal because `i_and_r` contains all of the elements of ``just_i``. ``i_value`` will end up with both `i` and `r` values.
+The assignment is legal because `i_and_r` contains all of the elements
+of ``just_i``. ``i_value`` will end up with both `i` and `r` values.
 
 === Unions
 
-Unions provide a way to hold several different datatypes in the same object.
-Unions are declared and used much like structs.
-When a union element is referenced, Nickle checks to make sure the referring element tag is the one currently stored in the union.
-This provides typechecking at runtime for this kind of polymorphism.
-Values can be converted to a union type by specifying a compatible union tag cast.
-A control structure `union switch` exists to split out the different tags and perform different functions based on the current tag:
+Unions provide a way to hold several different datatypes in the same
+object. Unions are declared and used much like structs. When a union
+element is referenced, Nickle checks to make sure the referring element
+tag is the one currently stored in the union. This provides typechecking
+at runtime for this kind of polymorphism. Values can be converted to a
+union type by specifying a compatible union tag cast. A control
+structure `union switch` exists to split out the different tags and
+perform different functions based on the current tag:
 
 ----
 
@@ -241,8 +262,8 @@ printf ("u_value %g\n", u_value);               /* u_value r = 1.2 */
 
 === Enums
 
-An enum names a fixed set of values.
-A value is written with the enum's type and the name, and `enum switch` chooses among them:
+An enum names a fixed set of values. A value is written with the enum's
+type and the name, and `enum switch` chooses among them:
 
 ----
 
@@ -265,8 +286,9 @@ case blue:
 
 === Arrays
 
-Array types in Nickle determine only the number of dimensions and not the size of each dimension.
-Therefore they can be declared in one of three ways:
+Array types in Nickle determine only the number of dimensions and not
+the size of each dimension. Therefore they can be declared in one of
+three ways:
 
 ----
 
@@ -275,10 +297,14 @@ int[...] b;
 int[3] c;
 ----
 
-By these declarations, ``a``, `b` and ``c`` are of the same type (one-dimensional array). The specification of the size of `c` actually has no effect on its declaration but rather on its initialization.
-Declaring `b` also gives it a value, an empty resizable array, and declaring `c` gives it an array of three uninitialized elements, but `a` starts out uninitialized.
-See <<_initializers,Initializers>> below.
-Declaring multidimensional arrays in Nickle is different than in C; C provides only arrays of arrays while Nickle allows either:
+By these declarations, ``a``, `b` and ``c`` are of the same type
+(one-dimensional array). The specification of the size of `c` actually
+has no effect on its declaration but rather on its initialization.
+Declaring `b` also gives it a value, an empty resizable array, and
+declaring `c` gives it an array of three uninitialized elements, but `a`
+starts out uninitialized. See <<_initializers,Initializers>> below.
+Declaring multidimensional arrays in Nickle is different than in C; C
+provides only arrays of arrays while Nickle allows either:
 
 ----
 
@@ -290,21 +316,28 @@ array_of_arrays[0][0] = 7;
 array_of_arrays[1] = (int[2]) { 1, 2 };
 ----
 
-These two types can be used in similar circumstances, but the first ensures that the resulting objects are rectangular while the second allows for each row of the array to have a different number of elements.
-The second also allows for each row to be manipulated separately.
-The final example shows an entire row being replaced with new contents.
+These two types can be used in similar circumstances, but the first
+ensures that the resulting objects are rectangular while the second
+allows for each row of the array to have a different number of elements.
+The second also allows for each row to be manipulated separately. The
+final example shows an entire row being replaced with new contents.
 
-Array values created with '...' in place of the dimension information are resizable; requests to store beyond the bounds of such arrays will cause the array dimensions to be increased to include the specified location.
-Resizable arrays may also be passed to the `setdim` and ``setdims`` built-in functions.
+Array values created with '...' in place of the dimension information
+are resizable; requests to store beyond the bounds of such arrays will
+cause the array dimensions to be increased to include the specified
+location. Resizable arrays may also be passed to the `setdim` and
+``setdims`` built-in functions.
 
 === Hashes
 
-Hashes provide an associative mapping from arbitrary keys to values.
-Any type may be used as the key.
-This allows indexing by strings, and even composite values.
-They are called ``hashes`` instead of associative arrays to make the performance characteristics of the underlying implementation clear.
+Hashes provide an associative mapping from arbitrary keys to values. Any
+type may be used as the key. This allows indexing by strings, and even
+composite values. They are called ``hashes`` instead of associative
+arrays to make the performance characteristics of the underlying
+implementation clear.
 
-Hashes are declared a bit like arrays, but instead of a value in the brackets, a type is placed:
+Hashes are declared a bit like arrays, but instead of a value in the
+brackets, a type is placed:
 
 ----
 
@@ -316,13 +349,20 @@ string_to_int["foo"] += 12;
 real_to_real[pi] = pi/2;
 ----
 
-The initializer syntax uses the double-arrow `+=>+` to separate key from value.
-Eliding the key specifies the "default" value -- used to instantiate newly created elements in the hash.
+The initializer syntax uses the double-arrow `+=>+` to separate key from
+value. Eliding the key specifies the "default" value -- used to
+instantiate newly created elements in the hash.
 
 === Pointers
 
-Pointers hold a reference to a separate object; multiple pointers may point at the same object and changes to the referenced object are reflected both in the underlying object as well as in any other references to the same object.
-While pointers can be used to point at existing storage locations, anonymous locations can be created with the reference built-in function; this allows for the creation of pointers to existing values without requiring that the value be stored in a named object.
+Pointers hold a reference to a separate object; multiple pointers may
+point at the same object and changes to the referenced object are
+reflected both in the underlying object as well as in any other
+references to the same object. While pointers can be used to point at
+existing storage locations, anonymous locations can be created with the
+reference built-in function; this allows for the creation of pointers to
+existing values without requiring that the value be stored in a named
+object.
 
 ----
 
@@ -342,10 +382,11 @@ printf ("%g\n", *pointer);              /* 38 */
 
 === References
 
-References, like pointers, refer to objects.
-They are unlike pointers, however; they are designed to provide for calls by reference in a completely by-value language.
-They may eventually replace pointers altogether.
-They are declared and assigned similarly, but not identically, to pointers:
+References, like pointers, refer to objects. They are unlike pointers,
+however; they are designed to provide for calls by reference in a
+completely by-value language. They may eventually replace pointers
+altogether. They are declared and assigned similarly, but not
+identically, to pointers:
 
 ----
 
@@ -356,10 +397,11 @@ i = 3;
 &ref = &i;
 ----
 
-``ref`` is declared as a reference to an integer, ``&int``.
-An integer, ``i``, is declared and given the value 3.
-Finally, the assignment carries some interesting semantics: the address of the reference is set to the address of ``i``.
-References may also be assigned otherwise anonymous values with ``reference``, e.g.
+``ref`` is declared as a reference to an integer, ``&int``. An integer,
+``i``, is declared and given the value 3. Finally, the assignment
+carries some interesting semantics: the address of the reference is set
+to the address of ``i``. References may also be assigned otherwise
+anonymous values with ``reference``, e.g.
 
 ----
 
@@ -367,8 +409,9 @@ References may also be assigned otherwise anonymous values with ``reference``, e
 &foo = reference ( 3 );
 ----
 
-References, unlike pointers, need not be dereferenced; they are used exactly as any other value.
-Changing either the value it refers to or the reference itself changes both.
+References, unlike pointers, need not be dereferenced; they are used
+exactly as any other value. Changing either the value it refers to or
+the reference itself changes both.
 
 ----
 
@@ -439,13 +482,16 @@ type(type,...)[*]       /* array of functions */
 /* etc. */
 ----
 +
-When type is missing, Nickle uses poly, which allows the variable to hold data of any type.
-Nickle checks types when it compiles the code, and again at runtime where a value's type isn't known until then, as with poly.
+When type is missing, Nickle uses poly, which allows the variable to
+hold data of any type. Nickle checks types when it compiles the code,
+and again at runtime where a value's type isn't known until then, as
+with poly.
 
 == Initializers
 
-Initializers in Nickle are expressions evaluated when the storage for a variable comes into scope.
-To initialize array and structure types, expressions which evaluate to a struct or array object are used:
+Initializers in Nickle are expressions evaluated when the storage for a
+variable comes into scope. To initialize array and structure types,
+expressions which evaluate to a struct or array object are used:
 
 ----
 
@@ -461,7 +507,8 @@ typedef struct {
 i_and_r s = (i_and_r) { i = 12, r = pi/2 };
 ----
 
-As a special case, initializers for struct and array variables may elide the type leaving only the bracketed initializer:
+As a special case, initializers for struct and array variables may elide
+the type leaving only the bracketed initializer:
 
 ----
 
@@ -469,7 +516,8 @@ int[3]  a = { 1, 2, 3 };
 i_and_r s = { i = 12, r = pi/2 };
 ----
 
-An array initializer may also compute each element from its indices, giving names for them in brackets:
+An array initializer may also compute each element from its indices,
+giving names for them in brackets:
 
 ----
 
@@ -477,26 +525,33 @@ int[5]          squares = { [i] = i * i };              /* 0, 1, 4, 9, 16 */
 int[3,3]        identity = { [i,j] = i == j ? 1 : 0 };
 ----
 
-Instead of initializing structures by their position in the declared type, Nickle uses the structure tags.
-This avoids common mistakes when the structure type is redeclared.
+Instead of initializing structures by their position in the declared
+type, Nickle uses the structure tags. This avoids common mistakes when
+the structure type is redeclared.
 
-An array initializer followed by an ellipsis ( `+...+` ) is replicated to fill the remainder of the elements in that dimension:
+An array initializer followed by an ellipsis ( `+...+` ) is replicated
+to fill the remainder of the elements in that dimension:
 
 ----
 
 int[4,4]        a = { { 1, 2 ... }, { 3, 4 ... } ... };
 ----
 
-This leaves `a` initialized to an array whose first row is `{ 1, 2, 2, 2 }` and subsequent rows are ``{ 3, 4, 4, 4 }``.
-It is an error to use this ellipsis notation when the associated type specification contains stars instead of expressions for the dimensions of the array.
-Variables need not be completely initialized; arrays can be partially filled and structures may have only a subset of their elements initialized.
-Using an uninitialized variable causes a run time exception to be raised.
+This leaves `a` initialized to an array whose first row is `{ 1, 2, 2, 2
+}` and subsequent rows are ``{ 3, 4, 4, 4 }``. It is an error to use
+this ellipsis notation when the associated type specification contains
+stars instead of expressions for the dimensions of the array. Variables
+need not be completely initialized; arrays can be partially filled and
+structures may have only a subset of their elements initialized. Using
+an uninitialized variable causes a run time exception to be raised.
 
 == Identifier scope
 
-Identifiers are scoped lexically; any identifier in lexical scope can be used in any expression (with one exception described below). Each compound statement creates a new lexical scope.
-Function declarations and statement blocks also create new lexical scopes.
-This limits the scope of variables in situations like:
+Identifiers are scoped lexically; any identifier in lexical scope can be
+used in any expression (with one exception described below). Each
+compound statement creates a new lexical scope. Function declarations
+and statement blocks also create new lexical scopes. This limits the
+scope of variables in situations like:
 
 ----
 

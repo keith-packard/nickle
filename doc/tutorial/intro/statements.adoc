@@ -6,10 +6,12 @@ _expr_ `;` +
 `;` `/* null statement */` +
 `{` _statement_ ... `}`
 
-The simplest statement is merely an expression terminated by a semicolon; the expression is evaluated.
-A semicolon by itself is allowed but does nothing.
-One or more statements may be grouped inside curly braces to form one compound statement; each is executed in order.
-Any statements may compose the statement list, including control statements and other curly-bracketed lists.
+The simplest statement is merely an expression terminated by a
+semicolon; the expression is evaluated. A semicolon by itself is allowed
+but does nothing. One or more statements may be grouped inside curly
+braces to form one compound statement; each is executed in order. Any
+statements may compose the statement list, including control statements
+and other curly-bracketed lists.
 
 == Conditionals
 
@@ -73,7 +75,8 @@ twixt ( get_lock ( ); release_lock ( ) )
 
 == Switch
 
-`switch (` _expr_ `) { case` _expr_ `:` _statement-list_ ... `default:` _statement-list_ `}`
+`switch (` _expr_ `) { case` _expr_ `:` _statement-list_ ... `default:`
+_statement-list_ `}`
 
 Control jumps to the first `case` whose `expr` evaluates to the same
 value as the `expr` at the top.  Unlike in C, these values do not have
@@ -134,7 +137,8 @@ so it is clear you are doing it on purpose.  This is a difficult error
 to catch.
 
 == Union switch
-`union switch (` _union_ `) { case` _name_ `:` _statement-list_ ... `default:` _statement-list_ `}`
+`union switch (` _union_ `) { case` _name_ `:` _statement-list_ ...
+`default:` _statement-list_ `}`
 
 `union switch` is similar to `switch`.  It matches the `case` based on
 what name currently applies to the union's value.  As always,
@@ -161,8 +165,9 @@ union switch ( u ) {
 
 In this case, it prints 'hello'.
 
-An additional name may follow that of a case; the union's value will be available inside the case by that name.
-The switch above could have been written:
+An additional name may follow that of a case; the union's value will be
+available inside the case by that name. The switch above could have been
+written:
 
 ----
 union switch ( u ) {
@@ -195,9 +200,9 @@ while ( x < 10 ) {
 
 This prints the numbers from zero to nine.
 
-`do-while` is like `while`, but tests the condition after each iteration rather than before.
-Thus, it is guaranteed to execute at least once.
-It is often used in input while testing for end-of-file:
+`do-while` is like `while`, but tests the condition after each iteration
+rather than before. Thus, it is guaranteed to execute at least once. It
+is often used in input while testing for end-of-file:
 
 ----
 file f = File::open ( "test", "r" );

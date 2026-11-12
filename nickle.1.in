@@ -403,7 +403,10 @@ An array type is determined only by the base type and number
 of dimensions of the array.
 .IP "T0() T0(T,T,...,T)"
 A function returning type T0.  A function accepts 0
-or more arguments.
+or more arguments.  Storage of a function type holds any
+function whose type is a subtype or supertype of it; calling
+one checks the arguments against its own types, and its
+result is checked wherever it is stored or returned.
 .IP "T0() T0(T,T,...,T \fB...\fP)"
 A function accepting zero or more required
 arguments, plus an arbitrary number of optional

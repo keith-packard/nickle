@@ -1046,7 +1046,14 @@ CompileCall(ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code, Boo
     if ((tail == TailAlways && !TypePoly(expr->base.type)
          && TypeIsSupertype(code->base.type, expr->base.type))
         || (tail == TailVoid && TypeCanon(expr->base.type) == typePrim[rep_void])) {
-        BuildInst(obj, OpTailCall, inst, stat);
+        /*
+         * A poly function's return accepts whatever the callee
+         * returns, and a void call ending a function returns nothing
+         */
+        if (TypePoly(code->base.type) || tail == TailVoid)
+            BuildInst(obj, OpTailCall, inst, stat);
+        else
+            BuildInst(obj, OpCheckTailCall, inst, stat);
         inst->ints.value = varactual ? -argc : argc;
     } else {
         BuildInst(obj, OpCall, inst, stat);
@@ -3458,6 +3465,10 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
             } else {
                 obj = _CompileExpr(obj, expr->tree.right, True, expr, code);
             }
+            /*
+             * An OpCheckTailCall whose callee returns the wrong type
+             * becomes an ordinary call, which returns through here
+             */
             if (ObjCode(obj, ObjLast(obj))->base.opCode != OpTailCall)
                 obj = _CompileNonLocal(obj, BranchModReturn, expr, code);
             expr->base.type = expr->tree.right->base.type;
@@ -3510,6 +3521,7 @@ CompileIsUnconditional(InstPtr inst)
     case OpCatch:
     case OpRaise:
         return True;
+    /* OpCheckTailCall may continue as an ordinary call */
     default:
         return False;
     }
@@ -4042,6 +4054,7 @@ static const char * const OpNames[] = {
     "VarActual",
     "Call",
     "TailCall",
+    "CheckTailCall",
     "ExceptionCall",
     "Dot",
     "DotRef",
@@ -4235,6 +4248,7 @@ InstDump(InstPtr inst, int indent, ptrdiff_t i, ptrdiff_t *branch, ptrdiff_t max
         break;
     case OpCall:
     case OpTailCall:
+    case OpCheckTailCall:
         FilePrintf(FileStdout, "%z args", inst->ints.value);
         break;
     case OpBuildArray:

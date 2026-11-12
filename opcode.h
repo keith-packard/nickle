@@ -62,6 +62,8 @@ typedef enum _OpCode {
     OpVarActual,
     OpCall,
     OpTailCall,
+    /* A tail call whose callee's actual return type must fit the caller's */
+    OpCheckTailCall,
     OpExceptionCall,
     OpDot,
     OpDotRef,

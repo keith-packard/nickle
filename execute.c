@@ -66,7 +66,7 @@ BuildFrame(Value thread, Value func, Value value, Bool staticInit, Bool tail, Bo
 }
 
 static Value
-ThreadCall(Value thread, Bool tail, InstPtr *next, ptrdiff_t *stack)
+ThreadCall(Value thread, OpCode op, InstPtr *next, ptrdiff_t *stack)
 {
     ENTER();
     ptrdiff_t    argc = *stack;
@@ -78,6 +78,7 @@ ThreadCall(Value thread, Bool tail, InstPtr *next, ptrdiff_t *stack)
     ArgType     *argt;
     ptrdiff_t    fe;
     ptrdiff_t    base;
+    Bool         tail = op != OpCall;
 
     /*
      * Typecheck actuals
@@ -106,6 +107,17 @@ ThreadCall(Value thread, Bool tail, InstPtr *next, ptrdiff_t *stack)
     }
     code = func->func.code;
     argt = code->base.args;
+    /*
+     * The compiler makes a tail call only when the callee's static
+     * return type fits the caller's, but a function value's actual
+     * type need only be ordered with its static one. For
+     * OpCheckTailCall, make sure the actual one fits too, or else call
+     * it normally, so the caller's return checks the result
+     */
+    if (op == OpCheckTailCall
+        && !TypeIsSupertype(thread->thread.continuation.frame->function->func.code->base.type,
+                            code->base.type))
+        tail = False;
     while (fe < argc || (argt && !argt->varargs)) {
         if (!argt) {
             RaiseStandardException(exception_invalid_argument, 3,
@@ -666,7 +678,7 @@ ThreadExceptionCall(Value thread, InstPtr *next, ptrdiff_t *stack)
     /*
      * Call the function
      */
-    ret = ThreadCall(thread, False, next, &argc);
+    ret = ThreadCall(thread, OpCall, next, &argc);
     /*
      * Account for the argument array
      */
@@ -1292,8 +1304,9 @@ ThreadsRun(Value until, Value lex)
                     break;
                 case OpCall:
                 case OpTailCall:
+                case OpCheckTailCall:
                     stack = inst->ints.value;
-                    value = ThreadCall(thread, inst->base.opCode == OpTailCall, &next, &stack);
+                    value = ThreadCall(thread, inst->base.opCode, &next, &stack);
                     break;
                 case OpArrow:
                 case OpArrowRef:

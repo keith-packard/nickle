@@ -12,6 +12,22 @@ extend namespace Complex {
     /* Bits computed beyond the result precision */
     int	guard_bits = 32;
 
+    int part_precision(complex z)
+	/*
+	 * Return the precision of 'z' from its imprecise parts, as
+	 * arithmetic gives an exact operand the other's precision, or
+	 * the default precision when both are exact. That is the
+	 * precision of imprecise(0), which, unlike imprecise(z), costs
+	 * nothing to compute
+	 */
+    {
+	int	px = precision(creal(z)), py = precision(cimag(z));
+
+	if (px == 0 && py == 0)
+	    return precision(imprecise(0));
+	return max(px, py);
+    }
+
     complex round_correctly(int prec, complex(int, *real, *real) compute)
 	/*
 	 * As Math::round_correctly, for each part of the value from
@@ -115,8 +131,8 @@ extend namespace Complex {
 	    return new(rw * c, rw * s);
 	}
 
-	return round_correctly(min(precision(imprecise(r)),
-				   precision(imprecise(t))), compute);
+	return round_correctly(min(part_precision(r), part_precision(t)),
+			       compute);
     }
 
     public complex conj(complex z)
@@ -134,9 +150,9 @@ extend namespace Complex {
 	return Math::atan2(cimag(z), creal(z));
     }
 
-    real log_abs(real x, real y)
+    real log_abs(real x, real y, int prec)
 	/*
-	 * Return log(sqrt(x**2 + y**2)), correctly rounded
+	 * Return log(sqrt(x**2 + y**2)), correctly rounded to 'prec' bits
 	 */
     {
 	/* Only these dyadic points lie on the unit circle */
@@ -165,7 +181,7 @@ extend namespace Complex {
 	    return l / 2;
 	}
 
-	return Math::round_correctly(max(precision(x), precision(y)), compute);
+	return Math::round_correctly(prec, compute);
     }
 
     protected complex log(complex z)
@@ -175,8 +191,12 @@ extend namespace Complex {
     {
 	if (z == 0)
 	    raise invalid_argument("log: must be nonzero", 0, z);
-	return new(log_abs(creal(z), cimag(z)),
-		   Math::atan2(cimag(z), creal(z)));
+
+	int	prec = part_precision(z);
+	real	x = creal(z), y = cimag(z);
+
+	return new(log_abs(x, y, prec),
+		   Math::atan2(imprecise(y, prec), imprecise(x, prec)));
     }
 
     protected complex exp(complex z)
@@ -186,7 +206,8 @@ extend namespace Complex {
     {
 	if (z == 0)
 	    return 1;
-	z = imprecise(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 
 	complex compute(int wprec, *real re_err, *real im_err)
 	{
@@ -200,7 +221,7 @@ extend namespace Complex {
 	    return new(e * c, e * s);
 	}
 
-	return round_correctly(precision(z), compute);
+	return round_correctly(prec, compute);
     }
 
     int part_exponent(real x)
@@ -220,6 +241,8 @@ extend namespace Complex {
 		return 0;
 	    raise divide_by_zero(1, x);
 	}
+	int	prec = min(part_precision(x), part_precision(y));
+
 	x = imprecise(x);
 	y = imprecise(y);
 
@@ -229,7 +252,6 @@ extend namespace Complex {
 	 * more bits as |w| needs, plus guard bits. With 2**(e-1) <= |x|
 	 * < 2**e, |log(x)| is under |e| + 1 + π
 	 */
-	int	prec = min(precision(x), precision(y));
 	real	log_bound = Math::abs(part_exponent(abs(x))) + 5;
 	int	wprec = prec + guard_bits +
 	    max(0, part_exponent(log_bound * abs(y)));
@@ -273,8 +295,8 @@ extend namespace Complex {
 
     protected complex asin(complex z)
     {
-	z = imprecise(z);
-	int	prec = precision(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 	complex	zp = imprecise(z, prec + guard_bits);
 	complex	a = sqrt(1 - zp);
 	complex	b = sqrt(1 + zp);
@@ -285,8 +307,8 @@ extend namespace Complex {
 
     protected complex acos(complex z)
     {
-	z = imprecise(z);
-	int	prec = precision(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 	complex	zp = imprecise(z, prec + guard_bits);
 	complex	a = sqrt(1 - zp);
 	complex	b = sqrt(1 + zp);
@@ -303,7 +325,8 @@ extend namespace Complex {
     {
 	if (z == 0)
 	    return 1;
-	z = imprecise(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 
 	complex compute(int wprec, *real re_err, *real im_err)
 	{
@@ -319,7 +342,7 @@ extend namespace Complex {
 	    return new(a * b, -(c * d));
 	}
 
-	return round_correctly(precision(z), compute);
+	return round_correctly(prec, compute);
     }
 
     protected complex sin(complex z)
@@ -330,7 +353,8 @@ extend namespace Complex {
     {
 	if (z == 0)
 	    return 0;
-	z = imprecise(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 
 	complex compute(int wprec, *real re_err, *real im_err)
 	{
@@ -346,7 +370,7 @@ extend namespace Complex {
 	    return new(a * b, c * d);
 	}
 
-	return round_correctly(precision(z), compute);
+	return round_correctly(prec, compute);
     }
 
     protected complex tan(complex z)
@@ -360,7 +384,8 @@ extend namespace Complex {
     {
 	if (z == 0)
 	    return 0;
-	z = imprecise(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 
 	complex compute(int wprec, *real re_err, *real im_err)
 	{
@@ -378,7 +403,7 @@ extend namespace Complex {
 	    return new(n / d, m / d);
 	}
 
-	return round_correctly(precision(z), compute);
+	return round_correctly(prec, compute);
     }
 
     protected complex cosh(complex z)
@@ -389,7 +414,8 @@ extend namespace Complex {
     {
 	if (z == 0)
 	    return 1;
-	z = imprecise(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 
 	complex compute(int wprec, *real re_err, *real im_err)
 	{
@@ -405,7 +431,7 @@ extend namespace Complex {
 	    return new(a * b, c * d);
 	}
 
-	return round_correctly(precision(z), compute);
+	return round_correctly(prec, compute);
     }
 
     protected complex sinh(complex z)
@@ -416,7 +442,8 @@ extend namespace Complex {
     {
 	if (z == 0)
 	    return 0;
-	z = imprecise(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 
 	complex compute(int wprec, *real re_err, *real im_err)
 	{
@@ -432,7 +459,7 @@ extend namespace Complex {
 	    return new(a * b, c * d);
 	}
 
-	return round_correctly(precision(z), compute);
+	return round_correctly(prec, compute);
     }
 
     protected complex tanh(complex z)
@@ -444,7 +471,8 @@ extend namespace Complex {
     {
 	if (z == 0)
 	    return 0;
-	z = imprecise(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 
 	complex compute(int wprec, *real re_err, *real im_err)
 	{
@@ -462,7 +490,7 @@ extend namespace Complex {
 	    return new(n / d, m / d);
 	}
 
-	return round_correctly(precision(z), compute);
+	return round_correctly(prec, compute);
     }
 
     protected complex atanh(complex z)
@@ -479,8 +507,8 @@ extend namespace Complex {
 	if (x > 0)
 	    return -atanh(-z);
 
-	z = imprecise(z);
-	int	prec = precision(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 	int	wprec = prec + guard_bits;
 	x = imprecise(x, wprec);
 	y = imprecise(y, wprec);
@@ -521,8 +549,8 @@ extend namespace Complex {
 
     protected complex acosh(complex z)
     {
-	z = imprecise(z);
-	int	prec = precision(z);
+	int	prec = part_precision(z);
+	z = imprecise(z, prec);
 	complex	zp = imprecise(z, prec + guard_bits);
 	complex	a = sqrt(zp - 1);
 	complex	b = sqrt(zp + 1);

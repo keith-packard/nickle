@@ -1162,20 +1162,21 @@ doPrettyPrint(Value f, Publish publish, SymbolPtr symbol, int level, Bool nest)
         if (v && ValueIsFunc(v)) {
             PrettyCode(f, v->func.code, symbol->symbol.name, class_undef, publish, level, nest);
         } else {
-            FilePrintf(f, "%p%k%t%A = %v;", publish, symbol->symbol.class, symbol->symbol.type,
-                       symbol->symbol.name, v);
+            FilePrintf(f, "%p%k%t%A", publish, symbol->symbol.class, symbol->symbol.type,
+                       symbol->symbol.name);
+            /* An uninitialized global prints without an initializer */
+            if (v)
+                FilePrintf(f, " = %v", v);
+            FilePuts(f, ";");
         }
         FilePuts(f, "\n");
         break;
     case class_namespace:
-        FilePrintf(f, "%p%C %A", publish, symbol->symbol.class, symbol->symbol.name);
-        if (nest) {
-            FilePuts(f, " {\n");
-            PrintNamespace(f, symbol->namespace.namespace, level + 1);
-            PrettyIndent(f, 0, level);
-            FilePuts(f, "}\n");
-        } else
-            FilePuts(f, ";\n");
+        /* A namespace declaration needs its body, even inside a summary */
+        FilePrintf(f, "%p%C %A {\n", publish, symbol->symbol.class, symbol->symbol.name);
+        PrintNamespace(f, symbol->namespace.namespace, level + 1);
+        PrettyIndent(f, 0, level);
+        FilePuts(f, "}\n");
         break;
     case class_exception:
         FilePrintf(f, "%p%C %A ", publish, symbol->symbol.class, symbol->symbol.name);

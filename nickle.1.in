@@ -1505,7 +1505,9 @@ below, and the discussion of Command::nickle_path above.
 Load the library for each namespace NAME, unless it is already
 defined.  The file name is NAME in lower case, with a dash before
 each capital letter that follows a lower-case one, and .5c
-appended: PRNG is prng.5c.
+appended: PRNG is prng.5c.  At the first NAME whose library can't be
+found, it reports the file and loads neither that NAME nor those after
+it.
 .IP "autoimport NAME {,NAME}"
 As autoload, then import each namespace.
 .IP "reimport NAME {,NAME}"

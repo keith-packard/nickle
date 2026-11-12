@@ -172,35 +172,61 @@ extend namespace Command {
 	 * core behavior for autoload / autoimport / reimport
 	 */
     {
-	/* XXX things are pushed onto the lexer stack
-	   in reverse order, so we have to be careful
-	   to generate things in the reverse of the order
-	   we want them to appear in. */
-	for (int i = dim(args) - 1; i >= 0; --i) {
-	    string[*]	name = args[i];
-	    if (do_import)
-		force_import(name);
+	typedef struct {
+	    file	f;
+	    string	path;
+	} library;
 
+	/*
+	 * Open the files each name needs, outermost namespace first,
+	 * stopping at the first name with a missing file, so that
+	 * neither it nor any later name is loaded or imported
+	 */
+	library[...][...] libraries = {};
+	int		  loaded;
+
+	for (loaded = 0; loaded < dim(args); loaded++) {
+	    string[*]	name = args[loaded];
+	    bool	missing = false;
+
+	    libraries[loaded] = (library[...]) {};
 	    if (!reimport && valid_name (name))
 		continue;
-
-	    for (int j = dim(name) - 1; j >= 0; j--)
+	    for (int j = 0; j < dim(name); j++)
 	    {
 		string[*] subname = (string[j+1]) { [k] = name[k] };
 		if (reimport || !valid_name (subname))
 		{
-		    string f = make_filename(subname);
-		    if (!lex_library (f))
+		    string	f = make_filename(subname);
+		    library	l;
+
+		    if (!open_library (f, &l.f, &l.path))
 		    {
 			File::fprintf (stderr,
 				       "Cannot %s from " +
 				       "file \"%s\", giving up.\n",
 				       cmd,
 				       f);
-			return;
+			missing = true;
+			break;
 		    }
+		    libraries[loaded][dim(libraries[loaded])] = l;
 		}
 	    }
+	    if (missing)
+		break;
+	}
+
+	/*
+	 * The lexer reads what was pushed last first, so push each
+	 * name's import and then its files, last name first
+	 */
+	for (int i = loaded - 1; i >= 0; i--) {
+	    if (do_import)
+		force_import(args[i]);
+	    for (int j = dim(libraries[i]) - 1; j >= 0; j--)
+		Command::lex_input (libraries[i][j].f, libraries[i][j].path,
+				    false, false);
 	}
     }
 

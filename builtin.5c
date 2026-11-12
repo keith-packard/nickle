@@ -66,6 +66,30 @@ extend namespace Command {
 	return String::substr (path, i + 1, l - i - 1);
     }
 
+    bool open_library (string name, *file f, *string found)
+	/*
+	 * Search 'nickle_path' for the file 'name', opening the first
+	 * found and setting 'found' to its path.  Returns whether any
+	 * file was found.
+	 */
+    {
+	for (string path = nickle_path;
+	     path != "";
+	     path = path_rest (path))
+	{
+	    *found = path_first (path) + "/" + name;
+	    try {
+		*f = File::open (*found, "r");
+		return true;
+	    } catch File::open_error (string name,
+				      File::error_type err,
+				      string msg) {
+		;
+	    }
+	}
+	return false;
+    }
+
     public bool lex_library (string name)
 	/*
 	 * Search 'nickle_path' for the file 'name' and push any
@@ -73,19 +97,12 @@ extend namespace Command {
 	 * file was found and read.
 	 */
     {
-	for (string path = nickle_path;
-	     path != "";
-	     path = path_rest (path))
-	{
-	    try
-		return lex_file (path_first (path) + "/" + name);
-	    catch File::open_error (string name,
-				    File::error_type err,
-				    string msg) {
-		;
-	    }
-	}
-	return false;
+	file	f;
+	string	found;
+
+	if (!open_library (name, &f, &found))
+	    return false;
+	return Command::lex_input (f, found, false, false);
     }
 
     public bool lex_string (string s)

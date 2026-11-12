@@ -178,24 +178,36 @@ namespace ParseArgs {
 	    }
 	}
 
-	void process_flag(&arg a)
+	bool takes_value(arg a)
 	    /*
-	     * Process a flag
+	     * Return whether 'a' takes a value
 	     */
 	{
-	    argind++;
+	    union switch(a.var) {
+	    case arg_flag:
+		return false;
+	    default:
+		return true;
+	    }
+	}
+
+	void process_flag(&arg a, string name)
+	    /*
+	     * Set flag 'a', given as 'name', or store the
+	     * next argument as its value
+	     */
+	{
 	    union switch(a.var) {
 	    case arg_flag var:
 		var = true;
-		return;
+		break;
 	    default:
 		if (argind >= dim(argv)) {
-		    fprintf(stderr, "%s: missing value for --%s\n",
-			    argd.prog_name, a.name);
+		    fprintf(stderr, "%s: missing value for %s\n",
+			    argd.prog_name, name);
 		    usagef(stderr);
 		}
-		save_value(&a.var, argv[argind]);
-		argind++;
+		save_value(&a.var, argv[argind++]);
 	    }
 	}
 
@@ -225,6 +237,7 @@ namespace ParseArgs {
 
 	    /* process abbreviated (old-style) flags (maybe grouped) */
 	    if (flag && a[1] != '-') {
+		argind++;
 		for (int i = 1; i < length(a); i++) {
 		    if (!hash_test(arg_abbr_hash, a[i])) {
 			fprintf(stderr, "%s: unknown flag char '-%c'\n",
@@ -232,7 +245,16 @@ namespace ParseArgs {
 				a[i]);
 			usagef(stderr);
 		    }
-		    process_flag(&arg_abbr_hash[a[i]]);
+		    &arg d = &arg_abbr_hash[a[i]];
+		    /*
+		     * As with getopt, the rest of the group is the
+		     * value of a flag that takes one
+		     */
+		    if (takes_value(d) && i + 1 < length(a)) {
+			save_value(&d.var, substr(a, i + 1, length(a) - i - 1));
+			break;
+		    }
+		    process_flag(&d, sprintf("-%c", a[i]));
 		}
 		continue;
 	    }
@@ -246,7 +268,8 @@ namespace ParseArgs {
 				argname);
 			usagef(stderr);
 		}
-		process_flag(&arg_name_hash[argname]);
+		argind++;
+		process_flag(&arg_name_hash[argname], a);
 		continue;
 	    }
 

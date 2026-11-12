@@ -29,9 +29,48 @@ extend namespace Complex {
 	return Math::atan2(cimag(z), creal(z));
     }
 
-    protected complex log(complex z)
+    real log_abs(real x, real y)
+	/*
+	 * Return log(sqrt(x**2 + y**2)), correctly rounded
+	 */
     {
-	return new(Math::log(Math::sqrt(creal(z)**2 + cimag(z)**2)),
+	/* Only these dyadic points lie on the unit circle */
+	if ((Math::abs(x) == 1 && y == 0) || (x == 0 && Math::abs(y) == 1))
+	    return 0;
+
+	x = imprecise(x);
+	y = imprecise(y);
+	real compute(int wprec, *real err)
+	{
+	    /*
+	     * h has a relative error under 3 * 2**-wprec, which moves
+	     * log(h) by about that much. Near 1, where log would cancel,
+	     * h - 1 is exact and log1p keeps its bits
+	     */
+	    real	xw = imprecise(x, wprec), yw = imprecise(y, wprec);
+	    real	h = xw * xw + yw * yw;
+	    real	l;
+
+	    if (1/2 < h && h < 2)
+		l = Math::log1p(h - 1);
+	    else
+		l = Math::log(h);
+
+	    *err = (2 + Math::abs(l)) * 2**-wprec;
+	    return l / 2;
+	}
+
+	return Math::round_correctly(max(precision(x), precision(y)), compute);
+    }
+
+    protected complex log(complex z)
+	/*
+	 * Return log(z), each part correctly rounded
+	 */
+    {
+	if (z == 0)
+	    raise invalid_argument("log: must be nonzero", 0, z);
+	return new(log_abs(creal(z), cimag(z)),
 		   Math::atan2(cimag(z), creal(z)));
     }
 
@@ -41,6 +80,9 @@ extend namespace Complex {
 	return new(r * Math::cos(cimag(z)),
 		   r * Math::sin(cimag(z)));
     }
+
+    /* Bits computed beyond the result precision */
+    int	guard_bits = 32;
 
     int part_exponent(real x)
 	/*
@@ -61,11 +103,19 @@ extend namespace Complex {
 	}
 	x = imprecise(x);
 	y = imprecise(y);
-	/* add precision to cover the atan2 + sin/cos operations */
-	int prec = min(precision(x), precision(y));
-	int iprec = prec + abs(part_exponent(creal(x))) + abs(part_exponent(cimag(x)));
-	complex xi = imprecise(x, iprec);
-	complex yi = imprecise(y, iprec);
+
+	/*
+	 * x**y = exp(w), w = y log(x). An absolute error in w becomes
+	 * that relative error in the result, so compute w with as many
+	 * more bits as |w| needs, plus guard bits. With 2**(e-1) <= |x|
+	 * < 2**e, |log(x)| is under |e| + 1 + π
+	 */
+	int	prec = min(precision(x), precision(y));
+	real	log_bound = Math::abs(part_exponent(abs(x))) + 5;
+	int	wprec = prec + guard_bits +
+	    max(0, part_exponent(log_bound * abs(y)));
+	complex	xi = imprecise(x, wprec);
+	complex	yi = imprecise(y, wprec);
 	return imprecise(exp(log(xi) * yi), prec);
     }
 
@@ -101,8 +151,6 @@ extend namespace Complex {
      * for Complex Elementary Functions", which keep their accuracy
      * near the cuts and need no scaling for large arguments.
      */
-
-    int	guard_bits = 32;
 
     protected complex asin(complex z)
     {

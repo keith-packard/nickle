@@ -293,7 +293,7 @@ extend namespace Math {
 	return imprecise (local_ln2, prec);
     }
 
-    real round_correctly (int prec, real(int, *real) compute)
+    protected real round_correctly (int prec, real(int, *real) compute)
 	/*
 	 * Call compute(wprec, &err) with increasing working precision
 	 * until its result, whose absolute error is below 'err', rounds

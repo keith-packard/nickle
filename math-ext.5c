@@ -62,12 +62,74 @@ extend namespace Math {
 	return imprecise(0.5 * log((1 + x) / (1 - x)), bits);
     }
 
+    protected real cosh_w(real x, int wprec, *real rel)
+	/*
+	 * Compute cosh(x) to 'wprec' bits, setting 'rel' to a bound on
+	 * the relative error. cosh(0) is an exact 1
+	 */
+    {
+	if (x == 0) {
+	    *rel = 0;
+	    return 1;
+	}
+
+	real	r;
+	real	e = exp_w(abs(x), wprec, &r);
+
+	/* 1/e and the sum of positive terms each add a rounding */
+	*rel = r + 3 * 2**-wprec;
+	return (e + 1 / e) / 2;
+    }
+
+    protected real sinh_w(real x, int wprec, *real rel)
+	/*
+	 * Compute sinh(x) to 'wprec' bits, setting 'rel' to a bound on
+	 * the relative error. sinh(0) is an exact 0
+	 */
+    {
+	if (x == 0) {
+	    *rel = 0;
+	    return 0;
+	}
+
+	/*
+	 * e - 1/e cancels as x approaches 0, losing small_bits(x)
+	 * bits, so compute e with that many more
+	 */
+	int	eprec = wprec + small_bits(x) + 2;
+	real	ue = 2**-eprec;
+	real	r;
+	real	e = exp_w(abs(x), eprec, &r);
+	real	s = (e - 1 / e) / 2;
+
+	/*
+	 * e and 1/e carry absolute errors under (r + ue) e and
+	 * (r + 2 ue) / e, and the difference rounds once more
+	 */
+	*rel = ((r + 2 * ue) * (e + 1 / e) + ue * s) / s;
+	if (x < 0)
+	    return -s;
+	return s;
+    }
+
     public real cosh(x)
 	/*
 	 * Returns hyperbolic cosine of 'x'.
 	 */
     {
-	return (exp(x) + exp(-x)) / 2;
+	if (x == 0)
+	    return 1;
+	x = imprecise(x);
+	real compute(int wprec, *real err)
+	{
+	    real	rel;
+	    real	c = cosh_w(x, wprec, &rel);
+
+	    *err = c * rel;
+	    return c;
+	}
+
+	return round_correctly(precision(x), compute);
     }
 
     public real sinh(x)
@@ -75,11 +137,20 @@ extend namespace Math {
 	 * Returns hyperbolic sine of 'x'.
 	 */
     {
+	/* Keep the precision of an imprecise 0 */
+	if (x == 0)
+	    return x;
 	x = imprecise(x);
-	int bits = precision(x);
-	/* exp(x) - exp(-x) cancels as x approaches 0 */
-	x = imprecise(x, bits + small_bits(x) + 8);
-	return imprecise((exp(x) - exp(-x)) / 2, bits);
+	real compute(int wprec, *real err)
+	{
+	    real	rel;
+	    real	s = sinh_w(x, wprec, &rel);
+
+	    *err = abs(s) * rel;
+	    return s;
+	}
+
+	return round_correctly(precision(x), compute);
     }
 
     public real tanh(x)
@@ -87,10 +158,20 @@ extend namespace Math {
 	 * Returns hyperbolic tangent of 'x'.
 	 */
     {
+	if (x == 0)
+	    return x;
 	x = imprecise(x);
-	int bits = precision(x);
-	x = imprecise(x, bits + 8);
-	return imprecise(sinh(x) / cosh(x), bits);
+	real compute(int wprec, *real err)
+	{
+	    real	srel, crel;
+	    real	t = sinh_w(x, wprec, &srel) / cosh_w(x, wprec, &crel);
+
+	    /* The quotient adds one rounding */
+	    *err = abs(t) * (2 * (srel + crel) + 2**-wprec);
+	    return t;
+	}
+
+	return round_correctly(precision(x), compute);
     }
 
     real _erf(real x, real off)

@@ -311,7 +311,7 @@ extend namespace Math {
 	}
     }
 
-    real exp_w (real v, int wprec, *real rel)
+    protected real exp_w (real v, int wprec, *real rel)
 	/*
 	 * Compute e ** v to 'wprec' bits, setting 'rel' to a bound on
 	 * the relative error
@@ -1116,6 +1116,34 @@ extend namespace Math {
 	return big_cos (abs (r));
     }
 
+    protected real sin_w (real a, int wprec, *real err)
+	/*
+	 * Compute sin(a) to 'wprec' bits, setting 'err' to a bound on
+	 * the absolute error. sin(0) is an exact 0
+	 */
+    {
+	if (a == 0) {
+	    *err = 0;
+	    return 0;
+	}
+	*err = 2 ** (3 - wprec);
+	return sin_reduced (reduced_angle (imprecise (a), wprec));
+    }
+
+    protected real cos_w (real a, int wprec, *real err)
+	/*
+	 * Compute cos(a) to 'wprec' bits, setting 'err' to a bound on
+	 * the absolute error. cos(0) is an exact 1
+	 */
+    {
+	if (a == 0) {
+	    *err = 0;
+	    return 1;
+	}
+	*err = 2 ** (3 - wprec);
+	return cos_reduced (reduced_angle (imprecise (a), wprec));
+    }
+
     public real sin (real a)
 	/*
 	 * return sine (a)
@@ -1126,8 +1154,7 @@ extend namespace Math {
 	    return 0;
 	real compute (int wprec, *real err)
 	{
-	    *err = 2 ** (3 - wprec);
-	    return sin_reduced (reduced_angle (a, wprec));
+	    return sin_w (a, wprec, err);
 	}
 
 	return round_correctly (precision (a), compute);
@@ -1143,8 +1170,7 @@ extend namespace Math {
 	    return 1;
 	real compute (int wprec, *real err)
 	{
-	    *err = 2 ** (3 - wprec);
-	    return cos_reduced (reduced_angle (a, wprec));
+	    return cos_w (a, wprec, err);
 	}
 
 	return round_correctly (precision (a), compute);

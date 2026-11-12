@@ -1,0 +1,21 @@
+/*
+ * Nickle test suite
+ *
+ * File::stdnull
+ *
+ * stdnull never noted that it had opened /dev/null, so each call
+ * opened it again and leaked a file descriptor.
+ */
+
+exception wrong (string what);
+
+file f = File::stdnull ();
+
+if (File::stdnull () != f)
+    raise wrong ("a second call opened another file");
+
+/* It reads as empty and accepts writes */
+File::fprintf (f, "discarded\n");
+File::flush (f);
+if (!File::end (f))
+    raise wrong ("read data");

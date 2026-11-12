@@ -674,12 +674,11 @@ NaturalBitSet (Natural *n, int i)
 #endif
 
 /*
- * Return an exponent within one of that of a value in
- * [2**(exp2-1), 2**exp2) in base 'ibase', storing
- * 2**exp2 / ibase**exponent, rounded to 'prec' bits, in '*ratio'
+ * Search for an exponent within one of that of a value in
+ * [2**(exp2-1), 2**exp2)
  */
 static Value
-FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
+FloatExpSearch(Value exp2, int ibase, Value two_f, Value base_f)
 {
     ENTER();
     double dscale;
@@ -687,15 +686,11 @@ FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
     Value  r;
     Value  min, max, mean, nmean;
     Value  pow2;
-    Value  base_f;
     Value  two;
-    Value  two_f;
     Bool   done;
 
     DebugV("exp2", exp2);
     two = NewInt(2);
-    two_f = NewIntFloat(2, prec);
-    base_f = NewIntFloat(ibase, prec);
     /*
      * Compute expbase, this is a bit tricky as log is only
      * available in floats
@@ -721,7 +716,6 @@ FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
     do {
         if (aborting) {
             EXIT();
-            *ratio = Void;
             return Void;
         }
         nmean = Div(Plus(min, max), two);
@@ -744,10 +738,61 @@ FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
         else
             max = mean;
     } while (False(Equal(max, min)));
-    mean = Minus(mean, One);
-    /*    r = Divide (pow2, Pow (base, Minus (mean, One)));*/
+    RETURN(Minus(mean, One));
+}
+
+/*
+ * Return an exponent for a value in [2**(exp2-1), 2**exp2) in base
+ * 'ibase', storing 2**exp2 / ibase**exponent, rounded to 'prec' bits,
+ * in '*ratio'. Unless 'ibase' is a power of two, the exponent may be
+ * one too large, which FloatPrint corrects
+ */
+static Value
+FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
+{
+    ENTER();
+    Value     two_f = NewIntFloat(2, prec);
+    Value     base_f = NewIntFloat(ibase, prec);
+    Value     mean = 0;
+    Value     r;
+    ptrdiff_t e;
+
+    /*
+     * The exponent is floor(exp2 * log_base(2)) or one less. A power
+     * of two base gives the exponent exactly. Otherwise a double gives
+     * the former, within 1e-6 for exp2 below 2**30, unless the product
+     * is too near an integer to floor
+     */
+    if (ValueToPtrdiff(exp2, &e)) {
+        if ((ibase & (ibase - 1)) == 0) {
+            ptrdiff_t bits = 0;
+
+            while (((ptrdiff_t)1 << bits) < ibase)
+                bits++;
+            /* Exactly floor((exp2 - 1) / bits), which %a relies on */
+            if (e >= 1)
+                mean = NewPtrdiffInteger((e - 1) / bits);
+            else
+                mean = NewPtrdiffInteger(-((1 - e + bits - 1) / bits));
+        } else if (e == 0) {
+            mean = Zero;
+        } else if (-((ptrdiff_t)1 << 30) < e && e < ((ptrdiff_t)1 << 30)) {
+            double x = (double)e * log(2) / log(ibase);
+            double k = floor(x);
+
+            if (x - k > 1e-5 && k + 1 - x > 1e-5)
+                mean = NewPtrdiffInteger((ptrdiff_t)k);
+        }
+    }
+    if (!mean) {
+        mean = FloatExpSearch(exp2, ibase, two_f, base_f);
+        if (aborting) {
+            EXIT();
+            *ratio = Void;
+            return Void;
+        }
+    }
     r = Divide(Pow(two_f, exp2), Pow(base_f, mean));
-    /*    r = Divide (pow2, Pow (base, mean)); */
     RETURN2(mean, r, ratio);
 }
 

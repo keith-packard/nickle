@@ -9,6 +9,7 @@ tests = [
   'scanftest.5c',
   'parseargstest.5c',
   'stdinscripttest.5c',
+  'historytest.5c',
   'gcdtest.5c',
   'bitwisetest.5c',
   'remaindertest.5c',

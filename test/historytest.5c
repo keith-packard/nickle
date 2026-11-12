@@ -1,0 +1,57 @@
+/*
+ * Nickle test suite
+ *
+ * The history command
+ *
+ * "history" showed 11 values and "history N" showed N+1, as each
+ * started one value too early, and "history N,M" fetched values past
+ * either end of the history.
+ */
+
+exception wrong (string command, int[*] got, int[*] want);
+
+/*
+ * Run 'command' in a child nickle after printing 1 through 12, and
+ * return the history numbers it shows
+ */
+int[*] function shown (string command)
+{
+    string	nickle = Environ::get ("NICKLE");
+    file[*]	input = File::mkpipe ();
+    file[*]	output = File::mkpipe ();
+    int[...]	ids = {};
+
+    File::filter (nickle, (string[*]) { nickle },
+		  (file[3]) { input[0], output[1], stderr });
+    File::close (input[0]);
+    File::close (output[1]);
+    for (int i = 1; i <= 12; i++)
+	File::fprintf (input[1], "%d\n", i);
+    File::fprintf (input[1], "%s\n", command);
+    File::close (input[1]);
+    while (!File::end (output[0])) {
+	string line = File::fgets (output[0]);
+
+	if (String::length (line) > 0 && line[0] == '$')
+	    ids[dim (ids)] = string_to_integer (String::substr (line, 1, 4));
+    }
+    File::close (output[0]);
+    return ids;
+}
+
+void function check (string command, int[*] want)
+{
+    int[*] got = shown (command);
+
+    if (got != want)
+	raise wrong (command, got, want);
+}
+
+check ("history", (int[*]) { 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 });
+check ("history 3", (int[*]) { 10, 11, 12 });
+check ("history 20", (int[*]) { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 });
+check ("history 0", (int[*]) {});
+check ("history 2,5", (int[*]) { 2, 3, 4, 5 });
+check ("history 10,20", (int[*]) { 10, 11, 12 });
+check ("history 0,2", (int[*]) { 1, 2 });
+check ("history 5,2", (int[*]) {});

@@ -76,8 +76,8 @@ useful in an interactive setting, \fBnewline\fP only terminates
 statements at ``reasonable'' times.  \fBNewline\fP terminates either
 expressions or single statements typed by the user (with
 the exception of a few statements which require lookahead:
-notably if() and twixt(), which have an optional
-else part). Inside compound
+notably if(), which has an optional else part, and try, which
+may be followed by catch blocks). Inside compound
 statements or function definitions, only a \fB;\fP
 terminates statements.  This approach is convenient and does
 not appear to cause problems in normal use.
@@ -464,15 +464,15 @@ to use an uninitialized value will result
 in either a compile-time error or a runtime exception.
 .LP
 .B "Arrays:"
-.IP "[E]"
-creates a (zero-based) array with E elements.
+.IP "([E])"
+creates a (zero-based) array of poly with E elements.
 E must be non-negative.
-.IP "[E]{V,V,...,V}"
+.IP "([E]){V,V,...,V}"
 Creates an array with E elements,
 initialized to the Vs.  If there are
 too few initializers, remaining elements
 will remain uninitialized.
-.IP "[E]{V,V,...,V\fI...\fP}"
+.IP "([E]){V,V,...,V\fI...\fP}"
 The second ellipsis (three dots) is syntax, not
 metasyntax.  Create an array with E elements.  The
 first elements in the array will be initialized
@@ -480,11 +480,11 @@ according to the Vs, with any remaining elements
 receiving the same value as the last V.  This
 syntax may be used in the obvious fashion with any of the array
 initializers below.
-.IP "[*]{V,V,...,V}"
+.IP "([*]){V,V,...,V}"
 Creates an initialized array with exactly as
 many elements as initializers.  There
 must be at least one initializer.
-.IP "[E,E,...,E] [*,*,...,*]"
+.IP "([E,E,...,E]) ([*,*,...,*])"
 Creates multidimensional arrays.
 Integer expressions  and "*"
 cannot be mixed: an array's dimensions
@@ -494,7 +494,7 @@ be created initialized: see next paragraph for
 initializer syntax.
 .IP "(T[E]) (T[E,E,...,E]) (T[E]){E,E,...,E}"
 .IP "(T[E,E,...,E]){{E,...},...,{E,...}}"
-Alternate syntax for creating arrays of type T.
+The same, creating arrays of type T rather than poly.
 The initializers, in curly braces, are optional.
 The number of initializers must be less than or equal
 to the given number of elements in each dimension.
@@ -571,7 +571,7 @@ Conditional execution.
 .IP "else S"
 Else is allowed, with the usual syntax and semantics.
 In particular, an else binds to the most recent applicable
-if() or twixt().
+if().
 .IP "while (E) S"
 C-style while loop.
 .IP "do S while (E);"
@@ -585,21 +585,17 @@ be arbitrary.  The first case evaluating to the switch
 argument is taken, else the default if present, else the switch body
 is skipped.
 .IP "twixt(opt-E; opt-E) S"
-.IP "twixt(opt-E; opt-E) S else S"
-If first argument expression evaluates to true,
-the body of the twixt() and then the second argument expression
-will be evaluated.  If the first argument expression
-evaluates to false, the else statement will be executed
-if present.  Otherwise, the entire twixt() statement will be skipped.
+Evaluate the first expression, the enter expression, then the
+body S, then the second expression, the leave expression.
 .PP
-The twixt() statement guarantees that all of these events
-will happen in the specified
-order regardless of the manner in which the twixt() is
-entered (from outside) or exited, including exceptions,
-continuations, break, and Thread::kill().  (Compare with Java's ``finally'' clause.)
-.IP "try S;"
-.IP "try S catch name (T name, ...) { S; ... };"
-.IP "try S catch name (T name, ...) { S; ... } ... ;"
+The twixt() statement guarantees that the enter expression is
+evaluated whenever S is entered from outside, and the leave
+expression whenever S is exited, however that happens, including
+exceptions, continuations, break, return, and Thread::kill().
+(Compare with Java's ``finally'' clause.)
+.IP "try S"
+.IP "try S catch name (T name, ...) { S; ... }"
+.IP "try S catch name (T name, ...) { S; ... } ..."
 Execute the first statement S.  If an exception
 is raised during execution, and the name matches
 the name in a catch block, bind the formal parameters in the
@@ -608,6 +604,8 @@ and execute the body of the catch block.  There may be
 multiple catch blocks per try.  Zero catches, while legal,
 is relatively useless.  After completion of a catch block,
 execution continues after the try clause.
+The types of the catch parameters may be left out; when given, they
+must match the exception's declaration.
 As with else, a catch binds to the most recent applicable try-catch
 block.
 .IP "raise name(name, name, ..., name)"
@@ -615,11 +613,12 @@ Raise the named exception with zero or more arguments.
 .IP ";"
 The null statement
 .IP "break;"
-Discontinue execution of the nearest enclosing for/do/while/switch/twixt statement.  The leave expression will be executed as the
-twixt statement is exited.
+Discontinue execution of the nearest enclosing for/do/while/switch
+statement, evaluating the leave expression of each twixt() it exits.
 .IP "continue;"
 Branch directly to the conditional test of the nearest enclosing
-for/do/while statement.
+for/do/while statement, evaluating the leave expression of each
+twixt() it exits.
 .IP "return E;"
 Return value E from the nearest enclosing function.
 .\"
@@ -1026,8 +1025,8 @@ notation.
 .IP "%s"
 Requires a string argument, and emits the string literally.
 .IP "%g"
-Requires a number, and tries to pick a precise and readable
-representation to format it.
+Formats a number in fixed-point or scientific notation, whichever
+is more readable, and any other value as %v does.
 .LP
 .B "Format Modifiers:"
 .IP "digits"
@@ -1220,12 +1219,12 @@ on the semaphore awakens the least-recent thread to
 wait() on that semaphore.  The ``count'' of waiting
 processes may be set at semaphore creation time.
 .IP "semaphore function new(int c)"
-Create a new semaphore with an initial count c of waiting
-processes.  If c is positive, it means that c threads
-may wait on the semaphore before one blocks.  If c is
-negative, it sets a count of threads which must be
-waiting on the semaphore before further waits will
-not block.
+Create a new semaphore with count c.  Each wait() decrements
+the count, blocking while it is negative until a signal()
+releases it, and each signal() increments it.  If c is
+positive, c threads may wait on the semaphore before one
+blocks.  If c is zero or negative, a wait blocks until 1 - c
+more signals than waits have been made.
 .IP "semaphore function new()"
 Same as new(0).
 .IP "void signal(semaphore s)"
@@ -1537,7 +1536,8 @@ Print each integer code point E in decimal and hexadecimal,
 with the character it encodes.
 .IP "print NAME"
 Display a formatted version of the object denoted by NAME.
-Comments and original formatting are lost.
+Original formatting and comments are lost, except for the
+documentation comment that follows a function's header.
 If NAME is a variable, print the type as well as the value.
 .IP "edit NAME"
 Invoke $EDITOR on the named object, and

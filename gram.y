@@ -419,7 +419,7 @@ namespace       : namespace NAMESPACENAME COLONCOLON
                         else
                             symbol = e->atom.symbol;
                         if (!symbol) {
-                            ParseError("non-existant namespace \"%A\"", $2);
+                            ParseError("nonexistent namespace \"%A\"", $2);
                             YYERROR;
                         } else if (symbol->symbol.class != class_namespace) {
                             ParseError("%A is not a namespace", $2);
@@ -439,7 +439,7 @@ namespace       : namespace NAMESPACENAME COLONCOLON
                         else
                             symbol = e->atom.symbol;
                         if (!symbol) {
-                            ParseError("non-existant namespace \"%A\"", $1);
+                            ParseError("nonexistent namespace \"%A\"", $1);
                             YYERROR;
                         } else if (symbol->symbol.class != class_namespace) {
                             ParseError("%A is not a namespace", $1);
@@ -580,7 +580,7 @@ simple_statement: if_statement namespace_end attendnl
                         if (publish == publish_extend) {
                             symbol = NamespaceFindName(CurrentNamespace, $4, True);
                             if (!symbol) {
-                                ParseError("non-existant namespace %A", $4);
+                                ParseError("nonexistent namespace %A", $4);
                                 YYERROR;
                             } else if (symbol->symbol.class != class_namespace) {
                                 ParseError("%A is not a namespace", $4);
@@ -631,7 +631,7 @@ simple_statement: if_statement namespace_end attendnl
                                 e = e->tree.right;
                             symbol = e->atom.symbol;
                             if (!symbol) {
-                                ParseError("non-existant namespace %A", e->atom.atom);
+                                ParseError("nonexistent namespace %A", e->atom.atom);
                                 YYERROR;
                             } else if (symbol->symbol.class != class_namespace) {
                                 ParseError("%A is not a namespace", e->atom.atom);

@@ -724,6 +724,7 @@ typedef struct _io_chain {
 typedef struct _file {
     BaseValue     base;
     union _value *next; /* used to chain blocked files together */
+    union _value *peer; /* the other end of a pipe from File::mkpipe, if alive */
     int           fd;
     int           pid;          /* for pipes, process id */
     int           status;       /* from wait */

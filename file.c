@@ -549,12 +549,45 @@ FileMark(void *object)
 
     FileFlush((Value)file, False);
     MemReference(file->next);
+    /* peer is a weak link, cleared by FileFree, so it doesn't keep the other end open */
+}
+
+/*
+ * Whether only this process can read what 'file' writes: it is the
+ * write end of a pipe from File::mkpipe whose read end is still open
+ * here and wasn't given to another process
+ */
+static Bool
+FileUnreadable(Value file)
+{
+    Value peer = file->file.peer;
+
+    return peer && (peer->file.flags & FileReadable) && !(peer->file.flags & FileClosed)
+        && peer->file.fd >= 0 && peer->file.pid == 0;
 }
 
 void
 FileFini(void)
 {
+    Value blocked, *prev;
+
     MemCollect();
+    /*
+     * Once this process exits, nothing reads a pipe only it can read,
+     * so drop output waiting for one rather than wait forever
+     */
+    for (prev = &fileBlocked; (blocked = *prev);) {
+        if ((blocked->file.flags & FileOutputBlocked) && FileUnreadable(blocked)) {
+            FileChainFree(blocked->file.output);
+            blocked->file.output = NULL;
+            blocked->file.flags &= ~FileOutputBlocked;
+            if (!(blocked->file.flags & FileInputBlocked)) {
+                *prev = blocked->file.next;
+                continue;
+            }
+        }
+        prev = &blocked->file.next;
+    }
     while (anyFileWriteBlocked)
         FileCheckBlocked(True);
 }
@@ -565,6 +598,9 @@ FileFree(void *object)
     File *file = object;
 
     if (file->fd == -1 || FileClose((Value)file) != FileBlocked) {
+        /* The other end, if still alive, no longer has this one */
+        if (file->peer)
+            file->peer->file.peer = 0;
         FileChainFree(file->input);
         file->input = NULL;
         FileChainFree(file->output);
@@ -614,6 +650,7 @@ NewFile(int fd)
 
     ret = ALLOCATE(&FileRep.data, sizeof(File));
     ret->file.next = 0;
+    ret->file.peer = 0;
     ret->file.fd = fd;
     ret->file.pid = 0;
     ret->file.status = 0;
@@ -909,6 +946,9 @@ FileMakePipe(int *errp)
     file = FileCreate(fds[1], FileWritable);
     file->file.flags |= FilePipe;
     ArrayValueSet(&files->array, 1, file);
+    /* Link the ends, so exit can tell whether anyone else reads it */
+    file->file.peer = ArrayValue(&files->array, 0);
+    ArrayValue(&files->array, 0)->file.peer = file;
     RETURN(files);
 }
 

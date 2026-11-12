@@ -35,3 +35,4 @@ padded ("αβγ");
 padded ("del" + String::new (0x7f));
 padded ("tab\t");
 padded ("ctl\001");
+padded (String::new ((int[*]) { 1, '2', 0, '1' }));

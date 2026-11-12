@@ -1,0 +1,44 @@
+/*
+ * Nickle test suite
+ *
+ * Printing and reading escapes in strings and characters
+ *
+ * Strings printed an octal escape followed directly by a digit, which
+ * the lexer read as part of the escape: character 1 then '2' printed
+ * as "\0012", which reads back as a newline. Characters printed '\\'
+ * as '\' and octal escapes with a stray '.', and the lexer read a
+ * '\\' constant on to the next quote on the line.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* The lexer stops a '\\' constant at its own closing quote */
+int[*] chars = { '\\', 'a', '\'', '\\' };
+check ("chars", chars, (int[*]) { 92, 97, 39, 92 });
+
+/* Strings mixing control characters and the digits after them */
+string[*] strings = {
+    String::new ((int[*]) { 1, '2' }),
+    String::new ((int[*]) { 0, '1', 0 }),
+    String::new ((int[*]) { 7, '7', '8', 27, '0' }),
+    String::new ((int[*]) { '\\', '"', 10, '1', 9, '9' }),
+};
+
+/* Read each printed string back as a literal */
+string again = "";
+for (int i = 0; i < dim (strings); i++)
+    again += sprintf ("check (\"string %d\", %v, strings[%d]);\n", i, strings[i], i);
+Command::lex_string (again);
+
+/* Character constants print as they read back */
+int function charfn () { return '\\' + '\0' + '\v' + '\033'; }
+file f = File::string_write ();
+Command::pretty_print (f, (string[*]) { "charfn" });
+string p = File::string_string (f);
+check ("printed chars", String::index (p, "return '\\\\' + '\\000' + '\\013' + '\\033';") >= 0, true);

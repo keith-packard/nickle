@@ -836,6 +836,7 @@ typedef enum _standardException {
     exception_system_error,          /* string integer poly */
     exception_io_eof,                /* file */
     exception_out_of_memory,         /* string */
+    exception_thread_killed,         /* none; no catch can name it */
     _num_standard_exceptions
 } StandardException;
 

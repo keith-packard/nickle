@@ -591,7 +591,7 @@ The twixt() statement guarantees that all of these events
 will happen in the specified
 order regardless of the manner in which the twixt() is
 entered (from outside) or exited, including exceptions,
-continuations, and break.  (Compare with Java's ``finally'' clause.)
+continuations, break, and Thread::kill().  (Compare with Java's ``finally'' clause.)
 .IP "try S;"
 .IP "try S catch name (T name, ...) { S; ... };"
 .IP "try S catch name (T name, ...) { S; ... } ... ;"
@@ -1177,7 +1177,12 @@ The remainder of the Thread functions are fairly standard.
 .IP "int function kill(thread list...)"
 Kills every running thread in the array list.  With
 no arguments, kills the currently running thread.
-Returns the number of threads killed.
+A killed thread unwinds as if it had raised an exception
+that no catch can name, running its twixt() leave
+expressions, and then finishes; join() returns <> for it.
+Killing a thread again while it unwinds finishes it at once.
+Returns the number of threads killed that weren't already
+finished or being killed.
 .IP "thread function current()"
 Return the current thread.
 .IP "void function list()"

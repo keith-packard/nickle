@@ -857,6 +857,8 @@ typedef struct _thread {
     void        *sleep;
     ptrdiff_t    id;
     int          partial;
+    /* Thread::kill has started unwinding it */
+    Bool         killed;
     /*
      * Lower priority threads
      */

@@ -76,9 +76,10 @@ import_Thread_namespace(void)
           " int kill (thread t ...)\n"
           "\n"
           " If no threads are provided, kill the current thread.\n"
-          " Otherwise, kill all of the threads provided.\n"
+          " Otherwise, kill all of the threads provided. A killed\n"
+          " thread runs its twixt leave expressions, then finishes.\n"
           " Return the number of threads killed that weren't already\n"
-          " finished.\n" },
+          " finished or being killed.\n" },
         { 0 }
     };
 

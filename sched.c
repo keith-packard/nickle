@@ -273,26 +273,66 @@ do_Thread_get_priority(Value thread)
     RETURN(NewInt(thread->thread.priority));
 }
 
+static SymbolPtr         standardExceptions[_num_standard_exceptions];
+static StandardException standardException;
+static Value             standardExceptionArgs;
+
+/*
+ * Raise 'se' in 'thread'. In the running thread, while a builtin
+ * executes, it's raised when the instruction ends. Any other thread
+ * stops waiting and jumps to the handler, running when next scheduled
+ */
+static void
+ThreadRaise(Value thread, StandardException se, Value args, Bool executing)
+{
+    ENTER();
+    SymbolPtr except = standardExceptions[se];
+
+    if (thread == running && executing) {
+        standardException = se;
+        standardExceptionArgs = args;
+        SetSignalException();
+    } else if (except) {
+        InstPtr next;
+
+        ThreadAbandonSleep(thread);
+        thread->thread.partial = 0;
+        RaiseException(thread, except, args, &next);
+        thread->thread.continuation.value = args;
+        thread->thread.continuation.pc = next;
+        if (thread->thread.state == ThreadSuspended)
+            ThreadSetState(thread, ThreadRunning);
+    }
+    EXIT();
+}
+
 /* Kill 'thread', argument 'i' of Thread::kill */
 static int
 KillThread(Value thread, ptrdiff_t i)
 {
-    int ret;
-
     if (!ValueIsThread(thread)) {
         RaiseStandardException(exception_invalid_argument, 3, NewStrString("kill: not a thread"),
                                NewPtrdiffInteger(i), thread);
         return 0;
     }
     if (thread->thread.state == ThreadFinished)
-        ret = 0;
-    else {
-        ret = 1;
-        /* A killed thread has no result for join to return */
+        return 0;
+    if (thread->thread.killed) {
+        /*
+         * Killed again while unwinding: finish without waiting for the
+         * rest, but count the thread only once
+         */
         thread->thread.continuation.value = Void;
+        if (thread == running)
+            SetSignalFinished();
+        else
+            ThreadFinish(thread, False);
+        return 0;
     }
-    ThreadFinish(thread, False);
-    return ret;
+    /* Unwind it through its twixt leave expressions; see RaiseException */
+    thread->thread.killed = True;
+    ThreadRaise(thread, exception_thread_killed, Void, True);
+    return 1;
 }
 
 Value
@@ -468,6 +508,7 @@ NewThread(FramePtr frame, ObjPtr code)
     ret->thread.sleep = 0;
     ret->thread.id = ++ThreadId;
     ret->thread.partial = 0;
+    ret->thread.killed = False;
     ret->thread.next = 0;
 
     ContinuationInit(&ret->thread.continuation);
@@ -561,6 +602,14 @@ ThreadInit(void)
     MemAddRoot(StoppedReference);
     BlockHandlerReference = NewReference((void **)&blockHandlers);
     MemAddRoot(BlockHandlerReference);
+    /*
+     * Thread::kill raises this in the killed thread. It is in no
+     * namespace, so no catch can name it, and RaiseException unwinds
+     * the thread quietly instead of reporting it
+     */
+    RegisterStandardException(
+        exception_thread_killed,
+        NewSymbolException(AtomId("thread_killed"), NewTypeFunc(typePoly, 0), Void));
     EXIT();
 }
 
@@ -854,6 +903,12 @@ JumpUnhandledException(Value thread)
     /* make exec loop reschedule */
     if (thread == running)
         SetSignalError();
+    /* A killed thread pushed no continuation for the debugger; it just ends */
+    if (continuation == Void) {
+        thread->thread.continuation.value = Void;
+        ThreadFinish(thread, False);
+        return;
+    }
     DebugStart(continuation);
     ThreadFinish(thread, True);
 }
@@ -1105,32 +1160,41 @@ RaiseException(Value thread, SymbolPtr except, Value args, InstPtr *next)
     }
     /* unhandled exception -- build an empty continuation and jump to it */
     if (!continuation) {
-        ptrdiff_t i;
-        InstPtr   pc = thread->thread.continuation.pc;
+        Value debug;
 
-        PrintError("Unhandled exception %A (", except->symbol.name);
-        if (args) {
-            ptrdiff_t dim = ArrayLimits(&args->array)[0];
-            for (i = 0; i < dim; i++) {
-                PrintError("%g", ArrayValue(&args->array, i));
-                if (i < dim - 1)
-                    PrintError(", ");
+        if (except == standardExceptions[exception_thread_killed]) {
+            /*
+             * Thread::kill: the jump still runs the twixt leave
+             * expressions, but Void tells JumpUnhandledException to end
+             * the thread quietly
+             */
+            debug = Void;
+        } else {
+            ptrdiff_t i;
+            InstPtr   pc = thread->thread.continuation.pc;
+
+            PrintError("Unhandled exception %A (", except->symbol.name);
+            if (args) {
+                ptrdiff_t dim = ArrayLimits(&args->array)[0];
+                for (i = 0; i < dim; i++) {
+                    PrintError("%g", ArrayValue(&args->array, i));
+                    if (i < dim - 1)
+                        PrintError(", ");
+                }
             }
+            PrintError(")\n");
+            TraceFrame(FileStderr, thread->thread.continuation.frame,
+                       thread->thread.continuation.obj, pc, 20);
+            debug = NewContinuation(&thread->thread.continuation, pc);
         }
-        PrintError(")\n");
-        TraceFrame(FileStderr, thread->thread.continuation.frame, thread->thread.continuation.obj,
-                   pc, 20);
         continuation = EmptyContinuation();
-        STACK_PUSH(continuation->stack, NewContinuation(&thread->thread.continuation, pc));
+        STACK_PUSH(continuation->stack, debug);
     }
     ContinuationJump(thread, continuation, args, next);
     EXIT();
 }
 
-static SymbolPtr         standardExceptions[_num_standard_exceptions];
-static StandardException standardException;
-static Value             standardExceptionArgs;
-static ReferencePtr      standardExceptionArgsRef;
+static ReferencePtr standardExceptionArgsRef;
 
 void
 RegisterStandardException(StandardException se, SymbolPtr sym)
@@ -1195,25 +1259,10 @@ static void
 SignalThread(Value thread, Value signal, Bool executing)
 {
     ENTER();
-    Value     args = NewArray(False, False, typePoly, 1, &(ptrdiff_t) { 1 });
-    SymbolPtr except = standardExceptions[exception_signal];
+    Value args = NewArray(False, False, typePoly, 1, &(ptrdiff_t) { 1 });
 
     ArrayValueSet(&args->array, 0, signal);
-    if (thread == running && executing) {
-        standardException = exception_signal;
-        standardExceptionArgs = args;
-        SetSignalException();
-    } else if (except) {
-        InstPtr next;
-
-        ThreadAbandonSleep(thread);
-        thread->thread.partial = 0;
-        RaiseException(thread, except, args, &next);
-        thread->thread.continuation.value = args;
-        thread->thread.continuation.pc = next;
-        if (thread->thread.state == ThreadSuspended)
-            ThreadSetState(thread, ThreadRunning);
-    }
+    ThreadRaise(thread, exception_signal, args, executing);
     EXIT();
 }
 

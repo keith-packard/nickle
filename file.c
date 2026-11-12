@@ -1162,6 +1162,15 @@ FileFlush(Value file, Bool block)
             close(file->file.fd);
             file->file.fd = -1;
         }
+        /*
+         * Output that an error left unwritten can't be written once
+         * the fd is closed, and waiting for fd -1 to become writable
+         * never ends
+         */
+        if ((file->file.flags & FileString) == 0) {
+            FileChainFree(file->file.output);
+            file->file.output = NULL;
+        }
     }
     EXIT();
     return n;

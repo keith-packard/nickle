@@ -1,0 +1,38 @@
+/*
+ * Nickle test suite
+ *
+ * String::parse_csv
+ *
+ * A malformed quoted field, as "a"b, raised invalid_argument from
+ * dequote instead of bad_csv_parse
+ */
+
+exception bad_csv (string line, string what);
+
+string[*][*] good_lines = {
+    { "a,b,c", "a", "b", "c" },
+    { "\"a\",x", "a", "x" },
+    { "\"a\"\"b\",x", "a\"b", "x" },
+    { "\"a,b\",c", "a,b", "c" },
+    { "", "" },
+};
+
+for (int i = 0; i < dim (good_lines); i++) {
+    string[*]	got = String::parse_csv (good_lines[i][0]);
+
+    if (dim (got) != dim (good_lines[i]) - 1)
+	raise bad_csv (good_lines[i][0], "fields");
+    for (int j = 0; j < dim (got); j++)
+	if (got[j] != good_lines[i][j + 1])
+	    raise bad_csv (good_lines[i][0], got[j]);
+}
+
+string[*]	bad_lines = { "\"a\"b,x", "x,\"a\"b", "\"abc", "x\"y,z" };
+
+for (int i = 0; i < dim (bad_lines); i++) {
+    try {
+	String::parse_csv (bad_lines[i]);
+	raise bad_csv (bad_lines[i], "accepted");
+    } catch String::bad_csv_parse (string msg, string[*] partial) {
+    }
+}

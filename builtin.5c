@@ -108,12 +108,6 @@ library "printf.5c";
 library "abort.5c";
 import Abort;
 
-library "history.5c";
-
-# Now load the extra commands.
-library "parse-args.5c";
-library "command.5c";
-
 # Note that some libraries extend namespaces, and
 # thus aren't autoload/autoimport candidates.
 library "math.5c";
@@ -122,6 +116,13 @@ library "factorial.5c"
 library "gamma.5c"
 library "math-ext.5c"
 import Math;
+
+library "history.5c";
+
+# Now load the extra commands.
+library "parse-args.5c";
+library "command.5c";
+
 library "scanf.5c";
 library "socket.5c";
 library "complex.5c";

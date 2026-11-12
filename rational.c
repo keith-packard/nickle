@@ -452,6 +452,57 @@ RationalRoundDigits(Value rv, Natural *dig, ptrdiff_t digits)
     RETURN(NewRational(r->sign, q, scale));
 }
 
+/*
+ * Write the first 'count' digits in 'base' of the fraction
+ * partial / den, which is below one, to 'buf' with a terminating
+ * NUL, returning the remainder. Long division a chunk of digits at a
+ * time, as many as fit in a natural digit, keeps this linear in
+ * 'count'; multiplying by base**count and converting the quotient at
+ * once took time quadratic in it
+ */
+static Natural *
+RationalFractionDigits(char *buf, ptrdiff_t count, Natural *partial, Natural *den, int base)
+{
+    ENTER();
+    double_digit scale = (double_digit)base;
+    int          chunk = 1;
+    Natural     *nscale;
+    StackPointer mark;
+    ptrdiff_t    done = 0;
+
+    while (scale <= MAXDIGIT / (double_digit)base) {
+        scale *= (double_digit)base;
+        chunk++;
+    }
+    nscale = NewNatural(scale);
+    mark = MemMark();
+    while (done < count && !aborting) {
+        ptrdiff_t    n = chunk;
+        Natural     *mult = nscale;
+        double_digit q;
+
+        if (count - done < n) {
+            n = count - done;
+            mult = NaturalIntPow(NewNatural((double_digit)base), n);
+        }
+        q = NaturalToDoubleDigit(NaturalDivide(NaturalTimes(partial, mult), den, &partial));
+        for (ptrdiff_t i = n - 1; i >= 0; i--) {
+            int d = (int)(q % (double_digit)base);
+
+            if (d < 10)
+                buf[done + i] = (char)('0' + d);
+            else
+                buf[done + i] = (char)('a' + d - 10);
+            q /= (double_digit)base;
+        }
+        done += n;
+        /* Keep only the remainder, so each chunk's temporaries go */
+        partial = MemReturn(mark, partial);
+    }
+    buf[count] = '\0';
+    RETURN(partial);
+}
+
 static Bool
 RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, int prec,
                      uint32_t fill)
@@ -460,15 +511,14 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
     Rational *r = &rv->rational;
     Natural  *quo;
     Natural  *partial;
-    Natural  *rep, *init;
     Natural  *dig;
     ptrdiff_t exponent = 0;
     ptrdiff_t exponent_width = 0;
     Bool      scientific = False;
-    char     *initial = 0, *in;
-    char     *repeat = 0, *re;
+    char     *initial = 0;
+    char     *repeat = 0;
     char     *whole;
-    ptrdiff_t initial_width, repeat_width = 0;
+    ptrdiff_t initial_width = 0, repeat_width = 0;
     ptrdiff_t frac_width;
     ptrdiff_t rep_width, brace_width = 0, dot_width = 0;
     ptrdiff_t whole_width;
@@ -671,22 +721,11 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
             dot_width = 0;
     }
     if (initial_width) {
-        init = NaturalDivide(NaturalTimes(partial, NaturalIntPow(dig, initial_width)), r->den,
-                             &partial);
+        partial = RationalFractionDigits(initial, initial_width, partial, r->den, base);
         if (aborting) {
             free(initial);
             EXIT();
             return False;
-        }
-        in = NaturalSprint(initial + initial_width + 1, init, base, &initial_width);
-        if (!in) {
-            free(initial);
-            EXIT();
-            return False;
-        }
-        while (in > initial) {
-            *--in = '0';
-            ++initial_width;
         }
     }
     if (rep_width) {
@@ -701,23 +740,12 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
             repeat_width = -1;
             rep_width >>= 1;
         }
-        rep = NaturalDivide(NaturalTimes(partial, NaturalIntPow(dig, rep_width)), r->den, &partial);
+        partial = RationalFractionDigits(repeat, rep_width, partial, r->den, base);
         if (aborting) {
             free(initial);
             free(repeat);
             EXIT();
             return False;
-        }
-        re = NaturalSprint(repeat + rep_width + 1, rep, base, &rep_width);
-        if (!re) {
-            free(initial);
-            free(repeat);
-            EXIT();
-            return False;
-        }
-        while (re > repeat) {
-            *--re = '0';
-            ++rep_width;
         }
         if (use_braces) {
             rep_width++; /* open { */

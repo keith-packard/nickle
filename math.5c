@@ -70,6 +70,33 @@ extend namespace Math {
 	return real_sqrt (v);
     }
 
+    protected real sqrt_w (real v, int wprec, *real rel)
+	/*
+	 * Compute sqrt(v), v >= 0, to 'wprec' bits, setting 'rel' to a
+	 * bound on the relative error. An exact square root, as of 0,
+	 * has none
+	 */
+    {
+	if (v == 0) {
+	    *rel = 0;
+	    return 0;
+	}
+	v = imprecise (v);
+
+	real	s = sqrt (imprecise (v, wprec + 2));
+
+	/*
+	 * sqrt(v) - s = (v - s**2) / (sqrt(v) + s), so the residual,
+	 * computed exactly, bounds the error by (v - s**2) / s**2
+	 */
+	int	rprec = 2 * precision (s) + precision (v) + 8;
+	real	se = imprecise (s, rprec);
+	real	r = se * se - imprecise (v, rprec);
+
+	*rel = abs (r) / (se * se);
+	return s;
+    }
+
     public real cbrt (real v)
 	/*
 	 * Returns cube root of v to the same precision as 'v'.
@@ -486,266 +513,263 @@ extend namespace Math {
 	return v;
     }
 
+    /*
+     * Copyright (c) 1985 Regents of the University of California.
+     * All rights reserved.
+     *
+     * Redistribution and use in source and binary forms, with or without
+     * modification, are permitted provided that the following conditions
+     * are met:
+     * 1. Redistributions of source code must retain the above copyright
+     *    notice, this list of conditions and the following disclaimer.
+     * 2. Redistributions in binary form must reproduce the above copyright
+     *    notice, this list of conditions and the following disclaimer in the
+     *    documentation and/or other materials provided with the distribution.
+     * 3. All advertising materials mentioning features or use of this software
+     *    must display the following acknowledgement:
+     *	This product includes software developed by the University of
+     *	California, Berkeley and its contributors.
+     * 4. Neither the name of the University nor the names of its contributors
+     *    may be used to endorse or promote products derived from this software
+     *    without specific prior written permission.
+     *
+     * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+     * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+     * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+     * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+     * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+     * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+		* OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+     * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+     * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+     * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+     * SUCH DAMAGE.
+     */
+
+    /* log__L(Z)
+     *		LOG(1+X) - 2S			       X
+     * RETURN      ---------------  WHERE Z = S*S,  S = ------- , 0 <= Z <= .0294...
+     *		      S				     2 + X
+     *
+     * DOUBLE PRECISION (VAX D FORMAT 56 bits or IEEE DOUBLE 53 BITS)
+     * KERNEL FUNCTION FOR LOG; TO BE USED IN LOG1P, LOG, AND POW FUNCTIONS
+     * CODED IN C BY K.C. NG, 1/19/85;
+     * REVISED BY K.C. Ng, 2/3/85, 4/16/85.
+     *
+     * Method :
+     *	1. Polynomial approximation: let s = x/(2+x).
+     *	   Based on log(1+x) = log(1+s) - log(1-s)
+     *		 = 2s + 2/3 s**3 + 2/5 s**5 + .....,
+     *
+     *	   (log(1+x) - 2s)/s is computed by
+     *
+     *	       z*(L1 + z*(L2 + z*(... (L7 + z*L8)...)))
+     *
+     *	   where z=s*s. (See the listing below for Lk's values.) The
+     *	   coefficients are obtained by a special Remez algorithm.
+     *
+     * Accuracy:
+     *	Assuming no rounding error, the maximum magnitude of the approximation
+     *	error (absolute) is 2**(-58.49) for IEEE double, and 2**(-63.63)
+     *	for VAX D format.
+     *
+     * Constants:
+     * The hexadecimal values are the intended ones for the following constants.
+     * The decimal values may be used, provided that the compiler will convert
+     * from decimal to binary accurately enough to produce the hexadecimal values
+     * shown.
+     */
+
+    real log__L (real z)
+    {
+	global real L1 = imprecise (6.6666666666667340202E-1, 64);
+	global real L2 = imprecise (3.9999999999416702146E-1, 64);
+	global real L3 = imprecise (2.8571428742008753154E-1, 64);
+	global real L4 = imprecise (2.2222198607186277597E-1, 64);
+	global real L5 = imprecise (1.8183562745289935658E-1, 64);
+	global real L6 = imprecise (1.5314087275331442206E-1, 64);
+	global real L7 = imprecise (1.4795612545334174692E-1, 64);
+
+	return(z*(L1+z*(L2+z*(L3+z*(L4+z*(L5+z*(L6+z*L7)))))));
+    }
+
+    /* LOG(X)
+     * RETURN THE LOGARITHM OF x
+     * DOUBLE PRECISION (VAX D FORMAT 56 bits or IEEE DOUBLE 53 BITS)
+     * CODED IN C BY K.C. NG, 1/19/85;
+     * REVISED BY K.C. NG on 2/7/85, 3/7/85, 3/24/85, 4/16/85.
+     *
+     * Required system supported functions:
+     *	scalb(x,n)
+     *	copysign(x,y)
+     *	logb(x)
+     *	finite(x)
+     *
+     * Required kernel function:
+     *	log__L(z)
+     *
+     * Method :
+     *	1. Argument Reduction: find k and f such that
+     *			x = 2^k * (1+f),
+     *	   where  sqrt(2)/2 < 1+f < sqrt(2) .
+     *
+     *	2. Let s = f/(2+f) ; based on log(1+f) = log(1+s) - log(1-s)
+     *		 = 2s + 2/3 s**3 + 2/5 s**5 + .....,
+     *	   log(1+f) is computed by
+     *
+     *	     		log(1+f) = 2s + s*log__L(s*s)
+     *	   where
+     *		log__L(z) = z*(L1 + z*(L2 + z*(... (L6 + z*L7)...)))
+     *
+     *	   See log__L() for the values of the coefficients.
+     *
+     *	3. Finally,  log(x) = k*ln2 + log(1+f).  (Here n*ln2 will be stored
+     *	   in two floating point number: n*ln2hi + n*ln2lo, n*ln2hi is exact
+     *	   since the last 20 bits of ln2hi is 0.)
+     *
+     * Special cases:
+     *	log(x) is NaN with signal if x < 0 (including -INF) ;
+     *	log(+INF) is +INF; log(0) is -INF with signal;
+     *	log(NaN) is that NaN with no signal.
+     *
+     * Accuracy:
+     *	log(x) returns the exact log(x) nearly rounded. In a test run with
+     *	1,536,000 random arguments on a VAX, the maximum observed error was
+     *	.826 ulps (units in the last place).
+     *
+     * Constants:
+     * The hexadecimal values are the intended ones for the following constants.
+     * The decimal values may be used, provided that the compiler will convert
+     * from decimal to binary accurately enough to produce the hexadecimal values
+     * shown.
+     */
+
+    real bsd_log (real x)
+    {
+	global real ln2hi = imprecise (6.9314718036912381649E-1, 64);
+	global real ln2lo = imprecise (1.9082149292705877000E-10, 64);
+	global real sqrt2 = imprecise (1.4142135623730951455E0, 64);
+
+	global real negone = imprecise (-1.0, 64);
+	global real half   = imprecise (0.5, 64);
+	global real two    = imprecise (2, 64);
+	real s,z,t;
+	int k,n;
+
+	/* argument reduction */
+	/* mantissa() is in [0.5, 1); the code below expects [1, 2) */
+	k=exponent(x)-1;   x=mantissa(x)*2;
+	if(x >= sqrt2 ) {k += 1; x *= half;}
+	x += negone ;
+
+	/* compute log(1+x)  */
+	s = x/(two + x);
+	t = x*x*half;
+	z = k*ln2lo + s*(t+log__L(s*s));
+	x += (z - t);
+
+	return (k*ln2hi+x);
+    }
+
+    protected real log_w (real a, int wprec, *real err)
+	/*
+	 * Compute log(a), a > 0, to 'wprec' bits, setting 'err' to a
+	 * bound on the absolute error
+	 */
+    {
+	/*
+	 * Near 1, where Newton's method below would lose relative
+	 * precision, use the log1p series
+	 */
+	if (0.7071067811865476 < a && a < 1.4142135623730951)
+	    return log1p_series (a - 1, wprec, err);
+
+	/* log(a) = -log(1/a); rounding 1/a moves log under 2**-wprec */
+	int	sgn = 1;
+	if (a < 1) {
+	    a = 1 / imprecise (a, wprec);
+	    sgn = -1;
+	}
+
+	int	e = 0;
+
+	/*
+	 * Bring all values within the range of 1 <= a <= 2.
+	 */
+	if (a > 2) {
+	    e = exponent(a) - 1;
+	    a = mantissa(a) * 2;
+	}
+
+	/*
+	 * estimate = bsd_log (a).  This gives 53 bits
+	 */
+
+	real v = bsd_log (imprecise (a, 64));
+
+	/*
+	 * Precision doubles every time around, start
+	 * with 50 bits and compute how many doublings are
+	 * needed to get the desired precision
+	 */
+	int	maxiter = 0;
+	int	rprec = 50;
+
+	while (rprec <= wprec)
+	{
+	    rprec *= 2;
+	    maxiter++;
+	}
+
+	int	iprec = wprec + maxiter * 16;
+
+	if (maxiter > 0)
+	{
+	    v = imprecise (v, iprec);
+	    a = imprecise (a, iprec);
+
+	/*
+	 * Newton's method
+	 *
+	 * v = log(a)
+	 *
+	 * exp(v) = a
+	 *
+	 * exp(v) - a = 0
+	 *
+	 * v' = v - (exp(v) - a) / exp(v)
+	 *
+	 * v' = v - 1 + a/exp(v)
+	 *
+	 *  v' = v - 1 + a * exp(-v);
+	 */
+	    real one = imprecise (1, iprec);
+	    real rel;
+
+	    while (maxiter-- > 0)
+		v = (v - one) + a / exp_w(v, iprec, &rel);
+	}
+
+	/* Mix in the log of the exponent */
+	if (e != 0) {
+	    int eprec = iprec + ilog(2, e) + 1;
+	    v += imprecise(e, eprec) * ln2_value(eprec);
+	}
+
+	/*
+	 * Rounding 1/a adds under 2**-wprec, Newton's method stops
+	 * below 2**-wprec, exp and the arithmetic add a few units of
+	 * 2**-iprec and e * log(2) adds under 2**-iprec
+	 */
+	*err = (4 + abs (v)) * 2 ** -wprec;
+	return sgn * v;
+    }
+
     public real log (real a)
 	/*
 	 * Return natural logarithm of 'a'
 	 */
     {
-	/*
-	 * Copyright (c) 1985 Regents of the University of California.
-	 * All rights reserved.
-	 *
-	 * Redistribution and use in source and binary forms, with or without
-	 * modification, are permitted provided that the following conditions
-	 * are met:
-	 * 1. Redistributions of source code must retain the above copyright
-	 *    notice, this list of conditions and the following disclaimer.
-	 * 2. Redistributions in binary form must reproduce the above copyright
-	 *    notice, this list of conditions and the following disclaimer in the
-	 *    documentation and/or other materials provided with the distribution.
-	 * 3. All advertising materials mentioning features or use of this software
-	 *    must display the following acknowledgement:
-	 *	This product includes software developed by the University of
-	 *	California, Berkeley and its contributors.
-	 * 4. Neither the name of the University nor the names of its contributors
-	 *    may be used to endorse or promote products derived from this software
-	 *    without specific prior written permission.
-	 *
-	 * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
-	 * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-	 * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-	 * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
-	 * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-	 * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-		    * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-	 * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-	 * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-	 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-	 * SUCH DAMAGE.
-	 */
-
-	/* log__L(Z)
-	 *		LOG(1+X) - 2S			       X
-	 * RETURN      ---------------  WHERE Z = S*S,  S = ------- , 0 <= Z <= .0294...
-	 *		      S				     2 + X
-	 *
-	 * DOUBLE PRECISION (VAX D FORMAT 56 bits or IEEE DOUBLE 53 BITS)
-	 * KERNEL FUNCTION FOR LOG; TO BE USED IN LOG1P, LOG, AND POW FUNCTIONS
-	 * CODED IN C BY K.C. NG, 1/19/85;
-	 * REVISED BY K.C. Ng, 2/3/85, 4/16/85.
-	 *
-	 * Method :
-	 *	1. Polynomial approximation: let s = x/(2+x).
-	 *	   Based on log(1+x) = log(1+s) - log(1-s)
-	 *		 = 2s + 2/3 s**3 + 2/5 s**5 + .....,
-	 *
-	 *	   (log(1+x) - 2s)/s is computed by
-	 *
-	 *	       z*(L1 + z*(L2 + z*(... (L7 + z*L8)...)))
-	 *
-	 *	   where z=s*s. (See the listing below for Lk's values.) The
-	 *	   coefficients are obtained by a special Remez algorithm.
-	 *
-	 * Accuracy:
-	 *	Assuming no rounding error, the maximum magnitude of the approximation
-	 *	error (absolute) is 2**(-58.49) for IEEE double, and 2**(-63.63)
-	 *	for VAX D format.
-	 *
-	 * Constants:
-	 * The hexadecimal values are the intended ones for the following constants.
-	 * The decimal values may be used, provided that the compiler will convert
-	 * from decimal to binary accurately enough to produce the hexadecimal values
-	 * shown.
-	 */
-
-	real log__L (real z)
-	{
-	    global real L1 = imprecise (6.6666666666667340202E-1, 64);
-	    global real L2 = imprecise (3.9999999999416702146E-1, 64);
-	    global real L3 = imprecise (2.8571428742008753154E-1, 64);
-	    global real L4 = imprecise (2.2222198607186277597E-1, 64);
-	    global real L5 = imprecise (1.8183562745289935658E-1, 64);
-	    global real L6 = imprecise (1.5314087275331442206E-1, 64);
-	    global real L7 = imprecise (1.4795612545334174692E-1, 64);
-
-	    return(z*(L1+z*(L2+z*(L3+z*(L4+z*(L5+z*(L6+z*L7)))))));
-	}
-
-	/* LOG(X)
-	 * RETURN THE LOGARITHM OF x
-	 * DOUBLE PRECISION (VAX D FORMAT 56 bits or IEEE DOUBLE 53 BITS)
-	 * CODED IN C BY K.C. NG, 1/19/85;
-	 * REVISED BY K.C. NG on 2/7/85, 3/7/85, 3/24/85, 4/16/85.
-	 *
-	 * Required system supported functions:
-	 *	scalb(x,n)
-	 *	copysign(x,y)
-	 *	logb(x)
-	 *	finite(x)
-	 *
-	 * Required kernel function:
-	 *	log__L(z)
-	 *
-	 * Method :
-	 *	1. Argument Reduction: find k and f such that
-	 *			x = 2^k * (1+f),
-	 *	   where  sqrt(2)/2 < 1+f < sqrt(2) .
-	 *
-	 *	2. Let s = f/(2+f) ; based on log(1+f) = log(1+s) - log(1-s)
-	 *		 = 2s + 2/3 s**3 + 2/5 s**5 + .....,
-	 *	   log(1+f) is computed by
-	 *
-	 *	     		log(1+f) = 2s + s*log__L(s*s)
-	 *	   where
-	 *		log__L(z) = z*(L1 + z*(L2 + z*(... (L6 + z*L7)...)))
-	 *
-	 *	   See log__L() for the values of the coefficients.
-	 *
-	 *	3. Finally,  log(x) = k*ln2 + log(1+f).  (Here n*ln2 will be stored
-	 *	   in two floating point number: n*ln2hi + n*ln2lo, n*ln2hi is exact
-	 *	   since the last 20 bits of ln2hi is 0.)
-	 *
-	 * Special cases:
-	 *	log(x) is NaN with signal if x < 0 (including -INF) ;
-	 *	log(+INF) is +INF; log(0) is -INF with signal;
-	 *	log(NaN) is that NaN with no signal.
-	 *
-	 * Accuracy:
-	 *	log(x) returns the exact log(x) nearly rounded. In a test run with
-	 *	1,536,000 random arguments on a VAX, the maximum observed error was
-	 *	.826 ulps (units in the last place).
-	 *
-	 * Constants:
-	 * The hexadecimal values are the intended ones for the following constants.
-	 * The decimal values may be used, provided that the compiler will convert
-	 * from decimal to binary accurately enough to produce the hexadecimal values
-	 * shown.
-	 */
-
-	real bsd_log (real x)
-	{
-	    global real ln2hi = imprecise (6.9314718036912381649E-1, 64);
-	    global real ln2lo = imprecise (1.9082149292705877000E-10, 64);
-	    global real sqrt2 = imprecise (1.4142135623730951455E0, 64);
-
-	    global real negone = imprecise (-1.0, 64);
-	    global real half   = imprecise (0.5, 64);
-	    global real two    = imprecise (2, 64);
-	    real s,z,t;
-	    int k,n;
-
-	    /* argument reduction */
-	    /* mantissa() is in [0.5, 1); the code below expects [1, 2) */
-	    k=exponent(x)-1;   x=mantissa(x)*2;
-	    if(x >= sqrt2 ) {k += 1; x *= half;}
-	    x += negone ;
-
-	    /* compute log(1+x)  */
-	    s = x/(two + x);
-	    t = x*x*half;
-	    z = k*ln2lo + s*(t+log__L(s*s));
-	    x += (z - t);
-
-	    return (k*ln2hi+x);
-	}
-
-	/*
-	 * Compute log(a) to 'wprec' bits, setting 'err' to a bound on
-	 * the absolute error
-	 */
-	real log_w (real a, int wprec, *real err)
-	{
-	    /*
-	     * Near 1, where Newton's method below would lose relative
-	     * precision, use the log1p series
-	     */
-	    if (0.7071067811865476 < a && a < 1.4142135623730951)
-		return log1p_series (a - 1, wprec, err);
-
-	    /* log(a) = -log(1/a); rounding 1/a moves log under 2**-wprec */
-	    int	sgn = 1;
-	    if (a < 1) {
-		a = 1 / imprecise (a, wprec);
-		sgn = -1;
-	    }
-
-	    int	e = 0;
-
-	    /*
-	     * Bring all values within the range of 1 <= a <= 2.
-	     */
-	    if (a > 2) {
-		e = exponent(a) - 1;
-		a = mantissa(a) * 2;
-	    }
-
-	    /*
-	     * estimate = bsd_log (a).  This gives 53 bits
-	     */
-
-	    real v = bsd_log (imprecise (a, 64));
-
-	    /*
-	     * Precision doubles every time around, start
-	     * with 50 bits and compute how many doublings are
-	     * needed to get the desired precision
-	     */
-	    int	maxiter = 0;
-	    int	rprec = 50;
-
-	    while (rprec <= wprec)
-	    {
-		rprec *= 2;
-		maxiter++;
-	    }
-
-	    int	iprec = wprec + maxiter * 16;
-
-	    if (maxiter > 0)
-	    {
-		v = imprecise (v, iprec);
-		a = imprecise (a, iprec);
-
-	    /*
-	     * Newton's method
-	     *
-	     * v = log(a)
-	     *
-	     * exp(v) = a
-	     *
-	     * exp(v) - a = 0
-	     *
-	     * v' = v - (exp(v) - a) / exp(v)
-	     *
-	     * v' = v - 1 + a/exp(v)
-	     *
-	     *  v' = v - 1 + a * exp(-v);
-	     */
-		real one = imprecise (1, iprec);
-		real rel;
-
-		while (maxiter-- > 0)
-		    v = (v - one) + a / exp_w(v, iprec, &rel);
-	    }
-
-	    /* Mix in the log of the exponent */
-	    if (e != 0) {
-		int eprec = iprec + ilog(2, e) + 1;
-		static real log2 = 0;
-		if (log2 == 0 || precision(log2) < eprec)
-		    log2 = log(imprecise(2, eprec));
-		v += imprecise(e, eprec) * log2;
-	    }
-
-	    /*
-	     * Rounding 1/a adds under 2**-wprec, Newton's method stops
-	     * below 2**-wprec, exp and the arithmetic add a few units of
-	     * 2**-iprec and e * log(2) adds under 2**-iprec
-	     */
-	    *err = (4 + abs (v)) * 2 ** -wprec;
-	    return sgn * v;
-	}
-
 	/*
 	 * Bounds checking
 	 */
@@ -766,6 +790,32 @@ extend namespace Math {
 	return round_correctly (precision (a), compute);
     }
 
+    protected real log1p_w (real x, int wprec, *real err)
+	/*
+	 * Compute log(1+x), x > -1, to 'wprec' bits, setting 'err' to a
+	 * bound on the absolute error. log1p(0) is an exact 0
+	 */
+    {
+	if (x == 0) {
+	    *err = 0;
+	    return 0;
+	}
+	x = imprecise (x);
+	if (-0.2928932188134524 < x && x < 0.4142135623730951)
+	    return log1p_series (x, wprec, err);
+
+	/*
+	 * Otherwise 1 + x is far enough from 1 for log. Form it
+	 * exactly, then round it to 'wprec' bits, which moves the
+	 * result by under 2**-wprec
+	 */
+	real	u = imprecise (x, precision (x) + abs (exponent (x)) + 2) + 1;
+	real	v = log_w (imprecise (u, wprec), wprec, err);
+
+	*err += 2 * 2 ** -wprec;
+	return v;
+    }
+
     public real logp1 (real x)
 	/*
 	 * Return natural logarithm of 1 + 'x'
@@ -778,27 +828,12 @@ extend namespace Math {
 
 	x = imprecise (x);
 
-	int	prec = precision (x);
-
 	real compute (int wprec, *real err)
 	{
-	    if (-0.2928932188134524 < x && x < 0.4142135623730951)
-		return log1p_series (x, wprec, err);
-
-	    /*
-	     * Otherwise 1 + x is far enough from 1 for log. Form it
-	     * exactly, then round it to 'wprec' bits, which moves the
-	     * result by under 2**-wprec
-	     */
-	    int	e = exponent (x);
-	    real	u = imprecise (x, prec + abs (e) + 2) + 1;
-	    real	v = log (imprecise (u, wprec));
-
-	    *err = (2 + abs (v)) * 2 ** -wprec;
-	    return v;
+	    return log1p_w (x, wprec, err);
 	}
 
-	return round_correctly (prec, compute);
+	return round_correctly (precision (x), compute);
     }
 
     /* The C99 name for logp1 */
@@ -1319,7 +1354,7 @@ extend namespace Math {
 	return round_correctly (precision (v), compute);
     }
 
-    real atan2_w (real y, real x, int wprec, *real err)
+    protected real atan2_w (real y, real x, int wprec, *real err)
 	/*
 	 * Compute atan2(y, x), (x, y) != (0, 0), to 'wprec' bits,
 	 * setting 'err' to a bound on the absolute error

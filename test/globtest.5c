@@ -1,0 +1,33 @@
+/*
+ * Nickle test suite
+ *
+ * Command::glob
+ *
+ * glob read the first two characters of its argument without checking
+ * its length, so "~" and "" raised a string index error, and a bare
+ * "~" wasn't expanded.
+ */
+
+exception wrong (string name, string got, string want);
+
+void function check (string name, string want)
+{
+    string got = Command::glob (name);
+
+    if (got != want)
+	raise wrong (name, got, want);
+}
+
+check ("", "");
+check ("a", "a");
+check ("~x", "~x");
+check ("a~", "a~");
+check ("a/~/b", "a/~/b");
+
+if (Environ::check ("HOME")) {
+    string home = Environ::get ("HOME");
+
+    check ("~", home);
+    check ("~/", home + "/");
+    check ("~/a/b", home + "/a/b");
+}

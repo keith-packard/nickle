@@ -129,20 +129,44 @@ ComplexReduce(Value av)
 static Bool
 ComplexPrint(Value f, Value fv, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
-    Bool value = format == 'v';
+    ENTER();
+    Value im = fv->complex.i;
+    Bool  real;
 
-    if (value)
+    if (format == 'v') {
         FilePuts(f, "cmplx(");
-    if (!Print(f, fv->complex.r, format, base, width, prec, fill))
-        return False;
-    if (value)
+        if (!Print(f, fv->complex.r, format, base, width, prec, fill)) {
+            EXIT();
+            return False;
+        }
         FilePuts(f, ", ");
-    else
-        FilePuts(f, "+i");
-    if (!Print(f, fv->complex.i, format, base, width, prec, fill))
-        return False;
-    if (value)
+        if (!Print(f, im, format, base, width, prec, fill)) {
+            EXIT();
+            return False;
+        }
         FilePuts(f, ")");
+        EXIT();
+        return True;
+    }
+
+    /* As a+bi or a-bi, leaving out a real part of exactly zero */
+    real = ValueIsFloat(fv->complex.r) || !Zerop(fv->complex.r);
+    if (real && !Print(f, fv->complex.r, format, base, width, prec, fill)) {
+        EXIT();
+        return False;
+    }
+    if (Negativep(im)) {
+        FilePuts(f, "-");
+        im = Negate(im);
+    } else if (real) {
+        FilePuts(f, "+");
+    }
+    if (!Print(f, im, format, base, width, prec, fill)) {
+        EXIT();
+        return False;
+    }
+    FilePuts(f, "i");
+    EXIT();
     return True;
 }
 

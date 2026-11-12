@@ -1455,6 +1455,8 @@ Set the user and group ids or supplementary groups.
 Raised when a system function fails; val is the value it failed on.
 .PP
 .IP Complex
+Complex numbers print as a+bi or a-bi, or as just bi when the
+real part is exactly zero; %v prints them as cmplx(a, b).
 The Complex namespace holds functions on complex numbers,
 including:
 .IP "real function creal(complex c)"

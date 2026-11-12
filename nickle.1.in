@@ -132,7 +132,9 @@ As in C.  String constants
 are surrounded by double-quotes.  Backslashed
 characters (including double-quotes) stand for themselves, except "\\n"
 stands for newline, "\\r" for carriage return,
-"\\b" for backspace, "\\t" for tab and "\\f" for formfeed.
+"\\b" for backspace, "\\t" for tab, "\\f" for formfeed, and "\\v" for
+vertical tab.  A backslash followed by octal digits stands for the
+character with that code, as in "\\101" for "A" and "\\0" for NUL.
 .IP name
 A variable reference.
 .IP "name() name(E,E,...,E)"

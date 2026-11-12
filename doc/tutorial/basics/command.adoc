@@ -1,7 +1,7 @@
 = Commands
 
 The following are commands that the Nickle interpreter understands, not actual language constructs.
-They may be issued only at the top level. 
+They may be issued only at the top level.
 
 == Expressions
 
@@ -24,21 +24,23 @@ $ nickle
 
 Statements, from expressions terminated by semicolons to complicated control structures, are executed but have no value to print.
 Statements are not commands but actual syntax, so they may be used in scripts.
-If a line is ended before it can be sensible as an expression or statement, Nickle will continue until it is a statement, e.g. 
+A newline ends a command, except inside parentheses, brackets, or braces, or partway through a control statement such as `for` or `if`.
+There, Nickle reads more lines, prompting with `+`, until the command is complete, e.g.
 
 ----
 
 $ nickle
-> int x
-+ = 0
-+ ;
+> int x = (1 +
++ 2);
+> x
+3
 >
 ----
 
 == Quit
 
 The `quit` command exits Nickle.
-An optional argument specifies the return value. 
+An optional argument specifies the return value.
 
 ----
 
@@ -51,7 +53,7 @@ $
 
 The `print` command provides information such as visibility, type, and value, about a name.
 It need not be the name of a variable; functions, namespaces, etc.
-may also be printed. 
+may also be printed.
 
 ----
 
@@ -59,15 +61,13 @@ $ nickle
 > int x = 2;
 > print x
 global int x = 2;
-> print String
-public namespace String {
-    public int length (string) <builtin>
-    public string new (poly) <builtin>
-    public int index (string, string) <builtin>
-    public string substr (string, int, int) <builtin>
-    public int rindex (string target, string pattern);
-    public string dirname (string name);
-}
+> print String::length
+public int length (string)
+    /*
+     * int length (string s)
+     *
+     * Return the number of characters in 's'.
+     */ <builtin>
 > void function hello() { printf("hello, world\n"); }
 > print hello
 void hello ()
@@ -79,30 +79,55 @@ void hello ()
 
 == Undefine
 
-A defined name can be undefined, e.g. 
+A defined name can be undefined.
+The `undefine` command takes several names, separated by commas, and stops at the first one it can't find, e.g.
 
 ----
 
 $ nickle
 > print x
-No symbol "x" in namespace
+"x": name not found
 > int x = 0;
 > print x
 global int x = 0;
 > undefine x
 > print x
-No symbol "x" in namespace
+"x": name not found
 >
 ----
 
 == Loading files
 
-The `load` and `library` commands evaluate a file at runtime like the `-f` and `-l` flags, respectively. 
+The `load` command evaluates the file it names, like the `-f` flag, and `library` finds the file in Nickle's library path, like the `-l` flag.
+Unlike those flags, an error in such a file, or a file that can't be found, is reported and Nickle continues.
+
+----
+
+$ nickle
+> load "nosuch.5c"
+Cannot load "nosuch.5c": No such file or directory
+> library "nosuch.5c"
+Cannot load library "nosuch.5c": not found in "/usr/share/nickle"
+>
+----
+
+The `autoload` command loads the library for each namespace it names, unless the namespace is already defined.
+The library's file name is the namespace's name in lower case, with a dash before each capital letter that follows a lower-case one, and `.5c` appended, so `PRNG` comes from `prng.5c`.
+The `autoimport` command does the same and then imports each namespace, and `reimport` loads the libraries even when the namespaces are already defined.
+
+----
+
+$ nickle
+> autoimport PRNG
+> randint (6) < 6
+true
+>
+----
 
 == Edit
 
 The `edit` command invokes `$EDITOR` on the name given as an argument.
-This is particularly useful to change a function while in interactive mode. 
+This is particularly useful to change a function while in interactive mode.
 
 ----
 
@@ -127,15 +152,14 @@ void hello ()
 == History
 
 The `history` command retrieves the values of the last ten expressions.
-With an argument, it instead retrieves the values of that many preceeding values.
-With two arguments, it retrieves the specified range in history. 
+With an argument, it instead retrieves that many of the most recent values.
+With two arguments, it retrieves the specified range in history.
 
 ----
 
 $ nickle
 ...
 > history
-$176    20
 $177    5
 $178    0
 $179    12
@@ -159,11 +183,23 @@ $184    0
 $185    10
 ----
 
-These history items may be named and used directly: 
+These history items may be named and used directly:
 
 ----
 
 > $180 ** 2
 144
+>
+----
+
+== Char
+
+The `char` command prints each code point it is given in decimal and hexadecimal, with the character it encodes.
+
+----
+
+$ nickle
+> char 0x263a
+9786 0x263a: "☺"
 >
 ----

@@ -1372,7 +1372,7 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                     }
                 | OP OS stars CS CP namespace_start arrayinit namespace_end
                     {
-                        $7->base.type = NewTypeArray(typePoly, $3, True);
+                        $7->base.type = NewTypeArray(typePoly, $3, False);
                         ParseCanonType($7->base.type, False);
                         $$ = NewExprTree(NEW, $7, 0);
                         $$->base.type = $7->base.type;

@@ -708,8 +708,9 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
     Natural  *partial;
     Natural  *rep, *init;
     Natural  *dig;
-    int       exponent = 0;
-    int       exponent_width = 0;
+    ptrdiff_t exponent = 0;
+    ptrdiff_t exponent_width = 0;
+    Bool      scientific = False;
     char     *initial = 0, *in;
     char     *repeat = 0, *re;
     char     *whole;
@@ -734,42 +735,77 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
         prec = -1;
     dig = NewNatural((double_digit)base);
     /*
-     * Check for small numbers for 'e' format
+     * Scale to [1, base) for 'e' format, and for small numbers in 'g'
+     * format, which uses 'e' format when they need few enough digits
      */
-    if (NaturalLess(r->num, r->den) && !NaturalZero(r->num)) {
-        Natural  *ratio, *rem;
-        Natural  *mag;
-        ptrdiff_t bits;
+    if (!NaturalZero(r->num)
+        && (format == 'e' || (format == 'g' && prec > 0 && NaturalLess(r->num, r->den)))) {
+        Bool      small = NaturalLess(r->num, r->den);
+        Natural  *big = small ? r->den : r->num;
+        Natural  *little = small ? r->num : r->den;
+        Natural  *mag, *next;
 
-        if (format == 'e' || (format == 'g' && prec > 0)) {
-            ratio = NaturalDivide(r->den, r->num, &rem);
-            bits = NaturalWidth(ratio);
-            exponent = (int)((double)bits / (log((double)base) / log(2.0)));
-            if (exponent < 0)
-                exponent = 0;
-            mag = NaturalIntPow(dig, exponent);
-            while (NaturalLess(mag, ratio)) {
+        /*
+         * big / little exceeds 2**bits, so this estimate of the
+         * exponent's magnitude is never too large
+         */
+        ptrdiff_t bits = NaturalWidth(big) - NaturalWidth(little) - 1;
+        ptrdiff_t k = 0;
+
+        if (bits > 0)
+            k = (ptrdiff_t)((double)bits / log2((double)base));
+        mag = NaturalIntPow(dig, k);
+        if (small) {
+            /* The least k with num base**k >= den */
+            while (NaturalLess(NaturalTimes(mag, r->num), r->den)) {
                 mag = NaturalTimes(mag, dig);
-                exponent++;
+                k++;
             }
-            if (format == 'g' && prec > 0)
-                if (prec - exponent < 3)
-                    format = 'e';
-            if (format == 'e') {
-                int ev;
+        } else {
+            /* The greatest k with den base**k <= num */
+            while (!NaturalLess(r->num, NaturalTimes(next = NaturalTimes(mag, dig), r->den))) {
+                mag = next;
+                k++;
+            }
+        }
+        if (format == 'g' && prec - k < 3)
+            format = 'e';
+        if (format == 'e') {
+            if (small) {
                 rv = RationalTimes(rv, NewRational(Positive, mag, one_natural), True);
-                r = &rv->rational;
-                exponent_width = 3;
-                ev = exponent;
-                while (ev >= base) {
-                    exponent_width++;
-                    ev /= base;
+                exponent = -k;
+            } else {
+                rv = RationalTimes(rv, NewRational(Positive, one_natural, mag), True);
+                exponent = k;
+            }
+            r = &rv->rational;
+
+            /* Rounding to 'prec' digits may carry the mantissa to base */
+            if (prec > 0) {
+                Natural *half = NaturalTimes(NaturalIntPow(dig, prec), two_natural);
+                Value    rounded
+                    = RationalPlusHelper(Positive, &NewRational(Positive, r->num, r->den)->rational,
+                                         &NewRational(Positive, one_natural, half)->rational);
+
+                if (!NaturalLess(rounded->rational.num, NaturalTimes(dig, rounded->rational.den))) {
+                    rv = RationalTimes(rv, NewRational(Positive, one_natural, dig), True);
+                    r = &rv->rational;
+                    exponent++;
                 }
-                exponent = -exponent;
-            } else
-                exponent = 0;
-        } else
-            exponent = 0;
+            }
+            scientific = True;
+            /* 'e', the sign of a negative exponent, and its decimal digits */
+            exponent_width = 2;
+            if (exponent < 0)
+                exponent_width++;
+            for (ptrdiff_t ev = exponent; ev <= -10 || ev >= 10; ev /= 10)
+                exponent_width++;
+        }
+    }
+    /* Zero has exponent 0 */
+    if (format == 'e' && NaturalZero(r->num)) {
+        scientific = True;
+        exponent_width = 2;
     }
     CheckDecimalLength(prec, r->den, base, &initial_width, &repeat_width);
     if (aborting) {
@@ -959,9 +995,8 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
     /* Paring the output to fit may have dropped either part */
     free(initial);
     free(repeat);
-    if (exponent) {
-        FilePrintf(f, "e%d", exponent);
-    }
+    if (scientific)
+        FilePrintf(f, "e%z", exponent);
     while (-width > print_width) {
         FileOutchar(f, fill);
         width++;

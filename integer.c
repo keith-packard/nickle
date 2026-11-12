@@ -427,6 +427,13 @@ IntegerPrint(Value f, Value iv, uint32_t format, int base, int width, int prec, 
         return PrintAsFloat(f, iv, base, width, fill);
     ENTER();
 
+    /* Scientific notation is the rational printer's */
+    if (format == 'e') {
+        Bool ret = Print(f, NewIntegerRational(i), format, base, width, prec, fill);
+        EXIT();
+        return ret;
+    }
+
     if (base == 0)
         base = 10;
     result = NaturalSprint(0, IMag(i), base, &print_width);

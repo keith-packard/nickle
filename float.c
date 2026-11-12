@@ -826,9 +826,13 @@ FloatPrint(Value f, Value fv, uint32_t format, int base, int width, int print_pr
 
     m = Times(m, fratio);
 
+    /* Zero has no digits to scale to [1, base); its exponent is 0 */
+    if (FpartZero(a->mant))
+        expbase = Zero;
+
 try_again_e:
     DPrintF("scaled m", &m->floats);
-    if (True(Less(m, One))) {
+    if (!FpartZero(a->mant) && True(Less(m, One))) {
         m = Times(m, NewInt(base));
         expbase = Minus(expbase, One);
         DPrintF("make m >= 1", &m->floats);

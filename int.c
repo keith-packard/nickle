@@ -238,6 +238,18 @@ IntCeil(Value av, int expandOk)
     return av;
 }
 
+/*
+ * Print 'a' in scientific notation, which the rational printer does
+ */
+static Bool
+IntPrintScientific(Value f, int a, int base, int width, int prec, uint32_t fill)
+{
+    ENTER();
+    Bool ret = Print(f, NewIntRational(a), 'e', base, width, prec, fill);
+    EXIT();
+    return ret;
+}
+
 static Bool
 IntPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint32_t fill)
 {
@@ -252,6 +264,8 @@ IntPrint(Value f, Value av, uint32_t format, int base, int width, int prec, uint
 
     if (format == 'a')
         return PrintAsFloat(f, av, base, width, fill);
+    if (format == 'e')
+        return IntPrintScientific(f, a, base, width, prec, fill);
 
     if ('A' <= format && format <= 'Z')
         letter = 'A';

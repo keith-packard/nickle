@@ -27,6 +27,7 @@ tests = [
   'primesievetest.5c',
   'prngseedtest.5c',
   'addrstringtest.5c',
+  'shiftntest.5c',
   'gcdtest.5c',
   'bitwisetest.5c',
   'remaindertest.5c',

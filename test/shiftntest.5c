@@ -1,0 +1,44 @@
+/*
+ * Nickle test suite
+ *
+ * String::shiftn
+ *
+ * A negative count, documented as shifting right, indexed before the
+ * array, and a count past its end made a negative dimension
+ */
+
+exception bad_shift (int len, int n, int i);
+
+for (int len = 0; len <= 5; len++)
+    for (int n = -4; n <= 7; n++) {
+	poly[...]	a = {};
+
+	for (int i = 0; i < len; i++)
+	    a[i] = i + 100;
+	String::shiftn (&a, n);
+
+	/* The element at i came from i + n, if there was one */
+	int	want = len - n;
+
+	if (n > len)
+	    want = 0;
+	if (dim (a) != want)
+	    raise bad_shift (len, n, -1);
+	for (int i = 0; i < dim (a); i++) {
+	    int	from = i + n;
+
+	    if (from < 0) {
+		if (!is_uninit (&a[i]))
+		    raise bad_shift (len, n, i);
+	    } else if (is_uninit (&a[i]) || a[i] != from + 100)
+		raise bad_shift (len, n, i);
+	}
+    }
+
+/* Uninitialized elements move along */
+poly[...]	b = { 1, 2 };
+
+String::shiftn (&b, -2);
+String::shiftn (&b, 1);
+if (dim (b) != 3 || !is_uninit (&b[0]) || b[1] != 1 || b[2] != 2)
+    raise bad_shift (2, 1, 0);

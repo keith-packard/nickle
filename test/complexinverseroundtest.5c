@@ -1,0 +1,66 @@
+/*
+ * Nickle test suite
+ *
+ * Complex log and the inverse functions are correctly rounded
+ *
+ * The inverse functions added a fixed 32 bits of precision, leaving
+ * each part within about 2**-29 ulp of the right value, so it was
+ * rarely rounded the wrong way. log's real part already rounded
+ * correctly, from public functions that each rounded once more
+ */
+
+import Complex;
+
+exception bad_result (string name, complex z, complex got, complex want);
+
+string[*]		names = {
+    "log", "asin", "acos", "atan", "asinh", "acosh", "atanh",
+};
+(complex(complex))[*]	funcs = {
+    Complex::log, Complex::asin, Complex::acos, Complex::atan,
+    Complex::asinh, Complex::acosh, Complex::atanh,
+};
+
+void check (int f, complex z, int prec)
+{
+    complex	got;
+
+    z = imprecise (z, prec);
+    try {
+	got = funcs[f] (z);
+    } catch divide_by_zero (real num, real den) {
+	/* z rounded onto a pole */
+	if (z != 1 && z != -1 && z != Complex::i && z != -Complex::i)
+	    raise bad_result (names[f], z, 0, 0);
+	return;
+    }
+
+    complex	want = imprecise (funcs[f] (imprecise (z, prec + 600)), prec);
+
+    if (got != want)
+	raise bad_result (names[f], z, got, want);
+}
+
+complex[*] special = {
+    cmplx (1, 9.86009878e-17), cmplx (1, 1e-20), cmplx (-1, 1e-20),
+    cmplx (1 + 1e-15, 0), cmplx (1 - 1e-15, 0), cmplx (1e-20, 1),
+    cmplx (0, 1 + 1e-15), cmplx (2, 0), cmplx (-2, 0), cmplx (0, 2),
+    cmplx (0, -2), cmplx (1e-300, 1e300), cmplx (1e300, 1e-300),
+    cmplx (0.5, 1e-30), cmplx (3, 4),
+};
+
+for (int f = 0; f < dim (funcs); f++) {
+    for (int i = 0; i < dim (special); i++)
+	for (int prec = 24; prec <= 113; prec += 89)
+	    check (f, special[i], prec);
+    for (int k = 1; k <= 40; k++) {
+	complex	z = cmplx ((k * 7919 % 10007) / 1009 * 2 ** (k % 9 - 4),
+			   (k * 4441 % 10007) / 1009 * 2 ** (k % 7 - 3));
+
+	if (k % 2 == 0)
+	    z = -z;
+	if (k % 3 == 0)
+	    z = cmplx (creal (z), -cimag (z));
+	check (f, z, 53);
+    }
+}

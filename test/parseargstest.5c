@@ -6,7 +6,9 @@
  * An empty argument or a lone "-" indexed past the end of the string
  * while checking for a flag. "--" ended the positional arguments as
  * well as the options, so a positional argument couldn't start with
- * '-'; as in Python, it now ends only the options.
+ * '-'; as in Python, it now ends only the options. Each flag in a
+ * group such as "-ff" stepped past another argument, and a flag taking
+ * a value read it from the wrong one.
  */
 
 autoimport ParseArgs;
@@ -65,3 +67,9 @@ check ((string[*]) { "--", "--", "-f" }, false, "--", "unset",
 check ((string[*]) { "a", "--", "-f" }, false, "a", "unset",
        (string[*]) { "--", "-f" });
 check ((string[*]) { "-f", "--" }, true, "unset", "unset", (string[*]) {});
+
+/* Grouped flags, where the rest of the group is a value, as with getopt */
+check ((string[*]) { "-ff", "x" }, true, "x", "unset", (string[*]) {});
+check ((string[*]) { "-fv", "x", "y" }, true, "y", "x", (string[*]) {});
+check ((string[*]) { "-vfoo", "x" }, false, "x", "foo", (string[*]) {});
+check ((string[*]) { "-fv-", "x", "y" }, true, "x", "-", (string[*]) { "y" });

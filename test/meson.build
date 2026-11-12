@@ -12,6 +12,7 @@ tests = [
   'historytest.5c',
   'globtest.5c',
   'stdnulltest.5c',
+  'gammaprectest.5c',
   'gcdtest.5c',
   'bitwisetest.5c',
   'remaindertest.5c',

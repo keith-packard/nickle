@@ -521,10 +521,27 @@ PrettyExpr(Value f, Expr *e, int parentPrec, int level, Bool nest)
         FilePrintf(f, "0x");
         Print(f, e->constant.constant, 'x', 16, 0, -2, ' ');
         break;
+    case POLY_CONST:
+        /*
+         * A command statement calls its function as a constant; print
+         * the command's name rather than the function's whole text
+         */
+        if (ValueIsFunc(e->constant.constant)) {
+            CommandPtr c;
+
+            for (c = CurrentCommands; c; c = c->previous)
+                if (c->func == e->constant.constant)
+                    break;
+            if (c) {
+                FilePuts(f, AtomName(c->name));
+                break;
+            }
+        }
+        FilePrintf(f, "%v", e->constant.constant);
+        break;
     case TEN_NUM:
     case TEN_FLOAT:
     case STRING_CONST:
-    case POLY_CONST:
     case THREAD_CONST:
     case VOIDVAL:
     case BOOLVAL:

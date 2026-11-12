@@ -1,11 +1,11 @@
 = Nickle Expressions
 
-Expression types are listed in order of increasing precedence. 
+See <<_precedence,Precedence>> at the end of this section for how the operators group.
 
 == Variable declarations
 
-Variable declarations are expressions in Nickle; the value of a declaration is the value of the last variable with an initialization expression.
-For example, 
+Variable declarations are expressions in Nickle; the value of a declaration is the value of the last variable it declares.
+For example,
 
 ----
 
@@ -15,28 +15,28 @@ For example,
 global int val = 3;
 ----
 
-If no initialization expressions are present, it is an error to use the value of the expression. 
+If that variable has no initialization expression, it is an error to use the value of the expression.
 
 ----
 
 > val = (int i,j);
-Unhandled exception "uninitialized_value" at <stdin>:73
-        "Uninitialized value"
+Unhandled exception uninitialized_value ("uninitialized value")
+<stdin>:3:     val = (int i, j);
 ----
 
-Because they are expressions, declarations can be used in contructs such as: 
+Because they are expressions, declarations can be used in constructs such as:
 
 ----
 
-for (int i = 0; i  10; i++)
+for (int i = 0; i < 10; i++)
 {
-        
+
 }
 ----
 
 == Anonymous function declarations
 
-Functions may be declared anonymously and used immediately, e.g. 
+Functions may be declared anonymously and used immediately, e.g.
 
 ----
 
@@ -45,7 +45,7 @@ Functions may be declared anonymously and used immediately, e.g.
 ----
 
 Any context available to the function at definition time will be available whenever it is executed.
-See Storage classes in the section on Variables. 
+See <<_storage_classes,Storage classes>> in the section on Nickle Datatypes.
 
 == Binary operators
 
@@ -81,13 +81,16 @@ Boolean and, Boolean or::
 `a && b` +
 `a || b`
 
+Conditional::
+`a ? b : c` evaluates `b` if the bool `a` is true and `c` otherwise.
+
 Equal, Not equal::
 `a == b` +
 `a != b`
 
 Less than, Less than or equal to::
 `a < b` +
-`a <= b`
+`+a <= b+`
 
 Greater than, Greater than or equal to::
 `a > b` +
@@ -97,44 +100,38 @@ Assignment::
 `a = b`
 
 Assignment with operator::
-`a += b` +
-`a -= b` +
-`a *= b` +
-`a /= b` +
-`a //= b` +
-`a %= b` +
-`a **= b` +
-`a >>= b` +
-`a <<= b` +
-`a ^= b` +
-`a &= b` +
-`a |= b`
++
+----
+a += b    a -= b    a *= b    a /= b    a //= b   a %= b
+a **= b   a <<= b   a >>= b   a ^= b    a &= b    a |= b
+a &&= b   a ||= b
+----
 
 == Unary operators
 
-Dereference:::
+Dereference::
 `* a`
 
-Reference:::
+Reference::
 `& a`
 
-Negation:::
+Negation::
 `- a`
 
-Bitwise inverse:::
+Bitwise inverse::
 `~ a`
 
-Logical not:::
+Logical not::
 `! a`
 
-Factorial:::
+Factorial::
 `a !`
 
-Increment:::
+Increment::
 `+++++a+++` +
 `+++a+++++`
 
-Decrement:::
+Decrement::
 `--a` +
 `a--`
 
@@ -142,23 +139,29 @@ Decrement:::
 
 === Integer constants
 
-Integer constants with a leading zero are interpreted in octal, with a leading 0x in hex-decimal and with a leading 0b in binary.
-Here are some examples: 
+Integer constants with a leading zero or 0o are interpreted in octal, with a leading 0x in hexadecimal and with a leading 0b in binary.
+Underscores may separate digits, and a character in single quotes is its code point.
+Here are some examples:
 
 ----
 
 12      /* 12, decimal */
 014     /* 12, octal */
+0o14    /* 12, octal */
 0xc     /* 12, hex */
 0b1100  /* 12, binary */
+1_000   /* 1000 */
+'a'     /* 97 */
 ----
 
 === Rational constants
 
 Rational constants are the combination of an integer part, a mantissa with an initial and repeating part, and an exponent.
 All of these pieces are optional, but at least one of the parts (other than the exponent) must be present.
-If no fractional part is given, the resulting type of the value is int rather than rational.
-Some examples: 
+Curly braces mark the repeating part, so `.{56}` is exactly 56/99.
+If the value is a whole number, its type is int rather than rational.
+The values are exact, though Nickle displays them rounded to 15 decimal places.
+Some examples:
 
 ----
 
@@ -169,18 +172,22 @@ Some examples:
 > .34
 0.34
 > .{56}
-0.{56}
+0.565656565656566
+> .{56} == 56/99
+true
 > .34e3
 340
 > .{56}e12
-565656565656.{56}
+565656565656.565656565656566
 ----
+
+Hexadecimal, octal, and binary constants may have fractions and exponents too; the exponent of a hexadecimal constant follows `p` and is a power of two, as in C, so `0x1p4` is 16.
 
 === String constants
 
 String constants are surrounded in double quotes, e.g.  `"hello,
 world"`. Characters preceded by a backslash stand for themselves,
-including double-quote (`"`) and blackslash (`\`). The following
+including double-quote (`"`) and backslash (`\`). The following
 backslashed characters are special:
 
 * `\n` is newline
@@ -188,6 +195,8 @@ backslashed characters are special:
 * `\b` is backspace
 * `\t` is tab
 * `\f` is formfeed
+* `\v` is vertical tab
+* `\` followed by octal digits is the character with that code, so `"\101"` is `"A"` and `"\0"` is a NUL character
 
 
 == Variables
@@ -198,19 +207,19 @@ dereference operator yields the value of its target.
 
 == Struct and union references
 
-The construct 
+The construct
 
 _str_ `.` _name_
 
-yields the element _name_ of the struct or union _str_
-To retrieve elements from a struct or union pointer, as in C, use 
+yields the element _name_ of the struct or union _str_.
+To retrieve elements from a struct or union pointer, as in C, use
 
 _str_ `+->+` _name_
 
 == Array references
 
 _array_ `[` _expr_ `]` +
-_array_ `[` expr `,` _expr_ `,` ... `,` _expr_ `]`
+_array_ `[` _expr_ `,` _expr_ `,` ... `,` _expr_ `]`
 
 Elements of an array are indexed with square braces.  Elements of
 multidimensional arrays have indices in each dimension as in the
@@ -220,22 +229,50 @@ square brace:
 
 _array_ `*[` _expr_ `]`
 
-This is, however, deprecated in favor of using references to arrays, which have no such problems. 
+This is, however, deprecated in favor of using references to arrays, which have no such problems.
 
 == The fork operator
 
 The fork operator evaluates its argument in a child thread.
-See the section on Concurrency. 
+See the section on Concurrency.
 
 == Comma operator
 
 _expr_ `,` _expr_
 
 Evaluates each expression in turn, the resulting value is that of the right hand expression.
-For example, 
+For example,
 
 ----
 
 > 1+2, 5!, 3**4, 27/3
 9
 ----
+
+== Precedence
+
+From the tightest-binding to the loosest, Nickle's operators group as follows.
+Operators on the same line have the same precedence.
+
+----
+a[i]  a.b  a->b  f(x)
+++  --  -  !  ~  *  &  (prefix)  ++  --  !  (postfix)
+(U.tag) a                         (union cast)
+**                                (groups from the right)
+*  /  //  %
++  -
+<<  >>
+<  <=  >  >=
+==  !=
+&
+^
+|
+&&
+||
+?:
+fork
+=  +=  -=  and the rest           (group from the right)
+,
+----
+
+Unlike C, the unary operators bind tighter than `+**+`, so `+-2**2+` is 4.

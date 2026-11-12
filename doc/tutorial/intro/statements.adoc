@@ -9,11 +9,11 @@ _expr_ `;` +
 The simplest statement is merely an expression terminated by a semicolon; the expression is evaluated.
 A semicolon by itself is allowed but does nothing.
 One or more statements may be grouped inside curly braces to form one compound statement; each is executed in order.
-Any statements may compose the statement list, including control statements and other curly-bracketed lists. 
+Any statements may compose the statement list, including control statements and other curly-bracketed lists.
 
 == Conditionals
 
-`if (` _expr_ `)` _statement_
+`if (` _expr_ `)` _statement_ +
 `else` _statement_
 
 `if` is used to execute a section of code only under some condition:
@@ -25,10 +25,10 @@ if ( x == 0 )
         printf ( "x is zero.\n" );
 ----
 
-In this case, the message will be printed only if `x` is zero. 
+In this case, the message will be printed only if `x` is zero.
 
 `else` allows for a choice if the condition fails.  It executes its
-`statement` if the most recent `if` or `twixt` (see below) did not.
+`statement` if the most recent `if` did not.
 For example,
 
 ----
@@ -44,7 +44,7 @@ More than one option may be presented by nesting further 'if's in
 ----
 if ( x == 0 )
         printf ( "x is zero.\n" );
-else if ( x  0 )
+else if ( x < 0 )
         printf ( "x is negative.\n" );
 else
         printf ( "x is positive.\n" );
@@ -54,13 +54,14 @@ else
 
 `twixt (` _expr_ `;` _expr_ `)` _statement_
 
-Ensures that the the first `expr` will always have been evaluated
+Ensures that the first `expr` will always have been evaluated
 whenever control flow passes into any part of `statement` and ensures
 that the second `expr` will be evaluated anytime control flow passes
-out of `statement`. _That order is guaranteed_.  If a `long_jmp`
+out of `statement`. _That order is guaranteed_.  If a `longjmp`
 target is inside `statement`, the first `expr` will be executed before
-control passes to the target.  If `statement` throws an exception or
-`long_jmp`s out of the `twixt`, the second `expr` will be evaluated.
+control passes to the target.  If `statement` raises an exception,
+``longjmp``s out of the `twixt`, leaves it with `break`, `continue`, or
+`return`, or its thread is killed, the second `expr` will be evaluated.
 Thus, `twixt` is useful in locked operations where the statement
 should only be executed under a lock and that lock must be released
 afterwards.
@@ -103,7 +104,7 @@ switch ( x ) {
 
 Notice the `break`s in the example.  Once control jumps to the
 matching case, it continues normally: Upon exhausting that
-`statement-list`, _it does not jump out of the `_switch_`_; it
+`statement-list`, _it does not jump out of the_ `switch`; it
 continues through the subsequent statement lists.  Here is an example
 of this 'falling through':
 
@@ -120,7 +121,7 @@ switch ( sign ( x ) ) {
 }
 ----
 
-This prints: 
+This prints:
 
 ----
 x is positive.
@@ -158,10 +159,10 @@ union switch ( u ) {
 }
 ----
 
-In this case, it prints 'hello'. 
+In this case, it prints 'hello'.
 
 An additional name may follow that of a case; the union's value will be available inside the case by that name.
-The switch above could have been written: 
+The switch above could have been written:
 
 ----
 union switch ( u ) {
@@ -181,31 +182,31 @@ union switch ( u ) {
 `for (` _expr_ `;` _expr_ `;` _expr_ `)` _statement_
 
 `while` executes `statement` repeatedly as long as `expr` is true.
-Control continues outside the loop when `expression` becomes false.
-For example: 
+Control continues outside the loop when `expr` becomes false.
+For example:
 
 ----
 int x = 0;
-while ( x  10 ) {
+while ( x < 10 ) {
         printf ( "%d\n", x );
         ++x;
 }
 ----
 
-This prints the numbers from zero to nine. 
+This prints the numbers from zero to nine.
 
 `do-while` is like `while`, but tests the condition after each iteration rather than before.
-Thus, it is garaunteed to execute at least once.
-It is often used in input while testing for end-of-file: 
+Thus, it is guaranteed to execute at least once.
+It is often used in input while testing for end-of-file:
 
 ----
 file f = File::open ( "test", "r" );
 
 do {
         printf ( "%s\n", File::fgets ( f ) );
-} while ( ! end ( f ) );
+} while ( ! File::end ( f ) );
 
-close ( f );
+File::close ( f );
 ----
 
 `for` begins by evaluating the first `expr`, which often initializes a
@@ -217,7 +218,7 @@ usually increments or decrements the counter variable.  The `while`
 example above can also be written as the following `for` loop:
 
 ----
-for ( int x = 0; x  10; ++x )
+for ( int x = 0; x < 10; ++x )
         printf ( "%d\n", x );
 ----
 
@@ -225,7 +226,8 @@ for ( int x = 0; x  10; ++x )
 
 `continue` +
 `break` +
-`return` _expr_
+`return` _expr_ +
+`return`
 
 `continue` restarts the nearest surrounding `do-while`, `while`, or
 `for` loop by jumping directly to the conditional test.  The iterative
@@ -236,4 +238,11 @@ statement of a `for` loop will be evaluated first.
 a `for` loop will not be evaluated.
 
 `return` returns from the nearest surrounding function with value
-`expr`.
+`expr`, or with no value from a function of type `void`.
+
+Each of these evaluates the second `expr` of any `twixt` it leaves.
+
+== Exceptions
+
+`try`, `catch`, and `raise` handle errors and other exceptional
+conditions; see the section on Exceptions.

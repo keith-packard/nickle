@@ -1,0 +1,51 @@
+/*
+ * Nickle test suite
+ *
+ * Complex exp, sin, cos, sinh, cosh, and polar are correctly rounded
+ *
+ * Each part was the product of two correctly rounded real functions,
+ * so it could be an ulp off
+ */
+
+import Complex;
+
+exception bad_result (string name, complex z, complex got, complex want);
+
+complex polar_z (complex z) = polar (creal (z), cimag (z));
+
+string[*]		names = { "exp", "sin", "cos", "sinh", "cosh", "polar" };
+(complex(complex))[*]	funcs = {
+    Complex::exp, Complex::sin, Complex::cos, Complex::sinh, Complex::cosh,
+    polar_z,
+};
+
+void check (int f, complex z, int prec)
+{
+    z = imprecise (z, prec);
+
+    complex	got = funcs[f] (z);
+    complex	want = imprecise (funcs[f] (imprecise (z, prec + 600)), prec);
+
+    if (got != want)
+	raise bad_result (names[f], z, got, want);
+}
+
+for (int k = 1; k <= 60; k++) {
+    complex	z = cmplx ((k * 7919 % 10007) / 1009 * 2 ** (k % 13 - 6),
+			   (k * 4441 % 10007) / 1009 * 2 ** (k % 11 - 5));
+
+    if (k % 2 == 0)
+	z = -z;
+    if (k % 3 == 0)
+	z = cmplx (creal (z), -cimag (z));
+    for (int f = 0; f < dim (funcs); f++)
+	for (int prec = 53; prec <= 113; prec += 60)
+	    check (f, z, prec);
+}
+
+/* Exact zero parts stay exact */
+if (Complex::exp (cmplx (imprecise (1, 53), 0)) != imprecise (Math::e, 53) ||
+    cimag (Complex::sin (cmplx (0, imprecise (2, 53)))) == 0 ||
+    creal (Complex::sin (cmplx (0, imprecise (2, 53)))) != 0 ||
+    Complex::exp (0) != 1 || polar (2, 0) != 2)
+    raise bad_result ("exact", 0, 0, 0);

@@ -1,0 +1,48 @@
+/*
+ * Nickle test suite
+ *
+ * ParseArgs::parseargs
+ *
+ * An empty argument or a lone "-" indexed past the end of the string
+ * while checking for a flag.
+ */
+
+autoimport ParseArgs;
+
+exception bad_parse (string[*] argv, string what);
+
+void function check (string[*] argv, bool want_flag, string want_path,
+		     string want_value)
+{
+    bool	flag = false;
+    string	path = "unset";
+    string	value = "unset";
+    argdesc	argd = {
+	.prog_name = "parseargstest",
+	.args = {
+	    { .var = { .arg_flag = &flag }, .abbr = 'f', .name = "flag",
+	      .desc = "A flag" },
+	    { .var = { .arg_string = &value }, .abbr = 'v', .name = "value",
+	      .expr_name = "value", .desc = "A value" },
+	},
+	.posn_args = {
+	    { .var = { .arg_string = &path }, .name = "file", .optional = <> },
+	},
+    };
+
+    parseargs (&argd, &argv);
+    if (flag != want_flag)
+	raise bad_parse (argv, "flag");
+    if (path != want_path)
+	raise bad_parse (argv, "path");
+    if (value != want_value)
+	raise bad_parse (argv, "value");
+}
+
+check ((string[*]) {}, false, "unset", "unset");
+check ((string[*]) { "-" }, false, "-", "unset");
+check ((string[*]) { "" }, false, "", "unset");
+check ((string[*]) { "-f", "-" }, true, "-", "unset");
+check ((string[*]) { "--flag", "" }, true, "", "unset");
+check ((string[*]) { "-v", "-", "x" }, false, "x", "-");
+check ((string[*]) { "--value", "", "-" }, false, "-", "");

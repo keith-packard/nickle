@@ -670,19 +670,24 @@ catches         :   catches catch %prec TRY
                 |
                     { $$ = 0; }
                 ;
-catch           : CATCH fullname namespace_start args doc_string block namespace_end
+catch           : CATCH fullname namespace_start args doc_string block attendnl namespace_end
                     {
                         $$ = NewExprCode(NewFuncCode(typePrim[rep_void], $4, $6, $5),
                                             $2);
                     }
                 ;
+/*
+ * The bodies below each end with an attendnl to match the ignorenl in
+ * opt_argdefines, so the count is back where it started when a newline
+ * may end the enclosing command
+ */
 opt_func_body   : func_body
-                | SEMI
+                | SEMI attendnl
                     { $$ = 0; }
                 ;
 func_body       : { ++funcDepth; } block_or_expr { --funcDepth; $$ = $2; }
                 ;
-block_or_expr   : block
+block_or_expr   : block attendnl
                     { $$ = $1; }
                 | attendnl ASSIGN simpleexpr SEMI
                     {
@@ -834,12 +839,12 @@ func_name       : decl NAME OP
                     { $$.type = $1; $$.decl = NewDeclList($2, 0, 0); }
                 | decl FUNCTION NAME OP
                     { $$.type = $1; $$.decl = NewDeclList($3, 0, 0); }
-                | FUNCTION ignorenl NAME OP
+                | FUNCTION NAME OP
                     {
                         $$.type.publish = publish_private;
                         $$.type.class = class_undef;
                         $$.type.type = typePoly;
-                        $$.decl = NewDeclList($3, 0, 0);
+                        $$.decl = NewDeclList($2, 0, 0);
                     }
                 ;
 opt_init        : ASSIGN simpleexpr
@@ -1195,7 +1200,8 @@ func_right      : attendnl ASSIGN simpleexpr
                         $$ = NewExprTree(OC, NewExprTree(RETURNTOK, 0, $3),
                                             NewExprTree(OC, 0, 0));
                     }
-                | { ++funcDepth; } block { --funcDepth; $$ = $2; }
+                /* Match the ignorenl in opt_argdefines, as opt_func_body does */
+                | { ++funcDepth; } block { --funcDepth; } attendnl { $$ = $2; }
                 ;
 /*
 * Fundemental expression production

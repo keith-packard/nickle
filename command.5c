@@ -5,11 +5,11 @@ extend namespace Command {
      * programs to run from the top level of the
      * interpreter
      */
-    
-    public void display (poly v) 
+
+    public void display (poly v)
 	/*
 	 * Used by the top-level read/eval/print loop.
-	 * For non-void 'v', 
+	 * For non-void 'v',
 	 *   Prints out 'v' in the current default format.
 	 *   Inserts 'v' into the history.
 	 */
@@ -21,7 +21,7 @@ extend namespace Command {
 	putchar ('\n');
     }
 
-    public void display_base (poly v, int base) 
+    public void display_base (poly v, int base)
 	/*
 	 * Used by the top-level read/eval/print loop
 	 * when '# base' is appended to an expression.
@@ -48,7 +48,7 @@ extend namespace Command {
 	 */
     {
 	int	code = 0;
-	
+
 	if (dim(args) > 0)
 	    code = args[0];
 	exit (code);
@@ -190,7 +190,7 @@ extend namespace Command {
 		if (reimport || !valid_name (subname))
 		{
 		    string f = make_filename(subname);
-		    if (!lex_library (f)) 
+		    if (!lex_library (f))
 		    {
 			File::fprintf (stderr,
 				       "Cannot %s from " +
@@ -249,10 +249,10 @@ extend namespace Command {
 	 */
     {
 	for (int i = 0; i < dim (c); i++)
-	    printf ("%3d 0x%02x: %v\n", 
+	    printf ("%3d 0x%02x: %v\n",
 		    c[i], c[i], String::new (c[i]));
     }
-    
+
     new ("char", do_char);
 
     void process_args(&string[*] argv)
@@ -286,26 +286,31 @@ extend namespace Command {
 	void save_library(string arg) {
 	    save_lexable((lexable.library)arg);
 	}
-	
+
 	void save_script(string arg) {
+	    script_name = arg;
+	    /* As in Python, "-" reads the script from stdin */
+	    if (arg == "-") {
+		lex_stdin = true;
+		return;
+	    }
 	    save_lexable((lexable.script)arg);
 	    /* Add directory containing the script to the library path */
 	    nickle_path = String::dirname (arg) + ":" + nickle_path;
-	    script_name = arg;
 	    lex_stdin = false;
 	}
-	
+
 	void save_file(string arg) {
 	    save_lexable((lexable.sfile)arg);
 	}
-	
+
 	void save_expr(string arg) {
 	    save_lexable((lexable.expr)arg);
 	    lex_stdin = false;
 	}
 
 	bool show_version = false;
-	
+
 	ParseArgs::argdesc argd = {
 	    .args = {
 		{ .var = { .arg_lambda = save_library},
@@ -346,7 +351,7 @@ extend namespace Command {
 	}
 
 	/* Reset argv to hold remaining arguments */
-	if (lex_stdin && is_uninit(&user_argind)) {
+	if (lex_stdin && script_name == "" && is_uninit(&user_argind)) {
 	    string[0] rest = {};
 	    argv = rest;
 	} else {

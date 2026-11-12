@@ -24,6 +24,9 @@ following the script are placed in the Nickle string array
 argv for programmatic inspection.  When invoked without an
 expression or script argument, Nickle reads from
 standard input, and writes to standard output.
+A script named \fB\-\fP reads the script from standard input,
+as Python does, after any files, libraries, and expressions
+given as options; argv[0] is then \fB\-\fP.
 .PP
 Options are as follows:
 .TP

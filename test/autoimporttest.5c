@@ -1,0 +1,71 @@
+/*
+ * Nickle test suite
+ *
+ * autoimport with a missing module
+ *
+ * autoimport queued each import before loading its file, so a missing
+ * file still ran the import, adding an error for the namespace. And as
+ * it worked from the last name to the first, a missing name stopped it
+ * before loading the names ahead of it.
+ */
+
+exception bad_autoimport (string what, string got);
+
+void write_file (string name, string contents)
+{
+    file	f = File::open (name, "w");
+
+    File::fprintf (f, "%s", contents);
+    File::close (f);
+}
+
+write_file ("autoalpha.5c",
+	    "namespace Autoalpha { public int alpha_value = 17; }\n");
+write_file ("autoalpha-inner.5c",
+	    "extend namespace Autoalpha { public namespace Inner {" +
+	    " public int inner_value = 23; } }\n");
+write_file ("autobeta.5c",
+	    "printf (\"autobeta loaded\\n\");\n" +
+	    "namespace Autobeta { public int beta_value = 5; }\n");
+write_file ("autoimport-script.5c",
+	    "Command::nickle_path = \".\";\n" +
+	    "autoimport Autoalpha::Inner\n" +
+	    "printf (\"inner %d\\n\", inner_value);\n" +
+	    "autoimport Autoalpha, Nosuch, Autobeta\n" +
+	    "printf (\"alpha %d\\n\", alpha_value);\n");
+
+string[*] read_lines (file f)
+{
+    string[...]	lines = {};
+
+    while (!File::end (f))
+	lines[dim (lines)] = File::fgets (f);
+    return lines;
+}
+
+string	nickle = Environ::get ("NICKLE");
+file[*]	output = File::mkpipe ();
+file[*]	errors = File::mkpipe ();
+
+File::filter (nickle, (string[*]) { nickle, "autoimport-script.5c" },
+	      (file[3]) { stdin, output[1], errors[1] });
+File::close (output[1]);
+File::close (errors[1]);
+
+string[*]	out = read_lines (output[0]);
+string[*]	err = read_lines (errors[0]);
+string[*]	want_out = { "inner 23", "alpha 17" };
+string[*]	want_err = {
+    "Cannot autoimport from file \"nosuch.5c\", giving up.",
+};
+
+if (dim (out) != dim (want_out))
+    raise bad_autoimport ("output", sprintf ("%v", out));
+for (int i = 0; i < dim (out); i++)
+    if (out[i] != want_out[i])
+	raise bad_autoimport ("output", out[i]);
+if (dim (err) != dim (want_err))
+    raise bad_autoimport ("errors", sprintf ("%v", err));
+for (int i = 0; i < dim (err); i++)
+    if (err[i] != want_err[i])
+	raise bad_autoimport ("errors", err[i]);

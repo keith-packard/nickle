@@ -23,6 +23,7 @@ tests = [
   'complexinverseroundtest.5c',
   'ctypetest.5c',
   'printftest.5c',
+  'autoimporttest.5c',
   'gcdtest.5c',
   'bitwisetest.5c',
   'remaindertest.5c',

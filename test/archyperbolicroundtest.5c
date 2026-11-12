@@ -1,0 +1,52 @@
+/*
+ * Nickle test suite
+ *
+ * asinh, acosh, and atanh are correctly rounded
+ *
+ * Each computed a log at a few bits beyond the argument's precision,
+ * so each was sometimes an ulp off. atanh(-1) raised invalid_argument
+ * from log, where atanh(1) raised divide_by_zero
+ */
+
+exception bad_result (string name, real x, real got, real want);
+
+void check (string name, real(real) f, real x, int prec)
+{
+    x = imprecise (x, prec);
+
+    real	got = f (x);
+    real	want = imprecise (f (imprecise (x, prec + 600)), prec);
+
+    if (got != want)
+	raise bad_result (name, x, got, want);
+}
+
+for (int k = 1; k <= 600; k++) {
+    rational	m = (k * 7919 % 10007) / 10007;
+    rational	s = m * 2 ** (k % 61 - 40);
+
+    if (k % 2 == 0)
+	s = -s;
+    for (int prec = 53; prec <= 113; prec += 60) {
+	check ("asinh", asinh, s * 64, prec);
+	check ("acosh", acosh, 1 + abs (s) * 64, prec);
+	/* Near 0 and near ±1 */
+	check ("atanh", atanh, s / 2 ** 21, prec);
+	check ("atanh", atanh, (1 - (1 + m) * 2 ** -(k % 45 + 1)) * (-1) ** k,
+	       prec);
+    }
+}
+
+/* An imprecise argument at a root keeps its precision */
+if (precision (asinh (imprecise (0, 53))) != 53 ||
+    precision (acosh (imprecise (1, 53))) != 53 ||
+    precision (atanh (imprecise (0, 53))) != 53)
+    raise bad_result ("precision", 0, 0, 0);
+
+for (int s = -1; s <= 1; s += 2) {
+    try {
+	atanh (imprecise (s, 53));
+	raise bad_result ("atanh", s, 0, 0);
+    } catch divide_by_zero (real num, real den) {
+    }
+}

@@ -16,6 +16,7 @@ tests = [
   'rootexponenttest.5c',
   'complexlogpowtest.5c',
   'hyperbolicroundtest.5c',
+  'archyperbolicroundtest.5c',
   'complextantest.5c',
   'complexroundtest.5c',
   'gcdtest.5c',

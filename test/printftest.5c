@@ -112,3 +112,39 @@ check ("%.2f", f (0.375), "0.38");
 check ("%.1e", f (0.125), "1.2e-1");
 check ("%.1e", f (1250), "1.2e3");
 check ("%.0e", f (35), "4e1");
+
+/*
+ * Exponents are decimal in every base, introduced by '@' above base
+ * 10, where 'e' is a digit, as in GMP and MPFR. Floats wrote them in
+ * the base and rationals in decimal, both after 'e', so 3 * 16**10
+ * printed as 3.00ea and 3.00e10
+ */
+string sprint (real x, int base, int prec)
+{
+    file	s = File::string_write ();
+
+    File::print (s, x, "e", base, 0, prec, " ");
+    return File::string_string (s);
+}
+
+void check_base (real x, int base, int prec, string want)
+{
+    string	got = sprint (x, base, prec);
+
+    if (got != want)
+	raise bad_format (sprintf ("%%.%de base %d", prec, base), x, got, want);
+}
+
+void check_both (real x, int base, string want)
+{
+    check_base (f (x), base, 2, want);
+    check_base (x, base, 2, want);
+}
+
+check_both (3 * 2**40, 2, "1.10e41");
+check_both (3 * 2**40, 10, "3.30e12");
+check_both (3 * 2**40, 11, "1.06@12");
+check_both (3 * 2**40, 16, "3.00@10");
+check_both (3 / 4 / 16**10, 16, "c.00@-11");
+check_both (35 * 36**12, 36, "z.00@12");
+check_both (-11 / 12**30, 11, "-8.99@-31");

@@ -1,0 +1,101 @@
+/*
+ * Nickle test suite
+ *
+ * Functions of type noreturn
+ *
+ * A function that never returns, such as abort or exit, had type void,
+ * so a function of another type that ended by calling one could reach
+ * its end as far as the compiler knew. noreturn makes such a call
+ * end its block, fits wherever a value is expected, and is checked:
+ * a noreturn function may neither return nor reach its end, and a
+ * call through a function value that does return raises.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* A call of a noreturn function ends a function of any type */
+int function positive (int x)
+{
+    if (x > 0)
+	return x;
+    abort ("not positive");
+}
+
+check ("ends in abort", positive (3), 3);
+
+/* It fits where a value is expected */
+int function pick (bool ok) = ok ? 1 : abort ("bad");
+
+check ("conditional", pick (true), 1);
+
+noreturn function fail (string msg)
+{
+    raise invalid_argument (msg, 0, 0);
+}
+
+poly function result (poly() f)
+{
+    try {
+	return f ();
+    } catch invalid_argument (string msg, int i, poly value) {
+	return msg;
+    }
+}
+
+check ("raise", result (func () { return fail ("failed"); }), "failed");
+
+/* A returning function reached through a noreturn type is caught */
+noreturn() returns = void func () { };
+
+check ("trap", result (func () { returns (); }), "noreturn function returned");
+
+/* Builtins and libraries declare the functions that never return */
+string function printed (string name)
+{
+    file f = File::string_write ();
+
+    Command::pretty_print (f, (string[*]) { name });
+    return File::string_string (f);
+}
+
+check ("exit", String::index (printed ("exit"), "public noreturn exit (int)") == 0, true);
+check ("longjmp", String::index (printed ("longjmp"), "public noreturn longjmp") == 0, true);
+check ("abort", String::index (printed ("abort"), "noreturn abort (") >= 0, true);
+
+/* A noreturn function may neither return nor reach its end */
+string[*] read_lines (file f)
+{
+    string[...]	lines = {};
+
+    while (!File::end (f))
+	lines[dim (lines)] = File::fgets (f);
+    return lines;
+}
+
+string	nickle = Environ::get ("NICKLE");
+file[*]	errors = File::mkpipe ();
+
+File::filter (nickle,
+	      (string[*]) { nickle, "-e",
+			    "noreturn r () { return; }\n" +
+			    "noreturn e (int x) { if (x > 0) abort (\"x\"); }\n" },
+	      (file[3]) { stdin, stdout, errors[1] });
+File::close (errors[1]);
+
+string[*]	err = read_lines (errors[0]);
+int		returns_found = 0, ends_found = 0;
+
+for (int i = 0; i < dim (err); i++) {
+    if (String::index (err[i], "return in noreturn function") >= 0)
+	returns_found++;
+    if (String::index (err[i], "Control reaches end of function with type 'noreturn'") >= 0)
+	ends_found++;
+}
+check ("return error", returns_found, 1);
+check ("end errors", ends_found >= 1, true);

@@ -367,11 +367,13 @@ PrettyChar(Value f, uint32_t c)
             break;
         default:
             FileOutput(f, '\\');
-            Print(f, NewCharInteger(c), 'o', 8, 3, 0, '0');
+            Print(f, NewCharInteger(c), 'o', 8, 3, -1, '0');
             break;
         }
     else if (c == '\'')
         FilePuts(f, "\\'");
+    else if (c == '\\')
+        FilePuts(f, "\\\\");
     else
         FileOutchar(f, c);
     FileOutput(f, '\'');

@@ -194,7 +194,7 @@ extend namespace File {
 		    {
 			if (!fmts[i].test (this_arg))
 			    raise invalid_argument (fmts[i].message +
-						    "format with non-" +
+						    " format with non-" +
 						    fmts[i].message,
 						    1, this_arg);
 			this_base = fmts[i].base;

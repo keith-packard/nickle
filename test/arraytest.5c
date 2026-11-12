@@ -29,4 +29,25 @@ int[] x = {{1},2};
 stderr = save_stderr;
 Command::lex_exit_on_error (true);
 
+/*
+ * An untyped array sized by its initializers has a fixed size, like
+ * (poly[*]): the constructor made it resizable, as for poly[...]
+ */
+bool resizable (poly a)
+{
+    int[*]	d = dims (a);
+    int[dim (d)]	bigger = { [i] = d[i] + 1 };
+
+    try {
+	setdims (a, bigger);
+    } catch invalid_argument (string msg, int i, poly v) {
+	return false;
+    }
+    return true;
+}
+
+check (resizable (([*]) { 1, 2 }), false);
+check (resizable (([*,*]) { { 1, 2 }, { 3 } }), false);
+check (resizable ((poly[...]) { 1, 2 }), true);
+
 exit(0);

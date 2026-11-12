@@ -22,13 +22,29 @@ extend namespace String {
 
     public string dirname(string path)
 	/*
-	 * Return the directory portion of 'path'
+	 * Return the directory portion of 'path', as POSIX dirname
+	 * does: "." for a path without a slash, and "/" for one with
+	 * only slashes before its last component
 	 */
     {
-	int n = rindex(path, "/");
-	if (n == -1)
+	int end = length(path);
+
+	/* Skip trailing slashes */
+	while (end > 0 && path[end - 1] == '/')
+	    end--;
+	if (end == 0)
+	    return length(path) > 0 ? "/" : ".";
+	/* Skip the last component */
+	while (end > 0 && path[end - 1] != '/')
+	    end--;
+	if (end == 0)
 	    return ".";
-	return (substr(path, 0, n));
+	/* Skip the slashes before it */
+	while (end > 0 && path[end - 1] == '/')
+	    end--;
+	if (end == 0)
+	    return "/";
+	return substr(path, 0, end);
     }
 
     public string[*] split(string s, string sep)

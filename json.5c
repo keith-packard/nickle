@@ -199,24 +199,81 @@ namespace JSON {
 	    File::ungetc(c, f->f);
 	}
 
-	bool is_int_char(int c) {
-	    if (Ctype::isdigit(c))
-		return true;
-	    if (c == '-')
-		return true;
-	    return false;
+	void error() {
+	    raise json_parse_error(f->line, f->token);
 	}
 
-	bool is_float_char(int c) {
-	    if (Ctype::isdigit(c))
-		return true;
-	    if (c == '-')
-		return true;
-	    if (c == '.')
-		return true;
-	    if (c == 'e' || c == 'E')
-		return true;
-	    return false;
+	bool is_number_char(int c) {
+	    return Ctype::isdigit(c) || c == '-' || c == '+' || c == '.' || c == 'e' || c == 'E';
+	}
+
+	/*
+	 * Check 'n' against JSON's number syntax,
+	 * -?(0|[1-9][0-9]*)(.[0-9]+)?([eE][-+]?[0-9]+)?,
+	 * and return whether it has a fraction or exponent
+	 */
+	bool check_number(string n) {
+	    int i = 0;
+	    int l = String::length(n);
+
+	    int digits() {
+		int start = i;
+		while (i < l && Ctype::isdigit(n[i]))
+		    i++;
+		if (i == start)
+		    error();
+		return i - start;
+	    }
+
+	    bool is_float = false;
+	    if (i < l && n[i] == '-')
+		i++;
+	    if (i < l && n[i] == '0')
+		i++;
+	    else
+		digits();
+	    if (i < l && n[i] == '.') {
+		i++;
+		digits();
+		is_float = true;
+	    }
+	    if (i < l && (n[i] == 'e' || n[i] == 'E')) {
+		i++;
+		if (i < l && (n[i] == '-' || n[i] == '+'))
+		    i++;
+		digits();
+		is_float = true;
+	    }
+	    if (i != l)
+		error();
+	    return is_float;
+	}
+
+	int hex4() {
+	    int v = 0;
+	    for (int i = 0; i < 4; i++) {
+		int c = ch();
+		if (!Ctype::isxdigit(c))
+		    error();
+		v = v * 16 + string_to_integer(String::new(c), 16);
+	    }
+	    return v;
+	}
+
+	/* The code point of a \u escape, joining a surrogate pair */
+	int unicode() {
+	    int c = hex4();
+	    if (0xdc00 <= c && c <= 0xdfff)
+		error();
+	    if (0xd800 <= c && c <= 0xdbff) {
+		if (ch() != '\\' || ch() != 'u')
+		    error();
+		int low = hex4();
+		if (low < 0xdc00 || 0xdfff < low)
+		    error();
+		c = 0x10000 + ((c - 0xd800) << 10) + (low - 0xdc00);
+	    }
+	    return c;
 	}
 
 	bool match_keyword(string keyword) {
@@ -229,6 +286,8 @@ namespace JSON {
 	    return true;
 	}
 
+	/* The end of input between tokens ends the text; inside one, it's an error */
+	bool in_token = false;
 	try {
 	    f->token = "";
 	    for (;;) {
@@ -236,8 +295,10 @@ namespace JSON {
 
 		switch (c) {
 		case '\n':
+		case '\r':
 		case ' ':
 		case '\t':
+		    f->token = "";
 		    continue;
 		case '{':
 		    return (token_t) { .token = term_t._oc };
@@ -253,65 +314,83 @@ namespace JSON {
 		    return (token_t) { .token = term_t._colon };
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
-		case '-': case '.':
+		case '-':
 		    string nval = "";
-		    bool has_float = false;
-		    while (is_float_char(c)) {
+		    while (is_number_char(c)) {
 			nval = nval + String::new(c);
-			if (!is_int_char(c))
-			    has_float = true;
 			if (File::end(f->f))
 			    break;
 			c = ch();
 		    }
-		    unch(c);
-		    if (has_float)
+		    if (is_number_char(c)) {
+			/* The number ran to the end of the input */
+		    } else
+			unch(c);
+		    if (check_number(nval))
 			return (token_t) { .val = { .fval = atof(nval) }, .token = term_t._float };
 		    return (token_t) { .val = { .ival = atoi(nval) }, .token = term_t._int };
 		case '"':
+		    in_token = true;
 		    string sval = "";
 		    for (;;) {
 			c = ch();
 			if (c == '"')
 			    break;
+			if (c < 0x20)
+			    error();
 			if (c == '\\') {
 			    c = ch();
 			    switch (c) {
+			    case '"': case '\\': case '/':
+				break;
+			    case 'b':
+				c = '\b';
+				break;
+			    case 'f':
+				c = '\f';
+				break;
 			    case 'n':
 				c = '\n';
+				break;
+			    case 'r':
+				c = '\r';
 				break;
 			    case 't':
 				c = '\t';
 				break;
-			    default:
+			    case 'u':
+				c = unicode();
 				break;
+			    default:
+				error();
 			    }
 			}
 			sval = sval + String::new(c);
 		    }
 		    return (token_t) { .val = { .sval = sval }, .token = term_t._string };
 		case 't':
+		    in_token = true;
 		    if (match_keyword("true"))
 			return (token_t) { .val = { .bval = true }, .token = term_t._bool };
-		    raise json_parse_error(f->line, f->token);
-		    break;
+		    error();
 		case 'f':
+		    in_token = true;
 		    if (match_keyword("false"))
 			return (token_t) { .val = { .bval = false }, .token = term_t._bool };
-		    raise json_parse_error(f->line, f->token);
-		    break;
+		    error();
 		case 'n':
+		    in_token = true;
 		    if (match_keyword("null"))
 			return (token_t) { .val = { .nval = <> }, .token = term_t._null };
-		    raise json_parse_error(f->line, f->token);
-		    break;
+		    error();
 		default:
-		    break;
+		    error();
 		}
-		break;
 	    }
 	}
-	catch File::io_eof(file f) {
+	catch File::io_eof(file eof) {
+	    if (in_token)
+		error();
 	    return (token_t) { .token = term_t._end };
 	}
 	return (token_t) { .token = term_t._error };
@@ -334,24 +413,25 @@ namespace JSON {
 
 	poly[string] hash() {
 	    poly[string] ret = {};
+	    if (token.token == term_t._cc) {
+		next();
+		return ret;
+	    }
 	    for (;;) {
-		if (token.token == term_t._cc) {
-		    next();
-		    return ret;
-		}
 		expect(term_t._string);
 		string name = token.val.sval;
 		next();
 		expect(term_t._colon);
 		next();
-		poly val = value();
-		ret[name] = val;
+		ret[name] = value();
+		/* A comma must be followed by another member */
 		switch (token.token) {
 		case term_t._comma:
 		    next();
 		    continue;
 		case term_t._cc:
-		    break;
+		    next();
+		    return ret;
 		default:
 		    raise json_parse_error(f.line, f.token);
 		}
@@ -360,19 +440,20 @@ namespace JSON {
 
 	poly[] array() {
 	    poly[...] ret = {};
+	    if (token.token == term_t._cs) {
+		next();
+		return ret;
+	    }
 	    for (;;) {
-		if (token.token == term_t._cs) {
-		    next();
-		    return ret;
-		}
-		poly val = value();
-		ret[dim(ret)] = val;
+		ret[dim(ret)] = value();
+		/* A comma must be followed by another element */
 		switch (token.token) {
 		case term_t._comma:
 		    next();
 		    continue;
 		case term_t._cs:
-		    break;
+		    next();
+		    return ret;
 		default:
 		    raise json_parse_error(f.line, f.token);
 		}
@@ -407,11 +488,16 @@ namespace JSON {
 		    void nval = token.val.nval;
 		    next();
 		    return nval;
+	    default:
+		    raise json_parse_error(f.line, f.token);
 	    }
 	};
 
 	next();
-	return value();
+	poly ret = value();
+	/* Nothing may follow the value */
+	expect(term_t._end);
+	return ret;
     }
 
     public poly from_json(string arg) {

@@ -1034,6 +1034,9 @@ after decimal point) of the formatted value.  Either integer
 may be omitted.  Imprecise reals print no more digits than
 their precision supports, so the precision may yield fewer
 chars after the decimal point.
+Values round to the nearest digit, a tie going to an even
+digit, as in arithmetic; precision 0 prints a whole number
+with no point.
 .IP "-"
 A precision value indicating infinite
 precision.

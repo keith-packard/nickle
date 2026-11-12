@@ -965,7 +965,18 @@ try_again_f:
         ptrdiff_t frac_digits = frac_width == 0 ? 0 : frac_width - 1;
         Value     round
             = Times(Divide(One, NewInt(2)), Pow(NewInt(base), NewPtrdiffInteger(-frac_digits)));
-        frac_part = Plus(frac_part, round);
+        Value scaled = Times(frac_part, Pow(NewInt(base), NewPtrdiffInteger(frac_digits)));
+        Value kept = Floor(scaled);
+        Bool  even_tie = False;
+
+        /* At exactly half, round to an even last digit, as NewFloat does */
+        if (True(Equal(Minus(scaled, kept), Divide(One, NewInt(2))))) {
+            Value last = frac_digits ? kept : int_part;
+
+            even_tie = True(Equal(Mod(Mod(last, NewInt(base)), NewInt(2)), Zero));
+        }
+        if (!even_tie)
+            frac_part = Plus(frac_part, round);
 
         /*
          * If the fractional overflowed, bump the integer part

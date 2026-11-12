@@ -698,6 +698,30 @@ CheckDecimalLength(int prec, Natural *nden, int ibase, ptrdiff_t *initial, ptrdi
     EXIT();
 }
 
+/*
+ * Return 'rv' rounded to 'digits' places after the point in base
+ * 'dig', a tie going to an even last digit, as NewFloat rounds
+ */
+static Value
+RationalRoundDigits(Value rv, Natural *dig, ptrdiff_t digits)
+{
+    ENTER();
+    Rational *r = &rv->rational;
+    Natural  *scale = NaturalIntPow(dig, digits);
+    Natural  *rem, *last;
+    Natural  *q = NaturalDivide(NaturalTimes(r->num, scale), r->den, &rem);
+    Natural  *twice = NaturalTimes(rem, two_natural);
+    Bool      up = NaturalLess(r->den, twice);
+
+    if (NaturalEqual(twice, r->den)) {
+        (void)NaturalDivide(q, dig, &last);
+        up = !NaturalEven(last);
+    }
+    if (up)
+        q = NaturalPlus(q, one_natural);
+    RETURN(NewRational(r->sign, q, scale));
+}
+
 static Bool
 RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, int prec,
                      uint32_t fill)
@@ -780,14 +804,14 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
             }
             r = &rv->rational;
 
-            /* Rounding to 'prec' digits may carry the mantissa to base */
+            /*
+             * Round to 'prec' digits now, which may carry the
+             * mantissa to base, as with 9.9996 to 3 digits
+             */
             if (prec >= 0) {
-                Natural *half = NaturalTimes(NaturalIntPow(dig, prec), two_natural);
-                Value    rounded
-                    = RationalPlusHelper(Positive, &NewRational(Positive, r->num, r->den)->rational,
-                                         &NewRational(Positive, one_natural, half)->rational);
-
-                if (!NaturalLess(rounded->rational.num, NaturalTimes(dig, rounded->rational.den))) {
+                rv = RationalRoundDigits(rv, dig, prec);
+                r = &rv->rational;
+                if (!NaturalLess(r->num, NaturalTimes(dig, r->den))) {
                     rv = RationalTimes(rv, NewRational(Positive, one_natural, dig), True);
                     r = &rv->rational;
                     exponent++;
@@ -828,8 +852,7 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
     }
     /* Precision 0 rounds to a whole number, printed with no point */
     if (!use_braces && prec == 0) {
-        rv = RationalPlusHelper(r->sign, r,
-                                &NewRational(Positive, one_natural, two_natural)->rational);
+        rv = RationalRoundDigits(rv, dig, 0);
         r = &rv->rational;
         initial_width = repeat_width = rep_width = 0;
     }
@@ -837,12 +860,9 @@ RationalDecimalPrint(Value f, Value rv, uint32_t format, int base, int width, in
     if (!initial_width && !repeat_width && min_prec > 0)
         initial_width = min_prec;
     if (initial_width) {
-        Natural *half_digit;
         if (initial_width < 0) {
             initial_width = -initial_width;
-            half_digit = NaturalTimes(NaturalIntPow(dig, initial_width), two_natural);
-            rv = RationalPlusHelper(r->sign, r,
-                                    &NewRational(Positive, one_natural, half_digit)->rational);
+            rv = RationalRoundDigits(rv, dig, initial_width);
             r = &rv->rational;
         } else {
             if (!repeat_width && initial_width < min_prec)

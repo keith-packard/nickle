@@ -151,6 +151,17 @@ extend namespace File {
 		}
 
 		/*
+		 * A literal percent sign, which takes no argument
+		 */
+
+		if (fmt::c() == '%')
+		{
+		    putc ('%', f);
+		    fmt::step ();
+		    continue;
+		}
+
+		/*
 		 * typecheck and select base
 		 */
 

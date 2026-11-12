@@ -73,3 +73,64 @@ check ((string[*]) { "-ff", "x" }, true, "x", "unset", (string[*]) {});
 check ((string[*]) { "-fv", "x", "y" }, true, "y", "x", (string[*]) {});
 check ((string[*]) { "-vfoo", "x" }, false, "x", "foo", (string[*]) {});
 check ((string[*]) { "-fv-", "x", "y" }, true, "x", "-", (string[*]) { "y" });
+
+/*
+ * Usage lists every option by its abbreviation and name. An option
+ * with only an abbreviation was shown by its expr_name alone, and one
+ * without an expr_name, as a flag usually is, raised uninitialized_value
+ */
+void function check_usage ()
+{
+    string	program =
+	"import ParseArgs;" +
+	"argdesc argd = {" +
+	"    .prog_name = \"p\"," +
+	"    .args = {" +
+	"\t{ .var = { .arg_flag = &(bool g) }, .abbr = 'g'," +
+	"\t  .desc = \"a flag\" }," +
+	"\t{ .var = { .arg_string = &(string v) }, .abbr = 'v'," +
+	"\t  .expr_name = \"val\", .desc = \"a value\" }," +
+	"\t{ .var = { .arg_int = &(int n) }, .name = \"count\"," +
+	"\t  .desc = \"a count\" }," +
+	"\t{ .var = { .arg_flag = &(bool f) }, .abbr = 'f', .name = \"flag\"," +
+	"\t  .desc = \"named flag\" }," +
+	"    }," +
+	"};" +
+	"string[*] av = { \"--help\" };" +
+	"parseargs (&argd, &av);";
+    string[*]	want = {
+	"p: usage: p <options>",
+	"    -g   a flag",
+	"    -v <val>   a value",
+	"    --count <value>   a count",
+	"    -f,--flag   named flag",
+    };
+    string	nickle = Environ::get ("NICKLE");
+    file[*]	output = File::mkpipe ();
+
+    File::filter (nickle, (string[*]) { nickle, "-e", program },
+		  (file[3]) { stdin, output[1], stderr });
+    File::close (output[1]);
+    for (int i = 0; i < dim (want); i++) {
+	string line = "<eof>";
+
+	if (!File::end (output[0]))
+	    line = File::fgets (output[0]);
+
+	if (line != want[i])
+	    raise bad_parse ((string[*]) { "--help" }, line);
+    }
+    if (!File::end (output[0]))
+	raise bad_parse ((string[*]) { "--help" }, File::fgets (output[0]));
+}
+
+check_usage ();
+
+/* An option needs an abbreviation or a name */
+try {
+    argdesc argd = { .args = { { .var = { .arg_flag = &(bool x) } } } };
+    string[*] av = { "p" };
+    parseargs (&argd, &av);
+    raise bad_parse ((string[*]) {}, "bad_argd");
+} catch bad_argd (string reason) {
+}

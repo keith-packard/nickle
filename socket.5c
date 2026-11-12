@@ -1,32 +1,57 @@
 extend namespace Socket {
-    public string addr_to_string (int addr) 
+    public string addr_to_string (int addr)
 	/*
-	 * Return a dotted quad from 'addr'
+	 * Return a dotted quad from 'addr', in 0 .. 2**32-1
 	 */
     {
+	if (addr < 0 || addr >= 1 << 32)
+	    raise invalid_argument ("network address out of range", 0, addr);
 	return sprintf ("%d.%d.%d.%d",
 			(addr >> 24) & 0xff,
 			(addr >> 16) & 0xff,
 			(addr >> 8) & 0xff,
 			(addr) & 0xff);
     }
-    
-    public int string_to_addr (string addr) 
+
+    bool byte_string (string s)
 	/*
-	 * Parse a dotted quad
+	 * Return whether 's' is a decimal number from 0 to 255
 	 */
     {
-	int r = File::sscanf (addr, "%d.%d.%d.%d", 
-			&(int a), &(int b), &(int c), &(int d));
-	if (r != 4)
+	int len = String::length (s);
+
+	if (len < 1 || len > 3)
+	    return false;
+	for (int i = 0; i < len; i++)
+	    if (!Ctype::isdigit (s[i]))
+		return false;
+	return string_to_integer (s, 10) <= 255;
+    }
+
+    public int string_to_addr (string addr)
+	/*
+	 * Parse a dotted quad: four decimal numbers from 0 to 255,
+	 * separated by dots
+	 */
+    {
+	string[*]	parts = String::split (addr, ".");
+	int		r = 0;
+
+	if (dim (parts) != 4)
 	    raise invalid_argument ("invalid network address format",
-				    r, addr);
-	return (a << 24) + (b << 16) + (c << 8) + d;
+				    0, addr);
+	for (int i = 0; i < 4; i++) {
+	    if (!byte_string (parts[i]))
+		raise invalid_argument ("invalid network address format",
+					0, addr);
+	    r = (r << 8) | string_to_integer (parts[i], 10);
+	}
+	return r;
     }
 }
 
 /*
- * backwards compatibility for old namespace name 
+ * backwards compatibility for old namespace name
  */
 
 namespace Sockets {

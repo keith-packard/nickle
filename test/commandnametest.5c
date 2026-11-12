@@ -1,0 +1,53 @@
+/*
+ * Nickle test suite
+ *
+ * The print, edit, and undefine commands report unknown names alike
+ *
+ * print reported '"Math::zz": name not found' on stderr, while edit
+ * and undefine printed 'No symbol "zz" in namespace' on stdout, giving
+ * only the last part of the name.
+ */
+
+exception bad_names (string what, poly got);
+
+string[*] read_lines (file f)
+{
+    string[...]	lines = {};
+
+    while (!File::end (f))
+	lines[dim (lines)] = File::fgets (f);
+    return lines;
+}
+
+string	nickle = Environ::get ("NICKLE");
+file[*]	output = File::mkpipe ();
+file[*]	errors = File::mkpipe ();
+
+File::filter (nickle,
+	      (string[*]) { nickle, "-e",
+			    "int aa = 1, bb = 2;\n" +
+			    "undefine aa, zz, bb\n" +
+			    "print Math::zz\n" +
+			    "edit zz\n" +
+			    "printf (\"%v %v\\n\", Command::valid_name ((string[*]) { \"aa\" }), " +
+			    "Command::valid_name ((string[*]) { \"bb\" }));\n" },
+	      (file[3]) { stdin, output[1], errors[1] });
+File::close (output[1]);
+File::close (errors[1]);
+
+string[*]	out = read_lines (output[0]);
+string[*]	err = read_lines (errors[0]);
+string[*]	want_err = {
+    "\"zz\": name not found",
+    "\"Math::zz\": name not found",
+    "\"zz\": name not found",
+};
+
+/* undefine stops at the first unknown name */
+if (dim (out) != 1 || out[0] != "false true")
+    raise bad_names ("output", out);
+if (dim (err) != dim (want_err))
+    raise bad_names ("errors", err);
+for (int i = 0; i < dim (err); i++)
+    if (err[i] != want_err[i])
+	raise bad_names ("errors", err);

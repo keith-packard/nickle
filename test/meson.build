@@ -129,7 +129,8 @@ tests = [
   'commandreleasetest.5c',
   'pipeexittest.5c',
   'funcnewlinetest.5c',
-  'librarymissingtest.5c'
+  'librarymissingtest.5c',
+  'commandnametest.5c'
 ]
 
 # Foreign::load exists only where nickle can load shared libraries

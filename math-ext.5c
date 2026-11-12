@@ -16,6 +16,102 @@ extend namespace Math {
 	return e < 0 ? -e : 0;
     }
 
+    real exact_one_plus(real x)
+	/*
+	 * Returns 1 + 'x' exactly
+	 */
+    {
+	x = imprecise(x);
+	return imprecise(x, precision(x) + abs(exponent(x)) + 2) + 1;
+    }
+
+    protected real asinh_w(real v, int wprec, *real err)
+	/*
+	 * Compute asinh(v) to 'wprec' bits, setting 'err' to a bound on
+	 * the absolute error. asinh(0) is an exact 0
+	 */
+    {
+	if (v == 0) {
+	    *err = 0;
+	    return 0;
+	}
+
+	/*
+	 * asinh(s) = log1p(s + s**2 / (1 + sqrt(s**2 + 1))) for
+	 * s = |v|, whose terms are all positive. Rounding s and the
+	 * steps leave t under 10 roundings from exact, plus the
+	 * square root's error, and log1p' = 1 / (1 + t)
+	 */
+	real	u = 2**-wprec;
+	real	s = imprecise(abs(v), wprec);
+	real	r_rel;
+	real	r = sqrt_w(s * s + 1, wprec, &r_rel);
+	real	t = s + s * s / (1 + r);
+	real	t_rel = 10 * u + r_rel;
+	real	l = log1p_w(t, wprec, err);
+
+	*err += 2 * t * t_rel / (1 + t);
+	if (v < 0)
+	    return -l;
+	return l;
+    }
+
+    protected real acosh_w(real x, int wprec, *real err)
+	/*
+	 * Compute acosh(x), x >= 1, to 'wprec' bits, setting 'err' to a
+	 * bound on the absolute error. acosh(1) is an exact 0
+	 */
+    {
+	if (x == 1) {
+	    *err = 0;
+	    return 0;
+	}
+
+	/*
+	 * acosh(x) = log1p(t + sqrt(t (t + 2))) for t = x - 1, formed
+	 * exactly and then rounded, as it cancels near 1. The terms
+	 * are positive, leaving a under 6 roundings from exact, plus
+	 * the square root's error
+	 */
+	real	u = 2**-wprec;
+	real	t = imprecise(-exact_one_plus(-x), wprec);
+	real	r_rel;
+	real	r = sqrt_w(t * (t + 2), wprec, &r_rel);
+	real	a = t + r;
+	real	a_rel = 6 * u + r_rel;
+	real	l = log1p_w(a, wprec, err);
+
+	*err += 2 * a * a_rel / (1 + a);
+	return l;
+    }
+
+    protected real atanh_w(real x, int wprec, *real err)
+	/*
+	 * Compute atanh(x), |x| < 1, to 'wprec' bits, setting 'err' to a
+	 * bound on the absolute error. atanh(0) is an exact 0
+	 */
+    {
+	if (x == 0) {
+	    *err = 0;
+	    return 0;
+	}
+
+	/*
+	 * atanh(s) = log1p(2s / (1 - s)) / 2 for s = |x|. Rounding s,
+	 * and 1 - s, formed exactly, leave q under 3 roundings from
+	 * exact, and log1p' <= 1 for q >= 0
+	 */
+	real	u = 2**-wprec;
+	real	s = imprecise(abs(x), wprec);
+	real	q = 2 * s / imprecise(exact_one_plus(-s), wprec);
+	real	l = log1p_w(q, wprec, err);
+
+	*err = (*err + 4 * q * u) / 2;
+	if (x < 0)
+	    return -l / 2;
+	return l / 2;
+    }
+
     public real acosh(x)
 	/*
 	 * Returns inverse hyperbolic cosine of 'x'.
@@ -23,11 +119,16 @@ extend namespace Math {
     {
 	if (x < 1)
 	    raise invalid_argument("acosh arg < 1", 0, x);
+	/* Keep the precision of an imprecise 1 */
+	if (x == 1)
+	    return x - 1;
 	x = imprecise(x);
-	int bits = precision(x);
-	/* x*x-1 and the log cancel as x approaches 1 */
-	x = imprecise(x, bits + small_bits(x - 1) + 8);
-	return imprecise(log(x + sqrt(x*x-1)), bits);
+	real compute(int wprec, *real err)
+	{
+	    return acosh_w(x, wprec, err);
+	}
+
+	return round_correctly(precision(x), compute);
     }
 
     public real asinh(x)
@@ -35,17 +136,16 @@ extend namespace Math {
 	 * Returns inverse hyperbolic sine of 'x'.
 	 */
     {
-	if (x == 0) return 0;
+	/* Keep the precision of an imprecise 0 */
+	if (x == 0)
+	    return x;
 	x = imprecise(x);
-	int bits = precision(x);
-	real sign = 1;
-	if (x < 0) {
-	    sign = -1;
-	    x = -x;
+	real compute(int wprec, *real err)
+	{
+	    return asinh_w(x, wprec, err);
 	}
-	/* The log cancels as x approaches 0 */
-	x = imprecise(x, bits + small_bits(x) + 8);
-	return imprecise(sign * log(x + sqrt(x*x+1)), bits);
+
+	return round_correctly(precision(x), compute);
     }
 
     public real atanh(x)
@@ -55,11 +155,17 @@ extend namespace Math {
     {
 	if (abs(x) > 1)
 	    raise invalid_argument("atanh arg > 1", 0, x);
+	if (abs(x) == 1)
+	    raise divide_by_zero(x, 0);
+	if (x == 0)
+	    return x;
 	x = imprecise(x);
-	int bits = precision(x);
-	/* The log cancels as x approaches 0 */
-	x = imprecise(x, bits + small_bits(x) + 8);
-	return imprecise(0.5 * log((1 + x) / (1 - x)), bits);
+	real compute(int wprec, *real err)
+	{
+	    return atanh_w(x, wprec, err);
+	}
+
+	return round_correctly(precision(x), compute);
     }
 
     protected real cosh_w(real x, int wprec, *real rel)

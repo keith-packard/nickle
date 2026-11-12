@@ -79,6 +79,8 @@ static int
 tokenToPrecedence(int token)
 {
     switch (token) {
+    /* A declaration is an expr, as low as a comma expression */
+    case VAR:
     case COMMA:
         return 0;
     case ASSIGN:

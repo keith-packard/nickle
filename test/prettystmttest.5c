@@ -8,7 +8,9 @@
  * namespace printed whatever followed the name's node. const ran into
  * its type, and global was dropped from declarations inside functions.
  * Uninitialized globals printed = <uninit>, and namespaces nested in a
- * printed namespace printed without their bodies.
+ * printed namespace printed without their bodies. do-while printed a
+ * stray semicolon, which broke an enclosing if-else, and a
+ * comprehension block printed misindented.
  */
 
 exception wrong (string what, poly got, poly want);
@@ -108,3 +110,33 @@ Command::lex_string ("namespace Again " + String::substr (ns, String::index (ns,
 							  String::length (ns) - String::index (ns, "{")) +
 		     "check (\"outer\", Again::x, 1);\n" +
 		     "check (\"inner\", Again::Inner::y, 2);\n");
+
+/* do-while inside if-else, and a comprehension with a block, read back */
+int function dowhile (int a, bool b)
+{
+    if (b)
+	do
+	    a--;
+	while (a > 0)
+    else
+	a = 5;
+    return a;
+}
+
+int[*] function compblock ()
+{
+    return (int[3]) { [i] { int j = i * 2; return j + 1; } };
+}
+
+string dw = printed ("dowhile");
+string cb = printed ("compblock");
+has ("do-while", dw, "while (a > 0)\n");
+int dws = String::index (dw, "(");
+int cbs = String::index (cb, "(");
+Command::lex_string ("int function dowhile_again " +
+		     String::substr (dw, dws, String::length (dw) - dws) +
+		     "int[*] function compblock_again " +
+		     String::substr (cb, cbs, String::length (cb) - cbs) +
+		     "check (\"do-while true\", dowhile_again (3, true), dowhile (3, true));\n" +
+		     "check (\"do-while false\", dowhile_again (3, false), dowhile (3, false));\n" +
+		     "check (\"comprehension\", compblock_again (), compblock ());\n");

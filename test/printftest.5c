@@ -69,3 +69,20 @@ try {
     if (msg != "int format with non-int")
 	raise bad_format ("%d", "x", msg, "int format with non-int");
 }
+
+/*
+ * Precision 0 rounds to a whole number and prints no point. Exact
+ * values truncated, integers printed a point, and a width made floats
+ * ignore it
+ */
+check ("%.0f", 5/2, "3");
+check ("%.0f", 13/5, "3");
+check ("%.0f", -13/5, "-3");
+check ("%.0f", 2/3, "1");
+check ("%.0f", 1/3, "0");
+check ("%.0e", 2/3, "7e-1");
+check ("%5.0f", imprecise (2.5), "    3");
+check ("%-5.0f", -13/5, "-3   ");
+check ("%05.0f", -13/5, "-0003");
+check ("%.0f", 3, "3");
+check ("%5.0f", -(2**70), "-1180591620717411303424");

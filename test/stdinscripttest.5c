@@ -33,3 +33,5 @@ check ((string[*]) { "-" }, "(string [1]) {\"-\"}");
 check ((string[*]) { "-", "a", "b" }, "(string [3]) {\"-\", \"a\", \"b\"}");
 check ((string[*]) { "-", "-x", "" }, "(string [3]) {\"-\", \"-x\", \"\"}");
 check ((string[*]) {}, "(string [0]) {}");
+check ((string[*]) { "--", "-", "--", "a" },
+       "(string [3]) {\"-\", \"--\", \"a\"}");

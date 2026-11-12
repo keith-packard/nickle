@@ -4,7 +4,9 @@
  * ParseArgs::parseargs
  *
  * An empty argument or a lone "-" indexed past the end of the string
- * while checking for a flag.
+ * while checking for a flag. "--" ended the positional arguments as
+ * well as the options, so a positional argument couldn't start with
+ * '-'; as in Python, it now ends only the options.
  */
 
 autoimport ParseArgs;
@@ -12,11 +14,12 @@ autoimport ParseArgs;
 exception bad_parse (string[*] argv, string what);
 
 void function check (string[*] argv, bool want_flag, string want_path,
-		     string want_value)
+		     string want_value, string[*] want_rest)
 {
     bool	flag = false;
     string	path = "unset";
     string	value = "unset";
+    int		unknown = dim (argv);
     argdesc	argd = {
 	.prog_name = "parseargstest",
 	.args = {
@@ -28,6 +31,7 @@ void function check (string[*] argv, bool want_flag, string want_path,
 	.posn_args = {
 	    { .var = { .arg_string = &path }, .name = "file", .optional = <> },
 	},
+	.unknown = &unknown,
     };
 
     parseargs (&argd, &argv);
@@ -37,12 +41,27 @@ void function check (string[*] argv, bool want_flag, string want_path,
 	raise bad_parse (argv, "path");
     if (value != want_value)
 	raise bad_parse (argv, "value");
+    if (dim (argv) - unknown != dim (want_rest))
+	raise bad_parse (argv, "rest");
+    for (int i = 0; i < dim (want_rest); i++)
+	if (argv[unknown + i] != want_rest[i])
+	    raise bad_parse (argv, "rest");
 }
 
-check ((string[*]) {}, false, "unset", "unset");
-check ((string[*]) { "-" }, false, "-", "unset");
-check ((string[*]) { "" }, false, "", "unset");
-check ((string[*]) { "-f", "-" }, true, "-", "unset");
-check ((string[*]) { "--flag", "" }, true, "", "unset");
-check ((string[*]) { "-v", "-", "x" }, false, "x", "-");
-check ((string[*]) { "--value", "", "-" }, false, "-", "");
+check ((string[*]) {}, false, "unset", "unset", (string[*]) {});
+check ((string[*]) { "-" }, false, "-", "unset", (string[*]) {});
+check ((string[*]) { "" }, false, "", "unset", (string[*]) {});
+check ((string[*]) { "-f", "-" }, true, "-", "unset", (string[*]) {});
+check ((string[*]) { "--flag", "" }, true, "", "unset", (string[*]) {});
+check ((string[*]) { "-v", "-", "x" }, false, "x", "-", (string[*]) {});
+check ((string[*]) { "--value", "", "-" }, false, "-", "", (string[*]) {});
+
+/* "--" ends the options, but positional arguments still follow it */
+check ((string[*]) { "--", "-f" }, false, "-f", "unset", (string[*]) {});
+check ((string[*]) { "-f", "--", "-v", "x" }, true, "-v", "unset",
+       (string[*]) { "x" });
+check ((string[*]) { "--", "--", "-f" }, false, "--", "unset",
+       (string[*]) { "-f" });
+check ((string[*]) { "a", "--", "-f" }, false, "a", "unset",
+       (string[*]) { "--", "-f" });
+check ((string[*]) { "-f", "--" }, true, "unset", "unset", (string[*]) {});

@@ -5,11 +5,18 @@
  */
 
 extend namespace File {
-    public file stdnull () { 
+    public file stdnull ()
+	/*
+	 * Return a file open on /dev/null for reading and writing,
+	 * the same one each time
+	 */
+    {
 	static bool set = false;
 	static file f;
-	if (!set)
+	if (!set) {
 	    f = open("/dev/null", "r+");
+	    set = true;
+	}
 	return f;
     }
 
@@ -19,7 +26,7 @@ extend namespace File {
 	file error;
     } childfd;
 
-    public int mkchild(string path, string[*] argv, childfd fds ...) 
+    public int mkchild(string path, string[*] argv, childfd fds ...)
 	/*
 	 * Call filter transforming 'fds' into an array of three files.
 	 * This is what happens when you fork()
@@ -97,7 +104,7 @@ extend namespace File {
 	    return fgets (stdin);
 	}
     }
-    
+
     public import FileGlobals;
 }
 public import File::FileGlobals;

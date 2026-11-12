@@ -1,0 +1,30 @@
+/*
+ * Nickle test suite
+ *
+ * printf formats
+ */
+
+exception bad_format (string format, poly arg, string got, string want);
+
+void check (string format, poly arg, string want)
+{
+    string	got = sprintf (format, arg);
+
+    if (got != want)
+	raise bad_format (format, arg, got, want);
+}
+
+/*
+ * A zero fill goes after the sign, as in C; it went before, giving
+ * 00-42
+ */
+check ("%05d", -42, "-0042");
+check ("%05d", 42, "00042");
+check ("%05x", -42, "-002a");
+check ("%030d", -(2**70), "-00000001180591620717411303424");
+check ("%08.2f", -3/2, "-0001.50");
+check ("%08.2f", imprecise (-1.5), "-0001.50");
+check ("%012a", imprecise (-1.5), "-0x00001.8p0");
+check ("%-05d", -42, "-42  ");
+check ("%5d", -42, "  -42");
+check ("%05c", '-', "0000-");

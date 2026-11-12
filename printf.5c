@@ -125,15 +125,14 @@ extend namespace File {
 		if (fmt::match('0'))
 		    fill = "0";
 		int width = 0;
+		bool left = fmt::match('-');
 		if (fmt::match('*'))
 		    width = arg::next ();
 		else
-		{
-		    int sign = 1;
-		    if (fmt::match('-'))
-			sign = -1;
-		    width = fmt::number () * sign;
-		}
+		    width = fmt::number ();
+		/* As in C, '-' left-aligns even a negative '*' width */
+		if (left && width > 0)
+		    width = -width;
 
 		/*
 		 * precision

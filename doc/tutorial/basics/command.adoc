@@ -6,9 +6,12 @@ actual language constructs. They may be issued only at the top level.
 == Expressions
 
 If an expression is issued at the top level, such as `3**4` or
-``100!``, its value is printed to standard output.  If the expression
-ends with a # sign and another expression, its value is printed in
-whatever base the second expression evaluates to.
+``100!``, its value is printed to standard output, formatted by the
+`format` variable, `"%g"` to start with.  Setting `format` to `"%.-g"`
+shows values exactly, rationals with any repeating digits in curly
+braces.  If the expression ends with a # sign and another expression,
+its value is printed in whatever base the second expression evaluates
+to.
 
 ----
 
@@ -19,6 +22,11 @@ $ nickle
 81
 > 3**4 # 3
 10000
+> 1/3
+0.333333333333333
+> format = "%.-g";
+> 1/3
+0.{3}
 >
 ----
 

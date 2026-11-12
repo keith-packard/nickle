@@ -143,11 +143,12 @@ their C counterparts, with the following exceptions:
 
 * The precision of a field in the format string may be specified to be
   `-`, which means arbitrary precision.  The repeating digits of a
-  fraction are then shown in curly braces:
+  fraction are then shown in curly braces, and an imprecise value is
+  shown with just enough digits to identify it exactly:
 +
 ----
-> printf("%.-f %.3f\n", 1/7, 1/7);
-0.{142857} 0.143
+> printf("%.-f %.3f %.-g\n", 1/7, 1/7, imprecise(0.1, 53));
+0.{142857} 0.143 0.1
 ----
 
 * The `%g` format specifier prints a number in the best way possible,

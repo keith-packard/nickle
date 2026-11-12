@@ -176,14 +176,16 @@ foreach test : tests
       )
 endforeach
 
-# Finding a fraction's period took minutes for some denominators;
-# fail quickly if it does again
-test('repeatlengthtest.5c', nickle,
-     args: files('repeatlengthtest.5c'),
-     env: test_env,
-     workdir: meson.current_build_dir(),
-     timeout: 60
-    )
+# Finding a fraction's period and writing its digits took minutes for
+# some fractions; fail quickly if they do again
+foreach test : ['repeatlengthtest.5c', 'repeatdigitstest.5c']
+  test(test, nickle,
+       args: files(test),
+       env: test_env,
+       workdir: meson.current_build_dir(),
+       timeout: 60
+      )
+endforeach
 
 # Errors in input named on the command line, and unhandled exceptions,
 # must exit with an error status

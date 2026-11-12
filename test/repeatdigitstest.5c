@@ -1,0 +1,65 @@
+/*
+ * Nickle test suite
+ *
+ * Writing a fraction's digits
+ *
+ * The digits after the point were found by multiplying the remainder
+ * by base**n, dividing once, and converting the quotient, which took
+ * time quadratic in n: the 999982 repeating digits of 1/999983 took
+ * 21 seconds, and the ten million printed for 1/(2**127-1) would take
+ * hours. Long division a chunk at a time is linear.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+/* b**e mod m */
+int function powmod (int b, int e, int m)
+{
+    int	r = 1;
+
+    b %= m;
+    while (e > 0) {
+	if (e % 2 == 1)
+	    r = r * b % m;
+	b = b * b % m;
+	e //= 2;
+    }
+    return r;
+}
+
+/* 'n' decimal digits of the fraction r / d, which is below one */
+string function digits (int r, int d, int n)
+{
+    string	s = "";
+
+    for (int i = 0; i < n; i++) {
+	r *= 10;
+	s += String::new ('0' + r // d);
+	r %= d;
+    }
+    return s;
+}
+
+/* 1/999983 repeats all 999982 digits from the point */
+int	d = 999983;
+string	s = sprintf ("%.-f", 1/d);
+int	open = String::index (s, "{");
+string	rep = String::substr (s, open + 1, String::length (s) - open - 2);
+
+check ("1/999983 length", String::length (rep), d - 1);
+check ("1/999983 first digits", String::substr (rep, 0, 1000), digits (1, d, 1000));
+check ("1/999983 last digits", String::substr (rep, d - 1 - 1000, 1000),
+       digits (powmod (10, d - 1 - 1000, d), d, 1000));
+
+/* 2**127-1 is prime, and its period is too long to print in full */
+int	p = 2**127 - 1;
+
+s = sprintf ("%.-f", 1/p);
+check ("1/(2**127-1) length", String::length (s), 10000003);
+check ("1/(2**127-1) first digits", String::substr (s, 3, 1000), digits (1, p, 1000));

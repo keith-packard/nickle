@@ -775,6 +775,23 @@ ThreadBoxSetDefault(BoxPtr box, ptrdiff_t i, TypeChain *chain)
     }
 }
 
+/*
+ * Index 'hash' with 'key', which must fit its key type, returning
+ * the value, or a reference to it to store through unless 'fetch'
+ */
+static Value
+ThreadHashIndex(Value hash, Value key, Bool fetch)
+{
+    if (!TypeCompatibleAssign(hash->hash.keyType, key)) {
+        RaiseStandardException(exception_invalid_argument, 3,
+                               NewStrString("Incompatible type for hash index"), NewInt(0), key);
+        return Void;
+    }
+    if (fetch)
+        return HashGet(hash, key);
+    return HashRef(hash, key);
+}
+
 static Value
 ThreadOpArray(Value thread, Value value, ptrdiff_t stack, Bool fetch, Bool typeCheck)
 {
@@ -840,10 +857,7 @@ ThreadOpArray(Value thread, Value value, ptrdiff_t stack, Bool fetch, Bool typeC
                                    NewPtrdiffInteger(stack), v);
             break;
         }
-        if (fetch)
-            value = HashGet(v, value);
-        else
-            value = HashRef(v, value);
+        value = ThreadHashIndex(v, value, fetch);
         break;
     default:
         RaiseStandardException(
@@ -1232,12 +1246,22 @@ ThreadsRun(Value until, Value lex)
                     w = CStack(1);
                     v = CStack(0);
                     stack = 2;
-                    HashSet(w, v, value);
+                    /* As h[k] = value does, checking the key and the value */
+                    v = ThreadHashIndex(w, v, False);
+                    if (!aborting)
+                        ThreadAssign(v, value, True);
                     value = w;
                     break;
                 case OpInitHashDef:
                     v = CStack(0);
                     stack = 1;
+                    /* The default has no box to assign through */
+                    if (!TypeCompatibleAssign(v->hash.type, value)) {
+                        RaiseStandardException(exception_invalid_argument, 3,
+                                               NewStrString("Incompatible types in assignment"),
+                                               NewInt(0), value);
+                        break;
+                    }
                     HashSetDef(v, value);
                     value = v;
                     break;

@@ -1,0 +1,120 @@
+/*
+ * Nickle test suite
+ *
+ * scanf conversions
+ *
+ * Numbers took '-' anywhere and rejected '+', "%e" stopped at 'E'
+ * and at a signed exponent, "%x" read 0x1f as 0, field widths were
+ * matched as literal digits, and a lone '-' read as 0. A trailing '%'
+ * or too few arguments failed with an array bounds error, and extra
+ * arguments were ignored.
+ */
+
+exception bad_scan (string input, string format, int n, poly[*] got);
+
+/* Count the values 'format' stores */
+int function stored (string format)
+{
+    int n = 0;
+
+    for (int i = 0; i < String::length (format) - 1; i++)
+	if (format[i] == '%') {
+	    i++;
+	    if (format[i] != '%' && format[i] != '*')
+		n++;
+	}
+    return n;
+}
+
+void function check (string input, string format, int want_n, poly[*] want)
+{
+    int		nargs = stored (format);
+    poly[nargs]	got;
+    (*poly)[nargs] ptrs;
+
+    for (int i = 0; i < nargs; i++)
+	ptrs[i] = &got[i];
+
+    int		n = File::sscanf (input, format, ptrs ...);
+
+    if (n != want_n)
+	raise bad_scan (input, format, n, got);
+    for (int i = 0; i < dim (want); i++)
+	if (got[i] != want[i])
+	    raise bad_scan (input, format, n, got);
+}
+
+/* Integers */
+check ("1-2 3", "%d%d%d", 3, (poly[*]) { 1, -2, 3 });
+check ("+5 -7", "%d %d", 2, (poly[*]) { 5, -7 });
+check ("0x1f 1F -0X10", "%x %x %x", 3, (poly[*]) { 31, 31, -16 });
+check ("0b101 11", "%b %b", 2, (poly[*]) { 5, 3 });
+check ("17 0", "%o %x", 2, (poly[*]) { 15, 0 });
+check ("0x", "%x", 1, (poly[*]) { 0 });
+check ("-", "%d", 0, (poly[*]) {});
+check ("+x", "%d", 0, (poly[*]) {});
+check ("9", "%o", 0, (poly[*]) {});
+
+/* Numbers */
+check ("1e+5 1E5 2.5e-1", "%e %g %f", 3, (poly[*]) { 100000, 100000, 1/4 });
+check ("-.5 5. 0.{3}", "%f %f %f", 3, (poly[*]) { -1/2, 5, 1/3 });
+check ("0x1.8p3 -0X1P-2", "%a %a", 2, (poly[*]) { 12, -1/4 });
+check ("0x0.{5} 0x.{1}p4", "%a %a", 2, (poly[*]) { 1/3, 16/15 });
+check ("100ergs", "%f", 0, (poly[*]) {});
+check ("1e", "%f", 0, (poly[*]) {});
+check (".", "%f", 0, (poly[*]) {});
+
+/* Widths and suppressed assignments */
+check ("12345", "%3d%d", 2, (poly[*]) { 123, 45 });
+check ("-12345", "%3d%d", 2, (poly[*]) { -12, 345 });
+check ("1.2345", "%4f%f", 2, (poly[*]) { 1.23, 45 });
+check ("abcdef", "%2s%s", 2, (poly[*]) { "ab", "cdef" });
+check ("x=12 y=34", "x=%*d y=%d", 1, (poly[*]) { 34 });
+
+/* Characters and strings */
+check (" z", "%c%c", 2, (poly[*]) { ' ', 'z' });
+check ("abcdef", "%3c%c", 2, (poly[*]) { "abc", 'd' });
+check ("ab cd", "%C%S", 2, (poly[*]) { 'a', "b" });
+check ("ab", "%3c", 0, (poly[*]) {});
+check ("  héllo wörld", "%s %s", 2, (poly[*]) { "héllo", "wörld" });
+
+/* Literals and whitespace */
+check ("10.0.0.1", "%d.%d.%d.%d", 4, (poly[*]) { 10, 0, 0, 1 });
+check ("5\n\t 6", "%d %d", 2, (poly[*]) { 5, 6 });
+check ("5 6", "%d\n%d", 2, (poly[*]) { 5, 6 });
+check ("50 %", "%d%%", 1, (poly[*]) { 50 });
+check ("5,6", "%d;%d", 1, (poly[*]) { 5 });
+check ("", "%d", 0, (poly[*]) {});
+
+/* Format errors */
+string[*] bad_formats = { "%d%", "%q", "%0d" };
+
+for (int i = 0; i < dim (bad_formats); i++) {
+    try {
+	check ("5 6", bad_formats[i], -1, (poly[*]) {});
+    } catch invalid_argument (string msg, int arg, poly val) {
+	continue;
+    }
+    raise bad_scan ("5 6", bad_formats[i], -1, (poly[*]) {});
+}
+
+/* The format, not the input, decides the number of arguments */
+int a, b, c;
+
+try {
+    File::sscanf ("5 6", "%d %d", &a);
+    raise bad_scan ("5 6", "%d %d", -1, (poly[*]) {});
+} catch File::too_few_arguments (string format, poly[*] args) {
+}
+
+try {
+    File::sscanf ("5 6", "%d %d", &a, &b, &c);
+    raise bad_scan ("5 6", "%d %d", -1, (poly[*]) {});
+} catch File::too_many_arguments (string format, poly[*] args) {
+}
+
+try {
+    File::sscanf ("x", "%d %d", &a, &b, &c);
+    raise bad_scan ("x", "%d %d", -1, (poly[*]) {});
+} catch File::too_many_arguments (string format, poly[*] args) {
+}

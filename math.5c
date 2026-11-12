@@ -304,9 +304,18 @@ extend namespace Math {
 	for (int guard = 32; ; guard *= 2) {
 	    real	err;
 	    real	v = compute (prec + guard, &err);
-	    real	lo = imprecise (v - err, prec);
 
-	    if (lo == imprecise (v + err, prec))
+	    /*
+	     * Form v ± err with the bits of both, as arithmetic would
+	     * use the fewer, widening err by an ulp of v for the
+	     * rounding of the sum
+	     */
+	    int		vp = max (precision (v), precision (err), prec + guard);
+	    real	vw = imprecise (v, vp);
+	    real	e = imprecise (err, vp) + abs (vw) * 2 ** (1 - vp);
+	    real	lo = imprecise (vw - e, prec);
+
+	    if (lo == imprecise (vw + e, prec))
 		return lo;
 	}
     }

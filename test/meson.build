@@ -15,6 +15,7 @@ tests = [
   'gammaprectest.5c',
   'rootexponenttest.5c',
   'complexlogpowtest.5c',
+  'hyperbolicroundtest.5c',
   'gcdtest.5c',
   'bitwisetest.5c',
   'remaindertest.5c',

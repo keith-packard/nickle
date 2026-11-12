@@ -673,6 +673,11 @@ NaturalBitSet (Natural *n, int i)
 }
 #endif
 
+/*
+ * Return an exponent within one of that of a value in
+ * [2**(exp2-1), 2**exp2) in base 'ibase', storing
+ * 2**exp2 / ibase**exponent, rounded to 'prec' bits, in '*ratio'
+ */
 static Value
 FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
 {
@@ -689,8 +694,8 @@ FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
 
     DebugV("exp2", exp2);
     two = NewInt(2);
-    two_f = NewIntFloat(2, prec + 32);
-    base_f = NewIntFloat(ibase, prec + 32);
+    two_f = NewIntFloat(2, prec);
+    base_f = NewIntFloat(ibase, prec);
     /*
      * Compute expbase, this is a bit tricky as log is only
      * available in floats
@@ -746,10 +751,66 @@ FloatExp(Value exp2, Value *ratio, int ibase, ptrdiff_t prec)
     RETURN2(mean, r, ratio);
 }
 
+/*
+ * Return whether 'a' * base**digits / ibase**expbase lies exactly
+ * halfway between two integers. Twice that is
+ * mant * 2**(exp + 1) * ibase**-expbase * base**digits. With
+ * ibase = 2**zi * oi and base = 2**zb * ob, where oi and ob are odd
+ * like mant, that is an odd integer when the powers of two cancel and
+ * the odd factors divide out
+ */
 static Bool
-FloatPrint(Value f, Value fv, uint32_t format, int base, int width, int print_prec, uint32_t fill)
+FloatPrintTie(Float *a, Value expbase, int ibase, int base, ptrdiff_t digits)
 {
     ENTER();
+    int   zi = 0, oi = ibase;
+    int   zb = 0, ob = base;
+    Value twos;
+    Value n;
+    Bool  tie;
+
+    while (oi % 2 == 0) {
+        oi /= 2;
+        zi++;
+    }
+    while (ob % 2 == 0) {
+        ob /= 2;
+        zb++;
+    }
+    twos = Plus(Minus(Plus(NewInteger(a->exp->sign, a->exp->mag), One), Times(NewInt(zi), expbase)),
+                Times(NewInt(zb), NewPtrdiffInteger(digits)));
+    if (!Zerop(twos)) {
+        tie = False;
+    } else if (oi == 1) {
+        tie = True;
+    } else if (ibase != base) {
+        /* Only %a scales by another base, and it scales by 2 */
+        tie = False;
+    } else {
+        /* oi**n must divide mant, which can't when 3**n > 2**length > mant */
+        n = Minus(expbase, NewPtrdiffInteger(digits));
+        if (Negativep(n) || Zerop(n))
+            tie = True;
+        else if (False(Less(n, NewPtrdiffInteger(FpartLength(a->mant)))))
+            tie = False;
+        else
+            tie = Zerop(Mod(NewInteger(Positive, a->mant->mag), Pow(NewInt(oi), n)));
+    }
+    EXIT();
+    return tie;
+}
+
+/*
+ * Print 'fv', computing scaled mantissas to 'wprec' bits. A rounding
+ * decision too close to call at that precision starts over at twice it
+ */
+static Bool
+FloatPrintPrec(Value f, Value fv, uint32_t format, int base, int width, int print_prec,
+               uint32_t fill, ptrdiff_t wprec)
+{
+    ENTER();
+    uint32_t  orig_format = format;
+    int       orig_base = base;
     Float    *a = &fv->floats;
     Value     expbase;
     Fpart    *exp;
@@ -810,7 +871,7 @@ FloatPrint(Value f, Value fv, uint32_t format, int base, int width, int print_pr
     mant_prec = (ptrdiff_t)ceil((double)a->prec * log(2) / log(base)) + 1;
 
     expbase = FloatExp(Plus(NewPtrdiffInteger(length), NewInteger(a->exp->sign, a->exp->mag)),
-                       &ratio, exp_scale, a->prec);
+                       &ratio, exp_scale, wprec);
     if (aborting) {
         EXIT();
         return False;
@@ -968,10 +1029,49 @@ try_again_f:
             = Times(Divide(One, NewInt(2)), Pow(NewInt(base), NewPtrdiffInteger(-frac_digits)));
         Value scaled = Times(frac_part, Pow(NewInt(base), NewPtrdiffInteger(frac_digits)));
         Value kept = Floor(scaled);
+        Value half = Divide(One, NewInt(2));
+        Bool  tie;
         Bool  even_tie = False;
 
+        if (ValueIsFloat(scaled)) {
+            /*
+             * Raising ibase to expbase leaves m within
+             * 2**(bits(expbase) + 3 - wprec) of the exact value, relative,
+             * and m < base. Near a half, settle whether it is one exactly,
+             * or else start over at a higher precision
+             */
+            ptrdiff_t guard = 8;
+            ptrdiff_t e;
+            Value     off = Minus(Minus(scaled, kept), half);
+            Value     err;
+
+            if (!ValueToPtrdiff(expbase, &e)) {
+                guard += 64;
+                e = 0;
+            }
+            for (; e; e /= 2)
+                guard++;
+            err = Times(Pow(NewInt(base), NewPtrdiffInteger(frac_digits + 1)),
+                        Pow(NewInt(2), NewPtrdiffInteger(guard - wprec)));
+            tie = False;
+            if (False(Less(err, off)) && False(Less(off, Negate(err)))) {
+                if (!FloatPrintTie(a, expbase, exp_scale, base, frac_digits)) {
+                    free(int_buffer);
+                    EXIT();
+                    return FloatPrintPrec(f, fv, orig_format, orig_base, width, print_prec, fill,
+                                          wprec * 2);
+                }
+                tie = True;
+                /* Place the tie exactly, so rounding lands on a digit */
+                frac_part
+                    = Divide(Plus(kept, half), Pow(NewInt(base), NewPtrdiffInteger(frac_digits)));
+            }
+        } else {
+            tie = True(Equal(Minus(scaled, kept), half));
+        }
+
         /* At exactly half, round to an even last digit, as NewFloat does */
-        if (True(Equal(Minus(scaled, kept), Divide(One, NewInt(2))))) {
+        if (tie) {
             Value last = frac_digits ? kept : int_part;
 
             even_tie = True(Equal(Mod(Mod(last, NewInt(base)), NewInt(2)), Zero));
@@ -1063,6 +1163,12 @@ try_again_f:
 
     EXIT();
     return True;
+}
+
+static Bool
+FloatPrint(Value f, Value fv, uint32_t format, int base, int width, int print_prec, uint32_t fill)
+{
+    return FloatPrintPrec(f, fv, format, base, width, print_prec, fill, fv->floats.prec + 32);
 }
 
 static HashValue

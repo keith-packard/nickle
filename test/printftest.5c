@@ -190,3 +190,22 @@ for (int base = 2; base <= 16; base++)
  */
 check ("%.20f", f (1e-10), "0.00000000010000000000");
 check ("%.20f", f (0.0025), "0.0025000000000000001");
+
+/*
+ * '-' before a '*' width left-aligns, as in C, even when the width is
+ * negative. The '-' was only looked for before digits, so "%-*v" read
+ * '*' as its conversion and printed the width
+ */
+void check_star (string format, int width, poly arg, string want)
+{
+    string	got = sprintf (format, width, arg);
+
+    if (got != want)
+	raise bad_format (format, arg, got, want);
+}
+
+check_star ("[%-*v]", 4, "x", "[\"x\" ]");
+check_star ("[%-*d]", 4, 3, "[3   ]");
+check_star ("[%-*d]", -4, 3, "[3   ]");
+check_star ("[%*d]", -4, 3, "[3   ]");
+check_star ("[%*d]", 4, 3, "[   3]");

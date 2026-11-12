@@ -92,8 +92,31 @@ extend namespace Complex {
     }
 
     public complex polar(real r, real t)
+	/*
+	 * Return r (cos t + i sin t), each part correctly rounded
+	 */
     {
-	return new(r * Math::cos(t), r * Math::sin(t));
+	if (t == 0)
+	    return r;
+
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    /* r may have more bits than 'wprec', or be a rational */
+	    real	rw = imprecise(r, wprec);
+	    real	r_err = 0;
+	    real	c_err, s_err;
+	    real	c = Math::cos_w(t, wprec, &c_err);
+	    real	s = Math::sin_w(t, wprec, &s_err);
+
+	    if (rw != r)
+		r_err = Math::abs(rw) * 2**-wprec;
+	    *re_err = mul_err(rw, r_err, c, c_err, wprec);
+	    *im_err = mul_err(rw, r_err, s, s_err, wprec);
+	    return new(rw * c, rw * s);
+	}
+
+	return round_correctly(min(precision(imprecise(r)),
+				   precision(imprecise(t))), compute);
     }
 
     public complex conj(complex z)
@@ -157,10 +180,27 @@ extend namespace Complex {
     }
 
     protected complex exp(complex z)
+	/*
+	 * Return e**z, each part correctly rounded
+	 */
     {
-	real r = Math::exp(creal(z));
-	return new(r * Math::cos(cimag(z)),
-		   r * Math::sin(cimag(z)));
+	if (z == 0)
+	    return 1;
+	z = imprecise(z);
+
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	e_rel, c_err, s_err;
+	    real	e = Math::exp_w(creal(z), wprec, &e_rel);
+	    real	c = Math::cos_w(cimag(z), wprec, &c_err);
+	    real	s = Math::sin_w(cimag(z), wprec, &s_err);
+
+	    *re_err = mul_err(e, e * e_rel, c, c_err, wprec);
+	    *im_err = mul_err(e, e * e_rel, s, s_err, wprec);
+	    return new(e * c, e * s);
+	}
+
+	return round_correctly(precision(z), compute);
     }
 
     int part_exponent(real x)
@@ -256,15 +296,57 @@ extend namespace Complex {
     }
 
     protected complex cos(complex z)
+	/*
+	 * Return cos(x+iy) = cos x cosh y - i sin x sinh y,
+	 * each part correctly rounded
+	 */
     {
-	return new(Math::cos(creal(z)) * Math::cosh(cimag(z)),
-		   -Math::sin(creal(z)) * Math::sinh(cimag(z)));
+	if (z == 0)
+	    return 1;
+	z = imprecise(z);
+
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	x = creal(z), y = cimag(z);
+	    real	a_err, b_rel, c_err, d_rel;
+	    real	a = Math::cos_w(x, wprec, &a_err);
+	    real	b = Math::cosh_w(y, wprec, &b_rel);
+	    real	c = Math::sin_w(x, wprec, &c_err);
+	    real	d = Math::sinh_w(y, wprec, &d_rel);
+
+	    *re_err = mul_err(a, a_err, b, Math::abs(b) * b_rel, wprec);
+	    *im_err = mul_err(c, c_err, d, Math::abs(d) * d_rel, wprec);
+	    return new(a * b, -(c * d));
+	}
+
+	return round_correctly(precision(z), compute);
     }
 
     protected complex sin(complex z)
+	/*
+	 * Return sin(x+iy) = sin x cosh y + i cos x sinh y,
+	 * each part correctly rounded
+	 */
     {
-	return new(Math::sin(creal(z)) * Math::cosh(cimag(z)),
-		   Math::cos(creal(z)) * Math::sinh(cimag(z)));
+	if (z == 0)
+	    return 0;
+	z = imprecise(z);
+
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	x = creal(z), y = cimag(z);
+	    real	a_err, b_rel, c_err, d_rel;
+	    real	a = Math::sin_w(x, wprec, &a_err);
+	    real	b = Math::cosh_w(y, wprec, &b_rel);
+	    real	c = Math::cos_w(x, wprec, &c_err);
+	    real	d = Math::sinh_w(y, wprec, &d_rel);
+
+	    *re_err = mul_err(a, a_err, b, Math::abs(b) * b_rel, wprec);
+	    *im_err = mul_err(c, c_err, d, Math::abs(d) * d_rel, wprec);
+	    return new(a * b, c * d);
+	}
+
+	return round_correctly(precision(z), compute);
     }
 
     protected complex tan(complex z)
@@ -300,15 +382,57 @@ extend namespace Complex {
     }
 
     protected complex cosh(complex z)
+	/*
+	 * Return cosh(x+iy) = cosh x cos y + i sinh x sin y,
+	 * each part correctly rounded
+	 */
     {
-	return new(Math::cosh(creal(z)) * Math::cos(cimag(z)),
-		   Math::sinh(creal(z)) * Math::sin(cimag(z)));
+	if (z == 0)
+	    return 1;
+	z = imprecise(z);
+
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	x = creal(z), y = cimag(z);
+	    real	a_rel, b_err, c_rel, d_err;
+	    real	a = Math::cosh_w(x, wprec, &a_rel);
+	    real	b = Math::cos_w(y, wprec, &b_err);
+	    real	c = Math::sinh_w(x, wprec, &c_rel);
+	    real	d = Math::sin_w(y, wprec, &d_err);
+
+	    *re_err = mul_err(a, Math::abs(a) * a_rel, b, b_err, wprec);
+	    *im_err = mul_err(c, Math::abs(c) * c_rel, d, d_err, wprec);
+	    return new(a * b, c * d);
+	}
+
+	return round_correctly(precision(z), compute);
     }
 
     protected complex sinh(complex z)
+	/*
+	 * Return sinh(x+iy) = sinh x cos y + i cosh x sin y,
+	 * each part correctly rounded
+	 */
     {
-	return new(Math::sinh(creal(z)) * Math::cos(cimag(z)),
-		   Math::cosh(creal(z)) * Math::sin(cimag(z)));
+	if (z == 0)
+	    return 0;
+	z = imprecise(z);
+
+	complex compute(int wprec, *real re_err, *real im_err)
+	{
+	    real	x = creal(z), y = cimag(z);
+	    real	a_rel, b_err, c_rel, d_err;
+	    real	a = Math::sinh_w(x, wprec, &a_rel);
+	    real	b = Math::cos_w(y, wprec, &b_err);
+	    real	c = Math::cosh_w(x, wprec, &c_rel);
+	    real	d = Math::sin_w(y, wprec, &d_err);
+
+	    *re_err = mul_err(a, Math::abs(a) * a_rel, b, b_err, wprec);
+	    *im_err = mul_err(c, Math::abs(c) * c_rel, d, d_err, wprec);
+	    return new(a * b, c * d);
+	}
+
+	return round_correctly(precision(z), compute);
     }
 
     protected complex tanh(complex z)

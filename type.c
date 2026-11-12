@@ -14,6 +14,7 @@
 #include "gram.h"
 
 Type *typePoly;
+Type *typeNoReturn;
 Type *typeRefPoly;
 Type *typeArrayInt;
 Type *typePrim[rep_void + 1];
@@ -109,6 +110,7 @@ static DataType TypeArrayType = { TypeArrayMark, 0, "TypeArrayType" };
 static DataType TypeHashType = { TypeHashMark, 0, "TypeHashType" };
 static DataType TypeStructType = { TypeStructMark, 0, "TypeStructType" };
 static DataType TypeTypesType = { TypeTypesMark, 0, "TypeTypesType" };
+static DataType TypeNoReturnType = { 0, 0, "TypeNoReturnType" };
 
 static Type *
 NewTypePrim(Rep prim)
@@ -331,6 +333,14 @@ TypeNumeric(Type *t)
     return False;
 }
 
+/* Whether 't' is noreturn, through any typedef names */
+Bool
+TypeNoReturn(Type *t)
+{
+    t = TypeCanon(t);
+    return t && t->base.tag == type_noreturn;
+}
+
 Bool
 TypeIntegral(Type *t)
 {
@@ -437,10 +447,17 @@ TypeIsSupertype(Type *super, Type *sub)
     if (TypePoly(super))
         return True;
 
+    /* noreturn, having no values, is a subtype of all types */
+    if (sub->base.tag == type_noreturn)
+        return True;
+
     if (super->base.tag != sub->base.tag)
         return False;
 
     switch (super->base.tag) {
+    case type_noreturn:
+        /* Both are noreturn */
+        return True;
     case type_prim:
         if (super->prim.prim == sub->prim.prim)
             return True;
@@ -1004,6 +1021,10 @@ TypeCombineBinary(Type *left, int tag, Type *right)
         for (elt = right->types.elt; elt; elt = elt->next)
             if ((type = TypeCombineBinary(left, tag, elt->type)))
                 ret = TypeAdd(ret, type);
+    } else if (tag != ASSIGN
+               && (left->base.tag == type_noreturn || right->base.tag == type_noreturn)) {
+        /* An operation on a value that never arrives never finishes */
+        ret = TypeAdd(ret, typeNoReturn);
     } else
         switch (tag) {
         case ASSIGN:
@@ -1113,6 +1134,8 @@ TypeCombineUnary(Type *type, int tag)
         for (elt = type->types.elt; elt; elt = elt->next)
             if ((t = TypeCombineUnary(elt->type, tag)))
                 ret = TypeAdd(ret, t);
+    } else if (type->base.tag == type_noreturn) {
+        ret = typeNoReturn;
     } else
         switch (tag) {
         case STAR:
@@ -1529,6 +1552,9 @@ TypeInit(void)
     }
     typePoly = NewTypePrim(rep_undef);
     MemAddRoot(typePoly);
+    typeNoReturn = ALLOCATE(&TypeNoReturnType, sizeof(TypeBase));
+    typeNoReturn->base.tag = type_noreturn;
+    MemAddRoot(typeNoReturn);
     typeRefPoly = NewTypeRef(typePoly, True);
     MemAddRoot(typeRefPoly);
 

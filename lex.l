@@ -455,6 +455,7 @@ struct          { return yylvalInts(STRUCT); }
 union           { return yylvalInts(UNION); }
 enum            { return yylvalInts(ENUM); }
 void            { return yylvalType(typePrim[rep_void], VOID); }
+noreturn        { return yylvalType(typeNoReturn, NORETURN); }
 foreign         { return yylvalType(typePrim[rep_foreign], FOREIGN); }
 true            { return yylvalValue(TrueVal, BOOLVAL); }
 false           { return yylvalValue(FalseVal, BOOLVAL); }

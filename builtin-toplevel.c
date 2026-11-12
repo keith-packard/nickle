@@ -63,9 +63,9 @@ import_Toplevel_namespace(void)
           " int[*] dims (poly[] a)\n"
           "\n"
           " Return an array containing the list of dimensions of 'a'.\n" },
-        { do_exit, "exit", "v", "i",
+        { do_exit, "exit", "!", "i",
          "\n"
-          " void exit (int i)\n"
+          " noreturn exit (int i)\n"
           "\n"
           " Exit from the nickle environment with code 'i'.\n" },
         { do_exponent, "exponent", "i", "R",
@@ -265,9 +265,9 @@ import_Toplevel_namespace(void)
     };
 
     static const struct fbuiltin_2j funcs_2j[] = {
-        { do_longjmp, "longjmp", "v", "cp",
+        { do_longjmp, "longjmp", "!", "cp",
          "\n"
-          " void longjmp (continuation c, poly v)\n"
+          " noreturn longjmp (continuation c, poly v)\n"
           "\n"
           " Relocate execution to that saved in 'c', making the\n"
           " setjmp call there appear to return 'v'.\n" },

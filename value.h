@@ -447,7 +447,9 @@ typedef enum _typeTag {
     type_struct,
     type_union,
     type_types,
-    type_hash
+    type_hash,
+    /* The return type of a function that never returns */
+    type_noreturn
 } TypeTag;
 
 typedef struct _typeBase {
@@ -549,6 +551,7 @@ typedef struct _argList {
 } ArgList;
 
 extern Type *typePoly;
+extern Type *typeNoReturn;
 extern Type *typeRefPoly;
 extern Type *typeFileError;
 extern Type *typeArrayInt;
@@ -593,6 +596,7 @@ Bool         TypeIsCotype(Type *a, Type *b);
 #define TypeString(t) ((t)->base.tag == type_prim && (t)->prim.prim == rep_string)
 
 Bool    TypeNumeric(Type *t);
+Bool    TypeNoReturn(Type *t);
 Bool    TypeIntegral(Type *t);
 int32_t TypeCountDimensions(ExprPtr dims);
 

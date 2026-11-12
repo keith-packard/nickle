@@ -159,7 +159,7 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 %token              SEMI MOD OC CC DOLLAR DOTDOTDOT ENDFILE
 %token <class>      GLOBAL AUTO STATIC CONST
 %token <type>       POLY INTEGER NATURAL RATIONAL REAL COMPLEX STRING FOREIGN
-%token <type>       FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID BOOL
+%token <type>       FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID NORETURN BOOL
 %token              FUNCTION FUNC EXCEPTION RAISE
 %token              TYPEDEF IMPORT NEW ANONINIT
 %token <namespace>  NAMESPACE
@@ -1015,6 +1015,7 @@ basetype        : POLY
                 | CONTINUATION
                 | THREAD
                 | VOID
+                | NORETURN
                 | BOOL
                 | FOREIGN
                 ;
@@ -1849,6 +1850,7 @@ ParseCanonType(TypePtr type, Bool forwardAllowed)
     }
     switch (type->base.tag) {
     case type_prim:
+    case type_noreturn:
         break;
     case type_name:
         if (!TypeNameType(type)) {

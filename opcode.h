@@ -26,6 +26,8 @@ typedef enum _OpCode {
     OpCatch,
     OpEndCatch,
     OpRaise,
+    /* Follows a call to a noreturn function, which can't continue past it */
+    OpNoReturn,
     OpTwixt,
     OpTwixtDone,
     OpEnterDone,

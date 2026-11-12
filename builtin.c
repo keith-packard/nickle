@@ -221,6 +221,9 @@ BuiltinType(char *format, Type **type, Bool arg)
     case 'v':
         t = typePrim[rep_void];
         break;
+    case '!':
+        t = typeNoReturn;
+        break;
     case 'F':
         t = typePrim[rep_foreign];
         break;

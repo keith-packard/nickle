@@ -1072,8 +1072,11 @@ CompileCall(ObjPtr obj, ExprPtr expr, Tail tail, ExprPtr stat, CodePtr code, Boo
              * type here. Someday we'll figure all of this out...
              */
             /*	    expr->base.type = NewTypeRef (expr->base.type, True); */
-        } else
+        } else if (TypeNoReturn(expr->base.type)) {
+            BuildInst(obj, OpNoReturn, inst, stat);
+        } else {
             BuildInst(obj, OpNoop, inst, stat);
+        }
     }
     RETURN(obj);
 }
@@ -3459,6 +3462,10 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
             CompileError(obj, expr, "return not in function");
             break;
         }
+        if (TypeNoReturn(code->base.func->base.type)) {
+            CompileError(obj, expr, "return in noreturn function");
+            break;
+        }
         if (expr->tree.right) {
             if (expr->tree.right->base.tag == OP && _CompileCanTailCall(obj, code)) {
                 obj = CompileCall(obj, expr->tree.right, TailAlways, expr, code, False);
@@ -3520,6 +3527,7 @@ CompileIsUnconditional(InstPtr inst)
     case OpTailCall:
     case OpCatch:
     case OpRaise:
+    case OpNoReturn:
         return True;
     /* OpCheckTailCall may continue as an ordinary call */
     default:
@@ -3590,7 +3598,8 @@ CompileFuncCode(CodePtr code, ExprPtr stat, CodePtr previous, NonLocalPtr nonLoc
          * don't complain about void functions or catch blocks
          */
         if (!nonLocal
-            && !TypeCombineBinary(code->base.func->base.type, ASSIGN, typePrim[rep_void])) {
+            && (TypeNoReturn(code->base.func->base.type)
+                || !TypeCombineBinary(code->base.func->base.type, ASSIGN, typePrim[rep_void]))) {
             CompileError(obj, stat, "Control reaches end of function with type '%T'",
                          code->base.func->base.type);
         }
@@ -3832,6 +3841,7 @@ CompileType(ObjPtr obj, ExprPtr decls, TypePtr type, ExprPtr stat, CodePtr code)
 
     switch (type->base.tag) {
     case type_prim:
+    case type_noreturn:
         break;
     case type_name:
         break;
@@ -4018,6 +4028,7 @@ static const char * const OpNames[] = {
     "Catch",
     "EndCatch",
     "Raise",
+    "NoReturn",
     "OpTwixt",
     "OpTwixtDone",
     "OpEnterDone",

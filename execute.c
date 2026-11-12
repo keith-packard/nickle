@@ -1397,6 +1397,12 @@ ThreadsRun(Value until, Value lex)
                 case OpFork:
                     value = NewThread(thread->thread.continuation.frame, inst->obj.obj);
                     break;
+                case OpNoReturn:
+                    /* A function value of a noreturn type held one that returns */
+                    RaiseStandardException(exception_invalid_argument, 3,
+                                           NewStrString("noreturn function returned"), NewInt(0),
+                                           value);
+                    break;
                 case OpCatch:
                     if (aborting)
                         break;

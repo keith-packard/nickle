@@ -1689,6 +1689,9 @@ FilePutType(Value f, Type *t, Bool minimal)
                 FilePuts(f, ", ");
         }
         break;
+    case type_noreturn:
+        FilePuts(f, "noreturn");
+        break;
     }
     if (spaceit)
         FilePuts(f, " ");

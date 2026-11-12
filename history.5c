@@ -5,9 +5,9 @@
  */
 
 namespace History {
-    
+
     poly[...]	hist = {};
-    
+
     public void insert (poly v)
 	/*
 	 * Insert 'v' in the history list
@@ -31,32 +31,28 @@ namespace History {
 
     public void show (string format, int args...)
 	/*
-	 * show history elements
+	 * Show the last 10 history elements, the last 'args[0]', or
+	 * those from 'args[0]' through 'args[1]', in 'format'
 	 */
     {
-	int	from = 10, to = dim(hist);
-	int	id;
-	
-	if (dim(hist) == 0)
-	    return;
+	int	from, to = dim(hist);
 
-	if (dim(args) >= 1)
+	switch (dim(args)) {
+	case 0:
+	    from = to - 9;
+	    break;
+	case 1:
+	    from = to - args[0] + 1;
+	    break;
+	default:
 	    from = args[0];
-
-	if (dim(args) >= 2)
-	    to = args[1];
-	else
-	{
-	    from = dim(hist) - from;
-	    if (from < 1)
-		from = 1;
+	    to = min(args[1], to);
+	    break;
 	}
-	for (id = from; id <= to; id++)
-	{
-	    printf ("$%-4d\t", from);
-	    printf (format, fetch (id));
+	for (int id = max(from, 1); id <= to; id++) {
+	    printf ("$%-4d\t", id);
+	    printf (format, hist[id-1]);
 	    printf ("\n");
-	    from++;
 	}
     }
 }

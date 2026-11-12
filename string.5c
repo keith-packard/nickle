@@ -1,6 +1,6 @@
 extend namespace String {
 
-    public int rindex(string target, string pattern) 
+    public int rindex(string target, string pattern)
 	/*
 	 * Return the right-most location of 'pattern'
 	 * in 'target'
@@ -20,7 +20,7 @@ extend namespace String {
 	return -1;
     }
 
-    public string dirname(string path) 
+    public string dirname(string path)
 	/*
 	 * Return the directory portion of 'path'
 	 */
@@ -31,7 +31,7 @@ extend namespace String {
 	return (substr(path, 0, n));
     }
 
-    public string[*] split(string s, string sep) 
+    public string[*] split(string s, string sep)
 	/*
 	 * Split 's' at 'sep' boundaries, returning
 	 * an array of the resulting pieces
@@ -54,17 +54,35 @@ extend namespace String {
 
     public void shiftn(&(poly[...]) array, int n)
     /*
-     * Shift a growable array n elements: left is positive
+     * Shift a growable array n elements: left is positive,
+     * dropping the first n elements, or all of them when there
+     * are fewer; right is negative, growing the array by -n and
+     * leaving the first -n elements uninitialized
      */
     {
 	int f = dim(array);
-	for (int i = 0; i < f - n; i++)
-	    array[i] = array[i + n];
-	if (n < 0)
+
+	/* Elements may be uninitialized, which can't be copied */
+	void move(int to, int from) {
+	    if (is_uninit(&array[from]))
+		make_uninit(&array[to]);
+	    else
+		array[to] = array[from];
+	}
+
+	if (n >= 0) {
+	    if (n > f)
+		n = f;
+	    for (int i = 0; i < f - n; i++)
+		move(i, i + n);
+	    setdim(array, f - n);
+	} else {
+	    setdim(array, f - n);
+	    for (int i = f - 1; i >= 0; i--)
+		move(i - n, i);
 	    for (int i = 0; i < -n; i++)
 		make_uninit(&array[i]);
-	if (n > 0)
-	    setdim(array, f - n);
+	}
     }
 
     public void shift(&(poly[...]) array)
@@ -86,7 +104,7 @@ extend namespace String {
 	return substr(s, 0, n);
     }
 
-    public string chomp(string s) 
+    public string chomp(string s)
 	/*
 	 * Trim whitespace from begining and end of 's'
 	 */
@@ -101,7 +119,7 @@ extend namespace String {
 	return substr(s, i, j - i + 1);
     }
 
-    public bool inchars(int c, string s) 
+    public bool inchars(int c, string s)
 	/*
 	 * Return whether 'c' is in 's'
 	 */
@@ -109,7 +127,7 @@ extend namespace String {
 	return index(s, String::new(c)) >= 0;
     }
 
-    public string[*] wordsplit(string s, string sep) 
+    public string[*] wordsplit(string s, string sep)
     /*
      * Split 's' at boundaries consisting of sequences of
      * 'sep' characters, returning an array of the resulting
@@ -117,7 +135,7 @@ extend namespace String {
      */
     {
 	string[...] ss = {};
-	int i = 0; 
+	int i = 0;
 	while(i < length(s)) {
 	    while (i < length(s) && inchars(s[i], sep))
 		i++;
@@ -132,15 +150,15 @@ extend namespace String {
 	return ss;
     }
 
-    public typedef struct { 
+    public typedef struct {
 	string oq, cq, qq;
     } quote_context;
 
     typedef enum {normal, openq, xq} qstate;
 
     typedef string(string) dequote_t;
-    
-    public dequote_t make_dequote(quote_context q) 
+
+    public dequote_t make_dequote(quote_context q)
 	/*
 	 * Construct a quote parsing function based on 'q'
 	 */

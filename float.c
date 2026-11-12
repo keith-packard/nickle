@@ -1029,8 +1029,15 @@ try_again_f:
         return False;
     }
     frac_prec = mant_prec - int_width;
-    if (*int_string == '0')
-        frac_prec++;
+    if (*int_string == '0') {
+        ptrdiff_t lead;
+
+        /* Zeros after the point hold no precision; count from the first digit that does */
+        if (ValueToPtrdiff(expbase, &lead) && lead < 0)
+            frac_prec = mant_prec - 1 - lead;
+        else
+            frac_prec++;
+    }
 
     if (leader) {
         *--int_string = 'x';

@@ -35,10 +35,13 @@ string function run (string script)
     return got;
 }
 
-/* Fill the pipe, then leave a little in nickle's own buffer */
-string	fill = ("string s = String::new ((int[65536]) { [i] = 'x' });\n" +
-		"File::fprintf (p[1], \"%s\", s);\n" +
-		"File::fprintf (p[1], \"tail\\n\");\n");
+/*
+ * Write more than any pipe holds, leaving the rest in nickle's own
+ * buffer. A single print finishes even when the pipe fills partway,
+ * while a later print to the blocked pipe would wait forever.
+ */
+string	fill = ("string s = String::new ((int[2**20]) { [i] = 'x' }) + \"tail\\n\";\n" +
+		"File::fprintf (p[1], \"%s\", s);\n");
 
 check ("unread pipe", run ("file[*] p = File::mkpipe ();\n" + fill), "0");
 
@@ -67,9 +70,9 @@ string function contents (string name)
 /* cat finishes once the writer is gone; give it time */
 string	got = contents (out);
 
-for (int tries = 0; tries < 100 && String::length (got) != 65541; tries++) {
+for (int tries = 0; tries < 100 && String::length (got) != 2**20 + 5; tries++) {
     sleep (100);
     got = contents (out);
 }
-check ("read pipe length", String::length (got), 65541);
+check ("read pipe length", String::length (got), 2**20 + 5);
 File::unlink (out);

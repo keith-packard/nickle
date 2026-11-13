@@ -1,0 +1,45 @@
+/*
+ * Nickle test suite
+ *
+ * Filtered programs get the original stack limit
+ *
+ * Nickle raises its soft stack limit to the hard limit so the garbage
+ * collector can recurse deeply, and programs run through File::filter
+ * inherited the raised limit. A 32-bit program starting with an
+ * unlimited stack gets the legacy memory layout, which puts its shared
+ * libraries where ASan needs its shadow memory, so sanitized nickles
+ * run as children aborted.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+string	nickle = Environ::get ("NICKLE");
+
+/*
+ * Under a soft limit of 8192 KiB, print the hard limit, then run a
+ * child nickle that has sh print the limit it sees
+ */
+string	script = ("File::filter (\"sh\", (string[*]) { \"sh\", \"-c\", \"ulimit -s\" },\n" +
+		  "              (file[3]) { stdin, stdout, stderr });\n");
+
+file[*]	out = File::mkpipe ();
+
+File::filter ("sh",
+	      (string[*]) { "sh", "-c",
+			    "ulimit -S -s 8192 || exit; ulimit -H -s; \"$0\" -e \"$1\"",
+			    nickle, script },
+	      (file[3]) { stdin, out[1], stderr });
+File::close (out[1]);
+
+string	hard = File::fgets (out[0]);
+
+/* Skip when the hard limit leaves nickle nothing to raise */
+if (hard == "unlimited" || string_to_integer (hard) > 8192)
+    check ("filtered limit", File::fgets (out[0]), "8192");
+File::close (out[0]);

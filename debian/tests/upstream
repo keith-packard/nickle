@@ -1,5 +1,36 @@
 #!/bin/sh
+#
+# Exercise nickle with its test suite.
+#
+
+# We're probably already here, but just to be sure
 cd /usr/share/nickle/test > /dev/null
+
+# Some tests need to know where the binary is
+export NICKLE=$(which nickle)
+
+status=0
 for test in *.5c; do
-    nickle $test || exit 1
+
+    echo "TEST: $test"
+
+    # Tests ending in -error.5c are expected to fail
+    case "$test" in
+    *-error.5c)
+
+	# Send stderr to stdout so autopkgtest doesn't
+	# mark the test as failing
+        if "$NICKLE" "$test" 2>&1; then
+            echo "FAIL: $test exited successfully"
+            status=1
+        fi
+        ;;
+    *)
+        if ! "$NICKLE" "$test"; then
+            echo "FAIL: $test"
+            status=1
+        fi
+        ;;
+    esac
 done
+exit $status

@@ -43,7 +43,9 @@ static HashSetRec hashSets[] = {
     { 268435456,    295279081,    295279079    },
     { 536870912,    590559793,    590559791    },
     { 1073741824,   1181116273,   1181116271   },
+#if PTRDIFF_MAX > 2362232233
     { 2147483648ul, 2362232233ul, 2362232231ul }
+#endif
 };
 
 #define NHASHSETS (sizeof(hashSets) / sizeof(hashSets[0]))

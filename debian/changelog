@@ -1,3 +1,10 @@
+nickle (2.113) unstable; urgency=medium
+
+  * Fix 32-bit platforms with 64-bit dates
+  * Check for hurd ulimit behavior and skip stacklimittest
+
+ -- Keith Packard <keithp@keithp.com>  Fri, 13 Nov 2026 08:25:12 -0800
+
 nickle (2.112) unstable; urgency=medium
 
   * Fix 32-bit platform issues with various interfaces

@@ -3,14 +3,15 @@
 # Exercise nickle with its test suite.
 #
 
-# We're probably already here, but just to be sure
-cd /usr/share/nickle/test > /dev/null
+# Tests write scratch files in the current directory, so run them
+# from autopkgtest's writable temporary directory
+cd "$AUTOPKGTEST_TMP" || exit 1
 
 # Some tests need to know where the binary is
 export NICKLE=$(which nickle)
 
 status=0
-for test in *.5c; do
+for test in /usr/share/nickle/test/*.5c; do
 
     echo "TEST: $test"
 

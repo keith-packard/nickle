@@ -99,7 +99,6 @@ tests = [
   'manylocalstest.5c',
   'floatprectest.5c',
   'semcounttest.5c',
-  'datelimittest.5c',
   'reopentest.5c',
   'openmodetest.5c',
   'millistest.5c',
@@ -139,6 +138,11 @@ tests = [
   'hashtypetest.5c',
   'ptrdiffrangetest.5c'
 ]
+
+# Targets with 2038 problems can't run datelimittest
+if cc.sizeof('time_t', prefix: '#include <time.h>') >= 8
+  tests += ['datelimittest.5c']
+endif
 
 # Foreign::load exists only where nickle can load shared libraries
 if have_extern_syms and have_dlfcn_h and have_dlopen and have_dlsym

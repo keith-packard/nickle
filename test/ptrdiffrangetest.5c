@@ -1,0 +1,93 @@
+/*
+ * Nickle test suite
+ *
+ * Integers outside the ptrdiff_t range
+ *
+ * Array dimensions and pointer offsets are converted to ptrdiff_t.
+ * Dimensions outside its range were reported as invalid instead of
+ * negative or too large, and pointer arithmetic accepted only small
+ * ints as offsets. Offsets near the ends of the ptrdiff_t range must
+ * not overflow when added to the element index. 2**70 is outside the
+ * range on every target; 2**63 - 1 and -(2**63) sit at its ends on
+ * 64-bit targets.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+void function too_large (string what, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch out_of_memory (string m) {
+	check (what, m, "array too large");
+    }
+}
+
+void function invalid (string what, string message, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_argument (string m, int i, poly v) {
+	check (what, m, message);
+    }
+}
+
+void function outside (string what, poly offset, void() f)
+{
+    try {
+	f ();
+	raise not_raised (what);
+    } catch invalid_array_bounds (string m, poly a, poly b) {
+	check (what, m, "pointer arithmetic outside of array");
+	if (b != offset && a != offset)
+	    raise wrong (what, b, offset);
+    }
+}
+
+/* Array dimensions */
+too_large ("int[2**70]", void func () { int[2**70] a; });
+invalid ("int[-(2**70)]", "Negative array dimension",
+	 void func () { int[-(2**70)] a; });
+too_large ("setdims 2**70", void func () {
+    int[...,...] r = {};
+    setdims (r, (int[*]) { 1, 2**70 });
+});
+invalid ("setdims -(2**70)", "setdims: dimensions must be non-negative", void func () {
+    int[...,...] r = {};
+    setdims (r, (int[*]) { 1, -(2**70) });
+});
+too_large ("setdim 2**70", void func () { int[...] r = {}; setdim (r, 2**70); });
+invalid ("setdim -(2**70)", "setdim: dimension must be non-negative",
+	 void func () { int[...] r = {}; setdim (r, -(2**70)); });
+
+/* Pointer arithmetic */
+int[3] a = { 10, 20, 30 };
+check ("p + n", *(&a[1] + 1), 30);
+check ("n + p", *(1 + &a[1]), 30);
+check ("p - n", *(&a[2] - 2), 10);
+check ("n - p", *(2 - &a[1]), 20);
+check ("p - q", &a[2] - &a[0], 2);
+
+poly[*] huge = { 2**70, -(2**70) };
+for (int i = 0; i < dim (huge); i++) {
+    poly n = huge[i];
+    outside (sprintf ("p + %d", n), n, void func () { &a[1] + n; });
+    outside (sprintf ("%d + p", n), n, void func () { n + &a[1]; });
+    outside (sprintf ("p - %d", n), n, void func () { &a[1] - n; });
+    outside (sprintf ("%d - p", n), n, void func () { n - &a[1]; });
+}
+outside ("p + (2**63 - 1)", 2**63 - 1, void func () { &a[1] + (2**63 - 1); });
+outside ("p + -(2**63)", -(2**63), void func () { &a[1] + -(2**63); });
+outside ("p - (2**63 - 1)", 2**63 - 1, void func () { &a[1] - (2**63 - 1); });
+outside ("p - -(2**63)", -(2**63), void func () { &a[1] - -(2**63); });
+outside ("p + 2", 2, void func () { &a[1] + 2; });
+outside ("p - 2", 2, void func () { &a[1] - 2; });

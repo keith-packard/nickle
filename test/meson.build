@@ -136,7 +136,8 @@ tests = [
   'noreturntest.5c',
   'floatshortesttest.5c',
   'complexprinttest.5c',
-  'hashtypetest.5c'
+  'hashtypetest.5c',
+  'ptrdiffrangetest.5c'
 ]
 
 # Foreign::load exists only where nickle can load shared libraries

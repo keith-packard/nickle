@@ -304,7 +304,8 @@ install_man(manual)
 test_env = environment(
   {
     'NICKLESTART': meson.current_source_dir() / 'builtin.5c',
-    'NICKLEPATH': meson.current_source_dir(),
+    # test/math-bits.5c finds the generated math-tables.5c in the build tree
+    'NICKLEPATH': meson.current_source_dir() + ':' + meson.current_build_dir() / 'test',
     'NICKLE': nickle.full_path()
   }
   )

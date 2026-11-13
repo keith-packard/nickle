@@ -4,7 +4,7 @@
  * Trig operator tests
  */
 
-load "math-tables.5c"
+library "math-tables.5c"
 
 int test_precision = 333;
 int errors = 0;

@@ -41,9 +41,18 @@ void function bad_argument (string what, int want, void() f)
 bad_argument ("family", 0, void func () { Socket::create (9999, Socket::SOCK_STREAM); });
 bad_argument ("type", 1, void func () { Socket::create (Socket::AF_INET, 9999); });
 
+/*
+ * Linux reports ENOTSOCK; on the Hurd, /dev/null is a translator that
+ * answers socket calls with EPERM
+ */
 file null = File::open ("/dev/null", "r");
-io_fails ("listen on a file", File::error_type.NOTSOCK,
-	  void func () { Socket::listen (null, 5); });
+try {
+    Socket::listen (null, 5);
+    raise not_raised ("listen on a file");
+} catch File::io_error (string m, File::error_type e, file f) {
+    if (e != File::error_type.NOTSOCK && e != File::error_type.PERM)
+	raise wrong ("listen on a file", e, File::error_type.NOTSOCK);
+}
 File::close (null);
 
 file s = Socket::create (Socket::SOCK_STREAM);

@@ -379,9 +379,10 @@ IntSign(int i)
 #define MIN_NICKLE_INT        (-MAX_NICKLE_INT - 1)
 #define MAX_NICKLE_SIGNED_DIGIT                                               \
     ((signed_digit)(((double_digit)1 << (sizeof(signed_digit) * 8 - 1)) - 1))
+#define MIN_NICKLE_SIGNED_DIGIT (-MAX_NICKLE_SIGNED_DIGIT - 1)
 
-#define One  NewInt(1)
-#define Zero NewInt(0)
+#define One                     NewInt(1)
+#define Zero                    NewInt(0)
 
 static inline Bool
 ValueIsPtr(Value v)
@@ -870,9 +871,9 @@ typedef struct _thread {
 } Thread;
 
 typedef struct _semaphore {
-    BaseValue value;
-    ptrdiff_t count;
-    ptrdiff_t id;
+    BaseValue    value;
+    signed_digit count;
+    ptrdiff_t    id;
 } Semaphore;
 
 /*
@@ -1310,6 +1311,7 @@ void          FilePutDoubleDigitBase(Value file, double_digit a, int base);
 void          FilePutIntBase(Value file, int a, int base);
 void          FilePutInt(Value, int);
 void          FilePutPtrdiff(Value, ptrdiff_t);
+void          FilePutSignedDigit(Value, signed_digit);
 ptrdiff_t     FileStringWidth(char *string, ptrdiff_t length, uint32_t format);
 void          FilePutString(Value f, char *string, ptrdiff_t length, uint32_t format);
 void          FilePutRep(Value f, Rep tag, Bool minimal);

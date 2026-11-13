@@ -1378,6 +1378,18 @@ FilePutPtrdiff(Value file, ptrdiff_t a)
     FilePutDoubleDigitBase(file, m, 10);
 }
 
+void
+FilePutSignedDigit(Value file, signed_digit a)
+{
+    double_digit m = (double_digit)a;
+
+    if (a < 0) {
+        FileOutput(file, '-');
+        m = -m;
+    }
+    FilePutDoubleDigitBase(file, m, 10);
+}
+
 ptrdiff_t
 FileStringWidth(char *string, ptrdiff_t length, uint32_t format)
 {
@@ -1878,6 +1890,9 @@ FileVPrintf(Value file, char *fmt, va_list args)
                 break;
             case 'z':
                 FilePutPtrdiff(file, va_arg(args, ptrdiff_t));
+                break;
+            case 'Z':
+                FilePutSignedDigit(file, va_arg(args, signed_digit));
                 break;
             case 'v':
             case 'g':

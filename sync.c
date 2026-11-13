@@ -13,7 +13,7 @@ do_Semaphore_wait(Value s)
     if (aborting)
         RETURN(Void);
     if (!running->thread.partial) {
-        if (s->semaphore.count == PTRDIFF_MIN) {
+        if (s->semaphore.count == MIN_NICKLE_SIGNED_DIGIT) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("wait: semaphore count too small"), NewInt(0), s);
             RETURN(Void);
@@ -43,7 +43,7 @@ Value
 do_Semaphore_count(Value s)
 {
     ENTER();
-    RETURN(NewPtrdiffInteger(s->semaphore.count));
+    RETURN(NewSignedDigitInteger(s->semaphore.count));
 }
 
 Value
@@ -52,7 +52,7 @@ do_Semaphore_signal(Value s)
     ENTER();
     if (aborting)
         RETURN(Void);
-    if (s->semaphore.count == PTRDIFF_MAX) {
+    if (s->semaphore.count == MAX_NICKLE_SIGNED_DIGIT) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("signal: semaphore count too large"), NewInt(0), s);
         RETURN(Void);
@@ -72,7 +72,7 @@ SemaphorePrint(Value f, Value av, uint32_t format, int base, int width, int prec
     (void)width;
     (void)prec;
     (void)fill;
-    FilePrintf(f, "semaphore %z (%z)", av->semaphore.id, av->semaphore.count);
+    FilePrintf(f, "semaphore %z (%Z)", av->semaphore.id, av->semaphore.count);
     return True;
 }
 
@@ -103,7 +103,7 @@ do_Semaphore_new(ptrdiff_t n, Value *value)
 {
     ENTER();
     Value            ret;
-    ptrdiff_t        count;
+    signed_digit     count;
     static ptrdiff_t id;
 
     switch (n) {
@@ -111,7 +111,7 @@ do_Semaphore_new(ptrdiff_t n, Value *value)
         count = 0;
         break;
     case 1:
-        count = PtrdiffPart(value[0], "Illegal initial semaphore count");
+        count = SignedDigitPart(value[0], "Illegal initial semaphore count");
         if (aborting)
             RETURN(Void);
         break;

@@ -1,0 +1,39 @@
+/*
+ * Nickle test suite
+ *
+ * Reading long lines with File::fgets
+ *
+ * File::fgets appended each character to the line read so far, copying
+ * the line for every character, so a 64 KiB line allocated about 2 GiB
+ * and exhausted the address space of a 32-bit nickle built with ASan.
+ * A line of 2**20 characters took longer than the test timeout.
+ */
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+string	name = "fgetstest.tmp";
+int	n = 2**20;
+
+file	f = File::open (name, "w");
+for (int i = 0; i < n; i++)
+    File::putc ('x', f);
+File::fprintf (f, "\n\ndéf\nlast");
+File::close (f);
+
+f = File::open (name, "r");
+string	long_line = File::fgets (f);
+check ("long line length", String::length (long_line), n);
+check ("long line contents", long_line == String::new ((int[n]) { [i] = 'x' }), true);
+check ("empty line", File::fgets (f), "");
+check ("utf-8 line", File::fgets (f), "déf");
+check ("last line without newline", File::fgets (f), "last");
+check ("end", File::end (f), true);
+check ("past the end", File::fgets (f), "");
+File::close (f);
+File::unlink (name);

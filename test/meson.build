@@ -106,6 +106,7 @@ tests = [
   'charrangetest.5c',
   'utf8leadtest.5c',
   'highfdtest.5c',
+  'fdlimittest.5c',
   'vwidthtest.5c',
   'socketaddrtest.5c',
   'socketconnecttest.5c',

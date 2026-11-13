@@ -34,7 +34,7 @@ check ("substr whole", String::substr ("hello", 0, 5), "hello");
 check ("substr empty", String::substr ("hello", 5, 0), "");
 check ("substr utf-8", String::substr ("héllo", 1, 2), "él");
 
-substr_error ("start before string", "substr: index out of range",
+substr_error ("start before string", "substr: count out of range",
 	      poly func () { return String::substr ("hello", 2, -3); });
 substr_error ("index past end", "substr: index out of range",
 	      poly func () { return String::substr ("hello", 6, 0); });
@@ -44,7 +44,7 @@ substr_error ("huge index", "substr: index out of range",
 	      poly func () { return String::substr ("hello", 2**62, 1); });
 substr_error ("huge count", "substr: count out of range",
 	      poly func () { return String::substr ("hello", 1, 2**62); });
-substr_error ("huge negative count", "substr: index out of range",
+substr_error ("huge negative count", "substr: count out of range",
 	      poly func () { return String::substr ("hello", 1, -(2**62)); });
 
 check ("index utf-8", "héllo"[1], 0xe9);

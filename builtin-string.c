@@ -143,18 +143,19 @@ do_String_substr(Value av, Value bv, Value cv)
 
     a = StringChars(&av->string);
     al = StringLength(a, alen);
-    b = PtrdiffPart(bv, "substr: index not integer");
-    c = PtrdiffPart(cv, "substr: count not integer");
-    if (aborting)
-        RETURN(av);
     /*
      * Check the index before using it, so that none of the arithmetic
      * below can overflow. A negative count ends the substring at the
      * index.
      */
-    if (b < 0 || b > al || (c < 0 && c < -b)) {
+    if (!ValueToPtrdiff(bv, &b) || b < 0 || b > al) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("substr: index out of range"), NewInt(1), bv);
+        RETURN(av);
+    }
+    if (!ValueToPtrdiff(cv, &c) || (c < 0 && c < -b)) {
+        RaiseStandardException(exception_invalid_argument, 3,
+                               NewStrString("substr: count out of range"), NewInt(2), cv);
         RETURN(av);
     }
     if (c < 0) {

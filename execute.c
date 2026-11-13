@@ -293,12 +293,15 @@ ThreadArray(Value thread, Bool resizable, int32_t ndim, Type *type)
     dims = AllocateTemp((size_t)ndim * sizeof(ptrdiff_t));
     for (i = 0; i < ndim; i++) {
         Value d = Stack(i);
-        dims[i] = PtrdiffPart(d, "Invalid array dimension");
-        if (dims[i] < 0)
+        if (Negativep(d)) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("Negative array dimension"), NewInt(0), d);
-        if (aborting)
             RETURN(0);
+        }
+        if (!ValueToPtrdiff(d, &dims[i])) {
+            RaiseStandardException(exception_out_of_memory, 1, NewStrString("array too large"));
+            RETURN(0);
+        }
     }
     if (!ArrayDimsOk(ndim, dims))
         RETURN(0);
@@ -323,12 +326,15 @@ ThreadArrayInd(Value thread, Bool resizable, Value dim, Type *type)
     dims = AllocateTemp((size_t)ndim * sizeof(ptrdiff_t));
     for (i = 0; i < ndim; i++) {
         Value d = ArrayValue(a, i);
-        dims[i] = PtrdiffPart(d, "Invalid array dimension");
-        if (dims[i] < 0)
+        if (Negativep(d)) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("Negative array dimension"), NewInt(0), d);
-        if (aborting)
             RETURN(0);
+        }
+        if (!ValueToPtrdiff(d, &dims[i])) {
+            RaiseStandardException(exception_out_of_memory, 1, NewStrString("array too large"));
+            RETURN(0);
+        }
     }
     if (!ArrayDimsOk(ndim, dims))
         RETURN(0);

@@ -6,33 +6,43 @@
 
 #include "nickle.h"
 
+/*
+ * Raise invalid_array_bounds for pointer arithmetic leaving the array
+ */
+static Value
+RefOutside(Value av, Value bv)
+{
+    RaiseStandardException(exception_invalid_array_bounds, 3,
+                           NewStrString("pointer arithmetic outside of array"), av, bv);
+    return Void;
+}
+
+/*
+ * The bounds checks compare offsets before adding them to the element
+ * index so that offsets near the ends of the ptrdiff_t range cannot
+ * overflow
+ */
 static Value
 RefPlus(Value av, Value bv, int expandOk)
 {
     ENTER();
     ptrdiff_t i;
     Ref      *ref;
+    Value     offset;
 
     (void)expandOk;
-    if (ValueIsInt(av)) {
-        i = PtrdiffPart(av, "Attempt to add non-integer to reference type");
-        if (aborting)
-            RETURN(Void);
-        ref = &bv->ref;
-    } else if (ValueIsInt(bv)) {
-        i = PtrdiffPart(bv, "Attempt to add non-integer to reference type");
-        if (aborting)
-            RETURN(Void);
+    if (ValueIsRef(av)) {
         ref = &av->ref;
+        offset = bv;
+    } else if (ValueIsRef(bv)) {
+        ref = &bv->ref;
+        offset = av;
     } else
         RETURN(Void);
-    i = i + ref->element;
-    if (i < 0 || i >= ref->box->nvalues || (!ref->box->homogeneous && i != ref->element)) {
-        RaiseStandardException(exception_invalid_array_bounds, 3,
-                               NewStrString("pointer arithmetic outside of array"), av, bv);
-        RETURN(Void);
-    }
-    RETURN(NewRef(ref->box, i));
+    if (!ValueToPtrdiff(offset, &i) || i < -ref->element || i >= ref->box->nvalues - ref->element
+        || (!ref->box->homogeneous && i != 0))
+        RETURN(RefOutside(av, bv));
+    RETURN(NewRef(ref->box, ref->element + i));
 }
 
 static Value
@@ -40,23 +50,10 @@ RefMinus(Value av, Value bv, int expandOk)
 {
     ENTER();
     ptrdiff_t i;
-    ptrdiff_t element;
     Ref      *ref, *bref;
 
     (void)expandOk;
-    if (ValueIsInt(av)) {
-        i = PtrdiffPart(av, "Attempt to subtract non-integer to reference type");
-        if (aborting)
-            RETURN(Void);
-        ref = &bv->ref;
-        element = -ref->element;
-    } else if (ValueIsInt(bv)) {
-        i = -PtrdiffPart(bv, "Attempt to subtract non-integer to reference type");
-        if (aborting)
-            RETURN(Void);
-        ref = &av->ref;
-        element = ref->element;
-    } else {
+    if (ValueIsRef(av) && ValueIsRef(bv)) {
         ref = &av->ref;
         bref = &bv->ref;
         if (ref->box != bref->box) {
@@ -67,13 +64,21 @@ RefMinus(Value av, Value bv, int expandOk)
         }
         RETURN(NewPtrdiffInteger(ref->element - bref->element));
     }
-    i = i + element;
-    if (i < 0 || i >= ref->box->nvalues || (!ref->box->homogeneous && i != ref->element)) {
-        RaiseStandardException(exception_invalid_array_bounds, 3,
-                               NewStrString("pointer arithmetic outside of array"), av, bv);
-        RETURN(Void);
+    if (ValueIsRef(av)) {
+        ref = &av->ref;
+        if (!ValueToPtrdiff(bv, &i) || i > ref->element || i <= ref->element - ref->box->nvalues
+            || (!ref->box->homogeneous && i != 0))
+            RETURN(RefOutside(av, bv));
+        RETURN(NewRef(ref->box, ref->element - i));
     }
-    RETURN(NewRef(ref->box, i));
+    if (ValueIsRef(bv)) {
+        ref = &bv->ref;
+        if (!ValueToPtrdiff(av, &i) || i < ref->element || i - ref->element >= ref->box->nvalues
+            || (!ref->box->homogeneous && i - ref->element != ref->element))
+            RETURN(RefOutside(av, bv));
+        RETURN(NewRef(ref->box, i - ref->element));
+    }
+    RETURN(Void);
 }
 
 static Value
@@ -113,9 +118,9 @@ RefTypeCheck(BinaryOp op, Value av, Value bv, int expandOk)
             return av->value.type;
         __NICKLE_FALLTHROUGH;
     case PlusOp:
-        if (ValueIsInt(av))
+        if (Integralp(ValueTag(av)))
             return bv->value.type;
-        if (ValueIsInt(bv))
+        if (Integralp(ValueTag(bv)))
             return av->value.type;
         break;
     case LessOp:

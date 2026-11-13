@@ -45,12 +45,8 @@ value_offset(Value s, Atom member, char *error, ptrdiff_t def, ptrdiff_t offset,
 
     if (ref != 0)
         mem = RefValueGet(ref);
-    if (mem != 0) {
-        p = PtrdiffPart(mem, error);
-        if (aborting)
-            return 0;
-    }
-    if ((long long)p < min + offset || (long long)p > max + offset) {
+    if ((mem != 0 && !ValueToPtrdiff(mem, &p)) || (long long)p < min + offset
+        || (long long)p > max + offset) {
         if (!mem)
             mem = NewPtrdiffInteger(p);
         RaiseStandardException(exception_invalid_argument, 3, NewStrString(error), NewInt(0), mem);

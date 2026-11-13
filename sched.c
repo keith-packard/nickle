@@ -216,8 +216,7 @@ do_Thread_id_to_thread(Value id)
     ptrdiff_t i;
     Value     t;
 
-    i = PtrdiffPart(id, "Invalid thread id");
-    if (aborting)
+    if (!ValueToPtrdiff(id, &i))
         RETURN(Void);
     for (t = running; t; t = t->thread.next)
         if (t->thread.id == i)

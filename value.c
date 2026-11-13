@@ -193,21 +193,6 @@ ValueToPtrdiff(Value av, ptrdiff_t *p)
     return False;
 }
 
-/*
- * Return 'av' as a ptrdiff_t, raising invalid_argument when it isn't
- * an integer in that range
- */
-ptrdiff_t
-PtrdiffPart(Value av, char *error)
-{
-    ptrdiff_t p;
-
-    if (ValueToPtrdiff(av, &p))
-        return p;
-    RaiseStandardException(exception_invalid_argument, 3, NewStrString(error), NewInt(0), av);
-    return 0;
-}
-
 static char *
 BinaryOpMessage(BinaryOp operator)
 {

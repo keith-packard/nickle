@@ -1456,7 +1456,6 @@ int          IntPart(Value, char *error);
 uint32_t     CharPart(Value, char *error);
 Value        NewCharInteger(uint32_t c);
 Bool         ValueToPtrdiff(Value av, ptrdiff_t *p);
-ptrdiff_t    PtrdiffPart(Value, char *error);
 
 int          BoolPart(Value, char *error);
 

@@ -558,13 +558,15 @@ do_setdims(Value av, Value dv)
     }
     for (i = 0; i < a->ndim; i++) {
         int32_t j = a->ndim - 1 - i;
-        dims[j] = PtrdiffPart(ArrayValue(d, i), "setdims: invalid dimension");
-        if (aborting)
-            RETURN(Void);
-        if (dims[j] < 0) {
+        Value   dim = ArrayValue(d, i);
+        if (Negativep(dim)) {
             RaiseStandardException(exception_invalid_argument, 3,
                                    NewStrString("setdims: dimensions must be non-negative"),
-                                   NewPtrdiffInteger(i), NewPtrdiffInteger(dims[j]));
+                                   NewPtrdiffInteger(i), dim);
+            RETURN(Void);
+        }
+        if (!ValueToPtrdiff(dim, &dims[j])) {
+            RaiseStandardException(exception_out_of_memory, 1, NewStrString("array too large"));
             RETURN(Void);
         }
     }
@@ -578,13 +580,15 @@ Value
 do_setdim(Value av, Value dv)
 {
     ENTER();
-    ptrdiff_t d = PtrdiffPart(dv, "setdim: invalid dimension");
-    if (aborting)
-        RETURN(Void);
-    if (d < 0) {
+    ptrdiff_t d;
+    if (Negativep(dv)) {
         RaiseStandardException(exception_invalid_argument, 3,
                                NewStrString("setdim: dimension must be non-negative"), NewInt(1),
                                dv);
+        RETURN(Void);
+    }
+    if (!ValueToPtrdiff(dv, &d)) {
+        RaiseStandardException(exception_out_of_memory, 1, NewStrString("array too large"));
         RETURN(Void);
     }
     if (!av->array.resizable) {

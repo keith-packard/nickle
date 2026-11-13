@@ -33,26 +33,35 @@ int_value(signed_digit s)
 /*
  * Return member 'member' of 's' less 'offset', or 'def' less 'offset'
  * when it is missing, raising invalid_argument when the result is
- * outside [min, max]
+ * outside [min, max]. Subtracting before converting keeps fields whose
+ * values only fit [min, max] once offset, such as years past 2**31,
+ * within ptrdiff_t.
  */
-static long long
-value_offset(Value s, Atom member, char *error, ptrdiff_t def, ptrdiff_t offset, long long min,
-             long long max)
+#ifdef HAVE_STRUCT_TM_TM_GMTOFF
+static_assert(PTRDIFF_MAX >= LONG_MAX && PTRDIFF_MIN <= LONG_MIN, "gmtoff must fit ptrdiff_t");
+#endif
+
+static ptrdiff_t
+value_offset(Value s, Atom member, char *error, ptrdiff_t def, int offset, ptrdiff_t min,
+             ptrdiff_t max)
 {
     Value     ref = StructMemRef(s, AtomId(member));
     Value     mem = 0;
-    ptrdiff_t p = def;
+    ptrdiff_t p = def - offset;
 
     if (ref != 0)
         mem = RefValueGet(ref);
-    if ((mem != 0 && !ValueToPtrdiff(mem, &p)) || (long long)p < min + offset
-        || (long long)p > max + offset) {
-        if (!mem)
-            mem = NewPtrdiffInteger(p);
+    if (mem == 0)
+        return p;
+    ENTER();
+    if (!Integralp(ValueTag(mem)) || !ValueToPtrdiff(Minus(mem, NewInt(offset)), &p) || p < min
+        || p > max) {
         RaiseStandardException(exception_invalid_argument, 3, NewStrString(error), NewInt(0), mem);
+        EXIT();
         return 0;
     }
-    return (long long)p - offset;
+    EXIT();
+    return p;
 }
 
 static int

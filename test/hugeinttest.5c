@@ -50,7 +50,13 @@ check ("-(2**100) >> 99", -(2**100) >> 99, -2);
 check ("2**100 << -(2**80)", (2**100) << -(2**80), 0);
 
 /* Shift counts and bit counts past the small int range */
-int big = 1 << (2**30);
+int big;
+try {
+    big = 1 << (2**30);
+} catch out_of_memory (string m) {
+    printf("system too small for large shift tests\n");
+    exit(0);
+}
 
 check ("bit_width (1 << 2**30)", bit_width (big), 2**30 + 1);
 check ("(1 << 2**30) >> (2**30 - 3)", big >> (2**30 - 3), 8);

@@ -173,7 +173,7 @@ namespace JSON {
     typedef struct {
 	file	f;
 	int	line;
-	string	token;
+	int[...] token;		/* the characters of the current token */
     } json_input_t;
 
     json_input_t start_json(string s) {
@@ -188,19 +188,19 @@ namespace JSON {
 	    int c = File::getc(f->f);
 	    if (c == '\n')
 		f->line++;
-	    f->token = f->token + String::new(c);
+	    f->token[dim(f->token)] = c;
 	    return c;
 	}
 
 	void unch(int c) {
 	    if (c == '\n')
 		f->line--;
-	    f->token = String::substr(f->token, 0, String::length(f->token) - 1);
+	    setdim(f->token, dim(f->token) - 1);
 	    File::ungetc(c, f->f);
 	}
 
 	noreturn error() {
-	    raise json_parse_error(f->line, f->token);
+	    raise json_parse_error(f->line, String::new(f->token));
 	}
 
 	bool is_number_char(int c) {
@@ -289,7 +289,7 @@ namespace JSON {
 	/* The end of input between tokens ends the text; inside one, it's an error */
 	bool in_token = false;
 	try {
-	    f->token = "";
+	    f->token = (int[...]) {};
 	    for (;;) {
 		int	c = ch();
 
@@ -298,7 +298,7 @@ namespace JSON {
 		case '\r':
 		case ' ':
 		case '\t':
-		    f->token = "";
+		    setdim(f->token, 0);
 		    continue;
 		case '{':
 		    return (token_t) { .token = term_t._oc };
@@ -315,9 +315,9 @@ namespace JSON {
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
 		case '-':
-		    string nval = "";
+		    int[...] nchars = {};
 		    while (is_number_char(c)) {
-			nval = nval + String::new(c);
+			nchars[dim(nchars)] = c;
 			if (File::end(f->f))
 			    break;
 			c = ch();
@@ -326,12 +326,13 @@ namespace JSON {
 			/* The number ran to the end of the input */
 		    } else
 			unch(c);
+		    string nval = String::new(nchars);
 		    if (check_number(nval))
 			return (token_t) { .val = { .fval = atof(nval) }, .token = term_t._float };
 		    return (token_t) { .val = { .ival = atoi(nval) }, .token = term_t._int };
 		case '"':
 		    in_token = true;
-		    string sval = "";
+		    int[...] schars = {};
 		    for (;;) {
 			c = ch();
 			if (c == '"')
@@ -365,9 +366,9 @@ namespace JSON {
 				error();
 			    }
 			}
-			sval = sval + String::new(c);
+			schars[dim(schars)] = c;
 		    }
-		    return (token_t) { .val = { .sval = sval }, .token = term_t._string };
+		    return (token_t) { .val = { .sval = String::new(schars) }, .token = term_t._string };
 		case 't':
 		    in_token = true;
 		    if (match_keyword("true"))
@@ -406,7 +407,7 @@ namespace JSON {
 
 	void expect(term_t t) {
 	    if (token.token != t)
-		raise json_parse_error(f.line, f.token);
+		raise json_parse_error(f.line, String::new(f.token));
 	}
 
 	poly value();
@@ -433,7 +434,7 @@ namespace JSON {
 		    next();
 		    return ret;
 		default:
-		    raise json_parse_error(f.line, f.token);
+		    raise json_parse_error(f.line, String::new(f.token));
 		}
 	    }
 	}
@@ -455,7 +456,7 @@ namespace JSON {
 		    next();
 		    return ret;
 		default:
-		    raise json_parse_error(f.line, f.token);
+		    raise json_parse_error(f.line, String::new(f.token));
 		}
 	    }
 	}
@@ -489,7 +490,7 @@ namespace JSON {
 		    next();
 		    return nval;
 	    default:
-		    raise json_parse_error(f.line, f.token);
+		    raise json_parse_error(f.line, String::new(f.token));
 	    }
 	};
 

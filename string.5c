@@ -174,17 +174,31 @@ extend namespace String {
 
     typedef string(string) dequote_t;
 
+    int[*] code_points(string s)
+	/*
+	 * The characters of 's', decoded in one pass; indexing a
+	 * string scans it from the start
+	 */
+    {
+	file f = File::string_read(s);
+	int[...] cs = {};
+	while (!File::end(f))
+	    cs[dim(cs)] = File::getc(f);
+	return cs;
+    }
+
     public dequote_t make_dequote(quote_context q)
 	/*
 	 * Construct a quote parsing function based on 'q'
 	 */
     {
 	public string _dequote(string s) {
-	    string result = "";
+	    int[*] cs = code_points(s);
+	    int[...] result = {};
 	    qstate t = qstate.normal;
 	    int c;
-	    for (int cur = 0; cur < length(s); cur++) {
-		c = s[cur];
+	    for (int cur = 0; cur < dim(cs); cur++) {
+		c = cs[cur];
 		switch(t) {
 		case qstate.normal:
 		    if (inchars(c, q.oq)) {
@@ -199,7 +213,7 @@ extend namespace String {
 			continue;
 		    }
 		    if (inchars(c, q.cq)) {
-			if (cur != length(s) - 1)
+			if (cur != dim(cs) - 1)
 			    raise invalid_argument("trailing garbage", 0, s);
 			t = qstate.normal;
 			continue;
@@ -209,10 +223,10 @@ extend namespace String {
 		    t = qstate.openq;
 		    break;
 		}
-		result = result + String::new(c);
+		result[dim(result)] = c;
 	    }
 	    if (t == qstate.normal || t == qstate.xq && inchars(c, q.cq))
-		return result;
+		return String::new(result);
 	    raise invalid_argument("unexpected end of string", 0, s);
 	}
 	return _dequote;
@@ -245,9 +259,9 @@ extend namespace String {
 	dequote_t dq = make_dequote(q);
 	public string[*] _parse_csv(string s) {
 	    string[...] ss = {};
-	    string curs = "";
+	    int[...] curs = {};
 	    void consume() {
-		string t = chomp(curs);
+		string t = chomp(String::new(curs));
 		if (t != "" && t[0] == q.oq[0]) {
 		    /* A malformed quoted field is a malformed line */
 		    try {
@@ -257,12 +271,13 @@ extend namespace String {
 		    }
 		}
 		ss[dim(ss)] = t;
-		curs = "";
+		curs = (int[...]) {};
 	    }
 	    qstate t = qstate.normal;
+	    int[*] cs = code_points(s);
 	    int cur = 0;
-	    while (cur < length(s)) {
-		int c = s[cur];
+	    while (cur < dim(cs)) {
+		int c = cs[cur];
 		switch(t) {
 		case qstate.normal:
 		    if (c == sep) {
@@ -289,7 +304,7 @@ extend namespace String {
 		    t = qstate.normal;
 		    break;
 		}
-		curs = curs + String::new(c);
+		curs[dim(curs)] = c;
 		cur++;
 	    }
 	    if (t == qstate.openq)

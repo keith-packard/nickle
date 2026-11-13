@@ -108,12 +108,12 @@ extend namespace File {
 	    return c;
 	}
 
-	/* Read the character peek returned, as a string */
-	string next ()
+	/* Read the character peek returned */
+	int next ()
 	{
 	    if (width > 0)
 		width--;
-	    return String::new (getc (f));
+	    return getc (f);
 	}
 
 	/* Skip whitespace */
@@ -150,24 +150,24 @@ extend namespace File {
 	}
 
 	/* Append any digits in 'base' to 's', returning how many */
-	int digits (*string s, int base)
+	int digits (&int[...] s, int base)
 	{
 	    int n = 0;
 
 	    while (isbasedigit (peek (), base)) {
-		*s += next ();
+		s[dim(s)] = next ();
 		n++;
 	    }
 	    return n;
 	}
 
 	/* Append a sign to 's' if there is one */
-	void sign (*string s)
+	void sign (&int[...] s)
 	{
 	    int c = peek ();
 
 	    if (c == '+' || c == '-')
-		*s += next ();
+		s[dim(s)] = next ();
 	}
 
 	/*
@@ -176,7 +176,7 @@ extend namespace File {
 	 */
 	int integer (int base)
 	{
-	    string  s = "";
+	    int[...] s = {};
 	    int	    n = 0;
 
 	    sign (&s);
@@ -187,7 +187,7 @@ extend namespace File {
 		    prefix = 'x';
 		else
 		    prefix = 'b';
-		s += next ();
+		s[dim(s)] = next ();
 		n++;
 		if (Ctype::tolower (peek ()) == prefix)
 		    next ();
@@ -195,7 +195,7 @@ extend namespace File {
 	    n += digits (&s, base);
 	    if (n == 0)
 		raise matching_failure ();
-	    return string_to_integer (s, base);
+	    return string_to_integer (String::new (s), base);
 	}
 
 	/*
@@ -207,17 +207,17 @@ extend namespace File {
 	 */
 	real number ()
 	{
-	    string  s = "";
+	    int[...] s = {};
 	    int	    base = 10;
 	    int	    exponent_letter = 'e';
 	    int	    n = 0;
 
 	    sign (&s);
 	    if (peek () == '0') {
-		s += next ();
+		s[dim(s)] = next ();
 		n++;
 		if (Ctype::tolower (peek ()) == 'x') {
-		    s += next ();
+		    s[dim(s)] = next ();
 		    base = 16;
 		    exponent_letter = 'p';
 		    n = 0;
@@ -225,38 +225,38 @@ extend namespace File {
 	    }
 	    n += digits (&s, base);
 	    if (peek () == '.') {
-		s += next ();
+		s[dim(s)] = next ();
 		n += digits (&s, base);
 		if (peek () == '{') {
-		    s += next ();
+		    s[dim(s)] = next ();
 		    int r = digits (&s, base);
 		    if (r == 0 || peek () != '}')
 			raise matching_failure ();
-		    s += next ();
+		    s[dim(s)] = next ();
 		    n += r;
 		}
 	    }
 	    if (n == 0)
 		raise matching_failure ();
 	    if (Ctype::tolower (peek ()) == exponent_letter) {
-		s += next ();
+		s[dim(s)] = next ();
 		sign (&s);
 		if (digits (&s, 10) == 0)
 		    raise matching_failure ();
 	    }
-	    return string_to_real (s);
+	    return string_to_real (String::new (s));
 	}
 
 	/* Return the next run of characters other than whitespace */
 	string word ()
 	{
-	    string  s = "";
+	    int[...] s = {};
 
 	    while (peek () >= 0 && !Ctype::isspace (peek ()))
-		s += next ();
-	    if (s == "")
+		s[dim(s)] = next ();
+	    if (dim (s) == 0)
 		raise matching_failure ();
-	    return s;
+	    return String::new (s);
 	}
 
 	/* Check the whole format first, so errors don't depend on the input */
@@ -313,12 +313,12 @@ extend namespace File {
 			    raise matching_failure ();
 			value = getc (f);
 		    } else {
-			string s = "";
+			int[...] s = {};
 			while (peek () >= 0)
-			    s += next ();
+			    s[dim(s)] = next ();
 			if (width > 0)
 			    raise matching_failure ();
-			value = s;
+			value = String::new (s);
 		    }
 		    break;
 		case word:

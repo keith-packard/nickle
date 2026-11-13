@@ -1,3 +1,25 @@
+nickle (2.111) unstable; urgency=medium
+
+  * Fix buffer overflows in Karatsuba multiply
+  * Fix bitwise operations on negative big integers, gcd, and long division
+  * Fix garbage-collector crashes during hash resizing and object marking
+  * Check hash key and value types at run time
+  * Don't hang at exit on blocked output
+  * Round real and complex math functions correctly
+  * Print exact values with %.-g: shortest floats, repeating fractions in braces
+  * Add a noreturn type for functions that never return
+  * Classify characters by Unicode in Ctype
+  * Run twixt leave expressions in killed threads
+  * Use 64-bit sizes and indices throughout; enable strict warnings
+  * Format C sources with clang-format
+  * Update the tutorial and man page
+  * Fix printf, pretty-printer, JSON, CSV, scanf, parseargs, socket, and
+    file error bugs
+  * Accept \x escapes in strings and characters
+  * Raise the soft fd limit to the hard limit at startup
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 12 Nov 2026 17:00:39 -0800
+
 nickle (2.110) unstable; urgency=medium
 
   * Add Math::ldexp

@@ -1,3 +1,10 @@
+nickle (2.114) unstable; urgency=medium
+
+  * autopkgtest: deal with tests expected to fail
+  * autopkgtest: run from the current (writable) directory
+
+ -- Keith Packard <keithp@keithp.com>  Fri, 13 Nov 2026 11:54:45 -0800
+
 nickle (2.113) unstable; urgency=medium
 
   * Fix 32-bit platforms with 64-bit dates

@@ -1104,6 +1104,8 @@ mode string, ala UNIX stdio fopen().  Permissible
 modes are as in stdio: "r", "w", "a", "r+", "w+"
 and "a+".
 Other modes raise open_error with the INVAL error.
+Nickle raises its soft limit on open files to the hard limit
+at startup, so a script can open as many files as the system allows.
 .IP "file function reopen(string path, string mode, file f)"
 Make f refer to the file at the given path, opened with mode as
 in open(), flushing output pending for the old file and discarding
@@ -1133,6 +1135,7 @@ The argv argument is an array
 of strings giving the arguments to be passed to the program,
 with argv[0] conventionally being the program name.
 The files must be open system files, not string files.
+The program gets the limit on open files that nickle started with.
 Raises open_error if the program can't be run.
 .IP "int function mkchild(string path, string[*] argv, childfd fds...)"
 Like filter(), but each of the optional fds arguments,

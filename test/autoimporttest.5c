@@ -11,24 +11,28 @@
 
 exception bad_autoimport (string what, string got);
 
+string[...] written_files = {};
+
 void write_file (string name, string contents)
 {
     file	f = File::open (name, "w");
+
+    written_files[dim(written_files)] = name;
 
     File::fprintf (f, "%s", contents);
     File::close (f);
 }
 
-write_file ("autoalpha.5c",
+write_file ("/tmp/autoalpha.5c",
 	    "namespace Autoalpha { public int alpha_value = 17; }\n");
-write_file ("autoalpha-inner.5c",
+write_file ("/tmp/autoalpha-inner.5c",
 	    "extend namespace Autoalpha { public namespace Inner {" +
 	    " public int inner_value = 23; } }\n");
-write_file ("autobeta.5c",
+write_file ("/tmp/autobeta.5c",
 	    "printf (\"autobeta loaded\\n\");\n" +
 	    "namespace Autobeta { public int beta_value = 5; }\n");
-write_file ("autoimport-script.5c",
-	    "Command::nickle_path = \".\";\n" +
+write_file ("/tmp/autoimport-script.5c",
+	    "Command::nickle_path = \"/tmp\";\n" +
 	    "autoimport Autoalpha::Inner\n" +
 	    "printf (\"inner %d\\n\", inner_value);\n" +
 	    "autoimport Autoalpha, Nosuch, Autobeta\n" +
@@ -47,7 +51,7 @@ string	nickle = Environ::get ("NICKLE");
 file[*]	output = File::mkpipe ();
 file[*]	errors = File::mkpipe ();
 
-File::filter (nickle, (string[*]) { nickle, "autoimport-script.5c" },
+File::filter (nickle, (string[*]) { nickle, "/tmp/autoimport-script.5c" },
 	      (file[3]) { stdin, output[1], errors[1] });
 File::close (output[1]);
 File::close (errors[1]);
@@ -69,3 +73,6 @@ if (dim (err) != dim (want_err))
 for (int i = 0; i < dim (err); i++)
     if (err[i] != want_err[i])
 	raise bad_autoimport ("errors", err[i]);
+
+for (int i = 0; i < dim(written_files); i++)
+    File::unlink(written_files[i]);

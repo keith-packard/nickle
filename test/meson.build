@@ -199,12 +199,13 @@ foreach test : ['repeatlengthtest.5c', 'repeatdigitstest.5c', 'unreadpipetest.5c
 endforeach
 
 # Errors in input named on the command line, and unhandled exceptions,
-# must exit with an error status
+# must exit with an error status. Name these tests *-error.5c, which is
+# how debian/tests/upstream tells them apart
 error_tests = [
   'syntax-error.5c',
   'compile-error.5c',
-  'unhandled-if.5c',
-  'unhandled-try.5c',
+  'unhandled-if-error.5c',
+  'unhandled-try-error.5c',
 ]
 
 foreach test : error_tests

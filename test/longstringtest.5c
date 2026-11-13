@@ -1,0 +1,37 @@
+/*
+ * Nickle test suite
+ *
+ * Library routines reading long strings
+ *
+ * The JSON reader, fscanf, String::dequote, and String::parse_csv
+ * appended each character to the string read so far, copying it for
+ * every character, and the String routines indexed their input, which
+ * scans it from the start. Reading a string of 2**18 characters
+ * through all four took 96 seconds.
+ */
+
+autoimport JSON;
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+int	n = 2**18;
+string	x = String::new ((int[n]) { [i] = 'x' });
+
+check ("from_json", from_json ("\"" + x + "\"") == x, true);
+
+string	w;
+File::sscanf (x + " tail", "%s", &w);
+check ("sscanf %s", w == x, true);
+
+check ("dequote", String::dequote ("\"" + x + "\"") == x, true);
+
+string[*] fields = String::parse_csv (x + ",y");
+check ("parse_csv fields", dim (fields), 2);
+check ("parse_csv field", fields[0] == x, true);
+check ("parse_csv last field", fields[1], "y");

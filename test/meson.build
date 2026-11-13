@@ -108,6 +108,7 @@ tests = [
   'fdlimittest.5c',
   'stacklimittest.5c',
   'fgetstest.5c',
+  'longstringtest.5c',
   'vwidthtest.5c',
   'socketaddrtest.5c',
   'socketconnecttest.5c',

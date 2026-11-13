@@ -1,3 +1,12 @@
+nickle (2.112) unstable; urgency=medium
+
+  * Fix 32-bit platform issues with various interfaces
+  * Parse strings faster in fgets, JSON reader, fscanf and CSV
+  * Restore original stack limit for child processes.
+  * Work around hurd compatibility issues in some tests.
+
+ -- Keith Packard <keithp@keithp.com>  Fri, 13 Nov 2026 01:49:30 -0800
+
 nickle (2.111) unstable; urgency=medium
 
   * Fix buffer overflows in Karatsuba multiply

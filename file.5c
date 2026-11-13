@@ -81,21 +81,18 @@ extend namespace File {
 	     * The trailing newline will be stripped off.
 	     */
 	{
-	    string	s;
-	    int	c;
+	    /* Appending to a string would copy the line for every character */
+	    int[...]	chars = {};
+	    int		c;
 
-	    s = "";
 	    while (!end(f))
 	    {
 		c = getc (f);
-		switch (c) {
-		case '\n':
-		    return s;
-		default:
-		    s = s + String::new (c);
-		}
+		if (c == '\n')
+		    break;
+		chars[dim(chars)] = c;
 	    }
-	    return s;
+	    return String::new (chars);
 	}
 
 	public string gets ()

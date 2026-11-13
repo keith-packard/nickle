@@ -37,6 +37,60 @@
 
 int stdin_interactive;
 
+#if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT)
+/*
+ * Limits nickle raises to their hard limits at startup, with the
+ * values it started with, which programs it runs get back
+ */
+static struct {
+    int           resource;
+    struct rlimit original;
+    Bool          raised;
+} limits[] = {
+    /* Let the garbage collector's recursive marking go deep */
+    { .resource = RLIMIT_STACK },
+    /* Waiting with poll works for any descriptor */
+    { .resource = RLIMIT_NOFILE },
+};
+
+#define NLIMITS (sizeof(limits) / sizeof(limits[0]))
+#endif
+
+static void
+RaiseLimits(void)
+{
+#if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT)
+    for (size_t i = 0; i < NLIMITS; i++) {
+        struct rlimit raised;
+
+        if (getrlimit(limits[i].resource, &limits[i].original) != 0)
+            continue;
+        raised = limits[i].original;
+        if (raised.rlim_cur < raised.rlim_max) {
+            raised.rlim_cur = raised.rlim_max;
+            limits[i].raised = setrlimit(limits[i].resource, &raised) == 0;
+        }
+    }
+#endif
+}
+
+/*
+ * Give a program nickle runs the limits nickle started with. It may
+ * use select, which can't wait for descriptors past 1023, and starting
+ * with an unlimited stack moves a 32-bit program's shared libraries to
+ * the legacy memory layout, where they collide with ASan's shadow
+ * memory.
+ */
+void
+RestoreLimits(void)
+{
+#if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT)
+    for (size_t i = 0; i < NLIMITS; i++)
+        if (limits[i].raised)
+            (void)setrlimit(limits[i].resource, &limits[i].original);
+#endif
+}
+
 static void
 setArgv(int argc, char **argv)
 {
@@ -78,19 +132,7 @@ releaseSignal(int sig)
 int
 main(int argc, char **argv)
 {
-#if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT)
-    /*
-     * Allow stack to grow as large as possible to avoid
-     * crashes during recursive datastructure marking in the
-     * garbage collector
-     */
-    struct rlimit lim;
-
-    if (getrlimit(RLIMIT_STACK, &lim) == 0) {
-        lim.rlim_cur = lim.rlim_max;
-        (void)setrlimit(RLIMIT_STACK, &lim);
-    }
-#endif
+    RaiseLimits();
     (void)catchSignal(SIGHUP, die);
     (void)catchSignal(SIGINT, intr);
     (void)catchSignal(SIGQUIT, die);

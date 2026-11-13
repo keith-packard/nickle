@@ -20,10 +20,6 @@
 #include "ref.h"
 #include "gram.h"
 
-#ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif
-
 #ifdef O_ASYNC
 #define ASYNC O_ASYNC
 #else
@@ -36,12 +32,6 @@
 
 static ReferencePtr fileBlockedReference;
 static Value        fileBlocked;
-
-#if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT)
-/* The open file limit nickle started with, restored for filtered programs */
-static struct rlimit fileLimit;
-static Bool          fileLimitRaised;
-#endif
 
 #ifdef NO_PIPE_SIGIO
 Bool anyPipeReadBlocked;
@@ -516,18 +506,6 @@ FileInit(void)
 {
     ENTER();
     catchSignal(SIGCHLD, sigchld);
-#if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT)
-    /*
-     * Waiting with poll works for any descriptor, so open as many
-     * files as the hard limit allows
-     */
-    if (getrlimit(RLIMIT_NOFILE, &fileLimit) == 0 && fileLimit.rlim_cur < fileLimit.rlim_max) {
-        struct rlimit raised = fileLimit;
-
-        raised.rlim_cur = raised.rlim_max;
-        fileLimitRaised = setrlimit(RLIMIT_NOFILE, &raised) == 0;
-    }
-#endif
     fileBlockedReference = NewReference((void **)&fileBlocked);
     MemAddRoot(fileBlockedReference);
     FileInitErrors();
@@ -924,11 +902,7 @@ FileFilter(char *program, char *args[], Value filev, int *errp)
             dup2(fds[fd], fd);
         FileCloseFrom(3, errpipe[1]);
         fcntl(errpipe[1], F_SETFD, FD_CLOEXEC);
-#if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT)
-        /* The program may use select, which can't wait for descriptors past 1023 */
-        if (fileLimitRaised)
-            (void)setrlimit(RLIMIT_NOFILE, &fileLimit);
-#endif
+        RestoreLimits();
         execvp(program, args);
         /* A pipe write this small arrives whole */
         errcode = errno;

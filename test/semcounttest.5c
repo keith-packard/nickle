@@ -5,8 +5,10 @@
  *
  * Semaphore counts were ints: Semaphore::new refused initial counts
  * beyond a small int, and signaling a semaphore enough times
- * overflowed its count. Counts now cover the ptrdiff_t range, and
- * signal and wait raise invalid_argument at its ends.
+ * overflowed its count. Counts now cover the signed_digit range (64
+ * bits wherever C has a 64-bit integer type), and signal and wait
+ * raise invalid_argument at its ends. Printing a semaphore read the
+ * count as a ptrdiff_t, showing the wrong count on 32-bit targets.
  */
 
 exception not_raised (string what);
@@ -47,3 +49,14 @@ rejected ("wait at the bottom", void func () { Semaphore::wait (bottom); });
 check ("bottom unchanged", Semaphore::count (bottom), -(2**63));
 
 rejected ("new (2**70)", void func () { Semaphore::new (2**70); });
+
+/* Printing shows the whole count */
+string function printed_count (semaphore t)
+{
+    string p = sprintf ("%v", t);
+    int i = String::index (p, "(");
+    return String::substr (p, i, String::length (p) - i);
+}
+check ("print top", printed_count (top), "(9223372036854775807)");
+check ("print bottom", printed_count (bottom), "(-9223372036854775808)");
+check ("print small", printed_count (Semaphore::new (-5)), "(-5)");

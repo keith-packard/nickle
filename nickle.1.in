@@ -588,7 +588,7 @@ if().
 .IP "while (E) S"
 C-style while loop.
 .IP "do S while (E);"
-C-style do loop.
+C-style do loop.  The final ; may be left out.
 .IP "for (opt-E; opt-E; opt-E) S"
 C-style for loop.
 .IP "switch (E) { case E: S-list  case E: S-list ... default: S-list }"

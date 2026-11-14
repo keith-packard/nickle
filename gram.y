@@ -204,7 +204,7 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 %right          COLONCOLON
 
 %left IF TRY NONL
-%left ELSE CATCH NL
+%left ELSE CATCH NL SEMI
 
 %%
 lines           : lines pcommand
@@ -260,6 +260,15 @@ opt_nl          : NL
                 ;
 opt_semi        : SEMI
                 |
+                ;
+/*
+ * A ';' after do-while belongs to it, as in C, so that one inside an
+ * if doesn't come between the if and its else, but it may be left out.
+ * SEMI's precedence over IF shifts it here rather than ending the
+ * statement before it
+ */
+do_end          : SEMI
+                | %prec IF
                 ;
 opt_comma       : COMMA
                 |
@@ -487,7 +496,7 @@ simple_statement: if_statement namespace_end attendnl
                     { $$ = $1; }
                 | WHILE ignorenl namespace_start OP expr CP statement namespace_end attendnl
                     { $$ = NewExprTree(WHILE, $5, $7); }
-                | DO ignorenl namespace_start statement WHILE OP expr CP namespace_end attendnl
+                | DO ignorenl namespace_start statement WHILE OP expr CP do_end namespace_end attendnl
                     { $$ = NewExprTree(DO, $4, $7); }
                 | FOR ignorenl namespace_start OP for_exprs CP statement namespace_end attendnl
                     {

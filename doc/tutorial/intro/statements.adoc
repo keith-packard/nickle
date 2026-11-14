@@ -183,7 +183,7 @@ union switch ( u ) {
 == Loops
 
 `while (` _expr_ `)` _statement_ +
-`do` _statement_ `while (` _expr_ `)` +
+`do` _statement_ `while (` _expr_ `);` +
 `for (` _expr_ `;` _expr_ `;` _expr_ `)` _statement_
 
 `while` executes `statement` repeatedly as long as `expr` is true.
@@ -201,8 +201,9 @@ while ( x < 10 ) {
 This prints the numbers from zero to nine.
 
 `do-while` is like `while`, but tests the condition after each iteration
-rather than before. Thus, it is guaranteed to execute at least once. It
-is often used in input while testing for end-of-file:
+rather than before. Thus, it is guaranteed to execute at least once. The
+final `;` may be left out. It is often used in input while testing for
+end-of-file:
 
 ----
 file f = File::open ( "test", "r" );

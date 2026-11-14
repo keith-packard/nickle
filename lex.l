@@ -759,17 +759,22 @@ lexEscape(uint32_t c)
     }
 }
 
+/*
+ * Read a doc string, the comment after a function or exception header,
+ * dropping the leading space and '*' of each continuation line
+ */
 Value
 lexdoc(void)
 {
+    ENTER();
     int   c;
-    Value s = NewStrString("");
+    Value f = FileStringWrite();
 
     c = input();
     if (lexInput->at_eof) {
     bail:
         yyerror("Missing */ at end of file");
-        return Void;
+        RETURN(Void);
     }
     for (;;) {
         Bool skip = False;
@@ -777,7 +782,7 @@ lexdoc(void)
             if (skip && c != ' ' && c != '\t')
                 skip = False;
             if (!skip)
-                s = Plus(s, NewCharString((uint32_t)c));
+                FileOutput(f, c);
             if (c == '\n')
                 skip = True;
             c = input();
@@ -790,9 +795,9 @@ lexdoc(void)
         if (c == '/')
             break;
         if (!skip)
-            s = Plus(s, NewCharString('*'));
+            FileOutput(f, '*');
     }
-    return s;
+    RETURN(FileStringString(f));
 }
 
 void

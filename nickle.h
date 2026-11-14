@@ -791,32 +791,31 @@ void    NewLexInput(Value file, Atom name, Bool after, Bool interactive);
 extern volatile int stdin_in_readline;
 #endif
 
-int          yywrap(void);
-void         yyerror(char *msg);
-void         ParseError(char *fmt, ...);
-int          yylex(void);
-Bool         LexFile(char *file, Bool complain, Bool after);
-Value        atov(char *, int), aetov(char *);
-extern int   ignorenl;
-extern int   notCommand;
-extern int   seeComment;
-void         skipcomment(void);
-Value        lexdoc(void);
-void         skipline(void);
-uint32_t     lexEscape(uint32_t);
+int         yywrap(void);
+void        yyerror(char *msg);
+void        ParseError(char *fmt, ...);
+int         yylex(void);
+Bool        LexFile(char *file, Bool complain, Bool after);
+Value       atov(char *, int), aetov(char *);
+extern int  ignorenl;
+extern int  notCommand;
+extern int  seeComment;
+void        skipcomment(void);
+Value       lexdoc(void);
+void        skipline(void);
+uint32_t    lexEscape(uint32_t);
 
-extern void  init(void);
-extern int   stdin_interactive;
+extern void init(void);
+extern int  stdin_interactive;
 
-void         intr(int);
-void         stop(int), segv(int);
-void         die(int) __NICKLE_NORETURN;
-void         RestoreLimits(void);
+void        intr(int);
+void        stop(int), segv(int);
+void        die(int) __NICKLE_NORETURN;
+void        RestoreLimits(void);
 
-void         catchSignal(int sig, void (*func)(int sig));
+void        catchSignal(int sig, void (*func)(int sig));
 
-void         resetSignal(int sig, void (*func)(int sig));
-
+void        resetSignal(int sig, void (*func)(int sig));
 
 /* Standard exceptions */
 typedef enum _standardException {

@@ -225,7 +225,8 @@ eend            : NL
 
 /*
  * Sprinkled through the grammer to switch the lexer between reporting
- * and not reporting newlines
+ * and not reporting newlines. check-ignorenl.5c checks that every
+ * construct takes away what it adds, so parseIgnorenl is zero at reset
  */
 ignorenl        :
                     { parseIgnorenl++; }

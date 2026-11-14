@@ -314,6 +314,11 @@ subdir('test')
 
 # Check that functions leave their MemStack scopes properly
 test('check-memstack', find_program('check-memstack.py'), args : memstack_srcs)
+
+# Check that the grammar's ignorenl and attendnl rules pair up
+test('check-ignorenl', nickle,
+     args : files('check-ignorenl.5c', 'gram.y'),
+     env : test_env)
 subdir('examples')
 subdir('bench')
 subdir('doc')

@@ -139,7 +139,8 @@ tests = [
   'floatshortesttest.5c',
   'complexprinttest.5c',
   'hashtypetest.5c',
-  'ptrdiffrangetest.5c'
+  'ptrdiffrangetest.5c',
+  'lookaheadtest.5c'
 ]
 
 # Targets with 2038 problems can't run datelimittest

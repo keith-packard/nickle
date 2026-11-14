@@ -1,0 +1,46 @@
+/*
+ * Nickle test suite
+ *
+ * Writing strings with File::fputs
+ *
+ * fputs writes a string's characters, in UTF-8, without a newline, to
+ * string files and real files alike, and raises io_error on a file
+ * that can't take output.
+ */
+
+exception not_raised (string what);
+exception wrong (string what, poly got, poly want);
+
+void check(string what, poly got, poly want)
+{
+    if (got != want)
+        raise wrong(what, got, want);
+}
+
+file s = File::string_write();
+
+File::fputs("abc", s);
+File::fputs("", s);
+File::fputs("π ≈ 3.14\n", s);
+File::putc('!', s);
+check("string file", File::string_string(s), "abcπ ≈ 3.14\n!");
+
+string name = "fputstest.tmp";
+file f = File::open(name, "w");
+
+File::fputs("line one\n", f);
+File::fputs("line two", f);
+File::close(f);
+f = File::open(name, "r");
+check("first line", File::fgets(f), "line one");
+check("second line", File::fgets(f), "line two");
+check("end", File::end(f), true);
+File::close(f);
+File::unlink(name);
+
+try {
+    File::fputs("x", f);
+    raise not_raised("closed file");
+} catch File::io_error(string message, File::error_type error, file g) {
+    check("closed error", error, File::error_type.BADF);
+}

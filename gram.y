@@ -477,7 +477,7 @@ if_statement    : IF ignorenl namespace_start OP expr CP statement %prec IF
                     { $$ = NewExprTree(IF, $5, $7); }
                 | IF ignorenl namespace_start OP expr CP statement ELSE statement
                     { $$ = NewExprTree(ELSE, $5, NewExprTree(ELSE, $7, $9)); }
-
+                ;
 statement:      simple_statement
                 | block
                 ;
@@ -660,6 +660,7 @@ for_exprs       : opt_expr SEMI for_exprs
 try_body_statement:  simple_statement
                 | OC statements CC
                     { $$ = $2; }
+                ;
 
 try_statement:  TRY ignorenl try_body_statement catches
                     { $$ = NewExprTree(CATCH, $4, $3); }
@@ -1438,6 +1439,7 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
 opt_integer     : integer
                 |
                     { $$ = Zero; }
+                ;
 assignop        : ASSIGNPLUS
                 | ASSIGNMINUS
                 | ASSIGNTIMES

@@ -1,9 +1,10 @@
+/*
  * Takes degrees lat/long pairs,
  * Returns miles + compass degrees
  * Bart Massey 2000
  * From Javascript by Jeff Waldock 1997
  * http://jeff.sci.shu.ac.uk/jw/javascript/js2.html
- * 
+ *
  * XXX Appears to need some angle reductions: the bearing
  * may be off by a multiple of 90 degrees.
  */

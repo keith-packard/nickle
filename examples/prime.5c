@@ -1,3 +1,4 @@
+/*
  * factor(): Return an array of factors of a number
  *
  * Copyright © 2001  Keith Packard.
@@ -28,12 +29,12 @@ namespace Factor {
     }
 
     typedef int_list_struct;
-    
+
     typedef union {
 	*int_list_struct    ref;
 	void		    end;
     } int_list;
-    
+
     typedef struct {
 	int_list	    next;
 	int		    v;
@@ -48,7 +49,7 @@ namespace Factor {
 	    return prime_wrt (l.ref->next, i);
 	}
 
-	if (i < 3) 
+	if (i < 3)
 	    return (int_list.ref) reference ((int_list_struct) { .next = int_list.end, .v = 2 });
 
 	int_list    l = primes (i-1);

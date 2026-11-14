@@ -96,10 +96,12 @@ A character can be pushed back onto the stream with `ungetc` or
 `int File::ungetc(int c, file f)` +
 `void ungetchar(int c)`
 
-Strings can be read, a line at a time, using `fgets` and ``gets``.
+Strings can be read, a line at a time, using `fgets` and ``gets``,
+and written with ``fputs``.
 
 `string fgets(file f)` +
-`string gets()`
+`string gets()` +
+`void File::fputs(string s, file f)`
 
 These are like their C counterparts, with a few differences. At end of
 file, `getc` and `getchar` raise `File::io_eof` rather than returning a

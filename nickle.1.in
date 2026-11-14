@@ -1112,6 +1112,8 @@ in open(), flushing output pending for the old file and discarding
 input buffered from it.  Returns f.
 .IP "int function putc(int c, file f)"
 Output the character c to the output file f in UTF-8, and return c.
+.IP "void function fputs(string s, file f)"
+Output the string s to the output file f.
 .IP "int function ungetc(int c, file f)"
 Push the character c back onto the input file f, and return c.
 .IP "int function getb(file f)"

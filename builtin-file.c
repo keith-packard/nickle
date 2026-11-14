@@ -136,6 +136,11 @@ import_File_namespace(void)
           " int putc (int c, file f)\n"
           "\n"
           " Write the character 'c' to 'f'.\n" },
+        { do_File_fputs, "fputs", "v", "sf",
+         "\n"
+          " void fputs (string s, file f)\n"
+          "\n"
+          " Write the string 's' to 'f'.\n" },
         { do_File_setbuf, "setbuffer", "i", "fi",
          "\n"
           " int setbuffer (file f, int mode)\n"
@@ -614,6 +619,22 @@ do_File_putc(Value v, Value f)
         }
     }
     RETURN(v);
+}
+
+Value
+do_File_fputs(Value s, Value f)
+{
+    if (f->file.flags & FileOutputBlocked)
+        ThreadSleep(running, f);
+    else {
+        FilePutsc(f, StringChars(&s->string), s->string.length);
+        if (f->file.flags & FileOutputError)
+            RaiseStandardException(exception_io_error, 3, FileGetErrorMessage(f->file.output_errno),
+                                   FileGetError(f->file.output_errno), f);
+        else
+            complete = True;
+    }
+    return Void;
 }
 
 Value

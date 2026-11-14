@@ -1017,6 +1017,7 @@ Value do_Math_popcount(Value);
 Value do_Math_factorial(Value);
 Value do_File_putb(Value, Value);
 Value do_File_putc(Value, Value);
+Value do_File_fputs(Value, Value);
 Value do_File_ungetb(Value, Value);
 Value do_File_ungetc(Value, Value);
 Value do_File_setbuf(Value, Value);

@@ -817,7 +817,6 @@ void         catchSignal(int sig, void (*func)(int sig));
 
 void         resetSignal(int sig, void (*func)(int sig));
 
-extern Value yyinput;
 
 /* Standard exceptions */
 typedef enum _standardException {

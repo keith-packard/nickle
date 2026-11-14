@@ -27,6 +27,14 @@ static ReferencePtr lexValueReference;
 
 #define yyterminate() return (lexValue = 0, YY_NULL)
 
+/*
+ * The brackets open in the input, counted apart from the grammar's
+ * parseIgnorenl; newlines are insignificant while either is nonzero. A
+ * command closes all of its brackets, so when it ends, those still open
+ * belong to the token read ahead
+ */
+int lexIgnorenl;
+
 static inline int
 yylvalValue(Value value, int token)
 {
@@ -306,7 +314,7 @@ prompt(void)
 {
     Value v;
 
-    if (ignorenl)
+    if (parseIgnorenl || lexIgnorenl)
         v = lookupVar(0, "prompt2");
     else if (CurrentFrame)
         v = lookupVar(0, "prompt3");
@@ -498,17 +506,17 @@ has_member      { return yylvalInts(HASMEMBER); }
                         strcpy(yytext, "EOF");
                         return yylvalInts(ENDFILE);
                     }
-                    if (!ignorenl) {
+                    if (!parseIgnorenl && !lexIgnorenl) {
                         return yylvalInts(NL);
                     }
                 }
-"("             { ++ignorenl; return yylvalInts(OP); }
-")"             { if (ignorenl > 0) --ignorenl; return yylvalInts(CP); }
-"*["            { ++ignorenl; return yylvalInts(STAROS); }
-"["             { ++ignorenl; return yylvalInts(OS); }
-"]"             { if (ignorenl > 0) --ignorenl; return yylvalInts(CS); }
-"{"             { ++ignorenl; return yylvalInts(OC); }
-"}"             { if (ignorenl > 0) --ignorenl; return yylvalInts(CC); }
+"("             { ++lexIgnorenl; return yylvalInts(OP); }
+")"             { if (lexIgnorenl > 0) --lexIgnorenl; return yylvalInts(CP); }
+"*["            { ++lexIgnorenl; return yylvalInts(STAROS); }
+"["             { ++lexIgnorenl; return yylvalInts(OS); }
+"]"             { if (lexIgnorenl > 0) --lexIgnorenl; return yylvalInts(CS); }
+"{"             { ++lexIgnorenl; return yylvalInts(OC); }
+"}"             { if (lexIgnorenl > 0) --lexIgnorenl; return yylvalInts(CC); }
 "+="            { return yylvalInts(ASSIGNPLUS); }
 "-="            { return yylvalInts(ASSIGNMINUS); }
 "*="            { return yylvalInts(ASSIGNTIMES); }

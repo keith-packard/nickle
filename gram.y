@@ -49,7 +49,7 @@
  *      with different precedence. --BCM)
  *
  */
-int          ignorenl;
+int          parseIgnorenl;
 int          notCommand;
 int          seeComment;
 NamespacePtr LexNamespace;
@@ -228,14 +228,14 @@ eend            : NL
  * and not reporting newlines
  */
 ignorenl        :
-                    { ignorenl++; }
+                    { parseIgnorenl++; }
                 ;
 attendnl        :
-                    { if (ignorenl > 0) ignorenl--; }
+                    { if (parseIgnorenl > 0) parseIgnorenl--; }
                 ;
 reset           :
                     {
-                        ignorenl = 0;
+                        parseIgnorenl = 0;
                         LexNamespace = 0;
                         CurrentNamespace = TopNamespace;
                         funcDepth = 0;
@@ -2023,6 +2023,7 @@ ParseError(char *fmt, ...)
 void
 yyerror(char *msg)
 {
-    ignorenl = 0;
+    parseIgnorenl = 0;
+    lexIgnorenl = 0;
     ParseError("%s before %S", msg, yytext);
 }

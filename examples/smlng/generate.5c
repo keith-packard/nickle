@@ -6,37 +6,27 @@
 
 autoload PRNG;
 
-int function iswhite (int c)
-{
-    switch (c) {
-    case ' ':
-    case '\t':
-    case '\n':
-    case '\r':
-	return 1;
-    default:
-	return 0;
-    }
-}
-
+/*
+ * The next word from in: any white space before it, the word, and the
+ * white space character ending it
+ */
 string function word (file in)
 {
     string  w = "";
     int	    c;
-    
-    while ((c = File::getc (in)) != -1)
+
+    while (!File::end (in))
     {
+	c = File::getc (in);
 	w += String::new (c);
-	if (!iswhite (c))
+	if (!Ctype::isspace (c))
 	    break;
     }
-    if (c == -1)
-	return w;
-    
-    while ((c = File::getc (in)) != -1)
+    while (!File::end (in))
     {
+	c = File::getc (in);
 	w += String::new (c);
-	if (iswhite (c))
+	if (Ctype::isspace (c))
 	    break;
     }
     return w;
@@ -54,25 +44,17 @@ string[*] tags = {
     "r", "g", "b", "c", "m", "y", "k", "w"
 };
 
-typedef tagstack;
-
-typedef struct {
-    *tagstack	prev;
-    string	tag;
-} tagstack;
-
 void function tagfile (file in)
 {
-    string	w;
-    int		d, t;
-    *tagstack	stack = 0;
+    int		d;
+    /* The tags open, innermost last */
+    string[...]	stack = {};
 
-    int function dotag () 
+    int function dotag ()
     {
 	if (PRNG::randint (100) > 50)
 	{
-	    int end = PRNG::randint(2);
-	    if (stack != 0 && end)
+	    if (dim (stack) > 0 && PRNG::randint (2) == 1)
 		return -1;
 	    return 1;
 	}
@@ -86,19 +68,18 @@ void function tagfile (file in)
 
     void function start_tag ()
     {
-	stack = reference ((tagstack) {
-	    prev = stack,
-	    tag = tags[picktag()]
-	});
-	printf ("<%s>", stack->tag);
+	string	tag = tags[picktag()];
+
+	stack[dim (stack)] = tag;
+	printf ("<%s>", tag);
     }
 
     void function end_tag ()
     {
-	if (stack)
+	if (dim (stack) > 0)
 	{
-	    printf ("</%s>", stack->tag);
-	    stack = stack->prev;
+	    printf ("</%s>", stack[dim (stack) - 1]);
+	    setdim (stack, dim (stack) - 1);
 	}
     }
 
@@ -120,7 +101,7 @@ void function tagfile (file in)
 	printf ("%s", s);
     }
 
-    while (stack)
+    while (dim (stack) > 0)
 	end_tag ();
 }
 

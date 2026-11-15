@@ -194,7 +194,7 @@ extend namespace String {
     {
 	public string _dequote(string s) {
 	    int[*] cs = code_points(s);
-	    int[...] result = {};
+	    file result = File::string_write();
 	    qstate t = qstate.normal;
 	    int c;
 	    for (int cur = 0; cur < dim(cs); cur++) {
@@ -223,10 +223,10 @@ extend namespace String {
 		    t = qstate.openq;
 		    break;
 		}
-		result[dim(result)] = c;
+		File::putc(c, result);
 	    }
 	    if (t == qstate.normal || t == qstate.xq && inchars(c, q.cq))
-		return String::new(result);
+		return File::string_string(result);
 	    raise invalid_argument("unexpected end of string", 0, s);
 	}
 	return _dequote;

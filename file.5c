@@ -82,7 +82,7 @@ extend namespace File {
 	     */
 	{
 	    /* Appending to a string would copy the line for every character */
-	    int[...]	chars = {};
+	    file	line = string_write ();
 	    int		c;
 
 	    while (!end(f))
@@ -90,9 +90,9 @@ extend namespace File {
 		c = getc (f);
 		if (c == '\n')
 		    break;
-		chars[dim(chars)] = c;
+		putc (c, line);
 	    }
-	    return String::new (chars);
+	    return string_string (line);
 	}
 
 	public string gets ()

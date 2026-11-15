@@ -315,9 +315,9 @@ namespace JSON {
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
 		case '-':
-		    int[...] nchars = {};
+		    file nchars = File::string_write();
 		    while (is_number_char(c)) {
-			nchars[dim(nchars)] = c;
+			File::putc(c, nchars);
 			if (File::end(f->f))
 			    break;
 			c = ch();
@@ -326,13 +326,13 @@ namespace JSON {
 			/* The number ran to the end of the input */
 		    } else
 			unch(c);
-		    string nval = String::new(nchars);
+		    string nval = File::string_string(nchars);
 		    if (check_number(nval))
 			return (token_t) { .val = { .fval = atof(nval) }, .token = term_t._float };
 		    return (token_t) { .val = { .ival = atoi(nval) }, .token = term_t._int };
 		case '"':
 		    in_token = true;
-		    int[...] schars = {};
+		    file schars = File::string_write();
 		    for (;;) {
 			c = ch();
 			if (c == '"')
@@ -366,9 +366,9 @@ namespace JSON {
 				error();
 			    }
 			}
-			schars[dim(schars)] = c;
+			File::putc(c, schars);
 		    }
-		    return (token_t) { .val = { .sval = String::new(schars) }, .token = term_t._string };
+		    return (token_t) { .val = { .sval = File::string_string(schars) }, .token = term_t._string };
 		case 't':
 		    in_token = true;
 		    if (match_keyword("true"))

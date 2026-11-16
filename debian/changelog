@@ -1,3 +1,12 @@
+nickle (2.115) unstable; urgency=medium
+
+  * autopkgtest: Run tests from the provided temp directory.
+  * Fix some minor lexing/parsing issues.
+  * Re-implement the pretty printer
+  * Add File::fputs built-in.
+
+ -- Keith Packard <keithp@keithp.com>  Mon, 16 Nov 2026 14:36:26 -0800
+
 nickle (2.114) unstable; urgency=medium
 
   * autopkgtest: deal with tests expected to fail

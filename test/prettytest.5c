@@ -1009,6 +1009,40 @@ spelled_has ("w = <>;");
 spelled_has ("spelled(a, b, p, r…) + spelled(a, b, p, r...)");
 
 /*
+ * Types holding references print them in parentheses
+ *
+ * An array of references, (*poly)[3], printed as *poly[3], which reads
+ * back as a reference to an array, and so did function and hash types
+ * returning or holding references, and array and hash values.
+ */
+section("Types holding references print them in parentheses");
+
+void refs()
+{
+    (*poly)[3]   a;
+    (*int)(int)  g;
+    (*int)[int]  h;
+    *poly[3]     p;
+    *int(int)    q;
+}
+
+file	rf = File::string_write ();
+Command::pretty_print (rf, (string[*]) { "refs" });
+string	refs_text = File::string_string (rf);
+
+check ("array of references", String::index (refs_text, "(*poly)[3]  a;") >= 0, true);
+check ("function returning a reference", String::index (refs_text, "(*int)(int) g;") >= 0, true);
+check ("hash of references", String::index (refs_text, "(*int)[int] h;") >= 0, true);
+check ("reference to an array", String::index (refs_text, "*poly[3]    p;") >= 0, true);
+check ("reference to a function", String::index (refs_text, "*int(int)   q;") >= 0, true);
+
+int	referred = 1;
+(*int)[1] ref_array = { &referred };
+(*int)[int] ref_hash = { 1 => &referred };
+check ("array value", sprintf ("%v", ref_array), "((*int) [1]) {&1}");
+check ("hash value", sprintf ("%v", ref_hash), "((*int) [int]) { 1 => &1 }");
+
+/*
  * Comma expressions print grouped to the left
  *
  * The grammar groups a comma expression to the left, but the printer

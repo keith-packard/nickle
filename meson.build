@@ -251,13 +251,31 @@ nickle_headers = [
   
 nickle_start = files('builtin.5c')[0]
 
-prog_bison = find_program('bison', 'byacc', 'yacc', required : true)
+# Keeping comments needs a parser generator tracking locations
+# (%locations): bison does, as does byacc built with btyacc's
+# backtracking support, but not other yaccs, so use the first that
+# accepts check-locations.y
+have_yacc = false
+foreach name : ['bison', 'byacc', 'yacc']
+  prog = find_program(name, required : false)
+  if not have_yacc and prog.found()
+    check = run_command(prog, '-o', meson.current_build_dir() / 'check-locations.c',
+                        files('check-locations.y'), check : false)
+    if check.returncode() == 0
+      prog_yacc = prog
+      have_yacc = true
+    endif
+  endif
+endforeach
+if not have_yacc
+  error('Nickle needs a parser generator supporting %locations: bison, or byacc built with btyacc')
+endif
 
 gram_ch = custom_target(
   'gram.[ch]',
   input : 'gram.y',
   output : ['gram.c', 'gram.h'],
-  command : [  prog_bison, '-o', '@OUTPUT0@', '-d', '@INPUT@'],
+  command : [  prog_yacc, '-o', '@OUTPUT0@', '-d', '@INPUT@'],
   install: true,
   install_dir: [false, nickle_includedir])
 

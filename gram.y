@@ -74,6 +74,19 @@ typedef enum _CanonTypeResult {
  */
 static StackPointer commandMark;
 
+/*
+ * byacc passes yyerror the location with %locations, which it doesn't
+ * use, and its skeleton defines its variables without declaring them
+ * and declares yylex again
+ */
+#ifdef YYBYACC
+#define YYERROR_CALL(msg) yyerror(msg)
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Wredundant-decls"
+#endif
+#endif
+
 static inline void
 ParseReleaseCommand(void)
 {

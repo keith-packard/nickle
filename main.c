@@ -15,6 +15,11 @@
 #include "nickle.h"
 #include "gram.h"
 
+/* bison's gram.h declares yyparse; byacc's doesn't */
+#ifndef YY_YY_GRAM_H_INCLUDED
+int yyparse(void);
+#endif
+
 #include <signal.h>
 #include <stdio.h>
 

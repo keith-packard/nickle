@@ -57,7 +57,7 @@ namespace JSON {
 	}
 
 	void puts(string s) {
-	    File::fprintf(output, "%s", s);
+	    File::fputs(s, output);
 	}
 
 	void json(poly arg, int indent);
@@ -108,7 +108,7 @@ namespace JSON {
 	}
 
 	void json_bool(bool arg) {
-	    File::fprintf(output, "%s", arg ? "true" : "false");
+	    File::fputs(arg ? "true" : "false", output);
 	}
 
 	void json_null(void arg) {

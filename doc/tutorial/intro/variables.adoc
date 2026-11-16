@@ -464,7 +464,7 @@ type[type]              /* hash from type to type */
 type(type, ...)         /* function with type arguments and return value */
 struct { ... }          /* struct of types */
 union { ... }           /* union of types */
-type(type, ...)[*]      /* array of functions */
+type[*](type, ...)      /* array of functions */
 /* etc. */
 ----
 +

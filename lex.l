@@ -33,14 +33,30 @@ static ReferencePtr lexValueReference;
  * command closes all of its brackets, so when it ends, those still open
  * belong to the token read ahead
  */
-int lexIgnorenl;
+int         lexIgnorenl;
+
+static void lexNoteToken(int token);
+static void lexBlockComment(void);
+static void lexHashComment(void);
+static void lexFallThroughComment(CommentStyle style);
 
 static inline int
 yylvalValue(Value value, int token)
 {
     yylval.value = value;
     lexValue = value;
+    lexNoteToken(token);
     return token;
+}
+
+/*
+ * A number's value is its text as written, which the parser evaluates
+ * (ParseNumberValue) and keeps with the constant so it prints that way
+ */
+static inline int
+yylvalNumber(int token)
+{
+    return yylvalValue(NewStrString(yytext), token);
 }
 
 static inline int
@@ -48,6 +64,7 @@ yylvalClass(Class class, int token)
 {
     yylval.class = class;
     lexValue = 0;
+    lexNoteToken(token);
     return token;
 }
 
@@ -56,6 +73,7 @@ yylvalType(Type *type, int token)
 {
     yylval.type = type;
     lexValue = 0;
+    lexNoteToken(token);
     return token;
 }
 
@@ -64,6 +82,17 @@ yylvalInts(int token)
 {
     yylval.ints = token;
     lexValue = 0;
+    lexNoteToken(token);
+    return token;
+}
+
+/* An operator token written in UTF-8, which prints that way (EXPR_UTF8) */
+static inline int
+yylvalUtf8(int token)
+{
+    yylval.ints = token | LEX_UTF8;
+    lexValue = 0;
+    lexNoteToken(token);
     return token;
 }
 
@@ -72,6 +101,7 @@ yylvalPublish(Publish publish, int token)
 {
     yylval.publish = publish;
     lexValue = 0;
+    lexNoteToken(token);
     return token;
 }
 
@@ -80,6 +110,7 @@ yylvalAtom(Atom atom, int token)
 {
     yylval.atom = atom;
     lexValue = 0;
+    lexNoteToken(token);
     return token;
 }
 
@@ -119,10 +150,16 @@ typedef struct _lexInput {
     Bool              at_eof;
     Bool              interactive;
     Bool              exit_on_error; /* exit on parse and compile errors */
+    CommentInput      comments;
+    Value             format;      /* where to print this input formatted, or 0 to run it */
+    Bool              format_full; /* whether in full, or as a summary */
 } LexInput;
 
 static LexInput *lexInput;
 #define FILE_END_CHAR -2
+
+/* Tokens read from all inputs */
+static LexToken lexTokenCount;
 
 static void
 lexInputMark(void *object)
@@ -131,6 +168,110 @@ lexInputMark(void *object)
 
     MemReference(lex->next);
     MemReference(lex->file);
+    MemReference(lex->comments.pending);
+    MemReference(lex->comments.file_comments);
+    MemReference(lex->format);
+}
+
+/* Place the comments waiting for this token, and count it */
+static void
+lexNoteToken(int token)
+{
+    if (!lexInput || token == NL || token == ENDFILE) {
+        int line = lexInput ? lexInput->lineno : 0;
+
+        /* No tokens, just before the next one */
+        yylloc = (LexLocation) {
+            .first_token = lexTokenCount + 1,
+            .last_token = lexTokenCount,
+            .first_line = line,
+            .last_line = line,
+        };
+        return;
+    }
+    ++lexTokenCount;
+    yylloc = (LexLocation) {
+        .first_token = lexTokenCount,
+        .last_token = lexTokenCount,
+        .first_line = lexInput->lineno,
+        .last_line = lexInput->lineno,
+    };
+    CommentNoteToken(lexTokenCount, token, lexInput->lineno);
+    CommentInputToken(&lexInput->comments, lexTokenCount, lexInput->lineno);
+}
+
+/*
+ * Comments after an input's last token join its file record, which is
+ * kept by the input's name
+ */
+static void
+lexFinishInput(void)
+{
+    ENTER();
+    CommentPtr record = CommentInputFinish(&lexInput->comments);
+
+    if (lexInput->format) {
+        PrettyFormat(lexInput->format, record, lexInput->comments.first_line,
+                     lexInput->format_full);
+        NamespaceRestore();
+    }
+    CommentKeepRecord(lexInput->name, record);
+    EXIT();
+}
+
+/*
+ * Where to print the current input formatted, or 0 when it runs as
+ * usual
+ */
+Value
+LexFormatOutput(void)
+{
+    if (lexInput)
+        return lexInput->format;
+    return 0;
+}
+
+/*
+ * Whether an input being formatted has started, so that what runs now,
+ * such as a library it loads, comes from it
+ */
+Bool
+LexFormatting(void)
+{
+    for (LexInput *lex = lexInput; lex; lex = lex->next)
+        if (lex->format && lex->lineno > 0)
+            return True;
+    return False;
+}
+
+/*
+ * Read the file in, named name, next, parsing it without running it,
+ * and print it formatted to out, in full or as a summary
+ */
+void
+LexFormatFile(Value in, Atom name, Value out, Bool full)
+{
+    NewLexInput(in, name, False, False);
+    lexInput->format = out;
+    lexInput->format_full = full;
+}
+
+/* Record a comment just read, which started on first_line and ends on this line */
+static void
+lexRecordComment(Value text, int first_line, CommentStyle style, Bool fall_through)
+{
+    CommentInputRecord(&lexInput->comments, text, first_line, lexInput->lineno, style, fall_through,
+                       lexTokenCount);
+}
+
+/*
+ * Drop the placed comments of tokens the parser has consumed, keeping
+ * those of its lookahead token
+ */
+void
+LexReleaseComments(Bool lookahead)
+{
+    CommentReleasePlaced(lookahead ? lexTokenCount : lexTokenCount + 1);
 }
 
 static DataType lexInputType = { lexInputMark, 0, "lexInputType" };
@@ -150,6 +291,9 @@ NewLexInput(Value file, Atom name, Bool after, Bool interactive)
     lex->interactive = interactive;
     /* Files loaded by this input share its error handling */
     lex->exit_on_error = lexInput ? lexInput->exit_on_error : False;
+    lex->comments = (CommentInput) {};
+    lex->format = 0;
+    lex->format_full = False;
     if (after) {
         LexInput **prev;
 
@@ -211,6 +355,7 @@ LexInit(void)
     MemAddRoot(LexInputReference);
     lexValueReference = NewReference((void **)&lexValue);
     MemAddRoot(lexValueReference);
+    CommentInit();
     EXIT();
 }
 
@@ -381,6 +526,7 @@ yy_input(char *buf, int max_size)
 
     while (result < max_size) {
         if (lexInput->at_eof) {
+            lexFinishInput();
             FileClose(lexInput->file);
             lexInput = lexInput->next;
         }
@@ -485,12 +631,15 @@ U8LETTER    {U8LETTER_2}|{U8LETTER_3}|{U8LETTER_4}
 
 %%
 "/\052"         {
-                    if (seeComment) {
-                        return yylvalValue(lexdoc(), COMMENT_CONST);
-                    } else
-                        skipcomment();
+                    lexBlockComment();
                 }
-^[ \t]*#        skipline();
+^[ \t]*#        lexHashComment();
+"/\052"[ \t]*"[[fallthrough]]"[ \t]*"\052/" {
+                    lexFallThroughComment(comment_block);
+                }
+^[ \t]*#[ \t]*"[[fallthrough]]"[ \t]*\n {
+                    lexFallThroughComment(comment_hash);
+                }
 auto            { return yylvalClass(class_auto, AUTO); }
 const           { return yylvalClass(class_const, CONST); }
 global          { return yylvalClass(class_global, GLOBAL); }
@@ -547,14 +696,14 @@ has_member      { return yylvalInts(HASMEMBER); }
 ","             { return yylvalInts(COMMA); }
 "$"             { return yylvalInts(DOLLAR); }
 "..."           { return yylvalInts(DOTDOTDOT); }
-"…"             { return yylvalInts(DOTDOTDOT); }
+"…"             { return yylvalUtf8(DOTDOTDOT); }
 "."             { return yylvalInts(DOT); }
 "->"            { return yylvalInts(ARROW); }
-"→"             { return yylvalInts(ARROW); }
+"→"             { return yylvalUtf8(ARROW); }
 "=>"            { return yylvalInts(DARROW); }
-"⇒"             { return yylvalInts(DARROW); }
-"<>"            { return yylvalValue(Void, VOIDVAL); }
-"◊"             { return yylvalValue(Void, VOIDVAL); }
+"⇒"             { return yylvalUtf8(DARROW); }
+"<>"            { return yylvalInts(VOIDVAL); }
+"◊"             { return yylvalUtf8(VOIDVAL); }
 \n              {
                     if (lexInput->at_eof) {
                         strcpy(yytext, "EOF");
@@ -574,18 +723,18 @@ has_member      { return yylvalInts(HASMEMBER); }
 "+="            { return yylvalInts(ASSIGNPLUS); }
 "-="            { return yylvalInts(ASSIGNMINUS); }
 "*="            { return yylvalInts(ASSIGNTIMES); }
-"×="            { return yylvalInts(ASSIGNTIMES); }
+"×="            { return yylvalUtf8(ASSIGNTIMES); }
 "/="            { return yylvalInts(ASSIGNDIVIDE); }
-"÷="            { return yylvalInts(ASSIGNDIVIDE); }
+"÷="            { return yylvalUtf8(ASSIGNDIVIDE); }
 "//="           { return yylvalInts(ASSIGNDIV); }
-"⫽="            { return yylvalInts(ASSIGNDIV); }
+"⫽="            { return yylvalUtf8(ASSIGNDIV); }
 "%="            { return yylvalInts(ASSIGNMOD); }
 "**="           { return yylvalInts(ASSIGNPOW); }
-"↑="            { return yylvalInts(ASSIGNPOW); }
+"↑="            { return yylvalUtf8(ASSIGNPOW); }
 "<<="           { return yylvalInts(ASSIGNSHIFTL); }
-"⪡="            { return yylvalInts(ASSIGNSHIFTL); }
+"⪡="            { return yylvalUtf8(ASSIGNSHIFTL); }
 ">>="           { return yylvalInts(ASSIGNSHIFTR); }
-"⪢="            { return yylvalInts(ASSIGNSHIFTR); }
+"⪢="            { return yylvalUtf8(ASSIGNSHIFTR); }
 "^="            { return yylvalInts(ASSIGNLXOR); }
 "&&="           { return yylvalInts(ASSIGNAND); }
 "||="           { return yylvalInts(ASSIGNOR); }
@@ -596,13 +745,13 @@ has_member      { return yylvalInts(HASMEMBER); }
 "+"             { return yylvalInts(PLUS); }
 "-"             { return yylvalInts(MINUS); }
 "*"             { return yylvalInts(TIMES); }
-"×"             { return yylvalInts(TIMES); }
+"×"             { return yylvalUtf8(TIMES); }
 "/"             { return yylvalInts(DIVIDE); }
-"÷"             { return yylvalInts(DIVIDE); }
+"÷"             { return yylvalUtf8(DIVIDE); }
 "//"            { return yylvalInts(DIV); }
-"⫽"             { return yylvalInts(DIV); }
+"⫽"             { return yylvalUtf8(DIV); }
 "**"            { return yylvalInts(STARSTAR); }
-"↑"             { return yylvalInts(STARSTAR); }
+"↑"             { return yylvalUtf8(STARSTAR); }
 "%"             { return yylvalInts(MOD); }
 "!"             { return yylvalInts(BANG); }
 "#"             { return yylvalInts(POUND); }
@@ -610,32 +759,32 @@ has_member      { return yylvalInts(HASMEMBER); }
 "|"             { return yylvalInts(LOR); }
 "^"             { return yylvalInts(LXOR); }
 "~"             { return yylvalInts(LNOT); }
-"¬"             { return yylvalInts(LNOT); }
+"¬"             { return yylvalUtf8(LNOT); }
 "++"            { return yylvalInts(INC); }
-"⧺"             { return yylvalInts(INC); }
+"⧺"             { return yylvalUtf8(INC); }
 "--"            { return yylvalInts(DEC); }
 "=="            { return yylvalInts(EQ); }
 "!="            { return yylvalInts(NE); }
-"≠"             { return yylvalInts(NE); }
+"≠"             { return yylvalUtf8(NE); }
 "<"             { return yylvalInts(LT); }
 ">"             { return yylvalInts(GT); }
 "<="            { return yylvalInts(LE); }
-"≤"             { return yylvalInts(LE); }
+"≤"             { return yylvalUtf8(LE); }
 ">="            { return yylvalInts(GE); }
-"≥"             { return yylvalInts(GE); }
+"≥"             { return yylvalUtf8(GE); }
 "&&"            { return yylvalInts(AND); }
-"∧"             { return yylvalInts(AND); }
+"∧"             { return yylvalUtf8(AND); }
 "||"            { return yylvalInts(OR); }
-"∨"             { return yylvalInts(OR); }
+"∨"             { return yylvalUtf8(OR); }
 "<<"            { return yylvalInts(SHIFTL); }
-"⪡"             { return yylvalInts(SHIFTL); }
+"⪡"             { return yylvalUtf8(SHIFTL); }
 ">>"            { return yylvalInts(SHIFTR); }
-"⪢"             { return yylvalInts(SHIFTR); }
+"⪢"             { return yylvalUtf8(SHIFTR); }
 "?"             { return yylvalInts(QUEST); }
 "::"            { return yylvalInts(COLONCOLON); }
 ":"             { return yylvalInts(COLON); }
-"²"             { return yylvalInts(POW2); }
-"³"             { return yylvalInts(POW3); }
+"²"             { return yylvalUtf8(POW2); }
+"³"             { return yylvalUtf8(POW3); }
 " "             ;
 "\t"            ;
 "\r"            ;
@@ -728,31 +877,31 @@ has_member      { return yylvalInts(HASMEMBER); }
                     EXIT();
                     return yylvalValue(value, STRING_CONST);
                 }
-0                           { return yylvalValue(Zero, TEN_NUM); }
-0[0-7_]+                    { return yylvalValue(atov(yytext + 1, 8), OCTAL0_NUM); }
-0o[0-7_]+                   { return yylvalValue(atov(yytext + 2, 8), OCTAL_NUM); }
-0o[0-7_]+\./\.\.\.          { return yylvalValue(aetov(yytext), OCTAL_FLOAT); }
-0o[0-7_]+/\.\.              { return yylvalValue(atov(yytext + 2, 8), OCTAL_NUM); }
+0                           { return yylvalNumber(TEN_NUM); }
+0[0-7_]+                    { return yylvalNumber(OCTAL0_NUM); }
+0o[0-7_]+                   { return yylvalNumber(OCTAL_NUM); }
+0o[0-7_]+\./\.\.\.          { return yylvalNumber(OCTAL_FLOAT); }
+0o[0-7_]+/\.\.              { return yylvalNumber(OCTAL_NUM); }
 0o(([0-7_]+((\.[0-7_]*(\{[0-7_]+\})?)?))|(\.[0-7_]+)|(\.[0-7_]*\{[0-7_]+\}))(([Ee][-+]?[0-9_]+)?) {
-                    return yylvalValue(aetov(yytext), OCTAL_FLOAT);
+                    return yylvalNumber(OCTAL_FLOAT);
                 }
-0b[01_]+                    { return yylvalValue(atov(yytext + 2, 2), BINARY_NUM); }
-0b[01_]+\./\.\.\.           { return yylvalValue(aetov(yytext), BINARY_FLOAT); }
-0b[01_]+/\.\.               { return yylvalValue(atov(yytext + 2, 2), BINARY_NUM); }
+0b[01_]+                    { return yylvalNumber(BINARY_NUM); }
+0b[01_]+\./\.\.\.           { return yylvalNumber(BINARY_FLOAT); }
+0b[01_]+/\.\.               { return yylvalNumber(BINARY_NUM); }
 0b(([01_]+((\.[01_]*(\{[01_]+\})?)?))|(\.[01_]+)|(\.[01_]*\{[01_]+\}))(([Ee][-+]?[0-9_]+)?) {
-                    return yylvalValue(aetov(yytext), BINARY_FLOAT);
+                    return yylvalNumber(BINARY_FLOAT);
                 }
-0x[0-9a-fA-F_]+             { return yylvalValue(atov(yytext + 2, 16), HEX_NUM); }
-0x[0-9a-fA-F_]+\./\.\.\.    { return yylvalValue(aetov(yytext), HEX_FLOAT); }
-0x[0-9a-fA-F_]+/\.\.        { return yylvalValue(atov(yytext + 2, 16), HEX_NUM); }
+0x[0-9a-fA-F_]+             { return yylvalNumber(HEX_NUM); }
+0x[0-9a-fA-F_]+\./\.\.\.    { return yylvalNumber(HEX_FLOAT); }
+0x[0-9a-fA-F_]+/\.\.        { return yylvalNumber(HEX_NUM); }
 0x(([0-9a-fA-F_]+((\.[0-9a-fA-F_]*(\{[0-9a-fA-F_]+\})?)?))|(\.[0-9a-fA-F_]+)|(\.[0-9a-fA-F_]*\{[0-9a-fA-F_]+\}))(([Pp][-+]?[0-9_]+)?) {
-                    return yylvalValue(aetov(yytext), HEX_FLOAT);
+                    return yylvalNumber(HEX_FLOAT);
                 }
-[0-9][0-9_]*                { return yylvalValue(atov(yytext, 10), TEN_NUM); }
-[0-9][0-9_]*\./\.\.\.       { return yylvalValue(aetov(yytext), TEN_FLOAT); }
-[0-9][0-9_]*/\.\.           { return yylvalValue(atov(yytext, 10), TEN_NUM); }
+[0-9][0-9_]*                { return yylvalNumber(TEN_NUM); }
+[0-9][0-9_]*\./\.\.\.       { return yylvalNumber(TEN_FLOAT); }
+[0-9][0-9_]*/\.\.           { return yylvalNumber(TEN_NUM); }
 (([0-9][0-9_]*((\.[0-9_]*(\{[0-9_]+\})?)?))|(\.[0-9][0-9_]*)|(\.([0-9][0-9_]*)?\{[0-9_]+\}))(([Ee][-+]?[0-9_]+)?) {
-                    return yylvalValue(aetov(yytext), TEN_FLOAT);
+                    return yylvalNumber(TEN_FLOAT);
                 }
 ([a-zA-Z_]|{U8LETTER})([0-9a-zA-Z_]|{U8LETTER})* {
                     CommandPtr c;
@@ -814,79 +963,90 @@ lexEscape(uint32_t c)
 }
 
 /*
- * Read a doc string, the comment after a function or exception header,
- * dropping the leading space and '*' of each continuation line
+ * Read the rest of a comment whose opening slash-star has been read,
+ * returning it as written, or 0 when it never ends
  */
-Value
-lexdoc(void)
+static Value
+lexReadComment(void)
 {
     ENTER();
-    int   c;
+    int   c, prev = 0;
     Value f = FileStringWrite();
 
-    c = input();
-    if (lexInput->at_eof) {
-    bail:
-        yyerror("Missing */ at end of file");
-        RETURN(Void);
-    }
+    FilePuts(f, "/*");
     for (;;) {
-        Bool skip = False;
-        while (c != EOF && c != '*') {
-            if (skip && c != ' ' && c != '\t')
-                skip = False;
-            if (!skip)
-                FileOutput(f, c);
-            if (c == '\n')
-                skip = True;
-            c = input();
-            if (c == EOF || lexInput->at_eof)
-                goto bail;
-        }
         c = input();
-        if (c == EOF || lexInput->at_eof)
-            goto bail;
-        if (c == '/')
+        if (c == EOF || lexInput->at_eof) {
+            yyerror("Missing */ at end of file");
+            RETURN(0);
+        }
+        FileOutput(f, c);
+        if (prev == '*' && c == '/')
             break;
-        if (!skip)
-            FileOutput(f, '*');
+        prev = c;
     }
     RETURN(FileStringString(f));
 }
 
-void
-skipcomment(void)
+/* Read and record a comment whose opening slash-star has been read */
+static void
+lexBlockComment(void)
 {
-    int c;
+    ENTER();
+    int   first_line = lexInput->lineno;
+    Value text = lexReadComment();
 
-    c = input();
-    if (lexInput->at_eof) {
-    bail:
-        yyerror("Missing */ at end of file");
-        return;
-    }
-    for (;;) {
-        while (c != EOF && c != '*') {
-            c = input();
-            if (c == EOF || lexInput->at_eof)
-                goto bail;
-        }
-        c = input();
-        if (c == EOF || lexInput->at_eof)
-            goto bail;
-        if (c == '/')
-            return;
-    }
+    if (text)
+        lexRecordComment(text, first_line, comment_block, False);
+    EXIT();
 }
 
-void
-skipline(void)
+/*
+ * Record the comment in yytext, '[[fallthrough]]' alone, which marks a
+ * switch case falling through to the next as C's attribute does; a
+ * '#' comment's text ends before its newline
+ */
+static void
+lexFallThroughComment(CommentStyle style)
 {
-    int c;
+    ENTER();
+    ptrdiff_t len = (ptrdiff_t)strlen(yytext);
+    Value     text;
 
-    do {
+    if (style == comment_hash && len && yytext[len - 1] == '\n')
+        len--;
+    text = NewString(len);
+    memcpy(StringChars(&text->string), yytext, (size_t)len);
+    StringChars(&text->string)[len] = '\0';
+    lexRecordComment(text, lexInput->lineno, style, True);
+    EXIT();
+}
+
+/*
+ * Read and record the rest of a line starting with '#', whose start
+ * through the '#' is in yytext
+ */
+static void
+lexHashComment(void)
+{
+    ENTER();
+    int          first_line = lexInput->lineno;
+    CommentStyle style = comment_hash;
+    int          c;
+    Value        f = FileStringWrite();
+    Bool         at_start = yytext[0] == '#';
+
+    /* input() may overwrite yytext */
+    FilePuts(f, yytext);
+    c = input();
+    if (first_line == 1 && at_start && c == '!')
+        style = comment_shebang;
+    while (c != EOF && c != '\n') {
+        FileOutput(f, c);
         c = input();
-    } while (c != EOF && c != '\n');
+    }
+    lexRecordComment(FileStringString(f), first_line, style, False);
+    EXIT();
 }
 
 Value

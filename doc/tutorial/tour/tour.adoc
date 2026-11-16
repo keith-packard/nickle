@@ -117,13 +117,14 @@ $ nickle
 > library "examples/cribbage.5c"
 > print Cribbage
 namespace Cribbage {
-    public int score (int[*] v);
+    public int score(int[*] v);
 }
 > print Cribbage::score
-public int score (int[*] v)
+public int
+score(int[*] v)
 {
-    int n = dim (v);
-    return 2 * countsum (15, v, n) + 2 * countpairs (v, n);
+    int n = dim(v);
+    return 2 * countsum(15, v, n) + 2 * countpairs(v, n);
 }
 > import Cribbage;
 > score ((int[*]) { 5, 5, 10, 7, 8 })

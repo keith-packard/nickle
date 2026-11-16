@@ -20,7 +20,7 @@ exception e1 (int a, string b);
 
 file f = File::string_write ();
 Command::pretty_print (f, (string[*]) { "e1" });
-check ("printed", File::string_string (f), "exception e1 (int a, string b);\n");
+check ("printed", File::string_string (f), "exception e1(int a, string b);\n");
 
 int got_a = 0;
 string got_b = "";

@@ -219,13 +219,14 @@ if history_h != ''
 endif
 
 nickle_srcs = [
-  'alarm.c', 'array.c', 'atom.c', 'box.c', 'compile.c', 'complex.c', 'debug.c',
-  'divide.c', 'edit.c', 'error.c', 'execute.c', 'expr.c', 'file.c',
-  'float.c', 'foreign.c', 'frame.c', 'func.c', 'gcd.c', 'hash.c',
-  'int.c', 'integer.c', 'io.c', 'main.c', 'mem.c', 'natural.c',
-  'pretty.c', 'profile.c', 'rational.c', 'ref.c', 'refer.c',
-  'sched.c', 'scope.c', 'stack.c', 'string.c', 'struct.c', 'symbol.c',
-  'sync.c', 'type.c', 'union.c', 'util.c', 'value.c', 'mem.h',
+  'alarm.c', 'array.c', 'atom.c', 'box.c', 'comment.c',
+  'compile.c', 'complex.c', 'debug.c', 'divide.c', 'edit.c',
+  'error.c', 'execute.c', 'expr.c', 'file.c', 'float.c',
+  'foreign.c', 'frame.c', 'func.c', 'gcd.c', 'hash.c', 'int.c',
+  'integer.c', 'io.c', 'main.c', 'mem.c', 'natural.c', 'pretty.c',
+  'profile.c', 'rational.c', 'ref.c', 'refer.c', 'sched.c',
+  'scope.c', 'stack.c', 'string.c', 'struct.c', 'symbol.c',
+  'sync.c', 'type.c', 'union.c', 'util.c', 'value.c', 'comment.h', 'mem.h',
   'memp.h', 'nickle.h', 'opcode.h', 'ref.h', 'stack.h', 'value.h',
   'builtin-command.c', 'builtin-debug.c', 'builtin-environ.c',
   'builtin-file.c', 'builtin-math.c', 'builtin-namespaces.h',
@@ -245,7 +246,7 @@ nickle_files = [
 ]
 
 nickle_headers = [
-  'builtin.h', 'mem.h', 'nickle.h', 'ref.h', 'value.h',
+  'builtin.h', 'comment.h', 'mem.h', 'nickle.h', 'ref.h', 'value.h',
   'builtin-namespaces.h', 'memp.h', 'opcode.h', 'stack.h'
 ]
   

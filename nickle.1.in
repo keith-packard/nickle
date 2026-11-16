@@ -2,7 +2,7 @@
 .SH NAME
 nickle \- a desk calculator language
 .SH SYNOPSIS
-nickle [--help|--usage] [-f file] [-l library] [-e expr] [-V] [ script ] [--] [arg ...]
+nickle [--help|--usage] [-f file] [-l library] [-e expr] [-F source] [-V] [ script ] [--] [arg ...]
 .SH DESCRIPTION
 .PP
 \fINickle\fP is a
@@ -50,6 +50,16 @@ See below for a description of the library facility.
 Evaluate
 .I expr
 before beginning execution.
+.TP
+.BI "-F,--format " source
+Print
+.I source
+reformatted instead of running it.
+Commands that load code, such as
+.B autoimport
+and
+.BR library ,
+still run.
 .TP
 .BI "-V,--version"
 Print the Nickle version and exit.
@@ -1344,6 +1354,12 @@ the next input, and return true.
 Add f to the files the lexer reads, using name in error messages.
 If after is true, read f once the other input is exhausted rather
 than next.  If interactive is true, prompt as for a terminal.
+.IP "void function format_file(file out, file in, string name, bool full)"
+Read in next, using name in error messages, parsing it without
+running it, and print it to out once it ends: if full is true,
+reformatted as the
+.B --format
+option does; otherwise a summary of the names it declares.
 .IP "bool function valid_name(string[*] names)"
 Returns whether the path of namespace names leads to a defined
 name.
@@ -1373,6 +1389,9 @@ Implements the top-level print command.  Each
 argument is a path of namespace names leading to a name, which
 is looked up and the corresponding code printed to file f.
 An unknown name raises invalid_argument.
+.IP "void function format_names(file out, bool full, string[*] names...)"
+Like pretty_print, printing namespaces as a summary of their public
+names, or, if full is true, with all their names and code.
 .IP "void function display(poly val)"
 Prints the value val with the format in the top-level
 format variable and adds it to the history.
@@ -1564,9 +1583,15 @@ Print each integer code point E in decimal and hexadecimal,
 with the character it encodes.
 .IP "print NAME"
 Display a formatted version of the object denoted by NAME.
-Original formatting and comments are lost, except for the
-documentation comment that follows a function's header.
 If NAME is a variable, print the type as well as the value.
+.IP "print NAME::"
+Like print NAME, showing a namespace with all its names and code.
+.IP "print ::"
+Show all names, with all their code.
+.IP "print \(dqFILE\(dq"
+Read FILE without running it and print it reformatted, as
+.B --format
+does.
 .IP "edit NAME"
 Invoke $EDITOR on the named object, and
 re-incorporate the results of the edit.  This is most

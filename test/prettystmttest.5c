@@ -60,15 +60,15 @@ void function thrower ()
     raise N::nx ();
 }
 
-has ("qualified raise", printed ("thrower"), "raise N::nx ();");
+has ("qualified raise", printed ("thrower"), "raise N::nx();");
 
 /* The printed union switch compiles and behaves the same */
 int start = String::index (p, "(");
 string again = String::substr (p, start, String::length (p) - start);
 Command::lex_string ("int function pick_again " + again + "\n" +
-		     "check (\"i\", pick_again ((U) { .i = 5 }), pick ((U) { .i = 5 }));\n" +
-		     "check (\"s\", pick_again ((U) { .s = \"abc\" }), 3);\n" +
-		     "check (\"v\", pick_again (U.v), 0);\n");
+		     "check(\"i\", pick_again((U) { .i = 5 }), pick((U) { .i = 5 }));\n" +
+		     "check(\"s\", pick_again((U) { .s = \"abc\" }), 3);\n" +
+		     "check(\"v\", pick_again(U.v), 0);\n");
 
 /* Declaration qualifiers print with their types, and global persists */
 int function quals ()
@@ -81,15 +81,15 @@ int function quals ()
 }
 
 string q = printed ("quals");
-has ("const", q, "const int c = 9;");
-has ("const poly", q, "const k = 3;");
+has ("const", q, "const int  c = 9;");
+has ("const poly", q, "const      k = 3;");
 has ("global", q, "global int gg = 5;");
 has ("static", q, "static int s = 2;");
 int qstart = String::index (q, "(");
 Command::lex_string ("int function quals_again " +
 		     String::substr (q, qstart, String::length (q) - qstart) + "\n" +
-		     "check (\"first call\", quals_again (), 19);\n" +
-		     "check (\"second call\", quals_again (), 20);\n");
+		     "check(\"first call\", quals_again(), 19);\n" +
+		     "check(\"second call\", quals_again(), 20);\n");
 
 /* Printed globals and namespaces read back */
 namespace Outer {
@@ -108,8 +108,8 @@ has ("nested namespace", ns, "public namespace Inner {");
 has ("uninitialized", ns, "global int unset;");
 Command::lex_string ("namespace Again " + String::substr (ns, String::index (ns, "{"),
 							  String::length (ns) - String::index (ns, "{")) +
-		     "check (\"outer\", Again::x, 1);\n" +
-		     "check (\"inner\", Again::Inner::y, 2);\n");
+		     "check(\"outer\", Again::x, 1);\n" +
+		     "check(\"inner\", Again::Inner::y, 2);\n");
 
 /* do-while inside if-else, and a comprehension with a block, read back */
 int function dowhile (int a, bool b)
@@ -130,13 +130,13 @@ int[*] function compblock ()
 
 string dw = printed ("dowhile");
 string cb = printed ("compblock");
-has ("do-while", dw, "while (a > 0)\n");
+has ("do-while", dw, "while (a > 0);\n");
 int dws = String::index (dw, "(");
 int cbs = String::index (cb, "(");
 Command::lex_string ("int function dowhile_again " +
 		     String::substr (dw, dws, String::length (dw) - dws) +
 		     "int[*] function compblock_again " +
 		     String::substr (cb, cbs, String::length (cb) - cbs) +
-		     "check (\"do-while true\", dowhile_again (3, true), dowhile (3, true));\n" +
-		     "check (\"do-while false\", dowhile_again (3, false), dowhile (3, false));\n" +
-		     "check (\"comprehension\", compblock_again (), compblock ());\n");
+		     "check(\"do-while true\", dowhile_again(3, true), dowhile(3, true));\n" +
+		     "check(\"do-while false\", dowhile_again(3, false), dowhile(3, false));\n" +
+		     "check(\"comprehension\", compblock_again(), compblock());\n");

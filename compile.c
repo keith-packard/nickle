@@ -2983,6 +2983,30 @@ _CompileBoolExpr(ObjPtr obj, ExprPtr expr, Bool evaluate, ExprPtr stat, CodePtr 
     return obj;
 }
 
+/*
+ * The case after e in a switch's case list, skipping comments: a
+ * switch's first case, or the one after a case
+ */
+static ExprPtr
+CompileNextCase(ExprPtr e)
+{
+    ExprPtr cases = e->tree.right;
+
+    while (cases && cases->tree.left->base.tag == COMMENT_CONST)
+        cases = cases->tree.right;
+    return cases;
+}
+
+/* Whether a statement list holds nothing but comments */
+static Bool
+CompileOnlyComments(ExprPtr statements)
+{
+    for (; statements->tree.left; statements = statements->tree.right)
+        if (statements->tree.left->base.tag != COMMENT_CONST)
+            return False;
+    return True;
+}
+
 ObjPtr
 _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
 {
@@ -3242,6 +3266,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
         break;
     case SWITCH:
     case UNION:
+    case ENUM:
         /*
          * switch (a) { case b: c; case d: e; }
          *
@@ -3267,7 +3292,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
                 }
             }
         }
-        c = expr->tree.right;
+        c = CompileNextCase(expr);
         has_default = False;
         ncase = 0;
         while (c) {
@@ -3275,14 +3300,14 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
                 has_default = True;
             else
                 ncase++;
-            c = c->tree.right;
+            c = CompileNextCase(c);
         }
         /*
          * Check to see if the union switch covers
          * all possible values
          */
         test_inst = 0;
-        if (expr->base.tag == UNION && st) {
+        if ((expr->base.tag == UNION || expr->base.tag == ENUM) && st) {
             Bool      missing = False;
             ptrdiff_t i;
             Atom     *atoms = StructTypeAtoms(st);
@@ -3291,7 +3316,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
              * See if every member of the union has a case
              */
             for (i = 0; i < st->nelements; i++) {
-                c = expr->tree.right;
+                c = CompileNextCase(expr);
                 while (c) {
                     ExprPtr pair = c->tree.left->tree.left;
 
@@ -3300,7 +3325,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
                         if (tag == atoms[i])
                             break;
                     }
-                    c = c->tree.right;
+                    c = CompileNextCase(c);
                 }
                 if (!c) {
                     missing = True;
@@ -3319,7 +3344,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
         /*
          * Compile the comparisons
          */
-        c = expr->tree.right;
+        c = CompileNextCase(expr);
         icase = 0;
         while (c) {
             if (c->tree.left->tree.left) {
@@ -3337,7 +3362,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
                 NewInst(obj, expr->base.tag == SWITCH ? OpCase : OpTagCase, case_inst[icase], expr);
                 icase++;
             }
-            c = c->tree.right;
+            c = CompileNextCase(c);
         }
         /* add default case at the bottom */
         if (test_inst == 0) {
@@ -3349,7 +3374,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
         /*
          * Compile the statements
          */
-        c = expr->tree.right;
+        c = CompileNextCase(expr);
         icase = 0;
         while (c) {
             ExprPtr s = c->tree.left->tree.right;
@@ -3423,7 +3448,7 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
                 obj = _CompileStat(obj, s->tree.left, False, code);
                 s = s->tree.right;
             }
-            c = c->tree.right;
+            c = CompileNextCase(c);
         }
         obj->nonLocal = obj->nonLocal->prev;
         /*
@@ -3445,9 +3470,12 @@ _CompileStat(ObjPtr obj, ExprPtr expr, Bool last, CodePtr code)
         break;
     case OC:
         while (expr->tree.left) {
-            obj = _CompileStat(obj, expr->tree.left, last && !expr->tree.right->tree.left, code);
+            obj = _CompileStat(obj, expr->tree.left, last && CompileOnlyComments(expr->tree.right),
+                               code);
             expr = expr->tree.right;
         }
+        break;
+    case COMMENT_CONST:
         break;
     case BREAK:
         obj = _CompileNonLocal(obj, BranchModBreak, expr, code);
@@ -4281,7 +4309,7 @@ InstDump(InstPtr inst, int indent, ptrdiff_t i, ptrdiff_t *branch, ptrdiff_t max
     case OpArrowRefStore:
     case OpInitStruct:
     case OpInitUnion:
-        FilePrintf(FileStdout, "%s", AtomName(inst->atom.atom));
+        FilePuts(FileStdout, AtomName(inst->atom.atom));
         break;
     case OpObj:
         FilePrintf(FileStdout, "\n");
@@ -4302,13 +4330,13 @@ InstDump(InstPtr inst, int indent, ptrdiff_t i, ptrdiff_t *branch, ptrdiff_t max
         break;
     case OpBinFunc:
     case OpAssignFunc:
-        FilePrintf(FileStdout, "%s", ObjBinFuncName(inst->binfunc.func));
+        FilePuts(FileStdout, ObjBinFuncName(inst->binfunc.func));
         break;
     case OpUnOp:
         FilePrintf(FileStdout, "%U", inst->unop.op);
         break;
     case OpUnFunc:
-        FilePrintf(FileStdout, "%s", ObjUnFuncName(inst->unfunc.func));
+        FilePuts(FileStdout, ObjUnFuncName(inst->unfunc.func));
         break;
     case OpIsType:
         FilePrintf(FileStdout, "%T", inst->isType.type);

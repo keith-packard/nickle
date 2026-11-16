@@ -64,9 +64,9 @@ string function printed (string name)
     return File::string_string (f);
 }
 
-check ("exit", String::index (printed ("exit"), "public noreturn exit (int)") == 0, true);
+check ("exit", String::index (printed ("exit"), "public noreturn exit(int)") == 0, true);
 check ("longjmp", String::index (printed ("longjmp"), "public noreturn longjmp") == 0, true);
-check ("abort", String::index (printed ("abort"), "noreturn abort (") >= 0, true);
+check ("abort", String::index (printed ("abort"), "noreturn\nabort(") >= 0, true);
 
 /* A noreturn function may neither return nor reach its end */
 string[*] read_lines (file f)
@@ -83,8 +83,8 @@ file[*]	errors = File::mkpipe ();
 
 File::filter (nickle,
 	      (string[*]) { nickle, "-e",
-			    "noreturn r () { return; }\n" +
-			    "noreturn e (int x) { if (x > 0) abort (\"x\"); }\n" },
+			    "noreturn r() { return; }\n" +
+			    "noreturn e(int x) { if (x > 0) abort(\"x\"); }\n" },
 	      (file[3]) { stdin, stdout, errors[1] });
 File::close (errors[1]);
 

@@ -65,7 +65,7 @@ EditFunction(SymbolPtr symbol, Publish publish)
     }
     tmp = FileCreate(fd, FileWritable);
     if (tmp) {
-        PrettyPrint(tmp, publish, symbol);
+        PrettyPrint(tmp, publish, symbol, False);
         (void)FileClose(tmp);
         if (edit(nickleName) == 0)
             LexFile(nickleName, True, False);

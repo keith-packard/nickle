@@ -79,6 +79,18 @@ import_Command_namespace(void)
           " input sources are exhausted.\n"
           " If 'interactive', the lexer will display prompts as if\n"
           " input was coming from a terminal.\n" },
+        { do_Command_format_file, "format_file", "v", "ffsb",
+         "\n"
+          " void format_file (file out, file in, string name, bool full)\n"
+          "\n"
+          " Read 'in' next, using 'name' in error messages, parsing it\n"
+          " without running it, and print it to 'out' once it ends: in\n"
+          " full, formatted as written, comments and all; otherwise a\n"
+          " summary of what it declares, functions as declarations\n"
+          " without bodies, namespaces showing only names not private,\n"
+          " and other commands left out. Commands that load code, such\n"
+          " as autoimport and library, still run, as parsing the code\n"
+          " after them needs their names.\n" },
         { 0 }
     };
 
@@ -93,7 +105,18 @@ import_Command_namespace(void)
           " void pretty_print (file f, string[*] ... name)\n"
           "\n"
           " Prints the variable and value in a format capable of\n"
-          " reproducing the value if fed back to the parser\n" },
+          " reproducing the value if fed back to the parser, as\n"
+          " format_names (f, false, name ...) does\n" },
+        { do_Command_format_names, "format_names", "v", "fb.A*s",
+         "\n"
+          " void format_names (file out, bool full, string[*] ... name)\n"
+          "\n"
+          " Prints each name to 'out', or with no names every public\n"
+          " one: a variable with its current value, a function with\n"
+          " its definition. A namespace shows, as a summary, the names\n"
+          " in it not private, functions as declarations without\n"
+          " bodies; in full, every name in it, with function bodies,\n"
+          " laid out as formatting a file would.\n" },
 
         { 0 }
     };
@@ -145,6 +168,7 @@ do_Command_new_common(Value name, Value func, Bool names)
                                NewInt(1), func);
         RETURN(Void);
     }
+    CommandSave();
     CurrentCommands = NewCommand(CurrentCommands, AtomId(cmd), func, names);
     RETURN(Void);
 }
@@ -173,12 +197,14 @@ do_Command_delete(Value name)
     id = AtomId(cmd);
     if (!CommandFind(CurrentCommands, id))
         RETURN(FalseVal);
+    CommandSave();
     CurrentCommands = CommandRemove(CurrentCommands, id);
     RETURN(TrueVal);
 }
 
-Value
-do_Command_pretty_print(ptrdiff_t argc, Value *args)
+/* Print names, those after the first first arguments, as a summary or in full */
+static Value
+CommandPrettyNames(ptrdiff_t argc, Value *args, ptrdiff_t first, Bool full)
 {
     ENTER();
     Value        f;
@@ -189,19 +215,31 @@ do_Command_pretty_print(ptrdiff_t argc, Value *args)
     ptrdiff_t    i;
 
     f = args[0];
-    if (argc == 1) {
-        PrettyPrint(f, publish_public, 0);
+    if (argc == first) {
+        PrettyPrint(f, publish_public, 0, full);
         RETURN(Void);
     }
-    for (i = 1; i < argc; i++) {
+    for (i = first; i < argc; i++) {
         names = args[i];
         if (NamespaceLocate(names, &namespace, &symbol, &publish))
-            PrettyPrint(f, publish, symbol);
+            PrettyPrint(f, publish, symbol, full);
         else
             RaiseStandardException(exception_invalid_argument, 3, NewStrString("name not found"),
                                    NewPtrdiffInteger(i), names);
     }
     RETURN(Void);
+}
+
+Value
+do_Command_pretty_print(ptrdiff_t argc, Value *args)
+{
+    return CommandPrettyNames(argc, args, 1, False);
+}
+
+Value
+do_Command_format_names(ptrdiff_t argc, Value *args)
+{
+    return CommandPrettyNames(argc, args, 2, args[1] == TrueVal);
 }
 
 Value
@@ -273,6 +311,14 @@ do_Command_lex_input(Value file, Value name, Value after, Value interactive)
     ENTER();
     NewLexInput(file, AtomId(StringChars(&name->string)), after == TrueVal, interactive == TrueVal);
     RETURN(TrueVal);
+}
+
+Value
+do_Command_format_file(Value out, Value in, Value name, Value full)
+{
+    ENTER();
+    LexFormatFile(in, AtomId(StringChars(&name->string)), out, full == TrueVal);
+    RETURN(Void);
 }
 
 Value

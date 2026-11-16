@@ -1605,10 +1605,14 @@ FilePutArgType(Value f, ArgType *at)
 {
     FilePuts(f, "(");
     while (at) {
+        /* Print poly too, as a parameter needs a type to parse */
         if (at->type)
-            FilePutType(f, at->type, at->name != 0);
-        if (at->name)
+            FilePutType(f, at->type, False);
+        if (at->name) {
+            if (at->type)
+                FilePuts(f, " ");
             FilePuts(f, AtomName(at->name));
+        }
         if (at->varargs)
             FilePuts(f, " ...");
         at = at->next;
@@ -1751,10 +1755,15 @@ FilePutType(Value f, Type *t, Bool minimal)
             else
                 FilePuts(f, "union { ");
             st = t->structs.structs;
+            /* Members declared together print together, as 'int x, y;' */
             for (i = 0; i < st->nelements; i++) {
-                FilePutType(f, BoxTypesElements(st->types)[i], True);
+                if (StructTypeGrouped(st)[i])
+                    FilePuts(f, ", ");
+                else
+                    FilePutType(f, BoxTypesElements(st->types)[i], True);
                 FilePuts(f, AtomName(StructTypeAtoms(st)[i]));
-                FilePuts(f, "; ");
+                if (i == st->nelements - 1 || !StructTypeGrouped(st)[i + 1])
+                    FilePuts(f, "; ");
             }
             FilePuts(f, "}");
         }

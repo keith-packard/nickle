@@ -4,3 +4,6 @@
 # for licensing information.
 #
 subdir('tutorial')
+
+install_data('pretty-printer.md',
+	     install_dir: nickle_docdir)

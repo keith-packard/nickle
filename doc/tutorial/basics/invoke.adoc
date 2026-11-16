@@ -6,6 +6,7 @@
    [`-f` _file_]
    [`-l` _library_]
    [`-e` _expr_]
+   [`-F` _source_]
    [`-V`]
    [_script_] [`--`] [_arg_ ...]
 
@@ -23,6 +24,26 @@ Evaluate a Nickle expression, e.g.
 ----
 $ nickle -e 3**4
 81
+$
+----
+
+`-F` _source_, `--format` _source_::
+Print the file _source_ formatted instead of running it, laying out
+each command and declaration as `print` does, comments and all.
+Commands that load code, such as `autoimport` and `library`, still run,
+as the code after them needs their names.
++
+----
+$ cat square.5c
+/* Print a square */
+int square(int x) { return x*x; }
+printf("%d\n", square(3));
+$ nickle --format square.5c
+/* Print a square */
+int
+square(int x) = x * x;
+
+printf("%d\n", square(3));
 $
 ----
 

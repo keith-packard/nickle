@@ -64,7 +64,11 @@ $
 
 The `print` command provides information such as visibility, type, and
 value, about a name. It need not be the name of a variable; functions,
-namespaces, etc. may also be printed.
+namespaces, etc. may also be printed. A namespace prints as a summary
+of its public names, functions without their bodies; `print Name::`
+prints all of it, as written, and `print ::` every name. A file name in
+quotes, as in `print "prog.5c"`, prints the file formatted, without
+running it.
 
 ----
 
@@ -73,7 +77,7 @@ $ nickle
 > print x
 global int x = 2;
 > print String::length
-public int length (string)
+public int length(string)
     /*
      * int length (string s)
      *
@@ -81,9 +85,45 @@ public int length (string)
      */ <builtin>
 > void function hello() { printf("hello, world\n"); }
 > print hello
-void hello ()
+void
+hello()
 {
-    printf ("hello, world\n");
+    printf("hello, world\n");
+}
+>
+----
+
+Comments stay with the code they describe, and `print` shows them
+re-indented, with their lines as written. A comment that starts on the
+same line as code trails that code, and any other comment leads the
+code after it; a function with comments on its parameters prints one
+parameter per line. `pretty-printer.md`, installed with Nickle's
+documentation, gives the full rules.
+
+----
+
+$ nickle
+> /* Count the vowels in s */
+> int vowels (string s /* lower case */) {
++     int n = 0;        /* found so far */
++     for (int i = 0; i < String::length (s); i++)
++         if (String::index ("aeiou", String::new (s[i])) >= 0)
++             n++;
++     return n;
++ }
+> print vowels
+/* Count the vowels in s */
+int
+vowels(
+    string s /* lower case */)
+{
+    int n = 0; /* found so far */
+
+    for (int i = 0; i < String::length(s); i++)
+        if (String::index("aeiou", String::new(s[i]))
+            >= 0)
+            n++;
+    return n;
 }
 >
 ----
@@ -144,25 +184,27 @@ true
 
 == Edit
 
-The `edit` command invokes `$EDITOR` on the name given as an argument.
-This is particularly useful to change a function while in interactive mode.
+The `edit` command invokes `$EDITOR` on the name given as an argument,
+as `print` shows it, comments included, so they survive the edit. This
+is particularly useful to change a function while in interactive mode.
 
 ----
 
 $ nickle
 > void function hello() { printf("hello, world\n"); }
 > edit hello
-49
-3
-    printf ("hello, world\n");
+47
+4
+    printf("hello, world\n");
 c
 printf ("goodbye, cruel world\n");
 wq
-53
+52
 > print hello
-void hello ()
+void
+hello()
 {
-    printf ("goodbye, cruel world\n");
+    printf("goodbye, cruel world\n");
 }
 >
 ----

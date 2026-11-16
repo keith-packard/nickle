@@ -44,6 +44,7 @@ ArgTypeMark(void *object)
     MemReference(at->type);
     MemReference(at->symbol);
     MemReference(at->next);
+    MemReference(at->comments);
 }
 
 static void
@@ -164,6 +165,8 @@ NewArgType(Type *type, Bool varargs, Atom name, SymbolPtr symbol, ArgType *next)
     a->name = name;
     a->symbol = symbol;
     a->next = next;
+    a->comments = 0;
+    a->starts_line = False;
     RETURN(a);
 }
 

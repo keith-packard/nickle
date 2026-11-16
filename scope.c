@@ -60,6 +60,75 @@ NewNamelist(NamelistPtr next, SymbolPtr symbol, Publish publish)
 }
 
 /*
+ * The names a namespace held before formatting an input changed them:
+ * formatting parses declarations without running them, which would
+ * leave their names uninitialized, so the namespace gets these back
+ * once the input ends
+ */
+typedef struct _namespaceSaved *NamespaceSavedPtr;
+
+typedef struct _namespaceSaved {
+    DataType         *data;
+    NamespaceSavedPtr next;
+    NamespacePtr      namespace;
+    ptrdiff_t         count;
+    ptrdiff_t         hash_size; /* chains in its index, or 0 when it had none */
+    NamelistPtr       names[];   /* in its list's order */
+} NamespaceSaved;
+
+static void
+NamespaceSavedMark(void *object)
+{
+    NamespaceSavedPtr saved = object;
+
+    MemReference(saved->next);
+    MemReference(saved->namespace);
+    for (ptrdiff_t i = 0; i < saved->count; i++)
+        MemReference(saved->names[i]);
+}
+
+static DataType          namespaceSavedType = { NamespaceSavedMark, 0, "namespaceSavedType" };
+
+static NamespaceSavedPtr namespaceSaved;
+static ReferencePtr      namespaceSavedReference;
+
+/* The commands before formatting an input changed them, when it has */
+static Bool              commandsSaved;
+static CommandPtr        commandsBefore;
+static ReferencePtr      commandsBeforeReference;
+
+/*
+ * Save the names of 'namespace' before formatting an input, or
+ * running what it loads, first changes them
+ */
+static void
+NamespaceSave(NamespacePtr namespace)
+{
+    NamespaceSavedPtr saved;
+    NamelistPtr       namelist;
+    ptrdiff_t         i;
+
+    if (!LexFormatting())
+        return;
+    for (saved = namespaceSaved; saved; saved = saved->next)
+        if (saved->namespace == namespace)
+            return;
+
+    ENTER();
+    saved = ALLOCATE(&namespaceSavedType,
+                     sizeof(NamespaceSaved) + (size_t)namespace->count * sizeof(NamelistPtr));
+    saved->next = namespaceSaved;
+    saved->namespace = namespace;
+    saved->count = namespace->count;
+    saved->hash_size = namespace->hash ? namespace->hash->size : 0;
+    i = 0;
+    for (namelist = namespace->names; namelist; namelist = namelist->next)
+        saved->names[i++] = namelist;
+    namespaceSaved = saved;
+    EXIT();
+}
+
+/*
  * Namespaces with this many names get an index, so finding and adding
  * names doesn't search the whole list
  */
@@ -189,6 +258,14 @@ NamespaceInit(void)
     CurrentFrameReference = NewReference((void **)&CurrentFrame);
     MemAddRoot(CurrentFrameReference);
 
+    namespaceSaved = 0;
+    namespaceSavedReference = NewReference((void **)&namespaceSaved);
+    MemAddRoot(namespaceSavedReference);
+
+    commandsBefore = 0;
+    commandsBeforeReference = NewReference((void **)&commandsBefore);
+    MemAddRoot(commandsBeforeReference);
+
     EXIT();
 }
 
@@ -232,6 +309,8 @@ NamespaceAddName(NamespacePtr namespace, SymbolPtr symbol, Publish publish)
     ENTER();
     NamelistPtr namelist;
 
+    NamespaceSave(namespace);
+
     /*
      * Remove old symbol
      */
@@ -260,8 +339,52 @@ NamespaceRemoveName(NamespacePtr namespace, Atom atom)
 
     if (!namelist)
         return False;
+    NamespaceSave(namespace);
     NamespaceUnlink(namespace, namelist);
     return True;
+}
+
+/*
+ * Save the commands before formatting an input, or running what it
+ * loads, first changes them
+ */
+void
+CommandSave(void)
+{
+    if (!LexFormatting() || commandsSaved)
+        return;
+    commandsBefore = CurrentCommands;
+    commandsSaved = True;
+}
+
+/*
+ * Give each namespace the input just formatted changed its names back,
+ * and the commands too
+ */
+void
+NamespaceRestore(void)
+{
+    ENTER();
+    NamespaceSavedPtr saved;
+
+    for (saved = namespaceSaved; saved; saved = saved->next) {
+        NamespacePtr namespace = saved->namespace;
+
+        namespace->names = saved->count ? saved->names[0] : 0;
+        for (ptrdiff_t i = 0; i < saved->count; i++)
+            saved->names[i]->next = i + 1 < saved->count ? saved->names[i + 1] : 0;
+        namespace->count = saved->count;
+        namespace->hash = 0;
+        if (saved->hash_size)
+            NamespaceRehash(namespace, saved->hash_size);
+    }
+    namespaceSaved = 0;
+    if (commandsSaved) {
+        CurrentCommands = commandsBefore;
+        commandsBefore = 0;
+        commandsSaved = False;
+    }
+    EXIT();
 }
 
 void

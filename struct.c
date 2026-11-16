@@ -34,6 +34,18 @@ StructMemValue(Value sv, Atom name)
     RETURN(0);
 }
 
+/* The comment entries of a member, or 0 */
+ExprPtr
+StructMemComments(StructType *st, Atom name)
+{
+    ExprPtr c;
+
+    for (c = st->comments; c; c = c->tree.right)
+        if (c->tree.left->tree.left->atom.atom == name)
+            return c->tree.left->tree.right;
+    return 0;
+}
+
 Type *
 StructMemType(StructType *st, Atom name)
 {
@@ -159,6 +171,7 @@ StructTypeMark(void *object)
     StructType *st = object;
 
     MemReference(st->types);
+    MemReference(st->comments);
 }
 
 static DataType StructTypeType = { StructTypeMark, 0, "StructTypeType" };
@@ -173,12 +186,16 @@ NewStructType(ptrdiff_t nelements)
     /* Allocate the types first, as StructTypeType marks them */
     BoxTypesPtr types = NewBoxTypes(nelements);
 
-    st = ALLOCATE(&StructTypeType, sizeof(StructType) + (size_t)nelements * sizeof(Atom));
+    st = ALLOCATE(&StructTypeType,
+                  sizeof(StructType) + (size_t)nelements * (sizeof(Atom) + sizeof(bool)));
     st->nelements = nelements;
     st->types = types;
+    st->comments = 0;
     atoms = StructTypeAtoms(st);
-    for (i = 0; i < nelements; i++)
+    for (i = 0; i < nelements; i++) {
         atoms[i] = 0;
+        StructTypeGrouped(st)[i] = false;
+    }
     RETURN(st);
 }
 

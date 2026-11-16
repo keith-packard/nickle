@@ -41,7 +41,7 @@ int function charfn () { return '\\' + '\0' + '\v' + '\033'; }
 file f = File::string_write ();
 Command::pretty_print (f, (string[*]) { "charfn" });
 string p = File::string_string (f);
-check ("printed chars", String::index (p, "return '\\\\' + '\\000' + '\\013' + '\\033';") >= 0, true);
+check ("printed chars", String::index (p, "charfn() = '\\\\' + '\\000' + '\\013' + '\\033';") >= 0, true);
 
 /*
  * \x and hex digits give that character, as in C. Strings and

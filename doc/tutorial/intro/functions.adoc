@@ -36,9 +36,10 @@ argument; the last argument becomes an array to store them.
 
 ----
 > print sum
-int sum (int a, int b ...)
+int
+sum(int a, int b ...)
 {
-    for (int i = 0; i < dim (b); ++i)
+    for (int i = 0; i < dim(b); ++i)
         a += b[i];
     return a;
 }

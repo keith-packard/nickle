@@ -51,7 +51,6 @@
  */
 int          parseIgnorenl;
 int          notCommand;
-int          seeComment;
 NamespacePtr LexNamespace;
 static int   funcDepth;
 
@@ -87,19 +86,55 @@ static StackPointer commandMark;
 #endif
 #endif
 
+/*
+ * A symbol's location spans its first through last tokens, and the
+ * lines they start and end on; an empty one lies just before the next
+ * token, its lines the line the token before it ends on, so a symbol's
+ * first line is that of its first symbol holding a token
+ */
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                                       \
+    do {                                                                                      \
+        if (N) {                                                                              \
+            int yyfirst = 1;                                                                  \
+            while (yyfirst < (N)                                                              \
+                   && YYRHSLOC(Rhs, yyfirst).last_token < YYRHSLOC(Rhs, yyfirst).first_token) \
+                yyfirst++;                                                                    \
+            (Current).first_token = YYRHSLOC(Rhs, 1).first_token;                             \
+            (Current).last_token = YYRHSLOC(Rhs, N).last_token;                               \
+            (Current).first_line = YYRHSLOC(Rhs, yyfirst).first_line;                         \
+            (Current).last_line = YYRHSLOC(Rhs, N).last_line;                                 \
+        } else {                                                                              \
+            (Current).first_token = YYRHSLOC(Rhs, 0).last_token + 1;                          \
+            (Current).last_token = YYRHSLOC(Rhs, 0).last_token;                               \
+            (Current).first_line = YYRHSLOC(Rhs, 0).last_line;                                \
+            (Current).last_line = YYRHSLOC(Rhs, 0).last_line;                                 \
+        }                                                                                     \
+        CommentNoteLocation(Current);                                                         \
+    } while (0)
+
 static inline void
-ParseReleaseCommand(void)
+ParseReleaseCommand(Bool lookahead)
 {
     MemRelease(commandMark);
     commandMark = MemMark();
+    LexReleaseComments(lookahead);
 }
 
 static Expr           *ParseCanonFor(Expr *expr);
+
+static void            ParseCommand(Atom name, Expr *args, LexLocation location);
+static Value           ParseNumberValue(int tag, Value text);
+static Expr           *ParseNumber(int tag, Value text);
+static LexLocation     ParseSpan(LexLocation first, LexLocation last);
+static Expr           *ParseRow(Expr *comma, LexLocation previous, LexLocation item);
+static Expr           *ParseRows(Expr *init, Bool comma, LexLocation open, LexLocation close);
 
 static CanonTypeResult ParseCanonType(TypePtr type, Bool forwardAllowed);
 
 static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, Atom name);
 %}
+
+%locations
 
 %union {
     int          ints;
@@ -154,22 +189,24 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 %type  <argDecl>    argdecl
 %type  <argType>    opt_argdefines argdefines args
 %type  <argDecl>    argdefine
-%type  <boolean>    opt_dotdotdot
+%type  <boolean>    opt_comma
+%type  <ints>       opt_dotdotdot
 
 %type  <expr>       opt_expr for_exprs expr opt_exprs exprs simpleexpr
 %type  <expr>       opt_actuals actuals
 %type  <expr>       comma_expr
-%type  <ints>       assignop
+%type  <ints>       assignop union_or_enum
 %type  <value>      opt_integer integer
-%type  <value>      doc_string opt_comment
 %type  <expr>       opt_arrayinit arrayinit arrayelts  arrayelt
 %type  <expr>       opt_hashinit hashinit hashelts hashelt hashvalue
 %type  <expr>       structinit structelts structelt
 %type  <expr>       init
 
-%token              VAR EXPR ARRAY STRUCT UNION ENUM COMP HASH
+%token              VAR EXPR ARRAY STRUCT COMP HASH
+%token <ints>       UNION ENUM
 
-%token              SEMI MOD OC CC DOLLAR DOTDOTDOT ENDFILE
+%token              SEMI MOD OC CC DOLLAR ENDFILE
+%token <ints>       DOTDOTDOT
 %token <class>      GLOBAL AUTO STATIC CONST
 %token <type>       POLY INTEGER NATURAL RATIONAL REAL COMPLEX STRING FOREIGN
 %token <type>       FILET MUTEX SEMAPHORE CONTINUATION THREAD VOID NORETURN BOOL
@@ -185,8 +222,8 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 %token <value>      TEN_FLOAT OCTAL0_FLOAT OCTAL_FLOAT BINARY_FLOAT HEX_FLOAT
 %token <value>      CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
 %token <value>      COMMENT_CONST
-%token <value>      VOIDVAL BOOLVAL
-%token              DARROW
+%token <value>      BOOLVAL
+%token <ints>       VOIDVAL DARROW
 %token              ISTYPE HASMEMBER
 
 %nonassoc       POUND
@@ -199,20 +236,20 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
                 ASSIGNOR ASSIGNAND
 %right          FORK
 %right          QUEST COLON
-%left           OR
-%left           AND
+%left <ints>     OR
+%left <ints>     AND
 %left           LOR
 %left           LXOR
 %left           LAND
-%left           EQ NE
-%left           LT GT LE GE
-%left           SHIFTL SHIFTR
+%left <ints>     EQ NE
+%left <ints>     LT GT LE GE
+%left <ints>     SHIFTL SHIFTR
 %left           PLUS MINUS
-%left           TIMES DIVIDE DIV MOD
-%right          POW STARSTAR POW2 POW3
+%left <ints>     TIMES DIVIDE DIV MOD
+%right <ints>    POW STARSTAR POW2 POW3
 %left           UNIONCAST
-%right          UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
-%left           OS CS DOT ARROW STAROS CALL OP CP
+%right <ints>    UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
+%left <ints>     OS CS DOT ARROW STAROS CALL OP CP
 %right          POINTER
 %right          COLONCOLON
 
@@ -221,7 +258,7 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 
 %%
 lines           : lines pcommand
-                    { ParseReleaseCommand(); }
+                    { ParseReleaseCommand(yychar != YYEMPTY); }
                 |
                     { commandMark = MemMark(); }
                 ;
@@ -284,7 +321,9 @@ do_end          : SEMI
                 | %prec IF
                 ;
 opt_comma       : COMMA
+                    { $$ = True; }
                 |
+                    { $$ = False; }
                 ;
 /*
  * Interpreter command level
@@ -298,6 +337,11 @@ command         : not_command expr reset NL
                         FramePtr     f;
                         CodePtr      c;
 
+                        if (LexFormatOutput()) {
+                            PrettyFormatAppend(NewExprTree(DOLLAR, $2, 0), @2);
+                            EXIT();
+                            break;
+                        }
                         e = BuildCall("Command", "display", 1, NewExprTree(EXPR, $2, 0));
                         GetNamespace(&s, &f, &c);
                         t = NewThread(f, CompileExpr(e, c));
@@ -313,6 +357,11 @@ command         : not_command expr reset NL
                         FramePtr     f;
                         CodePtr      c;
 
+                        if (LexFormatOutput()) {
+                            PrettyFormatAppend(NewExprTree(DOLLAR, $2, $4), ParseSpan(@2, @4));
+                            EXIT();
+                            break;
+                        }
                         e = BuildCall("Command", "display_base", 2, NewExprTree(EXPR, $2, 0),
                                       $4);
                         GetNamespace(&s, &f, &c);
@@ -327,55 +376,24 @@ command         : not_command expr reset NL
                         FramePtr     f;
                         CodePtr      c;
                         Value        t;
+                        CommentPtr   leading, trailing;
 
+                        if (LexFormatOutput()) {
+                            PrettyFormatAppend($2, @2);
+                            EXIT();
+                            break;
+                        }
+                        CommentSplitStatement($2, @2, &leading, &trailing);
+                        CommentSymbols($2, leading, trailing);
                         GetNamespace(&s, &f, &c);
                         t = NewThread(f, CompileStat($2, c));
                         ThreadsRun(t, 0);
                         EXIT();
                     }
                 | not_command COMMAND opt_exprs reset opt_semi NL
-                    {
-                        ENTER();
-                        ExprPtr      e;
-                        Value        t;
-                        NamespacePtr s;
-                        FramePtr     f;
-                        CodePtr      c;
-                        CommandPtr   cmd;
-
-                        cmd = CommandFind(CurrentCommands, $2);
-                        if (!cmd)
-                            ParseError("Undefined command \"%s\"", AtomName($2));
-                        else {
-                            e = NewExprTree(OP, NewExprConst(POLY_CONST, cmd->func), $3);
-                            GetNamespace(&s, &f, &c);
-                            t = NewThread(f, CompileExpr(e, c));
-                            ThreadsRun(t, 0);
-                        }
-                        EXIT();
-                    }
+                    { ParseCommand($2, $3, ParseSpan(@2, @3)); }
                 | not_command NAMECOMMAND opt_rawnames reset opt_semi NL
-                    {
-                        ENTER();
-                        ExprPtr      e;
-
-                        Value        t;
-                        NamespacePtr s;
-                        FramePtr     f;
-                        CodePtr      c;
-                        CommandPtr   cmd;
-
-                        cmd = CommandFind(CurrentCommands, $2);
-                        if (!cmd)
-                            ParseError("Undefined command \"%s\"", AtomName($2));
-                        else {
-                            e = NewExprTree(OP, NewExprConst(POLY_CONST, cmd->func), $3);
-                            GetNamespace(&s, &f, &c);
-                            t = NewThread(f, CompileExpr(e, c));
-                            ThreadsRun(t, 0);
-                        }
-                        EXIT();
-                    }
+                    { ParseCommand($2, $3, ParseSpan(@2, @3)); }
                 | NL
                 | ENDFILE
                 ;
@@ -390,6 +408,16 @@ rawnames        : rawname COMMA rawnames
                 ;
 rawname         : rawnamespace rawatom
                     { $$ = BuildRawname($1, $2); }
+                | rawnamespace rawatom COLONCOLON
+                    {
+                        /* An empty last part asks for the namespace in full */
+                        ExprPtr e = NewExprTree(COLONCOLON, $1, NewExprAtom($2, 0, False));
+                        $$ = BuildRawname(e, AtomId(""));
+                    }
+                | COLONCOLON
+                    { $$ = BuildRawname(0, AtomId("")); }
+                | STRING_CONST
+                    { $$ = NewExprConst(STRING_CONST, $1); }
                 ;
 rawatom         : NAME
                 | NAMESPACENAME
@@ -402,7 +430,7 @@ rawnamespace    : rawnamespace rawatom COLONCOLON
                 ;
 fulltype        : namespace TYPENAME
                     {
-                        $$ = BuildFullname($1, $2);
+                        $$ = CommentNoteName(BuildFullname($1, $2), @2, @$);
                         LexNamespace = 0;
                     }
                 | TYPENAME
@@ -413,7 +441,7 @@ fulltype        : namespace TYPENAME
                 ;
 fullname        : namespace namespacename
                     {
-                        $$ = BuildFullname($1, $2);
+                        $$ = CommentNoteName(BuildFullname($1, $2), @2, @$);
                         LexNamespace = 0;
                     }
                 | namespacename
@@ -436,7 +464,7 @@ namespace       : namespace NAMESPACENAME COLONCOLON
                         ExprPtr   e;
                         SymbolPtr symbol;
 
-                        e = BuildFullname($1, $2);
+                        e = CommentNoteName(BuildFullname($1, $2), @2, ParseSpan(@1, @2));
                         if (e->base.tag == COLONCOLON)
                             symbol = e->tree.right->atom.symbol;
                         else
@@ -456,7 +484,7 @@ namespace       : namespace NAMESPACENAME COLONCOLON
                         ExprPtr   e;
                         SymbolPtr symbol;
 
-                        e = BuildFullname(0, $1);
+                        e = CommentNoteName(BuildFullname(0, $1), @1, @1);
                         if (e->base.tag == COLONCOLON)
                             symbol = e->tree.right->atom.symbol;
                         else
@@ -485,14 +513,14 @@ namespace_end   :
                     { CurrentNamespace = CurrentNamespace->previous; }
                 ;
 block           : block_start statements block_end
-                    { $$ = $2; }
+                    { $$ = CommentBlock($2, @1, @3); }
                 ;
 block_start     : OC namespace_start
                 ;
 block_end       : namespace_end CC
                 ;
 statements      : statement statements
-                    { $$ = NewExprTree(OC, $1, $2); }
+                    { $$ = CommentStatementEntry($1, @1, $2); }
                 |
                     { $$ = NewExprTree(OC, 0, 0); }
                 ;
@@ -502,14 +530,17 @@ if_statement    : IF ignorenl namespace_start OP expr CP statement %prec IF
                     { $$ = NewExprTree(ELSE, $5, NewExprTree(ELSE, $7, $9)); }
                 ;
 statement:      simple_statement
+                    { $$ = CommentNoteStatement($1, @1); }
                 | block
+                    { $$ = CommentNoteStatement($1, @1); }
                 ;
 
 simple_statement: if_statement namespace_end attendnl
                     { $$ = $1; }
                 | WHILE ignorenl namespace_start OP expr CP statement namespace_end attendnl
                     { $$ = NewExprTree(WHILE, $5, $7); }
-                | DO ignorenl namespace_start statement WHILE OP expr CP do_end namespace_end attendnl
+                | DO ignorenl namespace_start statement WHILE OP expr CP do_end namespace_end
+                  attendnl
                     { $$ = NewExprTree(DO, $4, $7); }
                 | FOR ignorenl namespace_start OP for_exprs CP statement namespace_end attendnl
                     {
@@ -522,7 +553,7 @@ simple_statement: if_statement namespace_end attendnl
                     { $$ = NewExprTree(SWITCH, $5, $7); }
                 | union_or_enum SWITCH ignorenl namespace_start OP expr CP union_case_block
                   namespace_end attendnl
-                    { $$ = NewExprTree(UNION, $6, $8); }
+                    { $$ = NewExprTree($1, $6, $8); }
                 | BREAK SEMI
                     { $$ = NewExprTree(BREAK, (Expr *)0, (Expr *)0); }
                 | CONTINUE SEMI
@@ -533,7 +564,7 @@ simple_statement: if_statement namespace_end attendnl
                     { $$ = NewExprTree(EXPR, $1, (Expr *)0); }
                 | SEMI
                     { $$ = NewExprTree(SEMI, (Expr *)0, (Expr *)0); }
-                | func_decl doc_string opt_func_body namespace_end
+                | func_decl opt_func_body namespace_end
                     {
                         DeclList *decl = $1.decl;
                         SymbolPtr symbol = decl->symbol;
@@ -542,13 +573,14 @@ simple_statement: if_statement namespace_end attendnl
                         TypePtr   type = $1.type.type;
                         TypePtr   ret = type->func.ret;
                         ArgType  *argType = type->func.args;
+                        Expr     *body = CommentDoc(@1, $2, decl);
 
                         if (symbol) {
-                            if ($3) {
+                            if ($2) {
                                 symbol->symbol.forward = False;
                                 ParseCanonType(ret, False);
                                 decl->init
-                                    = NewExprCode(NewFuncCode(ret, argType, $3, $2),
+                                    = NewExprCode(NewFuncCode(ret, argType, body, Void),
                                                   NewExprAtom(symbol->symbol.name, symbol, False));
                             } else
                                 symbol->symbol.forward = True;
@@ -556,7 +588,7 @@ simple_statement: if_statement namespace_end attendnl
                         $$ = NewExprDecl(FUNC, decl, class, type, publish);
                     }
                 | opt_publish EXCEPTION ignorenl NAME namespace_start opt_argdecls namespace_end
-                  doc_string SEMI attendnl
+                  SEMI attendnl
                     {
                         DeclListPtr decl;
                         /* Give the symbol its arguments, as builtin exceptions have */
@@ -564,7 +596,7 @@ simple_statement: if_statement namespace_end attendnl
 
                         decl = NewDeclList($4, 0, 0);
                         decl->symbol = ParseNewSymbol($1, class_exception, type, $4);
-                        decl->symbol->exception.doc = $8;
+                        CommentDoc(@6, 0, decl);
                         $$ = NewExprDecl(EXCEPTION, decl, class_exception, type, $1);
                     }
                 | RAISE fullname OP opt_exprs CP SEMI
@@ -634,7 +666,17 @@ simple_statement: if_statement namespace_end attendnl
                          * the parser stack
                          */
                         CurrentNamespace = $2;
-                        $$ = NewExprTree(NAMESPACE, NewExprAtom($4, 0, False), $7);
+                        /*
+                         * The declaration names the namespace, with its
+                         * publish qualifier, and its symbol to take
+                         * comments, unless extending it
+                         */
+                        DeclListPtr decl = NewDeclList($4, 0, 0);
+                        if ($1 != publish_extend)
+                            decl->symbol = NamespaceFindName(CurrentNamespace, $4, False);
+                        $$ = NewExprTree(NAMESPACE,
+                                         NewExprDecl(NAMESPACE, decl, class_namespace, 0, $1),
+                                         CommentBlock($7, @6, @8));
                     }
                 | opt_publish IMPORT ignorenl fullnames SEMI attendnl
                     {
@@ -682,7 +724,7 @@ for_exprs       : opt_expr SEMI for_exprs
 
 try_body_statement:  simple_statement
                 | OC statements CC
-                    { $$ = $2; }
+                    { $$ = CommentBlock($2, @1, @3); }
                 ;
 
 try_statement:  TRY ignorenl try_body_statement catches
@@ -694,10 +736,11 @@ catches         :   catches catch %prec TRY
                 |
                     { $$ = 0; }
                 ;
-catch           : CATCH fullname namespace_start args doc_string block attendnl namespace_end
+catch           : CATCH fullname namespace_start args block attendnl namespace_end
                     {
-                        $$ = NewExprCode(NewFuncCode(typePrim[rep_void], $4, $6, $5),
-                                            $2);
+                        Expr *body = CommentDoc(@4, $5, 0);
+
+                        $$ = NewExprCode(NewFuncCode(typePrim[rep_void], $4, body, Void), $2);
                     }
                 ;
 /*
@@ -715,28 +758,18 @@ block_or_expr   : block attendnl
                     { $$ = $1; }
                 | attendnl ASSIGN simpleexpr SEMI
                     {
-                        $$ = NewExprTree(OC, NewExprTree(RETURNTOK, 0, $3),
-                                            NewExprTree(OC, 0, 0));
+                        $$ = CommentStatementEntry(NewExprTree(RETURNTOK, 0, $3),
+                                                   ParseSpan(@2, @3), NewExprTree(OC, 0, 0));
                     }
                 ;
 union_or_enum   : UNION
                 | ENUM
                 ;
-see_comment     :
-                    { seeComment = 1; }
-                ;
-doc_string      : see_comment opt_comment
-                    { seeComment = 0; $$ = $2; }
-                ;
-opt_comment     : COMMENT_CONST
-                |
-                    { $$ = Void; }
-                ;
 case_block      : block_start cases block_end
-                    { $$ = $2; }
+                    { $$ = CommentCaseBlock($2, @1, @3); }
                 ;
 cases           : case cases
-                    { $$ = NewExprTree(CASE, $1, $2); }
+                    { $$ = CommentCaseEntry($1, @1, $2); }
                 |
                     { $$ = 0; }
                 ;
@@ -746,10 +779,10 @@ case            : CASE expr COLON statements
                     { $$ = NewExprTree(CASE, 0, $3); }
                 ;
 union_case_block: block_start union_cases block_end
-                    { $$ = $2; }
+                    { $$ = CommentCaseBlock($2, @1, @3); }
                 ;
 union_cases     : union_case union_cases
-                    { $$ = NewExprTree(CASE, $1, $2); }
+                    { $$ = CommentCaseEntry($1, @1, $2); }
                 |
                     { $$ = 0; }
                 ;
@@ -779,14 +812,20 @@ opt_name        : NAME
 * Identifiers
 */
 atoms           : NAME COMMA atoms
-                    { $$ = NewAtomList($3, $1); }
+                    {
+                        $$ = NewAtomList($3, $1);
+                        $$->comments = CommentItemEntries(@1, @2);
+                    }
                 | NAME
-                    { $$ = NewAtomList(0, $1); }
+                    {
+                        $$ = NewAtomList(0, $1);
+                        $$->comments = CommentEntries(@1);
+                    }
                 ;
 typenames       : typename COMMA typenames
-                    { $$ = NewDeclList($1, 0, $3); }
+                    { $$ = CommentNoteDecl(NewDeclList($1, 0, $3), @1); }
                 | typename
-                    { $$ = NewDeclList($1, 0, 0); }
+                    { $$ = CommentNoteDecl(NewDeclList($1, 0, 0), @1); }
                 ;
 typename        : TYPENAME
                 | NAME
@@ -802,7 +841,7 @@ typename        : TYPENAME
 initnames       : name opt_init next_decl initnames
                     {
                         if ($1) {
-                            $$ = NewDeclList($1->symbol.name, $2, $4);
+                            $$ = CommentNoteDecl(NewDeclList($1->symbol.name, $2, $4), @1);
                             $$->symbol = $1;
                         } else
                             $$ = $4;
@@ -810,7 +849,7 @@ initnames       : name opt_init next_decl initnames
                 | name opt_init
                     {
                         if ($1) {
-                            $$ = NewDeclList($1->symbol.name, $2, 0);
+                            $$ = CommentNoteDecl(NewDeclList($1->symbol.name, $2, 0), @1);
                             $$->symbol = $1;
                         } else
                             $1 = 0;
@@ -860,15 +899,15 @@ func_decl       : func_name namespace_start opt_argdefines CP
                     }
                 ;
 func_name       : decl NAME OP
-                    { $$.type = $1; $$.decl = NewDeclList($2, 0, 0); }
+                    { $$.type = $1; $$.decl = CommentNoteDecl(NewDeclList($2, 0, 0), @2); }
                 | decl FUNCTION NAME OP
-                    { $$.type = $1; $$.decl = NewDeclList($3, 0, 0); }
+                    { $$.type = $1; $$.decl = CommentNoteDecl(NewDeclList($3, 0, 0), @3); }
                 | FUNCTION NAME OP
                     {
                         $$.type.publish = publish_private;
                         $$.type.class = class_undef;
                         $$.type.type = typePoly;
-                        $$.decl = NewDeclList($2, 0, 0);
+                        $$.decl = CommentNoteDecl(NewDeclList($2, 0, 0), @2);
                     }
                 ;
 opt_init        : ASSIGN simpleexpr
@@ -970,10 +1009,13 @@ subtype         : basetype
                             for (al = ml->atoms; al; al = al->next) {
                                 AddBoxType(&st->types, ml->type);
                                 StructTypeAtoms(st)[nelements] = al->atom;
+                                StructTypeGrouped(st)[nelements] = al != ml->atoms;
                                 nelements++;
                             }
                         }
                         $$ = NewTypeStruct(st);
+                        for (ml = $3; ml; ml = ml->next)
+                            CommentStruct(st, ml->atoms);
                     }
                 | UNION OC union_members CC
                     {
@@ -993,10 +1035,13 @@ subtype         : basetype
                             for (al = ml->atoms; al; al = al->next) {
                                 AddBoxType(&st->types, ml->type);
                                 StructTypeAtoms(st)[nelements] = al->atom;
+                                StructTypeGrouped(st)[nelements] = al != ml->atoms;
                                 nelements++;
                             }
                         }
                         $$ = NewTypeUnion(st, False);
+                        for (ml = $3; ml; ml = ml->next)
+                            CommentStruct(st, ml->atoms);
                     }
                 | ENUM OC atoms CC
                     {
@@ -1016,6 +1061,7 @@ subtype         : basetype
                             nelements++;
                         }
                         $$ = NewTypeUnion(st, True);
+                        CommentStruct(st, $3);
                     }
 
                 | OP type CP
@@ -1066,12 +1112,18 @@ dims            : simpleexpr COMMA dims
 * Structure member declarations
 */
 struct_members  : opt_type atoms SEMI struct_members
-                    { $$ = NewMemList($2, $1, $4); }
+                    {
+                        $$ = NewMemList($2, $1, $4);
+                        CommentMembers($2, @1, ParseSpan(@1, @3));
+                    }
                 |
                     { $$ = 0; }
                 ;
 union_members   : opt_type atoms SEMI union_members
-                    { $$ = NewMemList($2, $1, $4); }
+                    {
+                        $$ = NewMemList($2, $1, $4);
+                        CommentMembers($2, @1, ParseSpan(@1, @3));
+                    }
                 |
                     { $$ = 0; }
                 ;
@@ -1108,9 +1160,9 @@ opt_argdecls    : OP argdecls CP
                     { $$ = 0; }
                 ;
 argdecls        : argdecl COMMA argdecls
-                    { $$ = NewArgType($1.type, False, $1.name, 0, $3); }
+                    { $$ = CommentArg(NewArgType($1.type, False, $1.name, 0, $3), @1, @2); }
                 | argdecl opt_dotdotdot
-                    { $$ = NewArgType($1.type, $2, $1.name, 0, 0); }
+                    { $$ = CommentArg(NewArgType($1.type, $2 != 0, $1.name, 0, 0), @1, @2); }
                 ;
 argdecl         : type NAME
                     {
@@ -1155,9 +1207,9 @@ opt_argdefines  : ignorenl argdefines
                     { $$ = 0; }
                 ;
 argdefines      : argdefine COMMA argdefines
-                    { $$ = NewArgType($1.type, False, $1.name, 0, $3); }
+                    { $$ = CommentArg(NewArgType($1.type, False, $1.name, 0, $3), @1, @2); }
                 | argdefine opt_dotdotdot
-                    { $$ = NewArgType($1.type, $2, $1.name, 0, 0); }
+                    { $$ = CommentArg(NewArgType($1.type, $2 != 0, $1.name, 0, 0), @1, @2); }
                 ;
 argdefine       : opt_type NAME
                     { $$.type = $1; $$.name = $2; }
@@ -1165,9 +1217,8 @@ argdefine       : opt_type NAME
                     { $$.type = $1; $$.name = 0; }
                 ;
 opt_dotdotdot   : DOTDOTDOT
-                    { $$ = True; }
                 |
-                    { $$ = False; }
+                    { $$ = 0; }
                 ;
 
 /*
@@ -1216,14 +1267,14 @@ actuals         : simpleexpr COMMA actuals
                     { $$ = NewExprTree(COMMA, $1, $3); }
                 | simpleexpr opt_dotdotdot
                     {
-                        ExprPtr arg = $2 ? NewExprTree(DOTDOTDOT, $1, 0) : $1;
+                        ExprPtr arg = $2 ? NewExprTree($2, $1, 0) : $1;
                         $$ = NewExprTree(COMMA, arg, 0);
                     }
                 ;
 func_right      : attendnl ASSIGN simpleexpr
                     {
-                        $$ = NewExprTree(OC, NewExprTree(RETURNTOK, 0, $3),
-                                            NewExprTree(OC, 0, 0));
+                        $$ = CommentStatementEntry(NewExprTree(RETURNTOK, 0, $3),
+                                                   ParseSpan(@2, @3), NewExprTree(OC, 0, 0));
                     }
                 /* Match the ignorenl in opt_argdefines, as opt_func_body does */
                 | { ++funcDepth; } block { --funcDepth; } attendnl { $$ = $2; }
@@ -1233,9 +1284,9 @@ func_right      : attendnl ASSIGN simpleexpr
 */
 simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                     {
-                        if ($2 == ASSIGNPOW)
+                        if (($2 & ~LEX_UTF8) == ASSIGNPOW)
                             $$ = NewExprTree(ASSIGNPOW, BuildName("Math", "assign_pow"),
-                                                NewExprTree(ASSIGNPOW, $1, $3));
+                                                NewExprTree($2, $1, $3));
                         else {
                             ExprPtr left = $1;
                             /*
@@ -1250,11 +1301,11 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                             $$ = NewExprTree($2, $1, $3);
                         }
                     }
-                | opt_type FUNC namespace_start args doc_string func_right namespace_end
+                | opt_type FUNC namespace_start args func_right namespace_end
                   %prec ASSIGN
                     {
                         ParseCanonType($1, False);
-                        $$ = NewExprCode(NewFuncCode($1, $4, $6, $5), 0);
+                        $$ = NewExprCode(NewFuncCode($1, $4, CommentDoc(@4, $5, 0), Void), 0);
                     }
                 | MOD integer                                           %prec THREADID
                     {
@@ -1280,7 +1331,7 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                 | MINUS simpleexpr                                      %prec UMINUS
                     { $$ = NewExprTree(UMINUS, $2, (Expr *)0); }
                 | LNOT simpleexpr
-                    { $$ = NewExprTree(LNOT, $2, (Expr *)0); }
+                    { $$ = NewExprTree($1, $2, (Expr *)0); }
                 | BANG simpleexpr
                     { $$ = NewExprTree(BANG, $2, (Expr *)0); }
                 | simpleexpr BANG                                       %prec FACT
@@ -1288,9 +1339,9 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                         $$ = NewExprTree(FACT, BuildName("Math", "factorial"), $1);
                     }
                 | INC simpleexpr
-                    { $$ = NewExprTree(INC, $2, (Expr *)0); }
+                    { $$ = NewExprTree($1, $2, (Expr *)0); }
                 | simpleexpr INC
-                    { $$ = NewExprTree(INC, (Expr *)0, $1); }
+                    { $$ = NewExprTree($2, (Expr *)0, $1); }
                 | DEC simpleexpr
                     { $$ = NewExprTree(DEC, $2, (Expr *)0); }
                 | simpleexpr DEC
@@ -1302,34 +1353,34 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                 | simpleexpr MINUS simpleexpr
                     { $$ = NewExprTree(MINUS, $1, $3); }
                 | simpleexpr TIMES simpleexpr
-                    { $$ = NewExprTree(TIMES, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | simpleexpr DIVIDE simpleexpr
-                    { $$ = NewExprTree(DIVIDE, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | simpleexpr DIV simpleexpr
-                    { $$ = NewExprTree(DIV, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | simpleexpr MOD simpleexpr
                     { $$ = NewExprTree(MOD, $1, $3); }
                 | simpleexpr STARSTAR simpleexpr                        %prec POW
                     {
                         $$ = NewExprTree(POW, BuildName("Math", "pow"),
-                                            NewExprTree(POW, $1, $3));
+                                            NewExprTree(POW | ($2 & LEX_UTF8), $1, $3));
                     }
                 | simpleexpr POW2
                     {
-                        $$ = NewExprTree(
-                            POW, BuildName("Math", "pow"),
-                            NewExprTree(POW, $1, NewExprConst(TEN_NUM, NewInt(2))));
+                        $$ = NewExprTree(POW, BuildName("Math", "pow"),
+                                            NewExprTree(POW | ($2 & LEX_UTF8), $1,
+                                                        NewExprConst(TEN_NUM, NewInt(2))));
                     }
                 | simpleexpr POW3
                     {
-                        $$ = NewExprTree(
-                            POW, BuildName("Math", "pow"),
-                            NewExprTree(POW, $1, NewExprConst(TEN_NUM, NewInt(3))));
+                        $$ = NewExprTree(POW, BuildName("Math", "pow"),
+                                            NewExprTree(POW | ($2 & LEX_UTF8), $1,
+                                                        NewExprConst(TEN_NUM, NewInt(3))));
                     }
                 | simpleexpr SHIFTL simpleexpr
-                    { $$ = NewExprTree(SHIFTL, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | simpleexpr SHIFTR simpleexpr
-                    { $$ = NewExprTree(SHIFTR, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | simpleexpr QUEST simpleexpr COLON simpleexpr
                     { $$ = NewExprTree(QUEST, $1, NewExprTree(COLON, $3, $5)); }
                 | simpleexpr LXOR simpleexpr
@@ -1339,48 +1390,48 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                 | simpleexpr LOR simpleexpr
                     { $$ = NewExprTree(LOR, $1, $3); }
                 | simpleexpr AND simpleexpr
-                    { $$ = NewExprTree(AND, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | simpleexpr OR simpleexpr
-                    { $$ = NewExprTree(OR, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | simpleexpr EQ simpleexpr
                     { $$ = NewExprTree(EQ, $1, $3); }
                 | simpleexpr NE simpleexpr
-                    { $$ = NewExprTree(NE, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | simpleexpr LT simpleexpr
                     { $$ = NewExprTree(LT, $1, $3); }
                 | simpleexpr GT simpleexpr
                     { $$ = NewExprTree(GT, $1, $3); }
                 | simpleexpr LE simpleexpr
-                    { $$ = NewExprTree(LE, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | simpleexpr GE simpleexpr
-                    { $$ = NewExprTree(GE, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | fullname
                 | TEN_NUM
-                    { $$ = NewExprConst(TEN_NUM, $1); }
+                    { $$ = ParseNumber(TEN_NUM, $1); }
                 | OCTAL_NUM
-                    { $$ = NewExprConst(OCTAL_NUM, $1); }
+                    { $$ = ParseNumber(OCTAL_NUM, $1); }
                 | OCTAL0_NUM
-                    { $$ = NewExprConst(OCTAL0_NUM, $1); }
+                    { $$ = ParseNumber(OCTAL0_NUM, $1); }
                 | BINARY_NUM
-                    { $$ = NewExprConst(BINARY_NUM, $1); }
+                    { $$ = ParseNumber(BINARY_NUM, $1); }
                 | HEX_NUM
-                    { $$ = NewExprConst(HEX_NUM, $1); }
+                    { $$ = ParseNumber(HEX_NUM, $1); }
                 | TEN_FLOAT
-                    { $$ = NewExprConst(TEN_FLOAT, $1); }
+                    { $$ = ParseNumber(TEN_FLOAT, $1); }
                 | OCTAL_FLOAT
-                    { $$ = NewExprConst(OCTAL_FLOAT, $1); }
+                    { $$ = ParseNumber(OCTAL_FLOAT, $1); }
                 | OCTAL0_FLOAT
-                    { $$ = NewExprConst(OCTAL0_FLOAT, $1); }
+                    { $$ = ParseNumber(OCTAL0_FLOAT, $1); }
                 | BINARY_FLOAT
-                    { $$ = NewExprConst(BINARY_FLOAT, $1); }
+                    { $$ = ParseNumber(BINARY_FLOAT, $1); }
                 | HEX_FLOAT
-                    { $$ = NewExprConst(HEX_FLOAT, $1); }
+                    { $$ = ParseNumber(HEX_FLOAT, $1); }
                 | CHAR_CONST
                     { $$ = NewExprConst(CHAR_CONST, $1); }
                 | STRING_CONST
                     { $$ = NewExprConst(STRING_CONST, $1); }
                 | VOIDVAL
-                    { $$ = NewExprConst(VOIDVAL, $1); }
+                    { $$ = NewExprConst($1, Void); }
                 | BOOLVAL
                     { $$ = NewExprConst(BOOLVAL, $1); }
                 | OS CS
@@ -1437,7 +1488,7 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                 | DOT
                     { $$ = NewExprTree(DOLLAR, 0, 0); }
                 | OP expr CP
-                    { $$ = $2; }
+                    { $$ = CommentNoteSpan($2, @$); }
                 | OP block CP
                     { $$ = $2; }
                 | simpleexpr STAROS dims CS
@@ -1457,7 +1508,7 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                 | simpleexpr DOT NAME
                     { $$ = NewExprTree(DOT, $1, NewExprAtom($3, 0, False)); }
                 | simpleexpr ARROW NAME
-                    { $$ = NewExprTree(ARROW, $1, NewExprAtom($3, 0, False)); }
+                    { $$ = NewExprTree($2, $1, NewExprAtom($3, 0, False)); }
                 ;
 opt_integer     : integer
                 |
@@ -1480,10 +1531,15 @@ assignop        : ASSIGNPLUS
                 | ASSIGN
                 ;
 integer         : TEN_NUM
+                    { $$ = ParseNumberValue(TEN_NUM, $1); }
                 | OCTAL_NUM
+                    { $$ = ParseNumberValue(OCTAL_NUM, $1); }
                 | OCTAL0_NUM
+                    { $$ = ParseNumberValue(OCTAL0_NUM, $1); }
                 | BINARY_NUM
+                    { $$ = ParseNumberValue(BINARY_NUM, $1); }
                 | HEX_NUM
+                    { $$ = ParseNumberValue(HEX_NUM, $1); }
                 ;
 /*
  * Array initializers
@@ -1501,9 +1557,9 @@ arrayinit       : OC arrayelts opt_comma opt_dotdotdot CC
                             ExprPtr i = elts;
                             while (i->tree.right)
                                 i = i->tree.right;
-                            i->tree.right = NewExprTree(COMMA, NewExprTree(DOTDOTDOT, 0, 0), 0);
+                            i->tree.right = NewExprTree(COMMA, NewExprTree($4, 0, 0), 0);
                         }
-                        $$ = NewExprTree(ARRAY, elts, 0);
+                        $$ = ParseRows(NewExprTree(ARRAY, elts, 0), $3 && !$4, @1, @5);
                     }
                 | OC OS namespace_start compnames comparray CS comprehension namespace_end CC
                     {
@@ -1535,7 +1591,7 @@ comparray       :
                     }
                 ;
 arrayelts       : arrayelts COMMA arrayelt
-                    { $$ = NewExprTree(COMMA, $1, $3); }
+                    { $$ = ParseRow(NewExprTree(COMMA, $1, $3), @1, @3); }
                 | arrayelt
                     { $$ = NewExprTree(COMMA, 0, $1); }
                 ;
@@ -1555,18 +1611,18 @@ opt_hashinit    : hashinit
 hashinit        : OC hashelts opt_comma CC
                     {
                         ExprPtr elts = $2 ? ExprRehang($2, 0) : 0;
-                        $$ = NewExprTree(HASH, elts, 0);
+                        $$ = ParseRows(NewExprTree(HASH, elts, 0), $3, @1, @4);
                     }
                 ;
 hashelts        : hashelts COMMA hashelt
-                    { $$ = NewExprTree(COMMA, $1, $3); }
+                    { $$ = ParseRow(NewExprTree(COMMA, $1, $3), @1, @3); }
                 | hashelt
                     { $$ = NewExprTree(COMMA, 0, $1); }
                 ;
 hashelt         : simpleexpr DARROW hashvalue
-                    { $$ = NewExprTree(DARROW, $1, $3); }
+                    { $$ = NewExprTree($2, $1, $3); }
                 | DARROW hashvalue
-                    { $$ = NewExprTree(DARROW, 0, $2); }
+                    { $$ = NewExprTree($1, 0, $2); }
                 ;
 hashvalue       : simpleexpr
                 | init
@@ -1575,10 +1631,10 @@ hashvalue       : simpleexpr
 * Structure initializers
 */
 structinit      : OC structelts opt_comma CC
-                    { $$ = NewExprTree(STRUCT, ExprRehang($2, 0), 0); }
+                    { $$ = ParseRows(NewExprTree(STRUCT, ExprRehang($2, 0), 0), $3, @1, @4); }
                 ;
 structelts      : structelts COMMA structelt
-                    { $$ = NewExprTree(COMMA, $1, $3); }
+                    { $$ = ParseRow(NewExprTree(COMMA, $1, $3), @1, @3); }
                 | structelt
                     { $$ = NewExprTree(COMMA, 0, $1); }
                 ;
@@ -1607,6 +1663,7 @@ DeclListMark(void *object)
     MemReference(dl->next);
     MemReference(dl->symbol);
     MemReference(dl->init);
+    MemReference(dl->comments);
 }
 
 static DataType DeclListType = { DeclListMark, 0, "DeclListType" };
@@ -1622,6 +1679,8 @@ NewDeclList(Atom name, ExprPtr init, DeclListPtr next)
     dl->name = name;
     dl->symbol = 0;
     dl->init = init;
+    dl->comments = 0;
+    dl->starts_line = False;
     RETURN(dl);
 }
 
@@ -1835,6 +1894,106 @@ BuildCall(char *scope, char *name, int nargs, ...)
     printf("\n");
 #endif
     RETURN(e);
+}
+
+/*
+ * Run the command name with args, or report that there is none. While
+ * formatting, add it to the commands printed instead, running only one
+ * that loads code, as later code needs its names
+ */
+static void
+ParseCommand(Atom name, Expr *args, LexLocation location)
+{
+    ENTER();
+    ExprPtr      e;
+    Value        t;
+    NamespacePtr s;
+    FramePtr     f;
+    CodePtr      c;
+    CommandPtr   cmd = CommandFind(CurrentCommands, name);
+
+    if (LexFormatOutput()) {
+        PrettyFormatAppend(NewExprTree(COMMAND, NewExprAtom(name, 0, False), args), location);
+        if (!PrettyFormatRuns(name))
+            cmd = 0;
+    } else if (!cmd)
+        ParseError("Undefined command \"%s\"", AtomName(name));
+    if (cmd) {
+        e = NewExprTree(OP, NewExprConst(POLY_CONST, cmd->func), args);
+        GetNamespace(&s, &f, &c);
+        t = NewThread(f, CompileExpr(e, c));
+        ThreadsRun(t, 0);
+    }
+    EXIT();
+}
+
+/* The value of a number token from its text as written */
+static Value
+ParseNumberValue(int tag, Value text)
+{
+    char *s = StringChars(&text->string);
+
+    switch (tag) {
+    case TEN_NUM:
+        return atov(s, 10);
+    case OCTAL0_NUM:
+        return atov(s + 1, 8);
+    case OCTAL_NUM:
+        return atov(s + 2, 8);
+    case BINARY_NUM:
+        return atov(s + 2, 2);
+    case HEX_NUM:
+        return atov(s + 2, 16);
+    default:
+        return aetov(s);
+    }
+}
+
+/* A number constant from its text, keeping the text for printing */
+static Expr *
+ParseNumber(int tag, Value text)
+{
+    ENTER();
+    Expr *e = NewExprConst(tag, ParseNumberValue(tag, text));
+
+    e->constant.text = text;
+    RETURN(e);
+}
+
+/* The tokens from first through last */
+static LexLocation
+ParseSpan(LexLocation first, LexLocation last)
+{
+    return (LexLocation) {
+        .first_token = first.first_token,
+        .last_token = last.last_token,
+        .first_line = first.first_line,
+        .last_line = last.last_line,
+    };
+}
+
+/*
+ * Mark an initializer's item, in the COMMA node holding it, as starting
+ * a row when it starts a line after the items before it end
+ */
+static Expr *
+ParseRow(Expr *comma, LexLocation previous, LexLocation item)
+{
+    if (item.first_line > previous.last_line)
+        comma->base.flags |= EXPR_ROW;
+    return comma;
+}
+
+/*
+ * Mark an initializer written across lines with a trailing comma as
+ * printing as rows
+ */
+static Expr *
+ParseRows(Expr *init, Bool comma, LexLocation open, LexLocation close)
+{
+    if (comma && close.last_line > open.first_line)
+        init->base.flags |= EXPR_ROWS;
+    return init;
 }
 
 /*

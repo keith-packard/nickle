@@ -27,8 +27,9 @@ typedef struct _symbolBase {
     SymbolPtr next;
     Atom      name;
     Class class;
-    Type *type;
-    Bool  forward; /* forward declaration of a function */
+    Type        *type;
+    Bool         forward;  /* forward declaration of a function */
+    union _expr *comments; /* comment entries of its declaration */
 } SymbolBase;
 
 typedef struct _symbolType {
@@ -118,6 +119,7 @@ SymbolPtr           NamespaceFindName(NamespacePtr namespace, Atom atom, Bool se
 Bool                NamespaceIsNamePrivate(NamespacePtr namespace, Atom atom, Bool search);
 SymbolPtr           NamespaceAddName(NamespacePtr namespace, SymbolPtr symbol, Publish publish);
 Bool                NamespaceRemoveName(NamespacePtr namespace, Atom atom);
+void                NamespaceRestore(void);
 void                NamespaceImport(NamespacePtr namespace, NamespacePtr import, Publish publish);
 void                NamespaceInit(void);
 
@@ -135,6 +137,7 @@ typedef struct _command {
 CommandPtr                NewCommand(CommandPtr previous, Atom name, Value func, Bool names);
 CommandPtr                CommandFind(CommandPtr command, Atom name);
 CommandPtr                CommandRemove(CommandPtr command, Atom name);
+void                      CommandSave(void);
 
 extern CommandPtr         CurrentCommands;
 
@@ -145,6 +148,8 @@ typedef struct _DeclList {
     Atom        name;
     SymbolPtr   symbol;
     ExprPtr     init;
+    ExprPtr     comments;    /* those around the name, as ExprBase.comments */
+    Bool        starts_line; /* the source starts a line with it, after a ',' */
 } DeclList;
 
 extern DeclListPtr       NewDeclList(Atom name, ExprPtr init, DeclListPtr next);
@@ -218,11 +223,29 @@ TwixtPtr TwixtNext(TwixtPtr twixt, TwixtPtr last);
 #define BRK     2
 #define RET     3
 
+/*
+ * An initializer written across lines with a trailing comma prints as
+ * rows, and an item of one starting a line in the source starts a row
+ * (the flag is on its COMMA node)
+ */
+#define EXPR_ROWS 1
+#define EXPR_ROW  2
+
+/*
+ * An operator written in UTF-8 (× for *) prints that way: the lexer adds
+ * LEX_UTF8 to the token's value, which the parser passes on as the
+ * node's tag, and ExprBaseInit turns it into EXPR_UTF8
+ */
+#define EXPR_UTF8 4
+#define LEX_UTF8  0x40000000
+
 typedef struct _exprBase {
-    DataType *data;
-    int       tag;
-    Atom      file;
-    int       line;
+    DataType    *data;
+    int          tag;
+    Atom         file;
+    int          line;
+    int          flags;    /* EXPR_ROWS, EXPR_ROW, EXPR_UTF8 */
+    union _expr *comments; /* comment entries around it, leading then trailing, or 0 */
     NamespacePtr namespace;
     Type        *type;
     double_digit ticks;
@@ -238,6 +261,7 @@ typedef struct _exprTree {
 typedef struct _exprConst {
     ExprBase expr;
     Value    constant;
+    Value    text; /* a number as written, for printing, or 0 */
 } ExprConst;
 
 typedef struct _exprAtom {
@@ -266,14 +290,21 @@ typedef struct _exprType {
     Type    *type;
 } ExprType;
 
+/* A comment in a statement list, tagged COMMENT_CONST */
+typedef struct _exprComment {
+    ExprBase         expr;
+    struct _comment *comment;
+} ExprComment;
+
 typedef union _expr {
-    ExprBase  base;
-    ExprTree  tree;
-    ExprConst constant;
-    ExprAtom  atom;
-    ExprCode  code;
-    ExprDecl  decl;
-    ExprType  type;
+    ExprBase    base;
+    ExprTree    tree;
+    ExprConst   constant;
+    ExprAtom    atom;
+    ExprCode    code;
+    ExprDecl    decl;
+    ExprType    type;
+    ExprComment comment;
 } Expr;
 
 Expr *NewExprTree(int tag, Expr *left, Expr *right);
@@ -283,7 +314,16 @@ Expr *NewExprAtom(Atom atom, SymbolPtr symbol, Bool privateFound);
 Expr *NewExprCode(CodePtr code, ExprPtr name);
 Expr *NewExprDecl(int tag, DeclListPtr decl, Class class, Type *type, Publish publish);
 Expr *NewExprType(int tag, Expr *left, Type *type);
+Expr *NewExprComment(struct _comment *comment);
 Expr *ExprRehang(Expr *expr, Expr *right);
+Bool  ExprVisitPreOrder(Expr *e, Bool (*visit)(Expr *e, void *closure), void *closure);
+
+/* Comments, which need the expression types */
+#ifdef LOCAL_BUILD
+#include "comment.h"
+#else
+#include <nickle/comment.h>
+#endif
 
 typedef struct _codeBase {
     DataType *data;
@@ -761,7 +801,7 @@ typedef struct _ProfileData {
     double_digit self;
 } ProfileData;
 
-void    PrettyPrint(Value f, Publish publish, SymbolPtr name);
+void    PrettyPrint(Value f, Publish publish, SymbolPtr name, Bool full);
 void    PrettyCode(Value f, CodePtr code, Atom name, Class class, Publish publish, int level,
                    Bool nest);
 void    PrettyStat(Value F, Expr *e, Bool nest);
@@ -778,6 +818,13 @@ ExprPtr BuildName(char *ns_name, char *name);
 ExprPtr BuildCall(char *, char *, int, ...);
 ExprPtr BuildFullname(ExprPtr colonnames, Atom name);
 ExprPtr BuildRawname(ExprPtr colonnames, Atom name);
+
+Value   LexFormatOutput(void);
+Bool    LexFormatting(void);
+void    LexFormatFile(Value in, Atom name, Value out, Bool full);
+void    PrettyFormatAppend(Expr *command, LexLocation location);
+Bool    PrettyFormatRuns(Atom name);
+void    PrettyFormat(Value f, CommentPtr record, int first_line, Bool full);
 
 Atom    LexFileName(void);
 int     LexFileLine(void);
@@ -800,10 +847,7 @@ Value       atov(char *, int), aetov(char *);
 extern int  parseIgnorenl;
 extern int  lexIgnorenl;
 extern int  notCommand;
-extern int  seeComment;
-void        skipcomment(void);
-Value       lexdoc(void);
-void        skipline(void);
+void        LexReleaseComments(Bool lookahead);
 uint32_t    lexEscape(uint32_t);
 
 extern void init(void);
@@ -918,6 +962,7 @@ Value do_string_to_integer(ptrdiff_t, Value *);
 Value do_Semaphore_new(ptrdiff_t, Value *);
 Value do_Command_undefine(ptrdiff_t, Value *);
 Value do_Command_pretty_print(ptrdiff_t, Value *);
+Value do_Command_format_names(ptrdiff_t, Value *);
 
 /* zero argument builtins */
 Value do_Thread_cont(void);
@@ -1043,6 +1088,7 @@ Value do_File_filter(Value file, Value argv, Value filev);
 
 /* four argument builtins */
 Value do_Command_lex_input(Value file, Value name, Value after, Value interactive);
+Value do_Command_format_file(Value out, Value in, Value name, Value full);
 Value do_Command_lex_exit_on_error(Value exit);
 
 /* seven argument builtins */

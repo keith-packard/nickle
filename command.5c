@@ -106,16 +106,57 @@ extend namespace Command {
 	File::fprintf (stderr, "\"%s\": %s\n", name, msg);
     }
 
-    void do_pretty_print (string[*] names...)
+    void do_pretty_print (poly args...)
 	/*
 	 * print		- pretty print all public names
 	 * print name ...	- pretty print given names
+	 * print namespace::	- print a namespace in full, as written
+	 * print ::		- print all names in full
+	 * print "file" ...	- print each file formatted, as written
 	 */
     {
-	try {
-	    pretty_print (stdout, names ...);
-	} catch invalid_argument(string msg, int i, poly value) {
-	    name_error (msg, value);
+	string[...]	files = {};
+	bool		names = false;
+
+	for (int i = 0; i < dim (args); i++) {
+	    if (is_type (args[i], string)) {
+		files[dim (files)] = args[i];
+		continue;
+	    }
+
+	    /*
+	     * The parser ends a name written with a trailing :: with "",
+	     * and gives :: alone as just ""
+	     */
+	    string[*]	name = args[i];
+	    bool	full = false;
+	    if (name[dim (name) - 1] == "") {
+		name = (string[dim (name) - 1]) { [j] = name[j] };
+		full = true;
+	    }
+	    names = true;
+	    try {
+		if (dim (name) == 0)
+		    format_names (stdout, full);
+		else
+		    format_names (stdout, full, name);
+	    } catch invalid_argument(string msg, int i, poly value) {
+		name_error (msg, value);
+	    }
+	}
+	if (!names && dim (files) == 0)
+	    format_names (stdout, false);
+
+	/* Each file queued is read before those queued earlier */
+	for (int i = dim (files) - 1; i >= 0; i--) {
+	    try {
+		format_file (stdout, File::open (files[i], "r"), files[i], true);
+	    } catch File::open_error (string msg,
+				      File::error_type err,
+				      string name) {
+		File::fprintf (stderr, "Cannot print \"%s\": %s\n",
+			       name, msg);
+	    }
 	}
     }
 
@@ -338,6 +379,7 @@ extend namespace Command {
 	    string sfile;
 	    string script;
 	    string expr;
+	    string format;
 	} lexable;
 
 	lexable[...] lexables = {};
@@ -375,6 +417,11 @@ extend namespace Command {
 	    lex_stdin = false;
 	}
 
+	void save_format(string arg) {
+	    save_lexable((lexable.format)arg);
+	    lex_stdin = false;
+	}
+
 	bool show_version = false;
 
 	ParseArgs::argdesc argd = {
@@ -394,6 +441,11 @@ extend namespace Command {
 		  .name = "expr",
 		  .expr_name = "expression",
 		  .desc = "Expression to evaluate."},
+		{ .var = { .arg_lambda = save_format},
+		  .abbr = 'F',
+		  .name = "format",
+		  .expr_name = "source",
+		  .desc = "Print a source file formatted, without running it."},
 		{ .var = { .arg_flag = &show_version },
 		  .abbr = 'V',
 		  .name = "version",
@@ -473,6 +525,15 @@ extend namespace Command {
 		break;
 	    case expr arg:
 		lex_string(arg + "\n");
+		break;
+	    case format arg:
+		try {
+		    format_file (stdout, File::open (arg, "r"), arg, true);
+		} catch File::open_error (string msg,
+					  File::error_type err,
+					  string name) {
+		    load_fail (name, msg);
+		}
 		break;
 	    }
 	    /* Errors in command-line input, unlike stdin, are fatal */

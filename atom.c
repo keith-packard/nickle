@@ -137,6 +137,7 @@ AtomListMark(void *object)
     AtomListPtr al = object;
 
     MemReference(al->next);
+    MemReference(al->comments);
 }
 
 static DataType AtomListType = { AtomListMark, 0, "AtomListType" };
@@ -150,5 +151,6 @@ NewAtomList(AtomListPtr next, Atom atom)
     al = ALLOCATE(&AtomListType, sizeof(AtomList));
     al->next = next;
     al->atom = atom;
+    al->comments = 0;
     RETURN(al);
 }

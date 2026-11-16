@@ -13,6 +13,7 @@ SymbolTypeMark(void *object)
 
     MemReference(st->symbol.next);
     MemReference(st->symbol.type);
+    MemReference(st->symbol.comments);
 }
 
 static void
@@ -22,6 +23,7 @@ SymbolGlobalMark(void *object)
 
     MemReference(sg->symbol.next);
     MemReference(sg->symbol.type);
+    MemReference(sg->symbol.comments);
     MemReference(sg->value);
 }
 
@@ -32,6 +34,7 @@ SymbolLocalMark(void *object)
 
     MemReference(sl->symbol.next);
     MemReference(sl->symbol.type);
+    MemReference(sl->symbol.comments);
     MemReference(sl->code);
 }
 
@@ -42,6 +45,7 @@ SymbolNamespaceMark(void *object)
 
     MemReference(sn->symbol.next);
     MemReference(sn->symbol.type);
+    MemReference(sn->symbol.comments);
     MemReference(sn->namespace);
 }
 
@@ -52,6 +56,7 @@ SymbolExceptionMark(void *object)
 
     MemReference(se->symbol.next);
     MemReference(se->symbol.type);
+    MemReference(se->symbol.comments);
     MemReference(se->doc);
 }
 
@@ -73,6 +78,7 @@ NewSymbolType(Atom name, Type *type)
     s->symbol.class = class_typedef;
     s->symbol.type = type;
     s->symbol.forward = False;
+    s->symbol.comments = 0;
     RETURN(s);
 }
 
@@ -88,6 +94,7 @@ NewSymbolException(Atom name, Type *type, Value doc)
     s->symbol.class = class_exception;
     s->symbol.type = type;
     s->symbol.forward = False;
+    s->symbol.comments = 0;
     s->exception.doc = doc;
     RETURN(s);
 }
@@ -106,6 +113,7 @@ NewSymbolConst(Atom name, Type *type)
     s->symbol.class = class_const;
     s->symbol.type = type;
     s->symbol.forward = False;
+    s->symbol.comments = 0;
     s->global.value = value;
     RETURN(s);
 }
@@ -124,6 +132,7 @@ NewSymbolGlobal(Atom name, Type *type)
     s->symbol.class = class_global;
     s->symbol.type = type;
     s->symbol.forward = False;
+    s->symbol.comments = 0;
     s->global.value = value;
     RETURN(s);
 }
@@ -140,6 +149,7 @@ NewSymbolGlobalValue(Atom name, BoxPtr value)
     s->symbol.class = class_global;
     s->symbol.type = value->u.type;
     s->symbol.forward = False;
+    s->symbol.comments = 0;
     s->global.value = value;
     RETURN(s);
 }
@@ -156,6 +166,7 @@ NewSymbolArg(Atom name, Type *type)
     s->symbol.class = class_arg;
     s->symbol.type = type;
     s->symbol.forward = False;
+    s->symbol.comments = 0;
     s->local.element = 0;
     s->local.code = 0;
     RETURN(s);
@@ -173,6 +184,7 @@ NewSymbolAuto(Atom name, Type *type)
     s->symbol.class = class_auto;
     s->symbol.type = type;
     s->symbol.forward = False;
+    s->symbol.comments = 0;
     s->local.element = -1;
     s->local.code = 0;
     RETURN(s);
@@ -190,6 +202,7 @@ NewSymbolStatic(Atom name, Type *type)
     s->symbol.class = class_static;
     s->symbol.type = type;
     s->symbol.forward = False;
+    s->symbol.comments = 0;
     s->local.element = -1;
     s->local.code = 0;
     RETURN(s);
@@ -207,6 +220,7 @@ NewSymbolNamespace(Atom name, NamespacePtr namespace)
     s->symbol.class = class_namespace;
     s->symbol.type = 0;
     s->symbol.forward = False;
+    s->symbol.comments = 0;
     s->namespace.namespace = namespace;
     RETURN(s);
 }

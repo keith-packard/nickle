@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -56,6 +57,7 @@ typedef struct _AtomList {
     DataType   *data;
     AtomListPtr next;
     Atom        atom;
+    ExprPtr     comments; /* comment entries, for struct and enum members */
 } AtomList;
 
 AtomListPtr NewAtomList(AtomListPtr next, Atom atom);
@@ -434,6 +436,8 @@ typedef struct _argType {
     Atom             name;
     SymbolPtr        symbol;
     struct _argType *next;
+    ExprPtr          comments;    /* comment entries of its declaration */
+    Bool             starts_line; /* the source starts a line with it, after a ',' */
 } ArgType;
 
 ArgType *NewArgType(TypePtr type, Bool varargs, Atom name, SymbolPtr symbol, ArgType *next);
@@ -797,10 +801,17 @@ typedef struct _structType {
     DataType   *data;
     ptrdiff_t   nelements;
     BoxTypesPtr types;
+    ExprPtr     comments; /* members' comment entries, by name (StructMemComments) */
     Atom        atoms[0];
 } StructType;
 
 #define StructTypeAtoms(st) ((st)->atoms)
+
+/*
+ * After the atoms, a flag for each member: whether it continues the
+ * declaration of the member before it, as y does in 'int x, y;'
+ */
+#define StructTypeGrouped(st) ((bool *)(StructTypeAtoms(st) + (st)->nelements))
 
 typedef struct _struct {
     BaseValue   base;
@@ -1267,6 +1278,7 @@ Value       NewStruct(StructType *type, Bool constant);
 StructType *NewStructType(ptrdiff_t nelements);
 Type       *BuildStructType(ptrdiff_t nelements, ...);
 Type       *StructMemType(StructType *st, Atom name);
+ExprPtr     StructMemComments(StructType *st, Atom name);
 Value       StructMemRef(Value sv, Atom name);
 Value       StructMemValue(Value sv, Atom name);
 Value       NewUnion(StructType *type, Bool constant);

@@ -20,6 +20,7 @@ ExprTreeMark(void *object)
 
     MemReference(et->expr.namespace);
     MemReference(et->expr.type);
+    MemReference(et->expr.comments);
     MemReference(et->left);
     MemReference(et->right);
     if (!profiling)
@@ -33,7 +34,9 @@ ExprConstMark(void *object)
 
     MemReference(ec->expr.namespace);
     MemReference(ec->expr.type);
+    MemReference(ec->expr.comments);
     MemReference(ec->constant);
+    MemReference(ec->text);
     if (!profiling)
         ec->expr.ticks = ec->expr.sub_ticks = 0;
 }
@@ -44,6 +47,7 @@ ExprAtomMark(void *object)
     ExprAtom *ea = object;
     MemReference(ea->expr.namespace);
     MemReference(ea->expr.type);
+    MemReference(ea->expr.comments);
     MemReference(ea->symbol);
     if (!profiling)
         ea->expr.ticks = ea->expr.sub_ticks = 0;
@@ -56,6 +60,7 @@ ExprCodeMark(void *object)
 
     MemReference(ec->expr.namespace);
     MemReference(ec->expr.type);
+    MemReference(ec->expr.comments);
     MemReference(ec->code);
     if (!profiling)
         ec->expr.ticks = ec->expr.sub_ticks = 0;
@@ -68,6 +73,7 @@ ExprDeclMark(void *object)
 
     MemReference(ed->expr.namespace);
     MemReference(ed->expr.type);
+    MemReference(ed->expr.comments);
     MemReference(ed->decl);
     MemReference(ed->type);
     if (!profiling)
@@ -81,10 +87,22 @@ ExprTypeMark(void *object)
 
     MemReference(et->expr.namespace);
     MemReference(et->expr.type);
+    MemReference(et->expr.comments);
     MemReference(et->left);
     MemReference(et->type);
     if (!profiling)
         et->expr.ticks = et->expr.sub_ticks = 0;
+}
+
+static void
+ExprCommentMark(void *object)
+{
+    ExprComment *ec = object;
+
+    MemReference(ec->expr.namespace);
+    MemReference(ec->expr.type);
+    MemReference(ec->expr.comments);
+    MemReference(ec->comment);
 }
 
 static DataType ExprTreeType = { ExprTreeMark, 0, "ExprTreeType" };
@@ -93,17 +111,25 @@ static DataType ExprAtomType = { ExprAtomMark, 0, "ExprAtomType" };
 static DataType ExprCodeType = { ExprCodeMark, 0, "ExprCodeType" };
 static DataType ExprDeclType = { ExprDeclMark, 0, "ExprDeclType" };
 static DataType ExprTypeType = { ExprTypeMark, 0, "ExprTypeType" };
+static DataType ExprCommentType = {
+    .Mark = ExprCommentMark,
+    .Free = 0,
+    .name = "ExprCommentType",
+};
 
 static void
 ExprBaseInit(Expr *e, int tag)
 {
-    e->base.tag = tag;
+    e->base.tag = tag & ~LEX_UTF8;
     e->base.file = LexFileName();
     e->base.line = LexFileLine();
+    e->base.flags = (tag & LEX_UTF8) ? EXPR_UTF8 : 0;
+    e->base.comments = 0;
     e->base.namespace = CurrentNamespace;
     e->base.type = 0;
     e->base.ticks = 0;
     e->base.sub_ticks = 0;
+    CommentNoteExpr(e);
 }
 
 Expr *
@@ -141,6 +167,7 @@ NewExprConst(int tag, Value val)
     e = ALLOCATE(&ExprConstType, sizeof(ExprConst));
     ExprBaseInit(e, tag);
     e->constant.constant = val;
+    e->constant.text = 0;
     RETURN(e);
 }
 
@@ -219,4 +246,48 @@ ExprRehang(Expr *e, Expr *right)
         e->tree.right = right;
         return e;
     }
+}
+
+/*
+ * Call visit for e and the expressions inside it in pre-order, each
+ * before those inside it and a node's left before its right, until it
+ * returns True; return whether it did. The bodies of functions aren't
+ * inside, being statements of their own
+ */
+Bool
+ExprVisitPreOrder(Expr *e, Bool (*visit)(Expr *e, void *closure), void *closure)
+{
+    DeclListPtr decl;
+
+    while (e) {
+        if (visit(e, closure))
+            return True;
+        if (e->base.data == &ExprTreeType) {
+            if (ExprVisitPreOrder(e->tree.left, visit, closure))
+                return True;
+            e = e->tree.right;
+        } else if (e->base.data == &ExprTypeType) {
+            e = e->type.left;
+        } else if (e->base.data == &ExprDeclType) {
+            for (decl = e->decl.decl; decl; decl = decl->next)
+                if (ExprVisitPreOrder(decl->init, visit, closure))
+                    return True;
+            e = 0;
+        } else {
+            e = 0;
+        }
+    }
+    return False;
+}
+
+Expr *
+NewExprComment(CommentPtr comment)
+{
+    ENTER();
+    Expr *e;
+
+    e = ALLOCATE(&ExprCommentType, sizeof(ExprComment));
+    ExprBaseInit(e, COMMENT_CONST);
+    e->comment.comment = comment;
+    RETURN(e);
 }

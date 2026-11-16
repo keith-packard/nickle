@@ -47,8 +47,8 @@ string[*][2] cases = {
     { "(a ^ b) & c", "(a ^ b) & c" },
     { "a ^ (b & c)", "a ^ b & c" },
     { "(a | b) ^ c", "(a | b) ^ c" },
-    { "is_type (a, int) || has_member (a, x)", "is_type (a, int) || has_member (a, x)" },
-    { "max ((a, b), c)", "max ((a, b), c)" },
+    { "is_type(a, int) || has_member(a, x)", "is_type(a, int) || has_member(a, x)" },
+    { "max((a, b), c)", "max((a, b), c)" },
     { "(int[3]) { (a, b), c, a = 4 }", "(int[3]) { (a, b), c, a = 4 }" },
     { "(int[2, 2]) { [i, j] = i + j }", "(int[2, 2]) { [i, j] = i + j }" },
     { "(int[int]) { (a, b) => (b, c) }", "(int[int]) { (a, b) => (b, c) }" },
@@ -66,7 +66,7 @@ string[*][2] cases = {
 
 for (int i = 0; i < dim (cases); i++) {
     string name = sprintf ("prec_%d", i);
-    Command::lex_string (sprintf ("poly %s () { return %s; }\n", name, cases[i][0]));
+    Command::lex_string (sprintf ("poly %s() { return %s; }\n", name, cases[i][0]));
 }
 
 /* What calling 'f' gives, or the name of the exception it raises */
@@ -90,10 +90,11 @@ for (int i = 0; i < dim (cases); i++) {
     file f = File::string_write ();
     Command::pretty_print (f, (string[*]) { name });
     string printed = File::string_string (f);
-    string want = "return " + cases[i][1] + ";";
+    /* A body returning one value prints as '= value' */
+    string want = ") = " + cases[i][1] + ";";
     if (String::index (printed, want) < 0)
 	raise wrong (cases[i][0], printed, want);
-    again += sprintf ("check (\"%s\", result (prec_%d), result (poly func () { return %s; }));\n",
+    again += sprintf ("check(\"%s\", result(prec_%d), result(poly func() { return %s; }));\n",
 		      cases[i][0], i, cases[i][1]);
 }
 Command::lex_string (again);
@@ -112,7 +113,7 @@ file f = File::string_write ();
 Command::pretty_print (f, (string[*]) { "statements" });
 string printed = File::string_string (f);
 check ("//=", String::index (printed, "x //= 3;") >= 0, true);
-check ("fork", String::index (printed, "thread t = fork x + 1;") >= 0, true);
-check ("declaration", String::index (printed, "int y = (x, 3);") >= 0, true);
+check ("fork", String::index (printed, "thread  t = fork x + 1;") >= 0, true);
+check ("declaration", String::index (printed, "int     y = (x, 3);") >= 0, true);
 check ("uninitialized array", String::index (printed, "poly[*] z = (poly[3]) {};") >= 0, true);
-check ("declaration argument", String::index (printed, "y = abs ((int w = -4));") >= 0, true);
+check ("declaration argument", String::index (printed, "y = abs((int w = -4));") >= 0, true);

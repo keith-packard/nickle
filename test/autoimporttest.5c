@@ -19,7 +19,7 @@ void write_file (string name, string contents)
 
     written_files[dim(written_files)] = name;
 
-    File::fprintf (f, "%s", contents);
+    File::fputs (contents, f);
     File::close (f);
 }
 

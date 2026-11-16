@@ -25,13 +25,13 @@ void status ()
     int nt = dim (owned);
     int i;
 
-    
+
     twixt (acquire (owned_mutex); release (owned_mutex))
     {
 	for (i = 0; i < nt; i++)
 	{
 	    if (owned[i] >= 0)
-		printf ("%s", mutexes[owned[i]].name);
+		File::fputs (mutexes[owned[i]].name, stdout);
 	    else
 		printf (" ");
 	}
@@ -42,14 +42,14 @@ void status ()
 void t (*(named_mutex[*]) mutexes, int self, int delay)
 {
     int i;
-    
+
     Semaphore::signal (started);
     die = false;
     while (!die)
     {
 	for (i = 0; !die && i < dim (*mutexes); i++)
 	{
-	    twixt (acquire ((*mutexes)[i].mut_ex); 
+	    twixt (acquire ((*mutexes)[i].mut_ex);
 		   release ((*mutexes)[i].mut_ex))
 	    {
 		twixt (acquire (owned_mutex); release (owned_mutex))
@@ -98,4 +98,4 @@ void monitor (int delay)
 
 start (20, 10, 100);
 monitor (200);
-    
+

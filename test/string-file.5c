@@ -28,3 +28,13 @@ for (int i = 0; i < 5000; i++) {
     want += line;
 }
 check(want, File::string_string(f));
+
+/* As does output from fputs */
+want = "";
+f = File::string_write();
+for (int i = 0; i < 5000; i++) {
+    string line = sprintf("%d\n", i);
+    File::fputs(line, f);
+    want += line;
+}
+check(want, File::string_string(f));

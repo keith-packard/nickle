@@ -98,7 +98,7 @@ void function tagfile (file in)
 	}
 	string s = word (in);
 	if (s == "") break;
-	printf ("%s", s);
+	File::fputs (s, stdout);
     }
 
     while (dim (stack) > 0)

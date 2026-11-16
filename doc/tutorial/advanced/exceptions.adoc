@@ -42,7 +42,7 @@ The following syntax may be used to declare a new exception:
 For example,
 
 ----
-exception my_exception ( string msg, int a, int b, int c );
+exception my_exception(string msg, int a, int b, int c);
 ----
 
 == Raise
@@ -52,7 +52,7 @@ exception my_exception ( string msg, int a, int b, int c );
 Raises the named exception with the given arguments, e.g.
 
 ----
-raise my_exception ( "message", 0, 1, 2 );
+raise my_exception("message", 0, 1, 2);
 ----
 
 Execution is broken and `my_exception` travels up the stack until it
@@ -61,7 +61,7 @@ prints an error message, with the line that raised it, such as:
 
 ----
 Unhandled exception my_exception ("message", 0, 1, 2)
-example.5c:2:     raise my_exception ("message", 0, 1, 2);
+example.5c:2:     raise my_exception("message", 0, 1, 2);
 ----
 
 When Nickle reads commands from a terminal, an unhandled exception
@@ -85,11 +85,12 @@ re-raise the exception.  Any number of catch blocks may be associated
 with a try statement.  For example:
 
 ----
-exception my_exception(string msg,int a,int b,int c);
+exception my_exception(string msg, int a, int b, int c);
 
-try raise my_exception("blah",1,2,3);
-catch my_exception(string msg,int a,int b,int c) {
-        printf("%s: exception successfully caught (%d,%d,%d).\n",msg,a,b,c);
+try
+    raise my_exception("blah", 1, 2, 3);
+catch my_exception(string msg, int a, int b, int c) {
+    printf("%s: exception successfully caught (%d,%d,%d).\n", msg, a, b, c);
 }
 ----
 
@@ -116,14 +117,17 @@ statement.  For example,
 ----
 exception my_exception(string msg, int a, int b, int c);
 
-void foo(string msg, int a, int b, int c) {
-        twixt(printf("entering twixt..."); printf("leaving twixt.\n"))
-                raise my_exception(msg, a, b, c);
+void
+foo(string msg, int a, int b, int c)
+{
+    twixt (printf("entering twixt..."); printf("leaving twixt.\n"))
+        raise my_exception(msg, a, b, c);
 }
 
-try foo("blah", 1, 2, 3);
-catch my_exception(string msg,int a,int b,int c) {
-	printf("%s: exception successfully caught (%d,%d,%d).\n",msg,a,b,c);
+try
+    foo("blah", 1, 2, 3);
+catch my_exception(string msg, int a, int b, int c) {
+    printf("%s: exception successfully caught (%d,%d,%d).\n", msg, a, b, c);
 }
 ----
 

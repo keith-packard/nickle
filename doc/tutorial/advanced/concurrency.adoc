@@ -30,7 +30,7 @@ exclusion below.
 The builtin namespace `Thread` has functions for manipulating threads
 once they have been forked.
 
-`int kill ( thread t ... )`
+`int kill(thread t ...)`
 
 Kills the threads it takes as arguments, or the current thread if it
 is given none.  A killed thread evaluates the leave expressions of any
@@ -38,7 +38,7 @@ is given none.  A killed thread evaluates the leave expressions of any
 `kill` returns the number of those threads that weren't already
 finished or being killed.
 
-`poly join ( thread t )`
+`poly join(thread t)`
 
 Waits for thread `t` to finish and returns the value of its expression,
 or `<>` if it was killed.
@@ -48,21 +48,22 @@ For example,
 
 ----
 thread t = fork 1000!;
-# something else...
+
+/* something else... */
 printf("1000! = %d\n", Thread::join(t));
 ----
 
 will execute `something else` while `t` runs, then wait for it to
 complete and print out its value.
 
-`thread current ()`
+`thread current()`
 
 Returns the currently running thread.  `kill(current())` ends the
 current thread, like `kill()`, and `join(current())` raises
 `invalid_argument`, since a thread can't wait for itself.
 
-`int set_priority ( thread t, int i )` +
-`int get_priority ( thread t )`
+`int set_priority(thread t, int i)` +
+`int get_priority(thread t)`
 
 Priorities determine how runtime is divided among threads; a thread
 with higher priority will always run before one with a lower
@@ -76,12 +77,16 @@ Consider the following situation:
 ----
 import Thread;
 
-void function para() {
-        printf("My next statement will be false.\n");
+void
+para()
+{
+    printf("My next statement will be false.\n");
 }
 
-void function dox() {
-        printf("My previous statement was true.\n");
+void
+dox()
+{
+    printf("My previous statement was true.\n");
 }
 
 thread t = fork para();
@@ -103,12 +108,12 @@ from a library loaded with `autoimport Mutex`.  A mutex is an object
 which threads can use to coordinate conflicting sections of code.
 `Mutex` defines the following functions:
 
-`mutex new ()`
+`mutex new()`
 
 Creates a new mutex and returns it.
 
-`bool acquire ( mutex m )` +
-`bool try_acquire ( mutex m )`
+`bool acquire(mutex m)` +
+`bool try_acquire(mutex m)`
 
 `acquire` blocks until `m` is free, then locks it and returns true.
 At the top of the conflicting code, each thread should acquire the
@@ -117,7 +122,7 @@ executing.  `try_acquire` instead returns false immediately if `m` is
 in use.  A thread acquiring a mutex it already owns raises
 `Mutex::deadlock`.
 
-`void release ( mutex m )`
+`void release(mutex m)`
 
 When the thread which owns a mutex leaves the conflicting section of
 code, it should call release to free it for the next thread to acquire
@@ -125,7 +130,7 @@ it.  Releasing a mutex the thread doesn't own raises `Mutex::notowned`.
 Acquiring and releasing in a `twixt` statement makes sure the mutex is
 released however the code leaves.
 
-`mutex_owner owner ( mutex m )`
+`mutex_owner owner(mutex m)`
 
 Returns the owner of `m`, a `mutex_owner` union: `owner` holding the
 thread which currently owns it, or `nobody` if it is free.
@@ -138,21 +143,25 @@ acquired by one command isn't owned by the next.
 This is how the example above might work with mutual exclusion:
 
 ----
-autoimport Mutex;
+autoimport Mutex
 import Thread;
 
-mutex m = new();
+mutex  m = new();
 
-void function para() {
-        acquire(m);
-        printf("My next statement will be false.\n");
-        release(m);
+void
+para()
+{
+    acquire(m);
+    printf("My next statement will be false.\n");
+    release(m);
 }
 
-void function dox() {
-        acquire(m);
-        printf("My previous statement was true.\n");
-        release(m);
+void
+dox()
+{
+    acquire(m);
+    printf("My previous statement was true.\n");
+    release(m);
 }
 
 thread t = fork para();
@@ -175,14 +184,14 @@ namespace.  Semaphores are similar to mutexes, but have some number of
 threads that may run that isn't necessarily one, as it is with
 mutexes.  A semaphore with a count of one behaves just like a mutex.
 
-`semaphore new ( int c )`
+`semaphore new(int c)`
 
 Semaphores are created with `new`, which is unlike `Mutex::new` in
 that it takes an argument: the number of threads it will run
 simultaneously.
 
-`void wait ( semaphore s )` +
-`void signal ( semaphore s )`
+`void wait(semaphore s)` +
+`void signal(semaphore s)`
 
 `wait` decrements the count of `s`, which starts with the initial
 value specified by `new`.  If the count, after the decrement, is
@@ -225,7 +234,7 @@ semaphore 1 (2)
 > wait(s);
 > s
 semaphore 1 (1)
-> for(int i=0; i < 100; ++i)
+> for (int i = 0; i < 100; ++i)
 +   signal(s);
 > s
 semaphore 1 (101)

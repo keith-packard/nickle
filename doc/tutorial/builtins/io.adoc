@@ -44,9 +44,9 @@ name of the program.  For example,
 
 ----
 > autoload Process
-> file ls = Process::popen ( Process::popen_direction.read, true, "ls", "ls", "-a" );
-> do printf ( "%s\n", File::fgets ( ls ) );
-+ while ( ! File::end ( ls ) );
+> file ls = Process::popen(Process::popen_direction.read, true, "ls", "ls", "-a");
+> do printf("%s\n", File::fgets(ls));
++ while (!File::end(ls));
 .
 ..
 bin
@@ -62,7 +62,7 @@ When a file is no longer needed, it should be closed.
 `void File::close(file f)`
 
 ----
-> File::close ( ls );
+> File::close(ls);
 ----
 
 == Flush

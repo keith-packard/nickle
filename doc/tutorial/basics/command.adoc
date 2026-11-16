@@ -104,10 +104,10 @@ documentation, gives the full rules.
 
 $ nickle
 > /* Count the vowels in s */
-> int vowels (string s /* lower case */) {
+> int vowels(string s /* lower case */) {
 +     int n = 0;        /* found so far */
-+     for (int i = 0; i < String::length (s); i++)
-+         if (String::index ("aeiou", String::new (s[i])) >= 0)
++     for (int i = 0; i < String::length(s); i++)
++         if (String::index("aeiou", String::new(s[i])) >= 0)
 +             n++;
 +     return n;
 + }
@@ -120,8 +120,7 @@ vowels(
     int n = 0; /* found so far */
 
     for (int i = 0; i < String::length(s); i++)
-        if (String::index("aeiou", String::new(s[i]))
-            >= 0)
+        if (String::index("aeiou", String::new(s[i])) >= 0)
             n++;
     return n;
 }
@@ -177,7 +176,7 @@ are already defined.
 
 $ nickle
 > autoimport PRNG
-> randint (6) < 6
+> randint(6) < 6
 true
 >
 ----

@@ -3,12 +3,15 @@
 An example function might be declared like this:
 
 ----
-int gcf ( int a, int b ) {
-        int f = 1;
-        for ( int i = 2; i <= abs ( a ) && i <= abs ( b ); ++i )
-                while ( ( a // f ) % i == 0 && ( b // f ) % i == 0 )
-                        f *= i;
-        return f;
+int
+gcf(int a, int b)
+{
+    int f = 1;
+
+    for (int i = 2; i <= abs(a) && i <= abs(b); ++i)
+        while (a // f % i == 0 && b // f % i == 0)
+            f *= i;
+    return f;
 }
 ----
 
@@ -24,9 +27,10 @@ declaration that ends with a semicolon instead of a body declares a
 function to be defined later:
 
 ----
-int dbl ( int x ) = x * 2;
+int
+dbl(int x) = x * 2;
 
-int fwd ( int x );
+int fwd(int x);
 ----
 
 A function can take any number of arguments.  The final argument may
@@ -43,11 +47,11 @@ sum(int a, int b ...)
         a += b[i];
     return a;
 }
-> sum(1,2)
+> sum(1, 2)
 3
 > sum(4)
 4
-> sum(1,2,4,6)
+> sum(1, 2, 4, 6)
 13
 ----
 
@@ -55,14 +59,13 @@ Functions are called as in C, with their names followed by argument
 values in parentheses:
 
 ----
-foo ( "hello", 7.2 );
+foo("hello", 7.2);
 ----
 
 Since they are first class, functions can be assigned:
 
 ----
-
-int(int,int) a = gcf;
+int(int, int) a = gcf;
 ----
 
 See <<_type_checking_and_subtyping,Type checking and subtyping>> in
@@ -71,8 +74,8 @@ assigned to each other. Functions may also be declared and used
 anonymously:
 
 ----
-(int func ( int a, int b ) { return a + b; })(2,3);     /* 5 */
-(func ( x ) = x * 3)(5);                                /* 15 */
+(int func(int a, int b) = a + b)(2, 3); /* 5 */
+(func(poly x) = x * 3)(5);              /* 15 */
 ----
 
 Replacing the function name with the keyword `func` indicates its anonymity. 

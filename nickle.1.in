@@ -168,8 +168,8 @@ In addition to being able to initialize a definition with
 a Nickle value, C-style array, structure, and union definitions
 are also allowed: For example, the following
 .nf
-  int[*,*] name = {{0,1},{2,3}}
-  int[2,2] name = {{0...}...}
+  int[*, *] name = { { 0, 1 }, { 2, 3 } }
+  int[2, 2] name = { { 0 ... } ... }
 .fi
 are permitted with the obvious semantics.  This is the context
 in which the dimensions in a type may be expressions: see the
@@ -1661,11 +1661,13 @@ is to load @pkgdatadir@/builtin.5c.
 An example (taken from the \fIbc\fP manual:
 .nf
 
-  real function exponent(real x) {
+  real
+  exponent(real x)
+  {
       real a = 1;
-      int b = 1;
+      int  b = 1;
       real s = 1;
-      int i = 1;
+      int  i = 1;
       while (1) {
           a = a * x;
           b = b * i;
@@ -1683,7 +1685,7 @@ function e ** x and
 .nf
 
   for (i = 1; i < 10; i++)
-      printf ("%g\\n", exponent (i));
+      printf("%g\\n", exponent(i));
 
 .fi
 prints approximate values of the exponential function of the first
@@ -1705,14 +1707,14 @@ in an array initializer: it is confused with a structure
 initializer.  For example:
 .nf
   > int x = 0;
-  > (int[*]){x = 1}
-  ->     (int[*]) { x = 1 }
-Non array initializer
+  > (int[*]) { x = 1 }
+  ->     (int[*]) { x = 1 };
+  <stdin>:2: Struct/union initializer type mismatch, type 'int[*]'
 .fi
 The workaround is to parenthesize the assignment expression:
 .nf
-  > (int[*]){(x = 1)}
-  [1]{1}
+  > (int[*]) { (x = 1) }
+  (int [1]) {1}
 .fi
 Because this is so rare, so hard to fix, and so easy to work around, this
 bug is unlikely to be fixed anytime soon.

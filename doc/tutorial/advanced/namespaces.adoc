@@ -28,18 +28,20 @@ An example namespace might be declared like this:
 
 ----
 namespace Example {
+    int        blah = 1;
+    public int a = 0;
 
-        int blah = 1;
-        public int a = 0;
+    int
+    bar(int a)
+    {
+        ...
+    }
 
-        int function bar(int a) {
-                ...
-        }
-
-        protected int function foo(int a) {
-                ...
-        }
-
+    protected int
+    foo(int a)
+    {
+        ...
+    }
 }
 ----
 
@@ -53,7 +55,7 @@ of the name of the namespace.  If the example above had been declared
 
 ----
 protected namespace Example {
-        ...
+    ...
 }
 ----
 
@@ -73,7 +75,7 @@ Names may be added to a namespace after it is initially defined with the
 
 ----
 extend namespace Example {
-        string[*] greeting = { "hello", "world" };
+    string[*] greeting = { "hello", "world" };
 }
 ----
 
@@ -130,7 +132,7 @@ one, and `.5c` appended, so `Mutex` comes from `mutex.5c`.  The
 See <<_commands,Commands>>.
 
 ----
-autoimport Mutex;
+autoimport Mutex
 
-mutex m = new ();
+mutex m = new();
 ----

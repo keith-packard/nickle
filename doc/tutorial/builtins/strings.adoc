@@ -86,47 +86,47 @@ that facilitate using strings, including the following.
 
 === Length
 
-`int length ( string s )`
+`int length(string s)`
 
 Returns the number of characters in ``s``.
 For example,
 
 ----
-> String::length ( "hello, world" )
+> String::length("hello, world")
 12
 >
 ----
 
 === Index
 
-`int index ( string t, string p )` +
-`int rindex ( string t, string p )`
+`int index(string t, string p)` +
+`int rindex(string t, string p)`
 
 Returns the index of the first occurrence of the substring `p` in
 ``t``, or -1 if `p` is not in ``t``; `rindex` returns the last
 occurrence instead.  For example,
 
 ----
-> String::index ( "hello, world", "or" )
+> String::index("hello, world", "or")
 8
-> String::index ( "hello, world", "goodbye" )
+> String::index("hello, world", "goodbye")
 -1
-> String::rindex ( "hello, world", "o" )
+> String::rindex("hello, world", "o")
 8
 ----
 
 === Substr
 
-`string substr ( string s, int i, int l )`
+`string substr(string s, int i, int l)`
 
 Returns the substring of `s` which begins at index `i` and is `l`
 characters long. If `l` is negative, returns the substring of that
 length which precedes `i` instead. For example,
 
 ----
-> String::substr ( "hello, world", 8, 2 )
+> String::substr("hello, world", 8, 2)
 "or"
-> String::substr ( "hello, world", 8, -4 )
+> String::substr("hello, world", 8, -4)
 "o, w"
 >
 ----
@@ -141,8 +141,8 @@ directory part of a path; and `parse_csv`, which splits a line of
 comma-separated values.
 
 ----
-> String::split ( "a,b,c", "," )
+> String::split("a,b,c", ",")
 (string [...]) {"a", "b", "c"}
-> String::chomp ( "  hi  " )
+> String::chomp("  hi  ")
 "hi"
 ----

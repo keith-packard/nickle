@@ -1,7 +1,7 @@
 = Nickle Continuations
 
-`poly setjmp ( &continuation c, poly retval )` +
-`noreturn longjmp ( continuation c, poly retval )`
+`poly setjmp(&continuation c, poly retval)` +
+`noreturn longjmp(continuation c, poly retval)`
 
 Arbitrary flow control is accomplished in Nickle with first-class
 continuations and the functions `setjmp` and `longjmp`.  These are
@@ -26,32 +26,37 @@ returning up each branch once the result is found.
 [source,c]
 ----
 typedef struct {
-        int key;
-        poly data;
-        &poly left, right;
+    int   key;
+    poly  data;
+    &poly left, right;
 } tree;
 
-void _search ( tree t, int key, &continuation c ) {
-        if ( key < t.key && ! is_void ( t.left ) )
-                _search ( t.left, key, &c );
-        else if ( key > t.key && ! is_void ( t.right ) )
-                _search ( t.right, key, &c );
-        else if ( key == t.key )
-                longjmp ( c, t.data );
+void
+_search(tree t, int key, &continuation c)
+{
+    if (key < t.key && !is_void(t.left))
+        _search(t.left, key, &c);
+    else if (key > t.key && !is_void(t.right))
+        _search(t.right, key, &c);
+    else if (key == t.key)
+        longjmp(c, t.data);
 }
 
-poly search(tree t, int key) {
-	continuation c;
-        poly p = setjmp ( &c, <> );
+poly
+search(tree t, int key)
+{
+    continuation c;
+    poly         p = setjmp(&c, <>);
 
-        if ( is_void ( p ) )
-                _search ( t, key, &c );
-	return p;
+    if (is_void(p))
+        _search(t, key, &c);
+    return p;
 }
 
-tree t = { key = 2, data = "blah", left = reference ( <> ), right = reference ( <> ) };
+tree t = {
+    key = 2, data = "blah", left = reference(<>), right = reference(<>) };
 
-search(t, 2)                    /* "blah" */
+search(t, 2) /* "blah" */
 ----
 
 This is a pretty normal binary tree search, but notice how it is run:

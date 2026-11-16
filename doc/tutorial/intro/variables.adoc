@@ -102,12 +102,11 @@ are accessible as integer code points by using the array index
 operators. See the section on Strings.
 
 ----
-
 string foo = "hello";
 string bar = "world";
 string msg = foo + ", " + bar;
 
-printf("%s\n", msg);            /* hello, world */
+printf("%s\n", msg); /* hello, world */
 ----
 
 === File datatype
@@ -117,8 +116,8 @@ Several builtin functions accept and return this datatype.
 See the section on input and output.
 
 ----
-
 file f = File::open("file", "w");
+
 File::fprintf(f, "hello, world!\n");
 File::close(f);
 ----
@@ -138,10 +137,10 @@ library builds mutexes on them. See the section on Concurrency and
 Continuations.
 
 ----
-
 thread t = fork 5!;
-# do stuff...
-printf("5! = %d\n", Thread::join(t));   /* 5! = 120 */
+
+/* do stuff... */
+printf("5! = %d\n", Thread::join(t)); /* 5! = 120 */
 ----
 
 Continuations capture the dynamic state of execution in much the same
@@ -161,15 +160,15 @@ doesn't violate the type rules.
 
 ----
 
-> poly i=3, s="hello\n";
-> i+3
+> poly i = 3, s = "hello\n";
+> i + 3
 6
-> s+3           /* can't add string and int */
+> s + 3          /* can't add string and int */
 Unhandled exception invalid_binop_values ("incompatible operands for +", "hello\n", 3)
 <stdin>:3:     s + 3;
 > printf(i)     /* printf expects a string */
 Unhandled exception invalid_argument ("Incompatible argument", 0, 3)
-<stdin>:4:     printf (i);
+<stdin>:4:     printf(i);
 > printf(s)
 hello
 >
@@ -205,15 +204,12 @@ feature is that a struct value is compatible with a struct type if the
 struct value contains all of the entries in the type. For example:
 
 ----
-
 typedef struct {
-        int     i;
-        real    r;
+    int  i;
+    real r;
 } i_and_r;
 
-typedef struct {
-        int     i;
-} just_i;
+typedef struct { int i; } just_i;
 
 i_and_r i_and_r_value = { i = 12, r = 37 };
 
@@ -237,10 +233,9 @@ structure `union switch` exists to split out the different tags and
 perform different functions based on the current tag:
 
 ----
-
 typedef union {
-        int     i;
-        real    r;
+    int  i;
+    real r;
 } i_and_r_union;
 
 i_and_r_union u_value;
@@ -249,15 +244,15 @@ u_value.i = 37;
 
 union switch (u_value) {
 case i:
-        printf ("i value %d\n", u_value.i);
-        break;
+    printf("i value %d\n", u_value.i);
+    break;
 case r:
-        printf ("r value %g\n", u_value.r);
-        break;
+    printf("r value %g\n", u_value.r);
+    break;
 }
 
 u_value = (i_and_r_union.r) 1.2;
-printf ("u_value %g\n", u_value);               /* u_value r = 1.2 */
+printf("u_value %g\n", u_value); /* u_value r = 1.2 */
 ----
 
 === Enums
@@ -266,21 +261,20 @@ An enum names a fixed set of values. A value is written with the enum's
 type and the name, and `enum switch` chooses among them:
 
 ----
-
 typedef enum { red, green, blue } color;
 
 color c = color.green;
 
 enum switch (c) {
 case red:
-        printf ("red\n");
-        break;
+    printf("red\n");
+    break;
 case green:
-        printf ("green\n");    /* green */
-        break;
+    printf("green\n"); /* green */
+    break;
 case blue:
-        printf ("blue\n");
-        break;
+    printf("blue\n");
+    break;
 }
 ----
 
@@ -291,10 +285,9 @@ the size of each dimension. Therefore they can be declared in one of
 three ways:
 
 ----
-
-int[*] a;
+int[*]   a;
 int[...] b;
-int[3] c;
+int[3]   c;
 ----
 
 By these declarations, ``a``, `b` and ``c`` are of the same type
@@ -307,11 +300,10 @@ Declaring multidimensional arrays in Nickle is different than in C; C
 provides only arrays of arrays while Nickle allows either:
 
 ----
+int[3, 3] array_2d = {};
+int[3][3] array_of_arrays = { (int[3]) {} ... };
 
-int[3,3]        array_2d = {};
-int[3][3]       array_of_arrays = { (int[3]) {} ... };
-
-array_2d[0,0] = 7;
+array_2d[0, 0] = 7;
 array_of_arrays[0][0] = 7;
 array_of_arrays[1] = (int[2]) { 1, 2 };
 ----
@@ -340,13 +332,12 @@ Hashes are declared a bit like arrays, but instead of a value in the
 brackets, a type is placed:
 
 ----
-
-int[string]     string_to_int = { "hello" => 2, => 0 };
-real[real]      real_to_real = { 2.5 => 27 };
+int[string] string_to_int = { "hello" => 2, => 0 };
+real[real]  real_to_real = { 2.5 => 27 };
 
 string_to_int["bar"] = 17;
 string_to_int["foo"] += 12;
-real_to_real[pi] = pi/2;
+real_to_real[pi] = pi / 2;
 ----
 
 The initializer syntax uses the double-arrow `+=>+` to separate key from
@@ -365,19 +356,18 @@ existing values without requiring that the value be stored in a named
 object.
 
 ----
-
-*int    pointer;
-int     object;
+*int pointer;
+int  object;
 
 pointer = &object;
 *pointer = 12;
 
-printf ("%g\n", object);                /* 12 */
+printf("%g\n", object); /* 12 */
 
-pointer = reference (37);
+pointer = reference(37);
 (*pointer)++;
 
-printf ("%g\n", *pointer);              /* 38 */
+printf("%g\n", *pointer); /* 38 */
 ----
 
 === References
@@ -389,7 +379,6 @@ altogether. They are declared and assigned similarly, but not
 identically, to pointers:
 
 ----
-
 &int ref;
 int  i;
 
@@ -404,9 +393,8 @@ to the address of ``i``. References may also be assigned otherwise
 anonymous values with ``reference``, e.g.
 
 ----
-
 &int foo;
-&foo = reference ( 3 );
+&foo = reference(3);
 ----
 
 References, unlike pointers, need not be dereferenced; they are used
@@ -414,14 +402,13 @@ exactly as any other value. Changing either the value it refers to or
 the reference itself changes both.
 
 ----
-
-printf("%g\n", i);      /* 3 */
-printf("%g\n", ref);    /* 3 */
+printf("%g\n", i);   /* 3 */
+printf("%g\n", ref); /* 3 */
 
 ++ref;
 
-printf("%g\n", i);      /* 4 */
-printf("%g\n", ref);    /* 4 */
+printf("%g\n", i);   /* 4 */
+printf("%g\n", ref); /* 4 */
 ----
 
 === Functions
@@ -436,14 +423,13 @@ function can take any number of arguments at that point, each of the
 same type as the final argument type:
 
 ----
+int(int, int) a;
+void(int ...) b;
 
-int(int, int)   a;
-void(int ...)   b;
-
-a(1,2);
+a(1, 2);
 b(1);
-b(1,2);
-b(1,"hello");   /* illegal, "hello" is not compatible with int */
+b(1, 2);
+b(1, "hello"); /* illegal, "hello" is not compatible with int */
 ----
 
 See the section on Functions.
@@ -473,12 +459,12 @@ type                    /* primitive type */
 &type                   /* reference to type */
 type[*]                 /* array of type */
 type[...]               /* resizable array of type */
-type[*,*]               /* two-dimensional array of type */
+type[*, *]              /* two-dimensional array of type */
 type[type]              /* hash from type to type */
-type(type,...)          /* function with type arguments and return value */
+type(type, ...)         /* function with type arguments and return value */
 struct { ... }          /* struct of types */
 union { ... }           /* union of types */
-type(type,...)[*]       /* array of functions */
+type(type, ...)[*]      /* array of functions */
 /* etc. */
 ----
 +
@@ -494,35 +480,32 @@ variable comes into scope. To initialize array and structure types,
 expressions which evaluate to a struct or array object are used:
 
 ----
-
-int     k = 12;
-int     z = floor (pi * 27);
-int[3]  a = (int[3]) { 1, 2, 3 };
+int    k = 12;
+int    z = floor(pi * 27);
+int[3] a = (int[3]) { 1, 2, 3 };
 
 typedef struct {
-        int     i;
-        real    r;
+    int  i;
+    real r;
 } i_and_r;
 
-i_and_r s = (i_and_r) { i = 12, r = pi/2 };
+i_and_r s = (i_and_r) { i = 12, r = pi / 2 };
 ----
 
 As a special case, initializers for struct and array variables may elide
 the type leaving only the bracketed initializer:
 
 ----
-
 int[3]  a = { 1, 2, 3 };
-i_and_r s = { i = 12, r = pi/2 };
+i_and_r s = { i = 12, r = pi / 2 };
 ----
 
 An array initializer may also compute each element from its indices,
 giving names for them in brackets:
 
 ----
-
-int[5]          squares = { [i] = i * i };              /* 0, 1, 4, 9, 16 */
-int[3,3]        identity = { [i,j] = i == j ? 1 : 0 };
+int[5]    squares = { [i] = i * i }; /* 0, 1, 4, 9, 16 */
+int[3, 3] identity = { [i, j] = i == j ? 1 : 0 };
 ----
 
 Instead of initializing structures by their position in the declared
@@ -533,8 +516,7 @@ An array initializer followed by an ellipsis ( `+...+` ) is replicated
 to fill the remainder of the elements in that dimension:
 
 ----
-
-int[4,4]        a = { { 1, 2 ... }, { 3, 4 ... } ... };
+int[4, 4] a = { { 1, 2 ... }, { 3, 4 ... } ... };
 ----
 
 This leaves `a` initialized to an array whose first row is `{ 1, 2, 2, 2
@@ -554,21 +536,25 @@ and statement blocks also create new lexical scopes. This limits the
 scope of variables in situations like:
 
 ----
-
 if ((int i = foo(x)) > 0)
-        printf ("i in scope here %d\n", i);
+    printf("i in scope here %d\n", i);
 else
-        printf ("i still in scope here %d\n", i);
-printf ("i not in scope here\n");
+    printf("i still in scope here %d\n", i);
+printf("i not in scope here\n");
 ----
 
 Identifiers are lexically scoped even when functions are nested:
 
 ----
-int foo (int x) {
-        int y = 1;
-        int bar (int z) { return z + y; }
-        return bar (x);
+int
+foo(int x)
+{
+    int y = 1;
+
+    int
+    bar(int z) = z + y;
+
+    return bar(x);
 }
 ----
 
@@ -595,13 +581,11 @@ Storage captured and passed out of the function will remain
 accessible.
 
 ----
-*int foo (int x)
-{
-        return &x;
-}
+*int
+foo(int x) = &x;
 
-*int    a1 = foo (1);
-*int    a2 = foo (2);
+*int a1 = foo(1);
+*int a2 = foo(2);
 ----
 
 `a1` and `a2` now refer to separately allocated storage.
@@ -614,16 +598,17 @@ both the executable code and the storage for any enclosed static
 variables, function values are created from function declarations.
 
 ----
-int() incrementer ()
+int()
+incrementer()
 {
-        return (func () {
-                static int      x = 0;
-                return ++x;
-        });
+    return func() {
+               static int x = 0;
+               return ++x;
+           };
 }
 
-int()   a = incrementer();
-int()   b = incrementer();
+int() a = incrementer();
+int() b = incrementer();
 ----
 
 `a` and `b` refer to functions with separate static state and so the
@@ -637,15 +622,18 @@ within an initializer for a static variable exist in the frame for the
 static initializer, not for the function.
 
 ----
-poly foo ()
+poly
+foo()
 {
-        static poly bar (*int z)
-        {
-                *z = (*z)!;
-        }
-        static x = ((int y = 7), bar (&y), y);
+    static poly
+    bar(*int z)
+    {
+        *z = (*z)!;
+    }
 
-        return x;
+    static x = ((int y = 7), bar(&y), y);
+
+    return x;
 }
 ----
 
@@ -663,18 +651,21 @@ initializer is executed in the static initializer of the outermost
 enclosing function.
 
 ----
-poly foo ()
+poly
+foo()
 {
-        poly bar ()
-        {
-                global  g = 1;
-                static  s = 1;
+    poly
+    bar()
+    {
+        global g = 1;
+        static s = 1;
 
-                g++;
-                s++;
-                return (int[2]) { g, s };
-        }
-        return bar ();
+        g++;
+        s++;
+        return (int[2]) { g, s };
+    }
+
+    return bar();
 }
 ----
 

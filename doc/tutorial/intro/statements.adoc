@@ -23,8 +23,8 @@ If `expr` is true, `statement` is executed; otherwise control skips
 over it.  For example:
 
 ----
-if ( x == 0 )
-        printf ( "x is zero.\n" );
+if (x == 0)
+    printf("x is zero.\n");
 ----
 
 In this case, the message will be printed only if `x` is zero.
@@ -34,22 +34,22 @@ In this case, the message will be printed only if `x` is zero.
 For example,
 
 ----
-if ( x == 0 )
-        printf ( "x is zero.\n" );
+if (x == 0)
+    printf("x is zero.\n");
 else
-        printf ( "x is not zero.\n" );
+    printf("x is not zero.\n");
 ----
 
 More than one option may be presented by nesting further 'if's in
 'else' statements like this:
 
 ----
-if ( x == 0 )
-        printf ( "x is zero.\n" );
-else if ( x < 0 )
-        printf ( "x is negative.\n" );
+if (x == 0)
+    printf("x is zero.\n");
+else if (x < 0)
+    printf("x is negative.\n");
 else
-        printf ( "x is positive.\n" );
+    printf("x is positive.\n");
 ----
 
 == Twixt
@@ -69,8 +69,8 @@ should only be executed under a lock and that lock must be released
 afterwards.
 
 ----
-twixt ( get_lock ( ); release_lock ( ) )
-        locked_operation ( );
+twixt (get_lock(); release_lock())
+    locked_operation();
 ----
 
 == Switch
@@ -86,22 +86,22 @@ skips the `switch` entirely.  This example prints out a number to the
 screen, replacing it by a letter as though it were a poker card:
 
 ----
-switch ( x ) {
-        case 1:
-                printf ( "A\n" );       /* ace */
-                break;
-        case 11:
-                printf ( "J\n" );       /* jack */
-                break;
-        case 12:
-                printf ( "Q\n" );       /* queen */
-                break;
-        case 13:
-                printf ( "K\n" );       /* king */
-                break;
-        default:
-                printf ( "%d\n", x );   /* numeric */
-                break;
+switch (x) {
+case 1:
+    printf("A\n"); /* ace */
+    break;
+case 11:
+    printf("J\n"); /* jack */
+    break;
+case 12:
+    printf("Q\n"); /* queen */
+    break;
+case 13:
+    printf("K\n"); /* king */
+    break;
+default:
+    printf("%d\n", x); /* numeric */
+    break;
 }
 ----
 
@@ -114,13 +114,13 @@ of this 'falling through':
 ----
 int x = 3;
 
-switch ( sign ( x ) ) {
-        case -1:
-                printf ( "x is negative.\n" );
-        case 1:
-                printf ( "x is positive.\n" );
-        default:
-                printf ( "x is zero.\n" );
+switch (sign(x)) {
+case -1:
+    printf("x is negative.\n");
+case 1:
+    printf("x is positive.\n");
+default:
+    printf("x is zero.\n");
 }
 ----
 
@@ -147,19 +147,19 @@ way to print the union:
 
 ----
 union {
-        int a;
-        string b;
+    int    a;
+    string b;
 } u;
 
 u.b = "hello";
 
-union switch ( u ) {
-        case a:
-                printf ( "%d\n", u.a );
-                break;
-        case b:
-                printf ( "%s\n", u.b );
-                break;
+union switch (u) {
+case a:
+    printf("%d\n", u.a);
+    break;
+case b:
+    printf("%s\n", u.b);
+    break;
 }
 ----
 
@@ -170,13 +170,13 @@ available inside the case by that name. The switch above could have been
 written:
 
 ----
-union switch ( u ) {
-        case a num:
-                printf ( "%d\n", num );
-                break;
-        case b str:
-                printf ( "%s\n", str );
-                break;
+union switch (u) {
+case a num:
+    printf("%d\n", num);
+    break;
+case b str:
+    printf("%s\n", str);
+    break;
 }
 ----
 
@@ -192,9 +192,9 @@ For example:
 
 ----
 int x = 0;
-while ( x < 10 ) {
-        printf ( "%d\n", x );
-        ++x;
+while (x < 10) {
+    printf("%d\n", x);
+    ++x;
 }
 ----
 
@@ -206,13 +206,13 @@ final `;` may be left out. It is often used in input while testing for
 end-of-file:
 
 ----
-file f = File::open ( "test", "r" );
+file f = File::open("test", "r");
 
 do {
-        printf ( "%s\n", File::fgets ( f ) );
-} while ( ! File::end ( f ) );
+    printf("%s\n", File::fgets(f));
+} while (!File::end(f));
 
-File::close ( f );
+File::close(f);
 ----
 
 `for` begins by evaluating the first `expr`, which often initializes a
@@ -224,8 +224,8 @@ usually increments or decrements the counter variable.  The `while`
 example above can also be written as the following `for` loop:
 
 ----
-for ( int x = 0; x < 10; ++x )
-        printf ( "%d\n", x );
+for (int x = 0; x < 10; ++x)
+    printf("%d\n", x);
 ----
 
 == Flow control

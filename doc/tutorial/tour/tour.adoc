@@ -37,11 +37,11 @@ prompt indicates an incomplete line to be continued.
 0
 > int y = x;
 > ++y;
-> for(int i = 0; i < 25; i++)
+> for (int i = 0; i < 25; i++)
 +   x += 0;
 > x
 0
-> for(int i = 1; i < 9; i += 2)
+> for (int i = 1; i < 9; i += 2)
 +   x += i;
 > x
 16
@@ -94,9 +94,9 @@ of variables.
 
 > (-1) ** (1/2)
 Unhandled exception invalid_argument ("sqrt of negative number", 0, -1)
-/usr/share/nickle/math.5c:19:     raise invalid_argument ("sqrt of negative number", 0, v);
+/usr/share/nickle/math.5c:18:     raise invalid_argument("sqrt of negative number", 0, v);
     sqrt (-1)
-/usr/share/nickle/math.5c:1537:     result = sqrt (a);
+/usr/share/nickle/math.5c:1548:     result = sqrt(a);
     pow (-1, 0.5)
 <stdin>:1:     -1 ** (1 / 2);
 - done
@@ -127,7 +127,7 @@ score(int[*] v)
     return 2 * countsum(15, v, n) + 2 * countpairs(v, n);
 }
 > import Cribbage;
-> score ((int[*]) { 5, 5, 10, 7, 8 })
+> score((int[*]) { 5, 5, 10, 7, 8 })
 8
 > quit
 $

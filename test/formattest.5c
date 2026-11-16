@@ -396,3 +396,44 @@ check("names kept",
       "int x = 1;\n" + "\n" + "int\n" + "f() = 2;\n" + "\n"
       + "library \"command.5c\"\n" + "5 false\n" + "true\n");
 File::unlink(declares);
+
+/*
+ * Checking a file's format
+ *
+ * nickle --check-format reports each file formatting would change,
+ * with the first line it changes, and exits with status 1 when any
+ * would change.
+ */
+section("Checking a file's format");
+
+string name = "formatchecktest.tmp";
+
+/* Check text's format in a child nickle, returning its output and exit status */
+string
+check_format(string text)
+{
+    file f = File::open(name, "w");
+
+    File::fputs(text, f);
+    File::close(f);
+
+    file[*] out = File::mkpipe();
+
+    File::filter("sh",
+                 (string[*]) {
+                     "sh", "-c", "\"$0\" --check-format \"$1\" 2>&1; echo $?",
+                     nickle, name },
+                 (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
+
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
+    return got;
+}
+
+check("formatted", check_format("int x = 1;\n\nint\nf() = 2;\n"), "0\n");
+check("not formatted", check_format("int x = 1;\nint   y=2;\n"),
+      name + ":2: formatting changes this line\n" + "1\n");

@@ -338,6 +338,11 @@ test('check-memstack', find_program('check-memstack.py'), args : memstack_srcs)
 test('check-ignorenl', nickle,
      args : files('check-ignorenl.5c', 'gram.y'),
      env : test_env)
+
+# Check that the pretty-printer parenthesizes operators as the grammar binds them
+test('check-precedence', nickle,
+     args : files('check-precedence.5c', 'gram.y'),
+     env : test_env)
 subdir('examples')
 subdir('bench')
 subdir('doc')

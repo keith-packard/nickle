@@ -10,7 +10,8 @@
  * Uninitialized globals printed = <uninit>, and namespaces nested in a
  * printed namespace printed without their bodies. do-while printed a
  * stray semicolon, which broke an enclosing if-else, and a
- * comprehension block printed misindented.
+ * comprehension block printed misindented. enum switch printed as
+ * union switch, and numbers printed as their values, .4 as (2/5).
  */
 
 exception wrong (string what, poly got, poly want);
@@ -140,3 +141,37 @@ Command::lex_string ("int function dowhile_again " +
 		     "check(\"do-while true\", dowhile_again(3, true), dowhile(3, true));\n" +
 		     "check(\"do-while false\", dowhile_again(3, false), dowhile(3, false));\n" +
 		     "check(\"comprehension\", compblock_again(), compblock());\n");
+
+/* A return without a value prints without a space before its ';' */
+void function early (int a)
+{
+    if (a > 0)
+	return;
+    a = 1;
+}
+
+has ("void return", printed ("early"), "        return;\n");
+
+
+/* An enum switch prints as one */
+typedef enum { red, green } color;
+
+int function hue (color c)
+{
+    enum switch (c) {
+    case red:
+	return 1;
+    case green:
+	return 2;
+    }
+}
+
+has ("enum switch", printed ("hue"), "enum switch (c) {");
+
+/* Numbers print as written */
+real function numbers ()
+{
+    return .4 + 1_000 + 0x1F + 1.5e3 + .{3};
+}
+
+has ("numbers", printed ("numbers"), "numbers() = .4 + 1_000 + 0x1F + 1.5e3 + .{3};");

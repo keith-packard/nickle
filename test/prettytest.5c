@@ -1,0 +1,1062 @@
+/*
+ * Nickle test suite
+ *
+ * Printing code
+ *
+ * The pretty-printer lays code out as clang-format lays out C: spaces
+ * for indentation, no space before call parentheses, a definition's
+ * name on its own line, braces on their statement's line, long
+ * statements broken at their nicest places, struct types and
+ * declarations lined up. These sections need no comments, so they run
+ * in every build.
+ */
+
+/*
+ * Each section below was a test of its own. It starts by naming
+ * itself, so the comment describing it leads that statement and not
+ * the section's code, which would print with it
+ */
+void section(string name)
+{
+}
+
+/*
+ * Indentation of printed code
+ *
+ * print indented with a tab for each two levels; it now indents four
+ * spaces per level, with no tabs.
+ */
+section("Indentation of printed code");
+
+exception wrong (string what, poly got, poly want);
+
+void function check (string what, poly got, poly want)
+{
+    if (got != want)
+	raise wrong (what, got, want);
+}
+
+int deep (int a)
+{
+    if (a > 0)
+	if (a > 1)
+	    if (a > 2)
+		return 3;
+    return 0;
+}
+
+file	f = File::string_write ();
+Command::pretty_print (f, (string[*]) { "deep" });
+string	printed = File::string_string (f);
+
+check ("no tabs", String::index (printed, "\t"), -1);
+check ("level 4", String::index (printed, "\n                return 3;\n") >= 0, true);
+
+/*
+ * Spacing before parentheses in printed code
+ *
+ * print put a space between a name and the parenthesis after it, as
+ * in 'f (x)'. It now prints calls, declarations, raise, catch, and
+ * is_type and has_member with the parenthesis against the name, as
+ * clang-format does for C, keeping the space after if, while, for,
+ * switch, and twixt. Parameters of type poly printed without it,
+ * which a function type can't read back.
+ */
+section("Spacing before parentheses in printed code");
+
+exception oops (int code);
+
+int spaced (int a, poly p)
+{
+    int g (int b) { return b; }
+    for (int i = 0; i < a; i++)
+	while (a > 10)
+	    a = g (a - 1);
+    switch (a) { default: break; }
+    twixt (a++; a--) { a = abs (a); }
+    try {
+	if (is_type (p, int) && has_member (p, x))
+	    raise oops (a);
+    } catch oops (int code) { a = code; }
+    return a;
+}
+
+file	f = File::string_write ();
+Command::pretty_print (f, (string[*]) { "spaced" });
+string	printed = File::string_string (f);
+
+void has (string want)
+{
+    check (want, String::index (printed, want) >= 0, true);
+}
+
+has ("spaced(int a, poly p)");
+has ("    int\n    g(int b) = b;\n");
+has ("for (int i = 0; i < a; i++)");
+has ("while (a > 10)");
+has ("a = g(a - 1);");
+has ("switch (a)");
+has ("twixt (a++; a--)");
+has ("a = abs(a);");
+has ("if (is_type(p, int) && has_member(p, x))");
+has ("raise oops(a);");
+has ("catch oops(int code)");
+
+/* A function type's poly parameters print their type, so it reads back */
+typedef bool(poly a, poly b) greater;
+file	tf = File::string_write ();
+Command::pretty_print (tf, (string[*]) { "greater" });
+check ("function type", String::index (File::string_string (tf), "bool(poly a, poly b)") >= 0, true);
+
+/*
+ * Function definitions put the name on its own line
+ *
+ * print starts a function definition's name on a line after its return
+ * type, as clang-format does for C, for top-level and nested functions;
+ * declarations and builtins stay on one line. The printed definitions
+ * read back. A function returning one value prints as '= value' when
+ * that fits, and a long parameter list breaks as call arguments do.
+ */
+section("Function definitions put the name on its own line");
+
+public int outer (int a)
+{
+    int inner (int b) { b++; return b; }
+    return inner (a);
+}
+
+int later (int a);
+
+string printed (string name)
+{
+    file	f = File::string_write ();
+
+    Command::pretty_print (f, (string[*]) { name });
+    return File::string_string (f);
+}
+
+string	o = printed ("outer");
+
+check ("outer", String::index (o, "public int\nouter(int a)\n{\n") == 0, true);
+check ("inner", String::index (o, "    int\n    inner(int b)\n    {\n") >= 0, true);
+check ("builtin", String::index (printed ("exit"), "public noreturn exit(int)") == 0, true);
+
+/* The printed definition reads back */
+Command::lex_string (printed ("outer") + "check (\"again\", outer (1), 2);\n");
+
+/*
+ * A function returning one value prints as '= value' when that fits as
+ * code, and with a block otherwise or when its body has comments; a
+ * lambda of that form as an operand is parenthesized
+ */
+real function area (real w, real h) { return w * h; }
+string function describe_the_area_of (real width, real height) = sprintf ("the area is %g square units", width * height);
+int function commented (int x) { /* why */ return x; }
+int function applied (int x) = (int func (int y) = y * 3) (x);
+
+check ("short", String::index (printed ("area"), "real\narea(real w, real h) = w * h;\n") >= 0, true);
+check ("long", String::index (printed ("describe_the_area_of"),
+			      "describe_the_area_of(real width, real height)\n{\n    return sprintf(") > 0, true);
+/* A body holding a comment keeps its block */
+check ("commented", String::index (printed ("commented"), "commented(int x)\n{\n") > 0, true);
+check ("lambda operand", String::index (printed ("applied"), "(int func(int y) = y * 3)(x)") > 0, true);
+check ("lambda value", applied (2), 6);
+
+/* A long parameter list breaks as call arguments do */
+int function many_parameters (int expire_delta, int notify_delta, bool() lock, bool() unlock, bool() validate, void(int number) notify)
+{
+    return expire_delta + notify_delta;
+}
+exception many_reasons (int expire_delta, int notify_delta, string first_reason, string second_reason, int code);
+
+check ("exception parameters",
+       String::index (printed ("many_reasons"),
+		      "exception many_reasons(int expire_delta, int notify_delta,\n" +
+		      "                       string first_reason, string second_reason, int code);\n") >= 0,
+       true);
+check ("parameters",
+       String::index (printed ("many_parameters"),
+		      "many_parameters(int expire_delta, int notify_delta, bool() lock,\n" +
+		      "                bool() unlock, bool() validate, void(int number) notify)\n") > 0, true);
+
+/*
+ * Brace placement in printed code
+ *
+ * print put every brace on a line of its own and nested an else's if
+ * one level deeper. It now places braces as clang-format does: a block
+ * opens on its statement's line and closes on the line of what follows
+ * it, an else-if chain stays on one level, and a case's block opens on
+ * its label's line with a break after its closing brace. The printed
+ * code reads back to the same results.
+ */
+section("Brace placement in printed code");
+
+int braces (int a, int b)
+{
+    int c = a;
+
+    if (a > b) { c = b; } else if (a < b) c = a + b; else { c = 0; c++; }
+    while (c > 100) { c--; }
+    for (int i = 0; i < 3; i++) { c += i; }
+    do { c++; } while (c < 10);
+    switch (c) { case 1: c = 2; break; case 10: { int d = 3; c += d; } break; default: break; }
+    try { if (c < 0) raise divide_by_zero (1, 0); } catch divide_by_zero (real x, real y) { c = 0; }
+    return c;
+}
+
+file	f = File::string_write ();
+Command::pretty_print (f, (string[*]) { "braces" });
+string	printed = File::string_string (f);
+
+check ("layout", printed,
+       "int\n" +
+       "braces(int a, int b)\n" +
+       "{\n" +
+       "    int c = a;\n" +
+       "\n" +
+       "    if (a > b) {\n" +
+       "        c = b;\n" +
+       "    } else if (a < b)\n" +
+       "        c = a + b;\n" +
+       "    else {\n" +
+       "        c = 0;\n" +
+       "        c++;\n" +
+       "    }\n" +
+       "    while (c > 100) {\n" +
+       "        c--;\n" +
+       "    }\n" +
+       "    for (int i = 0; i < 3; i++) {\n" +
+       "        c += i;\n" +
+       "    }\n" +
+       "    do {\n" +
+       "        c++;\n" +
+       "    } while (c < 10);\n" +
+       "    switch (c) {\n" +
+       "    case 1:\n" +
+       "        c = 2;\n" +
+       "        break;\n" +
+       "    case 10: {\n" +
+       "        int d = 3;\n" +
+       "        c += d;\n" +
+       "    } break;\n" +
+       "    default:\n" +
+       "        break;\n" +
+       "    }\n" +
+       "    try {\n" +
+       "        if (c < 0)\n" +
+       "            raise divide_by_zero(1, 0);\n" +
+       "    } catch divide_by_zero(real x, real y) {\n" +
+       "        c = 0;\n" +
+       "    }\n" +
+       "    return c;\n" +
+       "}\n");
+
+/* The printed code reads back */
+Command::lex_string ("int function braces_again" +
+		     String::substr (printed, String::index (printed, "("),
+				     String::length (printed) - String::index (printed, "(")) +
+		     "check (\"again 1\", braces_again (1, 2), braces (1, 2));\n" +
+		     "check (\"again 2\", braces_again (5, 2), braces (5, 2));\n" +
+		     "check (\"again 3\", braces_again (2, 2), braces (2, 2));\n");
+
+/*
+ * Wrapped control statement headers
+ *
+ * When the header of an if, else if, while, for, or switch breaks, its
+ * block's opening brace goes on a line of its own, and a body without
+ * braces has the header's continued lines four columns further in, so
+ * the header's lines don't line up with the body. A for or twixt
+ * header that breaks puts each clause on a line of its own, as a comma
+ * expression puts its operands. Printing the output again gives the
+ * same text.
+ */
+section("Wrapped control statement headers");
+
+string	nickle = Environ::get ("NICKLE");
+string	name = "prettyheadertest.tmp";
+
+/* Run script in a child nickle, returning its output, stderr included */
+string run (string script)
+{
+    file	f = File::open (name, "w");
+
+    File::fputs (script, f);
+    File::close (f);
+
+    file[*]	out = File::mkpipe ();
+
+    File::filter (nickle, (string[*]) { nickle, name },
+		  (file[3]) { stdin, out[1], out[1] });
+    File::close (out[1]);
+
+    string	got = "";
+    while (!File::end (out[0]))
+	got += File::fgets (out[0]) + "\n";
+    File::close (out[0]);
+    File::unlink (name);
+    return got;
+}
+
+string	globals = ("bool first_condition_to_check = true, second_condition_to_check = false, third_condition_to_check = true;\n");
+
+string	source = ("int f (int a)\n" +
+		  "{\n" +
+		  "    int x = 0;\n" +
+		  "    if (first_condition_to_check && second_condition_to_check || third_condition_to_check && a > 0) { x = 1; x++; }\n" +
+		  "    if (first_condition_to_check && second_condition_to_check || third_condition_to_check && a > 0) x = 2;\n" +
+		  "    while (first_condition_to_check && second_condition_to_check || third_condition_to_check && a > 9) { x--; }\n" +
+		  "    if (a > 0) x = 3; else if (first_condition_to_check && second_condition_to_check || third_condition_to_check && a > 1) { x = 4; } else x = 5;\n" +
+		  "    return x;\n" +
+		  "}\n");
+
+string	want = ("int\n" +
+		"f(int a)\n" +
+		"{\n" +
+		"    int x = 0;\n" +
+		"\n" +
+		"    if ((first_condition_to_check && second_condition_to_check)\n" +
+		"        || (third_condition_to_check && a > 0))\n" +
+		"    {\n" +
+		"        x = 1;\n" +
+		"        x++;\n" +
+		"    }\n" +
+		"    if ((first_condition_to_check && second_condition_to_check)\n" +
+		"            || (third_condition_to_check && a > 0))\n" +
+		"        x = 2;\n" +
+		"    while ((first_condition_to_check && second_condition_to_check)\n" +
+		"           || (third_condition_to_check && a > 9))\n" +
+		"    {\n" +
+		"        x--;\n" +
+		"    }\n" +
+		"    if (a > 0)\n" +
+		"        x = 3;\n" +
+		"    else if ((first_condition_to_check && second_condition_to_check)\n" +
+		"             || (third_condition_to_check && a > 1))\n" +
+		"    {\n" +
+		"        x = 4;\n" +
+		"    } else\n" +
+		"        x = 5;\n" +
+		"    return x;\n" +
+		"}\n");
+
+check ("print", run (globals + source + "print f\n"), want);
+check ("print again", run (globals + want + "print f\n"), want);
+
+/* A for's clauses break after their semicolons; a clause too long breaks inside */
+string	loops = ("void\n" +
+		 "loops(int[*] a)\n" +
+		 "{\n" +
+		 "    for (int index_of_the_first_element = 0;\n" +
+		 "         index_of_the_first_element < dim(a);\n" +
+		 "         index_of_the_first_element++)\n" +
+		 "        a[index_of_the_first_element] = 0;\n" +
+		 "    for (int index_of_the_first_element = 0;\n" +
+		 "         index_of_the_first_element < dim(a) && a[index_of_the_first_element] != 0\n" +
+		 "             && first_condition_to_check && second_condition_to_check;\n" +
+		 "         index_of_the_first_element++)\n" +
+		 "        a[index_of_the_first_element] = 1;\n" +
+		 "}\n");
+
+check ("for", run (globals + loops + "print loops\n"), loops);
+
+/* A broken header with an empty clause keeps its ';;' */
+string	empty = ("void\n" +
+		 "empty(int[*] a)\n" +
+		 "{\n" +
+		 "    for (int index_of_the_first_element = first_condition_to_check ? 0 : 1;;\n" +
+		 "         index_of_the_first_element += second_condition_to_check ? 2 : 3)\n" +
+		 "        break;\n" +
+		 "}\n");
+
+check ("empty clause", run (globals + empty + "print empty\n"), empty);
+
+/* A twixt header breaks as a for's does, and so do comma expressions */
+string	files = ("void\n" +
+		 "files(string basename)\n" +
+		 "{\n" +
+		 "    twixt ((file prob = File::open(basename + \"-prob.txt\", \"w\")),\n" +
+		 "           (file soln = File::open(basename + \"-soln.txt\", \"w\"));\n" +
+		 "           File::close(prob), File::close(soln))\n" +
+		 "    {\n" +
+		 "        File::fprintf(prob, \"problem\\n\");\n" +
+		 "        File::fprintf(soln, \"solution\\n\");\n" +
+		 "    }\n" +
+		 "}\n");
+
+check ("twixt",
+       run ("void files (string basename) {\n" +
+	    "    twixt ((file prob = File::open (basename + \"-prob.txt\", \"w\")), (file soln = File::open (basename + \"-soln.txt\", \"w\")); File::close (prob), File::close (soln)) {\n" +
+	    "        File::fprintf (prob, \"problem\\n\");\n" +
+	    "        File::fprintf (soln, \"solution\\n\");\n" +
+	    "    }\n" +
+	    "}\n" +
+	    "print files\n"),
+       files);
+check ("twixt again", run (files + "print files\n"), files);
+
+/*
+ * Breaking long statements
+ *
+ * print breaks a statement that won't fit, its lines ending by column
+ * 100 and at most 80 columns past the statement's start, as clang-format
+ * breaks C: call arguments and initializers after their commas, lined
+ * up after the opening parenthesis or brace, or on the lines after it,
+ * four columns in, when that takes no more lines; operators before the
+ * operator, lowest precedence first, lined up right of the enclosing
+ * parenthesis or four columns in, with a chain inside another four
+ * columns further; ?: before the ':' or before both parts. A group that
+ * breaks spreads its text evenly over the fewest lines. Struct and hash
+ * initializers break as well, and one holding an initializer too wide
+ * for a line of its own opens as a block. A lambda with a block lays
+ * out where it lands. A statement breaks at its nicest places first:
+ * lists, then operators binding loosest, outside brackets before inside
+ * them, and inside subscripts, member accesses, and casts last. An
+ * assignment statement's value, or a declaration's, moves past its
+ * operator when that fits better. Printing the output again gives the
+ * same text.
+ */
+section("Breaking long statements");
+
+string	name = "prettywraptest.tmp";
+
+/* Run script in a child nickle, returning its output, stderr included */
+string run (string script)
+{
+    file	f = File::open (name, "w");
+
+    File::fputs (script, f);
+    File::close (f);
+
+    file[*]	out = File::mkpipe ();
+
+    File::filter (nickle, (string[*]) { nickle, name },
+		  (file[3]) { stdin, out[1], out[1] });
+    File::close (out[1]);
+
+    string	got = "";
+    while (!File::end (out[0]))
+	got += File::fgets (out[0]) + "\n";
+    File::close (out[0]);
+    File::unlink (name);
+    return got;
+}
+
+string	globals = ("int argument_number_one = 1, argument_number_two = 2, argument_number_three = 3, four = 4;\n" +
+		   "int some_function_with_a_long_name (int a, int b, int c, int d) { return a + b + c + d; }\n" +
+		   "int first_value_in_the_sum = 1, second_value_in_the_sum = 2, scale_factor_for_it = 3;\n" +
+		   "bool first_condition_to_check = true, second_condition_to_check = false, third_condition_to_check = true;\n" +
+		   "exception problem_with_a_long_name (int code, string what, int other);\n");
+
+string	source = ("int wrapped (int a)\n" +
+		  "{\n" +
+		  "    int c, total, x, result;\n" +
+		  "    c = some_function_with_a_long_name (argument_number_one, argument_number_two, argument_number_three, four);\n" +
+		  "    total = first_value_in_the_sum + second_value_in_the_sum * scale_factor_for_it - argument_number_three / four;\n" +
+		  "    result = first_value_in_the_sum + second_value_in_the_sum * scale_factor_for_it * argument_number_three * argument_number_two * four * scale_factor_for_it - four;\n" +
+		  "    if (first_condition_to_check && second_condition_to_check || third_condition_to_check && a > 0) x = 1;\n" +
+		  "    int[*] values = { 1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000, 11000000 };\n" +
+		  "    x = first_condition_to_check ? argument_number_one + argument_number_two : argument_number_three * four;\n" +
+		  "    do x++; while (first_value_in_the_sum + second_value_in_the_sum < x && x < argument_number_three * 100);\n" +
+		  "    if (a < 0)\n" +
+		  "        raise problem_with_a_long_name (argument_number_one, \"a message that is long\", argument_number_two);\n" +
+		  "    return c + total + x + result + values[1];\n" +
+		  "}\n");
+
+string	want = ("int\n" +
+		"wrapped(int a)\n" +
+		"{\n" +
+		"    int c, total, x, result;\n" +
+		"\n" +
+		"    c = some_function_with_a_long_name(\n" +
+		"        argument_number_one, argument_number_two, argument_number_three, four);\n" +
+		"    total = first_value_in_the_sum + second_value_in_the_sum * scale_factor_for_it\n" +
+		"        - argument_number_three / four;\n" +
+		"    result = first_value_in_the_sum\n" +
+		"        + second_value_in_the_sum * scale_factor_for_it * argument_number_three\n" +
+		"            * argument_number_two * four * scale_factor_for_it\n" +
+		"        - four;\n" +
+		"    if ((first_condition_to_check && second_condition_to_check)\n" +
+		"            || (third_condition_to_check && a > 0))\n" +
+		"        x = 1;\n" +
+		"    int[*] values = { 1000000, 2000000, 3000000, 4000000, 5000000, 6000000,\n" +
+		"                      7000000, 8000000, 9000000, 10000000, 11000000 };\n" +
+		"    x = first_condition_to_check ? argument_number_one + argument_number_two\n" +
+		"                                 : argument_number_three * four;\n" +
+		"    do\n" +
+		"        x++;\n" +
+		"    while (first_value_in_the_sum + second_value_in_the_sum < x\n" +
+		"           && x < argument_number_three * 100);\n" +
+		"    if (a < 0)\n" +
+		"        raise problem_with_a_long_name(\n" +
+		"            argument_number_one, \"a message that is long\", argument_number_two);\n" +
+		"    return c + total + x + result + values[1];\n" +
+		"}\n");
+
+check ("print", run (globals + source + "print wrapped\n"), want);
+check ("print again", run (globals + want + "print wrapped\n"), want);
+
+/*
+ * Struct and hash initializers break too, and one holding an
+ * initializer too wide for a line of its own opens as a block
+ */
+string	table_types = ("typedef struct { string name; int code; string description; } entry_t;\n" +
+			"typedef struct { entry_t[*] entries; int count; } table_t;\n");
+
+string	tables = ("table_t function tables ()\n" +
+		  "{\n" +
+		  "    table_t t = { entries = { { name = \"first\", code = 1, description = \"the first of the entries\" }, { name = \"second\", code = 2, description = \"the second of the entries, a longer one\" } }, count = 2 };\n" +
+		  "    int[string] h = { \"one entry\" => 1, \"two entries\" => 2, \"three entries\" => 3, \"four entries\" => 4, \"five\" => 5 };\n" +
+		  "    return t;\n" +
+		  "}\n");
+
+string	tables_want = ("table_t\n" +
+		       "tables()\n" +
+		       "{\n" +
+		       "    table_t     t = {\n" +
+		       "        entries = {\n" +
+		       "            { name = \"first\", code = 1, description = \"the first of the entries\" },\n" +
+		       "            { name = \"second\", code = 2,\n" +
+		       "              description = \"the second of the entries, a longer one\" }\n" +
+		       "        },\n" +
+		       "        count = 2\n" +
+		       "    };\n" +
+		       "    int[string] h = { \"one entry\" => 1, \"two entries\" => 2,\n" +
+		       "                      \"three entries\" => 3, \"four entries\" => 4, \"five\" => 5 };\n" +
+		       "    return t;\n" +
+		       "}\n");
+
+check ("tables", run (table_types + tables + "print tables\n"), tables_want);
+check ("tables again", run (table_types + tables_want + "print tables\n"), tables_want);
+
+/*
+ * A lambda with a block keeps its brace after its parameters and its
+ * body four columns past where it starts; in arguments it starts a
+ * line of its own after the '(', and one fitting worse far to the right
+ * moves to a line of its own four columns in
+ */
+string	handler = "void register_handler_for (string name, string description, poly handler) { }\n";
+
+string	lambdas = ("void setup ()\n" +
+		   "{\n" +
+		   "    register_handler_for (\"x\", \"y\", void func () { printf (\"short\\n\"); });\n" +
+		   "    poly the_handler_variable_with_a_long_name = func (string message, int count) {\n" +
+		   "        printf (\"handling the message %s which arrived %d times so far today\\n\", message, count);\n" +
+		   "    };\n" +
+		   "}\n");
+
+string	lambdas_want = ("void\n" +
+			"setup()\n" +
+			"{\n" +
+			"    register_handler_for(\"x\", \"y\",\n" +
+			"                         void func() {\n" +
+			"                             printf(\"short\\n\");\n" +
+			"                         });\n" +
+			"    poly the_handler_variable_with_a_long_name =\n" +
+			"        func(string message, int count) {\n" +
+			"            printf(\"handling the message %s which arrived %d times so far today\\n\",\n" +
+			"                   message, count);\n" +
+			"        };\n" +
+			"}\n");
+
+check ("lambdas", run (handler + lambdas + "print setup\n"), lambdas_want);
+check ("lambdas again", run (handler + lambdas_want + "print setup\n"), lambdas_want);
+
+/* Items that would pass column 100 lined up after the '{ ' start on the next line instead */
+string	sprites = ("string function sprite_from_string_named (string s) = s;\n" +
+		   "void sprites ()\n" +
+		   "{\n" +
+		   "    string[*] the_sprites_for_the_robots_on_the_board = { sprite_from_string_named (\"the robot that is red\"), sprite_from_string_named (\"the robot that is blue\") };\n" +
+		   "}\n");
+
+string	sprites_want = ("void\n" +
+			"sprites()\n" +
+			"{\n" +
+			"    string[*] the_sprites_for_the_robots_on_the_board = {\n" +
+			"        sprite_from_string_named(\"the robot that is red\"),\n" +
+			"        sprite_from_string_named(\"the robot that is blue\") };\n" +
+			"}\n");
+
+check ("sprites", run (sprites + "print sprites\n"), sprites_want);
+
+/* An initializer too long after its '=' goes on the next line, four columns in */
+string	style = ("void style ()\n" +
+		 "{\n" +
+		 "    string font_style_for_the_test_window = \":pixelsize=12.3:hintstyle=hintfull:hinting=true:autohint=false:lcdfilter\";\n" +
+		 "}\n");
+
+string	style_want = ("void\n" +
+		      "style()\n" +
+		      "{\n" +
+		      "    string font_style_for_the_test_window =\n" +
+		      "        \":pixelsize=12.3:hintstyle=hintfull:hinting=true:autohint=false:lcdfilter\";\n" +
+		      "}\n");
+
+check ("style", run (style + "print style\n"), style_want);
+check ("style again", run (style_want + "print style\n"), style_want);
+
+/* Catch, lambda, and subscript lists break too */
+string	lists = ("exception a_problem_with_a_long_name (int first_argument_code, string second_argument_text, int third);\n" +
+		 "void lists (int[*,*] matrix_with_a_long_name, int first_index_value_here, int second_index_value_here)\n" +
+		 "{\n" +
+		 "    try {\n" +
+		 "        matrix_with_a_long_name[first_index_value_here * second_index_value_here + 1000000, second_index_value_here * 20000000] = 1;\n" +
+		 "    } catch a_problem_with_a_long_name (int first_argument_code, string second_argument_text, int third) {\n" +
+		 "        printf (\"%d\\n\", first_argument_code);\n" +
+		 "    }\n" +
+		 "    poly h = func (int first_parameter_of_lambda, string second_parameter_of_lambda, real third_parameter) {\n" +
+		 "        return first_parameter_of_lambda;\n" +
+		 "    };\n" +
+		 "}\n");
+
+string	lists_want = ("void\n" +
+		      "lists(int[*, *] matrix_with_a_long_name,\n" +
+		      "      int first_index_value_here, int second_index_value_here)\n" +
+		      "{\n" +
+		      "    try {\n" +
+		      "        matrix_with_a_long_name[\n" +
+		      "            first_index_value_here * second_index_value_here + 1000000,\n" +
+		      "            second_index_value_here * 20000000] = 1;\n" +
+		      "    } catch a_problem_with_a_long_name(\n" +
+		      "        int first_argument_code, string second_argument_text, int third)\n" +
+		      "    {\n" +
+		      "        printf(\"%d\\n\", first_argument_code);\n" +
+		      "    }\n" +
+		      "    poly h = func(int first_parameter_of_lambda,\n" +
+		      "                  string second_parameter_of_lambda, real third_parameter)\n" +
+		      "             {\n" +
+		      "                 return first_parameter_of_lambda;\n" +
+		      "             };\n" +
+		      "}\n");
+
+check ("lists", run (lists + "print lists\n"), lists_want);
+check ("lists again",
+       run ("exception a_problem_with_a_long_name (int first_argument_code, string second_argument_text, int third);\n" +
+	    lists_want + "print lists\n"),
+       lists_want);
+
+/*
+ * A statement breaks at its nicest places first: outside brackets
+ * before inside them, and inside a subscript only as a last resort
+ */
+string	mul = "int mul (int a, int b) { return a * b; }\n";
+string	nicest = ("void nicest (int[*,*] a, int[*,*] b, int i, int j)\n" +
+		  "{\n" +
+		  "    b[i, j] = mul(2, a[i, j]) ^ mul(3, a[(i + 1) % 4, j]) ^ a[(i + 2) % 4, j] ^ a[(i + 3) % 4, j];\n" +
+		  "}\n");
+
+string	nicest_want = ("void\n" +
+		       "nicest(int[*, *] a, int[*, *] b, int i, int j)\n" +
+		       "{\n" +
+		       "    b[i, j] = mul(2, a[i, j]) ^ mul(3, a[(i + 1) % 4, j])\n" +
+		       "        ^ a[(i + 2) % 4, j] ^ a[(i + 3) % 4, j];\n" +
+		       "}\n");
+
+check ("nicest", run (mul + nicest + "print nicest\n"), nicest_want);
+check ("nicest again", run (mul + nicest_want + "print nicest\n"), nicest_want);
+
+/*
+ * Member accesses break before each '.' or '->', a cast after the cast,
+ * and is_type and has_member between their arguments, as last resorts
+ * after the places outside them
+ */
+string	resort_types = ("typedef struct { int fourth_member_with_a_long_name; } inner_t;\n" +
+			"typedef struct { inner_t third_member_with_a_long_name; } middle_t;\n" +
+			"typedef struct { middle_t second_member_with_a_long_name; } outer_t;\n" +
+			"typedef union { int number_of_things_in_the_union; string name_of_it; } kind_t;\n");
+
+string	resorts = ("int last_resorts (outer_t first_object_with_a_quite_long_name)\n" +
+		   "{\n" +
+		   "    int result_of_it = first_object_with_a_quite_long_name.second_member_with_a_long_name.third_member_with_a_long_name.fourth_member_with_a_long_name;\n" +
+		   "    kind_t the_kind_of_the_value = (kind_t.number_of_things_in_the_union) first_object_with_a_quite_long_name.second_member_with_a_long_name.third_member_with_a_long_name.fourth_member_with_a_long_name;\n" +
+		   "    return result_of_it;\n" +
+		   "}\n" +
+		   "bool checks (poly value_with_a_rather_long_name, poly another_value_with_a_long_name)\n" +
+		   "{\n" +
+		   "    return is_type(value_with_a_rather_long_name, struct { int an_integer_member; real a_real_member; }) && has_member(another_value_with_a_long_name, a_member_name_that_goes_on_and_on);\n" +
+		   "}\n");
+
+string	resorts_want = ("int\n" +
+			"last_resorts(outer_t first_object_with_a_quite_long_name)\n" +
+			"{\n" +
+			"    int    result_of_it = first_object_with_a_quite_long_name\n" +
+			"        .second_member_with_a_long_name.third_member_with_a_long_name\n" +
+			"        .fourth_member_with_a_long_name;\n" +
+			"    kind_t the_kind_of_the_value = (kind_t.number_of_things_in_the_union)\n" +
+			"        (first_object_with_a_quite_long_name.second_member_with_a_long_name\n" +
+			"         .third_member_with_a_long_name.fourth_member_with_a_long_name);\n" +
+			"    return result_of_it;\n" +
+			"}\n" +
+			"bool\n" +
+			"checks(poly value_with_a_rather_long_name, poly another_value_with_a_long_name)\n" +
+			"{\n" +
+			"    return is_type(value_with_a_rather_long_name,\n" +
+			"                   struct { int an_integer_member; real a_real_member; })\n" +
+			"        && has_member(\n" +
+			"            another_value_with_a_long_name, a_member_name_that_goes_on_and_on);\n" +
+			"}\n");
+
+check ("last resorts", run (resort_types + resorts + "print last_resorts\nprint checks\n"),
+       resorts_want);
+check ("last resorts again",
+       run (resort_types + resorts_want + "print last_resorts\nprint checks\n"), resorts_want);
+
+/*
+ * An assignment statement's value moves to the line after its operator,
+ * four columns in, when that fits better than breaking inside it
+ */
+string	assigns = ("typedef struct { int[*, *] cells_of_the_board; int expire_time_of_the_game; } game_t;\n" +
+		   "int start_a_timer (int interval, int count, int lock, int unlock, int validate) { return 0; }\n" +
+		   "void assigns (game_t g, int expire_interval_of_the_game, int i, int j)\n" +
+		   "{\n" +
+		   "    g.cells_of_the_board[i, j] = start_a_timer(expire_interval_of_the_game, 10, 1, 2, 3) + 1;\n" +
+		   "    g.expire_time_of_the_game += start_a_timer(expire_interval_of_the_game, 10, 1, 2, 3) * 7;\n" +
+		   "}\n");
+
+string	assigns_want = ("void\n" +
+			"assigns(game_t g, int expire_interval_of_the_game, int i, int j)\n" +
+			"{\n" +
+			"    g.cells_of_the_board[i, j] =\n" +
+			"        start_a_timer(expire_interval_of_the_game, 10, 1, 2, 3) + 1;\n" +
+			"    g.expire_time_of_the_game +=\n" +
+			"        start_a_timer(expire_interval_of_the_game, 10, 1, 2, 3) * 7;\n" +
+			"}\n");
+
+check ("assignments", run (assigns + "print assigns\n"), assigns_want);
+check ("assignments again", run (assigns + "print assigns\n" + assigns_want + "print assigns\n"),
+       assigns_want + assigns_want);
+
+/*
+ * A declaration's value moves to the line after its '=' too, when it
+ * fits on one line there and not after the '='
+ */
+string	declares = ("void declares (int expire_interval_of_the_game, int validate_the_timer)\n" +
+		    "{\n" +
+		    "    int timer = start_a_timer(expire_interval_of_the_game, 10, 1, 2, validate_the_timer);\n" +
+		    "    int[*] timers = { start_a_timer(expire_interval_of_the_game, 10, 1, 2, 3), 7, 8, 9 };\n" +
+		    "}\n");
+
+string	declares_want = ("void\n" +
+			 "declares(int expire_interval_of_the_game, int validate_the_timer)\n" +
+			 "{\n" +
+			 "    int    timer =\n" +
+			 "        start_a_timer(expire_interval_of_the_game, 10, 1, 2, validate_the_timer);\n" +
+			 "    int[*] timers =\n" +
+			 "        { start_a_timer(expire_interval_of_the_game, 10, 1, 2, 3), 7, 8, 9 };\n" +
+			 "}\n");
+
+check ("declarations", run (assigns + declares + "print declares\n"), declares_want);
+check ("declarations again",
+       run (assigns + declares + "print declares\n" + declares_want + "print declares\n"),
+       declares_want + declares_want);
+
+/*
+ * Printing struct members declared together
+ *
+ * Struct types recorded one type per member, so 'int x, y;' printed
+ * as 'int x; int y;', and a comment on the declaration printed once
+ * for each name. Members declared together now print together, in
+ * print and in error messages, with a shared comment once.
+ */
+section("Printing struct members declared together");
+
+string	name = "structgrouptest.tmp";
+
+/* Run script in a child nickle, returning its output, stderr included */
+string run (string script)
+{
+    file	f = File::open (name, "w");
+
+    File::fputs (script, f);
+    File::close (f);
+
+    file[*]	out = File::mkpipe ();
+
+    File::filter (nickle, (string[*]) { nickle, name },
+		  (file[3]) { stdin, out[1], out[1] });
+    File::close (out[1]);
+
+    string	got = "";
+    while (!File::end (out[0]))
+	got += File::fgets (out[0]) + "\n";
+    File::close (out[0]);
+    File::unlink (name);
+    return got;
+}
+
+check ("print",
+       run ("typedef struct { real x, y, z; int n; } vec;\n" +
+	    "typedef union { int i, j; string s; } u;\n" +
+	    "typedef struct { int x, y; } point;\n" +
+	    "print vec\n" +
+	    "print u\n" +
+	    "print point\n"),
+       "typedef struct {\n" +
+       "    real x, y, z;\n" +
+       "    int  n;\n" +
+       "} vec;\n" +
+       "typedef union {\n" +
+       "    int    i, j;\n" +
+       "    string s;\n" +
+       "} u;\n" +
+       "typedef struct { int x, y; } point;\n");
+
+check ("error",
+       run ("typedef struct { int x, y; string s; } p;\n" +
+	    "p q = 3;\n"),
+       "->     p q = 3;\n" +
+       name + ":2: Incompatible types, storage 'struct { int x, y; string s; }', " +
+       "value 'int', for initializer\n");
+
+/*
+ * Laying out struct, union, and enum types
+ *
+ * print shows a struct or union on one line only when its members come
+ * from one declaration, as 'struct { int a, b; }', and the line fits,
+ * spanning at most 80 columns from its first non-blank one; otherwise
+ * it shows one declaration per line, with the names aligned past the
+ * widest type printed on one line. An enum shows on one line when it
+ * fits, and otherwise as a grid of aligned columns:
+ * a rectangle when its count of values allows one, and otherwise as
+ * many columns as fit with a short last row; an enum with comments
+ * fills lines instead, a commented value ending or starting its line.
+ * Trailing comments on members and parameters line up. A struct joined
+ * to another with '+', in an array type, or in a local declaration
+ * lays out the same way. Printing the output again gives the same text.
+ */
+section("Laying out struct, union, and enum types");
+
+string	name = "structwraptest.tmp";
+
+/* Run script in a child nickle, returning its output, stderr included */
+string run (string script)
+{
+    file	f = File::open (name, "w");
+
+    File::fputs (script, f);
+    File::close (f);
+
+    file[*]	out = File::mkpipe ();
+
+    File::filter (nickle, (string[*]) { nickle, name },
+		  (file[3]) { stdin, out[1], out[1] });
+    File::close (out[1]);
+
+    string	got = "";
+    while (!File::end (out[0]))
+	got += File::fgets (out[0]) + "\n";
+    File::close (out[0]);
+    File::unlink (name);
+    return got;
+}
+
+string	plain = ("typedef struct { real x, y, z; } vec;\n" +
+		  "typedef struct { int x; int y; } point;\n" +
+		  "typedef union { int i; real r; } num;\n" +
+		  "typedef struct { string first_name_of_the_person, last_name_of_the_person, middle; } person;\n" +
+		  "typedef enum { red, green, blue } color;\n" +
+		  "typedef enum { january, february, march, april, may, june, july, august, september, october, november, december } month;\n" +
+		  "typedef enum { value_0, value_1, value_2, value_3, value_4, value_5, value_6, value_7, value_8, value_9, value_10, value_11, value_12 } thirteen;\n" +
+		  "typedef struct {\n" +
+		  "    int lo, hi;\n" +
+		  "    struct { int a, b; } inner;\n" +
+		  "    struct { int c; real d; } other;\n" +
+		  "} nest;\n");
+
+string	plain_prints = ("print vec\nprint point\nprint num\nprint person\n" +
+			"print color\nprint month\nprint thirteen\nprint nest\n");
+
+string	plain_want = ("typedef struct { real x, y, z; } vec;\n" +
+		      "typedef struct {\n" +
+		      "    int x;\n" +
+		      "    int y;\n" +
+		      "} point;\n" +
+		      "typedef union {\n" +
+		      "    int  i;\n" +
+		      "    real r;\n" +
+		      "} num;\n" +
+		      "typedef struct {\n" +
+		      "    string first_name_of_the_person, last_name_of_the_person, middle;\n" +
+		      "} person;\n" +
+		      "typedef enum { red, green, blue } color;\n" +
+		      "typedef enum {\n" +
+		      "    january,   february,  march,     april,\n" +
+		      "    may,       june,      july,      august,\n" +
+		      "    september, october,   november,  december\n" +
+		      "} month;\n" +
+		      "typedef enum {\n" +
+		      "    value_0,  value_1,  value_2,  value_3,  value_4,  value_5,  value_6,  value_7,\n" +
+		      "    value_8,  value_9,  value_10, value_11, value_12\n" +
+		      "} thirteen;\n" +
+		      "typedef struct {\n" +
+		      "    int                  lo, hi;\n" +
+		      "    struct { int a, b; } inner;\n" +
+		      "    struct {\n" +
+		      "        int  c;\n" +
+		      "        real d;\n" +
+		      "    } other;\n" +
+		      "} nest;\n");
+
+check ("types", run (plain + plain_prints), plain_want);
+check ("types again", run (plain_want + plain_prints), plain_want);
+
+/*
+ * Aligning declarations and trailing comments in function bodies
+ *
+ * print lines up function bodies as clang-format does with nickle's
+ * .clang-format. In a run of declarations, which comments don't break,
+ * the names line up one space past the widest type. Trailing comments on
+ * consecutive lines, of any statements, line up one space past the
+ * longest of those lines; a line without one, or a comment on its own
+ * line, starts a new group. Printing the output again gives the same
+ * text.
+ */
+section("Aligning declarations and trailing comments in function bodies");
+
+string	name = "declaligntest.tmp";
+
+/* Run script in a child nickle, returning its output, stderr included */
+string run (string script)
+{
+    file	f = File::open (name, "w");
+
+    File::fputs (script, f);
+    File::close (f);
+
+    file[*]	out = File::mkpipe ();
+
+    File::filter (nickle, (string[*]) { nickle, name },
+		  (file[3]) { stdin, out[1], out[1] });
+    File::close (out[1]);
+
+    string	got = "";
+    while (!File::end (out[0]))
+	got += File::fgets (out[0]) + "\n";
+    File::close (out[0]);
+    File::unlink (name);
+    return got;
+}
+
+string	plain = ("void\n" +
+		  "plain()\n" +
+		  "{\n" +
+		  "    int a = 1;\n" +
+		  "    real bbbbbb;\n" +
+		  "    string c;\n" +
+		  "    a = 3;\n" +
+		  "    static int eeeeeee;\n" +
+		  "    int g;\n" +
+		  "    int[*] h = { 1, 2 };\n" +
+		  "}\n");
+
+string	plain_want = ("void\n" +
+		       "plain()\n" +
+		       "{\n" +
+		       "    int    a = 1;\n" +
+		       "    real   bbbbbb;\n" +
+		       "    string c;\n" +
+		       "\n" +
+		       "    a = 3;\n" +
+		       "    static int eeeeeee;\n" +
+		       "    int        g;\n" +
+		       "    int[*]     h = { 1, 2 };\n" +
+		       "}\n");
+
+check ("declarations", run (plain + "print plain\n"), plain_want);
+check ("declarations again", run (plain_want + "print plain\n"), plain_want);
+
+/*
+ * Operators print as the source spelled them
+ *
+ * Operators written in UTF-8 printed in ASCII, so formatting a file
+ * rewrote x² as x ** 2 and ◊ as <>. Names can't hold the characters
+ * operators use, so those print against names as their ASCII spellings
+ * do: ¬a, a⧺, p→x, and a².
+ */
+section("Operators print as the source spelled them");
+
+int spelled(int a, int b, *struct { int x; } p, int r ...)
+{
+    a ×= 2; a ÷= 2; a ⫽= 2; a ↑= 2; a ⪡= 1; a ⪢= 1; a *= 2;
+    a ⧺; ⧺ a; a++;
+    bool t = a ≠ b ∧ a ≤ b ∨ a ≥ b && a != b;
+    int s = a × b ÷ 2 ⫽ 3 + a ↑ b + a ² + (a + 1)³ + a ** 2 + (¬ a ⪡ 1 ⪢ 1) + ~a;
+    int u = p → x + p->x;
+    int[3] z = { 1 … };
+    int[int] h = { 1 ⇒ 2, 3 => 4 };
+    void v = ◊;
+    void w = <>;
+    return spelled(a, b, p, r …) + spelled(a, b, p, r ...);
+}
+
+file	sf = File::string_write ();
+Command::pretty_print (sf, (string[*]) { "spelled" });
+string	spelled_text = File::string_string (sf);
+
+void spelled_has (string want)
+{
+    check (want, String::index (spelled_text, want) >= 0, true);
+}
+
+spelled_has ("a ×= 2;\n    a ÷= 2;\n    a ⫽= 2;\n    a ↑= 2;\n    a ⪡= 1;\n    a ⪢= 1;\n    a *= 2;");
+spelled_has ("a⧺;\n    ⧺a;\n    a++;");
+spelled_has ("(a ≠ b ∧ a ≤ b) ∨ (a ≥ b && a != b)");
+spelled_has ("a × b ÷ 2 ⫽ 3 + a ↑ b + a² + (a + 1)³ + a ** 2 + (¬a ⪡ 1 ⪢ 1) + ~a");
+spelled_has ("p→x + p->x");
+spelled_has ("{ 1 … }");
+spelled_has ("{ 1 ⇒ 2, 3 => 4 }");
+spelled_has ("v = ◊;");
+spelled_has ("w = <>;");
+spelled_has ("spelled(a, b, p, r…) + spelled(a, b, p, r...)");
+
+/*
+ * Comma expressions print grouped to the left
+ *
+ * The grammar groups a comma expression to the left, but the printer
+ * grouped it to the right, so (1, 2, 3) printed as ((1, 2), 3).
+ */
+section("Comma expressions print grouped to the left");
+
+void commas()
+{
+    int z = (1, 2, 3);
+    int w = (1, (2, 3));
+    int v = (z, (int q = 1), q);
+    int u = ((int r = 2), r);
+}
+
+file	cf = File::string_write ();
+Command::pretty_print (cf, (string[*]) { "commas" });
+string	commas_text = File::string_string (cf);
+
+check ("left", String::index (commas_text, "z = (1, 2, 3);") >= 0, true);
+check ("right", String::index (commas_text, "w = (1, (2, 3));") >= 0, true);
+check ("declaration inside", String::index (commas_text, "v = (z, (int q = 1), q);") >= 0, true);
+check ("declaration first", String::index (commas_text, "u = ((int r = 2), r);") >= 0, true);
+
+/* A comprehension's names are a list, not a comma expression */
+void comprehension()
+{
+    int[3, 3, 3] a = { [i, j, k] = i + j + k };
+}
+
+file	pf = File::string_write ();
+Command::pretty_print (pf, (string[*]) { "comprehension" });
+check ("comprehension", String::index (File::string_string (pf), "{ [i, j, k] = i + j + k }") >= 0, true);
+
+/*
+ * A hash's default element prints without a stray space
+ *
+ * The printer put a space before a default element's '=>' as though a
+ * key had printed, so { "a" => 2, => 0 } printed as
+ * { "a" => 2,  => 0 }.
+ */
+section("A hash's default element prints without a stray space");
+
+void defaults()
+{
+    int[string] h = { "a" => 2, => 0 };
+}
+
+file	df = File::string_write ();
+Command::pretty_print (df, (string[*]) { "defaults" });
+check ("default", String::index (File::string_string (df), "{ \"a\" => 2, => 0 };") >= 0, true);

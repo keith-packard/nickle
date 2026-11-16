@@ -3,6 +3,9 @@
  *
  * A syntax error in a script must make nickle exit with an error
  * status; meson expects this test to fail
+ *
+ * Don't reformat this file with nickle --format, which stops at the
+ * syntax error.
  */
 
 int x = ;

@@ -1,0 +1,255 @@
+/*
+ * Copyright © 2026 Keith Packard and Bart Massey. All Rights Reserved.
+ * See the file COPYING in this directory for licensing information.
+ *
+ * Check that the pretty-printer parenthesizes operators as the grammar binds them.
+ *
+ * The printer keeps its own table of operator precedence and associativity (PrettyPrecedence
+ * and PrettyRightAssoc in pretty.c), as bison keeps no trace of gram.y's %left and %right lines
+ * in the parser it generates. This reads those lines, one level per line from the loosest, and
+ * formats, for each pair of binary operators, the statements (a op b) op c and a op (b op c),
+ * and -(a op b) and (-a) op b: each must keep its parentheses exactly when the grammar would
+ * group it otherwise without them, or when the printer keeps them to show how operators people
+ * misread group (PrettyClarifies), as clarifies says. Formatting parses without compiling, so
+ * operands needn't have types that fit. Every token on those lines must be a binary operator
+ * this knows how to spell or one it lists as something else, so a new operator can't go
+ * unchecked.
+ *
+ * Usage: nickle check-precedence.5c gram.y
+ */
+
+/* How each binary operator token is written */
+string[string] spelling = {
+    "OR" => "||",
+    "AND" => "&&",
+    "LOR" => "|",
+    "LXOR" => "^",
+    "LAND" => "&",
+    "EQ" => "==",
+    "NE" => "!=",
+    "LT" => "<",
+    "GT" => ">",
+    "LE" => "<=",
+    "GE" => ">=",
+    "SHIFTL" => "<<",
+    "SHIFTR" => ">>",
+    "PLUS" => "+",
+    "MINUS" => "-",
+    "TIMES" => "*",
+    "DIVIDE" => "/",
+    "DIV" => "//",
+    "MOD" => "%",
+    "POW" => "**",
+};
+
+/* The other tokens on the precedence lines, which this doesn't check */
+string[*]      others = {
+    "POUND", "COMMA", "ASSIGN", "FORK", "QUEST", "COLON",
+    "STARSTAR", "POW2", "POW3", "UNIONCAST",
+    "UMINUS", "BANG", "FACT", "LNOT", "INC", "DEC", "STAR", "AMPER", "THREADID",
+    "OS", "CS", "DOT", "ARROW", "STAROS", "CALL", "OP", "CP",
+    "POINTER", "COLONCOLON",
+    "IF", "TRY", "NONL", "ELSE", "CATCH", "NL", "SEMI",
+};
+
+string         path = argv[1];
+string[...]    problems = {};
+
+/* Each token's level, counting precedence lines from 1, and whether it groups to the right */
+int[string]    level = {};
+bool[string]   right = {};
+
+void
+read_precedence()
+{
+    file f = File::open(path, "r");
+    int  n = 0;
+
+    while (!File::end(f)) {
+        string[*] words = String::wordsplit(File::fgets(f), " \t");
+
+        if (dim(words) == 0)
+            continue;
+        if (words[0] != "%left" && words[0] != "%right"
+                && words[0] != "%nonassoc" && words[0] != "%precedence")
+            continue;
+        n++;
+        for (int i = 1; i < dim(words); i++) {
+
+            /* A value type, as <ints>, isn't a token */
+            if (words[i][0] == '<')
+                continue;
+            level[words[i]] = n;
+            right[words[i]] = words[0] == "%right";
+        }
+    }
+    File::close(f);
+}
+
+bool
+known(string token)
+{
+    if (hash_test(spelling, token))
+        return true;
+    for (int i = 0; i < dim(others); i++)
+        if (others[i] == token)
+            return true;
+    return false;
+}
+
+/* The kind of each binary operator, as PrettyOperatorKind in pretty.c gives it */
+string
+kind(string token)
+{
+    switch (token) {
+    case "PLUS":
+    case "MINUS":
+    case "TIMES":
+    case "DIVIDE":
+    case "DIV":
+    case "MOD":
+    case "POW":
+        return "arithmetic";
+    case "SHIFTL":
+    case "SHIFTR":
+        return "shift";
+    case "EQ":
+    case "NE":
+    case "LT":
+    case "GT":
+    case "LE":
+    case "GE":
+        return "comparison";
+    case "LAND":
+    case "LOR":
+    case "LXOR":
+        return "bitwise";
+    }
+    return token;
+}
+
+/*
+ * Whether an inner operand of outer keeps its parentheses though
+ * precedence doesn't need them: arithmetic, shifts, comparisons, or
+ * another bitwise operator inside a bitwise one, arithmetic inside a
+ * shift, a comparison inside a comparison, and && inside ||
+ */
+bool
+clarifies(string outer, string inner)
+{
+    switch (kind(outer)) {
+    case "bitwise":
+        return kind(inner) == "arithmetic" || kind(inner) == "shift"
+            || kind(inner) == "comparison"
+            || (kind(inner) == "bitwise" && inner != outer);
+    case "shift":
+        return kind(inner) == "arithmetic";
+    case "comparison":
+        return kind(inner) == "comparison";
+    case "OR":
+        return inner == "AND";
+    }
+    return false;
+}
+
+/* Each statement formatted, and what it must print as */
+string[...] sources = {};
+string[...] wanted = {};
+
+/* Format the statement source, which must print as want */
+void
+expect(file script, string source, string want)
+{
+    File::fprintf(script, "%s;\n", source);
+    sources[dim(sources)] = source;
+    wanted[dim(wanted)] = want;
+}
+
+/* The statements to format, one per line */
+string
+script()
+{
+    file      f = File::string_write();
+    string[*] binary = hash_keys(spelling);
+
+    for (int i = 0; i < dim(binary); i++) {
+        string inner = binary[i];
+        string is = spelling[inner];
+
+        if (!hash_test(level, inner))
+            continue;
+        for (int j = 0; j < dim(binary); j++) {
+            string outer = binary[j];
+            string os = spelling[outer];
+
+            if (!hash_test(level, outer))
+                continue;
+
+            /* The inner operator groups without parentheses when it binds tighter */
+            bool   tighter = level[inner] > level[outer];
+            bool   same = level[inner] == level[outer];
+            bool   clear = !clarifies(outer, inner);
+            bool   left_bare = (tighter || (same && !right[outer])) && clear;
+            bool   right_bare = (tighter || (same && right[outer])) && clear;
+            string left = sprintf("a %s b", is);
+            string right_text = sprintf("b %s c", is);
+
+            expect(f, sprintf("(%s) %s c", left, os),
+                   sprintf(left_bare ? "%s %s c" : "(%s) %s c", left, os));
+            expect(f, sprintf("a %s (%s)", os, right_text),
+                   sprintf(right_bare ? "a %s %s" : "a %s (%s)", os, right_text));
+        }
+
+        /* Prefix minus binds as tightly as UMINUS's line */
+        bool minus_tighter = level["UMINUS"] > level[inner];
+
+        expect(f, sprintf("-(a %s b)", is),
+               sprintf(minus_tighter ? "-(a %s b)" : "-a %s b", is));
+        expect(f, sprintf("(-a) %s b", is),
+               sprintf(minus_tighter ? "-a %s b" : "(-a) %s b", is));
+    }
+    return File::string_string(f);
+}
+
+/* The formatted statements, printed once formatting the script ends */
+file formatted = File::string_write();
+
+void
+report()
+{
+    file f = File::string_read(File::string_string(formatted));
+    int  n = 0;
+
+    while (!File::end(f)) {
+        string line = File::fgets(f);
+
+        if (line == "")
+            continue;
+        if (n >= dim(wanted))
+            problems[dim(problems)] = sprintf("extra output %v", line);
+        else if (line != wanted[n] + ";")
+            problems[dim(problems)] =
+                sprintf("%s prints as %v, want %v", sources[n], line, wanted[n] + ";");
+        n++;
+    }
+    if (n < dim(wanted))
+        problems[dim(problems)] =
+            sprintf("%d statements printed, want %d", n, dim(wanted));
+    for (int p = 0; p < dim(problems); p++)
+        printf("%s\n", problems[p]);
+    exit(dim(problems) > 0 ? 1 : 0);
+}
+
+read_precedence();
+for (int i = 0; i < dim(hash_keys(level)); i++) {
+    string token = hash_keys(level)[i];
+
+    if (!known(token))
+        problems[dim(problems)] =
+            sprintf("%s: %s is on a precedence line, unknown here", path, token);
+}
+
+/* The script is formatted, without running it, after this command, then checked */
+Command::format_file(
+    formatted, File::string_read(script()), "precedence", true);
+report();

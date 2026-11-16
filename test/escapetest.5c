@@ -8,6 +8,10 @@
  * as "\0012", which reads back as a newline. Characters printed '\\'
  * as '\' and octal escapes with a stray '.', and the lexer read a
  * '\\' constant on to the next quote on the line.
+ *
+ * Don't reformat this file with nickle --format: the printer writes
+ * constants from their values, so "\x41" would become "A" and the
+ * checks of reading \x escapes would check nothing.
  */
 
 exception wrong (string what, poly got, poly want);
@@ -36,12 +40,16 @@ for (int i = 0; i < dim (strings); i++)
     again += sprintf ("check (\"string %d\", %v, strings[%d]);\n", i, strings[i], i);
 Command::lex_string (again);
 
-/* Character constants print as they read back */
-int function charfn () { return '\\' + '\0' + '\v' + '\033'; }
+/*
+ * Character constants print as they read back, escaped as strings
+ * escape them, so other characters print as UTF-8
+ */
+int function charfn () { return '\\' + '\0' + '\v' + '\033' + 'ß' + '中'; }
 file f = File::string_write ();
 Command::pretty_print (f, (string[*]) { "charfn" });
 string p = File::string_string (f);
-check ("printed chars", String::index (p, "charfn() = '\\\\' + '\\000' + '\\013' + '\\033';") >= 0, true);
+check ("printed chars",
+       String::index (p, "charfn() = '\\\\' + '\\0' + '\\v' + '\\033' + 'ß' + '中';") >= 0, true);
 
 /*
  * \x and hex digits give that character, as in C. Strings and

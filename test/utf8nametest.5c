@@ -1,0 +1,67 @@
+/*
+ * Nickle test suite
+ *
+ * Lexing names next to UTF-8 operators
+ *
+ * Names took every byte past ASCII as a letter, so a name ran on into a
+ * UTF-8 operator after it, and an operator before a name became part of
+ * it: a⫽b, ¬a, and x² were names. Names now hold any UTF-8 character
+ * but those operators use, so those lex as they read, and names may
+ * still hold other UTF-8 characters.
+ *
+ * Don't reformat this file with nickle --format, which puts spaces
+ * around binary operators, so the checks of operators touching names
+ * would check nothing.
+ */
+
+exception wrong(string what, poly got, poly want);
+
+void
+check(string what, poly got, poly want)
+{
+    if (got != want)
+        raise wrong(what, got, want);
+}
+
+int a = 7, b = 2;
+
+check("a⫽b", a⫽b, 3);
+check("a×b", a×b, 14);
+check("a÷b", a÷b, 7/2);
+check("a↑b", a↑b, 49);
+check("a⪡b", a⪡b, 28);
+check("a⪢b", a⪢b, 1);
+check("¬a", ¬a, -8);
+check("a²", a², 49);
+check("a³", a³, 343);
+check("a≠b", a≠b, true);
+check("a≤b∨a≥b", a≤b∨a≥b, true);
+check("a≥b∧b≤a", a≥b∧b≤a, true);
+
+int c = 5;
+
+c⧺;
+check("c⧺", c, 6);
+⧺c;
+check("⧺c", c, 7);
+c⫽=b;
+check("c⫽=b", c, 3);
+
+typedef struct {
+    int x;
+} point;
+
+point  q = { x = 4 };
+*point p = &q;
+
+check("p→x", p→x, 4);
+
+int[3] z = { 1… };
+
+check("{ 1… }", z, (int[3]) { 1, 1, 1 });
+
+/* Names still hold other UTF-8 characters, and digits after one */
+int π = 3, naïve = 4, 中文 = 5, x₁ = 6, café2 = 7;
+
+check("UTF-8 names", π + naïve + 中文 + x₁ + café2, 25);
+check("UTF-8 name and operator", π×naïve, 12);

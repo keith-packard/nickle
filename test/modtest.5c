@@ -1,7 +1,7 @@
 void
 check(real n, real d)
 {
-    real q = n // d;
+    real q = n ⫽ d;
     real r = n % d;
 
     assert(is_int(q), "non-integral quotient %v", q);

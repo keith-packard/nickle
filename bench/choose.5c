@@ -1,4 +1,4 @@
 int
-choose(int n, int r) = n! // (r! * (n - r)!);
+choose(int n, int r) = n! ⫽ (r! * (n - r)!);
 
 choose(20000, 5000)

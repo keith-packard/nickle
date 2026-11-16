@@ -321,9 +321,9 @@ extend namespace Math {
              * Grow by at least half again, so slowly rising precisions
              * reuse the value. Terms shrink by 9, more than 3 bits each
              */
-            int     grown = precision(local_ln2) * 3 // 2;
+            int     grown = precision(local_ln2) * 3 ⫽ 2;
             int     wprec = max(prec, grown) + 8;
-            split_t s = binary_splitting_ln2(0, wprec // 3 + 2);
+            split_t s = binary_splitting_ln2(0, wprec ⫽ 3 + 2);
 
             local_ln2 = imprecise(2 * s.t, wprec) / imprecise(3 * s.b * s.q, wprec);
         }

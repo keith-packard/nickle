@@ -46,6 +46,6 @@ File::fprintf(src, "); }\n");
 Command::lex_input(
     File::string_read(File::string_string(src)), "longlists", false, false);
 
-check("long_block", long_block(), n * (n - 1) // 2);
+check("long_block", long_block(), n * (n - 1) ⫽ 2);
 check("long_switch", long_switch(n - 1), 2 * (n - 1));
 check("long_call", long_call(), n);

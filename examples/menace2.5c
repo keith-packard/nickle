@@ -93,7 +93,7 @@ ttable_lookup(position pos)
             position np;
 
             for (int i = 0; i < 9; i++)
-                np[x[i] % 3, x[i] // 3] = p[i % 3, i // 3];
+                np[x[i] % 3, x[i] ⫽ 3] = p[i % 3, i ⫽ 3];
             return np;
         }
 
@@ -237,13 +237,13 @@ go(int n)
         scanf("%d", &j);
         switch (j) {
         case -1:
-            b[i % 3, i // 3] = piece.o;
+            b[i % 3, i ⫽ 3] = piece.o;
             break;
         case 1:
-            b[i % 3, i // 3] = piece.x;
+            b[i % 3, i ⫽ 3] = piece.x;
             break;
         case 0:
-            b[i % 3, i // 3] = piece.none;
+            b[i % 3, i ⫽ 3] = piece.none;
             break;
         default:
             abort("bad piece on input");

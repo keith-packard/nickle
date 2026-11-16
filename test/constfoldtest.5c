@@ -22,7 +22,7 @@ try {
 }
 
 try {
-    int x = 7 // 0;
+    int x = 7 ⫽ 0;
     raise not_raised("7 // 0");
 } catch divide_by_zero(real a, real b) {
     if (a != 7 || b != 0)

@@ -16,13 +16,13 @@ int chunk_mask = (1 << chunk_bits) - 1;
 
 /* Two's complement chunk i, extracted without bitwise operators */
 int
-chunk(int x, int i) = x // 2 ** (chunk_bits * i) % 2 ** chunk_bits;
+chunk(int x, int i) = x ⫽ 2 ** (chunk_bits * i) % 2 ** chunk_bits;
 
 int
 reference(int a, int b, int(int, int) op)
 {
     int width = max(bit_width(a), bit_width(b)) + 1;
-    int chunks = width // chunk_bits + 1;
+    int chunks = width ⫽ chunk_bits + 1;
     int r = 0;
 
     for (int i = 0; i < chunks; i++)

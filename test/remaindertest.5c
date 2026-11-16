@@ -16,7 +16,7 @@ void
 check(int a, int b)
 {
     int r = a % b;
-    int want = a - a // b * b;
+    int want = a - a ⫽ b * b;
 
     if (r != want || hash(r) != hash(want)
             || bit_width(r) != bit_width(want) || r < 0 || r >= abs(b))

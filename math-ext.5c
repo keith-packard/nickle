@@ -356,9 +356,9 @@ extend namespace Math {
              * Grow by at least half again, so slowly rising precisions
              * reuse the value
              */
-            int  grown = precision(local_gamma) * 3 // 2;
+            int  grown = precision(local_gamma) * 3 ⫽ 2;
             int  wprec = max(prec, grown) + 32;
-            int  n = wprec // 5 + 1;
+            int  n = wprec ⫽ 5 + 1;
             int  n2 = n * n;
             real a = -log(imprecise(n, wprec));
             real b = imprecise(1, wprec);

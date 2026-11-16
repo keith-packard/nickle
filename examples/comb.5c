@@ -8,10 +8,10 @@
 namespace Comb {
 
     public int
-    perm(poly n, poly r) = n! // r!;
+    perm(poly n, poly r) = n! ⫽ r!;
 
     public int
-    choose(poly n, poly r) = n! // (r! * (n - r)!);
+    choose(poly n, poly r) = n! ⫽ (r! * (n - r)!);
 
     public int
     binom(poly n, poly k)

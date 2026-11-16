@@ -6,7 +6,7 @@ witnessexp(int b, int e, int m)
         return -1;
     if (e == 1)
         return b % m;
-    int res = witnessexp(b, e // 2, m);
+    int res = witnessexp(b, e ⫽ 2, m);
     if (res == -1)
         return res;
     int t = res * res % m;

@@ -93,7 +93,7 @@ namespace Sort {
                         a[k++] = R[j++];
                 }
 
-                int q = (p + r) // 2;
+                int q = (p + r) ⫽ 2;
                 msort(p, q);
                 msort(q + 1, r);
                 merge(p, q, r);

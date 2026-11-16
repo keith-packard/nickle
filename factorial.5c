@@ -54,13 +54,13 @@ extend namespace Math {
                 return smallOddSwing[n];
             int                 sqrt_n = floor(sqrt(n));
             PrimeSieve::range_t r1 = PrimeSieve::primes_range(&primes, 3, sqrt_n);
-            PrimeSieve::range_t r2 = PrimeSieve::primes_range(&primes, sqrt_n + 1, n // 3);
+            PrimeSieve::range_t r2 = PrimeSieve::primes_range(&primes, sqrt_n + 1, n ⫽ 3);
             int                 count = 0;
             for (int i_p = r1.start; i_p < r1.end; i_p++) {
                 int prime = primes[i_p];
                 int q = n, p = 1;
 
-                while ((q //= prime) > 0)
+                while ((q ⫽= prime) > 0)
                     if ((q & 1) == 1)
                         p *= prime;
                 if (p > 1)
@@ -68,10 +68,10 @@ extend namespace Math {
             }
             for (int i_p = r2.start; i_p < r2.end; i_p++) {
                 int prime = primes[i_p];
-                if (((n // prime) & 1) == 1)
+                if (((n ⫽ prime) & 1) == 1)
                     prime_list[count++] = prime;
             }
-            int prod = PrimeSieve::primorial(&primes, n // 2 + 1, n);
+            int prod = PrimeSieve::primorial(&primes, n ⫽ 2 + 1, n);
             for (int i = 0; i < count; i++)
                 prod *= prime_list[i];
             return prod;

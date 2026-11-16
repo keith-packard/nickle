@@ -145,7 +145,7 @@ namespace Polynomial {
             return (polynomial) { 1 };
         if (e == 1)
             return b;
-        polynomial tmp = power(b, e // 2);
+        polynomial tmp = power(b, e ⫽ 2);
         polynomial tmp2 = mult(tmp, tmp);
         if (e % 2 == 0)
             return tmp2;
@@ -166,7 +166,7 @@ namespace Polynomial {
             return (polynomial) { 1 };
         if (e == 1)
             return div_mod(b, m).rem;
-        polynomial tmp = power_mod(b, e // 2, m);
+        polynomial tmp = power_mod(b, e ⫽ 2, m);
         polynomial tmp2 = mult(tmp, tmp);
         if (e % 2 == 0)
             return div_mod(tmp2, m).rem;

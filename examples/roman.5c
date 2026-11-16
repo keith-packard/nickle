@@ -44,14 +44,14 @@ roman(int i)
             return dig.five + lots(i - 5, dig.ones);
         if (i == 9)
             return dig.ones + dig.tens;
-        return lots(i // 10, dig.tens) + place(i % 10, dig);
+        return lots(i ⫽ 10, dig.tens) + place(i % 10, dig);
     }
 
     int d;
 
     for (d = 0; d < dim(digits); d++)
         if (i >= digits[d].base)
-            return place(i // digits[d].base, digits[d]) + roman(i % digits[d].base);
+            return place(i ⫽ digits[d].base, digits[d]) + roman(i % digits[d].base);
     return "";
 }
 

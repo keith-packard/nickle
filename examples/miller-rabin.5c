@@ -36,7 +36,7 @@ namespace MillerRabin {
         case 1:
             return (witness_result) { pow = b % m, wit = 0 };
         }
-        witness_result tmp = witnessexp(b, e // 2, m);
+        witness_result tmp = witnessexp(b, e ⫽ 2, m);
         if (tmp.wit != 0)
             return tmp;
         int t = tmp.pow * tmp.pow % m;

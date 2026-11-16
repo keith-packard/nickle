@@ -32,7 +32,7 @@ order(int d, int b)
     int g;
 
     while ((g = gcd(d, b)) != 1)
-        d //= g;
+        d ⫽= g;
     if (d == 1)
         return 0;
     int v = b % d, k = 1;

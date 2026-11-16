@@ -25,7 +25,7 @@ check_exp()
                 errors++;
             }
         }
-        for (int p = 0; p < prec // 3; p++) {
+        for (int p = 0; p < prec ⫽ 3; p++) {
             real x = imprecise(2 ** -p, prec);
             if (exp(x) - 1 == 0) {
                 printf("exp(x): prec %d is one for p %d x %.-g\n", prec, p, x);

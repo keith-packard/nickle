@@ -22,7 +22,7 @@ namespace Numbers {
             return 1;
         if (e == 1)
             return b % m;
-        int tmp = bigpowmod(b, e // 2, m);
+        int tmp = bigpowmod(b, e ⫽ 2, m);
         int tmp2 = tmp * tmp % m;
         if (e % 2 == 0)
             return tmp2;
@@ -40,7 +40,7 @@ namespace Numbers {
         coeff t = extgcd(b, a % b);
         int   x = t.x;
         t.x = t.y;
-        t.y = x - a // b * t.y;
+        t.y = x - a ⫽ b * t.y;
         return t;
     }
 

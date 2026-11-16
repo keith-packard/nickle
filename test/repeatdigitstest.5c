@@ -30,7 +30,7 @@ powmod(int b, int e, int m)
         if (e % 2 == 1)
             r = r * b % m;
         b = b * b % m;
-        e //= 2;
+        e ⫽= 2;
     }
     return r;
 }
@@ -43,7 +43,7 @@ digits(int r, int d, int n)
 
     for (int i = 0; i < n; i++) {
         r *= 10;
-        s += String::new('0' + r // d);
+        s += String::new('0' + r ⫽ d);
         r %= d;
     }
     return s;

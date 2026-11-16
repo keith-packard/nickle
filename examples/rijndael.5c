@@ -198,8 +198,8 @@ public namespace Rijndael {
         0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91,
     };
 
-    int       MAXBC = 256 // 32;
-    int       MAXKC = 256 // 32;
+    int       MAXBC = 256 ⫽ 32;
+    int       MAXKC = 256 ⫽ 32;
     int       MAXROUNDS = 14;
     int       TRUE = 1;
     int       FALSE = 0;
@@ -227,7 +227,7 @@ public namespace Rijndael {
     public int DIR_DECRYPT = 1;
     public int BITSPERBLOCK = 128;
     public int MAX_KEY_SIZE = 64;
-    public int MAX_IV_SIZE = BITSPERBLOCK // 8;
+    public int MAX_IV_SIZE = BITSPERBLOCK ⫽ 8;
 
     public exception bad_key_bits(int keyBits);
     public exception bad_block_bits(int blockBits);
@@ -414,7 +414,7 @@ public namespace Rijndael {
             /* copy values into round key array */
             for (j = 0; j < KC && t < (ROUNDS + 1) * BC; j++, t++)
                 for (i = 0; i < 4; i++)
-                    (*W)[t // BC, i, t % BC] = tk[i, j];
+                    (*W)[t ⫽ BC, i, t % BC] = tk[i, j];
 
             while (t < (ROUNDS + 1) * BC) {
 
@@ -429,12 +429,12 @@ public namespace Rijndael {
                         for (i = 0; i < 4; i++)
                             tk[i, j] ^= tk[i, j - 1];
                 else {
-                    for (j = 1; j < KC // 2; j++)
+                    for (j = 1; j < KC ⫽ 2; j++)
                         for (i = 0; i < 4; i++)
                             tk[i, j] ^= tk[i, j - 1];
                     for (i = 0; i < 4; i++)
-                        tk[i, KC // 2] ^= S[tk[i, KC // 2 - 1]];
-                    for (j = KC // 2 + 1; j < KC; j++)
+                        tk[i, KC ⫽ 2] ^= S[tk[i, KC ⫽ 2 - 1]];
+                    for (j = KC ⫽ 2 + 1; j < KC; j++)
                         for (i = 0; i < 4; i++)
                             tk[i, j] ^= tk[i, j - 1];
                 }
@@ -442,7 +442,7 @@ public namespace Rijndael {
                 /* copy values into round key array */
                 for (j = 0; j < KC && t < (ROUNDS + 1) * BC; j++, t++)
                     for (i = 0; i < 4; i++)
-                        (*W)[t // BC, i, t % BC] = tk[i, j];
+                        (*W)[t ⫽ BC, i, t % BC] = tk[i, j];
             }
 
             return 0;
@@ -724,7 +724,7 @@ public namespace Rijndael {
             raise bad_key_len(keyLen);
 
         key->keyMaterial = keyMaterial;
-        for (i = 0; i < key->keyLen // 8; i++) {
+        for (i = 0; i < key->keyLen ⫽ 8; i++) {
             t = key->keyMaterial[2 * i];
             if (t >= '0' && t <= '9')
                 j = (t - '0') << 4;
@@ -745,7 +745,7 @@ public namespace Rijndael {
             else
                 raise bad_key_material(String::new(t));
 
-            k[i % 4, i // 4] = j & 0xff;
+            k[i % 4, i ⫽ 4] = j & 0xff;
         }
         rijndaelKeySched(k, key->keyLen, key->blockLen, &key->keySched);
         return 1;
@@ -824,7 +824,7 @@ public namespace Rijndael {
             raise bad_cipher_state(cipher);
         }
 
-        numBlocks = inputLen // cipher->blockLen;
+        numBlocks = inputLen ⫽ cipher->blockLen;
 
         switch (cipher->mode) {
         case MODE_ECB:
@@ -908,7 +908,7 @@ public namespace Rijndael {
             raise bad_cipher_state(cipher);
         }
 
-        numBlocks = inputLen // cipher->blockLen;
+        numBlocks = inputLen ⫽ cipher->blockLen;
 
         switch (cipher->mode) {
         case MODE_ECB:
@@ -952,7 +952,7 @@ public namespace Rijndael {
 
                     /* parse input stream into rectangular array */
                     for (t = 0; t < 4; t++)
-                        block[t, j] = (*input)[cipher->blockLen // 8 + 4 * j + t] & 0xFF;
+                        block[t, j] = (*input)[cipher->blockLen ⫽ 8 + 4 * j + t] & 0xFF;
                 }
                 rijndaelDecrypt(&block, key->keyLen, cipher->blockLen, &key->keySched);
 
@@ -963,8 +963,8 @@ public namespace Rijndael {
                      * into output ciphertext bytes
                      */
                     for (t = 0; t < 4; t++)
-                        (*outBuffer)[cipher->blockLen // 8 + 4 * j + t] =
-                            block[t, j] ^ (*input)[4 * j + t - 4 * cipher->blockLen // 32];
+                        (*outBuffer)[cipher->blockLen ⫽ 8 + 4 * j + t] =
+                            block[t, j] ^ (*input)[4 * j + t - 4 * cipher->blockLen ⫽ 32];
                 }
             }
             break;
@@ -1035,7 +1035,7 @@ public namespace Rijndael {
     public int[*]
     string_to_array(string s, *cipherInstance cipher)
     {
-        int      blockLen = cipher->blockLen // 8;
+        int      blockLen = cipher->blockLen ⫽ 8;
         int      len = ceil(String::length(s) / blockLen) * blockLen;
 
         int[len] a = {};

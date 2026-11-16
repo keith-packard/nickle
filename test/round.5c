@@ -5,7 +5,7 @@ autoimport PRNG
 void
 floor_check(int num, int den, int floor)
 {
-    if (num // den != floor)
+    if (num ⫽ den != floor)
         raise bad_round(num, den, floor);
 }
 
@@ -14,7 +14,7 @@ ceil_check(int num, int den, int ceil)
 {
     int compare;
 
-    compare = num // den;
+    compare = num ⫽ den;
     if (num % den != 0)
         compare++;
     if (compare != ceil)

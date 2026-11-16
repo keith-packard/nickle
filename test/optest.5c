@@ -88,9 +88,9 @@ check(x * 2, 8);
 check(x / 2, 2);
 
 /* Tests integer division. */
-check(x // 3, 1);
-check(x // 3 == floor(x / 3), true);
-check(x // 3 * 3 + x % 3 == x, true);
+check(x ⫽ 3, 1);
+check(x ⫽ 3 == floor(x / 3), true);
+check(x ⫽ 3 * 3 + x % 3 == x, true);
 
 /* Tests remainder. */
 check(x % 3, 1);
@@ -107,7 +107,7 @@ check(x << 1 == x * 2 ** 1, true);
 /* Tests bitwise right shift. */
 check(x >> 1, 2);
 check(x >> -1, 8);
-check(x >> 1 == x // 2 ** 1, true);
+check(x >> 1 == x ⫽ 2 ** 1, true);
 
 /* Tests relational operators. */
 check(x <= 10, true);
@@ -221,7 +221,7 @@ check(x, 3);
 
 check(bool func() {
           try {
-              x //= 2;
+              x ⫽= 2;
               return true;
           } catch invalid_argument(string msg, int i, poly value) {
               printf("Integer divide equals assignment failed (x //= 2).\n");

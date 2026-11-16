@@ -36,7 +36,7 @@ edge(int p1, int p2)
 {
     if (p1 == p2)
         return false;
-    if (p1 // side == p2 // side)
+    if (p1 ⫽ side == p2 ⫽ side)
         return true;
     if (p1 % side == p2 % side)
         return true;
@@ -46,8 +46,8 @@ edge(int p1, int p2)
      * and the same vertical "stripe", it is in the
      * same "cell"
      */
-    if (p1 // (side * unit) == p2 // (side * unit)
-            && p1 % side // unit == p2 % side // unit)
+    if (p1 ⫽ (side * unit) == p2 ⫽ (side * unit)
+            && p1 % side ⫽ unit == p2 % side ⫽ unit)
         return true;
     return false;
 }

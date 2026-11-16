@@ -29,4 +29,6 @@ foreach benchmark : benchmarks
 	    args: files(benchmark + '.5c'),
 	    env: test_env)
 
+  nickle_format_files += files(benchmark + '.5c')
+
 endforeach

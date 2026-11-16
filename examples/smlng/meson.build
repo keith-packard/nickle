@@ -13,6 +13,8 @@ smlng_dir = nickle_examplesdir / 'smlng'
 install_data(nickle_files + ['COPYING', 'data.sgml'],
 	     install_dir: smlng_dir)
 
+nickle_format_files += files(nickle_files)
+
 test('smlng', nickle,
      args: files(['test.5c', 'data.sgml']),
      env: test_env,

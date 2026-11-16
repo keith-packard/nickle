@@ -238,6 +238,13 @@ are parsed without running, so formatting a file, here or with `print
 "file"`, then gives back the names and commands it changed: a variable
 keeps its value, and the file's names and what it loaded are gone.
 
+`nickle --check-format FILE` reports the first line of `FILE` that
+formatting it would change, and exits with status 1 when formatting
+would change any file given. The test `nickle-format-check` checks
+Nickle's own sources so, and `ninja nickle-format` formats them: the
+`.5c` files the meson build lists, except two tests that say why they
+must not be formatted.
+
 Formatting the output again changes nothing. A comment ends a line only
 where it ended one in the source, since reading the output again would
 give it that line end and break the line there: no line breaks just

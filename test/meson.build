@@ -197,7 +197,8 @@ endforeach
 # Finding a fraction's period and writing its digits took minutes for
 # some fractions, and exit waited forever on a pipe nobody could read;
 # fail quickly if they do again
-foreach test : ['repeatlengthtest.5c', 'repeatdigitstest.5c', 'unreadpipetest.5c']
+quick_tests = ['repeatlengthtest.5c', 'repeatdigitstest.5c', 'unreadpipetest.5c']
+foreach test : quick_tests
   test(test, nickle,
        args: files(test),
        env: test_env,
@@ -231,3 +232,17 @@ test('expr-error', nickle,
     )
 
 install_data(files(tests + error_tests + extra_files), install_dir: nickle_testdir)
+
+# These say why nickle --format must not reformat them; the tests run
+# only on some targets are formatted everywhere
+format_skip = ['escapetest.5c', 'syntax-error.5c', 'utf8nametest.5c']
+foreach test : tests + quick_tests + error_tests + extra_files
+  if test not in format_skip
+    nickle_format_files += files(test)
+  endif
+endforeach
+foreach test : ['datelimittest.5c', 'foreignloadtest.5c']
+  if test not in tests
+    nickle_format_files += files(test)
+  endif
+endforeach

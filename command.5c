@@ -354,6 +354,72 @@ extend namespace Command {
 
     new("char", do_char);
 
+    /* The files --check-format reads, and the string files formatting them writes */
+    typedef struct {
+        string name;
+        string source;
+        file   formatted;
+    } format_check_t;
+
+    format_check_t[...] format_checks = {};
+    int                 format_checks_done = 0;
+    bool                format_checks_failed = false;
+
+    void
+    format_check(string name)
+        /*
+         * Read the file 'name', and format it into a string file,
+         * stacking beneath it the command comparing the two
+         */
+    {
+        file in = File::open(name, "r");
+        file source = File::string_write();
+        int  b;
+
+        while ((b = File::getb(in)) != -1)
+            File::putb(b, source);
+        File::close(in);
+
+        int i = dim(format_checks);
+        format_checks[i] = (format_check_t) {
+            name = name,
+            source = File::string_string(source),
+            formatted = File::string_write(),
+        };
+        lex_string(sprintf("Command::format_check_done(%d)\n", i));
+        format_file(format_checks[i].formatted,
+                    File::string_read(format_checks[i].source), name, true);
+    }
+
+    public void
+    format_check_done(int i)
+        /*
+         * Used by --check-format once file 'i' has been formatted:
+         * report it when formatting changes it, and after the last,
+         * exit with status 1 when any changed
+         */
+    {
+        format_check_t check = format_checks[i];
+        file           want = File::string_read(check.source);
+        file           got = File::string_read(File::string_string(check.formatted));
+        int            line = 1;
+
+        while (!File::end(want) || !File::end(got)) {
+            int c = File::getb(want);
+
+            if (c != File::getb(got)) {
+                File::fprintf(
+                    stderr, "%s:%d: formatting changes this line\n", check.name, line);
+                format_checks_failed = true;
+                break;
+            }
+            if (c == '\n')
+                line++;
+        }
+        if (++format_checks_done == dim(format_checks) && format_checks_failed)
+            exit(1);
+    }
+
     void
     process_args(&string[*] argv)
         /* parse nickle command-line arguments */
@@ -373,6 +439,7 @@ extend namespace Command {
             string script;
             string expr;
             string format;
+            string check_format;
         } lexable;
 
         lexable[...] lexables = {};
@@ -428,6 +495,17 @@ extend namespace Command {
         save_format(string arg)
         {
             save_lexable((lexable.format) arg);
+
+            /* Find the libraries it loads as a script would */
+            nickle_path = String::dirname(arg) + ":" + nickle_path;
+            lex_stdin = false;
+        }
+
+        void
+        save_check_format(string arg)
+        {
+            save_lexable((lexable.check_format) arg);
+            nickle_path = String::dirname(arg) + ":" + nickle_path;
             lex_stdin = false;
         }
 
@@ -444,6 +522,9 @@ extend namespace Command {
                 { var = { arg_lambda = save_format }, abbr = 'F',
                   name = "format", expr_name = "source",
                   desc = "Print a source file formatted, without running it." },
+                { var = { arg_lambda = save_check_format }, abbr = 'C',
+                  name = "check-format", expr_name = "source",
+                  desc = "Check that formatting a source file leaves it unchanged." },
                 { var = { arg_flag = &show_version }, abbr = 'V',
                   name = "version", desc = "Print the Nickle version and exit" },
             },
@@ -530,6 +611,16 @@ extend namespace Command {
             case format arg:
                 try {
                     format_file(stdout, File::open(arg, "r"), arg, true);
+                } catch File::open_error(string msg,
+                                         File::error_type err,
+                                         string name)
+                {
+                    load_fail(name, msg);
+                }
+                break;
+            case check_format arg:
+                try {
+                    format_check(arg);
                 } catch File::open_error(string msg,
                                          File::error_type err,
                                          string name)

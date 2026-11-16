@@ -15,5 +15,13 @@ examples = [
 install_data(examples + ['COPYING'],
 	     install_dir: nickle_examplesdir)
 
+# Examples not installed, which are formatted too
+examples_uninstalled = [
+  'apsp.5c', 'circle.5c', 'coroutines.5c', 'crc.5c', 'google-puzzle.5c',
+  'mplex.5c', 'rijndael.5c', 'search.5c', 'shortpaths.5c'
+]
+
+nickle_format_files += files(examples + examples_uninstalled)
+
 subdir('smlng')
 subdir('turtle')

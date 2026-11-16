@@ -245,6 +245,10 @@ nickle_files = [
   'json.5c', 'cha-cha.5c', 'math-ext.5c', 'complex.5c'
 ]
 
+# Every .5c file laid out as nickle --format prints them; each
+# directory adds its own
+nickle_format_files = files(nickle_files, 'check-ignorenl.5c', 'check-precedence.5c')
+
 nickle_headers = [
   'builtin.h', 'comment.h', 'mem.h', 'nickle.h', 'ref.h', 'value.h',
   'builtin-namespaces.h', 'memp.h', 'opcode.h', 'stack.h'
@@ -362,6 +366,16 @@ if prog_clang_format.found()
 			'--clang-format', prog_clang_format,
 			format_srcs, bench_srcs])
 endif
+
+# Check that the Nickle sources are laid out as nickle --format prints
+# them, and 'ninja nickle-format' lays them out that way
+prog_nickle_format = find_program('nickle-format.py')
+test('nickle-format-check', prog_nickle_format,
+     args : ['--check', '--nickle', nickle, nickle_format_files],
+     env : test_env)
+run_target('nickle-format',
+	   command : [prog_nickle_format, '--nickle', nickle, nickle_format_files],
+	   env : test_env)
 
 # Check that lex.l's patterns for names' UTF-8 characters leave out
 # those its operators use, and 'ninja utf8-names' regenerates them

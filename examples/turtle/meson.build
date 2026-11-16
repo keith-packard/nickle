@@ -11,6 +11,8 @@ turtle_dir = nickle_examplesdir / 'turtle'
 install_data(nickle_files + ['snowflake.tex', 'COPYING'],
 	     install_dir: turtle_dir)
 
+nickle_format_files += files(nickle_files)
+
 test('snowflake', nickle,
      args: files('snowflake.5c'),
      timeout: 1000,

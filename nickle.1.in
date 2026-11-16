@@ -2,7 +2,7 @@
 .SH NAME
 nickle \- a desk calculator language
 .SH SYNOPSIS
-nickle [--help|--usage] [-f file] [-l library] [-e expr] [-F source] [-V] [ script ] [--] [arg ...]
+nickle [--help|--usage] [-f file] [-l library] [-e expr] [-F source] [-C source] [-V] [ script ] [--] [arg ...]
 .SH DESCRIPTION
 .PP
 \fINickle\fP is a
@@ -60,6 +60,14 @@ Commands that load code, such as
 and
 .BR library ,
 still run.
+.TP
+.BI "-C,--check-format " source
+Report the first line of
+.I source
+that reformatting it would change, and exit with status 1 when
+reformatting would change any
+.I source
+given.
 .TP
 .BI "-V,--version"
 Print the Nickle version and exit.

@@ -7,6 +7,7 @@
    [`-l` _library_]
    [`-e` _expr_]
    [`-F` _source_]
+   [`-C` _source_]
    [`-V`]
    [_script_] [`--`] [_arg_ ...]
 
@@ -44,6 +45,17 @@ int
 square(int x) = x * x;
 
 printf("%d\n", square(3));
+$
+----
+
+`-C` _source_, `--check-format` _source_::
+Report the first line of the file _source_ that formatting it would
+change, and exit with status 1 if formatting would change any _source_
+given.
++
+----
+$ nickle --check-format square.5c
+square.5c:2: formatting changes this line
 $
 ----
 

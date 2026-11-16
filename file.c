@@ -1668,6 +1668,14 @@ FilePutBaseType(Value f, Type *t, Bool minimal)
     case type_hash:
         FilePutBaseType(f, t->hash.type, minimal);
         break;
+    case type_ref:
+        /* Subscripts or parameters follow, which *int[3] would take into the reference */
+        FilePuts(f, "(");
+        FilePutType(f, t, False);
+        FilePuts(f, ")");
+        if (minimal)
+            FilePuts(f, " ");
+        break;
     default:
         FilePutType(f, t, minimal);
         break;

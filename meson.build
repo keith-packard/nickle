@@ -357,6 +357,12 @@ if prog_clang_format.found()
 			format_srcs, bench_srcs])
 endif
 
+# Check that lex.l's patterns for names' UTF-8 characters leave out
+# those its operators use, and 'ninja utf8-names' regenerates them
+prog_mkutf8names = find_program('mkutf8names.py')
+test('check-utf8-names', prog_mkutf8names, args : ['--check', files('lex.l')])
+run_target('utf8-names', command : [prog_mkutf8names, files('lex.l')])
+
 # 'ninja unicode-tables' regenerates Ctype's tables, ctype-class.h and
 # ctype-case.h, from the Unicode Character Database in
 # /usr/share/unicode; the generated files are committed

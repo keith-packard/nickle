@@ -1,183 +1,185 @@
 extend namespace Math {
 
-	rational[*] stirling_coefficients(int len)
-		/*
-		 * Return the first 'len' coefficients B(2k)/(2k(2k-1))
-		 * of Stirling's series for Binet's function,
-		 *
-		 *	J(x) = log Γ(x) - (x - 1/2) log x + x - log(2π)/2
-		 *	     ~ Σ B(2k)/(2k(2k-1) x^(2k-1)), k >= 1,
-		 *
-		 * computed exactly from the Bernoulli numbers by the
-		 * Akiyama-Tanigawa algorithm, which cancels too badly
-		 * to run in floating point
-		 */
-	{
-		int n = 2 * len + 1;
-		rational[n] t = { 1 };
-		rational[len] s;
-		int k = 1;
-		for (int m = 2; m <= n; m++) {
-			t[m-1] = 1/m;
-			for (int j = m-1; j >= 1; j--)
-				t[j-1] = j * (t[j-1] - t[j]);
-			if ((m & 1) != 0) {
-				s[k-1] = t[0]/((2*k-1)*(2*k));
-				k++;
-			}
-		}
-		return s;
-	}
+    rational[*]
+    stirling_coefficients(int len)
+        /*
+         * Return the first 'len' coefficients B(2k)/(2k(2k-1))
+         * of Stirling's series for Binet's function,
+         *
+         *      J(x) = log Γ(x) - (x - 1/2) log x + x - log(2π)/2
+         *           ~ Σ B(2k)/(2k(2k-1) x^(2k-1)), k >= 1,
+         *
+         * computed exactly from the Bernoulli numbers by the
+         * Akiyama-Tanigawa algorithm, which cancels too badly
+         * to run in floating point
+         */
+    {
+        int           n = 2 * len + 1;
+        rational[n]   t = { 1 };
+        rational[len] s;
+        int           k = 1;
 
-	/* The coefficients computed so far */
-	rational[...] stirling = {};
+        for (int m = 2; m <= n; m++) {
+            t[m - 1] = 1 / m;
+            for (int j = m - 1; j >= 1; j--)
+                t[j - 1] = j * (t[j - 1] - t[j]);
+            if ((m & 1) != 0) {
+                s[k - 1] = t[0] / ((2 * k - 1) * (2 * k));
+                k++;
+            }
+        }
+        return s;
+    }
 
-	rational stirling_coefficient(int k)
-		/*
-		 * Return coefficient 'k', from 0, of Stirling's series
-		 */
-	{
-		if (k >= dim(stirling)) {
-			rational[*] c = stirling_coefficients(
-				max(k + 1, 2 * dim(stirling), 16));
-			for (int i = dim(stirling); i < dim(c); i++)
-				stirling[i] = c[i];
-		}
-		return stirling[k];
-	}
+    /* The coefficients computed so far */
+    rational[...] stirling = {};
 
-	real gamma_large(real x, int wprec, *real rel)
-		/*
-		 * Return Γ(x) for x >= wprec and x >= 10000 to 'wprec'
-		 * bits, setting 'rel' to a bound on its relative error,
-		 * from Stirling's formula with Binet's function,
-		 *
-		 *	Γ(x) = sqrt(2π/x) exp(x (log x - 1) + J(x))
-		 */
-	{
-		real	u = 2**-wprec;
-		real	n = imprecise(x, wprec);
-		real	l = log(n);
-		real	y = n * (l - 1);
+    rational
+    stirling_coefficient(int k)
+        /* Return coefficient 'k', from 0, of Stirling's series */
+    {
+        if (k >= dim(stirling)) {
+            rational[*] c = stirling_coefficients(max(k + 1, 2 * dim(stirling), 16));
+            for (int i = dim(stirling); i < dim(c); i++)
+                stirling[i] = c[i];
+        }
+        return stirling[k];
+    }
 
-		/*
-		 * For x > 0, Stirling's series envelops J: stopping at
-		 * any term leaves an error smaller than the next. Sum
-		 * terms until the next is below the rounding errors in
-		 * y. The terms shrink until k is about πx, far past
-		 * where this stops for x >= wprec
-		 */
-		real	target = n * l * u;
-		real	inv2 = 1 / (n * n);
-		real	p = 1 / n;
-		real	j = 0, next;
-		int	k = 0;
-		for (;;) {
-			next = stirling_coefficient(k) * p;
-			if (abs(next) <= target)
-				break;
-			j += next;
-			p *= inv2;
-			k++;
-		}
+    real
+    gamma_large(real x, int wprec, *real rel)
+        /*
+         * Return Γ(x) for x >= wprec and x >= 10000 to 'wprec'
+         * bits, setting 'rel' to a bound on its relative error,
+         * from Stirling's formula with Binet's function,
+         *
+         *      Γ(x) = sqrt(2π/x) exp(x (log x - 1) + J(x))
+         */
+    {
+        real u = 2 ** -wprec;
+        real n = imprecise(x, wprec);
+        real l = log(n);
+        real y = n * (l - 1);
 
-		/*
-		 * Bound the absolute error in the exponent: rounding x,
-		 * the log, and the products in y, rounding the sum, the
-		 * series' truncation, and rounding in the terms, the
-		 * largest of which is 1/(12x), and their sum
-		 */
-		real	e = y + j;
-		real	err = 8 * n * l * u + abs(e) * u + 2 * abs(next) +
-			      (4 * k + 8) * u / (6 * n);
+        /*
+         * For x > 0, Stirling's series envelops J: stopping at
+         * any term leaves an error smaller than the next. Sum
+         * terms until the next is below the rounding errors in
+         * y. The terms shrink until k is about πx, far past
+         * where this stops for x >= wprec
+         */
+        real target = n * l * u;
+        real inv2 = 1 / (n * n);
+        real p = 1 / n;
+        real j = 0, next;
+        int  k = 0;
 
-		*rel = err < 1/2 ? 2 * err + 8 * u : 1;
-		return exp(e) * sqrt(2 * pi_value(wprec) / n);
-	}
+        for (;;) {
+            next = stirling_coefficient(k) * p;
+            if (abs(next) <= target)
+                break;
+            j += next;
+            p *= inv2;
+            k++;
+        }
 
-	real gamma_w(real x, int wprec, *real rel)
-		/*
-		 * Return Γ(x), for 'x' not a non-positive integer, to
-		 * 'wprec' bits, setting 'rel' to a bound on its relative
-		 * error
-		 */
-	{
-		real	u = 2**-wprec;
+        /*
+         * Bound the absolute error in the exponent: rounding x,
+         * the log, and the products in y, rounding the sum, the
+         * series' truncation, and rounding in the terms, the
+         * largest of which is 1/(12x), and their sum
+         */
+        real e = y + j;
+        real err =
+            8 * n * l * u + abs(e) * u + 2 * abs(next) + (4 * k + 8) * u / (6 * n);
 
-		if (x < -0.5) {
-			/*
-			 * Euler's reflection formula,
-			 *
-			 *	Γ(x) = π/(sin(πx) Γ(1-x))
-			 *
-			 * sin(πx) cancels near the poles, so compute it as
-			 * ±sin(πr) from r = x - k, which is exact. 1 - x
-			 * needs a bit more than x to be exact
-			 */
-			int	k = floor(x + 1/2);
-			real	pi_w = pi_value(wprec);
-			real	s = sin(pi_w * imprecise(x - k, wprec));
-			if ((k & 1) != 0)
-				s = -s;
-			real	g = gamma_w(1 - imprecise(x, precision(x) + 2),
-					    wprec, rel);
-			*rel += 8 * u;
-			return pi_w / (s * g);
-		}
+        *rel = err < 1 / 2 ? 2 * err + 8 * u : 1;
+        return exp(e) * sqrt(2 * pi_value(wprec) / n);
+    }
 
-		int	m = max(10000, wprec);
+    real
+    gamma_w(real x, int wprec, *real rel)
+        /*
+         * Return Γ(x), for 'x' not a non-positive integer, to
+         * 'wprec' bits, setting 'rel' to a bound on its relative
+         * error
+         */
+    {
+        real u = 2 ** -wprec;
 
-		if (x < m) {
-			/*
-			 * Γ(x) = Γ(x + m) / (x (x + 1) ... (x + m - 1)),
-			 * with x + m computed exactly, as Stirling's series
-			 * needs a large argument. Every factor is at least
-			 * 1/2 but the first, so none cancels
-			 */
-			real	xw = imprecise(x, wprec);
-			real	p = xw;
-			for (int i = 1; i < m; i++)
-				p *= xw + i;
-			int	nbits = precision(x) +
-				max(0, exponent(imprecise(2 * m)) - exponent(x));
-			real	n = imprecise(x, nbits) + m;
-			real	g = gamma_large(n, wprec, rel);
-			*rel += 3 * m * u + u;
-			return g / p;
-		}
+        if (x < -0.5) {
 
-		return gamma_large(x, wprec, rel);
-	}
+            /*
+             * Euler's reflection formula,
+             *
+             *      Γ(x) = π/(sin(πx) Γ(1-x))
+             *
+             * sin(πx) cancels near the poles, so compute it as
+             * ±sin(πr) from r = x - k, which is exact. 1 - x
+             * needs a bit more than x to be exact
+             */
+            int  k = floor(x + 1 / 2);
+            real pi_w = pi_value(wprec);
+            real s = sin(pi_w * imprecise(x - k, wprec));
 
-	public real gamma(real n)
-		/*
-		 * Return Γ(n), correctly rounded
-		 */
-	{
-		/*
-		 * For non-positive integers, raise exception
-		 */
-		if (n <= 0 && n == floor(n))
-		    raise invalid_argument("gamma of non-positive integer", 0, n);
+            if ((k & 1) != 0)
+                s = -s;
+            real g = gamma_w(1 - imprecise(x, precision(x) + 2), wprec, rel);
+            *rel += 8 * u;
+            return pi_w / (s * g);
+        }
 
-		/*
-		 * For positive integers, use factorial
-		 */
-		if (is_int(n))
-			return (floor(n)-1)!;
+        int m = max(10000, wprec);
 
-		n = imprecise(n);
-		real compute(int wprec, *real err)
-		{
-			real	rel;
-			real	g = gamma_w(n, wprec, &rel);
+        if (x < m) {
 
-			*err = abs(g) * rel;
-			return g;
-		}
+            /*
+             * Γ(x) = Γ(x + m) / (x (x + 1) ... (x + m - 1)),
+             * with x + m computed exactly, as Stirling's series
+             * needs a large argument. Every factor is at least
+             * 1/2 but the first, so none cancels
+             */
+            real xw = imprecise(x, wprec);
+            real p = xw;
 
-		return round_correctly(precision(n), compute);
-	}
+            for (int i = 1; i < m; i++)
+                p *= xw + i;
+            int  nbits = precision(x) + max(0, exponent(imprecise(2 * m)) - exponent(x));
+            real n = imprecise(x, nbits) + m;
+            real g = gamma_large(n, wprec, rel);
+            *rel += 3 * m * u + u;
+            return g / p;
+        }
 
-	public real(real n) Γ = gamma;
+        return gamma_large(x, wprec, rel);
+    }
+
+    public real
+    gamma(real n)
+        /* Return Γ(n), correctly rounded */
+    {
+        /* For non-positive integers, raise exception */
+        if (n <= 0 && n == floor(n))
+            raise invalid_argument("gamma of non-positive integer", 0, n);
+
+        /* For positive integers, use factorial */
+        if (is_int(n))
+            return (floor(n) - 1)!;
+
+        n = imprecise(n);
+
+        real
+        compute(int wprec, *real err)
+        {
+            real rel;
+            real g = gamma_w(n, wprec, &rel);
+
+            *err = abs(g) * rel;
+            return g;
+        }
+
+        return round_correctly(precision(n), compute);
+    }
+
+    public real(real n) Γ = gamma;
 }

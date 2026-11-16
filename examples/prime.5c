@@ -11,123 +11,135 @@
 
 namespace Factor {
 
-    public bool is_prime (int i)
+    public bool
+    is_prime(int i)
     {
-	if (i == 1) return false;
-	if (i == 2) return true;
-	if ((i & 1) == 0) return false;
+        if (i == 1)
+            return false;
+        if (i == 2)
+            return true;
+        if ((i & 1) == 0)
+            return false;
 
-	int limit = floor (sqrt (i)) + 1;
-	int f;
+        int limit = floor(sqrt(i)) + 1;
+        int f;
 
-	for (f = 3; f <= limit; f++)
-	{
-	    if ((i % f) == 0)
-		return false;
-	}
-	return true;
+        for (f = 3; f <= limit; f++) {
+            if (i % f == 0)
+                return false;
+        }
+        return true;
     }
 
     typedef int_list_struct;
 
     typedef union {
-	*int_list_struct    ref;
-	void		    end;
+        *int_list_struct ref;
+        void             end;
     } int_list;
 
     typedef struct {
-	int_list	    next;
-	int		    v;
+        int_list next;
+        int      v;
     } int_list_struct;
 
-    public int_list primes (int i)
+    public int_list
+    primes(int i)
     {
-	bool prime_wrt (int_list l, int i)
-	{
-	    if (l == int_list.end) return true;
-	    if (i % l.ref->v == 0) return false;
-	    return prime_wrt (l.ref->next, i);
-	}
+        bool
+        prime_wrt(int_list l, int i)
+        {
+            if (l == int_list.end)
+                return true;
+            if (i % l.ref->v == 0)
+                return false;
+            return prime_wrt(l.ref->next, i);
+        }
 
-	if (i < 3)
-	    return (int_list.ref) reference ((int_list_struct) { .next = int_list.end, .v = 2 });
+        if (i < 3)
+            return (int_list.ref) (reference(
+                (int_list_struct) { next = int_list.end, v = 2 }));
 
-	int_list    l = primes (i-1);
+        int_list l = primes(i - 1);
 
-	if (prime_wrt (l, i))
-	    return (int_list.ref) reference ((int_list_struct) { .next = l, .v = i });
-	return l;
+        if (prime_wrt(l, i))
+            return (int_list.ref) (reference((int_list_struct) { next = l, v = i }));
+        return l;
     }
 
-    int[*] list_to_array (int_list l)
+    int[*]
+    list_to_array(int_list l)
     {
-	int list_length (int_list l)
-	{
-	    return l != int_list.end ? 1+list_length(l.ref->next) : 0;
-	}
+        int
+        list_length(int_list l) = l != int_list.end ? 1 + list_length(l.ref->next) : 0;
 
-	int[*]  a = (int [list_length (l)]) {};
-	int	i = 0;
-	while (l != int_list.end)
-	{
-	    a[i] = l.ref->v;
-	    l = l.ref->next;
-	    i++;
-	}
-	return a;
+        int[*] a = (int[list_length(l)]) {};
+        int    i = 0;
+        while (l != int_list.end) {
+            a[i] = l.ref->v;
+            l = l.ref->next;
+            i++;
+        }
+        return a;
     }
 
     typedef union {
-	int[*]  array;
-	void	none;
+        int[*] array;
+        void   none;
     } array_or_none;
 
-    public array_or_none factor (int i)
+    public array_or_none
+    factor(int i)
     {
-	array_or_none array_append (array_or_none a, int v)
-	{
-	    union switch (a) {
-	    case array:
-		int[*]  n = (int [dim(a.array)+1]) {};
-		int	i;
+        array_or_none
+        array_append(array_or_none a, int v)
+        {
+            union switch (a) {
+            case array:
+                int[*] n = (int[dim(a.array) + 1]) {};
+                int    i;
 
-		for (i = 0; i < dim(a.array); i++)
-		    n[i] = a.array[i];
-		n[i] = v;
-		return (array_or_none.array) n;
-	    case none:
-		int[*]	n = (int [1]) { v };
-		return (array_or_none.array) n;
-	    }
-	}
+                for (i = 0; i < dim(a.array); i++)
+                    n[i] = a.array[i];
+                n[i] = v;
+                return (array_or_none.array) n;
+            case none:
+                int[*] n = (int[1]) { v };
+                return (array_or_none.array) n;
+            }
+        }
 
-	if (i < 0) return array_append (factor (-i), -1);
+        if (i < 0)
+            return array_append(factor(-i), -1);
 
-	array_or_none   result = array_or_none.none;
+        array_or_none result = array_or_none.none;
 
-	int one_factor (int i)
-	{
-	    if (i == 1) return 1;
-	    if ((i & 1) == 0) return 2;
+        int
+        one_factor(int i)
+        {
+            if (i == 1)
+                return 1;
+            if ((i & 1) == 0)
+                return 2;
 
-	    int limit = floor (sqrt (i)) + 1;
-	    int f;
+            int limit = floor(sqrt(i)) + 1;
+            int f;
 
-	    for (f = 3; f <= limit; f += 2)
-	    {
-		if (!is_prime (f)) continue;
-		if ((i % f) == 0)
-		    return f;
-	    }
-	    return i;
-	}
+            for (f = 3; f <= limit; f += 2) {
+                if (!is_prime(f))
+                    continue;
+                if (i % f == 0)
+                    return f;
+            }
+            return i;
+        }
 
-	while (i > 1)
-	{
-	    int	factor = one_factor (i);
-	    result = array_append (result, factor);
-	    i /= factor;
-	}
-	return result;
+        while (i > 1) {
+            int factor = one_factor(i);
+
+            result = array_append(result, factor);
+            i /= factor;
+        }
+        return result;
     }
 }

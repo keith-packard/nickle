@@ -7,425 +7,430 @@
 extend namespace Complex {
     protected complex(real r, real i) new = cmplx;
 
-    protected complex i = new(0,1);
+    protected complex                 i = new(0, 1);
 
     /* Bits computed beyond the result precision */
-    int	guard_bits = 32;
+    int                               guard_bits = 32;
 
-    int part_precision(complex z)
-	/*
-	 * Return the precision of 'z' from its imprecise parts, as
-	 * arithmetic gives an exact operand the other's precision, or
-	 * the default precision when both are exact. That is the
-	 * precision of imprecise(0), which, unlike imprecise(z), costs
-	 * nothing to compute
-	 */
+    int
+    part_precision(complex z)
+        /*
+         * Return the precision of 'z' from its imprecise parts, as
+         * arithmetic gives an exact operand the other's precision, or
+         * the default precision when both are exact. That is the
+         * precision of imprecise(0), which, unlike imprecise(z), costs
+         * nothing to compute
+         */
     {
-	int	px = precision(creal(z)), py = precision(cimag(z));
+        int px = precision(creal(z)), py = precision(cimag(z));
 
-	if (px == 0 && py == 0)
-	    return precision(imprecise(0));
-	return max(px, py);
+        if (px == 0 && py == 0)
+            return precision(imprecise(0));
+        return max(px, py);
     }
 
-    complex round_correctly(int prec, complex(int, *real, *real) compute)
-	/*
-	 * As Math::round_correctly, for each part of the value from
-	 * compute(wprec, &re_err, &im_err). A part with no error must
-	 * be exact; an exact zero stays exact
-	 */
+    complex
+    round_correctly(int prec, complex(int, *real, *real) compute)
+        /*
+         * As Math::round_correctly, for each part of the value from
+         * compute(wprec, &re_err, &im_err). A part with no error must
+         * be exact; an exact zero stays exact
+         */
     {
-	bool round_part(real v, real err, int wprec, *real r)
-	{
-	    if (err == 0 && v == 0) {
-		*r = 0;
-		return true;
-	    }
+        bool
+        round_part(real v, real err, int wprec, *real r)
+        {
+            if (err == 0 && v == 0) {
+                *r = 0;
+                return true;
+            }
 
-	    /*
-	     * Form v ± err with the bits of both, as arithmetic would
-	     * use the fewer, widening err by an ulp of v for the
-	     * rounding of the sum
-	     */
-	    int		vp = max(precision(v), precision(err), wprec);
-	    real	vw = imprecise(v, vp);
-	    real	e = imprecise(err, vp) + Math::abs(vw) * 2**(1 - vp);
+            /*
+             * Form v ± err with the bits of both, as arithmetic would
+             * use the fewer, widening err by an ulp of v for the
+             * rounding of the sum
+             */
+            int  vp = max(precision(v), precision(err), wprec);
+            real vw = imprecise(v, vp);
+            real e = imprecise(err, vp) + Math::abs(vw) * 2 ** (1 - vp);
 
-	    *r = imprecise(vw - e, prec);
-	    return *r == imprecise(vw + e, prec);
-	}
+            *r = imprecise(vw - e, prec);
+            return *r == imprecise(vw + e, prec);
+        }
 
-	for (int guard = guard_bits; ; guard *= 2) {
-	    int		wprec = prec + guard;
-	    real	re_err, im_err, re, im;
-	    complex	v = compute(wprec, &re_err, &im_err);
+        for (int guard = guard_bits;; guard *= 2) {
+            int     wprec = prec + guard;
+            real    re_err, im_err, re, im;
+            complex v = compute(wprec, &re_err, &im_err);
 
-	    if (round_part(creal(v), re_err, wprec, &re) &&
-		round_part(cimag(v), im_err, wprec, &im))
-		return new(re, im);
-	}
+            if (round_part(creal(v), re_err, wprec, &re)
+                    && round_part(cimag(v), im_err, wprec, &im))
+                return new(re, im);
+        }
     }
 
-    real mul_err(real a, real a_err, real b, real b_err, int wprec)
-	/*
-	 * Return a bound on the error in a * b rounded to 'wprec' bits,
-	 * given the errors in 'a' and 'b'
-	 */
+    real
+    mul_err(real a, real a_err, real b, real b_err, int wprec)
+        /*
+         * Return a bound on the error in a * b rounded to 'wprec' bits,
+         * given the errors in 'a' and 'b'
+         */
     {
-	return Math::abs(a) * b_err + Math::abs(b) * a_err + a_err * b_err +
-	       2 * Math::abs(a * b) * 2**-wprec;
+        return Math::abs(a) * b_err + Math::abs(b) * a_err
+            + a_err * b_err + 2 * Math::abs(a * b) * 2 ** -wprec;
     }
 
-    real div_err(real n, real n_err, real d, real d_err, int wprec)
-	/*
-	 * Return a bound on the error in n / d rounded to 'wprec' bits,
-	 * given the errors in 'n' and 'd'
-	 */
+    real
+    div_err(real n, real n_err, real d, real d_err, int wprec)
+        /*
+         * Return a bound on the error in n / d rounded to 'wprec' bits,
+         * given the errors in 'n' and 'd'
+         */
     {
-	if (n == 0 && n_err == 0)
-	    return 0;
+        if (n == 0 && n_err == 0)
+            return 0;
 
-	real	q = Math::abs(n / d);
+        real q = Math::abs(n / d);
 
-	/* Too uncertain to bound; ask for more bits */
-	if (Math::abs(d) <= 2 * d_err)
-	    return q + 1;
-	return (n_err + q * d_err) / (Math::abs(d) - d_err) + 2 * q * 2**-wprec;
+        /* Too uncertain to bound; ask for more bits */
+        if (Math::abs(d) <= 2 * d_err)
+            return q + 1;
+        return (n_err + q * d_err) / (Math::abs(d) - d_err) + 2 * q * 2 ** -wprec;
     }
 
-    real twice_sum_squares(real a, real a_err, real b, real b_err, int wprec,
-			   *real err)
-	/*
-	 * Return 2 (a² + b²) rounded to 'wprec' bits, setting 'err' to a
-	 * bound on its error given the errors in 'a' and 'b'
-	 */
+    real
+    twice_sum_squares(real a, real a_err, real b, real b_err, int wprec,
+                      *real err)
+        /*
+         * Return 2 (a² + b²) rounded to 'wprec' bits, setting 'err' to a
+         * bound on its error given the errors in 'a' and 'b'
+         */
     {
-	real	s = a * a + b * b;
+        real s = a * a + b * b;
 
-	*err = 2 * (mul_err(a, a_err, a, a_err, wprec) +
-		    mul_err(b, b_err, b, b_err, wprec) + 2 * s * 2**-wprec);
-	return 2 * s;
+        *err = 2
+            * (mul_err(a, a_err, a, a_err, wprec)
+               + mul_err(b, b_err, b, b_err, wprec) + 2 * s * 2 ** -wprec);
+        return 2 * s;
     }
 
-    public complex polar(real r, real t)
-	/*
-	 * Return r (cos t + i sin t), each part correctly rounded
-	 */
+    public complex
+    polar(real r, real t)
+        /* Return r (cos t + i sin t), each part correctly rounded */
     {
-	if (t == 0)
-	    return r;
+        if (t == 0)
+            return r;
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    /* r may have more bits than 'wprec', or be a rational */
-	    real	rw = imprecise(r, wprec);
-	    real	r_err = 0;
-	    real	c_err, s_err;
-	    real	c = Math::cos_w(t, wprec, &c_err);
-	    real	s = Math::sin_w(t, wprec, &s_err);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            /* r may have more bits than 'wprec', or be a rational */
+            real rw = imprecise(r, wprec);
+            real r_err = 0;
+            real c_err, s_err;
+            real c = Math::cos_w(t, wprec, &c_err);
+            real s = Math::sin_w(t, wprec, &s_err);
 
-	    if (rw != r)
-		r_err = Math::abs(rw) * 2**-wprec;
-	    *re_err = mul_err(rw, r_err, c, c_err, wprec);
-	    *im_err = mul_err(rw, r_err, s, s_err, wprec);
-	    return new(rw * c, rw * s);
-	}
+            if (rw != r)
+                r_err = Math::abs(rw) * 2 ** -wprec;
+            *re_err = mul_err(rw, r_err, c, c_err, wprec);
+            *im_err = mul_err(rw, r_err, s, s_err, wprec);
+            return new(rw * c, rw * s);
+        }
 
-	return round_correctly(min(part_precision(r), part_precision(t)),
-			       compute);
+        return round_correctly(min(part_precision(r), part_precision(t)), compute);
     }
 
-    public complex conj(complex z)
+    public complex
+    conj(complex z) = new(creal(z), -cimag(z));
+
+    protected real
+    abs(complex z) = Math::sqrt(creal(z) ** 2 + cimag(z) ** 2);
+
+    public real
+    arg(complex z) = Math::atan2(cimag(z), creal(z));
+
+    real
+    log_abs(real x, real y, int prec)
+        /* Return log(sqrt(x**2 + y**2)), correctly rounded to 'prec' bits */
     {
-	return new(creal(z), -cimag(z));
+        /* Only these dyadic points lie on the unit circle */
+        if ((Math::abs(x) == 1 && y == 0) || (x == 0 && Math::abs(y) == 1))
+            return 0;
+
+        x = imprecise(x);
+        y = imprecise(y);
+
+        real
+        compute(int wprec, *real err)
+        {
+            /*
+             * h has a relative error under 3 * 2**-wprec, which moves
+             * log(h) by under 4 * 2**-wprec. Near 1, where log would
+             * cancel, h - 1 is exact and log1p keeps its bits
+             */
+            real xw = imprecise(x, wprec), yw = imprecise(y, wprec);
+            real h = xw * xw + yw * yw;
+            real l;
+
+            if (1 / 2 < h && h < 2)
+                l = Math::log1p_w(h - 1, wprec, err);
+            else
+                l = Math::log_w(h, wprec, err);
+
+            *err = (*err + 4 * 2 ** -wprec) / 2;
+            return l / 2;
+        }
+
+        return Math::round_correctly(prec, compute);
     }
 
-    protected real abs(complex z)
+    protected complex
+    log(complex z)
+        /* Return log(z), each part correctly rounded */
     {
-	return Math::sqrt(creal(z)**2 + cimag(z)**2);
+        if (z == 0)
+            raise invalid_argument("log: must be nonzero", 0, z);
+
+        int  prec = part_precision(z);
+        real x = creal(z), y = cimag(z);
+
+        return new(
+            log_abs(x, y, prec), Math::atan2(imprecise(y, prec), imprecise(x, prec)));
     }
 
-    public real arg(complex z)
+    protected complex
+    exp(complex z)
+        /* Return e**z, each part correctly rounded */
     {
-	return Math::atan2(cimag(z), creal(z));
+        if (z == 0)
+            return 1;
+        int prec = part_precision(z);
+        z = imprecise(z, prec);
+
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real e_rel, c_err, s_err;
+            real e = Math::exp_w(creal(z), wprec, &e_rel);
+            real c = Math::cos_w(cimag(z), wprec, &c_err);
+            real s = Math::sin_w(cimag(z), wprec, &s_err);
+
+            *re_err = mul_err(e, e * e_rel, c, c_err, wprec);
+            *im_err = mul_err(e, e * e_rel, s, s_err, wprec);
+            return new(e * c, e * s);
+        }
+
+        return round_correctly(prec, compute);
     }
 
-    real log_abs(real x, real y, int prec)
-	/*
-	 * Return log(sqrt(x**2 + y**2)), correctly rounded to 'prec' bits
-	 */
+    int
+    part_exponent(real x)
+        /* Returns the exponent of 'x', or 0 when 'x' is an exact zero */
     {
-	/* Only these dyadic points lie on the unit circle */
-	if ((Math::abs(x) == 1 && y == 0) || (x == 0 && Math::abs(y) == 1))
-	    return 0;
-
-	x = imprecise(x);
-	y = imprecise(y);
-	real compute(int wprec, *real err)
-	{
-	    /*
-	     * h has a relative error under 3 * 2**-wprec, which moves
-	     * log(h) by under 4 * 2**-wprec. Near 1, where log would
-	     * cancel, h - 1 is exact and log1p keeps its bits
-	     */
-	    real	xw = imprecise(x, wprec), yw = imprecise(y, wprec);
-	    real	h = xw * xw + yw * yw;
-	    real	l;
-
-	    if (1/2 < h && h < 2)
-		l = Math::log1p_w(h - 1, wprec, err);
-	    else
-		l = Math::log_w(h, wprec, err);
-
-	    *err = (*err + 4 * 2**-wprec) / 2;
-	    return l / 2;
-	}
-
-	return Math::round_correctly(prec, compute);
+        return x == 0 ? 0 : exponent(imprecise(x));
     }
 
-    protected complex log(complex z)
-	/*
-	 * Return log(z), each part correctly rounded
-	 */
+    protected complex
+    pow(complex x, complex y)
     {
-	if (z == 0)
-	    raise invalid_argument("log: must be nonzero", 0, z);
+        if (x == 0) {
+            if (y == 0)
+                return 1;
+            if (creal(y) > 0)
+                return 0;
+            raise divide_by_zero(1, x);
+        }
+        int prec = min(part_precision(x), part_precision(y));
 
-	int	prec = part_precision(z);
-	real	x = creal(z), y = cimag(z);
+        x = imprecise(x);
+        y = imprecise(y);
 
-	return new(log_abs(x, y, prec),
-		   Math::atan2(imprecise(y, prec), imprecise(x, prec)));
+        /*
+         * x**y = exp(w), w = y log(x). An absolute error in w becomes
+         * that relative error in the result, so compute w with as many
+         * more bits as |w| needs, plus guard bits. With 2**(e-1) <= |x|
+         * < 2**e, |log(x)| is under |e| + 1 + π
+         */
+        real    log_bound = Math::abs(part_exponent(abs(x))) + 5;
+        int     wprec = prec + guard_bits + max(0, part_exponent(log_bound * abs(y)));
+        complex xi = imprecise(x, wprec);
+        complex yi = imprecise(y, wprec);
+        return imprecise(exp(log(xi) * yi), prec);
     }
 
-    protected complex exp(complex z)
-	/*
-	 * Return e**z, each part correctly rounded
-	 */
+    protected complex
+    sqrt(complex z)
     {
-	if (z == 0)
-	    return 1;
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        real x = creal(z), y = cimag(z);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	e_rel, c_err, s_err;
-	    real	e = Math::exp_w(creal(z), wprec, &e_rel);
-	    real	c = Math::cos_w(cimag(z), wprec, &c_err);
-	    real	s = Math::sin_w(cimag(z), wprec, &s_err);
+        if (y == 0) {
+            if (x >= 0)
+                return Math::sqrt(x);
+            return new(0, Math::sqrt(-x));
+        }
 
-	    *re_err = mul_err(e, e * e_rel, c, c_err, wprec);
-	    *im_err = mul_err(e, e * e_rel, s, s_err, wprec);
-	    return new(e * c, e * s);
-	}
-
-	return round_correctly(prec, compute);
+        /*
+         * Compute the larger part from |z| + |x|, then the smaller as
+         * y / (2 * larger), avoiding the cancellation in |z| - |x|
+         */
+        real t = Math::sqrt((abs(z) + Math::abs(x)) / 2);
+        if (x >= 0)
+            return new(t, y / (2 * t));
+        if (y > 0)
+            return new(y / (2 * t), t);
+        return new(-y / (2 * t), -t);
     }
 
-    int part_exponent(real x)
-	/*
-	 * Returns the exponent of 'x', or 0 when 'x' is an exact zero
-	 */
+    real
+    one_plus(real x, int wprec, *real err)
+        /*
+         * Return 1 + x rounded to 'wprec' bits, setting 'err' to a bound
+         * on its rounding error, which is 0 when 1 + x fits
+         */
     {
-	return x == 0 ? 0 : exponent(imprecise(x));
+        x = imprecise(x);
+
+        real e = imprecise(x, precision(x) + Math::abs(part_exponent(x)) + 2) + 1;
+        real r = imprecise(e, wprec);
+
+        *err = 0;
+        if (r != e)
+            *err = Math::abs(r) * 2 ** -wprec;
+        return r;
     }
 
-    protected complex pow(complex x, complex y)
+    complex
+    sqrt_err(real p, real p_err, real q, int wprec,
+             *real re_err, *real im_err)
+        /*
+         * Return sqrt(p + iq), as sqrt does, to 'wprec' bits, setting
+         * the errors in its parts given the error in 'p'. 'q' must be
+         * exact, and so must 'p' when q is 0 and p is near 0, as its
+         * sign then picks the result
+         */
     {
-	if (x == 0) {
-	    if (y == 0)
-		return 1;
-	    if (creal(y) > 0)
-		return 0;
-	    raise divide_by_zero(1, x);
-	}
-	int	prec = min(part_precision(x), part_precision(y));
+        real u = 2 ** -wprec;
+        real p_rel = 0;
 
-	x = imprecise(x);
-	y = imprecise(y);
+        q = imprecise(q, wprec);
 
-	/*
-	 * x**y = exp(w), w = y log(x). An absolute error in w becomes
-	 * that relative error in the result, so compute w with as many
-	 * more bits as |w| needs, plus guard bits. With 2**(e-1) <= |x|
-	 * < 2**e, |log(x)| is under |e| + 1 + π
-	 */
-	real	log_bound = Math::abs(part_exponent(abs(x))) + 5;
-	int	wprec = prec + guard_bits +
-	    max(0, part_exponent(log_bound * abs(y)));
-	complex	xi = imprecise(x, wprec);
-	complex	yi = imprecise(y, wprec);
-	return imprecise(exp(log(xi) * yi), prec);
+        if (p_err != 0) {
+
+            /* Too uncertain to bound; ask for more bits */
+            if (Math::abs(p) <= 2 * p_err) {
+                *re_err = *im_err = Math::abs(p) + 1;
+                return 0;
+            }
+            p_rel = p_err / Math::abs(p);
+        }
+
+        if (q == 0) {
+            real s_rel;
+            real s = Math::sqrt_w(Math::abs(p), wprec, &s_rel);
+            real s_err = s * (p_rel + s_rel);
+
+            if (p >= 0) {
+                *re_err = s_err;
+                *im_err = 0;
+                return s;
+            }
+            *re_err = 0;
+            *im_err = s_err;
+            return new(0, s);
+        }
+
+        /*
+         * Each step adds positive values, so relative errors add up:
+         * |z| from p**2 + q**2, then t from (|z| + |p|) / 2, and the
+         * other part from |q| / 2t
+         */
+        real m_rel, t_rel;
+        real m = Math::sqrt_w(p * p + q * q, wprec, &m_rel);
+        real t = Math::sqrt_w((m + Math::abs(p)) / 2, wprec, &t_rel);
+        real o = Math::abs(q) / (2 * t);
+
+        t_rel += p_rel + m_rel + 2 * u;
+        real t_err = t * t_rel;
+        real o_err = o * (t_rel + u);
+
+        if (q < 0)
+            o = -o;
+        if (p >= 0) {
+            *re_err = t_err;
+            *im_err = o_err;
+            return new(t, o);
+        }
+        *re_err = o_err;
+        *im_err = t_err;
+        if (q < 0)
+            return new(-o, -t);
+        return new(o, t);
     }
 
-    protected complex sqrt(complex z)
+    real
+    atan2_err(real y, real y_err, real x, real x_err, int wprec, *real err)
+        /*
+         * Return atan2(y, x) to 'wprec' bits, setting 'err' to a bound
+         * on its error given the errors in 'y' and 'x'. An exact zero y
+         * with x surely positive gives an exact 0
+         */
     {
-	real	x = creal(z), y = cimag(z);
+        if (y == 0 && y_err == 0 && x > x_err) {
+            *err = 0;
+            return 0;
+        }
 
-	if (y == 0) {
-	    if (x >= 0)
-		return Math::sqrt(x);
-	    return new(0, Math::sqrt(-x));
-	}
+        real ax = Math::abs(x), ay = Math::abs(y);
+        real r = Math::max(ax - x_err, ay - y_err);
 
-	/*
-	 * Compute the larger part from |z| + |x|, then the smaller as
-	 * y / (2 * larger), avoiding the cancellation in |z| - |x|
-	 */
-	real	t = Math::sqrt((abs(z) + Math::abs(x)) / 2);
-	if (x >= 0)
-	    return new(t, y / (2 * t));
-	if (y > 0)
-	    return new(y / (2 * t), t);
-	return new(-y / (2 * t), -t);
+        /*
+         * Too uncertain to bound, either near the origin or where x
+         * may be negative and y may take either sign, which crosses
+         * the cut; ask for more bits
+         */
+        if (r <= 0 || (x <= x_err && ay <= y_err && y_err != 0)) {
+            *err = 8;
+            return 0;
+        }
+
+        /*
+         * Moving (x, y) by under x_err + y_err at a distance of at
+         * least r turns it by under twice their ratio
+         */
+        real a = Math::atan2_w(y, x, wprec, err);
+
+        *err += 2 * (x_err + y_err) / r;
+        return a;
     }
 
-    real one_plus(real x, int wprec, *real err)
-	/*
-	 * Return 1 + x rounded to 'wprec' bits, setting 'err' to a bound
-	 * on its rounding error, which is 0 when 1 + x fits
-	 */
+    real
+    product_err(real a, real a_err, real b, real b_err,
+                real c, real c_err, real d, real d_err, int wprec,
+                *real err)
+        /*
+         * Return a b + c d rounded to 'wprec' bits, setting 'err' to a
+         * bound on its error given the errors in each value
+         */
     {
-	x = imprecise(x);
+        real v = a * b + c * d;
 
-	real	e = imprecise(x, precision(x) + Math::abs(part_exponent(x)) + 2) + 1;
-	real	r = imprecise(e, wprec);
-
-	*err = 0;
-	if (r != e)
-	    *err = Math::abs(r) * 2**-wprec;
-	return r;
+        *err = mul_err(a, a_err, b, b_err, wprec)
+            + mul_err(c, c_err, d, d_err, wprec) + 2 * Math::abs(v) * 2 ** -wprec;
+        return v;
     }
 
-    complex sqrt_err(real p, real p_err, real q, int wprec,
-		     *real re_err, *real im_err)
-	/*
-	 * Return sqrt(p + iq), as sqrt does, to 'wprec' bits, setting
-	 * the errors in its parts given the error in 'p'. 'q' must be
-	 * exact, and so must 'p' when q is 0 and p is near 0, as its
-	 * sign then picks the result
-	 */
+    real
+    asinh_err(real v, real v_err, int wprec, *real err)
+        /*
+         * Return asinh(v) to 'wprec' bits, setting 'err' to a bound on
+         * its error given the error in 'v'; asinh' <= 1
+         */
     {
-	real	u = 2**-wprec;
-	real	p_rel = 0;
+        real a = Math::asinh_w(v, wprec, err);
 
-	q = imprecise(q, wprec);
-
-	if (p_err != 0) {
-	    /* Too uncertain to bound; ask for more bits */
-	    if (Math::abs(p) <= 2 * p_err) {
-		*re_err = *im_err = Math::abs(p) + 1;
-		return 0;
-	    }
-	    p_rel = p_err / Math::abs(p);
-	}
-
-	if (q == 0) {
-	    real	s_rel;
-	    real	s = Math::sqrt_w(Math::abs(p), wprec, &s_rel);
-	    real	s_err = s * (p_rel + s_rel);
-
-	    if (p >= 0) {
-		*re_err = s_err;
-		*im_err = 0;
-		return s;
-	    }
-	    *re_err = 0;
-	    *im_err = s_err;
-	    return new(0, s);
-	}
-
-	/*
-	 * Each step adds positive values, so relative errors add up:
-	 * |z| from p**2 + q**2, then t from (|z| + |p|) / 2, and the
-	 * other part from |q| / 2t
-	 */
-	real	m_rel, t_rel;
-	real	m = Math::sqrt_w(p * p + q * q, wprec, &m_rel);
-	real	t = Math::sqrt_w((m + Math::abs(p)) / 2, wprec, &t_rel);
-	real	o = Math::abs(q) / (2 * t);
-
-	t_rel += p_rel + m_rel + 2 * u;
-	real	t_err = t * t_rel;
-	real	o_err = o * (t_rel + u);
-
-	if (q < 0)
-	    o = -o;
-	if (p >= 0) {
-	    *re_err = t_err;
-	    *im_err = o_err;
-	    return new(t, o);
-	}
-	*re_err = o_err;
-	*im_err = t_err;
-	if (q < 0)
-	    return new(-o, -t);
-	return new(o, t);
-    }
-
-    real atan2_err(real y, real y_err, real x, real x_err, int wprec, *real err)
-	/*
-	 * Return atan2(y, x) to 'wprec' bits, setting 'err' to a bound
-	 * on its error given the errors in 'y' and 'x'. An exact zero y
-	 * with x surely positive gives an exact 0
-	 */
-    {
-	if (y == 0 && y_err == 0 && x > x_err) {
-	    *err = 0;
-	    return 0;
-	}
-
-	real	ax = Math::abs(x), ay = Math::abs(y);
-	real	r = Math::max(ax - x_err, ay - y_err);
-
-	/*
-	 * Too uncertain to bound, either near the origin or where x
-	 * may be negative and y may take either sign, which crosses
-	 * the cut; ask for more bits
-	 */
-	if (r <= 0 || (x <= x_err && ay <= y_err && y_err != 0)) {
-	    *err = 8;
-	    return 0;
-	}
-
-	/*
-	 * Moving (x, y) by under x_err + y_err at a distance of at
-	 * least r turns it by under twice their ratio
-	 */
-	real	a = Math::atan2_w(y, x, wprec, err);
-
-	*err += 2 * (x_err + y_err) / r;
-	return a;
-    }
-
-    real product_err(real a, real a_err, real b, real b_err,
-		     real c, real c_err, real d, real d_err, int wprec,
-		     *real err)
-	/*
-	 * Return a b + c d rounded to 'wprec' bits, setting 'err' to a
-	 * bound on its error given the errors in each value
-	 */
-    {
-	real	v = a * b + c * d;
-
-	*err = mul_err(a, a_err, b, b_err, wprec) +
-	       mul_err(c, c_err, d, d_err, wprec) +
-	       2 * Math::abs(v) * 2**-wprec;
-	return v;
-    }
-
-    real asinh_err(real v, real v_err, int wprec, *real err)
-	/*
-	 * Return asinh(v) to 'wprec' bits, setting 'err' to a bound on
-	 * its error given the error in 'v'; asinh' <= 1
-	 */
-    {
-	real	a = Math::asinh_w(v, wprec, err);
-
-	*err += v_err;
-	return a;
+        *err += v_err;
+        return a;
     }
 
     /*
@@ -439,353 +444,373 @@ extend namespace Complex {
      * near the cuts and need no scaling for large arguments.
      */
 
-    protected complex asin(complex z)
+    protected complex
+    asin(complex z)
     {
-	if (z == 0)
-	    return 0;
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        if (z == 0)
+            return 0;
+        int prec = part_precision(z);
+        z = imprecise(z, prec);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	x = creal(z), y = cimag(z);
-	    real	am_err, ap_err, ar_err, ai_err, br_err, bi_err, d_err;
-	    real	am = one_plus(-x, wprec, &am_err);
-	    real	ap = one_plus(x, wprec, &ap_err);
-	    complex	a = sqrt_err(am, am_err, -y, wprec, &ar_err, &ai_err);
-	    complex	b = sqrt_err(ap, ap_err, y, wprec, &br_err, &bi_err);
-	    real	ar = creal(a), ai = cimag(a), br = creal(b), bi = cimag(b);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real    x = creal(z), y = cimag(z);
+            real    am_err, ap_err, ar_err, ai_err, br_err, bi_err, d_err;
+            real    am = one_plus(-x, wprec, &am_err);
+            real    ap = one_plus(x, wprec, &ap_err);
+            complex a = sqrt_err(am, am_err, -y, wprec, &ar_err, &ai_err);
+            complex b = sqrt_err(ap, ap_err, y, wprec, &br_err, &bi_err);
+            real    ar = creal(a), ai = cimag(a), br = creal(b), bi = cimag(b);
 
-	    /* Re(a b) and Im(conj(a) b) */
-	    real	d = product_err(ar, ar_err, br, br_err, -ai, ai_err,
-					bi, bi_err, wprec, &d_err);
-	    real	re = atan2_err(x, 0, d, d_err, wprec, re_err);
-	    real	n = product_err(ar, ar_err, bi, bi_err, -ai, ai_err,
-					br, br_err, wprec, &d_err);
-	    real	im = asinh_err(n, d_err, wprec, im_err);
+            /* Re(a b) and Im(conj(a) b) */
+            real    d =
+                product_err(ar, ar_err, br, br_err, -ai, ai_err, bi, bi_err, wprec, &d_err);
+            real    re = atan2_err(x, 0, d, d_err, wprec, re_err);
+            real    n =
+                product_err(ar, ar_err, bi, bi_err, -ai, ai_err, br, br_err, wprec, &d_err);
+            real    im = asinh_err(n, d_err, wprec, im_err);
 
-	    return new(re, im);
-	}
+            return new(re, im);
+        }
 
-	return round_correctly(prec, compute);
+        return round_correctly(prec, compute);
     }
 
-    protected complex acos(complex z)
+    protected complex
+    acos(complex z)
     {
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        int prec = part_precision(z);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	x = creal(z), y = cimag(z);
-	    real	am_err, ap_err, ar_err, ai_err, br_err, bi_err, n_err;
-	    real	am = one_plus(-x, wprec, &am_err);
-	    real	ap = one_plus(x, wprec, &ap_err);
-	    complex	a = sqrt_err(am, am_err, -y, wprec, &ar_err, &ai_err);
-	    complex	b = sqrt_err(ap, ap_err, y, wprec, &br_err, &bi_err);
-	    real	ar = creal(a), ai = cimag(a), br = creal(b), bi = cimag(b);
+        z = imprecise(z, prec);
 
-	    /* 2 atan2(Re a, Re b) and Im(conj(b) a) */
-	    real	re = 2 * atan2_err(ar, ar_err, br, br_err, wprec, re_err);
-	    real	n = product_err(br, br_err, ai, ai_err, -bi, bi_err,
-					ar, ar_err, wprec, &n_err);
-	    real	im = asinh_err(n, n_err, wprec, im_err);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real    x = creal(z), y = cimag(z);
+            real    am_err, ap_err, ar_err, ai_err, br_err, bi_err, n_err;
+            real    am = one_plus(-x, wprec, &am_err);
+            real    ap = one_plus(x, wprec, &ap_err);
+            complex a = sqrt_err(am, am_err, -y, wprec, &ar_err, &ai_err);
+            complex b = sqrt_err(ap, ap_err, y, wprec, &br_err, &bi_err);
+            real    ar = creal(a), ai = cimag(a), br = creal(b), bi = cimag(b);
 
-	    *re_err *= 2;
-	    return new(re, im);
-	}
+            /* 2 atan2(Re a, Re b) and Im(conj(b) a) */
+            real    re = 2 * atan2_err(ar, ar_err, br, br_err, wprec, re_err);
+            real    n =
+                product_err(br, br_err, ai, ai_err, -bi, bi_err, ar, ar_err, wprec, &n_err);
+            real    im = asinh_err(n, n_err, wprec, im_err);
 
-	return round_correctly(prec, compute);
+            *re_err *= 2;
+            return new(re, im);
+        }
+
+        return round_correctly(prec, compute);
     }
 
-    protected complex cos(complex z)
-	/*
-	 * Return cos(x+iy) = cos x cosh y - i sin x sinh y,
-	 * each part correctly rounded
-	 */
+    protected complex
+    cos(complex z)
+        /*
+         * Return cos(x+iy) = cos x cosh y - i sin x sinh y,
+         * each part correctly rounded
+         */
     {
-	if (z == 0)
-	    return 1;
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        if (z == 0)
+            return 1;
+        int prec = part_precision(z);
+        z = imprecise(z, prec);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	x = creal(z), y = cimag(z);
-	    real	a_err, b_rel, c_err, d_rel;
-	    real	a = Math::cos_w(x, wprec, &a_err);
-	    real	b = Math::cosh_w(y, wprec, &b_rel);
-	    real	c = Math::sin_w(x, wprec, &c_err);
-	    real	d = Math::sinh_w(y, wprec, &d_rel);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real x = creal(z), y = cimag(z);
+            real a_err, b_rel, c_err, d_rel;
+            real a = Math::cos_w(x, wprec, &a_err);
+            real b = Math::cosh_w(y, wprec, &b_rel);
+            real c = Math::sin_w(x, wprec, &c_err);
+            real d = Math::sinh_w(y, wprec, &d_rel);
 
-	    *re_err = mul_err(a, a_err, b, Math::abs(b) * b_rel, wprec);
-	    *im_err = mul_err(c, c_err, d, Math::abs(d) * d_rel, wprec);
-	    return new(a * b, -(c * d));
-	}
+            *re_err = mul_err(a, a_err, b, Math::abs(b) * b_rel, wprec);
+            *im_err = mul_err(c, c_err, d, Math::abs(d) * d_rel, wprec);
+            return new(a * b, -(c * d));
+        }
 
-	return round_correctly(prec, compute);
+        return round_correctly(prec, compute);
     }
 
-    protected complex sin(complex z)
-	/*
-	 * Return sin(x+iy) = sin x cosh y + i cos x sinh y,
-	 * each part correctly rounded
-	 */
+    protected complex
+    sin(complex z)
+        /*
+         * Return sin(x+iy) = sin x cosh y + i cos x sinh y,
+         * each part correctly rounded
+         */
     {
-	if (z == 0)
-	    return 0;
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        if (z == 0)
+            return 0;
+        int prec = part_precision(z);
+        z = imprecise(z, prec);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	x = creal(z), y = cimag(z);
-	    real	a_err, b_rel, c_err, d_rel;
-	    real	a = Math::sin_w(x, wprec, &a_err);
-	    real	b = Math::cosh_w(y, wprec, &b_rel);
-	    real	c = Math::cos_w(x, wprec, &c_err);
-	    real	d = Math::sinh_w(y, wprec, &d_rel);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real x = creal(z), y = cimag(z);
+            real a_err, b_rel, c_err, d_rel;
+            real a = Math::sin_w(x, wprec, &a_err);
+            real b = Math::cosh_w(y, wprec, &b_rel);
+            real c = Math::cos_w(x, wprec, &c_err);
+            real d = Math::sinh_w(y, wprec, &d_rel);
 
-	    *re_err = mul_err(a, a_err, b, Math::abs(b) * b_rel, wprec);
-	    *im_err = mul_err(c, c_err, d, Math::abs(d) * d_rel, wprec);
-	    return new(a * b, c * d);
-	}
+            *re_err = mul_err(a, a_err, b, Math::abs(b) * b_rel, wprec);
+            *im_err = mul_err(c, c_err, d, Math::abs(d) * d_rel, wprec);
+            return new(a * b, c * d);
+        }
 
-	return round_correctly(prec, compute);
+        return round_correctly(prec, compute);
     }
 
-    protected complex tan(complex z)
-	/*
-	 * tan(x+iy) = (sin 2x + i sinh 2y) / (cos 2x + cosh 2y), avoiding
-	 * the cancellation in sin(z) / cos(z), which loses about
-	 * 2|y| log2(e) bits of the real part. The denominator is
-	 * 2 (cos²x + sinh²y), whose terms can't cancel, as cos 2x and
-	 * cosh 2y do near the poles. Each part is correctly rounded
-	 */
+    protected complex
+    tan(complex z)
+        /*
+         * tan(x+iy) = (sin 2x + i sinh 2y) / (cos 2x + cosh 2y), avoiding
+         * the cancellation in sin(z) / cos(z), which loses about
+         * 2|y| log2(e) bits of the real part. The denominator is
+         * 2 (cos²x + sinh²y), whose terms can't cancel, as cos 2x and
+         * cosh 2y do near the poles. Each part is correctly rounded
+         */
     {
-	if (z == 0)
-	    return 0;
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        if (z == 0)
+            return 0;
+        int prec = part_precision(z);
+        z = imprecise(z, prec);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	x = creal(z), y = cimag(z);
-	    real	c_err, s_rel, n_err, m_rel, d_err;
-	    real	c = Math::cos_w(x, wprec, &c_err);
-	    real	s = Math::sinh_w(y, wprec, &s_rel);
-	    real	n = Math::sin_w(2 * x, wprec, &n_err);
-	    real	m = Math::sinh_w(2 * y, wprec, &m_rel);
-	    real	d = twice_sum_squares(c, c_err, s, Math::abs(s) * s_rel,
-					      wprec, &d_err);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real x = creal(z), y = cimag(z);
+            real c_err, s_rel, n_err, m_rel, d_err;
+            real c = Math::cos_w(x, wprec, &c_err);
+            real s = Math::sinh_w(y, wprec, &s_rel);
+            real n = Math::sin_w(2 * x, wprec, &n_err);
+            real m = Math::sinh_w(2 * y, wprec, &m_rel);
+            real d = twice_sum_squares(c, c_err, s, Math::abs(s) * s_rel, wprec, &d_err);
 
-	    *re_err = div_err(n, n_err, d, d_err, wprec);
-	    *im_err = div_err(m, Math::abs(m) * m_rel, d, d_err, wprec);
-	    return new(n / d, m / d);
-	}
+            *re_err = div_err(n, n_err, d, d_err, wprec);
+            *im_err = div_err(m, Math::abs(m) * m_rel, d, d_err, wprec);
+            return new(n / d, m / d);
+        }
 
-	return round_correctly(prec, compute);
+        return round_correctly(prec, compute);
     }
 
-    protected complex cosh(complex z)
-	/*
-	 * Return cosh(x+iy) = cosh x cos y + i sinh x sin y,
-	 * each part correctly rounded
-	 */
+    protected complex
+    cosh(complex z)
+        /*
+         * Return cosh(x+iy) = cosh x cos y + i sinh x sin y,
+         * each part correctly rounded
+         */
     {
-	if (z == 0)
-	    return 1;
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        if (z == 0)
+            return 1;
+        int prec = part_precision(z);
+        z = imprecise(z, prec);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	x = creal(z), y = cimag(z);
-	    real	a_rel, b_err, c_rel, d_err;
-	    real	a = Math::cosh_w(x, wprec, &a_rel);
-	    real	b = Math::cos_w(y, wprec, &b_err);
-	    real	c = Math::sinh_w(x, wprec, &c_rel);
-	    real	d = Math::sin_w(y, wprec, &d_err);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real x = creal(z), y = cimag(z);
+            real a_rel, b_err, c_rel, d_err;
+            real a = Math::cosh_w(x, wprec, &a_rel);
+            real b = Math::cos_w(y, wprec, &b_err);
+            real c = Math::sinh_w(x, wprec, &c_rel);
+            real d = Math::sin_w(y, wprec, &d_err);
 
-	    *re_err = mul_err(a, Math::abs(a) * a_rel, b, b_err, wprec);
-	    *im_err = mul_err(c, Math::abs(c) * c_rel, d, d_err, wprec);
-	    return new(a * b, c * d);
-	}
+            *re_err = mul_err(a, Math::abs(a) * a_rel, b, b_err, wprec);
+            *im_err = mul_err(c, Math::abs(c) * c_rel, d, d_err, wprec);
+            return new(a * b, c * d);
+        }
 
-	return round_correctly(prec, compute);
+        return round_correctly(prec, compute);
     }
 
-    protected complex sinh(complex z)
-	/*
-	 * Return sinh(x+iy) = sinh x cos y + i cosh x sin y,
-	 * each part correctly rounded
-	 */
+    protected complex
+    sinh(complex z)
+        /*
+         * Return sinh(x+iy) = sinh x cos y + i cosh x sin y,
+         * each part correctly rounded
+         */
     {
-	if (z == 0)
-	    return 0;
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        if (z == 0)
+            return 0;
+        int prec = part_precision(z);
+        z = imprecise(z, prec);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	x = creal(z), y = cimag(z);
-	    real	a_rel, b_err, c_rel, d_err;
-	    real	a = Math::sinh_w(x, wprec, &a_rel);
-	    real	b = Math::cos_w(y, wprec, &b_err);
-	    real	c = Math::cosh_w(x, wprec, &c_rel);
-	    real	d = Math::sin_w(y, wprec, &d_err);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real x = creal(z), y = cimag(z);
+            real a_rel, b_err, c_rel, d_err;
+            real a = Math::sinh_w(x, wprec, &a_rel);
+            real b = Math::cos_w(y, wprec, &b_err);
+            real c = Math::cosh_w(x, wprec, &c_rel);
+            real d = Math::sin_w(y, wprec, &d_err);
 
-	    *re_err = mul_err(a, Math::abs(a) * a_rel, b, b_err, wprec);
-	    *im_err = mul_err(c, Math::abs(c) * c_rel, d, d_err, wprec);
-	    return new(a * b, c * d);
-	}
+            *re_err = mul_err(a, Math::abs(a) * a_rel, b, b_err, wprec);
+            *im_err = mul_err(c, Math::abs(c) * c_rel, d, d_err, wprec);
+            return new(a * b, c * d);
+        }
 
-	return round_correctly(prec, compute);
+        return round_correctly(prec, compute);
     }
 
-    protected complex tanh(complex z)
-	/*
-	 * tanh(x+iy) = (sinh 2x + i sin 2y) / (cosh 2x + cos 2y), avoiding
-	 * the cancellation in sinh(z) / cosh(z). The denominator is
-	 * 2 (sinh²x + cos²y), as for tan. Each part is correctly rounded
-	 */
+    protected complex
+    tanh(complex z)
+        /*
+         * tanh(x+iy) = (sinh 2x + i sin 2y) / (cosh 2x + cos 2y), avoiding
+         * the cancellation in sinh(z) / cosh(z). The denominator is
+         * 2 (sinh²x + cos²y), as for tan. Each part is correctly rounded
+         */
     {
-	if (z == 0)
-	    return 0;
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        if (z == 0)
+            return 0;
+        int prec = part_precision(z);
+        z = imprecise(z, prec);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	x = creal(z), y = cimag(z);
-	    real	s_rel, c_err, n_rel, m_err, d_err;
-	    real	s = Math::sinh_w(x, wprec, &s_rel);
-	    real	c = Math::cos_w(y, wprec, &c_err);
-	    real	n = Math::sinh_w(2 * x, wprec, &n_rel);
-	    real	m = Math::sin_w(2 * y, wprec, &m_err);
-	    real	d = twice_sum_squares(s, Math::abs(s) * s_rel, c, c_err,
-					      wprec, &d_err);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real x = creal(z), y = cimag(z);
+            real s_rel, c_err, n_rel, m_err, d_err;
+            real s = Math::sinh_w(x, wprec, &s_rel);
+            real c = Math::cos_w(y, wprec, &c_err);
+            real n = Math::sinh_w(2 * x, wprec, &n_rel);
+            real m = Math::sin_w(2 * y, wprec, &m_err);
+            real d = twice_sum_squares(s, Math::abs(s) * s_rel, c, c_err, wprec, &d_err);
 
-	    *re_err = div_err(n, Math::abs(n) * n_rel, d, d_err, wprec);
-	    *im_err = div_err(m, m_err, d, d_err, wprec);
-	    return new(n / d, m / d);
-	}
+            *re_err = div_err(n, Math::abs(n) * n_rel, d, d_err, wprec);
+            *im_err = div_err(m, m_err, d, d_err, wprec);
+            return new(n / d, m / d);
+        }
 
-	return round_correctly(prec, compute);
+        return round_correctly(prec, compute);
     }
 
-    protected complex atanh(complex z)
+    protected complex
+    atanh(complex z)
     {
-	real	x = creal(z), y = cimag(z);
+        real x = creal(z), y = cimag(z);
 
-	if (Math::abs(x) == 1 && y == 0)
-	    raise divide_by_zero(x, 0);
-	/*
-	 * atanh is odd; computing with x <= 0 puts the cut on the
-	 * positive axis below it and the one on the negative axis
-	 * above it, as the counterclockwise rule asks
-	 */
-	if (x > 0)
-	    return -atanh(-z);
-	if (z == 0)
-	    return 0;
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        if (Math::abs(x) == 1 && y == 0)
+            raise divide_by_zero(x, 0);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	u = 2**-wprec;
-	    real	x = creal(z), y = cimag(z);
-	    real	yw = imprecise(y, wprec);
-	    real	m_err, p_err, d_err, q_err, e_err;
-	    real	m = one_plus(-x, wprec, &m_err);
-	    real	p = one_plus(x, wprec, &p_err);
+        /*
+         * atanh is odd; computing with x <= 0 puts the cut on the
+         * positive axis below it and the one on the negative axis
+         * above it, as the counterclockwise rule asks
+         */
+        if (x > 0)
+            return -atanh(-z);
+        if (z == 0)
+            return 0;
+        int prec = part_precision(z);
+        z = imprecise(z, prec);
 
-	    /*
-	     * Re = log(|1+z|**2 / |1-z|**2) / 4, the ratio being
-	     * 1 + 4x / |1-z|**2; log1p keeps the bits of small x, and
-	     * near the pole at -1 the ratio itself keeps those of 1+x.
-	     * 1+x is exact there, and log1p' and log' are at most 2
-	     * and 1 / the ratio
-	     */
-	    real	d = product_err(m, m_err, m, m_err, yw, 0, yw, 0,
-					wprec, &d_err);
-	    real	q = 4 * imprecise(x, wprec) / d;
-	    real	re;
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real u = 2 ** -wprec;
+            real x = creal(z), y = cimag(z);
+            real yw = imprecise(y, wprec);
+            real m_err, p_err, d_err, q_err, e_err;
+            real m = one_plus(-x, wprec, &m_err);
+            real p = one_plus(x, wprec, &p_err);
 
-	    q_err = div_err(4 * imprecise(x, wprec), 0, d, d_err, wprec);
-	    if (q > -1/2 && q_err < 1/4) {
-		re = Math::log1p_w(q, wprec, re_err) / 4;
-		*re_err = (*re_err + 4 * q_err) / 4;
-	    } else {
-		real	n_err;
-		real	n = product_err(p, p_err, p, p_err, yw, 0, yw, 0,
-					    wprec, &n_err);
-		real	r = n / d;
-		real	r_err = div_err(n, n_err, d, d_err, wprec);
+            /*
+             * Re = log(|1+z|**2 / |1-z|**2) / 4, the ratio being
+             * 1 + 4x / |1-z|**2; log1p keeps the bits of small x, and
+             * near the pole at -1 the ratio itself keeps those of 1+x.
+             * 1+x is exact there, and log1p' and log' are at most 2
+             * and 1 / the ratio
+             */
+            real d = product_err(m, m_err, m, m_err, yw, 0, yw, 0, wprec, &d_err);
+            real q = 4 * imprecise(x, wprec) / d;
+            real re;
 
-		if (r <= 2 * r_err) {
-		    *re_err = 8;
-		    re = 0;
-		} else {
-		    re = Math::log_w(r, wprec, re_err) / 4;
-		    *re_err = (*re_err + 2 * r_err / r) / 4;
-		}
-	    }
+            q_err = div_err(4 * imprecise(x, wprec), 0, d, d_err, wprec);
+            if (q > -1 / 2 && q_err < 1 / 4) {
+                re = Math::log1p_w(q, wprec, re_err) / 4;
+                *re_err = (*re_err + 4 * q_err) / 4;
+            } else {
+                real n_err;
+                real n = product_err(p, p_err, p, p_err, yw, 0, yw, 0, wprec, &n_err);
+                real r = n / d;
+                real r_err = div_err(n, n_err, d, d_err, wprec);
 
-	    /* Im = arg((1+z) conj(1-z)) / 2 = atan2(2y, (1-x)(1+x) - y**2) / 2 */
-	    real	e = product_err(m, m_err, p, p_err, -yw, 0, yw, 0,
-					wprec, &e_err);
-	    real	im = atan2_err(2 * yw, 0, e, e_err, wprec, im_err) / 2;
+                if (r <= 2 * r_err) {
+                    *re_err = 8;
+                    re = 0;
+                } else {
+                    re = Math::log_w(r, wprec, re_err) / 4;
+                    *re_err = (*re_err + 2 * r_err / r) / 4;
+                }
+            }
 
-	    *im_err /= 2;
-	    return new(re, im);
-	}
+            /* Im = arg((1+z) conj(1-z)) / 2 = atan2(2y, (1-x)(1+x) - y**2) / 2 */
+            real e = product_err(m, m_err, p, p_err, -yw, 0, yw, 0, wprec, &e_err);
+            real im = atan2_err(2 * yw, 0, e, e_err, wprec, im_err) / 2;
 
-	return round_correctly(prec, compute);
+            *im_err /= 2;
+            return new(re, im);
+        }
+
+        return round_correctly(prec, compute);
     }
 
-    protected complex atan(complex z)
+    protected complex
+    atan(complex z)
     {
-	/* atan(z) = -i atanh(iz) */
-	complex	w = atanh(new(-cimag(z), creal(z)));
+        /* atan(z) = -i atanh(iz) */
+        complex w = atanh(new(-cimag(z), creal(z)));
 
-	return new(cimag(w), -creal(w));
+        return new(cimag(w), -creal(w));
     }
 
-    protected complex asinh(complex z)
+    protected complex
+    asinh(complex z)
     {
-	/* asinh(z) = i asin(-iz) */
-	complex	w = asin(new(cimag(z), -creal(z)));
+        /* asinh(z) = i asin(-iz) */
+        complex w = asin(new(cimag(z), -creal(z)));
 
-	return new(-cimag(w), creal(w));
+        return new(-cimag(w), creal(w));
     }
 
-    protected complex acosh(complex z)
+    protected complex
+    acosh(complex z)
     {
-	int	prec = part_precision(z);
-	z = imprecise(z, prec);
+        int prec = part_precision(z);
 
-	complex compute(int wprec, *real re_err, *real im_err)
-	{
-	    real	x = creal(z), y = cimag(z);
-	    real	am_err, ap_err, ar_err, ai_err, br_err, bi_err, n_err;
-	    real	am = -one_plus(-x, wprec, &am_err);
-	    real	ap = one_plus(x, wprec, &ap_err);
-	    complex	a = sqrt_err(am, am_err, y, wprec, &ar_err, &ai_err);
-	    complex	b = sqrt_err(ap, ap_err, y, wprec, &br_err, &bi_err);
-	    real	ar = creal(a), ai = cimag(a), br = creal(b), bi = cimag(b);
+        z = imprecise(z, prec);
 
-	    /* Re(conj(a) b) and 2 atan2(Im a, Re b) */
-	    real	n = product_err(ar, ar_err, br, br_err, ai, ai_err,
-					bi, bi_err, wprec, &n_err);
-	    real	re = asinh_err(n, n_err, wprec, re_err);
-	    real	im = 2 * atan2_err(ai, ai_err, br, br_err, wprec, im_err);
+        complex
+        compute(int wprec, *real re_err, *real im_err)
+        {
+            real    x = creal(z), y = cimag(z);
+            real    am_err, ap_err, ar_err, ai_err, br_err, bi_err, n_err;
+            real    am = -one_plus(-x, wprec, &am_err);
+            real    ap = one_plus(x, wprec, &ap_err);
+            complex a = sqrt_err(am, am_err, y, wprec, &ar_err, &ai_err);
+            complex b = sqrt_err(ap, ap_err, y, wprec, &br_err, &bi_err);
+            real    ar = creal(a), ai = cimag(a), br = creal(b), bi = cimag(b);
 
-	    *im_err *= 2;
-	    return new(re, im);
-	}
+            /* Re(conj(a) b) and 2 atan2(Im a, Re b) */
+            real    n =
+                product_err(ar, ar_err, br, br_err, ai, ai_err, bi, bi_err, wprec, &n_err);
+            real    re = asinh_err(n, n_err, wprec, re_err);
+            real    im = 2 * atan2_err(ai, ai_err, br, br_err, wprec, im_err);
 
-	return round_correctly(prec, compute);
+            *im_err *= 2;
+            return new(re, im);
+        }
+
+        return round_correctly(prec, compute);
     }
 }

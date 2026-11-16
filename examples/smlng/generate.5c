@@ -4,106 +4,97 @@
  * for licensing information.
  */
 
-autoload PRNG;
+autoload PRNG
 
 /*
  * The next word from in: any white space before it, the word, and the
  * white space character ending it
  */
-string function word (file in)
+string
+word(file in)
 {
-    string  w = "";
-    int	    c;
+    string w = "";
+    int    c;
 
-    while (!File::end (in))
-    {
-	c = File::getc (in);
-	w += String::new (c);
-	if (!Ctype::isspace (c))
-	    break;
+    while (!File::end(in)) {
+        c = File::getc(in);
+        w += String::new(c);
+        if (!Ctype::isspace(c))
+            break;
     }
-    while (!File::end (in))
-    {
-	c = File::getc (in);
-	w += String::new (c);
-	if (Ctype::isspace (c))
-	    break;
+    while (!File::end(in)) {
+        c = File::getc(in);
+        w += String::new(c);
+        if (Ctype::isspace(c))
+            break;
     }
     return w;
 }
 
 string[*] tags = {
-    "B",
-    "EM",
-    "I",
-    "PL",
-    "S",
-    "TT",
-    "U",
-    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-    "r", "g", "b", "c", "m", "y", "k", "w"
-};
+    "B", "EM", "I", "PL", "S", "TT", "U", "0", "1", "2", "3", "4",
+    "5", "6", "7", "8", "9", "r", "g", "b", "c", "m", "y", "k", "w" };
 
-void function tagfile (file in)
+void
+tagfile(file in)
 {
-    int		d;
+    int         d;
+
     /* The tags open, innermost last */
-    string[...]	stack = {};
+    string[...] stack = {};
 
-    int function dotag ()
+    int
+    dotag()
     {
-	if (PRNG::randint (100) > 50)
-	{
-	    if (dim (stack) > 0 && PRNG::randint (2) == 1)
-		return -1;
-	    return 1;
-	}
-	return 0;
+        if (PRNG::randint(100) > 50) {
+            if (dim(stack) > 0 && PRNG::randint(2) == 1)
+                return -1;
+            return 1;
+        }
+        return 0;
     }
 
-    int function picktag ()
+    int
+    picktag() = PRNG::randint(dim(tags));
+
+    void
+    start_tag()
     {
-	return PRNG::randint (dim (tags));
+        string tag = tags[picktag()];
+
+        stack[dim(stack)] = tag;
+        printf("<%s>", tag);
     }
 
-    void function start_tag ()
+    void
+    end_tag()
     {
-	string	tag = tags[picktag()];
-
-	stack[dim (stack)] = tag;
-	printf ("<%s>", tag);
+        if (dim(stack) > 0) {
+            printf("</%s>", stack[dim(stack) - 1]);
+            setdim(stack, dim(stack) - 1);
+        }
     }
 
-    void function end_tag ()
-    {
-	if (dim (stack) > 0)
-	{
-	    printf ("</%s>", stack[dim (stack) - 1]);
-	    setdim (stack, dim (stack) - 1);
-	}
+    for (;;) {
+        d = dotag();
+        switch (d) {
+        case 1:
+            start_tag();
+            break;
+        case 0:
+            break;
+        case -1:
+            end_tag();
+            break;
+        }
+        string s = word(in);
+        if (s == "")
+            break;
+        File::fputs(s, stdout);
     }
 
-    for (;;)
-    {
-	d = dotag ();
-	switch (d) {
-	case 1:
-	    start_tag ();
-	    break;
-	case 0:
-	    break;
-	case -1:
-	    end_tag ();
-	    break;
-	}
-	string s = word (in);
-	if (s == "") break;
-	File::fputs (s, stdout);
-    }
-
-    while (dim (stack) > 0)
-	end_tag ();
+    while (dim(stack) > 0)
+        end_tag();
 }
 
-tagfile (stdin);
-
+tagfile(stdin);

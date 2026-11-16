@@ -10,28 +10,30 @@
  * process reads still arrives.
  */
 
-exception wrong (string what, poly got, poly want);
+exception wrong(string what, poly got, poly want);
 
-void function check (string what, poly got, poly want)
+void
+check(string what, poly got, poly want)
 {
     if (got != want)
-	raise wrong (what, got, want);
+        raise wrong(what, got, want);
 }
 
-string	nickle = Environ::get ("NICKLE");
+string nickle = Environ::get("NICKLE");
 
 /* Run 'script' in a child nickle, returning its exit status */
-string function run (string script)
+string
+run(string script)
 {
-    file[*]	status = File::mkpipe ();
+    file[*] status = File::mkpipe();
 
-    File::filter ("sh",
-		  (string[*]) { "sh", "-c", "\"$0\" -e \"$1\" > /dev/null; echo $?",
-				nickle, script },
-		  (file[3]) { stdin, status[1], stderr });
-    File::close (status[1]);
-    string	got = File::fgets (status[0]);
-    File::close (status[0]);
+    File::filter("sh",
+                 (string[*]) { "sh", "-c", "\"$0\" -e \"$1\" > /dev/null; echo $?",
+                               nickle, script },
+                 (file[3]) { stdin, status[1], stderr });
+    File::close(status[1]);
+    string got = File::fgets(status[0]);
+    File::close(status[0]);
     return got;
 }
 
@@ -40,39 +42,43 @@ string function run (string script)
  * buffer. A single print finishes even when the pipe fills partway,
  * while a later print to the blocked pipe would wait forever.
  */
-string	fill = ("string s = String::new ((int[2**20]) { [i] = 'x' }) + \"tail\\n\";\n" +
-		"File::fprintf (p[1], \"%s\", s);\n");
+string fill = ("string s = String::new ((int[2**20]) { [i] = 'x' }) + \"tail\\n\";\n"
+               + "File::fprintf (p[1], \"%s\", s);\n");
 
-check ("unread pipe", run ("file[*] p = File::mkpipe ();\n" + fill), "0");
+check("unread pipe", run("file[*] p = File::mkpipe ();\n" + fill), "0");
 
 /* A child reading the pipe still gets everything */
-string	out = "unreadpipe.out";
+string out = "unreadpipe.out";
 
-check ("read pipe",
-       run ("file[*] p = File::mkpipe ();\n" +
-	    "file o = File::open (\"" + out + "\", \"w\");\n" +
-	    "File::filter (\"cat\", (string[*]) { \"cat\" }, (file[3]) { p[0], o, stderr });\n" +
-	    fill),
-       "0");
+check("read pipe",
+      run("file[*] p = File::mkpipe ();\n"
+          + "file o = File::open (\"" + out + "\", \"w\");\n"
+          + "File::filter (\"cat\", (string[*]) { \"cat\" }, (file[3]) { p[0], o, stderr });\n"
+          + fill),
+      "0");
 
 /* The contents of the file 'name' */
-string function contents (string name)
+string
+contents(string name)
 {
-    file	f = File::open (name, "r");
-    string	got = "";
+    file   f = File::open(name, "r");
+    string got = "";
 
-    while (!File::end (f))
-	got += File::fgets (f) + "\n";
-    File::close (f);
+    while (!File::end(f))
+        got += File::fgets(f) + "\n";
+    File::close(f);
     return got;
 }
 
 /* cat finishes once the writer is gone; give it time */
-string	got = contents (out);
+string got = contents(out);
 
-for (int tries = 0; tries < 100 && String::length (got) != 2**20 + 5; tries++) {
-    sleep (100);
-    got = contents (out);
+for (int tries = 0;
+     tries < 100 && String::length(got) != 2 ** 20 + 5;
+     tries++)
+{
+    sleep(100);
+    got = contents(out);
 }
-check ("read pipe length", String::length (got), 2**20 + 5);
-File::unlink (out);
+check("read pipe length", String::length(got), 2 ** 20 + 5);
+File::unlink(out);

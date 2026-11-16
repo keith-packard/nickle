@@ -8,53 +8,54 @@
  * precision asked for, so %.17e printed the same.
  */
 
-exception wrong (string what, poly got, poly want);
+exception wrong(string what, poly got, poly want);
 
-void function check (string what, poly got, poly want)
+void
+check(string what, poly got, poly want)
 {
     if (got != want)
-	raise wrong (what, got, want);
+        raise wrong(what, got, want);
 }
 
-check ("%e", sprintf ("%e", 1e-300), "1e-300");
-check ("%g", sprintf ("%g", 2e-30), "2e-30");
-check ("%.17e", sprintf ("%.17e", 1e-300), "1.00000000000000000e-300");
-check ("%.3e", sprintf ("%.3e", 2e-30), "2.000e-30");
-check ("%.17g", sprintf ("%.17g", 1e-20), "1.00000000000000000e-20");
+check("%e", sprintf("%e", 1e-300), "1e-300");
+check("%g", sprintf("%g", 2e-30), "2e-30");
+check("%.17e", sprintf("%.17e", 1e-300), "1.00000000000000000e-300");
+check("%.3e", sprintf("%.3e", 2e-30), "2.000e-30");
+check("%.17g", sprintf("%.17g", 1e-20), "1.00000000000000000e-20");
 
 /* Values with fraction digits print as before */
-check ("%.3f", sprintf ("%.3f", 1.5), "1.500");
-check ("%f", sprintf ("%f", 1/4), "0.25");
-check ("%g", sprintf ("%g", 1/3), "0.333333333333333");
+check("%.3f", sprintf("%.3f", 1.5), "1.500");
+check("%f", sprintf("%f", 1 / 4), "0.25");
+check("%g", sprintf("%g", 1 / 3), "0.333333333333333");
 
 /*
  * Arbitrary precision shows a repeating fraction in braces. %.-f, %.-e,
  * and %.-g printed one cycle of the digits without them, so 1/7
  * printed as 0.142857, which reads as a different number
  */
-check ("%.-f", sprintf ("%.-f", 1/7), "0.{142857}");
-check ("%.-f", sprintf ("%.-f", 7/6), "1.1{6}");
-check ("%.-g", sprintf ("%.-g", 2/3), "0.{6}");
-check ("%.-e", sprintf ("%.-e", 1/3), "3.{3}e-1");
-check ("%.-f", sprintf ("%.-f", 1/4), "0.25");
-check ("%.-e", sprintf ("%.-e", 1/4), "2.5e-1");
+check("%.-f", sprintf("%.-f", 1 / 7), "0.{142857}");
+check("%.-f", sprintf("%.-f", 7 / 6), "1.1{6}");
+check("%.-g", sprintf("%.-g", 2 / 3), "0.{6}");
+check("%.-e", sprintf("%.-e", 1 / 3), "3.{3}e-1");
+check("%.-f", sprintf("%.-f", 1 / 4), "0.25");
+check("%.-e", sprintf("%.-e", 1 / 4), "2.5e-1");
 
 /*
  * At arbitrary precision, %g writes a rational below 1e-4 in scientific
  * notation, as it does at other precisions, rather than as a long run
  * of zeros
  */
-check ("%.-g", sprintf ("%.-g", 1/3e30), "3.{3}e-31");
-check ("%.-g", sprintf ("%.-g", 3e-30), "3e-30");
-check ("%.-g", sprintf ("%.-g", -1/300000), "-3.{3}e-6");
-check ("%.-g", sprintf ("%.-g", 1/3000), "0.000{3}");
+check("%.-g", sprintf("%.-g", 1 / 3e30), "3.{3}e-31");
+check("%.-g", sprintf("%.-g", 3e-30), "3e-30");
+check("%.-g", sprintf("%.-g", -1 / 300000), "-3.{3}e-6");
+check("%.-g", sprintf("%.-g", 1 / 3000), "0.000{3}");
 
 /*
  * %g writes a rational below 1e-4 in scientific notation, as it does a
  * float. It kept fixed point while three significant digits fit in its
  * precision, so 1/14! printed as 0.000000000011471
  */
-check ("%g", sprintf ("%g", 1/14!), "1.147074559772972e-11");
-check ("%g", sprintf ("%g", 1/30000), sprintf ("%g", imprecise (1/30000)));
-check ("%g", sprintf ("%g", 1/3000), "0.000333333333333");
-check ("%.3g", sprintf ("%.3g", 1/14!), "1.147e-11");
+check("%g", sprintf("%g", 1 / 14!), "1.147074559772972e-11");
+check("%g", sprintf("%g", 1 / 30000), sprintf("%g", imprecise(1 / 30000)));
+check("%g", sprintf("%g", 1 / 3000), "0.000333333333333");
+check("%.3g", sprintf("%.3g", 1 / 14!), "1.147e-11");

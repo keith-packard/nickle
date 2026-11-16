@@ -11,52 +11,65 @@
  * count as a ptrdiff_t, showing the wrong count on 32-bit targets.
  */
 
-exception not_raised (string what);
-exception wrong (string what, poly got, poly want);
+exception not_raised(string what);
+exception wrong(string what, poly got, poly want);
 
-void function check (string what, poly got, poly want)
+void
+check(string what, poly got, poly want)
 {
     if (got != want)
-	raise wrong (what, got, want);
+        raise wrong(what, got, want);
 }
 
-void function rejected (string what, void() f)
+void
+rejected(string what, void() f)
 {
     try {
-	f ();
-	raise not_raised (what);
-    } catch invalid_argument (string m, poly a, poly b) {
+        f();
+        raise not_raised(what);
+    } catch invalid_argument(string m, poly a, poly b) {
     }
 }
 
-semaphore s = Semaphore::new (2**40);
-check ("new (2**40)", Semaphore::count (s), 2**40);
-Semaphore::signal (s);
-check ("signal", Semaphore::count (s), 2**40 + 1);
-Semaphore::wait (s);
-Semaphore::wait (s);
-check ("wait", Semaphore::count (s), 2**40 - 1);
-check ("test", Semaphore::test (s), true);
-check ("after test", Semaphore::count (s), 2**40 - 2);
+semaphore s = Semaphore::new(2 ** 40);
+check("new (2**40)", Semaphore::count(s), 2 ** 40);
+Semaphore::signal(s);
+check("signal", Semaphore::count(s), 2 ** 40 + 1);
+Semaphore::wait(s);
+Semaphore::wait(s);
+check("wait", Semaphore::count(s), 2 ** 40 - 1);
+check("test", Semaphore::test(s), true);
+check("after test", Semaphore::count(s), 2 ** 40 - 2);
 
 /* The ends of the range */
-semaphore top = Semaphore::new (2**63 - 1);
-rejected ("signal at the top", void func () { Semaphore::signal (top); });
-check ("top unchanged", Semaphore::count (top), 2**63 - 1);
+semaphore top = Semaphore::new(2 ** 63 - 1);
+rejected("signal at the top",
+         void func() {
+             Semaphore::signal(top);
+         });
+check("top unchanged", Semaphore::count(top), 2 ** 63 - 1);
 
-semaphore bottom = Semaphore::new (-(2**63));
-rejected ("wait at the bottom", void func () { Semaphore::wait (bottom); });
-check ("bottom unchanged", Semaphore::count (bottom), -(2**63));
+semaphore bottom = Semaphore::new(-(2 ** 63));
+rejected("wait at the bottom",
+         void func() {
+             Semaphore::wait(bottom);
+         });
+check("bottom unchanged", Semaphore::count(bottom), -(2 ** 63));
 
-rejected ("new (2**70)", void func () { Semaphore::new (2**70); });
+rejected("new (2**70)",
+         void func() {
+             Semaphore::new(2 ** 70);
+         });
 
 /* Printing shows the whole count */
-string function printed_count (semaphore t)
+string
+printed_count(semaphore t)
 {
-    string p = sprintf ("%v", t);
-    int i = String::index (p, "(");
-    return String::substr (p, i, String::length (p) - i);
+    string p = sprintf("%v", t);
+    int    i = String::index(p, "(");
+    return String::substr(p, i, String::length(p) - i);
 }
-check ("print top", printed_count (top), "(9223372036854775807)");
-check ("print bottom", printed_count (bottom), "(-9223372036854775808)");
-check ("print small", printed_count (Semaphore::new (-5)), "(-5)");
+
+check("print top", printed_count(top), "(9223372036854775807)");
+check("print bottom", printed_count(bottom), "(-9223372036854775808)");
+check("print small", printed_count(Semaphore::new(-5)), "(-5)");

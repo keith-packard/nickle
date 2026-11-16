@@ -1,516 +1,532 @@
 extend namespace Math {
-    public real pi = imprecise
-    (3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679,
-    256);
+    public real    pi = imprecise(3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679,
+                                  256);
 
-    public real π = pi;
+    public real    π = pi;
 
-    protected real e = imprecise
-    (2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274,
-     256);
+    protected real e = imprecise(2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274,
+                                 256);
 
-    public real sqrt (real v)
-	/*
-	 * Returns square root of v to the same precision as 'v'.
-	 * If v is precise and has a precise square root, returns that.
-	 */
+    public real
+    sqrt(real v)
+        /*
+         * Returns square root of v to the same precision as 'v'.
+         * If v is precise and has a precise square root, returns that.
+         */
     {
-	if (v < 0)
-	    raise invalid_argument ("sqrt of negative number", 0, v);
-	real real_sqrt(real v)
-	{
-	    real	err;
-	    real	prev, cur;
+        if (v < 0)
+            raise invalid_argument("sqrt of negative number", 0, v);
 
-	    v = imprecise (v);
-	    int prec = precision(v);
-	    int iprec = prec + 5 * bit_width(prec) + 10;
-	    real vi = imprecise(v, iprec);
-	    /* Initial estimate is 1/2 ** log2(v)/2 */
-	    cur = ldexp(imprecise(0.5, iprec), exponent(v) ⫽ 2);
-	    int iter = iprec + 100;
-	    do {
-		/*
-		 * Newton's method iteration
-		 *
-		 * f(y)  = y² - x
-		 * f'(y) = 2y
-		 *
-		 * y'    = y - f(y)/f'(y)
-		 *       = y - (y² - x) / 2y
-		 *       = y - y/2 + x/2y
-		 *       = y/2 + x/2y
-		 */
-		prev = cur;
-		cur = prev/2 + vi/(2*prev);
-		/* bail if we take too long */
-		if (--iter <= 0)
-		    break;
-	    } while (imprecise(cur, prec+2) != imprecise(prev, prec+2));
-	    return abs(imprecise(cur, prec));
-	}
+        real
+        real_sqrt(real v)
+        {
+            real err;
+            real prev, cur;
 
-	if (v == 0)
-		return 0;
+            v = imprecise(v);
+            int  prec = precision(v);
+            int  iprec = prec + 5 * bit_width(prec) + 10;
+            real vi = imprecise(v, iprec);
 
-	if (is_rational (v))
-	{
-	    int	num, den;
-	    real	num_s, den_s;
+            /* Initial estimate is 1/2 ** log2(v)/2 */
+            cur = ldexp(imprecise(0.5, iprec), exponent(v) ⫽ 2);
+            int iter = iprec + 100;
+            do {
 
-	    num = numerator (v);
-	    den = denominator (v);
-	    num_s = real_sqrt (imprecise (num, bit_width(num) + 128));
-	    den_s = real_sqrt (imprecise (den, bit_width(den) + 128));
-	    num = floor (num_s + 0.5);
-	    den = floor (den_s + 0.5);
-	    if (num * num == numerator (v) && den * den == denominator (v))
-		return num/den;
-	}
-	return real_sqrt (v);
-    }
+                /*
+                 * Newton's method iteration
+                 *
+                 * f(y)  = y² - x
+                 * f'(y) = 2y
+                 *
+                 * y'    = y - f(y)/f'(y)
+                 *       = y - (y² - x) / 2y
+                 *       = y - y/2 + x/2y
+                 *       = y/2 + x/2y
+                 */
+                prev = cur;
+                cur = prev / 2 + vi / (2 * prev);
 
-    protected real sqrt_w (real v, int wprec, *real rel)
-	/*
-	 * Compute sqrt(v), v >= 0, to 'wprec' bits, setting 'rel' to a
-	 * bound on the relative error. An exact square root, as of 0,
-	 * has none
-	 */
-    {
-	if (v == 0) {
-	    *rel = 0;
-	    return 0;
-	}
-	v = imprecise (v);
-
-	real	s = sqrt (imprecise (v, wprec + 2));
-
-	/*
-	 * sqrt(v) - s = (v - s**2) / (sqrt(v) + s), so the residual,
-	 * computed exactly, bounds the error by (v - s**2) / s**2
-	 */
-	int	rprec = 2 * precision (s) + precision (v) + 8;
-	real	se = imprecise (s, rprec);
-	real	r = se * se - imprecise (v, rprec);
-
-	*rel = abs (r) / (se * se);
-	return s;
-    }
-
-    public real cbrt (real v)
-	/*
-	 * Returns cube root of v to the same precision as 'v'.
-	 * If v is precise and has a precise cube root, returns that.
-	 */
-    {
-	real real_cbrt(real v)
-	{
-	    real	prev, cur;
-
-	    int s = sign (v);
-	    v = imprecise (abs (v));
-	    int prec = precision (v);
-	    /*
-	     * Estimate about log2(prec) iterations, add 5 bits
-	     * of precision for each one (for the 5 operations)
-	     */
-	    int iprec = prec + 5 * bit_width(prec) + 10;
-	    v = imprecise (v, iprec);
-	    /* Initial estimate is 3/4 ** log2(v)/3 */
-	    cur = ldexp (imprecise (0.75, iprec), exponent(v) ⫽ 3);
-	    int iter = iprec + 100;
-	    do {
-		prev = cur;
-		/*
-		 * Newton's method iteration
-		 *
-		 * f(y)  = y³ - x
-		 * f'(y) = 3y²
-		 *
-		 * y'    = y - f(y)/f'(y)
-		 *       = y - (y³ - x) / 3y²
-		 *       = y - y/3 + x/3y²
-		 *       = 2y/3 + x/3y²
-		 */
-		cur = 0.{6} * prev + 0.{3} * v / (prev*prev);
-		/* bail if we take too long */
-		if (--iter <= 0)
-		    break;
-	    } while (imprecise(cur, prec+2) != imprecise(prev, prec+2));
-	    return s * imprecise (abs (cur), prec);
-	}
+                /* bail if we take too long */
+                if (--iter <= 0)
+                    break;
+            } while (imprecise(cur, prec + 2) != imprecise(prev, prec + 2));
+            return abs(imprecise(cur, prec));
+        }
 
         if (v == 0)
-	    return 0;
+            return 0;
 
-	if (is_rational (v))
-	{
-	    int	num, den;
-	    real	num_s, den_s;
+        if (is_rational(v)) {
+            int  num, den;
+            real num_s, den_s;
 
-	    num = numerator (v);
-	    den = denominator (v);
-	    num_s = real_cbrt (imprecise (num, bit_width(num) + 128));
-	    den_s = real_cbrt (imprecise (den, bit_width(den) + 128));
-	    num = floor (num_s + 0.5);
-	    den = floor (den_s + 0.5);
-	    if (num ** 3 == numerator (v) && den ** 3 == denominator (v))
-		return num/den;
-	}
-	return real_cbrt (v);
+            num = numerator(v);
+            den = denominator(v);
+            num_s = real_sqrt(imprecise(num, bit_width(num) + 128));
+            den_s = real_sqrt(imprecise(den, bit_width(den) + 128));
+            num = floor(num_s + 0.5);
+            den = floor(den_s + 0.5);
+            if (num * num == numerator(v) && den * den == denominator(v))
+                return num / den;
+        }
+        return real_sqrt(v);
+    }
+
+    protected real
+    sqrt_w(real v, int wprec, *real rel)
+        /*
+         * Compute sqrt(v), v >= 0, to 'wprec' bits, setting 'rel' to a
+         * bound on the relative error. An exact square root, as of 0,
+         * has none
+         */
+    {
+        if (v == 0) {
+            *rel = 0;
+            return 0;
+        }
+        v = imprecise(v);
+
+        real s = sqrt(imprecise(v, wprec + 2));
+
+        /*
+         * sqrt(v) - s = (v - s**2) / (sqrt(v) + s), so the residual,
+         * computed exactly, bounds the error by (v - s**2) / s**2
+         */
+        int  rprec = 2 * precision(s) + precision(v) + 8;
+        real se = imprecise(s, rprec);
+        real r = se * se - imprecise(v, rprec);
+
+        *rel = abs(r) / (se * se);
+        return s;
+    }
+
+    public real
+    cbrt(real v)
+        /*
+         * Returns cube root of v to the same precision as 'v'.
+         * If v is precise and has a precise cube root, returns that.
+         */
+    {
+        real
+        real_cbrt(real v)
+        {
+            real prev, cur;
+
+            int  s = sign(v);
+
+            v = imprecise(abs(v));
+            int prec = precision(v);
+
+            /*
+             * Estimate about log2(prec) iterations, add 5 bits
+             * of precision for each one (for the 5 operations)
+             */
+            int iprec = prec + 5 * bit_width(prec) + 10;
+            v = imprecise(v, iprec);
+
+            /* Initial estimate is 3/4 ** log2(v)/3 */
+            cur = ldexp(imprecise(0.75, iprec), exponent(v) ⫽ 3);
+            int iter = iprec + 100;
+            do {
+                prev = cur;
+
+                /*
+                 * Newton's method iteration
+                 *
+                 * f(y)  = y³ - x
+                 * f'(y) = 3y²
+                 *
+                 * y'    = y - f(y)/f'(y)
+                 *       = y - (y³ - x) / 3y²
+                 *       = y - y/3 + x/3y²
+                 *       = 2y/3 + x/3y²
+                 */
+                cur = 0.{6} * prev + 0.{3} * v / (prev * prev);
+
+                /* bail if we take too long */
+                if (--iter <= 0)
+                    break;
+            } while (imprecise(cur, prec + 2) != imprecise(prev, prec + 2));
+            return s * imprecise(abs(cur), prec);
+        }
+
+        if (v == 0)
+            return 0;
+
+        if (is_rational(v)) {
+            int  num, den;
+            real num_s, den_s;
+
+            num = numerator(v);
+            den = denominator(v);
+            num_s = real_cbrt(imprecise(num, bit_width(num) + 128));
+            den_s = real_cbrt(imprecise(den, bit_width(den) + 128));
+            num = floor(num_s + 0.5);
+            den = floor(den_s + 0.5);
+            if (num ** 3 == numerator(v) && den ** 3 == denominator(v))
+                return num / den;
+        }
+        return real_cbrt(v);
     }
 
     /*
      * Fast integer logarithm via binary search from below (no division).
      * Returns floor(log(n)/log(base)) with no rounding error
      */
-    public int ilog(int base, int n)
-	/*
-	 * Fast integer logarithm via binary search from below (no division).
-	 * Returns floor(log(n)/log(base)) with no rounding error
-	 */
+    public int
+    ilog(int base, int n)
+        /*
+         * Fast integer logarithm via binary search from below (no division).
+         * Returns floor(log(n)/log(base)) with no rounding error
+         */
     {
-	if (base <= 1)
-	    raise invalid_argument("ilog of bad base", 0, base);
-	if (n <= 0)
-	    raise invalid_argument("ilog of bad value", 1, n);
-	int below = 0;
-	int above = 1;
-	int k = base;
-	while (k <= n) {
-	    k *= k;
-	    below = above;
-	    above *= 2;
-	}
-	while (true) {
-	    int q = base ** below;
-	    k = base;
-	    int nbelow = 0;
-	    int nabove = 1;
-	    while (q * k <= n) {
-		k *= k;
-		nbelow = nabove;
-		nabove *= 2;
-	    }
-	    if (nbelow == 0)
-		break;
-	    below += nbelow;
-	}
-	return below;
+        if (base <= 1)
+            raise invalid_argument("ilog of bad base", 0, base);
+        if (n <= 0)
+            raise invalid_argument("ilog of bad value", 1, n);
+        int below = 0;
+        int above = 1;
+        int k = base;
+        while (k <= n) {
+            k *= k;
+            below = above;
+            above *= 2;
+        }
+        while (true) {
+            int q = base ** below;
+
+            k = base;
+            int nbelow = 0;
+            int nabove = 1;
+            while (q * k <= n) {
+                k *= k;
+                nbelow = nabove;
+                nabove *= 2;
+            }
+            if (nbelow == 0)
+                break;
+            below += nbelow;
+        }
+        return below;
     }
 
-    real calculate_e (int prec)
-    /*
-     * Calculate e recursively
-     */
+    real
+    calculate_e(int prec)
+        /* Calculate e recursively */
     {
-	typedef struct {
-	    int	p;
-	    int	q;
-	} split_t;
+        typedef struct {
+            int p;
+            int q;
+        } split_t;
 
-	split_t make_split(int p, int q) = (split_t) { .p = p, .q = q };
+        split_t
+        make_split(int p, int q) = (split_t) { p = p, q = q };
 
-	/* Compute e-1 recursively */
+        /* Compute e-1 recursively */
 
-	split_t binary_splitting_e(int n0, int n1)
-	{
-	    if (n1 - n0 == 1)
-		return make_split(1, n1);
+        split_t
+        binary_splitting_e(int n0, int n1)
+        {
+            if (n1 - n0 == 1)
+                return make_split(1, n1);
 
-	    int nmid = (n0 + n1) >> 1;
+            int     nmid = (n0 + n1) >> 1;
 
-	    split_t r0 = binary_splitting_e(n0, nmid);
+            split_t r0 = binary_splitting_e(n0, nmid);
 
-	    split_t r1 = binary_splitting_e(nmid, n1);
+            split_t r1 = binary_splitting_e(nmid, n1);
 
-	    return make_split(r0.p * r1.q + r1.p, r0.q * r1.q);
-	}
+            return make_split(r0.p * r1.q + r1.p, r0.q * r1.q);
+        }
 
-	int log_factorial = 0;
-	int log_max = prec;
-	int series_size = 1;
+        int log_factorial = 0;
+        int log_max = prec;
+        int series_size = 1;
 
-	while (log_factorial < log_max) {
-	    log_factorial += ilog(2, series_size);
-	    series_size++;
-	}
+        while (log_factorial < log_max) {
+            log_factorial += ilog(2, series_size);
+            series_size++;
+        }
 
-	split_t pq = binary_splitting_e(0, series_size);
+        split_t pq = binary_splitting_e(0, series_size);
 
-	return imprecise(1 + pq.p / pq.q, prec);
+        return imprecise(1 + pq.p / pq.q, prec);
     }
 
-    public real e_value (int prec)
-	/*
-	 * return e at least as precise as 'prec'
-	 */
+    public real
+    e_value(int prec)
+        /* return e at least as precise as 'prec' */
     {
-	static real local_e = e;
+        static real local_e = e;
 
-	if (precision (local_e) < prec)
-	    local_e = calculate_e (prec);
-	return imprecise(local_e, prec);
+        if (precision(local_e) < prec)
+            local_e = calculate_e(prec);
+        return imprecise(local_e, prec);
     }
 
-    public real max(real arg, real args ...)
-	/*
-	 * Return maximum of all arguments
-	 */
+    public real
+    max(real arg, real args ...)
+        /* Return maximum of all arguments */
     {
-	for (int i = 0; i < dim(args); i++)
-	    if (arg < args[i])
-		arg = args[i];
-	return arg;
+        for (int i = 0; i < dim(args); i++)
+            if (arg < args[i])
+                arg = args[i];
+        return arg;
     }
 
-    public real min(real arg, real args ...)
-	/*
-	 * Return minimum of all arguments
-	 */
+    public real
+    min(real arg, real args ...)
+        /* Return minimum of all arguments */
     {
-	for (int i = 0; i < dim(args); i++)
-	    if (arg > args[i])
-		arg = args[i];
-	return arg;
+        for (int i = 0; i < dim(args); i++)
+            if (arg > args[i])
+                arg = args[i];
+        return arg;
     }
 
-    real ln2_value (int prec)
-	/*
-	 * Return log(2) at least as precise as 'prec', from
-	 * log(2) = 2 atanh(1/3) = 2/3 Σ{k=0..} 1 / ((2k+1) 9**k),
-	 * summed exactly by binary splitting
-	 */
+    real
+    ln2_value(int prec)
+        /*
+         * Return log(2) at least as precise as 'prec', from
+         * log(2) = 2 atanh(1/3) = 2/3 Σ{k=0..} 1 / ((2k+1) 9**k),
+         * summed exactly by binary splitting
+         */
     {
-	static real local_ln2 = 0;
+        static real local_ln2 = 0;
 
-	if (local_ln2 == 0 || precision (local_ln2) < prec) {
-	    typedef struct {
-		int	b;
-		int	q;
-		int	t;
-	    } split_t;
+        if (local_ln2 == 0 || precision(local_ln2) < prec) {
+            typedef struct {
+                int b;
+                int q;
+                int t;
+            } split_t;
 
-	    /* Σ{k=a..c-1} is t / (b q) */
-	    split_t binary_splitting_ln2 (int a, int c)
-	    {
-		if (c - a == 1)
-		    return (split_t) { .b = 2 * a + 1, .q = a == 0 ? 1 : 9,
-				       .t = 1 };
+            /* Σ{k=a..c-1} is t / (b q) */
+            split_t
+            binary_splitting_ln2(int a, int c)
+            {
+                if (c - a == 1)
+                    return (split_t) { b = 2 * a + 1, q = a == 0 ? 1 : 9, t = 1 };
 
-		int	m = (a + c) >> 1;
-		split_t	l = binary_splitting_ln2 (a, m);
-		split_t	r = binary_splitting_ln2 (m, c);
+                int     m = (a + c) >> 1;
+                split_t l = binary_splitting_ln2(a, m);
+                split_t r = binary_splitting_ln2(m, c);
 
-		return (split_t) { .b = l.b * r.b, .q = l.q * r.q,
-				   .t = r.b * r.q * l.t + l.b * r.t };
-	    }
+                return (split_t) {
+                    b = l.b * r.b, q = l.q * r.q, t = r.b * r.q * l.t + l.b * r.t };
+            }
 
-	    /*
-	     * Grow by at least half again, so slowly rising precisions
-	     * reuse the value. Terms shrink by 9, more than 3 bits each
-	     */
-	    int		grown = precision (local_ln2) * 3 // 2;
-	    int		wprec = max (prec, grown) + 8;
-	    split_t	s = binary_splitting_ln2 (0, wprec // 3 + 2);
+            /*
+             * Grow by at least half again, so slowly rising precisions
+             * reuse the value. Terms shrink by 9, more than 3 bits each
+             */
+            int     grown = precision(local_ln2) * 3 // 2;
+            int     wprec = max(prec, grown) + 8;
+            split_t s = binary_splitting_ln2(0, wprec // 3 + 2);
 
-	    local_ln2 = imprecise (2 * s.t, wprec) /
-			imprecise (3 * s.b * s.q, wprec);
-	}
-	return imprecise (local_ln2, prec);
+            local_ln2 = imprecise(2 * s.t, wprec) / imprecise(3 * s.b * s.q, wprec);
+        }
+        return imprecise(local_ln2, prec);
     }
 
-    protected real round_correctly (int prec, real(int, *real) compute)
-	/*
-	 * Call compute(wprec, &err) with increasing working precision
-	 * until its result, whose absolute error is below 'err', rounds
-	 * to the same 'prec' bit value at both ends of that range. As
-	 * imprecise rounds to nearest, that value is correctly rounded
-	 */
+    protected real
+    round_correctly(int prec, real(int, *real) compute)
+        /*
+         * Call compute(wprec, &err) with increasing working precision
+         * until its result, whose absolute error is below 'err', rounds
+         * to the same 'prec' bit value at both ends of that range. As
+         * imprecise rounds to nearest, that value is correctly rounded
+         */
     {
-	for (int guard = 32; ; guard *= 2) {
-	    real	err;
-	    real	v = compute (prec + guard, &err);
+        for (int guard = 32;; guard *= 2) {
+            real err;
+            real v = compute(prec + guard, &err);
 
-	    /*
-	     * Form v ± err with the bits of both, as arithmetic would
-	     * use the fewer, widening err by an ulp of v for the
-	     * rounding of the sum
-	     */
-	    int		vp = max (precision (v), precision (err), prec + guard);
-	    real	vw = imprecise (v, vp);
-	    real	e = imprecise (err, vp) + abs (vw) * 2 ** (1 - vp);
-	    real	lo = imprecise (vw - e, prec);
+            /*
+             * Form v ± err with the bits of both, as arithmetic would
+             * use the fewer, widening err by an ulp of v for the
+             * rounding of the sum
+             */
+            int  vp = max(precision(v), precision(err), prec + guard);
+            real vw = imprecise(v, vp);
+            real e = imprecise(err, vp) + abs(vw) * 2 ** (1 - vp);
+            real lo = imprecise(vw - e, prec);
 
-	    if (lo == imprecise (vw + e, prec))
-		return lo;
-	}
+            if (lo == imprecise(vw + e, prec))
+                return lo;
+        }
     }
 
-    protected real exp_w (real v, int wprec, *real rel)
-	/*
-	 * Compute e ** v to 'wprec' bits, setting 'rel' to a bound on
-	 * the relative error
-	 */
+    protected real
+    exp_w(real v, int wprec, *real rel)
+        /*
+         * Compute e ** v to 'wprec' bits, setting 'rel' to a bound on
+         * the relative error
+         */
     {
-	if (v < 0) {
-	    real e = 1 / exp_w (-v, wprec, rel);
-	    *rel += 2 ** -wprec;
-	    return e;
-	}
-	if (v == 0) {
-	    *rel = 0;
-	    return imprecise (1, wprec);
-	}
-	v = imprecise (v);
+        if (v < 0) {
+            real e = 1 / exp_w(-v, wprec, rel);
 
-	/*
-	 * For v > 1, use e**v = 2**n e**r with v = n log(2) + r and
-	 * 0 <= r < log(2). log(2) carries as many more bits as n needs,
-	 * so r is good to under 2**-(wprec+6) absolute, which is that
-	 * relative error in the result
-	 */
-	int	n = 0;
-	real	reduce_rel = 0;
+            *rel += 2 ** -wprec;
+            return e;
+        }
+        if (v == 0) {
+            *rel = 0;
+            return imprecise(1, wprec);
+        }
+        v = imprecise(v);
 
-	if (v > 1) {
-	    int	lprec = wprec + exponent (v) + 8;
-	    real	ln2 = ln2_value (lprec);
+        /*
+         * For v > 1, use e**v = 2**n e**r with v = n log(2) + r and
+         * 0 <= r < log(2). log(2) carries as many more bits as n needs,
+         * so r is good to under 2**-(wprec+6) absolute, which is that
+         * relative error in the result
+         */
+        int  n = 0;
+        real reduce_rel = 0;
 
-	    v = imprecise (v, lprec);
-	    n = floor (v / ln2);
-	    v -= n * ln2;
-	    reduce_rel = 2 ** -(wprec + 6);
-	    if (v == 0) {
-		*rel = reduce_rel;
-		return ldexp (imprecise (1, wprec), n);
-	    }
-	}
+        if (v > 1) {
+            int  lprec = wprec + exponent(v) + 8;
+            real ln2 = ln2_value(lprec);
 
-	/*
-	 * Emperically determined scale factor.  This
-	 * reduces the computation to working on values
-	 * near zero so that the power series converges
-	 * rapidly.  Increasing this further makes the
-	 * power series converge more rapidly, but
-	 * makes the expansion step more expensive.
-	 */
-	int expo = exponent (v);
-	int scale;
-	if (wprec > 50)
-	    scale = 27;
-	else
-	    scale = 12;
-	if (expo + scale < 0)
-	    scale = -expo;
-	expo += scale;
-	int div = (1 << scale);
+            v = imprecise(v, lprec);
+            n = floor(v / ln2);
+            v -= n * ln2;
+            reduce_rel = 2 ** -(wprec + 6);
+            if (v == 0) {
+                *rel = reduce_rel;
+                return ldexp(imprecise(1, wprec), n);
+            }
+        }
 
-	/*
-	 * Each of the 'expo' squarings below doubles the relative
-	 * error, so carry that many more bits through the series
-	 */
-	int iprec = wprec + expo + ilog (2, wprec + expo) + 8;
-	int iter = iprec;
+        /*
+         * Emperically determined scale factor.  This
+         * reduces the computation to working on values
+         * near zero so that the power series converges
+         * rapidly.  Increasing this further makes the
+         * power series converge more rapidly, but
+         * makes the expansion step more expensive.
+         */
+        int expo = exponent(v);
+        int scale;
+        if (wprec > 50)
+            scale = 27;
+        else
+            scale = 12;
+        if (expo + scale < 0)
+            scale = -expo;
+        expo += scale;
+        int  div = 1 << scale;
 
-	real mant = imprecise (mantissa(v), iprec) / div;
+        /*
+         * Each of the 'expo' squarings below doubles the relative
+         * error, so carry that many more bits through the series
+         */
+        int  iprec = wprec + expo + ilog(2, wprec + expo) + 8;
+        int  iter = iprec;
 
-	real e = imprecise (0, iprec);
-	real num = imprecise (1, iprec);
-	real den = imprecise (1, iprec);
-	real loop = imprecise (0, iprec);
+        real mant = imprecise(mantissa(v), iprec) / div;
 
-	/*
-	 * Traditional power series
-	 *
-	 *  exp(n) = 1 + n/1 + n**2/2! + n**3/3!
-	 */
-	while (iter-- > 0)
-	{
-	    real term = num/den;
-	    e = e + term;
-    	    if (exponent (e) > exponent(term) + iprec)
-		break;
-	    num *= mant;
-	    loop++;
-	    den *= loop;
-	}
+        real e = imprecise(0, iprec);
+        real num = imprecise(1, iprec);
+        real den = imprecise(1, iprec);
+        real loop = imprecise(0, iprec);
 
-	for (int i = 0; i < expo; i++)
-	    e *= e;
+        /*
+         * Traditional power series
+         *
+         *  exp(n) = 1 + n/1 + n**2/2! + n**3/3!
+         */
+        while (iter-- > 0) {
+            real term = num / den;
 
-	/*
-	 * The terms are positive and term n carries fewer than 2n
-	 * rounding errors; the sum adds one per term and the tail is
-	 * below the last term, and rounding v to 'iprec' adds one more.
-	 * Each squaring doubles that and adds one more rounding
-	 */
-	*rel = 2 ** (expo + 1) * (3 * loop + 5) * 2 ** -iprec + reduce_rel;
-	return ldexp (e, n);
+            e = e + term;
+            if (exponent(e) > exponent(term) + iprec)
+                break;
+            num *= mant;
+            loop++;
+            den *= loop;
+        }
+
+        for (int i = 0; i < expo; i++)
+            e *= e;
+
+        /*
+         * The terms are positive and term n carries fewer than 2n
+         * rounding errors; the sum adds one per term and the tail is
+         * below the last term, and rounding v to 'iprec' adds one more.
+         * Each squaring doubles that and adds one more rounding
+         */
+        *rel = 2 ** (expo + 1) * (3 * loop + 5) * 2 ** -iprec + reduce_rel;
+        return ldexp(e, n);
     }
 
-    public real exp (real v)
-	/*
-	 * Return e ** v;
-	 */
+    public real
+    exp(real v)
+        /* Return e ** v; */
     {
-	if (v == 0)
-	    return 1;
-	v = imprecise (v);
-	real compute (int wprec, *real err)
-	{
-	    real	rel;
-	    real	e = exp_w (v, wprec, &rel);
-	    *err = abs (e) * rel;
-	    return e;
-	}
+        if (v == 0)
+            return 1;
+        v = imprecise(v);
 
-	return round_correctly (precision (v), compute);
+        real
+        compute(int wprec, *real err)
+        {
+            real rel;
+            real e = exp_w(v, wprec, &rel);
+
+            *err = abs(e) * rel;
+            return e;
+        }
+
+        return round_correctly(precision(v), compute);
     }
 
-    real log1p_series (real f, int wprec, *real err)
-	/*
-	 * Return log(1+f) for sqrt(2)/2 < 1+f < sqrt(2) to 'wprec' bits,
-	 * following log1p from fdlibm (as also used in picolibc) with
-	 * its polynomial R replaced by the series it approximates:
-	 *
-	 *	s = f/(2+f), z = s*s, hfsq = f*f/2
-	 *	R = 2/3 z + 2/5 z**2 + 2/7 z**3 + ...
-	 *	log(1+f) = f - (hfsq - s*(hfsq+R))
-	 *
-	 * https://netlib.org/fdlibm/s_log1p.c
-	 *
-	 * 'f' must be exact. Sets 'err' to a bound on the absolute error
-	 */
+    real
+    log1p_series(real f, int wprec, *real err)
+        /*
+         * Return log(1+f) for sqrt(2)/2 < 1+f < sqrt(2) to 'wprec' bits,
+         * following log1p from fdlibm (as also used in picolibc) with
+         * its polynomial R replaced by the series it approximates:
+         *
+         *      s = f/(2+f), z = s*s, hfsq = f*f/2
+         *      R = 2/3 z + 2/5 z**2 + 2/7 z**3 + ...
+         *      log(1+f) = f - (hfsq - s*(hfsq+R))
+         *
+         * https://netlib.org/fdlibm/s_log1p.c
+         *
+         * 'f' must be exact. Sets 'err' to a bound on the absolute error
+         */
     {
-	f = imprecise (f, wprec);
+        f = imprecise(f, wprec);
 
-	real	hfsq = f * f / 2;
-	real	s = f / (2 + f);
-	real	z = s * s;
-	real	zn = z;
-	real	R = imprecise (0, wprec);
-	int	n;
+        real hfsq = f * f / 2;
+        real s = f / (2 + f);
+        real z = s * s;
+        real zn = z;
+        real R = imprecise(0, wprec);
+        int  n;
 
-	for (n = 1; ; n++) {
-	    real t = 2 * zn / (2 * n + 1);
-	    R += t;
-	    if (exponent (R) - exponent (t) > wprec)
-		break;
-	    zn *= z;
-	}
+        for (n = 1;; n++) {
+            real t = 2 * zn / (2 * n + 1);
 
-	real	c = s * (hfsq + R);
-	real	v = f - (hfsq - c);
+            R += t;
+            if (exponent(R) - exponent(t) > wprec)
+                break;
+            zn *= z;
+        }
 
-	/*
-	 * f is exact and hfsq has one rounding error. s, z and the n
-	 * terms of R carry fewer than 7n + 6 between them, relative
-	 * to c, and each remaining operation one more
-	 */
-	*err = (2 * abs (v) + 4 * abs (hfsq) + (8 * n + 12) * abs (c)) *
-	       2 ** -wprec;
-	return v;
+        real c = s * (hfsq + R);
+        real v = f - (hfsq - c);
+
+        /*
+         * f is exact and hfsq has one rounding error. s, z and the n
+         * terms of R carry fewer than 7n + 6 between them, relative
+         * to c, and each remaining operation one more
+         */
+        *err = (2 * abs(v) + 4 * abs(hfsq) + (8 * n + 12) * abs(c)) * 2 ** -wprec;
+        return v;
     }
 
     /*
@@ -527,8 +543,8 @@ extend namespace Math {
      *    documentation and/or other materials provided with the distribution.
      * 3. All advertising materials mentioning features or use of this software
      *    must display the following acknowledgement:
-     *	This product includes software developed by the University of
-     *	California, Berkeley and its contributors.
+     *  This product includes software developed by the University of
+     *  California, Berkeley and its contributors.
      * 4. Neither the name of the University nor the names of its contributors
      *    may be used to endorse or promote products derived from this software
      *    without specific prior written permission.
@@ -539,17 +555,18 @@ extend namespace Math {
      * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
      * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
      * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-		* OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+     *            OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
      * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
      * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
      * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
      * SUCH DAMAGE.
      */
 
-    /* log__L(Z)
-     *		LOG(1+X) - 2S			       X
+    /*
+     * log__L(Z)
+     *          LOG(1+X) - 2S                          X
      * RETURN      ---------------  WHERE Z = S*S,  S = ------- , 0 <= Z <= .0294...
-     *		      S				     2 + X
+     *                S                              2 + X
      *
      * DOUBLE PRECISION (VAX D FORMAT 56 bits or IEEE DOUBLE 53 BITS)
      * KERNEL FUNCTION FOR LOG; TO BE USED IN LOG1P, LOG, AND POW FUNCTIONS
@@ -557,21 +574,21 @@ extend namespace Math {
      * REVISED BY K.C. Ng, 2/3/85, 4/16/85.
      *
      * Method :
-     *	1. Polynomial approximation: let s = x/(2+x).
-     *	   Based on log(1+x) = log(1+s) - log(1-s)
-     *		 = 2s + 2/3 s**3 + 2/5 s**5 + .....,
+     *  1. Polynomial approximation: let s = x/(2+x).
+     *     Based on log(1+x) = log(1+s) - log(1-s)
+     *           = 2s + 2/3 s**3 + 2/5 s**5 + .....,
      *
-     *	   (log(1+x) - 2s)/s is computed by
+     *     (log(1+x) - 2s)/s is computed by
      *
-     *	       z*(L1 + z*(L2 + z*(... (L7 + z*L8)...)))
+     *         z*(L1 + z*(L2 + z*(... (L7 + z*L8)...)))
      *
-     *	   where z=s*s. (See the listing below for Lk's values.) The
-     *	   coefficients are obtained by a special Remez algorithm.
+     *     where z=s*s. (See the listing below for Lk's values.) The
+     *     coefficients are obtained by a special Remez algorithm.
      *
      * Accuracy:
-     *	Assuming no rounding error, the maximum magnitude of the approximation
-     *	error (absolute) is 2**(-58.49) for IEEE double, and 2**(-63.63)
-     *	for VAX D format.
+     *  Assuming no rounding error, the maximum magnitude of the approximation
+     *  error (absolute) is 2**(-58.49) for IEEE double, and 2**(-63.63)
+     *  for VAX D format.
      *
      * Constants:
      * The hexadecimal values are the intended ones for the following constants.
@@ -580,62 +597,64 @@ extend namespace Math {
      * shown.
      */
 
-    real log__L (real z)
+    real
+    log__L(real z)
     {
-	global real L1 = imprecise (6.6666666666667340202E-1, 64);
-	global real L2 = imprecise (3.9999999999416702146E-1, 64);
-	global real L3 = imprecise (2.8571428742008753154E-1, 64);
-	global real L4 = imprecise (2.2222198607186277597E-1, 64);
-	global real L5 = imprecise (1.8183562745289935658E-1, 64);
-	global real L6 = imprecise (1.5314087275331442206E-1, 64);
-	global real L7 = imprecise (1.4795612545334174692E-1, 64);
+        global real L1 = imprecise(6.6666666666667340202E-1, 64);
+        global real L2 = imprecise(3.9999999999416702146E-1, 64);
+        global real L3 = imprecise(2.8571428742008753154E-1, 64);
+        global real L4 = imprecise(2.2222198607186277597E-1, 64);
+        global real L5 = imprecise(1.8183562745289935658E-1, 64);
+        global real L6 = imprecise(1.5314087275331442206E-1, 64);
+        global real L7 = imprecise(1.4795612545334174692E-1, 64);
 
-	return(z*(L1+z*(L2+z*(L3+z*(L4+z*(L5+z*(L6+z*L7)))))));
+        return z * (L1 + z * (L2 + z * (L3 + z * (L4 + z * (L5 + z * (L6 + z * L7))))));
     }
 
-    /* LOG(X)
+    /*
+     * LOG(X)
      * RETURN THE LOGARITHM OF x
      * DOUBLE PRECISION (VAX D FORMAT 56 bits or IEEE DOUBLE 53 BITS)
      * CODED IN C BY K.C. NG, 1/19/85;
      * REVISED BY K.C. NG on 2/7/85, 3/7/85, 3/24/85, 4/16/85.
      *
      * Required system supported functions:
-     *	scalb(x,n)
-     *	copysign(x,y)
-     *	logb(x)
-     *	finite(x)
+     *  scalb(x,n)
+     *  copysign(x,y)
+     *  logb(x)
+     *  finite(x)
      *
      * Required kernel function:
-     *	log__L(z)
+     *  log__L(z)
      *
      * Method :
-     *	1. Argument Reduction: find k and f such that
-     *			x = 2^k * (1+f),
-     *	   where  sqrt(2)/2 < 1+f < sqrt(2) .
+     *  1. Argument Reduction: find k and f such that
+     *                  x = 2^k * (1+f),
+     *     where  sqrt(2)/2 < 1+f < sqrt(2) .
      *
-     *	2. Let s = f/(2+f) ; based on log(1+f) = log(1+s) - log(1-s)
-     *		 = 2s + 2/3 s**3 + 2/5 s**5 + .....,
-     *	   log(1+f) is computed by
+     *  2. Let s = f/(2+f) ; based on log(1+f) = log(1+s) - log(1-s)
+     *           = 2s + 2/3 s**3 + 2/5 s**5 + .....,
+     *     log(1+f) is computed by
      *
-     *	     		log(1+f) = 2s + s*log__L(s*s)
-     *	   where
-     *		log__L(z) = z*(L1 + z*(L2 + z*(... (L6 + z*L7)...)))
+     *                  log(1+f) = 2s + s*log__L(s*s)
+     *     where
+     *          log__L(z) = z*(L1 + z*(L2 + z*(... (L6 + z*L7)...)))
      *
-     *	   See log__L() for the values of the coefficients.
+     *     See log__L() for the values of the coefficients.
      *
-     *	3. Finally,  log(x) = k*ln2 + log(1+f).  (Here n*ln2 will be stored
-     *	   in two floating point number: n*ln2hi + n*ln2lo, n*ln2hi is exact
-     *	   since the last 20 bits of ln2hi is 0.)
+     *  3. Finally,  log(x) = k*ln2 + log(1+f).  (Here n*ln2 will be stored
+     *     in two floating point number: n*ln2hi + n*ln2lo, n*ln2hi is exact
+     *     since the last 20 bits of ln2hi is 0.)
      *
      * Special cases:
-     *	log(x) is NaN with signal if x < 0 (including -INF) ;
-     *	log(+INF) is +INF; log(0) is -INF with signal;
-     *	log(NaN) is that NaN with no signal.
+     *  log(x) is NaN with signal if x < 0 (including -INF) ;
+     *  log(+INF) is +INF; log(0) is -INF with signal;
+     *  log(NaN) is that NaN with no signal.
      *
      * Accuracy:
-     *	log(x) returns the exact log(x) nearly rounded. In a test run with
-     *	1,536,000 random arguments on a VAX, the maximum observed error was
-     *	.826 ulps (units in the last place).
+     *  log(x) returns the exact log(x) nearly rounded. In a test run with
+     *  1,536,000 random arguments on a VAX, the maximum observed error was
+     *  .826 ulps (units in the last place).
      *
      * Constants:
      * The hexadecimal values are the intended ones for the following constants.
@@ -644,196 +663,189 @@ extend namespace Math {
      * shown.
      */
 
-    real bsd_log (real x)
+    real
+    bsd_log(real x)
     {
-	global real ln2hi = imprecise (6.9314718036912381649E-1, 64);
-	global real ln2lo = imprecise (1.9082149292705877000E-10, 64);
-	global real sqrt2 = imprecise (1.4142135623730951455E0, 64);
+        global real ln2hi = imprecise(6.9314718036912381649E-1, 64);
+        global real ln2lo = imprecise(1.9082149292705877000E-10, 64);
+        global real sqrt2 = imprecise(1.4142135623730951455E0, 64);
 
-	global real negone = imprecise (-1.0, 64);
-	global real half   = imprecise (0.5, 64);
-	global real two    = imprecise (2, 64);
-	real s,z,t;
-	int k,n;
+        global real negone = imprecise(-1.0, 64);
+        global real half = imprecise(0.5, 64);
+        global real two = imprecise(2, 64);
+        real        s, z, t;
+        int         k, n;
 
-	/* argument reduction */
-	/* mantissa() is in [0.5, 1); the code below expects [1, 2) */
-	k=exponent(x)-1;   x=mantissa(x)*2;
-	if(x >= sqrt2 ) {k += 1; x *= half;}
-	x += negone ;
+        /* argument reduction */
+        /* mantissa() is in [0.5, 1); the code below expects [1, 2) */
+        k = exponent(x) - 1;
+        x = mantissa(x) * 2;
+        if (x >= sqrt2) {
+            k += 1;
+            x *= half;
+        }
+        x += negone;
 
-	/* compute log(1+x)  */
-	s = x/(two + x);
-	t = x*x*half;
-	z = k*ln2lo + s*(t+log__L(s*s));
-	x += (z - t);
+        /* compute log(1+x) */
+        s = x / (two + x);
+        t = x * x * half;
+        z = k * ln2lo + s * (t + log__L(s * s));
+        x += z - t;
 
-	return (k*ln2hi+x);
+        return k * ln2hi + x;
     }
 
-    protected real log_w (real a, int wprec, *real err)
-	/*
-	 * Compute log(a), a > 0, to 'wprec' bits, setting 'err' to a
-	 * bound on the absolute error
-	 */
+    protected real
+    log_w(real a, int wprec, *real err)
+        /*
+         * Compute log(a), a > 0, to 'wprec' bits, setting 'err' to a
+         * bound on the absolute error
+         */
     {
-	/*
-	 * Near 1, where Newton's method below would lose relative
-	 * precision, use the log1p series
-	 */
-	if (0.7071067811865476 < a && a < 1.4142135623730951)
-	    return log1p_series (a - 1, wprec, err);
+        /*
+         * Near 1, where Newton's method below would lose relative
+         * precision, use the log1p series
+         */
+        if (0.7071067811865476 < a && a < 1.4142135623730951)
+            return log1p_series(a - 1, wprec, err);
 
-	/* log(a) = -log(1/a); rounding 1/a moves log under 2**-wprec */
-	int	sgn = 1;
-	if (a < 1) {
-	    a = 1 / imprecise (a, wprec);
-	    sgn = -1;
-	}
+        /* log(a) = -log(1/a); rounding 1/a moves log under 2**-wprec */
+        int sgn = 1;
+        if (a < 1) {
+            a = 1 / imprecise(a, wprec);
+            sgn = -1;
+        }
 
-	int	e = 0;
+        int e = 0;
 
-	/*
-	 * Bring all values within the range of 1 <= a <= 2.
-	 */
-	if (a > 2) {
-	    e = exponent(a) - 1;
-	    a = mantissa(a) * 2;
-	}
+        /* Bring all values within the range of 1 <= a <= 2. */
+        if (a > 2) {
+            e = exponent(a) - 1;
+            a = mantissa(a) * 2;
+        }
 
-	/*
-	 * estimate = bsd_log (a).  This gives 53 bits
-	 */
+        /* estimate = bsd_log (a).  This gives 53 bits */
 
-	real v = bsd_log (imprecise (a, 64));
+        real v = bsd_log(imprecise(a, 64));
 
-	/*
-	 * Precision doubles every time around, start
-	 * with 50 bits and compute how many doublings are
-	 * needed to get the desired precision
-	 */
-	int	maxiter = 0;
-	int	rprec = 50;
+        /*
+         * Precision doubles every time around, start
+         * with 50 bits and compute how many doublings are
+         * needed to get the desired precision
+         */
+        int  maxiter = 0;
+        int  rprec = 50;
 
-	while (rprec <= wprec)
-	{
-	    rprec *= 2;
-	    maxiter++;
-	}
+        while (rprec <= wprec) {
+            rprec *= 2;
+            maxiter++;
+        }
 
-	int	iprec = wprec + maxiter * 16;
+        int iprec = wprec + maxiter * 16;
 
-	if (maxiter > 0)
-	{
-	    v = imprecise (v, iprec);
-	    a = imprecise (a, iprec);
+        if (maxiter > 0) {
+            v = imprecise(v, iprec);
+            a = imprecise(a, iprec);
 
-	/*
-	 * Newton's method
-	 *
-	 * v = log(a)
-	 *
-	 * exp(v) = a
-	 *
-	 * exp(v) - a = 0
-	 *
-	 * v' = v - (exp(v) - a) / exp(v)
-	 *
-	 * v' = v - 1 + a/exp(v)
-	 *
-	 *  v' = v - 1 + a * exp(-v);
-	 */
-	    real one = imprecise (1, iprec);
-	    real rel;
+            /*
+             * Newton's method
+             *
+             * v = log(a)
+             *
+             * exp(v) = a
+             *
+             * exp(v) - a = 0
+             *
+             * v' = v - (exp(v) - a) / exp(v)
+             *
+             * v' = v - 1 + a/exp(v)
+             *
+             *  v' = v - 1 + a * exp(-v);
+             */
+            real one = imprecise(1, iprec);
+            real rel;
 
-	    while (maxiter-- > 0)
-		v = (v - one) + a / exp_w(v, iprec, &rel);
-	}
+            while (maxiter-- > 0)
+                v = v - one + a / exp_w(v, iprec, &rel);
+        }
 
-	/* Mix in the log of the exponent */
-	if (e != 0) {
-	    int eprec = iprec + ilog(2, e) + 1;
-	    v += imprecise(e, eprec) * ln2_value(eprec);
-	}
+        /* Mix in the log of the exponent */
+        if (e != 0) {
+            int eprec = iprec + ilog(2, e) + 1;
+            v += imprecise(e, eprec) * ln2_value(eprec);
+        }
 
-	/*
-	 * Rounding 1/a adds under 2**-wprec, Newton's method stops
-	 * below 2**-wprec, exp and the arithmetic add a few units of
-	 * 2**-iprec and e * log(2) adds under 2**-iprec
-	 */
-	*err = (4 + abs (v)) * 2 ** -wprec;
-	return sgn * v;
+        /*
+         * Rounding 1/a adds under 2**-wprec, Newton's method stops
+         * below 2**-wprec, exp and the arithmetic add a few units of
+         * 2**-iprec and e * log(2) adds under 2**-iprec
+         */
+        *err = (4 + abs(v)) * 2 ** -wprec;
+        return sgn * v;
     }
 
-    public real log (real a)
-	/*
-	 * Return natural logarithm of 'a'
-	 */
+    public real
+    log(real a)
+        /* Return natural logarithm of 'a' */
     {
-	/*
-	 * Bounds checking
-	 */
+        /* Bounds checking */
 
-	if (a <= 0)
-	    raise invalid_argument ("log: must be positive", 0, a);
+        if (a <= 0)
+            raise invalid_argument("log: must be positive", 0, a);
 
-	if (a == 1)
-	    return 0;
+        if (a == 1)
+            return 0;
 
-	a = imprecise (a);
+        a = imprecise(a);
 
-	real compute (int wprec, *real err)
-	{
-	    return log_w (a, wprec, err);
-	}
+        real
+        compute(int wprec, *real err) = log_w(a, wprec, err);
 
-	return round_correctly (precision (a), compute);
+        return round_correctly(precision(a), compute);
     }
 
-    protected real log1p_w (real x, int wprec, *real err)
-	/*
-	 * Compute log(1+x), x > -1, to 'wprec' bits, setting 'err' to a
-	 * bound on the absolute error. log1p(0) is an exact 0
-	 */
+    protected real
+    log1p_w(real x, int wprec, *real err)
+        /*
+         * Compute log(1+x), x > -1, to 'wprec' bits, setting 'err' to a
+         * bound on the absolute error. log1p(0) is an exact 0
+         */
     {
-	if (x == 0) {
-	    *err = 0;
-	    return 0;
-	}
-	x = imprecise (x);
-	if (-0.2928932188134524 < x && x < 0.4142135623730951)
-	    return log1p_series (x, wprec, err);
+        if (x == 0) {
+            *err = 0;
+            return 0;
+        }
+        x = imprecise(x);
+        if (-0.2928932188134524 < x && x < 0.4142135623730951)
+            return log1p_series(x, wprec, err);
 
-	/*
-	 * Otherwise 1 + x is far enough from 1 for log. Form it
-	 * exactly, then round it to 'wprec' bits, which moves the
-	 * result by under 2**-wprec
-	 */
-	real	u = imprecise (x, precision (x) + abs (exponent (x)) + 2) + 1;
-	real	v = log_w (imprecise (u, wprec), wprec, err);
+        /*
+         * Otherwise 1 + x is far enough from 1 for log. Form it
+         * exactly, then round it to 'wprec' bits, which moves the
+         * result by under 2**-wprec
+         */
+        real u = imprecise(x, precision(x) + abs(exponent(x)) + 2) + 1;
+        real v = log_w(imprecise(u, wprec), wprec, err);
 
-	*err += 2 * 2 ** -wprec;
-	return v;
+        *err += 2 * 2 ** -wprec;
+        return v;
     }
 
-    public real logp1 (real x)
-	/*
-	 * Return natural logarithm of 1 + 'x'
-	 */
+    public real
+    logp1(real x)
+        /* Return natural logarithm of 1 + 'x' */
     {
-	if (x <= -1)
-	    raise invalid_argument ("logp1: must be greater than -1", 0, x);
-	if (x == 0)
-	    return 0;
+        if (x <= -1)
+            raise invalid_argument("logp1: must be greater than -1", 0, x);
+        if (x == 0)
+            return 0;
 
-	x = imprecise (x);
+        x = imprecise(x);
 
-	real compute (int wprec, *real err)
-	{
-	    return log1p_w (x, wprec, err);
-	}
+        real
+        compute(int wprec, *real err) = log1p_w(x, wprec, err);
 
-	return round_correctly (precision (x), compute);
+        return round_correctly(precision(x), compute);
     }
 
     /* The C99 name for logp1 */
@@ -844,32 +856,32 @@ extend namespace Math {
      *
      * log10(e) = log(e) / log(10) = 1/log(10)
      */
-    public real log10 (real a)
-	/*
-	 * Return base-10 log of 'a'
-	 */
+    public real
+    log10(real a)
+        /* Return base-10 log of 'a' */
     {
-	static real	inv_logb = 0;
+        static real inv_logb = 0;
 
-	a = imprecise (a);
-	if (a == 1)
-	    return 0;
-	real compute (int wprec, *real err)
-	{
-	    /*
-	     * log of a and of 10 are each correctly rounded to 'wprec'
-	     * bits; with the reciprocal and the product the result is
-	     * good to about 4 * 2**-wprec relative
-	     */
-	    if (inv_logb == 0 || precision (inv_logb) < wprec)
-		inv_logb = 1 / log (imprecise (10, wprec));
-	    real	v = log (imprecise (a, wprec)) *
-			imprecise (inv_logb, wprec);
-	    *err = abs (v) * 2 ** (3 - wprec);
-	    return v;
-	}
+        a = imprecise(a);
+        if (a == 1)
+            return 0;
 
-	return round_correctly (precision (a), compute);
+        real
+        compute(int wprec, *real err)
+        {
+            /*
+             * log of a and of 10 are each correctly rounded to 'wprec'
+             * bits; with the reciprocal and the product the result is
+             * good to about 4 * 2**-wprec relative
+             */
+            if (inv_logb == 0 || precision(inv_logb) < wprec)
+                inv_logb = 1 / log(imprecise(10, wprec));
+            real v = log(imprecise(a, wprec)) * imprecise(inv_logb, wprec);
+            *err = abs(v) * 2 ** (3 - wprec);
+            return v;
+        }
+
+        return round_correctly(precision(a), compute);
     }
 
     /*
@@ -877,141 +889,145 @@ extend namespace Math {
      *
      * log2(e) = log(e) / log(2) = 1/log(2)
      */
-    public real log2 (real a)
-	/*
-	 * Return base-2 log of 'a'
-	 */
+    public real
+    log2(real a)
+        /* Return base-2 log of 'a' */
     {
-	static real	inv_logb = 0;
+        static real inv_logb = 0;
 
-	a = imprecise (a);
-	if (a == 1)
-	    return 0;
-	real compute (int wprec, *real err)
-	{
-	    /*
-	     * log of a and of 2 are each correctly rounded to 'wprec'
-	     * bits; with the reciprocal and the product the result is
-	     * good to about 4 * 2**-wprec relative
-	     */
-	    if (inv_logb == 0 || precision (inv_logb) < wprec)
-		inv_logb = 1 / log (imprecise (2, wprec));
-	    real	v = log (imprecise (a, wprec)) *
-			imprecise (inv_logb, wprec);
-	    *err = abs (v) * 2 ** (3 - wprec);
-	    return v;
-	}
+        a = imprecise(a);
+        if (a == 1)
+            return 0;
 
-	return round_correctly (precision (a), compute);
+        real
+        compute(int wprec, *real err)
+        {
+            /*
+             * log of a and of 2 are each correctly rounded to 'wprec'
+             * bits; with the reciprocal and the product the result is
+             * good to about 4 * 2**-wprec relative
+             */
+            if (inv_logb == 0 || precision(inv_logb) < wprec)
+                inv_logb = 1 / log(imprecise(2, wprec));
+            real v = log(imprecise(a, wprec)) * imprecise(inv_logb, wprec);
+            *err = abs(v) * 2 ** (3 - wprec);
+            return v;
+        }
+
+        return round_correctly(precision(a), compute);
     }
 
-    real calculate_pi (int prec)
-	/*
-	 * Calculate pi using the formula:
-	 *
-	 *  PI = 24*atan (1/8) + 8*atan (1/57) + 4*atan (1/239);
-	 */
+    real
+    calculate_pi(int prec)
+        /*
+         * Calculate pi using the formula:
+         *
+         *  PI = 24*atan (1/8) + 8*atan (1/57) + 4*atan (1/239);
+         */
     {
-	/*
-	 * Estimate the number of digits available for
-	 * the specified value (v) after a certain number of
-	 * loops (p)
-	 */
-	real avail_prec (real v, int p)
-	{
-	    real	ret;
+        /*
+         * Estimate the number of digits available for
+         * the specified value (v) after a certain number of
+         * loops (p)
+         */
+        real
+        avail_prec(real v, int p)
+        {
+            real ret;
 
-	    ret = bit_width (p) - p * exponent (imprecise (v));
-	    /* printf ("v %g p %g avail %g\n", v, p, ret); */
-	    return ret;
-	}
+            ret = bit_width(p) - p * exponent(imprecise(v));
 
-	/*
-	 * Compute the number of loops needed to get
-	 * the desired precision
-	 */
-	int loops (real v, int prec)
-	{
-	    int p, low, high;
+            /* printf ("v %g p %g avail %g\n", v, p, ret); */
+            return ret;
+        }
 
-	    for (high = 1; ; high *= 2)
-	    {
-		if (avail_prec (v, high) > prec)
-		    break;
-	    }
-	    low = 1;
-	    while (high - low > 1)
-	    {
-		p = (high + low) ⫽ 2;
-		if (avail_prec (v, p) > prec)
-		    high = p;
-		else
-		    low = p;
-	    }
-	    return high;
-	}
+        /*
+         * Compute the number of loops needed to get
+         * the desired precision
+         */
+        int
+        loops(real v, int prec)
+        {
+            int p, low, high;
 
-	/*
-	 * Compute atan near zero
-	 *
-	 * atan(x) = x - x**3/3 + x**5/5 - ...
-	 */
-	real atan (rational den, int digits)
-	{
-	    int	    p, q;
-	    int	    l;
-	    int	    prec, mult;
-	    real    partial, result;
-	    real    pv, qv, mden;
+            for (high = 1;; high *= 2) {
+                if (avail_prec(v, high) > prec)
+                    break;
+            }
+            low = 1;
+            while (high - low > 1) {
+                p = (high + low) ⫽ 2;
+                if (avail_prec(v, p) > prec)
+                    high = p;
+                else
+                    low = p;
+            }
+            return high;
+        }
 
-	    p = 3;
-	    q = 5;
-	    mden = imprecise (den, digits * 4) ** 4;
-	    l = loops (1 / den, digits) ⫽ 2;
-	    /*
-	     * Need at least digits + log10(loops) for all intermediate
-	     * computations
-	     */
-	    /* printf ("loops %d\n", l); File.flush (stdout); */
-	    result = 1 / den;
-	    pv = 1 / (den ** p);
-	    qv = 1 / (den ** q);
-	    while (l-- > 0)
-	    {
-		partial = pv / p - qv / q;
-		if (partial == 0)
-		    break;
-		result = result - partial;
-		/* if (l % 10 == 0) { printf ("."); File.flush (stdout); } */
-		p += 4;
-		q += 4;
-		pv = pv / mden;
-		qv = qv / mden;
-	    }
-	    /* printf ("\n"); */
-	    return result;
-	}
+        /*
+         * Compute atan near zero
+         *
+         * atan(x) = x - x**3/3 + x**5/5 - ...
+         */
+        real
+        atan(rational den, int digits)
+        {
+            int  p, q;
+            int  l;
+            int  prec, mult;
+            real partial, result;
+            real pv, qv, mden;
 
-	real	value;
-	real	part1, part2, part3;
+            p = 3;
+            q = 5;
+            mden = imprecise(den, digits * 4) ** 4;
+            l = loops(1 / den, digits) ⫽ 2;
 
-	part1 = 24 *atan (8, prec + 30);
-	part2 = 8 * atan (57, prec + 30);
-	part3 = 4 * atan (239, prec + 30);
-	value = part1 + part2 + part3;
-	return imprecise (value, prec);
+            /*
+             * Need at least digits + log10(loops) for all intermediate
+             * computations
+             */
+            /* printf ("loops %d\n", l); File.flush (stdout); */
+            result = 1 / den;
+            pv = 1 / den ** p;
+            qv = 1 / den ** q;
+            while (l-- > 0) {
+                partial = pv / p - qv / q;
+                if (partial == 0)
+                    break;
+                result = result - partial;
+
+                /* if (l % 10 == 0) { printf ("."); File.flush (stdout); } */
+                p += 4;
+                q += 4;
+                pv = pv / mden;
+                qv = qv / mden;
+            }
+
+            /* printf ("\n"); */
+            return result;
+        }
+
+        real value;
+        real part1, part2, part3;
+
+        part1 = 24 * atan(8, prec + 30);
+        part2 = 8 * atan(57, prec + 30);
+        part3 = 4 * atan(239, prec + 30);
+        value = part1 + part2 + part3;
+        return imprecise(value, prec);
     }
 
-    public real pi_value (int prec)
-	/*
-	 * Return pi at least as precise as 'prec'
-	 */
+    public real
+    pi_value(int prec)
+        /* Return pi at least as precise as 'prec' */
     {
-	static real local_pi = pi;
+        static real local_pi = pi;
 
-	if (precision (local_pi) < prec)
-	    local_pi = calculate_pi (prec);
-	return imprecise (local_pi, prec);
+        if (precision(local_pi) < prec)
+            local_pi = calculate_pi(prec);
+        return imprecise(local_pi, prec);
     }
 
     /*
@@ -1019,119 +1035,115 @@ extend namespace Math {
      * 2**(2-wprec), reducing with enough bits of π to cover the
      * magnitude of 'aa'
      */
-    real limit_angle_to_pi (real aa, int wprec)
+    real
+    limit_angle_to_pi(real aa, int wprec)
     {
-	aa = imprecise (aa);
-	if (aa + pi_value (precision (aa)) == aa)
-		raise invalid_argument ("argument not precise enough", 0, aa);
-	if (abs (aa) <= 3)
-		return imprecise (aa, wprec);
+        aa = imprecise(aa);
+        if (aa + pi_value(precision(aa)) == aa)
+            raise invalid_argument("argument not precise enough", 0, aa);
+        if (abs(aa) <= 3)
+            return imprecise(aa, wprec);
 
-	int	rprec = wprec + max (exponent (aa), 0) + 4;
-	real	my_pi = pi_value (rprec);
+        int  rprec = wprec + max(exponent(aa), 0) + 4;
+        real my_pi = pi_value(rprec);
 
-	aa = imprecise (aa, rprec) % (2 * my_pi);
-	if (aa > my_pi)
-		aa -= 2 * my_pi;
-	return imprecise (aa, wprec);
+        aa = imprecise(aa, rprec) % (2 * my_pi);
+        if (aa > my_pi)
+            aa -= 2 * my_pi;
+        return imprecise(aa, wprec);
     }
 
-    /*
-     * sin(x) = x - x**3/3! + x**5/5! ...
-     */
-    real raw_sin (real a)
+    /* sin(x) = x - x**3/3! + x**5/5! ... */
+    real
+    raw_sin(real a)
     {
-	real    err;
-	real    v, term;
-	real    a4, aj, ai;
-	int	    i, j;
-	int	    iter;
-	int	    prec;
+        real err;
+        real v, term;
+        real a4, aj, ai;
+        int  i, j;
+        int  iter;
+        int  prec;
 
-	prec = precision(a);
-	int iprec = prec * 2;
-	a = imprecise(a,iprec);
-	i = 1;
-	j = 3;
-	a4 = a**4;
-	ai = a**i;
-	aj = a**j;
-	iter = prec + 8;
-	v = 0;
-	while (iter-- > 0)
-	{
-	    term = ai/i! - aj/j!;
-	    /* printf ("sin iter %d term %d\n", iter, term);*/
-	    v += term;
-	    if (exponent (v) > exponent (term) + iprec)
-		break;
-	    ai *= a4;
-	    aj *= a4;
-	    i += 4;
-	    j += 4;
-	}
-	return imprecise (v + term, prec);
+        prec = precision(a);
+        int iprec = prec * 2;
+        a = imprecise(a, iprec);
+        i = 1;
+        j = 3;
+        a4 = a ** 4;
+        ai = a ** i;
+        aj = a ** j;
+        iter = prec + 8;
+        v = 0;
+        while (iter-- > 0) {
+            term = ai / i! - aj / j!;
+
+            /* printf ("sin iter %d term %d\n", iter, term); */
+            v += term;
+            if (exponent(v) > exponent(term) + iprec)
+                break;
+            ai *= a4;
+            aj *= a4;
+            i += 4;
+            j += 4;
+        }
+        return imprecise(v + term, prec);
     }
 
     /* sin(5x) = 16 * sin**5(x) - 20 * sin**3(x) + 5 * sin(x) */
-    real do_5x (real a)
+    real
+    do_5x(real a) = 16 * a ** 5 - 20 * a ** 3 + 5 * a;
+
+    real
+    big_sin(real a)
     {
-	return 16 * a**5 - 20 * a**3 + 5 * a;
+        if (a > 0.01)
+            return do_5x(big_sin(a / 5));
+        return raw_sin(a);
     }
 
-    real big_sin (real a)
+    /* cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ... */
+
+    real
+    raw_cos(real a)
     {
-	if (a > 0.01)
-	    return do_5x (big_sin (a/5));
-	return raw_sin (a);
-    }
+        real v, term;
+        real ai, aj, a4;
+        int  i, j;
+        int  iter;
+        int  prec = precision(a);
+        int  iprec = prec * 2;
 
-    /*
-     * cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ...
-     */
-
-    real raw_cos (real a)
-    {
-	real    v, term;
-	real    ai, aj, a4;
-	int	    i, j;
-	int	    iter;
-	int	    prec = precision(a);
-	int	    iprec = prec * 2;
-
-	a = imprecise(a, iprec);
-	i = 0;
-	j = 2;
-	ai = 1;
-	aj = a**2;
-	a4 = a**4;
-	iter = prec + 8;
-	v = 0;
-	while (iter-- > 0)
-	{
-	    term = ai/i! - aj/j!;
-	    v += term;
-	    if (exponent (v) > exponent (term) + iprec)
-		break;
-	    ai *= a4;
-	    aj *= a4;
-	    i += 4;
-	    j += 4;
-	}
-	return imprecise (v + term);
+        a = imprecise(a, iprec);
+        i = 0;
+        j = 2;
+        ai = 1;
+        aj = a ** 2;
+        a4 = a ** 4;
+        iter = prec + 8;
+        v = 0;
+        while (iter-- > 0) {
+            term = ai / i! - aj / j!;
+            v += term;
+            if (exponent(v) > exponent(term) + iprec)
+                break;
+            ai *= a4;
+            aj *= a4;
+            i += 4;
+            j += 4;
+        }
+        return imprecise(v + term);
     }
 
     /* cos(4x) = 8 * (cos**4(x) - cos**2(x)) + 1 */
-    real do_4x (real c)
-    {
-	return 8 * (c**4 - c**2) + 1;
-    }
+    real
+    do_4x(real c) = 8 * (c ** 4 - c ** 2) + 1;
 
-    real big_cos (real a)
+    real
+    big_cos(real a)
     {
-	if (a > .01)
-	    return do_4x (big_cos (a/4));
-	return raw_cos (a);
+        if (a > .01)
+            return do_4x(big_cos(a / 4));
+        return raw_cos(a);
     }
 
     /*
@@ -1141,497 +1153,505 @@ extend namespace Math {
      * below 2**-wprec; raw_cos and the 4x steps in big_cos run at
      * twice that precision
      */
-    real reduced_angle (real a, int wprec)
+    real
+    reduced_angle(real a, int wprec)
     {
-	return imprecise (limit_angle_to_pi (a, wprec), wprec + 24);
+        return imprecise(limit_angle_to_pi(a, wprec), wprec + 24);
     }
 
-    real sin_reduced (real r)
+    real
+    sin_reduced(real r)
     {
-	if (r == 0)
-	    return r;
-	return r < 0 ? -big_sin (-r) : big_sin (r);
+        if (r == 0)
+            return r;
+        return r < 0 ? -big_sin(-r) : big_sin(r);
     }
 
-    real cos_reduced (real r)
+    real
+    cos_reduced(real r)
     {
-	if (r == 0)
-	    return imprecise (1, precision (r));
-	return big_cos (abs (r));
+        if (r == 0)
+            return imprecise(1, precision(r));
+        return big_cos(abs(r));
     }
 
-    protected real sin_w (real a, int wprec, *real err)
-	/*
-	 * Compute sin(a) to 'wprec' bits, setting 'err' to a bound on
-	 * the absolute error. sin(0) is an exact 0
-	 */
+    protected real
+    sin_w(real a, int wprec, *real err)
+        /*
+         * Compute sin(a) to 'wprec' bits, setting 'err' to a bound on
+         * the absolute error. sin(0) is an exact 0
+         */
     {
-	if (a == 0) {
-	    *err = 0;
-	    return 0;
-	}
-	*err = 2 ** (3 - wprec);
-	return sin_reduced (reduced_angle (imprecise (a), wprec));
+        if (a == 0) {
+            *err = 0;
+            return 0;
+        }
+        *err = 2 ** (3 - wprec);
+        return sin_reduced(reduced_angle(imprecise(a), wprec));
     }
 
-    protected real cos_w (real a, int wprec, *real err)
-	/*
-	 * Compute cos(a) to 'wprec' bits, setting 'err' to a bound on
-	 * the absolute error. cos(0) is an exact 1
-	 */
+    protected real
+    cos_w(real a, int wprec, *real err)
+        /*
+         * Compute cos(a) to 'wprec' bits, setting 'err' to a bound on
+         * the absolute error. cos(0) is an exact 1
+         */
     {
-	if (a == 0) {
-	    *err = 0;
-	    return 1;
-	}
-	*err = 2 ** (3 - wprec);
-	return cos_reduced (reduced_angle (imprecise (a), wprec));
+        if (a == 0) {
+            *err = 0;
+            return 1;
+        }
+        *err = 2 ** (3 - wprec);
+        return cos_reduced(reduced_angle(imprecise(a), wprec));
     }
 
-    public real sin (real a)
-	/*
-	 * return sine (a)
-	 */
+    public real
+    sin(real a)
+        /* return sine (a) */
     {
-	a = imprecise (a);
-	if (a == 0)
-	    return 0;
-	real compute (int wprec, *real err)
-	{
-	    return sin_w (a, wprec, err);
-	}
+        a = imprecise(a);
+        if (a == 0)
+            return 0;
 
-	return round_correctly (precision (a), compute);
+        real
+        compute(int wprec, *real err) = sin_w(a, wprec, err);
+
+        return round_correctly(precision(a), compute);
     }
 
-    public real cos (real a)
-	/*
-	 * return cosine (a)
-	 */
+    public real
+    cos(real a)
+        /* return cosine (a) */
     {
-	a = imprecise (a);
-	if (a == 0)
-	    return 1;
-	real compute (int wprec, *real err)
-	{
-	    return cos_w (a, wprec, err);
-	}
+        a = imprecise(a);
+        if (a == 0)
+            return 1;
 
-	return round_correctly (precision (a), compute);
+        real
+        compute(int wprec, *real err) = cos_w(a, wprec, err);
+
+        return round_correctly(precision(a), compute);
     }
 
-    public void sin_cos (real a, *real sinp, *real cosp)
-	/*
-	 * Compute sine and cosine of 'a' simultaneously
-	 */
+    public void
+    sin_cos(real a, *real sinp, *real cosp)
+        /* Compute sine and cosine of 'a' simultaneously */
     {
-	*sinp = sin (a);
-	*cosp = cos (a);
+        *sinp = sin(a);
+        *cosp = cos(a);
     }
 
-    public real tan (real a)
-	/*
-	 * return tangent (a)
-	 */
+    public real
+    tan(real a)
+        /* return tangent (a) */
     {
-	a = imprecise (a);
-	if (a == 0)
-	    return 0;
-	real compute (int wprec, *real err)
-	{
-	    real	r = reduced_angle (a, wprec);
-	    real	s = sin_reduced (r);
-	    real	c = cos_reduced (r);
+        a = imprecise(a);
+        if (a == 0)
+            return 0;
 
-	    if (c == 0) {
-		*err = 1;
-		return s;
-	    }
+        real
+        compute(int wprec, *real err)
+        {
+            real r = reduced_angle(a, wprec);
+            real s = sin_reduced(r);
+            real c = cos_reduced(r);
 
-	    /* sin and cos are each good to 2**(3-wprec) */
-	    real	t = s / c;
-	    *err = (1 + abs (t)) * 2 ** (3 - wprec) / abs (c) +
-		   abs (t) * 2 ** -wprec;
-	    return t;
-	}
+            if (c == 0) {
+                *err = 1;
+                return s;
+            }
 
-	return round_correctly (precision (a), compute);
+            /* sin and cos are each good to 2**(3-wprec) */
+            real t = s / c;
+            *err = (1 + abs(t)) * 2 ** (3 - wprec) / abs(c) + abs(t) * 2 ** -wprec;
+            return t;
+        }
+
+        return round_correctly(precision(a), compute);
+    }
+
+    /* atan(x) = x - x**3/3 + x**5/5 - ... */
+    real
+    raw_atan(real v)
+    {
+        real a, term;
+        real vi, vj, v4;
+        int  i, j;
+        int  iter;
+        int  prec = precision(v);
+        int  iprec = prec * 2;
+
+        v = imprecise(v, iprec);
+        i = 1;
+        j = 3;
+        vi = v ** i;
+        vj = v ** j;
+        v4 = v ** 4;
+        a = 0;
+        iter = prec + 8;
+        while (iter-- > 0) {
+            term = vi / i - vj / j;
+            a += term;
+            if (exponent(a) > exponent(term) + iprec)
+                break;
+            vi *= v4;
+            vj *= v4;
+            i += 4;
+            j += 4;
+        }
+        return imprecise(a, prec);
+    }
+
+    real
+    atan_w(real v, int wprec, *real err)
+        /*
+         * Compute atan(v) to 'wprec' bits, setting 'err' to a bound on
+         * the absolute error
+         */
+    {
+        v = imprecise(v, wprec);
+        if (v == 0) {
+            *err = 0;
+            return v;
+        }
+
+        /* atan(v) = -atan(-v) */
+        if (v < 0)
+            return -atan_w(-v, wprec, err);
+
+        /*
+         * atan(v) = pi/2 - atan(1/v). Rounding 1/v, pi/2 and the
+         * difference each add under 2**(1-wprec)
+         */
+        if (v > 1) {
+            real a = pi_value(wprec) / 2 - atan_w(1 / v, wprec, err);
+
+            *err += 2 ** (3 - wprec);
+            return a;
+        }
+
+        /*
+         * atan(v) = pi/6 + atan((v*sqrt(3) - 1) / (sqrt(3) + v)). The
+         * argument is good to 2**(2-wprec) and atan' <= 1; pi/6 and the
+         * sum each add under 2**(1-wprec)
+         */
+        if (v > .268) {
+            real sqrt3 = sqrt(imprecise(3, wprec));
+            real t = (v * sqrt3 - 1) / (sqrt3 + v);
+            real a = pi_value(wprec) / 6;
+
+            if (t != 0)
+                a += raw_atan(t);
+            *err = 2 ** (4 - wprec);
+            return a;
+        }
+
+        /* The series runs at twice the precision, then rounds once */
+        real a = raw_atan(v);
+        *err = abs(a) * 2 ** (2 - wprec);
+        return a;
+    }
+
+    public real
+    atan(real v)
+        /* return arctangent (v) */
+    {
+        v = imprecise(v);
+        if (v == 0)
+            return v;
+
+        real
+        compute(int wprec, *real err) = atan_w(v, wprec, err);
+
+        return round_correctly(precision(v), compute);
+    }
+
+    protected real
+    atan2_w(real y, real x, int wprec, *real err)
+        /*
+         * Compute atan2(y, x), (x, y) != (0, 0), to 'wprec' bits,
+         * setting 'err' to a bound on the absolute error
+         */
+    {
+        if (x == 0) {
+            *err = 2 ** -wprec;
+            return (y > 0 ? 1 : -1) * pi_value(wprec) / 2;
+        }
+
+        /*
+         * Rounding y, x and y/x to 'wprec' bits gives q a relative
+         * error under 3 * 2**-wprec, moving atan(q) by q/(1+q**2) of that
+         */
+        real q = imprecise(y, wprec) / imprecise(x, wprec);
+        real a = atan_w(q, wprec, err);
+
+        *err += abs(q) / (1 + q ** 2) * 3 * 2 ** -wprec;
+        if (x < 0) {
+            real p = pi_value(wprec);
+
+            if (y >= 0)
+                a += p;
+            else
+                a -= p;
+            *err += 2 ** (2 - wprec);
+        }
+        return a;
+    }
+
+    /* atan (y/x) */
+    public real
+    atan2(real y, real x)
+        /* return atan (y/x), but adjust for quadrant correctly */
+    {
+        y = imprecise(y);
+        x = imprecise(x);
+
+        if (y == 0 && x >= 0)
+            return 0;
+
+        real
+        compute(int wprec, *real err) = atan2_w(y, x, wprec, err);
+
+        return round_correctly(max(precision(y), precision(x)), compute);
     }
 
     /*
-     * atan(x) = x - x**3/3 + x**5/5 - ...
-     */
-    real raw_atan (real v)
-    {
-	real    a, term;
-	real    vi, vj, v4;
-	int	    i, j;
-	int	    iter;
-	int	    prec = precision(v);
-	int	    iprec = prec * 2;
-
-	v = imprecise (v, iprec);
-	i = 1;
-	j = 3;
-	vi = v**i;
-	vj = v**j;
-	v4 = v**4;
-	a = 0;
-	iter = prec + 8;
-	while (iter-- > 0)
-	{
-	    term = vi/i - vj/j;
-	    a += term;
-	    if (exponent (a) > exponent (term) + iprec)
-		break;
-	    vi *= v4;
-	    vj *= v4;
-	    i += 4;
-	    j += 4;
-	}
-	return imprecise (a, prec);
-    }
-
-    real atan_w (real v, int wprec, *real err)
-	/*
-	 * Compute atan(v) to 'wprec' bits, setting 'err' to a bound on
-	 * the absolute error
-	 */
-    {
-	v = imprecise (v, wprec);
-	if (v == 0) {
-	    *err = 0;
-	    return v;
-	}
-	/*
-	 * atan(v) = -atan(-v)
-	 */
-	if (v < 0)
-	    return -atan_w (-v, wprec, err);
-	/*
-	 * atan(v) = pi/2 - atan(1/v). Rounding 1/v, pi/2 and the
-	 * difference each add under 2**(1-wprec)
-	 */
-	if (v > 1) {
-	    real a = pi_value (wprec) / 2 - atan_w (1/v, wprec, err);
-	    *err += 2 ** (3 - wprec);
-	    return a;
-	}
-	/*
-	 * atan(v) = pi/6 + atan((v*sqrt(3) - 1) / (sqrt(3) + v)). The
-	 * argument is good to 2**(2-wprec) and atan' <= 1; pi/6 and the
-	 * sum each add under 2**(1-wprec)
-	 */
-	if (v > .268)
-	{
-	    real	sqrt3 = sqrt (imprecise (3, wprec));
-	    real	t = (v * sqrt3 - 1) / (sqrt3 + v);
-	    real	a = pi_value (wprec) / 6;
-	    if (t != 0)
-		a += raw_atan (t);
-	    *err = 2 ** (4 - wprec);
-	    return a;
-	}
-	/* The series runs at twice the precision, then rounds once */
-	real	a = raw_atan (v);
-	*err = abs (a) * 2 ** (2 - wprec);
-	return a;
-    }
-
-    public real atan (real v)
-	/*
-	 * return arctangent (v)
-	 */
-    {
-	v = imprecise (v);
-	if (v == 0)
-	    return v;
-	real compute (int wprec, *real err)
-	{
-	    return atan_w (v, wprec, err);
-	}
-
-	return round_correctly (precision (v), compute);
-    }
-
-    protected real atan2_w (real y, real x, int wprec, *real err)
-	/*
-	 * Compute atan2(y, x), (x, y) != (0, 0), to 'wprec' bits,
-	 * setting 'err' to a bound on the absolute error
-	 */
-    {
-	if (x == 0) {
-	    *err = 2 ** -wprec;
-	    return (y > 0 ? 1 : -1) * pi_value (wprec) / 2;
-	}
-
-	/*
-	 * Rounding y, x and y/x to 'wprec' bits gives q a relative
-	 * error under 3 * 2**-wprec, moving atan(q) by q/(1+q**2) of that
-	 */
-	real	q = imprecise (y, wprec) / imprecise (x, wprec);
-	real	a = atan_w (q, wprec, err);
-
-	*err += abs (q) / (1 + q**2) * 3 * 2 ** -wprec;
-	if (x < 0) {
-	    real p = pi_value (wprec);
-	    if (y >= 0)
-		a += p;
-	    else
-		a -= p;
-	    *err += 2 ** (2 - wprec);
-	}
-	return a;
-    }
-
-    /*
-     * atan (y/x)
-     */
-    public real atan2 (real y, real x)
-	/*
-	 * return atan (y/x), but adjust for quadrant correctly
-	 */
-    {
-	y = imprecise (y);
-	x = imprecise (x);
-
-	if (y == 0 && x >= 0)
-	    return 0;
-	real compute (int wprec, *real err)
-	{
-	    return atan2_w (y, x, wprec, err);
-	}
-
-	return round_correctly (max (precision (y), precision (x)), compute);
-    }
-
-    /*
-     *	atan(v) = asin(v/sqrt(1+v**2))
+     * atan(v) = asin(v/sqrt(1+v**2))
      *
-     *	q = v/sqrt(1+v**2)
-     *	q*sqrt(1+v**2) = v
-     *  q**2*(1+v**2) = v**2
-     *  q**2 + q**2v**2 = v**2
-     *	q**2 = v**2 - q**2v**2
-     *  q**2 = v**2 * (1 - q**2)
-     *  v**2 = q**2/(1-q**2)
-     *  v = q/sqrt(1-q**2)
+     * q = v/sqrt(1+v**2)
+     * q*sqrt(1+v**2) = v
+     * q**2*(1+v**2) = v**2
+     * q**2 + q**2v**2 = v**2
+     * q**2 = v**2 - q**2v**2
+     * q**2 = v**2 * (1 - q**2)
+     * v**2 = q**2/(1-q**2)
+     * v = q/sqrt(1-q**2)
      *
-     *  asin(q) = atan2(q, sqrt(1-q**2))
+     * asin(q) = atan2(q, sqrt(1-q**2))
      */
 
-    real asin_cos (real v, int wprec, *real s)
-	/*
-	 * Return v at enough precision that 1 - v**2 is exact near
-	 * |v| = 1, as v has precision(v) bits, and set 's' to
-	 * sqrt(1 - v**2), good to under 2**-(wprec+8) relative
-	 */
+    real
+    asin_cos(real v, int wprec, *real s)
+        /*
+         * Return v at enough precision that 1 - v**2 is exact near
+         * |v| = 1, as v has precision(v) bits, and set 's' to
+         * sqrt(1 - v**2), good to under 2**-(wprec+8) relative
+         */
     {
-	real	x = imprecise (v, max (2 * precision (v), wprec) + 8);
-	*s = sqrt (1 - x**2);
-	return x;
+        real x = imprecise(v, max(2 * precision(v), wprec) + 8);
+
+        *s = sqrt(1 - x ** 2);
+        return x;
     }
 
-    public real asin (real v)
-	/*
-	 * return arcsine (v)
-	 */
+    public real
+    asin(real v)
+        /* return arcsine (v) */
     {
-	v = imprecise (v);
-	if (abs (v) > 1)
-	    raise invalid_argument ("asin argument out of range", 0, v);
-	if (v == 0)
-	    return v;
-	real compute (int wprec, *real err)
-	{
-	    real	s;
-	    real	x = asin_cos (v, wprec, &s);
-	    return atan2_w (x, s, wprec, err);
-	}
+        v = imprecise(v);
+        if (abs(v) > 1)
+            raise invalid_argument("asin argument out of range", 0, v);
+        if (v == 0)
+            return v;
 
-	return round_correctly (precision (v), compute);
+        real
+        compute(int wprec, *real err)
+        {
+            real s;
+            real x = asin_cos(v, wprec, &s);
+            return atan2_w(x, s, wprec, err);
+        }
+
+        return round_correctly(precision(v), compute);
     }
 
     /*
      * acos(v) = asin (sqrt (1 - v**2))
-     *		= atan (sqrt(1-v**2) / sqrt (1-(sqrt (1-v**2))**2))
-     *		= atan (sqrt(1-v**2) / sqrt (1-(1-v**2)))
-     *		= atan2 (sqrt(1-v**2), v)
+     *          = atan (sqrt(1-v**2) / sqrt (1-(sqrt (1-v**2))**2))
+     *          = atan (sqrt(1-v**2) / sqrt (1-(1-v**2)))
+     *          = atan2 (sqrt(1-v**2), v)
      */
-    public real acos (real v)
-	/*
-	 * return arccosine (v)
-	 */
+    public real
+    acos(real v)
+        /* return arccosine (v) */
     {
-	v = imprecise(v);
-	if (abs (v) > 1)
-	    raise invalid_argument ("acos argument out of range", 0, v);
-	if (v == 1)
-	    return 0;
-	real compute (int wprec, *real err)
-	{
-	    real	s;
-	    real	x = asin_cos (v, wprec, &s);
-	    return atan2_w (s, x, wprec, err);
-	}
+        v = imprecise(v);
+        if (abs(v) > 1)
+            raise invalid_argument("acos argument out of range", 0, v);
+        if (v == 1)
+            return 0;
 
-	return round_correctly (precision (v), compute);
+        real
+        compute(int wprec, *real err)
+        {
+            real s;
+            real x = asin_cos(v, wprec, &s);
+            return atan2_w(s, x, wprec, err);
+        }
+
+        return round_correctly(precision(v), compute);
     }
 
     /* The builtin, which checks that exact results can be represented */
     real(real, int) _int_pow = pow;
 
-    /*
-     * These two are used for the '**' and '**=' operators
-     */
-    public real pow (real a, real b)
-	/*
-	 * return a ** b;
-	 */
+    /* These two are used for the '**' and '**=' operators */
+    public real
+    pow(real a, real b)
+        /* return a ** b; */
     {
-	real    result;
-	if (a == 0) {
-	    if (b == 0)
-		return 1;
-	    /* 0 ** b is 1 / 0 ** -b */
-	    if (b < 0)
-		raise divide_by_zero (1, a);
-	    return 0;
-	}
+        real result;
 
-	if (is_int (b))
-	{
-	    if (is_int (a))
-		return _int_pow (a, b);
-	    if (is_rational (a))
-		return pow (numerator(a), b) / pow (denominator (a), b);
-	    bool flip = false;
+        if (a == 0) {
+            if (b == 0)
+                return 1;
 
-	    if (b < 0)
-	    {
-		flip = true;
-		b = -b;
-	    }
-	    result = 1;
+            /* 0 ** b is 1 / 0 ** -b */
+            if (b < 0)
+                raise divide_by_zero(1, a);
+            return 0;
+        }
 
-	    int prec = precision(a);
-	    /* Increase precision to avoid dropping bits */
-	    if (prec != 0 && b > 0)
-		a = imprecise(a, prec + (ilog(2, b) + 1) * 4 + 5);
+        if (is_int(b)) {
+            if (is_int(a))
+                return _int_pow(a, b);
+            if (is_rational(a))
+                return pow(numerator(a), b) / pow(denominator(a), b);
+            bool flip = false;
 
-	    while (b > 0)
-	    {
-		if ((b & 1) != 0)
-		    result *= a;
-		b >>= 1;
-		if (b != 0)
-		    a *= a;
-	    }
-	    if (flip)
-		result = 1/result;
-	    if (prec != 0)
-		result = imprecise(result, prec);
-	}
-	else switch (b) {
-	case .5:
-	    result = sqrt (a);
-	    break;
-	case .{3}:
-	    result = cbrt (a);
-	    break;
-	default:
-	    /*
-	     * An error in b * log(a) becomes the same relative error in
-	     * the result, so compute it with as many more bits as its
-	     * magnitude needs, plus some guard bits
-	     */
-	    real	t = b * log(a);
-	    int	prec = precision (t);
-	    int	wprec = prec + max (exponent (t), 0) + 8;
+            if (b < 0) {
+                flip = true;
+                b = -b;
+            }
+            result = 1;
 
-	    t = imprecise (b, wprec) * log (imprecise (a, wprec));
-	    result = imprecise (exp (t), prec);
-	    break;
-	}
-	return result;
+            int prec = precision(a);
+
+            /* Increase precision to avoid dropping bits */
+            if (prec != 0 && b > 0)
+                a = imprecise(a, prec + (ilog(2, b) + 1) * 4 + 5);
+
+            while (b > 0) {
+                if ((b & 1) != 0)
+                    result *= a;
+                b >>= 1;
+                if (b != 0)
+                    a *= a;
+            }
+            if (flip)
+                result = 1 / result;
+            if (prec != 0)
+                result = imprecise(result, prec);
+        } else
+            switch (b) {
+            case .5:
+                result = sqrt(a);
+                break;
+            case .{3}:
+                result = cbrt(a);
+                break;
+            default:
+                /*
+                 * An error in b * log(a) becomes the same relative error in
+                 * the result, so compute it with as many more bits as its
+                 * magnitude needs, plus some guard bits
+                 */
+                real t = b * log(a);
+                int  prec = precision(t);
+                int  wprec = prec + max(exponent(t), 0) + 8;
+
+                t = imprecise(b, wprec) * log(imprecise(a, wprec));
+                result = imprecise(exp(t), prec);
+                break;
+            }
+        return result;
     }
 
-    public real assign_pow (*real a, real b)
-	/*
-	 * return *a = *a ** b;
-	 */
+    public real
+    assign_pow(*real a, real b)
+        /* return *a = *a ** b; */
     {
-	return *a = pow (*a, b);
+        return *a = pow(*a, b);
     }
-
 
     public exception lsb_0();
 
-    public int lsb(int b)
-	/*
-	 * return the bit position of
-	 * the least significant bit of the int argument
-	 * via binary search
-	 */
+    public int
+    lsb(int b)
+        /*
+         * return the bit position of
+         * the least significant bit of the int argument
+         * via binary search
+         */
     {
-	global bool mask(int b, int ul) {
-	    return (b & ((1 << (ul + 1)) - 1)) != 0;
-	}
+        global bool
+        mask(int b, int ul) = (b & ((1 << (ul + 1)) - 1)) != 0;
 
-	if (b == 0)
-	    raise lsb_0();
-	if (b == -1)
-	    return 0;
-	/* doubling phase */
-	int ul = 1;
-	for (!mask(b, ul); ul *= 2)
-	    /* do nothing */;
-	/* binary search phase */
-	int ll = 0;
-	while (ul > ll + 1) {
-	    int step = (ul - ll) ⫽ 2;
-	    if (mask(b, ul - step)) {
-		ul -= step;
-		continue;
-	    }
-	    if (!mask(b, ll + step)) {
-		ll += step;
-		continue;
-	    }
-	    abort("error in binary search");
-	}
-	if (mask(b, ll))
-	    return ll;
-	return ul;
+        if (b == 0)
+            raise lsb_0();
+        if (b == -1)
+            return 0;
+
+        /* doubling phase */
+        int ul = 1;
+        for (!mask(b, ul); ul *= 2) /* do nothing */
+            ;
+
+        /* binary search phase */
+        int ll = 0;
+        while (ul > ll + 1) {
+            int step = (ul - ll) ⫽ 2;
+
+            if (mask(b, ul - step)) {
+                ul -= step;
+                continue;
+            }
+            if (!mask(b, ll + step)) {
+                ll += step;
+                continue;
+            }
+            abort("error in binary search");
+        }
+        if (mask(b, ll))
+            return ll;
+        return ul;
     }
 
-    public int choose(int n, int k)
-        /* Number of ways of choosing k items from a set of
-           n distinct items. */
+    public int
+    choose(int n, int k)
+        /*
+         * Number of ways of choosing k items from a set of
+         * n distinct items.
+         */
     {
-        /* This keeps the size of the intermediate terms
-           smaller below, and also makes the bounds check
-           slightly easier. */
+        /*
+         * This keeps the size of the intermediate terms
+         * smaller below, and also makes the bounds check
+         * slightly easier.
+         */
         if (k > (n + 1) ⫽ 2)
             k = n - k;
         if (n < 0 || k < 0)
             return 0;
         int c = 1;
-        /* This keeps the size of the intermediate terms
-           down a bit compared to the traditional
-           computation.  It probably doesn't matter, but oh
-           well. */
+
+        /*
+         * This keeps the size of the intermediate terms
+         * down a bit compared to the traditional
+         * computation.  It probably doesn't matter, but oh
+         * well.
+         */
         for (int i = n - k + 1; i <= n; i++)
             c *= i;
         return c / k!;
     }
 
-    real(real) _abs = abs;
+    real(real)        _abs = abs;
     public real(real) abs = _abs;
-    int(real) _precision = precision;
-    public int(real) precision = _precision;
+    int(real)         _precision = precision;
+    public int(real)  precision = _precision;
 }
 
 /* XXX these shouldn't be here, but it was *convenient* */
 &int(string, int ...) atoi = &string_to_integer;
-&rational(string) atof = &string_to_real;
+&rational(string)     atof = &string_to_real;

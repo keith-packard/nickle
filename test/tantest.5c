@@ -5,46 +5,49 @@
  */
 library "math-bits.5c"
 
-void check_tan()
+void
+check_tan()
 {
-	printf("Checking tan\n");
-	for (int i = 0; i < dim(tan_table); i++) {
-		real angle = tan_table[i].angle;
-		real tan_value = tan_table[i].tan;
-		check("tan", tan, angle, tan_value);
-	}
-	printf("Checking tan is correctly rounded\n");
-	check_rounded("tan", tan, (real[*]) {
-		-1e4 - 0.3, -6.28, -1e-3, 1e-7, 1.5707963267948966,
-		3.141592653589793, 6.283185307179586, 355, 0x1.da821p+30 });
-	printf("Checking atan and atan2 are correctly rounded\n");
-	check_rounded("atan", atan, (real[*]) {
-		-1e300, -10, -1, -0.5773, -1e-20, 0.2679, 0.3, 1.0000001,
-		3.7320508, 1e300 });
-	real[*] ys = { 1, -1, 1e-20, -3.5, 0.75 };
-	real[*] xs = { 1, -1, 2e10, -1e-20, -0.75 };
-	check_rounded2("atan2", atan2, ys, xs);
-	/* an exact y must not limit the precision of the result */
-	real	a2 = atan2(1, imprecise(-2, 300));
-	if (precision(a2) != 300 ||
-	    a2 != imprecise(atan2(imprecise(1, 700), imprecise(-2, 700)),
-			    300)) {
-		printf("check failed atan2(1, -2) at 300 bits\n");
-		errors++;
-	}
-	printf("Checking atan\n");
-	for (int i = 0; i < dim(atan_table); i++) {
-		real ratio = atan_table[i].ratio;
-		real atan_value = atan_table[i].atan;
-		check("atan", atan, ratio, atan_value);
-	}
-	printf("Checking atan2\n");
-	for (int i = 0; i < dim(atan2_table); i++) {
-		real y = atan2_table[i].y;
-		real x = atan2_table[i].x;
-		real atan2_value = atan2_table[i].atan2;
-		check2("atan2", atan2, y, x, atan2_value);
-	}
+    printf("Checking tan\n");
+    for (int i = 0; i < dim(tan_table); i++) {
+        real angle = tan_table[i].angle;
+        real tan_value = tan_table[i].tan;
+        check("tan", tan, angle, tan_value);
+    }
+    printf("Checking tan is correctly rounded\n");
+    check_rounded("tan", tan,
+                  (real[*]) {
+                      -1e4 - 0.3, -6.28, -1e-3, 1e-7, 1.5707963267948966,
+                      3.141592653589793, 6.283185307179586, 355, 0x1.da821p+30 });
+    printf("Checking atan and atan2 are correctly rounded\n");
+    check_rounded("atan", atan,
+                  (real[*]) { -1e300, -10, -1, -0.5773, -1e-20, 0.2679,
+                              0.3, 1.0000001, 3.7320508, 1e300 });
+    real[*] ys = { 1, -1, 1e-20, -3.5, 0.75 };
+    real[*] xs = { 1, -1, 2e10, -1e-20, -0.75 };
+    check_rounded2("atan2", atan2, ys, xs);
+
+    /* an exact y must not limit the precision of the result */
+    real a2 = atan2(1, imprecise(-2, 300));
+    if (precision(a2) != 300
+        || a2 != imprecise(atan2(imprecise(1, 700), imprecise(-2, 700)), 300))
+    {
+        printf("check failed atan2(1, -2) at 300 bits\n");
+        errors++;
+    }
+    printf("Checking atan\n");
+    for (int i = 0; i < dim(atan_table); i++) {
+        real ratio = atan_table[i].ratio;
+        real atan_value = atan_table[i].atan;
+        check("atan", atan, ratio, atan_value);
+    }
+    printf("Checking atan2\n");
+    for (int i = 0; i < dim(atan2_table); i++) {
+        real y = atan2_table[i].y;
+        real x = atan2_table[i].x;
+        real atan2_value = atan2_table[i].atan2;
+        check2("atan2", atan2, y, x, atan2_value);
+    }
 }
 
 check_tan();

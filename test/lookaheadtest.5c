@@ -8,12 +8,11 @@
  * brace, newlines inside it still don't end the command.
  */
 
-int	x = 0;
+int x = 0;
 
 if (x > 0)
     x = 1;
-(int	y =
-     2);
+int y = 2;
 
 if (x > 0)
     x = 1;
@@ -22,4 +21,4 @@ if (x > 0)
 }
 
 if (y != 2 || x != 3)
-    exit (1);
+    exit(1);

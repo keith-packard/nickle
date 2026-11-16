@@ -9,27 +9,30 @@ namespace Abort {
 
     public exception aborting(string);
 
-    public noreturn abort(string reason, args ...)
-	/* Print a stack trace and raise aborting exception with message */
+    public noreturn
+    abort(string reason, poly args ...)
+        /* Print a stack trace and raise aborting exception with message */
     {
-	Debug::trace(Thread::current(), trace_depth);
-	string reasonmsg = File::sprintf(reason, args ...);
-	raise aborting(reasonmsg);
+        Debug::trace(Thread::current(), trace_depth);
+        string reasonmsg = File::sprintf(reason, args...);
+        raise aborting(reasonmsg);
     }
 
-    public void assert(bool ok, string failure, args ...)
-	/* If 'ok' is false, abort (failure, args ...); */
+    public void
+    assert(bool ok, string failure, poly args ...)
+        /* If 'ok' is false, abort (failure, args ...); */
     {
-	if (!ok)
-	    abort(failure, args ...);
+        if (!ok)
+            abort(failure, args...);
     }
 
     public bool do_debug = true;
 
-    public void debug(string fmt, args ...)
-	/* Print to stderr, controlled by 'do_debug' global */
+    public void
+    debug(string fmt, poly args ...)
+        /* Print to stderr, controlled by 'do_debug' global */
     {
-	if (do_debug)
-	    File::fprintf(stderr, fmt + "\n", args ...);
+        if (do_debug)
+            File::fprintf(stderr, fmt + "\n", args...);
     }
 }

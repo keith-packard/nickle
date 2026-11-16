@@ -6,568 +6,570 @@ extend namespace Command {
      * interpreter
      */
 
-    public void display (poly v)
-	/*
-	 * Used by the top-level read/eval/print loop.
-	 * For non-void 'v',
-	 *   Prints out 'v' in the current default format.
-	 *   Inserts 'v' into the history.
-	 */
+    public void
+    display(poly v)
+        /*
+         * Used by the top-level read/eval/print loop.
+         * For non-void 'v',
+         *   Prints out 'v' in the current default format.
+         *   Inserts 'v' into the history.
+         */
     {
-	if (is_void (v))
-	    return;
-	History::insert (v);
-	printf (format, v);
-	putchar ('\n');
+        if (is_void(v))
+            return;
+        History::insert(v);
+        printf(format, v);
+        putchar('\n');
     }
 
-    public void display_base (poly v, int base)
-	/*
-	 * Used by the top-level read/eval/print loop
-	 * when '# base' is appended to an expression.
-	 * For non-void 'v',
-	 *  Prints out 'v' in 'base'.
-	 *  Inserts 'v' into the history.
-	 */
+    public void
+    display_base(poly v, int base)
+        /*
+         * Used by the top-level read/eval/print loop
+         * when '# base' is appended to an expression.
+         * For non-void 'v',
+         *  Prints out 'v' in 'base'.
+         *  Inserts 'v' into the history.
+         */
     {
-	if (is_void (v))
-	    return;
-	History::insert (v);
-	File::print (stdout, v, "g", base, 0, -1, " ");
-	putchar ('\n');
+        if (is_void(v))
+            return;
+        History::insert(v);
+        File::print(stdout, v, "g", base, 0, -1, " ");
+        putchar('\n');
     }
 
-    /*
-     * Now add a collection of useful commands
-     */
+    /* Now add a collection of useful commands */
 
-    noreturn do_quit (int args...)
-	/*
-	 * quit	    - exit with code 0
-	 * quit N   - exit with code N
-	 */
+    noreturn
+    do_quit(int args ...)
+        /*
+         * quit     - exit with code 0
+         * quit N   - exit with code N
+         */
     {
-	int	code = 0;
+        int code = 0;
 
-	if (dim(args) > 0)
-	    code = args[0];
-	exit (code);
-    }
-    new ("quit", do_quit);
-
-    void do_history (int args...)
-	/*
-	 * history	- show some recent history
-	 * history N    - show N recent history
-	 * history N,M  - show history from N to M
-	 */
-    {
-	switch (dim (args)) {
-	case 0:
-	    History::show (format);
-	    break;
-	case 1:
-	    History::show (format, args[0]);
-	    break;
-	default:
-	    History::show (format, args[0], args[1]);
-	    break;
-	}
-    }
-    new ("history", do_history);
-
-    string format_name(string[*] name)
-	/*
-	 * given an array of namespace component strings,
-	 * produce a namespace-name
-	 */
-    {
-	if (dim(name) == 0)
-	    return "";
-	string result = name[0];
-	for (int i = 1; i < dim(name); i++)
-	    result += sprintf("::%s", name[i]);
-	return result;
+        if (dim(args) > 0)
+            code = args[0];
+        exit(code);
     }
 
-    void name_error (string msg, poly value)
-	/*
-	 * Report a name the print, edit, or undefine command
-	 * couldn't use: 'value' is the whole name or the part
-	 * that went wrong
-	 */
-    {
-	string	name;
+    new("quit", do_quit);
 
-	if (is_type (value, string[*]))
-	    name = format_name (value);
-	else
-	    name = sprintf ("%s", value);
-	File::fprintf (stderr, "\"%s\": %s\n", name, msg);
+    void
+    do_history(int args ...)
+        /*
+         * history      - show some recent history
+         * history N    - show N recent history
+         * history N,M  - show history from N to M
+         */
+    {
+        switch (dim(args)) {
+        case 0:
+            History::show(format);
+            break;
+        case 1:
+            History::show(format, args[0]);
+            break;
+        default:
+            History::show(format, args[0], args[1]);
+            break;
+        }
     }
 
-    void do_pretty_print (poly args...)
-	/*
-	 * print		- pretty print all public names
-	 * print name ...	- pretty print given names
-	 * print namespace::	- print a namespace in full, as written
-	 * print ::		- print all names in full
-	 * print "file" ...	- print each file formatted, as written
-	 */
+    new("history", do_history);
+
+    string
+    format_name(string[*] name)
+        /*
+         * given an array of namespace component strings,
+         * produce a namespace-name
+         */
     {
-	string[...]	files = {};
-	bool		names = false;
-
-	for (int i = 0; i < dim (args); i++) {
-	    if (is_type (args[i], string)) {
-		files[dim (files)] = args[i];
-		continue;
-	    }
-
-	    /*
-	     * The parser ends a name written with a trailing :: with "",
-	     * and gives :: alone as just ""
-	     */
-	    string[*]	name = args[i];
-	    bool	full = false;
-	    if (name[dim (name) - 1] == "") {
-		name = (string[dim (name) - 1]) { [j] = name[j] };
-		full = true;
-	    }
-	    names = true;
-	    try {
-		if (dim (name) == 0)
-		    format_names (stdout, full);
-		else
-		    format_names (stdout, full, name);
-	    } catch invalid_argument(string msg, int i, poly value) {
-		name_error (msg, value);
-	    }
-	}
-	if (!names && dim (files) == 0)
-	    format_names (stdout, false);
-
-	/* Each file queued is read before those queued earlier */
-	for (int i = dim (files) - 1; i >= 0; i--) {
-	    try {
-		format_file (stdout, File::open (files[i], "r"), files[i], true);
-	    } catch File::open_error (string msg,
-				      File::error_type err,
-				      string name) {
-		File::fprintf (stderr, "Cannot print \"%s\": %s\n",
-			       name, msg);
-	    }
-	}
+        if (dim(name) == 0)
+            return "";
+        string result = name[0];
+        for (int i = 1; i < dim(name); i++)
+            result += sprintf("::%s", name[i]);
+        return result;
     }
 
-    new_names ("print", do_pretty_print);
-
-    void do_edit (string[*] name)
-	/*
-	 * edit name		- edit the definition of name
-	 */
+    void
+    name_error(string msg, poly value)
+        /*
+         * Report a name the print, edit, or undefine command
+         * couldn't use: 'value' is the whole name or the part
+         * that went wrong
+         */
     {
-	try {
-	    edit (name);
-	} catch invalid_argument(string msg, int i, poly value) {
-	    name_error (msg, value);
-	}
+        string name;
+
+        if (is_type(value, string[*]))
+            name = format_name(value);
+        else
+            name = sprintf("%s", value);
+        File::fprintf(stderr, "\"%s\": %s\n", name, msg);
     }
 
-    new_names ("edit", do_edit);
-
-    void do_undefine (string[*] names...)
-	/*
-	 * undefine name ...	- remove the given names
-	 */
+    void
+    do_pretty_print(poly args ...)
+        /*
+         * print                - pretty print all public names
+         * print name ...       - pretty print given names
+         * print namespace::    - print a namespace in full, as written
+         * print ::             - print all names in full
+         * print "file" ...     - print each file formatted, as written
+         */
     {
-	try {
-	    undefine (names ...);
-	} catch invalid_argument(string msg, int i, poly value) {
-	    name_error (msg, value);
-	}
+        string[...] files = {};
+        bool        names = false;
+
+        for (int i = 0; i < dim(args); i++) {
+            if (is_type(args[i], string)) {
+                files[dim(files)] = args[i];
+                continue;
+            }
+
+            /*
+             * The parser ends a name written with a trailing :: with "",
+             * and gives :: alone as just ""
+             */
+            string[*] name = args[i];
+            bool      full = false;
+            if (name[dim(name) - 1] == "") {
+                name = (string[dim(name) - 1]) { [j] = name[j] };
+                full = true;
+            }
+            names = true;
+            try {
+                if (dim(name) == 0)
+                    format_names(stdout, full);
+                else
+                    format_names(stdout, full, name);
+            } catch invalid_argument(string msg, int i, poly value) {
+                name_error(msg, value);
+            }
+        }
+        if (!names && dim(files) == 0)
+            format_names(stdout, false);
+
+        /* Each file queued is read before those queued earlier */
+        for (int i = dim(files) - 1; i >= 0; i--) {
+            try {
+                format_file(stdout, File::open(files[i], "r"), files[i], true);
+            } catch File::open_error(string msg,
+                                     File::error_type err,
+                                     string name)
+            {
+                File::fprintf(stderr, "Cannot print \"%s\": %s\n", name, msg);
+            }
+        }
     }
 
-    new_names ("undefine", do_undefine);
+    new_names("print", do_pretty_print);
 
-    void do_load (string f)
-	/*
-	 * load "filename"	- read commands from "filename"
-	 */
+    void
+    do_edit(string[*] name)
+        /* edit name            - edit the definition of name */
     {
-	try {
-	    lex_file (f);
-	} catch File::open_error (string msg,
-				  File::error_type err,
-				  string name) {
-	    File::fprintf (stderr, "Cannot load \"%s\": %s\n",
-			   name, msg);
-	}
+        try {
+            edit(name);
+        } catch invalid_argument(string msg, int i, poly value) {
+            name_error(msg, value);
+        }
     }
 
-    new ("load", do_load);
+    new_names("edit", do_edit);
 
-
-    string make_filename(string[*] m)
-	/*
-	 * construct a filename from a namespace name
-	 */
+    void
+    do_undefine(string[*] names ...)
+        /* undefine name ...    - remove the given names */
     {
-	file r = File::string_write();
-	for (int j = 0; j < dim (m); j++) {
-	    if (j > 0)
-		File::putc('-', r);
-	    bool last_lower = false;
-	    file name = File::string_read(m[j]);
-	    while (!File::end(name))
-	    {
-		int c = File::getc(name);
-		bool cur_lower = Ctype::islower(c);
-		if (Ctype::isupper(c))
-		{
-		    c = Ctype::tolower(c);
-		    if (last_lower)
-			File::putc('-', r);
-		}
-		File::putc(c, r);
-		last_lower = cur_lower;
-	    }
-	}
-	return File::string_string(r) + ".5c";
+        try {
+            undefine(names...);
+        } catch invalid_argument(string msg, int i, poly value) {
+            name_error(msg, value);
+        }
     }
 
-    void force_import(string[*] name)
-	/*
-	 * force an import of the given name.  XXX horrible
-	 * kludge of consing up an import command in a string
-	 * and then lexing it.
-	 */
+    new_names("undefine", do_undefine);
+
+    void
+    do_load(string f)
+        /* load "filename"      - read commands from "filename" */
     {
-	string imp = sprintf("import %s;\n", format_name(name));
-	lex_string(imp);
+        try {
+            lex_file(f);
+        } catch File::open_error(string msg,
+                                 File::error_type err,
+                                 string name)
+        {
+            File::fprintf(stderr, "Cannot load \"%s\": %s\n", name, msg);
+        }
     }
 
-    void do_auto (string cmd, string[*][*] args,
-		  bool do_import, bool reimport)
-	/*
-	 * core behavior for autoload / autoimport / reimport
-	 */
+    new("load", do_load);
+
+    string
+    make_filename(string[*] m)
+        /* construct a filename from a namespace name */
     {
-	typedef struct {
-	    file	f;
-	    string	path;
-	} library;
+        file r = File::string_write();
 
-	/*
-	 * Open the files each name needs, outermost namespace first,
-	 * stopping at the first name with a missing file, so that
-	 * neither it nor any later name is loaded or imported
-	 */
-	library[...][...] libraries = {};
-	int		  loaded;
+        for (int j = 0; j < dim(m); j++) {
+            if (j > 0)
+                File::putc('-', r);
+            bool last_lower = false;
+            file name = File::string_read(m[j]);
+            while (!File::end(name)) {
+                int  c = File::getc(name);
+                bool cur_lower = Ctype::islower(c);
 
-	for (loaded = 0; loaded < dim(args); loaded++) {
-	    string[*]	name = args[loaded];
-	    bool	missing = false;
-
-	    libraries[loaded] = (library[...]) {};
-	    if (!reimport && valid_name (name))
-		continue;
-	    for (int j = 0; j < dim(name); j++)
-	    {
-		string[*] subname = (string[j+1]) { [k] = name[k] };
-		if (reimport || !valid_name (subname))
-		{
-		    string	f = make_filename(subname);
-		    library	l;
-
-		    if (!open_library (f, &l.f, &l.path))
-		    {
-			File::fprintf (stderr,
-				       "Cannot %s from " +
-				       "file \"%s\", giving up.\n",
-				       cmd,
-				       f);
-			missing = true;
-			break;
-		    }
-		    libraries[loaded][dim(libraries[loaded])] = l;
-		}
-	    }
-	    if (missing)
-		break;
-	}
-
-	/*
-	 * The lexer reads what was pushed last first, so push each
-	 * name's import and then its files, last name first
-	 */
-	for (int i = loaded - 1; i >= 0; i--) {
-	    if (do_import)
-		force_import(args[i]);
-	    for (int j = dim(libraries[i]) - 1; j >= 0; j--)
-		Command::lex_input (libraries[i][j].f, libraries[i][j].path,
-				    false, false);
-	}
+                if (Ctype::isupper(c)) {
+                    c = Ctype::tolower(c);
+                    if (last_lower)
+                        File::putc('-', r);
+                }
+                File::putc(c, r);
+                last_lower = cur_lower;
+            }
+        }
+        return File::string_string(r) + ".5c";
     }
 
-
-    void do_autoimport (string[*] args...)
-	/*
-	 * autoimport ModuleName ...	-
-	 *    if needed, load a library named "module-name.5c" and
-	 *    import ModuleName; do for each argument
-	 */
+    void
+    force_import(string[*] name)
+        /*
+         * force an import of the given name.  XXX horrible
+         * kludge of consing up an import command in a string
+         * and then lexing it.
+         */
     {
-	do_auto("autoimport", args, true, false);
+        string imp = sprintf("import %s;\n", format_name(name));
+        lex_string(imp);
     }
 
-    new_names ("autoimport", do_autoimport);
-
-
-    void do_reimport (string[*] args...)
-	/*
-	 * reimport ModuleName ...	-
-	 *    load a library named "module-name.5c" and
-	 *    import ModuleName; do for each argument
-	 */
+    void
+    do_auto(string cmd, string[*][*] args,
+            bool do_import, bool reimport)
+        /* core behavior for autoload / autoimport / reimport */
     {
-	do_auto("reimport", args, true, true);
+        typedef struct {
+            file   f;
+            string path;
+        } library;
+
+        /*
+         * Open the files each name needs, outermost namespace first,
+         * stopping at the first name with a missing file, so that
+         * neither it nor any later name is loaded or imported
+         */
+        library[...][...] libraries = {};
+        int               loaded;
+
+        for (loaded = 0; loaded < dim(args); loaded++) {
+            string[*] name = args[loaded];
+            bool      missing = false;
+
+            libraries[loaded] = (library[...]) {};
+            if (!reimport && valid_name(name))
+                continue;
+            for (int j = 0; j < dim(name); j++) {
+                string[*] subname = (string[j + 1]) { [k] = name[k] };
+                if (reimport || !valid_name(subname)) {
+                    string  f = make_filename(subname);
+                    library l;
+
+                    if (!open_library(f, &l.f, &l.path)) {
+                        File::fprintf(
+                            stderr, "Cannot %s from " + "file \"%s\", giving up.\n", cmd, f);
+                        missing = true;
+                        break;
+                    }
+                    libraries[loaded][dim(libraries[loaded])] = l;
+                }
+            }
+            if (missing)
+                break;
+        }
+
+        /*
+         * The lexer reads what was pushed last first, so push each
+         * name's import and then its files, last name first
+         */
+        for (int i = loaded - 1; i >= 0; i--) {
+            if (do_import)
+                force_import(args[i]);
+            for (int j = dim(libraries[i]) - 1; j >= 0; j--)
+                Command::lex_input(libraries[i][j].f, libraries[i][j].path, false, false);
+        }
     }
 
-    new_names ("reimport", do_reimport);
-
-
-    void do_autoload (string[*] args...)
-	/*
-	 * autoload ModuleName ...	-
-	 *    load a library named "module-name.5c".
-	 */
+    void
+    do_autoimport(string[*] args ...)
+        /*
+         * autoimport ModuleName ...    -
+         *    if needed, load a library named "module-name.5c" and
+         *    import ModuleName; do for each argument
+         */
     {
-	do_auto("autoload", args, false, false);
+        do_auto("autoimport", args, true, false);
     }
 
-    new_names ("autoload", do_autoload);
+    new_names("autoimport", do_autoimport);
 
-
-    void do_char (int c ...)
-	/*
-	 * char c1 c2 c3	    - Print characters for given integers
-	 */
+    void
+    do_reimport(string[*] args ...)
+        /*
+         * reimport ModuleName ...      -
+         *    load a library named "module-name.5c" and
+         *    import ModuleName; do for each argument
+         */
     {
-	for (int i = 0; i < dim (c); i++)
-	    printf ("%3d 0x%02x: %v\n",
-		    c[i], c[i], String::new (c[i]));
+        do_auto("reimport", args, true, true);
     }
 
-    new ("char", do_char);
+    new_names("reimport", do_reimport);
 
-    void process_args(&string[*] argv)
-	/*
-	 * parse nickle command-line arguments
-	 */
+    void
+    do_autoload(string[*] args ...)
+        /*
+         * autoload ModuleName ...      -
+         *    load a library named "module-name.5c".
+         */
     {
-	bool lex_stdin = true;
-	string script_name = "";
+        do_auto("autoload", args, false, false);
+    }
 
-	/* XXX Much of this architecture is driven by
-	   the fact that the lexer stacks the
-	   files to be processed rather than queueing them. */
+    new_names("autoload", do_autoload);
 
-	typedef union {
-	    string library;
-	    string sfile;
-	    string script;
-	    string expr;
-	    string format;
-	} lexable;
+    void
+    do_char(int c ...)
+        /* char c1 c2 c3            - Print characters for given integers */
+    {
+        for (int i = 0; i < dim(c); i++)
+            printf("%3d 0x%02x: %v\n", c[i], c[i], String::new(c[i]));
+    }
 
-	lexable[...] lexables = {};
+    new("char", do_char);
 
-	void process_lexables() {
-	}
+    void
+    process_args(&string[*] argv)
+        /* parse nickle command-line arguments */
+    {
+        bool   lex_stdin = true;
+        string script_name = "";
 
-	void save_lexable(lexable l) {
-	    lexables[dim(lexables)] = l;
-	}
+        /*
+         * XXX Much of this architecture is driven by
+         * the fact that the lexer stacks the
+         * files to be processed rather than queueing them.
+         */
 
-	void save_library(string arg) {
-	    save_lexable((lexable.library)arg);
-	}
+        typedef union {
+            string library;
+            string sfile;
+            string script;
+            string expr;
+            string format;
+        } lexable;
 
-	void save_script(string arg) {
-	    script_name = arg;
-	    /* As in Python, "-" reads the script from stdin */
-	    if (arg == "-") {
-		lex_stdin = true;
-		return;
-	    }
-	    save_lexable((lexable.script)arg);
-	    /* Add directory containing the script to the library path */
-	    nickle_path = String::dirname (arg) + ":" + nickle_path;
-	    lex_stdin = false;
-	}
+        lexable[...] lexables = {};
 
-	void save_file(string arg) {
-	    save_lexable((lexable.sfile)arg);
-	}
+        void
+        process_lexables()
+        {
+        }
 
-	void save_expr(string arg) {
-	    save_lexable((lexable.expr)arg);
-	    lex_stdin = false;
-	}
+        void
+        save_lexable(lexable l)
+        {
+            lexables[dim(lexables)] = l;
+        }
 
-	void save_format(string arg) {
-	    save_lexable((lexable.format)arg);
-	    lex_stdin = false;
-	}
+        void
+        save_library(string arg)
+        {
+            save_lexable((lexable.library) arg);
+        }
 
-	bool show_version = false;
+        void
+        save_script(string arg)
+        {
+            script_name = arg;
 
-	ParseArgs::argdesc argd = {
-	    .args = {
-		{ .var = { .arg_lambda = save_library},
-		  .abbr = 'l',
-		  .name = "library",
-		  .expr_name = "lib",
-		  .desc = "Library to load."},
-		{ .var = { .arg_lambda = save_file},
-		  .abbr = 'f',
-		  .name = "file",
-		  .expr_name = "source",
-		  .desc = "Source file to load."},
-		{ .var = { .arg_lambda = save_expr},
-		  .abbr = 'e',
-		  .name = "expr",
-		  .expr_name = "expression",
-		  .desc = "Expression to evaluate."},
-		{ .var = { .arg_lambda = save_format},
-		  .abbr = 'F',
-		  .name = "format",
-		  .expr_name = "source",
-		  .desc = "Print a source file formatted, without running it."},
-		{ .var = { .arg_flag = &show_version },
-		  .abbr = 'V',
-		  .name = "version",
-		  .desc = "Print the Nickle version and exit"},
-	    },
-	    .posn_args = {
-		{ .var = { .arg_lambda = save_script},
-		  .name = "script",
-		  .optional = <>}
-	    },
-	    .unknown = &(int user_argind),
-	    .prog_name = "nickle"
-	};
+            /* As in Python, "-" reads the script from stdin */
+            if (arg == "-") {
+                lex_stdin = true;
+                return;
+            }
+            save_lexable((lexable.script) arg);
 
-	/* actually parse the arguments */
-	ParseArgs::parseargs(&argd, &argv);
+            /* Add directory containing the script to the library path */
+            nickle_path = String::dirname(arg) + ":" + nickle_path;
+            lex_stdin = false;
+        }
 
-	if (show_version) {
-	    printf("Nickle %s\n", version);
-	    exit(0);
-	}
+        void
+        save_file(string arg)
+        {
+            save_lexable((lexable.sfile) arg);
+        }
 
-	/* Reset argv to hold remaining arguments */
-	if (lex_stdin && script_name == "" && is_uninit(&user_argind)) {
-	    string[0] rest = {};
-	    argv = rest;
-	} else {
-	    if (is_uninit(&user_argind))
-		user_argind = dim(argv);
-	    string[dim(argv) - user_argind + 1] rest;
-	    rest[0] = script_name;
-		for (int i = 1; i < dim(rest); i++)
-		    rest[i] = argv[i + user_argind - 1];
-	    argv = rest;
-	}
+        void
+        save_expr(string arg)
+        {
+            save_lexable((lexable.expr) arg);
+            lex_stdin = false;
+        }
 
-	/* Recall the comment above.  Since the lexer
-	   stacks, we must stack stdin, which is to run last,
-	   *before* the other stuff.  Bleah. */
-	if (lex_stdin)
-	{
-	    /* Add the current directory to the library path */
-	    nickle_path += ":.";
+        void
+        save_format(string arg)
+        {
+            save_lexable((lexable.format) arg);
+            lex_stdin = false;
+        }
 
-	    /* we want stdin to be processed after all other lexables */
-	    lex_input (stdin, "<stdin>", false, File::isatty (stdin));
-	}
+        bool               show_version = false;
 
-	/* now stack the other arguments, in reverse order */
-	for (int i = dim(lexables) - 1; i >=0; --i) {
-	    static noreturn load_fail(string name, string msg) {
-		File::fprintf (stderr, "Cannot load \"%s\": %s\n",
-			       name, msg);
-		exit (1);
-	    }
+        ParseArgs::argdesc argd = {
+            args = {
+                { var = { arg_lambda = save_library }, abbr = 'l',
+                  name = "library", expr_name = "lib", desc = "Library to load." },
+                { var = { arg_lambda = save_file }, abbr = 'f', name = "file",
+                  expr_name = "source", desc = "Source file to load." },
+                { var = { arg_lambda = save_expr }, abbr = 'e', name = "expr",
+                  expr_name = "expression", desc = "Expression to evaluate." },
+                { var = { arg_lambda = save_format }, abbr = 'F',
+                  name = "format", expr_name = "source",
+                  desc = "Print a source file formatted, without running it." },
+                { var = { arg_flag = &show_version }, abbr = 'V',
+                  name = "version", desc = "Print the Nickle version and exit" },
+            },
+            posn_args = {
+                { var = { arg_lambda = save_script }, name = "script", optional = <> }
+            },
+            unknown = &(int user_argind),
+            prog_name = "nickle"
+        };
 
-	    static void lex_script(string arg) {
-		try {
-		    lex_file (arg);
-		} catch File::open_error (string msg,
-					  File::error_type err,
-					  string name) {
-		    load_fail (name, msg);
-		}
-	    }
+        /* actually parse the arguments */
+        ParseArgs::parseargs(&argd, &argv);
 
-	    union switch(lexables[i]) {
-	    case library arg:
-		if (!lex_library (arg))
-		    load_fail (arg, "cannot load library");
-		break;
-	    case script arg:
-		lex_script(arg);
-		break;
-	    case sfile arg:
-		lex_script(arg);
-		break;
-	    case expr arg:
-		lex_string(arg + "\n");
-		break;
-	    case format arg:
-		try {
-		    format_file (stdout, File::open (arg, "r"), arg, true);
-		} catch File::open_error (string msg,
-					  File::error_type err,
-					  string name) {
-		    load_fail (name, msg);
-		}
-		break;
-	    }
-	    /* Errors in command-line input, unlike stdin, are fatal */
-	    lex_exit_on_error (true);
-	}
+        if (show_version) {
+            printf("Nickle %s\n", version);
+            exit(0);
+        }
 
-	/*
-	 * As Python does with PYTHONSTARTUP, load $NICKLERC, else
-	 * ~/.nicklerc, only when reading commands from a terminal.
-	 * Stacked last, it runs first, and like stdin, its errors
-	 * are reported without exiting. A missing ~/.nicklerc is
-	 * fine, but a missing $NICKLERC gets a warning
-	 */
-	if (lex_stdin && File::isatty (stdin)) {
-	    bool   named = Environ::check ("NICKLERC") &&
-			   Environ::get ("NICKLERC") != "";
-	    string rc = "";
+        /* Reset argv to hold remaining arguments */
+        if (lex_stdin && script_name == "" && is_uninit(&user_argind)) {
+            string[0] rest = {};
+            argv = rest;
+        } else {
+            if (is_uninit(&user_argind))
+                user_argind = dim(argv);
+            string[dim(argv) - user_argind + 1] rest;
+            rest[0] = script_name;
+            for (int i = 1; i < dim(rest); i++)
+                rest[i] = argv[i + user_argind - 1];
+            argv = rest;
+        }
 
-	    if (named)
-		rc = Environ::get ("NICKLERC");
-	    else if (Environ::check ("HOME"))
-		rc = Environ::get ("HOME") + "/.nicklerc";
-	    if (rc != "") {
-		try {
-		    lex_file (rc);
-		    lex_exit_on_error (false);
-		} catch File::open_error (string msg,
-					  File::error_type err,
-					  string name) {
-		    if (named)
-			File::fprintf (stderr, "Cannot load \"%s\": %s\n",
-				       name, msg);
-		}
-	    }
-	}
+        /*
+         * Recall the comment above.  Since the lexer
+         * stacks, we must stack stdin, which is to run last,
+         * *before* the other stuff.  Bleah.
+         */
+        if (lex_stdin) {
+
+            /* Add the current directory to the library path */
+            nickle_path += ":.";
+
+            /* we want stdin to be processed after all other lexables */
+            lex_input(stdin, "<stdin>", false, File::isatty(stdin));
+        }
+
+        /* now stack the other arguments, in reverse order */
+        for (int i = dim(lexables) - 1; i >= 0; --i) {
+
+            static noreturn
+            load_fail(string name, string msg)
+            {
+                File::fprintf(stderr, "Cannot load \"%s\": %s\n", name, msg);
+                exit(1);
+            }
+
+            static void
+            lex_script(string arg)
+            {
+                try {
+                    lex_file(arg);
+                } catch File::open_error(string msg,
+                                         File::error_type err,
+                                         string name)
+                {
+                    load_fail(name, msg);
+                }
+            }
+
+            union switch (lexables[i]) {
+            case library arg:
+                if (!lex_library(arg))
+                    load_fail(arg, "cannot load library");
+                break;
+            case script arg:
+                lex_script(arg);
+                break;
+            case sfile arg:
+                lex_script(arg);
+                break;
+            case expr arg:
+                lex_string(arg + "\n");
+                break;
+            case format arg:
+                try {
+                    format_file(stdout, File::open(arg, "r"), arg, true);
+                } catch File::open_error(string msg,
+                                         File::error_type err,
+                                         string name)
+                {
+                    load_fail(name, msg);
+                }
+                break;
+            }
+
+            /* Errors in command-line input, unlike stdin, are fatal */
+            lex_exit_on_error(true);
+        }
+
+        /*
+         * As Python does with PYTHONSTARTUP, load $NICKLERC, else
+         * ~/.nicklerc, only when reading commands from a terminal.
+         * Stacked last, it runs first, and like stdin, its errors
+         * are reported without exiting. A missing ~/.nicklerc is
+         * fine, but a missing $NICKLERC gets a warning
+         */
+        if (lex_stdin && File::isatty(stdin)) {
+            bool   named = Environ::check("NICKLERC") && Environ::get("NICKLERC") != "";
+            string rc = "";
+
+            if (named)
+                rc = Environ::get("NICKLERC");
+            else if (Environ::check("HOME"))
+                rc = Environ::get("HOME") + "/.nicklerc";
+            if (rc != "") {
+                try {
+                    lex_file(rc);
+                    lex_exit_on_error(false);
+                } catch File::open_error(string msg,
+                                         File::error_type err,
+                                         string name)
+                {
+                    if (named)
+                        File::fprintf(stderr, "Cannot load \"%s\": %s\n", name, msg);
+                }
+            }
+        }
     }
 }

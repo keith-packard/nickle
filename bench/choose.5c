@@ -1,5 +1,4 @@
-int function choose(int n, int r) {
-  return (n! // (r! * (n - r)!));
-}
+int
+choose(int n, int r) = n! // (r! * (n - r)!);
 
-choose(20000,5000)
+choose(20000, 5000)

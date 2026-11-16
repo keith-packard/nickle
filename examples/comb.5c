@@ -7,21 +7,20 @@
 
 namespace Comb {
 
-  public int perm(n, r) {
-    return n! // r!;
-  }
+    public int
+    perm(poly n, poly r) = n! // r!;
 
-  public int choose(n, r) {
-    return n! // (r! * (n - r)!);
-  }
+    public int
+    choose(poly n, poly r) = n! // (r! * (n - r)!);
 
-  public int binom(n, k) {
-    int sum, i;
+    public int
+    binom(poly n, poly k)
+    {
+        int sum, i;
 
-    sum = 1;
-    for (i = 1; i <= k; i++)
-	  sum += choose(n, i);
-    return sum;
-  }
-
+        sum = 1;
+        for (i = 1; i <= k; i++)
+            sum += choose(n, i);
+        return sum;
+    }
 }

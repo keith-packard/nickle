@@ -6,35 +6,36 @@
  * for licensing information.
  */
 
-continuation	c;
+continuation c;
 
-/*
- * Static initializer example
- */
-int stat ()
+/* Static initializer example */
+int
+stat()
 {
-    int	x = 1;
-    int bar ()
+    int x = 1;
+
+    int
+    bar()
     {
-	static int qq = 37;
-	/*
-	 * Create an array containing two objects.
-	 *
-	 * During the evaluation of the first initializer,
-	 * a continuation is captured.  Thus the initializer
-	 * can be reentered at this point.
-	 *
-	 * The second continuation demonstrates creating an
-	 * anonymous lambda and using a variety of values
-	 * which are in scope
-	 */
-	static int[*] y = (int[2]) { 
-	    (int l = setjmp (&c, 1)), 
-	    l + (func (a) { return a + ++l + x; }) (++x) + ++qq 
-	};
-	return ++y[0] + ++y[1];
+        static int    qq = 37;
+
+        /*
+         * Create an array containing two objects.
+         *
+         * During the evaluation of the first initializer,
+         * a continuation is captured.  Thus the initializer
+         * can be reentered at this point.
+         *
+         * The second continuation demonstrates creating an
+         * anonymous lambda and using a variety of values
+         * which are in scope
+         */
+        static int[*] y = (int[2]) {
+            (int l = setjmp(&c, 1)), l + (func(poly a) = a + ++l + x)(++x) + ++qq };
+        return ++y[0] + ++y[1];
     }
-    return bar () + bar();
+
+    return bar() + bar();
 }
 
 /*
@@ -42,63 +43,67 @@ int stat ()
  * hard to figure out from the code above.
  */
 
-stat ()		/* 98 */
-longjmp (c, 0)	/* 98 */
-longjmp (c, 1)	/* 110 */
+stat()        /* 98 */
+longjmp(c, 0) /* 98 */
+longjmp(c, 1) /* 110 */
 
-/*
- * Global initializer example
- */
+/* Global initializer example */
 int glob_x = 2;
 
-int glob ()
+int
+glob()
 {
-    int	x = 2;
-    int bar ()
-    {
-	int	z = 3;
-	global	q = 7;
-	int bletch ()
-	{
-	    /*
-	     * This initializer is run in glob's static initializer context
-	     * Again, an anonymous lambda is used to create a local name
-	     * context to hold a variety of name types
-	     */
-	    global y = (func (a) { 
-		static l_s = 7;
-		global l_g = 8; 
-		auto l_a = 9;
-		return a + q + l_s + l_g + l_a; 
-	    }) (glob_x);
-	    /*
-	     * This initializer is run in bletch's static initializer context
-	     * Hence it can reference dynamic variables anywhere above
-	     * bletch, static variables within bletch and global variables
-	     * anywhere
-	     */
-	    static u = z + glob_x;
-	    static t = u + q;
+    int x = 2;
 
-	    return ++y + u + t;
-	}
-	return bletch () + x;
+    int
+    bar()
+    {
+        int    z = 3;
+        global q = 7;
+
+        int
+        bletch()
+        {
+            /*
+             * This initializer is run in glob's static initializer context
+             * Again, an anonymous lambda is used to create a local name
+             * context to hold a variety of name types
+             */
+            global y = func(poly a) {
+                           static l_s = 7;
+                           global l_g = 8;
+                           poly   l_a = 9;
+                           return a + q + l_s + l_g + l_a;
+                       }(glob_x);
+
+            /*
+             * This initializer is run in bletch's static initializer context
+             * Hence it can reference dynamic variables anywhere above
+             * bletch, static variables within bletch and global variables
+             * anywhere
+             */
+            static u = z + glob_x;
+            static t = u + q;
+
+            return ++y + u + t;
+        }
+
+        return bletch() + x;
     }
-    return bar ();
+
+    return bar();
 }
 
-/* 
- * Sample output from this function
- */
+/* Sample output from this function */
 
-glob()	    /* 53 */
-glob()	    /* 54 */
-glob()	    /* 55 */
+glob() /* 53 */
+glob() /* 54 */
+glob() /* 55 */
 
 /*
  * Modify current glob_x value, has no effect on y value,
  * but does change u value
  */
-glob_x = 47;	
+glob_x = 47;
 
-glob ()	    /* 146 */
+glob() /* 146 */

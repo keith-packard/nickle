@@ -5,91 +5,90 @@
  */
 library "math-bits.5c"
 
-void check_log()
+void
+check_log()
 {
-	printf("Checking log precision\n");
-	int log_errors = 0;
-	for (int prec = 10; prec <= 1000; prec *= 10) {
-		real eval = Math::e_value(prec);
-		for (real x = imprecise(0.001, prec); x < 20; x *= 1.5) {
-			real	lnx = log(x);
+    printf("Checking log precision\n");
+    int log_errors = 0;
+    for (int prec = 10; prec <= 1000; prec *= 10) {
+        real eval = Math::e_value(prec);
+        for (real x = imprecise(0.001, prec); x < 20; x *= 1.5) {
+            real lnx = log(x);
 
-			real	explnx = exp(lnx);
+            real explnx = exp(lnx);
 
-			real	rterror = abs((x - explnx) / x);
-			real	rtlimit = 2 ** (-(prec - 6));
+            real rterror = abs((x - explnx) / x);
+            real rtlimit = 2 ** -(prec - 6);
 
-			if (rterror > rtlimit) {
-				printf("exp(log(x)) = x: prec %d error %g limit %g x %.-g\n",
-				       prec, rterror, rtlimit, x);
-				errors++;
-			}
+            if (rterror > rtlimit) {
+                printf("exp(log(x)) = x: prec %d error %g limit %g x %.-g\n",
+                       prec, rterror, rtlimit, x);
+                errors++;
+            }
 
-			for (real y = imprecise(0.001, prec); y < 20; y *= 1.5) {
-				real	lny = log(y);
+            for (real y = imprecise(0.001, prec); y < 20; y *= 1.5) {
+                real lny = log(y);
 
-				if (sign (lnx) != sign(lny))
-				    continue;
+                if (sign(lnx) != sign(lny))
+                    continue;
 
-				real	lnxy = log(x * y);
-				real	lnx_lny = lnx + lny;
-				real	error = abs ((lnxy - lnx_lny) / lnxy);
+                real lnxy = log(x * y);
+                real lnx_lny = lnx + lny;
+                real error = abs((lnxy - lnx_lny) / lnxy);
 
-				int plnxy = precision(lnxy);
-				int plnx_lny = precision(lnx_lny);
+                int  plnxy = precision(lnxy);
+                int  plnx_lny = precision(lnx_lny);
 
-				if (plnxy != plnx_lny)
-					printf("precision difference %d %d\n",
-					       plnxy, plnx_lny);
+                if (plnxy != plnx_lny)
+                    printf("precision difference %d %d\n", plnxy, plnx_lny);
 
-				int	bitdiff = max(2, ceil(abs(log2(abs(lnx)) - log2(abs(lny)))));
+                int  bitdiff = max(2, ceil(abs(log2(abs(lnx)) - log2(abs(lny)))));
 
-				real	limit = 2 ** -(prec - bitdiff - 5);
+                real limit = 2 ** -(prec - bitdiff - 5);
 
-				if (error > limit) {
-					printf("log(x*y) = log(x)+log(y): prec %d error %g limit %g x %.-g y %.-g\n",
-					       prec, error, limit, x, y);
-					errors++;
-				}
-			}
-		}
-	}
-	printf("Checking log at many precisions\n");
-	for (int prec = 52; prec <= 520; prec += 4) {
-		real[] xs = { 0.001, 0.4467884831395837, 1.75, 3, 1000 };
-		for (int i = 0; i < dim(xs); i++) {
-			real	x = imprecise(xs[i], prec);
-			real	lnx = log(x);
-			real	ref = log(imprecise(x, 2 * prec + 64));
-			real	error = abs((lnx - ref) / ref);
-			real	limit = 2 ** -(prec - 4);
+                if (error > limit) {
+                    printf("log(x*y) = log(x)+log(y): prec %d error %g limit %g x %.-g y %.-g\n",
+                           prec, error, limit, x, y);
+                    errors++;
+                }
+            }
+        }
+    }
+    printf("Checking log at many precisions\n");
+    for (int prec = 52; prec <= 520; prec += 4) {
+        real[] xs = { 0.001, 0.4467884831395837, 1.75, 3, 1000 };
+        for (int i = 0; i < dim(xs); i++) {
+            real x = imprecise(xs[i], prec);
+            real lnx = log(x);
+            real ref = log(imprecise(x, 2 * prec + 64));
+            real error = abs((lnx - ref) / ref);
+            real limit = 2 ** -(prec - 4);
 
-			if (error > limit) {
-				printf("log: prec %d error %g limit %g x %.-g\n",
-				       prec, error, limit, x);
-				errors++;
-			}
-		}
-	}
-	printf("Checking log is correctly rounded\n");
-	check_rounded("log", log, (real[*]) {
-		1e-300, 0.001, 0.4468, 0.75, 0.9999999, 1 + 2**-20, 1 - 2**-40,
-		1.5, 3, 1e30, 1e300 });
-	printf("Checking logp1 is correctly rounded\n");
-	check_rounded("logp1", logp1, (real[*]) {
-		1e-300, -1e-20, 3e-9, -0.29, 0.41, -0.5, 0.9, 3, 1e30 });
-	printf("Checking log10 and log2 are correctly rounded\n");
-	real[*] logb_args = {
-		1e-300, 0.001, 0.3, 0.9999999, 1.0000001, 2, 3, 10, 1000,
-		1e300 };
-	check_rounded("log10", log10, logb_args);
-	check_rounded("log2", log2, logb_args);
-	printf("Checking log\n");
-	for (int i = 0; i < dim(log_table); i++) {
-		real in = log_table[i].in;
-		real log_value = log_table[i].log;
-		check("log", log, in, log_value);
-	}
+            if (error > limit) {
+                printf("log: prec %d error %g limit %g x %.-g\n", prec, error, limit, x);
+                errors++;
+            }
+        }
+    }
+    printf("Checking log is correctly rounded\n");
+    check_rounded("log", log,
+                  (real[*]) { 1e-300, 0.001, 0.4468, 0.75, 0.9999999,
+                              1 + 2 ** -20, 1 - 2 ** -40, 1.5, 3, 1e30, 1e300 });
+    printf("Checking logp1 is correctly rounded\n");
+    check_rounded(
+        "logp1", logp1,
+        (real[*]) { 1e-300, -1e-20, 3e-9, -0.29, 0.41, -0.5, 0.9, 3, 1e30 });
+    printf("Checking log10 and log2 are correctly rounded\n");
+    real[*] logb_args =
+        { 1e-300, 0.001, 0.3, 0.9999999, 1.0000001, 2, 3, 10, 1000, 1e300 };
+    check_rounded("log10", log10, logb_args);
+    check_rounded("log2", log2, logb_args);
+    printf("Checking log\n");
+    for (int i = 0; i < dim(log_table); i++) {
+        real in = log_table[i].in;
+        real log_value = log_table[i].log;
+        check("log", log, in, log_value);
+    }
 }
 
 check_log();

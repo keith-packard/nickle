@@ -8,226 +8,222 @@ extend namespace File {
     int default_output_precision = -1;
     int infinite_output_precision = -2;
 
-    public exception too_many_arguments (string format, poly[*] args)
-	/*
-	 * Raised when too many arguments are passed to a printf
-	 * or scanf function
-	 */;
-    public exception too_few_arguments (string format, poly[*] args)
-	/*
-	 * Raised when too few arguments are passed to a printf
-	 * or scanf function
-	 */;
+    public exception too_many_arguments(string format, poly[*] args)
+        /*
+         * Raised when too many arguments are passed to a printf
+         * or scanf function
+         */;
+    public exception too_few_arguments(string format, poly[*] args)
+        /*
+         * Raised when too few arguments are passed to a printf
+         * or scanf function
+         */;
 
-    void to_utf8 (int c, void(int c) f)
+    void
+    to_utf8(int c, void(int c) f)
     {
-	int	bits;
+        int bits;
 
-	     if (c <        0x0) return;
-	else if (c <       0x80) { f(c);                          bits= -6; }
-	else if (c <      0x800) { f(((c >>  6) & 0x1F) | 0xC0);  bits=  0; }
-	else if (c <    0x10000) { f(((c >> 12) & 0x0F) | 0xE0);  bits=  6; }
-	else if (c <   0x200000) { f(((c >> 18) & 0x07) | 0xF0);  bits= 12; }
-	else if (c <  0x4000000) { f(((c >> 24) & 0x03) | 0xF8);  bits= 18; }
-	else if (c < 0x80000000) { f(((c >> 30) & 0x01) | 0xFC);  bits= 24; }
-	else return;
+        if (c < 0x0)
+            return;
+        else if (c < 0x80) {
+            f(c);
+            bits = -6;
+        } else if (c < 0x800) {
+            f(((c >> 6) & 0x1F) | 0xC0);
+            bits = 0;
+        } else if (c < 0x10000) {
+            f(((c >> 12) & 0x0F) | 0xE0);
+            bits = 6;
+        } else if (c < 0x200000) {
+            f(((c >> 18) & 0x07) | 0xF0);
+            bits = 12;
+        } else if (c < 0x4000000) {
+            f(((c >> 24) & 0x03) | 0xF8);
+            bits = 18;
+        } else if (c < 0x80000000) {
+            f(((c >> 30) & 0x01) | 0xFC);
+            bits = 24;
+        } else
+            return;
 
-	for ( ; bits >= 0; bits-= 6)
-	    f(((c >> bits) & 0x3F) | 0x80);
+        for (; bits >= 0; bits -= 6)
+            f(((c >> bits) & 0x3F) | 0x80);
     }
 
-    public void fprintf (file f, string format, poly args...)
-	/*
-	 * print 'args' to 'f' according to 'format'
-	 */
+    public void
+    fprintf(file f, string format, poly args ...)
+        /* print 'args' to 'f' according to 'format' */
     {
-	/*
-	 * A private namespace to walk the format string
-	 */
-	namespace fmt {
-	    int	i = 0;
-	    int len = String::length(format);
+        /* A private namespace to walk the format string */
+        namespace fmt {
+            int i = 0;
+            int len = String::length(format);
 
-	    /*
-	     * Return whether the end of the string has been reached
-	     */
-	    public bool done () {
-		return i >= len;
-	    }
+            /* Return whether the end of the string has been reached */
+            public bool
+            done() = i >= len;
 
-	    /*
-	     * Return current character, raising an exception if
-	     * the end of the string has been reached
-	     */
-	    public int c() {
-		if (done())
-		    raise invalid_argument ("invalid format", 1, format);
-		return format[i];
-	    }
+            /*
+             * Return current character, raising an exception if
+             * the end of the string has been reached
+             */
+            public int
+            c()
+            {
+                if (done())
+                    raise invalid_argument("invalid format", 1, format);
+                return format[i];
+            }
 
-	    /*
-	     * Step to next character
-	     */
-	    public void step () {
-		++i;
-	    }
+            /* Step to next character */
+            public void
+            step()
+            {
+                ++i;
+            }
 
-	    /*
-	     * Return true and step if current character matches 'm'
-	     */
-	    public bool match(int m) {
-		if (c() == m)
-		{
-		    step();
-		    return true;
-		}
-		return false;
-	    }
+            /* Return true and step if current character matches 'm' */
+            public bool
+            match(int m)
+            {
+                if (c() == m) {
+                    step();
+                    return true;
+                }
+                return false;
+            }
 
-	    /*
-	     * Return a number from the format string
-	     */
-	    public int number () {
-		int	n = 0;
-		while ('0' <= c() && c() <= '9')
-		{
-		    n = n * 10 + c() - '0';
-		    step();
-		}
-		return n;
-	    }
-	}
+            /* Return a number from the format string */
+            public int
+            number()
+            {
+                int n = 0;
 
-	namespace arg {
-	    int	n = 0;
+                while ('0' <= c() && c() <= '9') {
+                    n = n * 10 + c() - '0';
+                    step();
+                }
+                return n;
+            }
+        }
 
-	    public poly next () {
-		if (n == dim(args))
-		    raise too_few_arguments (format, args);
-		return args[n++];
-	    }
+        namespace arg {
+            int n = 0;
 
-	    public void done () {
-		if (n != dim(args))
-		    raise too_many_arguments (format, args);
-	    }
-	}
+            public poly
+            next()
+            {
+                if (n == dim(args))
+                    raise too_few_arguments(format, args);
+                return args[n++];
+            }
 
-	while (!fmt::done() && !File::error (f))
-	{
-	    if (fmt::match ('%') && fmt::c() != '%')
-	    {
-		/*
-		 * width
-		 */
+            public void
+            done()
+            {
+                if (n != dim(args))
+                    raise too_many_arguments(format, args);
+            }
+        }
 
-		string fill = " ";
-		if (fmt::match('0'))
-		    fill = "0";
-		int width = 0;
-		bool left = fmt::match('-');
-		if (fmt::match('*'))
-		    width = arg::next ();
-		else
-		    width = fmt::number ();
-		/* As in C, '-' left-aligns even a negative '*' width */
-		if (left && width > 0)
-		    width = -width;
+        while (!fmt::done() && !File::error(f)) {
+            if (fmt::match('%') && fmt::c() != '%') {
 
-		/*
-		 * precision
-		 */
+                /* width */
 
-		int prec = default_output_precision;
-		if (fmt::match ('.'))
-		{
-		    if (fmt::match('-'))
-			prec = infinite_output_precision;
-		    else if (fmt::match('*'))
-			prec = arg::next ();
-		    else
-			prec = fmt::number ();
-		}
+                string fill = " ";
 
-		/*
-		 * A literal percent sign, which takes no argument
-		 */
+                if (fmt::match('0'))
+                    fill = "0";
+                int  width = 0;
+                bool left = fmt::match('-');
+                if (fmt::match('*'))
+                    width = arg::next();
+                else
+                    width = fmt::number();
 
-		if (fmt::c() == '%')
-		{
-		    putc ('%', f);
-		    fmt::step ();
-		    continue;
-		}
+                /* As in C, '-' left-aligns even a negative '*' width */
+                if (left && width > 0)
+                    width = -width;
 
-		/*
-		 * typecheck and select base
-		 */
+                /* precision */
 
-		const struct {
-		    string	formats;
-		    bool(poly)	test;
-		    string	message;
-		    int		base;
-		}[*] fmts = {
-		    { .formats = "s",	    .test = is_string,
-		      .message = "string",  .base = 10 },
-		    { .formats = "dD",	    .test = is_int,
-		      .message = "int",	    .base = 10 },
-		    { .formats = "bB",	    .test = is_int,
-		      .message = "int",	    .base = 2 },
-		    { .formats = "oO",	    .test = is_int,
-		      .message = "int",	    .base = 8 },
-		    { .formats = "xX",	    .test = is_int,
-		      .message = "int",	    .base = 16 },
-		    { .formats = "aefEF",    .test = is_number,
-		      .message = "real",    .base = 10 }
-		};
+                int prec = default_output_precision;
+                if (fmt::match('.')) {
+                    if (fmt::match('-'))
+                        prec = infinite_output_precision;
+                    else if (fmt::match('*'))
+                        prec = arg::next();
+                    else
+                        prec = fmt::number();
+                }
 
-		poly	this_arg = arg::next();
-		string	this_fmt = String::new (fmt::c());
-		int	this_base = 10;
+                /* A literal percent sign, which takes no argument */
 
-		for (int i = 0; i < dim (fmts); i++)
-		    if (String::index (fmts[i].formats, this_fmt) >= 0)
-		    {
-			if (!fmts[i].test (this_arg))
-			    raise invalid_argument (fmts[i].message +
-						    " format with non-" +
-						    fmts[i].message,
-						    1, this_arg);
-			this_base = fmts[i].base;
-			break;
-		    }
-		print (f, this_arg, this_fmt, this_base, width, prec, fill);
-	    } else
-		putc (fmt::c(), f);
-	    fmt::step ();
-	}
-	arg::done ();
+                if (fmt::c() == '%') {
+                    putc('%', f);
+                    fmt::step();
+                    continue;
+                }
+
+                /* typecheck and select base */
+
+                const struct {
+                    string     formats;
+                    bool(poly) test;
+                    string     message;
+                    int        base;
+                }[*] fmts =
+                    { { formats = "s", test = is_string, message = "string", base = 10 },
+                      { formats = "dD", test = is_int, message = "int", base = 10 },
+                      { formats = "bB", test = is_int, message = "int", base = 2 },
+                      { formats = "oO", test = is_int, message = "int", base = 8 },
+                      { formats = "xX", test = is_int, message = "int", base = 16 },
+                      { formats = "aefEF", test = is_number, message = "real", base = 10 } };
+
+                poly   this_arg = arg::next();
+                string this_fmt = String::new(fmt::c());
+                int    this_base = 10;
+
+                for (int i = 0; i < dim(fmts); i++)
+                    if (String::index(fmts[i].formats, this_fmt) >= 0) {
+                        if (!fmts[i].test(this_arg))
+                            raise invalid_argument(
+                                fmts[i].message + " format with non-" + fmts[i].message,
+                                1, this_arg);
+                        this_base = fmts[i].base;
+                        break;
+                    }
+                print(f, this_arg, this_fmt, this_base, width, prec, fill);
+            } else
+                putc(fmt::c(), f);
+            fmt::step();
+        }
+        arg::done();
     }
 
     public namespace PrintfGlobals {
 
-	public void printf (string format, poly args...)
-	    /*
-	     * print 'args' to stdout according to 'format'
-	     */
-	{
-	    fprintf (stdout, format, args ...);
-	}
+        public void
+        printf(string format, poly args ...)
+            /* print 'args' to stdout according to 'format' */
+        {
+            fprintf(stdout, format, args...);
+        }
 
-	public string sprintf (string format, poly args...)
-	    /*
-	     * print 'args' to a string according to 'format'
-	     */
-	{
-	    file	f = File::string_write ();
-	    fprintf (f, format, args ...);
-	    return File::string_string (f);
-	}
+        public string
+        sprintf(string format, poly args ...)
+            /* print 'args' to a string according to 'format' */
+        {
+            file f = File::string_write();
+
+            fprintf(f, format, args...);
+            return File::string_string(f);
+        }
     }
 
     public import PrintfGlobals;
 }
+
 public import File::PrintfGlobals;

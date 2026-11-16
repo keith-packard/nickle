@@ -1,30 +1,35 @@
-autoimport PRNG;
+autoimport PRNG
 
-exception bad_result (int u, rational v);
+exception bad_result(int u, rational v);
 
-void function rat_check (int u, int v)
+void
+rat_check(int u, int v)
 {
-    if (((u/v) + (v/u)) * ((v*u) / (u**2 + v**2)) != 1)
-	raise bad_result (u, v);
+    if ((u / v + v / u) * (v * u / (u ** 2 + v ** 2)) != 1)
+        raise bad_result(u, v);
 }
 
-void function rat_random (int ubits, int vbits)
+void
+rat_random(int ubits, int vbits)
 {
-    int	    u = randbits (ubits);
-    int	    v = randbits (vbits);
+    int u = randbits(ubits);
+    int v = randbits(vbits);
 
-    if (u == 0) u = 1;
-    if (v == 0) v = 1;
-    rat_check (u, v);
+    if (u == 0)
+        u = 1;
+    if (v == 0)
+        v = 1;
+    rat_check(u, v);
 }
 
-void function rat_test (int amin, int amax, int bmin, int bmax)
+void
+rat_test(int amin, int amax, int bmin, int bmax)
 {
-    int	a, b;
+    int a, b;
 
     for (a = amin; a <= amax; a += randint(200))
-	for (b = bmin; b <= bmax; b += randint(200))
-	    rat_random (a, b);
+        for (b = bmin; b <= bmax; b += randint(200))
+            rat_random(a, b);
 }
 
-rat_test (2,2000,2,2000);
+rat_test(2, 2000, 2, 2000);

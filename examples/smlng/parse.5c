@@ -15,55 +15,57 @@ public namespace Lexc {
     public global int Left = 3;
     public global int Right = 4;
     public global int Slash = 5;
-    
-    public typedef struct {
-	int id;
-	int c;
-    } char;
-	
-    public exception InvalidChar (int c);
-    
-    public char function get (file in)
-    {
-	char	    ch;
 
-	if (File::end (in))
-	    return (char) { c = 0, id = Eof };
-	
-	ch.c = File::getc (in);
-	printf ("got %d\n", ch.c);
-	if (ch.c == '<')
-	    ch.id = Left;
-	else if (ch.c == '>')
-	    ch.id = Right;
-	else if (ch.c == '/')
-	    ch.id = Slash;
-	else if (' ' < ch.c)
-	    ch.id = Printable;
-	else switch (ch.c) {
-	case ' ':
-	case '\t':
-	case '\n':
-	case '\r':
-	    ch.id = White;
-	    break;
-	case -1:
-	    ch.id = Eof;
-	    break;
-	default:
-	    raise InvalidChar (ch.c);
-	}
-	return ch;
+    public typedef struct {
+        int id;
+        int c;
+    } char;
+
+    public exception InvalidChar(int c);
+
+    public char
+    get(file in)
+    {
+        char ch;
+
+        if (File::end(in))
+            return (char) { c = 0, id = Eof };
+
+        ch.c = File::getc(in);
+        printf("got %d\n", ch.c);
+        if (ch.c == '<')
+            ch.id = Left;
+        else if (ch.c == '>')
+            ch.id = Right;
+        else if (ch.c == '/')
+            ch.id = Slash;
+        else if (' ' < ch.c)
+            ch.id = Printable;
+        else
+            switch (ch.c) {
+            case ' ':
+            case '\t':
+            case '\n':
+            case '\r':
+                ch.id = White;
+                break;
+            case -1:
+                ch.id = Eof;
+                break;
+            default:
+                raise InvalidChar(ch.c);
+            }
+        return ch;
     }
 
-    public void function unget (int c, file in)
+    public void
+    unget(int c, file in)
     {
-	File::ungetc (c, in);
+        File::ungetc(c, in);
     }
 }
-	    
-public namespace Lex {
 
+public namespace Lex {
     public global int Eof = 0;
     public global int Text = 1;
     public global int Space = 2;
@@ -71,186 +73,184 @@ public namespace Lex {
     public global int End = 4;
 
     public typedef struct {
-	int	id;
-	string	value;
+        int    id;
+        string value;
     } token;
-    
-    public exception Syntax (int c);
 
-    global int	StateStart = 0;
-    global int	StateSeenLeft = 1;
-    global int	StateStartTag = 2;
-    global int	StateEndTag = 3;
-    global int	StateString = 4;
-    global int	StateSpace = 5;
+    public exception Syntax(int c);
 
-    public token function get (file in)
+    global int StateStart = 0;
+    global int StateSeenLeft = 1;
+    global int StateStartTag = 2;
+    global int StateEndTag = 3;
+    global int StateString = 4;
+    global int StateSpace = 5;
+
+    public token
+    get(file in)
     {
-	Lexc::char  c;
-	token	    t;
-	int	    state = StateStart;
-	
-	for (;;)
-	{
-	    c = Lexc::get (in);
-	    switch (state) {
-	    case StateStart:
-		switch (c.id) {
-		case Lexc::Eof:
-		    return (token) { .id = Eof, .value = "" };
-		case Lexc::Printable:
-		case Lexc::Slash:
-		    state = StateString;
-		    t = (token) { .id = Text, .value = String::new (c.c) };
-		    continue;
-		case Lexc::White:
-		    state = StateSpace;
-		    t = (token) { .id = Space, .value = String::new (c.c) };
-		    continue;
-		case Lexc::Left:
-		    state = StateSeenLeft;
-		    continue;
-		}
-		break;
-	    case StateSeenLeft:
-		switch (c.id) {
-		case Lexc::Printable:
-		    state = StateStartTag;
-		    t = (token) { .id = Start, .value = String::new (c.c) };
-		    continue;
-		case Lexc::Slash:
-		    state = StateEndTag;
-		    t = (token) { .id = End, .value = "" };
-		    continue;
-		}
-		break;
-	    case StateStartTag:
-	    case StateEndTag:
-		switch (c.id) {
-		case Lexc::Printable:
-		    t.value += String::new (c.c);
-		    continue;
-		case Lexc::Right:
-		    return t;
-		}
-		break;
-	    case StateString:
-		switch (c.id) {
-		case Lexc::Printable:
-		    t.value += String::new (c.c);
-		    continue;
-		case Lexc::White:
-		case Lexc::Left:
-		    Lexc::unget (c.c, in);
-		case Lexc::Eof:
-		    return t;
-		}
-		break;
-	    case StateSpace:
-		switch (c.id) {
-		case Lexc::White:
-		    t.value += String::new (c.c);
-		    continue;
-		case Lexc::Printable:
-		case Lexc::Left:
-		    Lexc::unget (c.c, in);
-		case Lexc::Eof:
-		    return t;
-		}
-		break;
-	    }
-	    raise Syntax (c.c);
-	}
+        Lexc::char c;
+        token      t;
+        int        state = StateStart;
+
+        for (;;) {
+            c = Lexc::get(in);
+            switch (state) {
+            case StateStart:
+                switch (c.id) {
+                case Lexc::Eof:
+                    return (token) { id = Eof, value = "" };
+                case Lexc::Printable:
+                case Lexc::Slash:
+                    state = StateString;
+                    t = (token) { id = Text, value = String::new(c.c) };
+                    continue;
+                case Lexc::White:
+                    state = StateSpace;
+                    t = (token) { id = Space, value = String::new(c.c) };
+                    continue;
+                case Lexc::Left:
+                    state = StateSeenLeft;
+                    continue;
+                }
+                break;
+            case StateSeenLeft:
+                switch (c.id) {
+                case Lexc::Printable:
+                    state = StateStartTag;
+                    t = (token) { id = Start, value = String::new(c.c) };
+                    continue;
+                case Lexc::Slash:
+                    state = StateEndTag;
+                    t = (token) { id = End, value = "" };
+                    continue;
+                }
+                break;
+            case StateStartTag:
+            case StateEndTag:
+                switch (c.id) {
+                case Lexc::Printable:
+                    t.value += String::new(c.c);
+                    continue;
+                case Lexc::Right:
+                    return t;
+                }
+                break;
+            case StateString:
+                switch (c.id) {
+                case Lexc::Printable:
+                    t.value += String::new(c.c);
+                    continue;
+                case Lexc::White:
+                case Lexc::Left:
+                    Lexc::unget(c.c, in);
+                case Lexc::Eof:
+                    return t;
+                }
+                break;
+            case StateSpace:
+                switch (c.id) {
+                case Lexc::White:
+                    t.value += String::new(c.c);
+                    continue;
+                case Lexc::Printable:
+                case Lexc::Left:
+                    Lexc::unget(c.c, in);
+                case Lexc::Eof:
+                    return t;
+                }
+                break;
+            }
+            raise Syntax(c.c);
+        }
     }
 }
 
 public namespace Parse {
-
-    public exception Syntax (string token);
+    public exception Syntax(string token);
 
     public typedef element;
-    
+
     public typedef struct {
-	*element    next;
-	string	    data;
-	*context    ctxt;
+        *element next;
+        string   data;
+        *context ctxt;
     } element;
 
-    public *element element_end = reference ((element){});
-    
+    public *element element_end = reference((element) {});
+
     public typedef c_list;
     public typedef struct {
-	string   active_tag;
-	*context ctxt;
-	*c_list  prev;
+        string   active_tag;
+        *context ctxt;
+        *c_list  prev;
     } c_list;
 
-    public *c_list   c_list_end = reference ((c_list) {});
+    public *c_list c_list_end = reference((c_list) {});
 
-    function clist_show(*c_list c) {
-	printf ("clist show...\n");
-	while (c != c_list_end && c->ctxt != no_context) {
-	    context_dump(*c->ctxt);
-	    printf("\n");
-	    c = c->prev;
-	}
+    poly
+    clist_show(*c_list c)
+    {
+        printf("clist show...\n");
+        while (c != c_list_end && c->ctxt != no_context) {
+            context_dump(*c->ctxt);
+            printf("\n");
+            c = c->prev;
+        }
     }
 
-    public *element function get (file in)
+    public *element
+    get(file in)
     {
-	*element    first = element_end;
-	* *element  p = &first;
-	*c_list	    c = reference ( (c_list) { .ctxt=&root_context, .prev=c_list_end});
+        *element  first = element_end;
+        **element p = &first;
+        *c_list   c = reference((c_list) { ctxt = &root_context, prev = c_list_end });
 
-	for (;;)
-	{
-	    Lex::token  t = Lex::get (in);
+        for (;;) {
+            Lex::token t = Lex::get(in);
 
-	    printf ("lexed: %v\n", t);
-	    switch (t.id) {
-	    case Lex::Eof:
-		if (c->ctxt != &root_context)
-		    raise Syntax ("At Eof but not back to root context");
-		return first;
-	    case Lex::Text:
-		*p = reference ((element) { 
-		    .next = element_end, 
-		    .data = t.value,
-		    .ctxt = c->ctxt });
-		p = &(*p)->next;
-		break;
-	    case Lex::Space:
-		*p = reference ((element) { 
-		    .next = element_end, 
-		    .data = t.value,
-		    .ctxt = c->ctxt });
-		p = &(*p)->next;
-		break;		
-	    case Lex::Start:
-		c = reference ((c_list) {
-		    .ctxt = reference (*c->ctxt),
-		    .prev = c,
-		    .active_tag = t.value });
-		context_set (c->ctxt, t.value);
-		break;
-	    case Lex::End:
-		if (c->ctxt == &root_context)
-		    raise Syntax ("Closing tag </"+t.value+"> encountered with no remaining open tags");
-		if (t.value != c->active_tag)
-		    raise Syntax ("Illegal closing tag </"+t.value+"> (expected </"+c->active_tag+">)");
-		c = c->prev;
-		break;
-	    }
-	}
+            printf("lexed: %v\n", t);
+            switch (t.id) {
+            case Lex::Eof:
+                if (c->ctxt != &root_context)
+                    raise Syntax("At Eof but not back to root context");
+                return first;
+            case Lex::Text:
+                *p =
+                    reference((element) { next = element_end, data = t.value, ctxt = c->ctxt });
+                p = &(*p)->next;
+                break;
+            case Lex::Space:
+                *p =
+                    reference((element) { next = element_end, data = t.value, ctxt = c->ctxt });
+                p = &(*p)->next;
+                break;
+            case Lex::Start:
+                c = reference(
+                    (c_list) { ctxt = reference(*c->ctxt), prev = c, active_tag = t.value });
+                context_set(c->ctxt, t.value);
+                break;
+            case Lex::End:
+                if (c->ctxt == &root_context)
+                    raise Syntax(
+                        "Closing tag </" + t.value + "> encountered with no remaining open tags");
+                if (t.value != c->active_tag)
+                    raise Syntax(
+                        "Illegal closing tag </" + t.value
+                        + "> (expected </" + c->active_tag + ">)");
+                c = c->prev;
+                break;
+            }
+        }
     }
 
-    public void function dump (*element e)
+    public void
+    dump(*element e)
     {
-	if (e != element_end)
-	{
-	    context_dump (*e->ctxt);
-	    printf ("%v\n", e->data);
-	    dump (e->next);
-	}
+        if (e != element_end) {
+            context_dump(*e->ctxt);
+            printf("%v\n", e->data);
+            dump(e->next);
+        }
     }
 }

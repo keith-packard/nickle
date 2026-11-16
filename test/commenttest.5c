@@ -14,7 +14,8 @@
  * itself, so the comment describing it leads that statement and not
  * the section's code, which would print with it
  */
-void section(string name)
+void
+section(string name)
 {
 }
 
@@ -29,87 +30,81 @@ void section(string name)
  */
 section("Lexing comments");
 
-exception wrong (string what, poly got, poly want);
+exception wrong(string what, poly got, poly want);
 
-void function check (string what, poly got, poly want)
+void
+check(string what, poly got, poly want)
 {
     if (got != want)
-	raise wrong (what, got, want);
+        raise wrong(what, got, want);
 }
 
-string	nickle = Environ::get ("NICKLE");
-string	name = "commentlextest.tmp";
+string nickle = Environ::get("NICKLE");
+string name = "commentlextest.tmp";
 
 typedef struct {
-    int		status;
-    string	output;
+    int    status;
+    string output;
 } result_t;
 
 /*
  * Run script in a child nickle, returning its exit status and its
  * output, both stdout and stderr
  */
-result_t run (string script)
+result_t
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter ("sh",
-		  (string[*]) { "sh", "-c", "\"$0\" \"$1\" 2>&1; echo $?",
-				nickle, name },
-		  (file[3]) { stdin, out[1], stderr });
-    File::close (out[1]);
+    File::filter(
+        "sh",
+        (string[*]) { "sh", "-c", "\"$0\" \"$1\" 2>&1; echo $?", nickle, name },
+        (file[3]) { stdin, out[1], stderr });
+    File::close(out[1]);
 
-    string[...]	lines = {};
-    while (!File::end (out[0]))
-	lines[dim(lines)] = File::fgets (out[0]);
-    File::close (out[0]);
-    File::unlink (name);
+    string[...] lines = {};
+    while (!File::end(out[0]))
+        lines[dim(lines)] = File::fgets(out[0]);
+    File::close(out[0]);
+    File::unlink(name);
 
-    string	output = "";
+    string output = "";
     for (int i = 0; i < dim(lines) - 1; i++)
-	output += lines[i] + "\n";
+        output += lines[i] + "\n";
     return (result_t) {
-	status = string_to_integer (lines[dim(lines) - 1]),
-	output = output
-    };
+        status = string_to_integer(lines[dim(lines) - 1]), output = output };
 }
 
-void check_run (string what, string script, int status, string output)
+void
+check_run(string what, string script, int status, string output)
 {
-    result_t	got = run (script);
+    result_t got = run(script);
 
-    check (what + " status", got.status, status);
-    check (what + " output", got.output, output);
+    check(what + " status", got.status, status);
+    check(what + " output", got.output, output);
 }
 
-check_run ("everywhere",
-	   "#!/usr/bin/env nickle\n" +
-	   "# header\n" +
-	   "# more header\n" +
-	   "/* license */\n" +
-	   "\n" +
-	   "/* leads x */\n" +
-	   "int x = 1;\t/* trails x */\n" +
-	   "int f (int a /* trails a */, int b)\n" +
-	   "    /* doc */\n" +
-	   "{\n" +
-	   "    /* leads return */\n" +
-	   "    return a /**/ + /***/ b; /* trails return */\n" +
-	   "}\n" +
-	   "  # indented hash\n" +
-	   "printf (\"%d\\n\", f (x, /* /* not nested */ 2));\n" +
-	   "/* end */\n",
-	   0, "3\n");
+check_run("everywhere",
+          "#!/usr/bin/env nickle\n" + "# header\n"
+          + "# more header\n" + "/* license */\n" + "\n"
+          + "/* leads x */\n" + "int x = 1;\t/* trails x */\n"
+          + "int f (int a /* trails a */, int b)\n"
+          + "    /* doc */\n" + "{\n" + "    /* leads return */\n"
+          + "    return a /**/ + /***/ b; /* trails return */\n"
+          + "}\n" + "  # indented hash\n"
+          + "printf (\"%d\\n\", f (x, /* /* not nested */ 2));\n"
+          + "/* end */\n",
+          0, "3\n");
 
-check_run ("hash at end", "printf (\"ok\\n\");\n# no newline", 0, "ok\n");
+check_run("hash at end", "printf (\"ok\\n\");\n# no newline", 0, "ok\n");
 
-check_run ("unterminated", "printf (\"ok\\n\");\n/* never ends\n", 1,
-	   "ok\n" + name + ":3: Missing */ at end of file before \"/*\"\n");
+check_run("unterminated", "printf (\"ok\\n\");\n/* never ends\n", 1,
+          "ok\n" + name + ":3: Missing */ at end of file before \"/*\"\n");
 
 /*
  * Comments in statement lists
@@ -122,73 +117,99 @@ check_run ("unterminated", "printf (\"ok\\n\");\n/* never ends\n", 1,
  */
 section("Comments in statement lists");
 
-int f (int a, int b)
-{ /* after the opening brace */
+int
+f(int a, int b)
+{
+    /* after the opening brace */
     /* leads the declaration */
-    int c = a;	/* trails the declaration */
-    if (a > b) { /* after the if brace */
-	c = b; /* trails the assignment */
-	/* before the closing brace */
+    int c = a; /* trails the declaration */
+
+    if (a > b) {
+
+        /* after the if brace */
+        c = b; /* trails the assignment */
+
+        /* before the closing brace */
     } else
-	c = /* inside an expression */ a + b;
-    switch (c) { /* after the switch brace */
+        c = /* inside an expression */ a + b;
+    switch (c) {
+
+    /* after the switch brace */
     /* before a case */
     case 3: /* after a case label */
-	c = 30;
-	break;
+        c = 30;
+        break;
+
     /* before the default */
     default:
-	/* in the default case */
-	break;
+        /* in the default case */
+        break;
+
     /* before the switch's closing brace */
     }
-    union switch ((union { int i; void v; }) { .i = c }) {
+    union switch ((union {
+                      int  i;
+                      void v;
+                  }) { i = c })
+    {
     /* before a union case */
     case i: /* after a union case label */
-	c++;
-	break;
+        c++;
+        break;
+
     /* before the last union case */
     case v:
-	break;
+        break;
+
     /* before the union switch's closing brace */
     }
-    try { /* in a try body */ c += 100; } catch divide_by_zero (real x, real y) { /* in a catch */ }
+    try {
+
+        /* in a try body */
+        c += 100;
+    } catch divide_by_zero(real x, real y) {
+
+        /* in a catch */
+    }
+
     /* leads the return */
     return c; /* trails the return */
+
     /* before the closing brace */
 }
 
-check ("f (1, 2)", f (1, 2), 131);
-check ("f (5, 2)", f (5, 2), 103);
+check("f (1, 2)", f(1, 2), 131);
+check("f (5, 2)", f(5, 2), 103);
 
 /*
  * A void function's last call statement is a tail call, so the
  * traceback of an exception raised at the bottom of the recursion
  * shows a single frame of v
  */
-string	nickle = Environ::get ("NICKLE");
-string	name = "commentstattest.tmp";
-file	script = File::open (name, "w");
+string nickle = Environ::get("NICKLE");
+string name = "commentstattest.tmp";
+file   script = File::open(name, "w");
 
-File::fputs ("exception boom ();\n" +
-	     "void v (int n) { if (n == 0) raise boom (); v (n - 1); /* trails */ }\n" +
-	     "v (3);\n", script);
-File::close (script);
+File::fputs("exception boom ();\n"
+            + "void v (int n) { if (n == 0) raise boom (); v (n - 1); /* trails */ }\n"
+            + "v (3);\n",
+            script);
+File::close(script);
 
-file[*]	errors = File::mkpipe ();
+file[*] errors = File::mkpipe();
 
-File::filter (nickle, (string[*]) { nickle, name },
-	      (file[3]) { stdin, stdout, errors[1] });
-File::close (errors[1]);
+File::filter(nickle, (string[*]) { nickle, name },
+             (file[3]) { stdin, stdout, errors[1] });
+File::close(errors[1]);
 
-int	frames = 0;
-while (!File::end (errors[0]))
-    if (String::index (File::fgets (errors[0]), "    v (") == 0)
-	frames++;
-File::close (errors[0]);
-File::unlink (name);
+int frames = 0;
+while (!File::end(errors[0]))
+    if (String::index(File::fgets(errors[0]), "    v (") == 0)
+        frames++;
+File::close(errors[0]);
+File::unlink(name);
 
-check ("frames", frames, 1);
+check("frames", frames, 1);
 
 /*
  * Reading a long run of '#' comment lines
@@ -200,11 +221,11 @@ check ("frames", frames, 1);
 section("Reading a long run of '#' comment lines");
 
 /* 2**18 comment lines, then code checking that it ran */
-string	lines = "# a line of a long run of comment lines\n";
+string lines = "# a line of a long run of comment lines\n";
 
 for (int i = 0; i < 18; i++)
     lines += lines;
-Command::lex_string (lines + "check (\"read past the comment\", 1, 1);\n");
+Command::lex_string(lines + "check (\"read past the comment\", 1, 1);\n");
 
 /*
  * Laying out comments
@@ -216,98 +237,57 @@ Command::lex_string (lines + "check (\"read past the comment\", 1, 1);\n");
  */
 section("Laying out comments");
 
-string	name = "commentlayouttest.tmp";
+string name = "commentlayouttest.tmp";
 
-string	script = ("void kept()\n" +
-		  "    /* A comment's lines\n" +
-		  "     * stay   as written,\n" +
-		  "     * however long they run, past one hundred columns counting the indentation and the comment marks. */\n" +
-		  "{ }\n" +
-		  "void one_line()\n" +
-		  "    /*\n" +
-		  "     * Short text\n" +
-		  "     */\n" +
-		  "{ }\n" +
-		  "void marks()\n" +
-		  "/**\n" +
-		  "\tText without continuation marks, a doxygen opener, and tab indentation.\n" +
-		  "\n" +
-		  "\tLists:\n" +
-		  "\t* star item\n" +
-		  "\t- dash item\n" +
-		  "\t  continued under its text\n" +
-		  "\t1. numbered item\n" +
-		  "\t   2) nested item\n" +
-		  "**/\n" +
-		  "{ }\n" +
-		  "void preformatted()\n" +
-		  "    /*\n" +
-		  "     * Formulas indented beyond the text:\n" +
-		  "     *     x = a\t* b\n" +
-		  "     *\t   y =   c\n" +
-		  "     */\n" +
-		  "{ }\n" +
-		  "print kept\n" +
-		  "print one_line\n" +
-		  "print marks\n" +
-		  "print preformatted\n");
+string script = ("void kept()\n" + "    /* A comment's lines\n"
+                 + "     * stay   as written,\n"
+                 + "     * however long they run, past one hundred columns counting the indentation and the comment marks. */\n"
+                 + "{ }\n" + "void one_line()\n" + "    /*\n"
+                 + "     * Short text\n" + "     */\n" + "{ }\n"
+                 + "void marks()\n" + "/**\n"
+                 + "\tText without continuation marks, a doxygen opener, and tab indentation.\n"
+                 + "\n" + "\tLists:\n" + "\t* star item\n" + "\t- dash item\n"
+                 + "\t  continued under its text\n" + "\t1. numbered item\n"
+                 + "\t   2) nested item\n" + "**/\n" + "{ }\n"
+                 + "void preformatted()\n" + "    /*\n"
+                 + "     * Formulas indented beyond the text:\n"
+                 + "     *     x = a\t* b\n" + "     *\t   y =   c\n"
+                 + "     */\n" + "{ }\n" + "print kept\n" + "print one_line\n"
+                 + "print marks\n" + "print preformatted\n");
 
-string	want = ("void\n" +
-		  "kept()\n" +
-		  "    /*\n" +
-		  "     * A comment's lines\n" +
-		  "     * stay   as written,\n" +
-		  "     * however long they run, past one hundred columns counting the indentation and the comment marks.\n" +
-		  "     */\n" +
-		  "{\n" +
-		  "}\n" +
-		  "void\n" +
-		  "one_line()\n" +
-		  "    /* Short text */\n" +
-		  "{\n" +
-		  "}\n" +
-		  "void\n" +
-		  "marks()\n" +
-		  "    /*\n" +
-		  "     * Text without continuation marks, a doxygen opener, and tab indentation.\n" +
-		  "     *\n" +
-		  "     * Lists:\n" +
-		  "     * * star item\n" +
-		  "     * - dash item\n" +
-		  "     *   continued under its text\n" +
-		  "     * 1. numbered item\n" +
-		  "     *    2) nested item\n" +
-		  "     */\n" +
-		  "{\n" +
-		  "}\n" +
-		  "void\n" +
-		  "preformatted()\n" +
-		  "    /*\n" +
-		  "     * Formulas indented beyond the text:\n" +
-		  "     *     x = a        * b\n" +
-		  "     *     y =   c\n" +
-		  "     */\n" +
-		  "{\n" +
-		  "}\n");
+string want = ("void\n" + "kept()\n" + "    /*\n"
+               + "     * A comment's lines\n" + "     * stay   as written,\n"
+               + "     * however long they run, past one hundred columns counting the indentation and the comment marks.\n"
+               + "     */\n" + "{\n" + "}\n" + "void\n" + "one_line()\n"
+               + "    /* Short text */\n" + "{\n" + "}\n" + "void\n"
+               + "marks()\n" + "    /*\n"
+               + "     * Text without continuation marks, a doxygen opener, and tab indentation.\n"
+               + "     *\n" + "     * Lists:\n" + "     * * star item\n"
+               + "     * - dash item\n" + "     *   continued under its text\n"
+               + "     * 1. numbered item\n" + "     *    2) nested item\n"
+               + "     */\n" + "{\n" + "}\n" + "void\n" + "preformatted()\n"
+               + "    /*\n" + "     * Formulas indented beyond the text:\n"
+               + "     *     x = a        * b\n" + "     *     y =   c\n"
+               + "     */\n" + "{\n" + "}\n");
 
-file	f = File::open (name, "w");
+file   f = File::open(name, "w");
 
-File::fputs (script, f);
-File::close (f);
+File::fputs(script, f);
+File::close(f);
 
-file[*]	out = File::mkpipe ();
+file[*] out = File::mkpipe();
 
-File::filter (nickle, (string[*]) { nickle, name },
-	      (file[3]) { stdin, out[1], stderr });
-File::close (out[1]);
+File::filter(
+    nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], stderr });
+File::close(out[1]);
 
-string	got = "";
-while (!File::end (out[0]))
-    got += File::fgets (out[0]) + "\n";
-File::close (out[0]);
-File::unlink (name);
+string got = "";
+while (!File::end(out[0]))
+    got += File::fgets(out[0]) + "\n";
+File::close(out[0]);
+File::unlink(name);
 
-check ("layout", got, want);
+check("layout", got, want);
 
 /*
  * Printing comments in statement lists
@@ -323,261 +303,164 @@ check ("layout", got, want);
  */
 section("Printing comments in statement lists");
 
-string	name = "commentprinttest.tmp";
+string name = "commentprinttest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	script = ("int f(int a, int b)\n" +
-		  "{ /* after open brace */\n" +
-		  "    /* leads first */\n" +
-		  "    int c = a;\t/* trails first */\n" +
-		  "    if (a > b) { /* if brace */\n" +
-		  "\tc = b; /* inner trails */\n" +
-		  "\t/* before inner close */\n" +
-		  "    } else\n" +
-		  "\tc = /* inside expr */ a + b;\n" +
-		  "    switch (c) {\n" +
-		  "    /* before case 1 */\n" +
-		  "    case 1: /* after case 1 */\n" +
-		  "\tc = 2;\n" +
-		  "\tbreak;\n" +
-		  "    default:\n" +
-		  "\t/* in default */\n" +
-		  "\tbreak;\n" +
-		  "    }\n" +
-		  "    try { /* try brace */ c++; } catch divide_by_zero(real a, real b) { /* catch */ }\n" +
-		  "    /* leads return */\n" +
-		  "    return c; /* trails return */\n" +
-		  "    /* before close */\n" +
-		  "}\n" +
-		  "int\n" +
-		  "g(int a)\n" +
-		  "{\n" +
-		  "    int long_variable_name = a * 2 + a * 3;\t/* a trailing comment far too long to fit after this statement */\n" +
-		  "# a hash comment\n" +
-		  "# on two lines\n" +
-		  "    if (a > 0) {\n" +
-		  "\ta = 1;\n" +
-		  "    } /* trails the closing brace */\n" +
-		  "    /*\n" +
-		  "     * A block comment\n" +
-		  "     *    with a preformatted line\n" +
-		  "     */\n" +
-		  "    return long_variable_name + a;\n" +
-		  "}\n" +
-		  "print f\n" +
-		  "print g\n");
+(string script =
+    "int f(int a, int b)\n" + "{ /* after open brace */\n"
+    + "    /* leads first */\n" + "    int c = a;\t/* trails first */\n"
+    + "    if (a > b) { /* if brace */\n"
+    + "\tc = b; /* inner trails */\n" + "\t/* before inner close */\n"
+    + "    } else\n" + "\tc = /* inside expr */ a + b;\n"
+    + "    switch (c) {\n" + "    /* before case 1 */\n"
+    + "    case 1: /* after case 1 */\n" + "\tc = 2;\n" + "\tbreak;\n"
+    + "    default:\n" + "\t/* in default */\n" + "\tbreak;\n" + "    }\n"
+    + "    try { /* try brace */ c++; } catch divide_by_zero(real a, real b) { /* catch */ }\n"
+    + "    /* leads return */\n" + "    return c; /* trails return */\n"
+    + "    /* before close */\n" + "}\n" + "int\n" + "g(int a)\n" + "{\n"
+    + "    int long_variable_name = a * 2 + a * 3;\t/* a trailing comment far too long to fit after this statement */\n"
+    + "# a hash comment\n" + "# on two lines\n" + "    if (a > 0) {\n"
+    + "\ta = 1;\n" + "    } /* trails the closing brace */\n" + "    /*\n"
+    + "     * A block comment\n" + "     *    with a preformatted line\n"
+    + "     */\n" + "    return long_variable_name + a;\n" + "}\n"
+    + "print f\n" + "print g\n");
 
-string	want = ("int\n" +
-		  "f(int a, int b)\n" +
-		  "{\n" +
-		  "    /* after open brace */\n" +
-		  "    /* leads first */\n" +
-		  "    int c = a; /* trails first */\n" +
-		  "\n" +
-		  "    if (a > b) {\n" +
-		  "\n" +
-		  "        /* if brace */\n" +
-		  "        c = b; /* inner trails */\n" +
-		  "\n" +
-		  "        /* before inner close */\n" +
-		  "    } else\n" +
-		  "        c = /* inside expr */ a + b;\n" +
-		  "    switch (c) {\n" +
-		  "\n" +
-		  "    /* before case 1 */\n" +
-		  "    case 1: /* after case 1 */\n" +
-		  "        c = 2;\n" +
-		  "        break;\n" +
-		  "    default:\n" +
-		  "        /* in default */\n" +
-		  "        break;\n" +
-		  "    }\n" +
-		  "    try {\n" +
-		  "\n" +
-		  "        /* try brace */\n" +
-		  "        c++;\n" +
-		  "    } catch divide_by_zero(real a, real b) {\n" +
-		  "\n" +
-		  "        /* catch */\n" +
-		  "    }\n" +
-		  "\n" +
-		  "    /* leads return */\n" +
-		  "    return c; /* trails return */\n" +
-		  "\n" +
-		  "    /* before close */\n" +
-		  "}\n" +
-		  "int\n" +
-		  "g(int a)\n" +
-		  "{\n" +
-		  "    /* a trailing comment far too long to fit after this statement */\n" +
-		  "    int long_variable_name = a * 2 + a * 3;\n" +
-		  "\n" +
-		  "    /*\n" +
-		  "     * a hash comment\n" +
-		  "     * on two lines\n" +
-		  "     */\n" +
-		  "    if (a > 0) {\n" +
-		  "        a = 1;\n" +
-		  "    } /* trails the closing brace */\n" +
-		  "\n" +
-		  "    /*\n" +
-		  "     * A block comment\n" +
-		  "     *    with a preformatted line\n" +
-		  "     */\n" +
-		  "    return long_variable_name + a;\n" +
-		  "}\n");
+string want = ("int\n" + "f(int a, int b)\n" + "{\n"
+               + "    /* after open brace */\n" + "    /* leads first */\n"
+               + "    int c = a; /* trails first */\n" + "\n"
+               + "    if (a > b) {\n" + "\n" + "        /* if brace */\n"
+               + "        c = b; /* inner trails */\n" + "\n"
+               + "        /* before inner close */\n" + "    } else\n"
+               + "        c = /* inside expr */ a + b;\n"
+               + "    switch (c) {\n" + "\n" + "    /* before case 1 */\n"
+               + "    case 1: /* after case 1 */\n" + "        c = 2;\n"
+               + "        break;\n" + "    default:\n"
+               + "        /* in default */\n" + "        break;\n" + "    }\n"
+               + "    try {\n" + "\n" + "        /* try brace */\n"
+               + "        c++;\n"
+               + "    } catch divide_by_zero(real a, real b) {\n" + "\n"
+               + "        /* catch */\n" + "    }\n" + "\n"
+               + "    /* leads return */\n"
+               + "    return c; /* trails return */\n" + "\n"
+               + "    /* before close */\n" + "}\n" + "int\n" + "g(int a)\n"
+               + "{\n"
+               + "    /* a trailing comment far too long to fit after this statement */\n"
+               + "    int long_variable_name = a * 2 + a * 3;\n" + "\n"
+               + "    /*\n" + "     * a hash comment\n"
+               + "     * on two lines\n" + "     */\n" + "    if (a > 0) {\n"
+               + "        a = 1;\n" + "    } /* trails the closing brace */\n"
+               + "\n" + "    /*\n" + "     * A block comment\n"
+               + "     *    with a preformatted line\n" + "     */\n"
+               + "    return long_variable_name + a;\n" + "}\n");
 
-string	printed = run (script);
+string printed = run(script);
 
-check ("print", printed, want);
-check ("print again", run (printed + "print f\nprint g\n"), want);
+check("print", printed, want);
+check("print again", run(printed + "print f\nprint g\n"), want);
 
 /*
  * A trailing comment printed before its statement gets the blank line
  * of a leading one, and the comments after it line up without it
  */
-string	moved = ("int\n" +
-		 "k(int a)\n" +
-		 "{\n" +
-		 "    a++; /* one */\n" +
-		 "\n" +
-		 "    /* a trailing comment much too long to fit after its statement, anywhere at all */\n" +
-		 "    a = a * 2 + a * 3 + a * 4;\n" +
-		 "    a--;           /* two */\n" +
-		 "    a = a * 5 + 1; /* three */\n" +
-		 "    return a;\n" +
-		 "}\n");
+(string moved =
+    "int\n" + "k(int a)\n" + "{\n" + "    a++; /* one */\n" + "\n"
+    + "    /* a trailing comment much too long to fit after its statement, anywhere at all */\n"
+    + "    a = a * 2 + a * 3 + a * 4;\n" + "    a--;           /* two */\n"
+    + "    a = a * 5 + 1; /* three */\n" + "    return a;\n" + "}\n");
 
-check ("moved trailing comment",
-       run ("int k(int a)\n{\n    a++; /* one */\n" +
-	    "    a = a * 2 + a * 3 + a * 4; /* a trailing comment much too long to fit after its statement, anywhere at all */\n" +
-	    "    a--; /* two */\n    a = a * 5 + 1; /* three */\n    return a;\n}\nprint k\n"),
-       moved);
-check ("moved trailing comment again", run (moved + "print k\n"), moved);
+check("moved trailing comment",
+      run("int k(int a)\n{\n    a++; /* one */\n"
+          + "    a = a * 2 + a * 3 + a * 4; /* a trailing comment much too long to fit after its statement, anywhere at all */\n"
+          + "    a--; /* two */\n    a = a * 5 + 1; /* three */\n    return a;\n}\nprint k\n"),
+      moved);
+check("moved trailing comment again", run(moved + "print k\n"), moved);
 
 /*
  * A '[[fallthrough]]' comment before a case label ends the case above,
  * at its statements' level without a blank line, where other comments
  * stay before the label
  */
-string	falls = ("int\n" +
-		 "ft(int x)\n" +
-		 "{\n" +
-		 "    int r = 0;\n" +
-		 "\n" +
-		 "    switch (x) {\n" +
-		 "    case 1:\n" +
-		 "        r++;\n" +
-		 "        /* [[fallthrough]] */\n" +
-		 "    case 2:\n" +
-		 "        r++;\n" +
-		 "        /* [[fallthrough]] */\n" +
-		 "\n" +
-		 "    /* about three */\n" +
-		 "    case 3:\n" +
-		 "        r *= 10;\n" +
-		 "        break;\n" +
-		 "    }\n" +
-		 "    return r;\n" +
-		 "}\n");
+string falls = ("int\n" + "ft(int x)\n" + "{\n" + "    int r = 0;\n" + "\n"
+                + "    switch (x) {\n" + "    case 1:\n" + "        r++;\n"
+                + "        /* [[fallthrough]] */\n" + "    case 2:\n"
+                + "        r++;\n" + "        /* [[fallthrough]] */\n"
+                + "\n" + "    /* about three */\n" + "    case 3:\n"
+                + "        r *= 10;\n" + "        break;\n" + "    }\n"
+                + "    return r;\n" + "}\n");
 
-check ("fall through",
-       run ("int ft(int x) {\n    int r = 0;\n    switch (x) {\n" +
-	    "    case 1:\n        r++;\n    /* [[fallthrough]] */\n" +
-	    "    case 2:\n        r++;\n# [[fallthrough]]\n    /* about three */\n" +
-	    "    case 3:\n        r *= 10;\n        break;\n    }\n    return r;\n}\n" +
-	    "print ft\nprintf(\"%d\\n\", ft(1));\n"),
-       falls + "20\n");
-check ("fall through again", run (falls + "print ft\n"), falls);
+check("fall through",
+      run("int ft(int x) {\n    int r = 0;\n    switch (x) {\n"
+          + "    case 1:\n        r++;\n    /* [[fallthrough]] */\n"
+          + "    case 2:\n        r++;\n# [[fallthrough]]\n    /* about three */\n"
+          + "    case 3:\n        r *= 10;\n        break;\n    }\n    return r;\n}\n"
+          + "print ft\nprintf(\"%d\\n\", ft(1));\n"),
+      falls + "20\n");
+check("fall through again", run(falls + "print ft\n"), falls);
 
-check ("error", run ("int h(int a)\n{\n    /* explain */\n    return a + \"x\";\n}\n"),
-       "->     return a + \"x\";\n" +
-       name + ":4: Incompatible types, left 'int', right 'string', for + operation\n");
+check("error",
+      run("int h(int a)\n{\n    /* explain */\n    return a + \"x\";\n}\n"),
+      "->     return a + \"x\";\n" + name
+      + ":4: Incompatible types, left 'int', right 'string', for + operation\n");
 
 /*
  * Comments before a case label after another case have a blank line
  * above them, as do those just inside the switch's brace when it ends
  * the switch's line
  */
-string	cases = ("int\n" +
-		 "sw(int x)\n" +
-		 "{\n" +
-		 "    switch (x) {\n" +
-		 "\n" +
-		 "    /* first */\n" +
-		 "    case 1:\n" +
-		 "        x++;\n" +
-		 "        break;\n" +
-		 "\n" +
-		 "    /* second */\n" +
-		 "    /* more */\n" +
-		 "    case 2:\n" +
-		 "        x--;\n" +
-		 "        break;\n" +
-		 "\n" +
-		 "    /* otherwise */\n" +
-		 "    default:\n" +
-		 "        x = 0;\n" +
-		 "        break;\n" +
-		 "\n" +
-		 "    /* the end */\n" +
-		 "    }\n" +
-		 "    return x;\n" +
-		 "}\n");
+string cases = ("int\n" + "sw(int x)\n" + "{\n" + "    switch (x) {\n" + "\n"
+                + "    /* first */\n" + "    case 1:\n" + "        x++;\n"
+                + "        break;\n" + "\n" + "    /* second */\n"
+                + "    /* more */\n" + "    case 2:\n" + "        x--;\n"
+                + "        break;\n" + "\n" + "    /* otherwise */\n"
+                + "    default:\n" + "        x = 0;\n" + "        break;\n"
+                + "\n" + "    /* the end */\n" + "    }\n"
+                + "    return x;\n" + "}\n");
 
-check ("case comments",
-       run ("int sw(int x) {\n    switch (x) {\n    /* first */\n    case 1: x++; break;\n" +
-	    "    /* second */\n    /* more */\n    case 2: x--; break;\n" +
-	    "    /* otherwise */\n    default: x = 0; break;\n    /* the end */\n    }\n" +
-	    "    return x;\n}\nprint sw\n"),
-       cases);
-check ("case comments again", run (cases + "print sw\n"), cases);
+check("case comments",
+      run("int sw(int x) {\n    switch (x) {\n    /* first */\n    case 1: x++; break;\n"
+          + "    /* second */\n    /* more */\n    case 2: x--; break;\n"
+          + "    /* otherwise */\n    default: x = 0; break;\n    /* the end */\n    }\n"
+          + "    return x;\n}\nprint sw\n"),
+      cases);
+check("case comments again", run(cases + "print sw\n"), cases);
 
 /*
  * A comment starting a block whose '{' ends a line of code has a blank
  * line above; one after a '{' on a line of its own doesn't
  */
-string	braces = ("int\n" +
-		  "br(int a)\n" +
-		  "{\n" +
-		  "    /* starts the function */\n" +
-		  "    if (a > 0) {\n" +
-		  "\n" +
-		  "        /* starts the if */\n" +
-		  "        a++;\n" +
-		  "    }\n" +
-		  "    if (first_condition_to_check_in_this_very_long_header\n" +
-		  "        && second_condition_to_check_here_too)\n" +
-		  "    {\n" +
-		  "        /* starts the wrapped if */\n" +
-		  "        a--;\n" +
-		  "    }\n" +
-		  "    return a;\n" +
-		  "}\n");
-string	conditions = "bool first_condition_to_check_in_this_very_long_header = true, second_condition_to_check_here_too = false;\n";
+string braces = ("int\n" + "br(int a)\n" + "{\n"
+                 + "    /* starts the function */\n" + "    if (a > 0) {\n"
+                 + "\n" + "        /* starts the if */\n" + "        a++;\n"
+                 + "    }\n"
+                 + "    if (first_condition_to_check_in_this_very_long_header\n"
+                 + "        && second_condition_to_check_here_too)\n"
+                 + "    {\n" + "        /* starts the wrapped if */\n"
+                 + "        a--;\n" + "    }\n" + "    return a;\n" + "}\n");
+string conditions = "bool first_condition_to_check_in_this_very_long_header = true, second_condition_to_check_here_too = false;\n";
 
-check ("braces", run (conditions + braces + "print br\n"), braces);
+check("braces", run(conditions + braces + "print br\n"), braces);
 
 /*
  * Printing comments on declarations
@@ -591,87 +474,65 @@ check ("braces", run (conditions + braces + "print br\n"), braces);
  */
 section("Printing comments on declarations");
 
-string	name = "commentsymboltest.tmp";
+string name = "commentsymboltest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	script = ("#!/usr/bin/env nickle\n" +
-		  "# file header\n" +
-		  "\n" +
-		  "/* leads f */\n" +
-		  "int f(int a) { return a; } /* trails f */\n" +
-		  "int x = 1, y = 2;\t/* counters */\n" +
-		  "/*\n" +
-		  " * About the namespace\n" +
-		  " */\n" +
-		  "namespace N {\n" +
-		  "    /* leads g */\n" +
-		  "    public int g() { return 1; }\n" +
-		  "    public int z = 3; /* trails z */\n" +
-		  "} /* trails N */\n" +
-		  "/* leads e */\n" +
-		  "exception e(int a);\n" +
-		  "typedef int count_t; /* a count */\n" +
-		  "extend namespace N {\n" +
-		  "    /* leads h */\n" +
-		  "    public int h() { return 2; }\n" +
-		  "}\n" +
-		  "/* leads extend, ignored */\n" +
-		  "extend namespace N { public int k = 4; }\n" +
-		  "print f\n" +
-		  "print x\n" +
-		  "print y\n" +
-		  "print N\n" +
-		  "print e\n" +
-		  "print count_t\n");
+string script = ("#!/usr/bin/env nickle\n" + "# file header\n" + "\n"
+                 + "/* leads f */\n"
+                 + "int f(int a) { return a; } /* trails f */\n"
+                 + "int x = 1, y = 2;\t/* counters */\n" + "/*\n"
+                 + " * About the namespace\n" + " */\n" + "namespace N {\n"
+                 + "    /* leads g */\n" + "    public int g() { return 1; }\n"
+                 + "    public int z = 3; /* trails z */\n"
+                 + "} /* trails N */\n" + "/* leads e */\n"
+                 + "exception e(int a);\n"
+                 + "typedef int count_t; /* a count */\n"
+                 + "extend namespace N {\n" + "    /* leads h */\n"
+                 + "    public int h() { return 2; }\n" + "}\n"
+                 + "/* leads extend, ignored */\n"
+                 + "extend namespace N { public int k = 4; }\n" + "print f\n"
+                 + "print x\n" + "print y\n" + "print N\n" + "print e\n"
+                 + "print count_t\n");
 
-string	want = ("/* leads f */\n" +
-		  "int\n" +
-		  "f(int a) = a; /* trails f */\n" +
-		  "global int x = 1; /* counters */\n" +
-		  "global int y = 2; /* counters */\n" +
-		  "/* About the namespace */\n" +
-		  "namespace N {\n" +
-		  "    /* leads g */\n" +
-		  "    public int g();\n" +
-		  "    public global int z = 3; /* trails z */\n" +
-		  "\n" +
-		  "    /* leads h */\n" +
-		  "    public int h();\n" +
-		  "    public global int k = 4;\n" +
-		  "} /* trails N */\n" +
-		  "/* leads e */\n" +
-		  "exception e(int a);\n" +
-		  "typedef int count_t; /* a count */\n");
+string want = ("/* leads f */\n" + "int\n" + "f(int a) = a; /* trails f */\n"
+               + "global int x = 1; /* counters */\n"
+               + "global int y = 2; /* counters */\n"
+               + "/* About the namespace */\n" + "namespace N {\n"
+               + "    /* leads g */\n" + "    public int g();\n"
+               + "    public global int z = 3; /* trails z */\n" + "\n"
+               + "    /* leads h */\n" + "    public int h();\n"
+               + "    public global int k = 4;\n" + "} /* trails N */\n"
+               + "/* leads e */\n" + "exception e(int a);\n"
+               + "typedef int count_t; /* a count */\n");
 
-check ("print", run (script), want);
+check("print", run(script), want);
 
 /* Printing a function's output again gives the same text */
-string	f_text = ("/* leads f */\n" +
-		  "int\n" +
-		  "f(int a) = a; /* trails f */\n");
+string f_text = "/* leads f */\n" + "int\n" + "f(int a) = a; /* trails f */\n";
 
-check ("print again", run (f_text + "print f\n"), f_text);
+check("print again", run(f_text + "print f\n"), f_text);
 
 /*
  * Printing comments on members and parameters
@@ -686,105 +547,70 @@ check ("print again", run (f_text + "print f\n"), f_text);
  */
 section("Printing comments on members and parameters");
 
-string	name = "commenttypetest.tmp";
+string name = "commenttypetest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	prints = ("print point\n" +
-		  "print num\n" +
-		  "print color\n" +
-		  "print area\n" +
-		  "print area2\n" +
-		  "print oops\n");
+string prints = ("print point\n" + "print num\n" + "print color\n"
+                 + "print area\n" + "print area2\n" + "print oops\n");
 
-string	script = ("typedef struct {\n" +
-		  "    int x;\t/* column */\n" +
-		  "    /* the row */\n" +
-		  "    int y;\n" +
-		  "    int a, b;\t/* a pair */\n" +
-		  "} point;\n" +
-		  "typedef union { int i; real r; } num;\n" +
-		  "typedef enum {\n" +
-		  "    red,\t/* stop */\n" +
-		  "    green,\t/* go */\n" +
-		  "    blue\n" +
-		  "} color;\n" +
-		  "int area(int width /* in pixels */, int height) { return width * height; }\n" +
-		  "int\n" +
-		  "area2(\n" +
-		  "    /* leads width */\n" +
-		  "    int width,\t/* trails width */\n" +
-		  "    int height\t/* trails height */\n" +
-		  ") { return width * height; }\n" +
-		  "exception oops(int code /* the code */);\n");
+string script = ("typedef struct {\n" + "    int x;\t/* column */\n"
+                 + "    /* the row */\n" + "    int y;\n"
+                 + "    int a, b;\t/* a pair */\n" + "} point;\n"
+                 + "typedef union { int i; real r; } num;\n"
+                 + "typedef enum {\n" + "    red,\t/* stop */\n"
+                 + "    green,\t/* go */\n" + "    blue\n" + "} color;\n"
+                 + "int area(int width /* in pixels */, int height) { return width * height; }\n"
+                 + "int\n" + "area2(\n" + "    /* leads width */\n"
+                 + "    int width,\t/* trails width */\n"
+                 + "    int height\t/* trails height */\n"
+                 + ") { return width * height; }\n"
+                 + "exception oops(int code /* the code */);\n");
 
-string	want = ("typedef struct {\n" +
-		  "    int x; /* column */\n" +
-		  "    /* the row */\n" +
-		  "    int y;\n" +
-		  "    int a, b; /* a pair */\n" +
-		  "} point;\n" +
-		  "typedef union {\n" +
-		  "    int  i;\n" +
-		  "    real r;\n" +
-		  "} num;\n" +
-		  "typedef enum {\n" +
-		  "    red, /* stop */\n" +
-		  "    green, /* go */\n" +
-		  "    blue\n" +
-		  "} color;\n" +
-		  "int\n" +
-		  "area(\n" +
-		  "    int width, /* in pixels */\n" +
-		  "    int height)\n" +
-		  "{\n" +
-		  "    return width * height;\n" +
-		  "}\n" +
-		  "int\n" +
-		  "area2(\n" +
-		  "    /* leads width */\n" +
-		  "    int width, /* trails width */\n" +
-		  "    int height /* trails height */)\n" +
-		  "{\n" +
-		  "    return width * height;\n" +
-		  "}\n" +
-		  "exception oops(\n" +
-		  "    int code /* the code */);\n");
+string want = ("typedef struct {\n" + "    int x; /* column */\n"
+               + "    /* the row */\n" + "    int y;\n"
+               + "    int a, b; /* a pair */\n" + "} point;\n"
+               + "typedef union {\n" + "    int  i;\n" + "    real r;\n"
+               + "} num;\n" + "typedef enum {\n" + "    red, /* stop */\n"
+               + "    green, /* go */\n" + "    blue\n" + "} color;\n"
+               + "int\n" + "area(\n" + "    int width, /* in pixels */\n"
+               + "    int height)\n" + "{\n" + "    return width * height;\n"
+               + "}\n" + "int\n" + "area2(\n" + "    /* leads width */\n"
+               + "    int width, /* trails width */\n"
+               + "    int height /* trails height */)\n" + "{\n"
+               + "    return width * height;\n" + "}\n" + "exception oops(\n"
+               + "    int code /* the code */);\n");
 
-check ("print", run (script + prints), want);
-check ("print again", run (want + prints), want);
+check("print", run(script + prints), want);
+check("print again", run(want + prints), want);
 
 /* A typedef statement keeps its members' comments */
-string	local = ("void\n" +
-		 "local()\n" +
-		 "{\n" +
-		 "    typedef struct {\n" +
-		 "        int  a; /* the a */\n" +
-		 "        real b;\n" +
-		 "    } T;\n" +
-		 "}\n");
+string local = ("void\n" + "local()\n" + "{\n" + "    typedef struct {\n"
+                + "        int  a; /* the a */\n" + "        real b;\n"
+                + "    } T;\n" + "}\n");
 
-check ("typedef statement", run (local + "print local\n"), local);
+check("typedef statement", run(local + "print local\n"), local);
 
 /*
  * Printing comments inside expressions
@@ -804,187 +630,140 @@ check ("typedef statement", run (local + "print local\n"), local);
  */
 section("Printing comments inside expressions");
 
-string	name = "exprcommenttest.tmp";
+string name = "exprcommenttest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	exprs = ("int g(int a, int b) = a + b;\n" +
-                "void exprs (int a, int b)\n" +
-                "{\n" +
-                "    int x = g (a /* first */, /* second */ b);\n" +
-                "    x = g (a, /* ends the line */\n" +
-                "\t   b);\n" +
-                "    x = g (a,\n" +
-                "\t   /* on a line of its own */\n" +
-                "\t   b);\n" +
-                "    x = a + /* why */\n" +
-                "\tb;\n" +
-                "    x = (g (a, b) /* inside */) * 2;\n" +
-                "    x = (/* leads */ a + b) * 2;\n" +
-                "    x = (a + b) /* after */ * 2;\n" +
-                "    x = String /* namespace */ ::length (\"abc\");\n" +
-                "    x = g (a, b /* before the close */);\n" +
-                "    switch (x) {\n" +
-                "    case 1 /* one */:\n" +
-                "\tbreak;\n" +
-                "    }\n" +
-                "}\n" +
-                "void inits ()\n" +
-                "{\n" +
-                "    int[*] table = {\n" +
-                "\t1, 2, 3, /* first row */\n" +
-                "\t/* leads the second row */\n" +
-                "\t4, 5, 6,\n" +
-                "\t7, /* inside a row */ 8, 9,\n" +
-                "    };\n" +
-                "}\n");
+string exprs = ("int g(int a, int b) = a + b;\n" + "void exprs (int a, int b)\n"
+                + "{\n" + "    int x = g (a /* first */, /* second */ b);\n"
+                + "    x = g (a, /* ends the line */\n" + "\t   b);\n"
+                + "    x = g (a,\n" + "\t   /* on a line of its own */\n"
+                + "\t   b);\n" + "    x = a + /* why */\n" + "\tb;\n"
+                + "    x = (g (a, b) /* inside */) * 2;\n"
+                + "    x = (/* leads */ a + b) * 2;\n"
+                + "    x = (a + b) /* after */ * 2;\n"
+                + "    x = String /* namespace */ ::length (\"abc\");\n"
+                + "    x = g (a, b /* before the close */);\n"
+                + "    switch (x) {\n" + "    case 1 /* one */:\n"
+                + "\tbreak;\n" + "    }\n" + "}\n" + "void inits ()\n" + "{\n"
+                + "    int[*] table = {\n" + "\t1, 2, 3, /* first row */\n"
+                + "\t/* leads the second row */\n" + "\t4, 5, 6,\n"
+                + "\t7, /* inside a row */ 8, 9,\n" + "    };\n" + "}\n");
 
-string	want = ("void\n" +
-               "exprs(int a, int b)\n" +
-               "{\n" +
-               "    int x = g(a /* first */, /* second */ b);\n" +
-               "\n" +
-               "    x = g(a, /* ends the line */\n" +
-               "          b);\n" +
-               "    x = g(a,\n" +
-               "          /* on a line of its own */\n" +
-               "          b);\n" +
-               "    x = a + /* why */\n" +
-               "        b;\n" +
-               "    x = g(a, b) /* inside */ * 2;\n" +
-               "    x = (/* leads */ a + b) * 2;\n" +
-               "    x = (a + b) /* after */ * 2;\n" +
-               "    x = String /* namespace */::length(\"abc\");\n" +
-               "    x = g(a, b /* before the close */);\n" +
-               "    switch (x) {\n" +
-               "    case 1 /* one */:\n" +
-               "        break;\n" +
-               "    }\n" +
-               "}\n" +
-               "void\n" +
-               "inits()\n" +
-               "{\n" +
-               "    int[*] table = {\n" +
-               "        1, 2,                    3, /* first row */\n" +
-               "        /* leads the second row */\n" +
-               "        4, 5,                    6,\n" +
-               "        7, /* inside a row */ 8, 9,\n" +
-               "    };\n" +
-               "}\n");
+string want = ("void\n" + "exprs(int a, int b)\n" + "{\n"
+               + "    int x = g(a /* first */, /* second */ b);\n" + "\n"
+               + "    x = g(a, /* ends the line */\n" + "          b);\n"
+               + "    x = g(a,\n" + "          /* on a line of its own */\n"
+               + "          b);\n" + "    x = a + /* why */\n" + "        b;\n"
+               + "    x = g(a, b) /* inside */ * 2;\n"
+               + "    x = (/* leads */ a + b) * 2;\n"
+               + "    x = (a + b) /* after */ * 2;\n"
+               + "    x = String /* namespace */::length(\"abc\");\n"
+               + "    x = g(a, b /* before the close */);\n"
+               + "    switch (x) {\n" + "    case 1 /* one */:\n"
+               + "        break;\n" + "    }\n" + "}\n" + "void\n"
+               + "inits()\n" + "{\n" + "    int[*] table = {\n"
+               + "        1, 2,                    3, /* first row */\n"
+               + "        /* leads the second row */\n"
+               + "        4, 5,                    6,\n"
+               + "        7, /* inside a row */ 8, 9,\n" + "    };\n" + "}\n");
 
-check ("print", run (exprs + "print exprs\nprint inits\n"), want);
+check("print", run(exprs + "print exprs\nprint inits\n"), want);
 
 /* The printed text prints the same again */
-check ("print again", run ("int g(int a, int b) = a + b;\n" + want + "print exprs\nprint inits\n"),
-       want);
+check("print again",
+      run("int g(int a, int b) = a + b;\n" + want
+          + "print exprs\nprint inits\n"),
+      want);
 
 /* A global prints its value, so the comments in its initializer go above it */
-check ("global", run ("int glob = 1 + /* in value */ 2;\nprint glob\n"),
-       "/* in value */\nglobal int glob = 3;\n");
+check("global", run("int glob = 1 + /* in value */ 2;\nprint glob\n"),
+      "/* in value */\nglobal int glob = 3;\n");
 
 /* Comments beside declared names stay beside them */
-string	decls = ("void decls ()\n" +
-		 "{\n" +
-		 "    int x /* after x */ = 1, /* before y */ y = 2;\n" +
-		 "    int z /* trailing z */;\n" +
-		 "    for (int i /* in a for */ = 0; i < 3; i++)\n" +
-		 "\t;\n" +
-		 "}\n");
+string decls = ("void decls ()\n" + "{\n"
+                + "    int x /* after x */ = 1, /* before y */ y = 2;\n"
+                + "    int z /* trailing z */;\n"
+                + "    for (int i /* in a for */ = 0; i < 3; i++)\n"
+                + "\t;\n" + "}\n");
 
-string	want_decls = ("void\n" +
-		      "decls()\n" +
-		      "{\n" +
-		      "    int x /* after x */ = 1, /* before y */ y = 2;\n" +
-		      "    int z /* trailing z */;\n" +
-		      "    for (int i /* in a for */ = 0; i < 3; i++)\n" +
-		      "        ;\n" +
-		      "}\n");
+string want_decls = ("void\n" + "decls()\n" + "{\n"
+                     + "    int x /* after x */ = 1, /* before y */ y = 2;\n"
+                     + "    int z /* trailing z */;\n"
+                     + "    for (int i /* in a for */ = 0; i < 3; i++)\n"
+                     + "        ;\n" + "}\n");
 
-check ("decls", run (decls + "print decls\n"), want_decls);
-check ("decls again", run (want_decls + "print decls\n"), want_decls);
-check ("global name", run ("int named /* after named */ = 1;\nprint named\n"),
-       "/* after named */\nglobal int named = 1;\n");
+check("decls", run(decls + "print decls\n"), want_decls);
+check("decls again", run(want_decls + "print decls\n"), want_decls);
+check("global name", run("int named /* after named */ = 1;\nprint named\n"),
+      "/* after named */\nglobal int named = 1;\n");
 
 /* Names after '::', '.', and '->', struct initializer names, and for clauses */
-string	names = ("typedef struct { int a, b; } S;\n" +
-		 "void names (S h, *S p, int i)\n" +
-		 "{\n" +
-		 "    i = String:: /* after colons */ length (\"abc\");\n" +
-		 "    i = h. /* after dot */ a;\n" +
-		 "    i = p-> /* after arrow */ b;\n" +
-		 "    S s = { a /* after a */ = 1, /* before b */ b = 2 };\n" +
-		 "    for (i = 0; /* in for */ i < 3; i++)\n" +
-		 "\t;\n" +
-		 "}\n");
+string names = ("typedef struct { int a, b; } S;\n"
+                + "void names (S h, *S p, int i)\n" + "{\n"
+                + "    i = String:: /* after colons */ length (\"abc\");\n"
+                + "    i = h. /* after dot */ a;\n"
+                + "    i = p-> /* after arrow */ b;\n"
+                + "    S s = { a /* after a */ = 1, /* before b */ b = 2 };\n"
+                + "    for (i = 0; /* in for */ i < 3; i++)\n"
+                + "\t;\n" + "}\n");
 
-string	want_names = ("void\n" +
-		      "names(S h, *S p, int i)\n" +
-		      "{\n" +
-		      "    i = String::/* after colons */ length(\"abc\");\n" +
-		      "    i = h./* after dot */ a;\n" +
-		      "    i = p->/* after arrow */ b;\n" +
-		      "    S s = { a /* after a */ = 1, /* before b */ b = 2 };\n" +
-		      "    for (i = 0; /* in for */ i < 3; i++)\n" +
-		      "        ;\n" +
-		      "}\n");
+string want_names = ("void\n" + "names(S h, *S p, int i)\n" + "{\n"
+                     + "    i = String::/* after colons */ length(\"abc\");\n"
+                     + "    i = h./* after dot */ a;\n"
+                     + "    i = p->/* after arrow */ b;\n"
+                     + "    S s = { a /* after a */ = 1, /* before b */ b = 2 };\n"
+                     + "    for (i = 0; /* in for */ i < 3; i++)\n"
+                     + "        ;\n" + "}\n");
 
-check ("names", run (names + "print names\n"), want_names);
-check ("names again",
-       run ("typedef struct { int a, b; } S;\n" + want_names + "print names\n"), want_names);
+check("names", run(names + "print names\n"), want_names);
+check("names again",
+      run("typedef struct { int a, b; } S;\n" + want_names + "print names\n"),
+      want_names);
 
 /* A body written '= value' keeps its value's comments */
-string	short = ("int sg (int i) = /* after eq */ i;\n" +
-		 "int sm (int i) = i /* after value */;\n" +
-		 "int sh (int i) = i; /* trails the function */\n");
+string short = ("int sg (int i) = /* after eq */ i;\n"
+                + "int sm (int i) = i /* after value */;\n"
+                + "int sh (int i) = i; /* trails the function */\n");
 
-string	want_short = ("int\n" +
-		      "sg(int i) = /* after eq */ i;\n" +
-		      "int\n" +
-		      "sm(int i) = i /* after value */;\n" +
-		      "int\n" +
-		      "sh(int i) = i; /* trails the function */\n");
+string want_short = ("int\n" + "sg(int i) = /* after eq */ i;\n" + "int\n"
+                     + "sm(int i) = i /* after value */;\n" + "int\n"
+                     + "sh(int i) = i; /* trails the function */\n");
 
-check ("short", run (short + "print sg\nprint sm\nprint sh\n"), want_short);
+check("short", run(short + "print sg\nprint sm\nprint sh\n"), want_short);
 
 /* A function's name keeps its comments, printed from the symbol too */
-string	funcs = ("int fb /* after name */ (int a)\n" +
-		 "{\n" +
-		 "    a++;\n" +
-		 "    return a;\n" +
-		 "}\n" +
-		 "int /* before name */ fs (int a) = a;\n");
+string funcs = ("int fb /* after name */ (int a)\n" + "{\n"
+                + "    a++;\n" + "    return a;\n" + "}\n"
+                + "int /* before name */ fs (int a) = a;\n");
 
-string	want_funcs = ("int\n" +
-		      "fb /* after name */(int a)\n" +
-		      "{\n" +
-		      "    a++;\n" +
-		      "    return a;\n" +
-		      "}\n" +
-		      "int\n" +
-		      "/* before name */ fs(int a) = a;\n");
+string want_funcs = ("int\n" + "fb /* after name */(int a)\n" + "{\n"
+                     + "    a++;\n" + "    return a;\n" + "}\n"
+                     + "int\n" + "/* before name */ fs(int a) = a;\n");
 
-check ("funcs", run (funcs + "print fb\nprint fs\n"), want_funcs);
-check ("funcs again", run (want_funcs + "print fb\nprint fs\n"), want_funcs);
+check("funcs", run(funcs + "print fb\nprint fs\n"), want_funcs);
+check("funcs again", run(want_funcs + "print fb\nprint fs\n"), want_funcs);
 
 /*
  * Printing comments beside control statements' keywords
@@ -998,110 +777,75 @@ check ("funcs again", run (want_funcs + "print fb\nprint fs\n"), want_funcs);
  */
 section("Printing comments beside control statements' keywords");
 
-string	name = "keywordcommenttest.tmp";
+string name = "keywordcommenttest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	source = ("exception e (int x);\n" +
-		  "exception z ();\n" +
-		  "void keywords (int i)\n" +
-		  "{\n" +
-		  "    if /* after if */ (i > 1)\n" +
-		  "\ti++;\n" +
-		  "    if (i > 1) /* after paren */ {\n" +
-		  "\ti++;\n" +
-		  "    } /* after brace */ else /* after else */ {\n" +
-		  "\ti--;\n" +
-		  "    }\n" +
-		  "    if (i > 1) {\n" +
-		  "\ti++;\n" +
-		  "    }\n" +
-		  "    /* before else */\n" +
-		  "    else {\n" +
-		  "\ti--;\n" +
-		  "    }\n" +
-		  "    if (i > 1)\n" +
-		  "\t/* before body */\n" +
-		  "\ti++;\n" +
-		  "    while /* after while */ (i > 0)\n" +
-		  "\ti--;\n" +
-		  "    for /* after for */ (;;) {\n" +
-		  "\tbreak /* after break */;\n" +
-		  "    }\n" +
-		  "    switch /* after switch */ (i) {\n" +
-		  "    case 1:\n" +
-		  "\tbreak;\n" +
-		  "    }\n" +
-		  "    do /* after do */ {\n" +
-		  "\ti++;\n" +
-		  "    } while /* after while */ (i < 3);\n" +
-		  "    raise /* after raise */ e (i);\n" +
-		  "    raise z ( /* empty */ );\n" +
-		  "    raise e (i) /* after paren */;\n" +
-		  "    return /* after return */;\n" +
-		  "}\n");
+string source = ("exception e (int x);\n" + "exception z ();\n"
+                 + "void keywords (int i)\n" + "{\n"
+                 + "    if /* after if */ (i > 1)\n" + "\ti++;\n"
+                 + "    if (i > 1) /* after paren */ {\n" + "\ti++;\n"
+                 + "    } /* after brace */ else /* after else */ {\n"
+                 + "\ti--;\n" + "    }\n" + "    if (i > 1) {\n"
+                 + "\ti++;\n" + "    }\n" + "    /* before else */\n"
+                 + "    else {\n" + "\ti--;\n" + "    }\n"
+                 + "    if (i > 1)\n" + "\t/* before body */\n" + "\ti++;\n"
+                 + "    while /* after while */ (i > 0)\n" + "\ti--;\n"
+                 + "    for /* after for */ (;;) {\n"
+                 + "\tbreak /* after break */;\n" + "    }\n"
+                 + "    switch /* after switch */ (i) {\n" + "    case 1:\n"
+                 + "\tbreak;\n" + "    }\n" + "    do /* after do */ {\n"
+                 + "\ti++;\n" + "    } while /* after while */ (i < 3);\n"
+                 + "    raise /* after raise */ e (i);\n"
+                 + "    raise z ( /* empty */ );\n"
+                 + "    raise e (i) /* after paren */;\n"
+                 + "    return /* after return */;\n" + "}\n");
 
-string	want = ("void\n" +
-		"keywords(int i)\n" +
-		"{\n" +
-		"    if /* after if */ (i > 1)\n" +
-		"        i++;\n" +
-		"    if (i > 1) /* after paren */ {\n" +
-		"        i++;\n" +
-		"    } /* after brace */ else /* after else */ {\n" +
-		"        i--;\n" +
-		"    }\n" +
-		"    if (i > 1) {\n" +
-		"        i++;\n" +
-		"    }\n" +
-		"    /* before else */\n" +
-		"    else {\n" +
-		"        i--;\n" +
-		"    }\n" +
-		"    if (i > 1)\n" +
-		"        /* before body */\n" +
-		"        i++;\n" +
-		"    while /* after while */ (i > 0)\n" +
-		"        i--;\n" +
-		"    for /* after for */ (;;) {\n" +
-		"        break /* after break */;\n" +
-		"    }\n" +
-		"    switch /* after switch */ (i) {\n" +
-		"    case 1:\n" +
-		"        break;\n" +
-		"    }\n" +
-		"    do /* after do */ {\n" +
-		"        i++;\n" +
-		"    } while /* after while */ (i < 3);\n" +
-		"    raise /* after raise */ e(i);\n" +
-		"    raise z(/* empty */);\n" +
-		"    raise e(i) /* after paren */;\n" +
-		"    return /* after return */;\n" +
-		"}\n");
+string want = ("void\n" + "keywords(int i)\n" + "{\n"
+               + "    if /* after if */ (i > 1)\n" + "        i++;\n"
+               + "    if (i > 1) /* after paren */ {\n" + "        i++;\n"
+               + "    } /* after brace */ else /* after else */ {\n"
+               + "        i--;\n" + "    }\n" + "    if (i > 1) {\n"
+               + "        i++;\n" + "    }\n" + "    /* before else */\n"
+               + "    else {\n" + "        i--;\n" + "    }\n"
+               + "    if (i > 1)\n" + "        /* before body */\n"
+               + "        i++;\n" + "    while /* after while */ (i > 0)\n"
+               + "        i--;\n" + "    for /* after for */ (;;) {\n"
+               + "        break /* after break */;\n" + "    }\n"
+               + "    switch /* after switch */ (i) {\n" + "    case 1:\n"
+               + "        break;\n" + "    }\n" + "    do /* after do */ {\n"
+               + "        i++;\n" + "    } while /* after while */ (i < 3);\n"
+               + "    raise /* after raise */ e(i);\n"
+               + "    raise z(/* empty */);\n"
+               + "    raise e(i) /* after paren */;\n"
+               + "    return /* after return */;\n" + "}\n");
 
-check ("print", run (source + "print keywords\n"), want);
-check ("print again",
-       run ("exception e (int x);\nexception z ();\n" + want + "print keywords\n"), want);
+check("print", run(source + "print keywords\n"), want);
+check(
+    "print again",
+    run("exception e (int x);\nexception z ();\n" + want + "print keywords\n"),
+    want);
 
 /*
  * Printing comments among a type's tokens
@@ -1115,117 +859,96 @@ check ("print again",
  */
 section("Printing comments among a type's tokens");
 
-string	name = "typecommenttest.tmp";
+string name = "typecommenttest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
 /* Format source as a file, read from a string, returning the output */
-string format (string source)
+string
+format(string source)
 {
-    return run (sprintf ("Command::format_file (stdout, File::string_read (%v), " +
-			 "\"source\", true);\n", source));
+    return run(sprintf("Command::format_file (stdout, File::string_read (%v), "
+                       + "\"source\", true);\n",
+                       source));
 }
 
-string	source = ("public /* after public */ int pv = 2;\n" +
-		  "int[ /* before star */ *] a = { 1 };\n" +
-		  "int[3 /* before bracket */ ] b = { 1, 2, 3 };\n" +
-		  "int[string /* after key */ ] h = {};\n" +
-		  "void(int /* in function type */ x) fp;\n" +
-		  "typedef struct { /* first member */\n" +
-		  "    int /* after member type */ m, n;\n" +
-		  "    real[ /* in member type */ *] r;\n" +
-		  "} s_t;\n" +
-		  "typedef int /* after typedef type */ myint;\n" +
-		  "string[* /* in return type */ ]\n" +
-		  "names(int[ /* in parameter type */ *] /* before name */ a, " +
-		  "poly /* before b */ b)\n" +
-		  "{\n" +
-		  "    int[*] c = (int[ /* in initializer type */ *]) { 1 };\n" +
-		  "    int[*] d = (int[1 /* in dimension */ + 1]) { 1, 2 };\n" +
-		  "    for ( /* before declaration */ int i = 0; i < 1; i++)\n" +
-		  "\t;\n" +
-		  "    return (string[*]) {};\n" +
-		  "}\n" +
-		  "void first( /* before first parameter */ int x) { }\n" +
-		  "*int(int /* in pointer type */ a) pp;\n");
+string source = ("public /* after public */ int pv = 2;\n"
+                 + "int[ /* before star */ *] a = { 1 };\n"
+                 + "int[3 /* before bracket */ ] b = { 1, 2, 3 };\n"
+                 + "int[string /* after key */ ] h = {};\n"
+                 + "void(int /* in function type */ x) fp;\n"
+                 + "typedef struct { /* first member */\n"
+                 + "    int /* after member type */ m, n;\n"
+                 + "    real[ /* in member type */ *] r;\n" + "} s_t;\n"
+                 + "typedef int /* after typedef type */ myint;\n"
+                 + "string[* /* in return type */ ]\n"
+                 + "names(int[ /* in parameter type */ *] /* before name */ a, "
+                 + "poly /* before b */ b)\n" + "{\n"
+                 + "    int[*] c = (int[ /* in initializer type */ *]) { 1 };\n"
+                 + "    int[*] d = (int[1 /* in dimension */ + 1]) { 1, 2 };\n"
+                 + "    for ( /* before declaration */ int i = 0; i < 1; i++)\n"
+                 + "\t;\n" + "    return (string[*]) {};\n" + "}\n"
+                 + "void first( /* before first parameter */ int x) { }\n"
+                 + "*int(int /* in pointer type */ a) pp;\n");
 
-string	want = ("public /* after public */ int      pv = 2;\n" +
-		"int[/* before star */ *]           a = { 1 };\n" +
-		"int[3 /* before bracket */]        b = { 1, 2, 3 };\n" +
-		"int[string /* after key */]        h = {};\n" +
-		"void(int /* in function type */ x) fp;\n" +
-		"\n" +
-		"typedef struct {\n" +
-		"    /* first member */\n" +
-		"    int /* after member type */  m, n;\n" +
-		"    real[/* in member type */ *] r;\n" +
-		"} s_t;\n" +
-		"typedef int /* after typedef type */ myint;\n" +
-		"\n" +
-		"string[* /* in return type */]\n" +
-		"names(int[/* in parameter type */ *] /* before name */ a, " +
-		"poly /* before b */ b)\n" +
-		"{\n" +
-		"    int[*] c = (int[/* in initializer type */ *]) { 1 };\n" +
-		"    int[*] d = (int[1 /* in dimension */ + 1]) { 1, 2 };\n" +
-		"\n" +
-		"    for (/* before declaration */ int i = 0; i < 1; i++)\n" +
-		"        ;\n" +
-		"    return (string[*]) {};\n" +
-		"}\n" +
-		"\n" +
-		"void\n" +
-		"first(/* before first parameter */ int x)\n" +
-		"{\n" +
-		"}\n" +
-		"\n" +
-		"*int(int /* in pointer type */ a) pp;\n");
+string want = ("public /* after public */ int      pv = 2;\n"
+               + "int[/* before star */ *]           a = { 1 };\n"
+               + "int[3 /* before bracket */]        b = { 1, 2, 3 };\n"
+               + "int[string /* after key */]        h = {};\n"
+               + "void(int /* in function type */ x) fp;\n" + "\n"
+               + "typedef struct {\n" + "    /* first member */\n"
+               + "    int /* after member type */  m, n;\n"
+               + "    real[/* in member type */ *] r;\n" + "} s_t;\n"
+               + "typedef int /* after typedef type */ myint;\n" + "\n"
+               + "string[* /* in return type */]\n"
+               + "names(int[/* in parameter type */ *] /* before name */ a, "
+               + "poly /* before b */ b)\n" + "{\n"
+               + "    int[*] c = (int[/* in initializer type */ *]) { 1 };\n"
+               + "    int[*] d = (int[1 /* in dimension */ + 1]) { 1, 2 };\n"
+               + "\n"
+               + "    for (/* before declaration */ int i = 0; i < 1; i++)\n"
+               + "        ;\n" + "    return (string[*]) {};\n" + "}\n"
+               + "\n" + "void\n"
+               + "first(/* before first parameter */ int x)\n" + "{\n"
+               + "}\n" + "\n" + "*int(int /* in pointer type */ a) pp;\n");
 
-check ("format", format (source), want);
-check ("format again", format (want), want);
+check("format", format(source), want);
+check("format again", format(want), want);
 
-check ("print", run (source + "print names, first, fp, pp, pv, myint\n"),
-       "string[* /* in return type */]\n" +
-       "names(int[/* in parameter type */ *] /* before name */ a, " +
-       "poly /* before b */ b)\n" +
-       "{\n" +
-       "    int[*] c = (int[/* in initializer type */ *]) { 1 };\n" +
-       "    int[*] d = (int[1 /* in dimension */ + 1]) { 1, 2 };\n" +
-       "\n" +
-       "    for (/* before declaration */ int i = 0; i < 1; i++)\n" +
-       "        ;\n" +
-       "    return (string[*]) {};\n" +
-       "}\n" +
-       "void\n" +
-       "first(/* before first parameter */ int x)\n" +
-       "{\n" +
-       "}\n" +
-       "global void(int /* in function type */ x) fp;\n" +
-       "global *int(int /* in pointer type */ a) pp;\n" +
-       "/* after public */\n" +
-       "public global int pv = 2;\n" +
-       "/* after typedef type */\n" +
-       "typedef int myint;\n");
+check("print", run(source + "print names, first, fp, pp, pv, myint\n"),
+      "string[* /* in return type */]\n"
+      + "names(int[/* in parameter type */ *] /* before name */ a, "
+      + "poly /* before b */ b)\n" + "{\n"
+      + "    int[*] c = (int[/* in initializer type */ *]) { 1 };\n"
+      + "    int[*] d = (int[1 /* in dimension */ + 1]) { 1, 2 };\n" + "\n"
+      + "    for (/* before declaration */ int i = 0; i < 1; i++)\n"
+      + "        ;\n" + "    return (string[*]) {};\n" + "}\n" + "void\n"
+      + "first(/* before first parameter */ int x)\n" + "{\n" + "}\n"
+      + "global void(int /* in function type */ x) fp;\n"
+      + "global *int(int /* in pointer type */ a) pp;\n"
+      + "/* after public */\n" + "public global int pv = 2;\n"
+      + "/* after typedef type */\n" + "typedef int myint;\n");
 
 /*
  * Blank lines in printed code
@@ -1242,157 +965,89 @@ check ("print", run (source + "print names, first, fp, pp, pv, myint\n"),
  */
 section("Blank lines in printed code");
 
-string	name = "prettyblanktest.tmp";
+string name = "prettyblanktest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	prints = "print outer\nprint first\nprint f\nprint g\nprint h\n";
+string prints = "print outer\nprint first\nprint f\nprint g\nprint h\n";
 
-string	source = ("int outer (int a)\n" +
-		  "{\n" +
-		  "    int b = a;\n" +
-		  "    /* leads helper */\n" +
-		  "    int helper (int x) { return x + 1; }\n" +
-		  "    int other (int y) { return y * 2; }\n" +
-		  "    b = helper (b);\n" +
-		  "    return other (b);\n" +
-		  "}\n" +
-		  "int first (int a)\n" +
-		  "{\n" +
-		  "    int inner (int x) { return x; }\n" +
-		  "    return inner (a);\n" +
-		  "}\n" +
-		  "int f (int a)\n" +
-		  "{\n" +
-		  "    int b = a;\n" +
-		  "    string s = \"x\";\n" +
-		  "    /* comment on the first statement */\n" +
-		  "    b++;\n" +
-		  "    for (int i = 0; i < 3; i++) {\n" +
-		  "        int t = i;\n" +
-		  "        b += t;\n" +
-		  "    }\n" +
-		  "    switch (b) { case 2: { int d = 3; b = d; } break; }\n" +
-		  "    return b;\n" +
-		  "}\n" +
-		  "void g (int a) { int only = a; }\n" +
-		  "int h (int a) { int one = a; return one; }\n");
+string source = ("int outer (int a)\n" + "{\n" + "    int b = a;\n"
+                 + "    /* leads helper */\n"
+                 + "    int helper (int x) { return x + 1; }\n"
+                 + "    int other (int y) { return y * 2; }\n"
+                 + "    b = helper (b);\n" + "    return other (b);\n"
+                 + "}\n" + "int first (int a)\n" + "{\n"
+                 + "    int inner (int x) { return x; }\n"
+                 + "    return inner (a);\n" + "}\n" + "int f (int a)\n"
+                 + "{\n" + "    int b = a;\n" + "    string s = \"x\";\n"
+                 + "    /* comment on the first statement */\n"
+                 + "    b++;\n" + "    for (int i = 0; i < 3; i++) {\n"
+                 + "        int t = i;\n" + "        b += t;\n" + "    }\n"
+                 + "    switch (b) { case 2: { int d = 3; b = d; } break; }\n"
+                 + "    return b;\n" + "}\n"
+                 + "void g (int a) { int only = a; }\n"
+                 + "int h (int a) { int one = a; return one; }\n");
 
-string	want = ("int\n" +
-		"outer(int a)\n" +
-		"{\n" +
-		"    int b = a;\n" +
-		"\n" +
-		"    /* leads helper */\n" +
-		"    int\n" +
-		"    helper(int x) = x + 1;\n" +
-		"\n" +
-		"    int\n" +
-		"    other(int y) = y * 2;\n" +
-		"\n" +
-		"    b = helper(b);\n" +
-		"    return other(b);\n" +
-		"}\n" +
-		"int\n" +
-		"first(int a)\n" +
-		"{\n" +
-		"    int\n" +
-		"    inner(int x) = x;\n" +
-		"\n" +
-		"    return inner(a);\n" +
-		"}\n" +
-		"int\n" +
-		"f(int a)\n" +
-		"{\n" +
-		"    int    b = a;\n" +
-		"    string s = \"x\";\n" +
-		"\n" +
-		"    /* comment on the first statement */\n" +
-		"    b++;\n" +
-		"    for (int i = 0; i < 3; i++) {\n" +
-		"        int t = i;\n" +
-		"        b += t;\n" +
-		"    }\n" +
-		"    switch (b) {\n" +
-		"    case 2: {\n" +
-		"        int d = 3;\n" +
-		"        b = d;\n" +
-		"    } break;\n" +
-		"    }\n" +
-		"    return b;\n" +
-		"}\n" +
-		"void\n" +
-		"g(int a)\n" +
-		"{\n" +
-		"    int only = a;\n" +
-		"}\n" +
-		"int\n" +
-		"h(int a)\n" +
-		"{\n" +
-		"    int one = a;\n" +
-		"    return one;\n" +
-		"}\n");
+string want = ("int\n" + "outer(int a)\n" + "{\n" + "    int b = a;\n" + "\n"
+               + "    /* leads helper */\n" + "    int\n"
+               + "    helper(int x) = x + 1;\n" + "\n" + "    int\n"
+               + "    other(int y) = y * 2;\n" + "\n" + "    b = helper(b);\n"
+               + "    return other(b);\n" + "}\n" + "int\n" + "first(int a)\n"
+               + "{\n" + "    int\n" + "    inner(int x) = x;\n" + "\n"
+               + "    return inner(a);\n" + "}\n" + "int\n" + "f(int a)\n"
+               + "{\n" + "    int    b = a;\n" + "    string s = \"x\";\n"
+               + "\n" + "    /* comment on the first statement */\n"
+               + "    b++;\n" + "    for (int i = 0; i < 3; i++) {\n"
+               + "        int t = i;\n" + "        b += t;\n" + "    }\n"
+               + "    switch (b) {\n" + "    case 2: {\n"
+               + "        int d = 3;\n" + "        b = d;\n" + "    } break;\n"
+               + "    }\n" + "    return b;\n" + "}\n" + "void\n" + "g(int a)\n"
+               + "{\n" + "    int only = a;\n" + "}\n" + "int\n" + "h(int a)\n"
+               + "{\n" + "    int one = a;\n" + "    return one;\n" + "}\n");
 
-check ("print", run (source + prints), want);
-check ("print again", run (want + prints), want);
+check("print", run(source + prints), want);
+check("print again", run(want + prints), want);
 
 /* Leading comments get a blank line above them, at any scope */
-string	commented = ("int steps(int a)\n" +
-		     "{\n" +
-		     "    /* first step */\n" +
-		     "    a++;\n" +
-		     "    /* second step */\n" +
-		     "    /* continues */\n" +
-		     "    a *= 2;\n" +
-		     "    return a;\n" +
-		     "}\n" +
-		     "namespace Steps {\n" +
-		     "    /* one */\n" +
-		     "    public int one = 1;\n" +
-		     "    /* two */\n" +
-		     "    public int two = 2;\n" +
-		     "}\n");
+string commented = ("int steps(int a)\n" + "{\n" + "    /* first step */\n"
+                    + "    a++;\n" + "    /* second step */\n"
+                    + "    /* continues */\n" + "    a *= 2;\n"
+                    + "    return a;\n" + "}\n" + "namespace Steps {\n"
+                    + "    /* one */\n" + "    public int one = 1;\n"
+                    + "    /* two */\n" + "    public int two = 2;\n" + "}\n");
 
-string	commented_want = ("int\n" +
-			  "steps(int a)\n" +
-			  "{\n" +
-			  "    /* first step */\n" +
-			  "    a++;\n" +
-			  "\n" +
-			  "    /* second step */\n" +
-			  "    /* continues */\n" +
-			  "    a *= 2;\n" +
-			  "    return a;\n" +
-			  "}\n" +
-			  "namespace Steps {\n" +
-			  "    /* one */\n" +
-			  "    public global int one = 1;\n" +
-			  "\n" +
-			  "    /* two */\n" +
-			  "    public global int two = 2;\n" +
-			  "}\n");
+string commented_want = ("int\n" + "steps(int a)\n" + "{\n"
+                         + "    /* first step */\n" + "    a++;\n" + "\n"
+                         + "    /* second step */\n" + "    /* continues */\n"
+                         + "    a *= 2;\n" + "    return a;\n" + "}\n"
+                         + "namespace Steps {\n" + "    /* one */\n"
+                         + "    public global int one = 1;\n" + "\n"
+                         + "    /* two */\n"
+                         + "    public global int two = 2;\n" + "}\n");
 
-check ("comments", run (commented + "print steps\nprint Steps\n"), commented_want);
+check(
+    "comments", run(commented + "print steps\nprint Steps\n"), commented_want);
 
 /*
  * Blank lines from the source stay, one for a run of them, between
@@ -1400,58 +1055,34 @@ check ("comments", run (commented + "print steps\nprint Steps\n"), commented_wan
  * except just inside braces, before a fall-through mark, and inside an
  * expression
  */
-string	spaced = ("typedef struct {\n    int x;\n\n\n    int y;\n} pt;\n" +
-		  "typedef enum { red, green,\n\n    blue, cyan } color;\n" +
-		  "int sp(int p,\n\n      int q)\n{\n\n    int r = p;\n    int s = q;\n\n" +
-		  "    /* about r */\n\n    r++;\n    switch (r) {\n\n    case 1:\n        r++;\n\n" +
-		  "        s++;\n        break;\n\n    case 2:\n        r--;\n\n" +
-		  "        # [[fallthrough]]\n    case 3:\n        break;\n\n    }\n" +
-		  "    r = sp(1,\n\n           2);\n\n    return r;\n\n}\n");
+(string spaced =
+    "typedef struct {\n    int x;\n\n\n    int y;\n} pt;\n"
+    + "typedef enum { red, green,\n\n    blue, cyan } color;\n"
+    + "int sp(int p,\n\n      int q)\n{\n\n    int r = p;\n    int s = q;\n\n"
+    + "    /* about r */\n\n    r++;\n    switch (r) {\n\n    case 1:\n        r++;\n\n"
+    + "        s++;\n        break;\n\n    case 2:\n        r--;\n\n"
+    + "        # [[fallthrough]]\n    case 3:\n        break;\n\n    }\n"
+    + "    r = sp(1,\n\n           2);\n\n    return r;\n\n}\n");
 
-string	spaced_want = ("typedef struct {\n" +
-		       "    int x;\n" +
-		       "\n" +
-		       "    int y;\n" +
-		       "} pt;\n" +
-		       "typedef enum {\n" +
-		       "    red, green,\n" +
-		       "\n" +
-		       "    blue, cyan\n" +
-		       "} color;\n" +
-		       "int\n" +
-		       "sp(\n" +
-		       "    int p,\n" +
-		       "\n" +
-		       "    int q)\n" +
-		       "{\n" +
-		       "    int r = p;\n" +
-		       "    int s = q;\n" +
-		       "\n" +
-		       "    /* about r */\n" +
-		       "\n" +
-		       "    r++;\n" +
-		       "    switch (r) {\n" +
-		       "    case 1:\n" +
-		       "        r++;\n" +
-		       "\n" +
-		       "        s++;\n" +
-		       "        break;\n" +
-		       "\n" +
-		       "    case 2:\n" +
-		       "        r--;\n" +
-		       "        /* [[fallthrough]] */\n" +
-		       "    case 3:\n" +
-		       "        break;\n" +
-		       "    }\n" +
-		       "    r = sp(1, 2);\n" +
-		       "\n" +
-		       "    return r;\n" +
-		       "}\n");
+string spaced_want = ("typedef struct {\n" + "    int x;\n" + "\n"
+                      + "    int y;\n" + "} pt;\n" + "typedef enum {\n"
+                      + "    red, green,\n" + "\n" + "    blue, cyan\n"
+                      + "} color;\n" + "int\n" + "sp(\n" + "    int p,\n"
+                      + "\n" + "    int q)\n" + "{\n" + "    int r = p;\n"
+                      + "    int s = q;\n" + "\n" + "    /* about r */\n"
+                      + "\n" + "    r++;\n" + "    switch (r) {\n"
+                      + "    case 1:\n" + "        r++;\n" + "\n"
+                      + "        s++;\n" + "        break;\n" + "\n"
+                      + "    case 2:\n" + "        r--;\n"
+                      + "        /* [[fallthrough]] */\n" + "    case 3:\n"
+                      + "        break;\n" + "    }\n" + "    r = sp(1, 2);\n"
+                      + "\n" + "    return r;\n" + "}\n");
 
-string	spaced_prints = "print pt\nprint color\nprint sp\n";
+string spaced_prints = "print pt\nprint color\nprint sp\n";
 
-check ("source blank lines", run (spaced + spaced_prints), spaced_want);
-check ("source blank lines again", run (spaced_want + spaced_prints), spaced_want);
+check("source blank lines", run(spaced + spaced_prints), spaced_want);
+check(
+    "source blank lines again", run(spaced_want + spaced_prints), spaced_want);
 
 /*
  * Printing declarations and parameter lists with the source's line breaks
@@ -1464,95 +1095,67 @@ check ("source blank lines again", run (spaced_want + spaced_prints), spaced_wan
  * written so keeps its block. Printing the output again gives the same
  * text.
  */
-section("Printing declarations and parameter lists with the source's line breaks");
+section(
+    "Printing declarations and parameter lists with the source's line breaks");
 
-string	name = "declbreaktest.tmp";
+string name = "declbreaktest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	decls = ("void decls ()\n" +
-		 "{\n" +
-		 "    int a,\n" +
-		 "\tb,\n" +
-		 "\tc;\n" +
-		 "    int x = 1, /* first */\n" +
-		 "\ty = 2;\n" +
-		 "    int p, q,\n" +
-		 "\tr;\n" +
-		 "    int m,\n" +
-		 "\t/* on a line of its own */\n" +
-		 "\tn;\n" +
-		 "    int v /* ends the line */\n" +
-		 "\t= 4;\n" +
-		 "    int s, t;\n" +
-		 "}\n");
+string decls = ("void decls ()\n" + "{\n" + "    int a,\n" + "\tb,\n"
+                + "\tc;\n" + "    int x = 1, /* first */\n"
+                + "\ty = 2;\n" + "    int p, q,\n" + "\tr;\n"
+                + "    int m,\n" + "\t/* on a line of its own */\n"
+                + "\tn;\n" + "    int v /* ends the line */\n"
+                + "\t= 4;\n" + "    int s, t;\n" + "}\n");
 
-string	want = ("void\n" +
-		"decls()\n" +
-		"{\n" +
-		"    int a,\n" +
-		"        b,\n" +
-		"        c;\n" +
-		"    int x = 1, /* first */\n" +
-		"        y = 2;\n" +
-		"    int p, q,\n" +
-		"        r;\n" +
-		"    int m,\n" +
-		"        /* on a line of its own */\n" +
-		"        n;\n" +
-		"    int v /* ends the line */\n" +
-		"            = 4;\n" +
-		"    int s, t;\n" +
-		"}\n");
+string want = ("void\n" + "decls()\n" + "{\n" + "    int a,\n" + "        b,\n"
+               + "        c;\n" + "    int x = 1, /* first */\n"
+               + "        y = 2;\n" + "    int p, q,\n" + "        r;\n"
+               + "    int m,\n" + "        /* on a line of its own */\n"
+               + "        n;\n" + "    int v /* ends the line */\n"
+               + "            = 4;\n" + "    int s, t;\n" + "}\n");
 
-check ("print", run (decls + "print decls\n"), want);
-check ("print again", run (want + "print decls\n"), want);
+check("print", run(decls + "print decls\n"), want);
+check("print again", run(want + "print decls\n"), want);
 
-string	params = ("real kaiser (real m,\n" +
-		  "\t     real wc,\n" +
-		  "\t     real beta) = m + wc + beta;\n" +
-		  "int sum (int a, int b, int c, int d,\n" +
-		  "\t int e, int f, int g)\n" +
-		  "{\n" +
-		  "    return a + b + c + d + e + f + g;\n" +
-		  "}\n");
+string params = ("real kaiser (real m,\n" + "\t     real wc,\n"
+                 + "\t     real beta) = m + wc + beta;\n"
+                 + "int sum (int a, int b, int c, int d,\n"
+                 + "\t int e, int f, int g)\n" + "{\n"
+                 + "    return a + b + c + d + e + f + g;\n" + "}\n");
 
-string	want_params = ("real\n" +
-		       "kaiser(real m,\n" +
-		       "       real wc,\n" +
-		       "       real beta)\n" +
-		       "{\n" +
-		       "    return m + wc + beta;\n" +
-		       "}\n" +
-		       "int\n" +
-		       "sum(int a, int b, int c, int d,\n" +
-		       "    int e, int f, int g)\n" +
-		       "{\n" +
-		       "    return a + b + c + d + e + f + g;\n" +
-		       "}\n");
+string want_params = ("real\n" + "kaiser(real m,\n" + "       real wc,\n"
+                      + "       real beta)\n" + "{\n"
+                      + "    return m + wc + beta;\n" + "}\n" + "int\n"
+                      + "sum(int a, int b, int c, int d,\n"
+                      + "    int e, int f, int g)\n" + "{\n"
+                      + "    return a + b + c + d + e + f + g;\n" + "}\n");
 
-check ("params", run (params + "print kaiser\nprint sum\n"), want_params);
-check ("params again", run (want_params + "print kaiser\nprint sum\n"), want_params);
+check("params", run(params + "print kaiser\nprint sum\n"), want_params);
+check("params again",
+      run(want_params + "print kaiser\nprint sum\n"), want_params);
 
 /*
  * Printing initializers with trailing commas
@@ -1570,178 +1173,118 @@ check ("params again", run (want_params + "print kaiser\nprint sum\n"), want_par
  */
 section("Printing initializers with trailing commas");
 
-string	name = "prettyrowstest.tmp";
+string name = "prettyrowstest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	rows = ("typedef struct { int x, y; } point_t;\n" +
-		"typedef struct { int[*] values; string name; } table_t;\n" +
-		"void tables ()\n" +
-		"{\n" +
-		"    int[8] vectors = {\n" +
-		"\t0x879531e0, 0xc5ecf37d, 0x516461b1, 0xc9a62f8a,\n" +
-		"\t0x44c20ef3, 0x3390af7f, 0xd9fc690b, 0x2a5f714c,\n" +
-		"    };\n" +
-		"    int[*] one_line = { 1, 2, 3, };\n" +
-		"    point_t origin = { x = 0,\n" +
-		"\t\t       y = 0, };\n" +
-		"    int[string] counts = { \"one\" => 1, \"two\" => 2,\n" +
-		"\t\t\t   \"three\" => 3, };\n" +
-		"    int[*] long_rows = {\n" +
-		"\t1000000001, 1000000002, 1000000003, 1000000004, 1000000005, 1000000006, 1000000007,\n" +
-		"\t1000000009,\n" +
-		"    };\n" +
-		"    table_t table = { values = {\n" +
-		"\t\t\t  1, 2,\n" +
-		"\t\t\t  3, 4,\n" +
-		"\t\t      }, name = \"table\" };\n" +
-		"    int[*, *] matrix = {\n" +
-		"\t{ 1, 2,\n" +
-		"\t  3, 4, },\n" +
-		"\t{ 5, 6, 7, 8 },\n" +
-		"    };\n" +
-		"    poly[*] getters = {\n" +
-		"\tfunc (point_t p) = p.x,\n" +
-		"\tfunc (point_t p) = p.y,\n" +
-		"    };\n" +
-		"}\n");
+(string rows =
+    "typedef struct { int x, y; } point_t;\n"
+    + "typedef struct { int[*] values; string name; } table_t;\n"
+    + "void tables ()\n" + "{\n" + "    int[8] vectors = {\n"
+    + "\t0x879531e0, 0xc5ecf37d, 0x516461b1, 0xc9a62f8a,\n"
+    + "\t0x44c20ef3, 0x3390af7f, 0xd9fc690b, 0x2a5f714c,\n" + "    };\n"
+    + "    int[*] one_line = { 1, 2, 3, };\n"
+    + "    point_t origin = { x = 0,\n" + "\t\t       y = 0, };\n"
+    + "    int[string] counts = { \"one\" => 1, \"two\" => 2,\n"
+    + "\t\t\t   \"three\" => 3, };\n" + "    int[*] long_rows = {\n"
+    + "\t1000000001, 1000000002, 1000000003, 1000000004, 1000000005, 1000000006, 1000000007,\n"
+    + "\t1000000009,\n" + "    };\n" + "    table_t table = { values = {\n"
+    + "\t\t\t  1, 2,\n" + "\t\t\t  3, 4,\n"
+    + "\t\t      }, name = \"table\" };\n" + "    int[*, *] matrix = {\n"
+    + "\t{ 1, 2,\n" + "\t  3, 4, },\n" + "\t{ 5, 6, 7, 8 },\n" + "    };\n"
+    + "    poly[*] getters = {\n" + "\tfunc (point_t p) = p.x,\n"
+    + "\tfunc (point_t p) = p.y,\n" + "    };\n" + "}\n");
 
-string	rows_want = ("void\n" +
-		     "tables()\n" +
-		     "{\n" +
-		     "    int[8]      vectors = {\n" +
-		     "        0x879531e0, 0xc5ecf37d, 0x516461b1, 0xc9a62f8a,\n" +
-		     "        0x44c20ef3, 0x3390af7f, 0xd9fc690b, 0x2a5f714c,\n" +
-		     "    };\n" +
-		     "    int[*]      one_line = { 1, 2, 3 };\n" +
-		     "    point_t     origin = {\n" +
-		     "        x = 0,\n" +
-		     "        y = 0,\n" +
-		     "    };\n" +
-		     "    int[string] counts = {\n" +
-		     "        \"one\" => 1, \"two\" => 2,\n" +
-		     "        \"three\" => 3,\n" +
-		     "    };\n" +
-		     "    int[*]      long_rows = {\n" +
-		     "        1000000001, 1000000002, 1000000003, 1000000004, 1000000005, 1000000006,\n" +
-		     "        1000000007,\n" +
-		     "        1000000009,\n" +
-		     "    };\n" +
-		     "    table_t     table = {\n" +
-		     "        values = {\n" +
-		     "            1, 2,\n" +
-		     "            3, 4,\n" +
-		     "        },\n" +
-		     "        name = \"table\"\n" +
-		     "    };\n" +
-		     "    int[*, *]   matrix = {\n" +
-		     "        {\n" +
-		     "            1, 2,\n" +
-		     "            3, 4,\n" +
-		     "        },\n" +
-		     "        { 5, 6, 7, 8 },\n" +
-		     "    };\n" +
-		     "    poly[*]     getters = {\n" +
-		     "        func(point_t p) = p.x,\n" +
-		     "        func(point_t p) = p.y,\n" +
-		     "    };\n" +
-		     "}\n");
+(string rows_want =
+    "void\n" + "tables()\n" + "{\n" + "    int[8]      vectors = {\n"
+    + "        0x879531e0, 0xc5ecf37d, 0x516461b1, 0xc9a62f8a,\n"
+    + "        0x44c20ef3, 0x3390af7f, 0xd9fc690b, 0x2a5f714c,\n" + "    };\n"
+    + "    int[*]      one_line = { 1, 2, 3 };\n"
+    + "    point_t     origin = {\n" + "        x = 0,\n" + "        y = 0,\n"
+    + "    };\n" + "    int[string] counts = {\n"
+    + "        \"one\" => 1, \"two\" => 2,\n" + "        \"three\" => 3,\n"
+    + "    };\n" + "    int[*]      long_rows = {\n"
+    + "        1000000001, 1000000002, 1000000003, 1000000004, 1000000005, 1000000006,\n"
+    + "        1000000007,\n" + "        1000000009,\n" + "    };\n"
+    + "    table_t     table = {\n" + "        values = {\n"
+    + "            1, 2,\n" + "            3, 4,\n" + "        },\n"
+    + "        name = \"table\"\n" + "    };\n" + "    int[*, *]   matrix = {\n"
+    + "        {\n" + "            1, 2,\n" + "            3, 4,\n"
+    + "        },\n" + "        { 5, 6, 7, 8 },\n" + "    };\n"
+    + "    poly[*]     getters = {\n" + "        func(point_t p) = p.x,\n"
+    + "        func(point_t p) = p.y,\n" + "    };\n" + "}\n");
 
-check ("rows", run (rows + "print tables\n"), rows_want);
-check ("rows again", run (rows + "print tables\n" + rows_want + "print tables\n"),
-       rows_want + rows_want);
+check("rows", run(rows + "print tables\n"), rows_want);
+check(
+    "rows again", run(rows + "print tables\n" + rows_want + "print tables\n"),
+    rows_want + rows_want);
 
 /* Rows lined up in columns */
-string	columns = ("typedef struct { real red, green, blue, alpha; } color_t;\n" +
-		"void columns ()\n" +
-		"{\n" +
-		"    int[*] sbox = {\n" +
-		"\t99, 124, 119, 123, 242, 107, 111, 197, 48, 1, 103, 43, 254, 215, 171, 118,\n" +
-		"\t202, 130, 201, 125, 250, 89, 71, 240, 173, 212, 162, 175, 156, 164, 114, 192,\n" +
-		"\t183, 253,\n" +
-		"    };\n" +
-		"    color_t[*] colors = {\n" +
-		"\t{ red = 1, green = 0, blue = 0, alpha = 1 },\n" +
-		"\t{ red = 0.5, green = 0, blue = 0.25, alpha = 0.75 },\n" +
-		"    };\n" +
-		"    real[*] mixed = {\n" +
-		"\t1, -2.5, 1e-300,\n" +
-		"\t10, 20, pi * 2,\n" +
-		"    };\n" +
-		"    string[*][2] pairs = {\n" +
-		"\t{ \"/foo\", \"/\" }, { \"/\", \"/\" },\n" +
-		"\t{ \"foo/bar\", \"foo\" }, { \"a\", \".\" },\n" +
-		"\t{ \"../x/\", \"..\" },\n" +
-		"    };\n" +
-		"    int[*] uneven = {\n" +
-		"\t1, 2,\n" +
-		"\t300,\n" +
-		"\t4, 5,\n" +
-		"    };\n" +
-		"    real[*] remainder = {\n" +
-		"\t1, 2, 3,\n" +
-		"\t400,\n" +
-		"    };\n" +
-		"}\n");
+(string columns =
+    "typedef struct { real red, green, blue, alpha; } color_t;\n"
+    + "void columns ()\n" + "{\n" + "    int[*] sbox = {\n"
+    + "\t99, 124, 119, 123, 242, 107, 111, 197, 48, 1, 103, 43, 254, 215, 171, 118,\n"
+    + "\t202, 130, 201, 125, 250, 89, 71, 240, 173, 212, 162, 175, 156, 164, 114, 192,\n"
+    + "\t183, 253,\n" + "    };\n" + "    color_t[*] colors = {\n"
+    + "\t{ red = 1, green = 0, blue = 0, alpha = 1 },\n"
+    + "\t{ red = 0.5, green = 0, blue = 0.25, alpha = 0.75 },\n"
+    + "    };\n" + "    real[*] mixed = {\n" + "\t1, -2.5, 1e-300,\n"
+    + "\t10, 20, pi * 2,\n" + "    };\n" + "    string[*][2] pairs = {\n"
+    + "\t{ \"/foo\", \"/\" }, { \"/\", \"/\" },\n"
+    + "\t{ \"foo/bar\", \"foo\" }, { \"a\", \".\" },\n"
+    + "\t{ \"../x/\", \"..\" },\n" + "    };\n"
+    + "    int[*] uneven = {\n" + "\t1, 2,\n" + "\t300,\n" + "\t4, 5,\n"
+    + "    };\n" + "    real[*] remainder = {\n" + "\t1, 2, 3,\n"
+    + "\t400,\n" + "    };\n" + "}\n");
 
-string	columns_want = ("void\n" +
-			"columns()\n" +
-			"{\n" +
-			"    int[*]       sbox = {\n" +
-			"         99, 124, 119, 123, 242, 107, 111, 197,\n" +
-			"         48,   1, 103,  43, 254, 215, 171, 118,\n" +
-			"        202, 130, 201, 125, 250,  89,  71, 240,\n" +
-			"        173, 212, 162, 175, 156, 164, 114, 192,\n" +
-			"        183, 253,\n" +
-			"    };\n" +
-			"    color_t[*]   colors = {\n" +
-			"        { red = 1,   green = 0, blue = 0,    alpha = 1 },\n" +
-			"        { red = 0.5, green = 0, blue = 0.25, alpha = 0.75 },\n" +
-			"    };\n" +
-			"    real[*]      mixed = {\n" +
-			"         1, -2.5, 1e-300,\n" +
-			"        10,   20, pi * 2,\n" +
-			"    };\n" +
-			"    string[*][2] pairs = {\n" +
-			"        { \"/foo\", \"/\" },      { \"/\", \"/\" },\n" +
-			"        { \"foo/bar\", \"foo\" }, { \"a\", \".\" },\n" +
-			"        { \"../x/\", \"..\" },\n" +
-			"    };\n" +
-			"    int[*]       uneven = {\n" +
-			"        1, 2,\n" +
-			"        300,\n" +
-			"        4, 5,\n" +
-			"    };\n" +
-			"    real[*]      remainder = {\n" +
-			"        1, 2, 3,\n" +
-			"        400,\n" +
-			"    };\n" +
-			"}\n");
+string columns_want = ("void\n" + "columns()\n" + "{\n"
+                       + "    int[*]       sbox = {\n"
+                       + "         99, 124, 119, 123, 242, 107, 111, 197,\n"
+                       + "         48,   1, 103,  43, 254, 215, 171, 118,\n"
+                       + "        202, 130, 201, 125, 250,  89,  71, 240,\n"
+                       + "        173, 212, 162, 175, 156, 164, 114, 192,\n"
+                       + "        183, 253,\n" + "    };\n"
+                       + "    color_t[*]   colors = {\n"
+                       + "        { red = 1,   green = 0, blue = 0,    alpha = 1 },\n"
+                       + "        { red = 0.5, green = 0, blue = 0.25, alpha = 0.75 },\n"
+                       + "    };\n" + "    real[*]      mixed = {\n"
+                       + "         1, -2.5, 1e-300,\n"
+                       + "        10,   20, pi * 2,\n" + "    };\n"
+                       + "    string[*][2] pairs = {\n"
+                       + "        { \"/foo\", \"/\" },      { \"/\", \"/\" },\n"
+                       + "        { \"foo/bar\", \"foo\" }, { \"a\", \".\" },\n"
+                       + "        { \"../x/\", \"..\" },\n" + "    };\n"
+                       + "    int[*]       uneven = {\n" + "        1, 2,\n"
+                       + "        300,\n" + "        4, 5,\n" + "    };\n"
+                       + "    real[*]      remainder = {\n"
+                       + "        1, 2, 3,\n" + "        400,\n"
+                       + "    };\n" + "}\n");
 
-check ("columns", run (columns + "print columns\n"), columns_want);
-check ("columns again",
-       run (columns + "print columns\n" + columns_want + "print columns\n"),
-       columns_want + columns_want);
+check("columns", run(columns + "print columns\n"), columns_want);
+check("columns again",
+      run(columns + "print columns\n" + columns_want + "print columns\n"),
+      columns_want + columns_want);
 
 /*
  * Printing names and files as a summary or in full
@@ -1757,325 +1300,217 @@ check ("columns again",
  */
 section("Printing names and files as a summary or in full");
 
-string	name = "prettymodetest.tmp";
+string name = "prettymodetest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	source = ("/* the namespace */\n" +
-		  "namespace N {\n" +
-		  "    /* a counter */\n" +
-		  "    public int count = 0;\n" +
-		  "    public void bump () { count++; }\n" +
-		  "    int hidden = 1;\n" +
-		  "}\n" +
-		  "int top = 3;\n" +
-		  "printf (\"ran\\n\");\n" +
-		  "/* helper */\n" +
-		  "int helper (int a) = a + 1;\n");
+string source = ("/* the namespace */\n" + "namespace N {\n"
+                 + "    /* a counter */\n" + "    public int count = 0;\n"
+                 + "    public void bump () { count++; }\n"
+                 + "    int hidden = 1;\n" + "}\n" + "int top = 3;\n"
+                 + "printf (\"ran\\n\");\n" + "/* helper */\n"
+                 + "int helper (int a) = a + 1;\n");
 
-check ("names summary",
-       run (source + "Command::format_names (stdout, false, (string[*]) { \"N\" });\n"),
-       "ran\n" +
-       "/* the namespace */\n" +
-       "namespace N {\n" +
-       "    /* a counter */\n" +
-       "    public global int count = 0;\n" +
-       "    public void bump();\n" +
-       "}\n");
+check("names summary",
+      run(source
+          + "Command::format_names (stdout, false, (string[*]) { \"N\" });\n"),
+      "ran\n" + "/* the namespace */\n" + "namespace N {\n"
+      + "    /* a counter */\n" + "    public global int count = 0;\n"
+      + "    public void bump();\n" + "}\n");
 
-check ("names full",
-       run (source + "Command::format_names (stdout, true, (string[*]) { \"N\" }, " +
-	    "(string[*]) { \"top\" });\n"),
-       "ran\n" +
-       "/* the namespace */\n" +
-       "namespace N {\n" +
-       "    /* a counter */\n" +
-       "    public int count = 0;\n" +
-       "\n" +
-       "    public void\n" +
-       "    bump()\n" +
-       "    {\n" +
-       "        count++;\n" +
-       "    }\n" +
-       "\n" +
-       "    int hidden = 1;\n" +
-       "}\n" +
-       "int top = 3;\n");
+check("names full",
+      run(source
+          + "Command::format_names (stdout, true, (string[*]) { \"N\" }, "
+          + "(string[*]) { \"top\" });\n"),
+      "ran\n" + "/* the namespace */\n" + "namespace N {\n"
+      + "    /* a counter */\n" + "    public int count = 0;\n" + "\n"
+      + "    public void\n" + "    bump()\n" + "    {\n" + "        count++;\n"
+      + "    }\n" + "\n" + "    int hidden = 1;\n" + "}\n" + "int top = 3;\n");
 
 /* The file to print sits in the current directory, as scratch files do */
-string	source_name = "prettymodetest-source.tmp";
+string source_name = "prettymodetest-source.tmp";
 
 /* Print the source as a file through the script run gives, and return the output */
-string run_script (string script)
+string
+run_script(string script)
 {
-    file	f = File::open (source_name, "w");
+    file f = File::open(source_name, "w");
 
-    File::fputs (source, f);
-    File::close (f);
-    string	got = run (script);
-    File::unlink (source_name);
+    File::fputs(source, f);
+    File::close(f);
+    string got = run(script);
+    File::unlink(source_name);
     return got;
 }
 
-string run_file (bool full)
+string
+run_file(bool full)
 {
-    return run_script (sprintf ("Command::format_file (stdout, File::open (\"%s\", \"r\"), " +
-				"\"%s\", %v);\n", source_name, source_name, full));
+    return run_script(sprintf("Command::format_file (stdout, File::open (\"%s\", \"r\"), "
+                              + "\"%s\", %v);\n", source_name,
+                              source_name, full));
 }
 
 /* print shows a namespace as a summary, and written with a trailing :: in full */
-check ("print summary", run (source + "print N\n"),
-       "ran\n" +
-       "/* the namespace */\n" +
-       "namespace N {\n" +
-       "    /* a counter */\n" +
-       "    public global int count = 0;\n" +
-       "    public void bump();\n" +
-       "}\n");
-check ("print in full", run (source + "print N::\n"),
-       "ran\n" +
-       "/* the namespace */\n" +
-       "namespace N {\n" +
-       "    /* a counter */\n" +
-       "    public int count = 0;\n" +
-       "\n" +
-       "    public void\n" +
-       "    bump()\n" +
-       "    {\n" +
-       "        count++;\n" +
-       "    }\n" +
-       "\n" +
-       "    int hidden = 1;\n" +
-       "}\n");
+check("print summary", run(source + "print N\n"),
+      "ran\n" + "/* the namespace */\n" + "namespace N {\n"
+      + "    /* a counter */\n" + "    public global int count = 0;\n"
+      + "    public void bump();\n" + "}\n");
+check("print in full", run(source + "print N::\n"),
+      "ran\n" + "/* the namespace */\n" + "namespace N {\n"
+      + "    /* a counter */\n" + "    public int count = 0;\n" + "\n"
+      + "    public void\n" + "    bump()\n" + "    {\n" + "        count++;\n"
+      + "    }\n" + "\n" + "    int hidden = 1;\n" + "}\n");
 
 /* print :: shows every name in full, the builtins' first */
-string	all = run (source + "print ::\n");
-string	last = ("/* the namespace */\n" +
-		"namespace N {\n" +
-		"    /* a counter */\n" +
-		"    public int count = 0;\n" +
-		"\n" +
-		"    public void\n" +
-		"    bump()\n" +
-		"    {\n" +
-		"        count++;\n" +
-		"    }\n" +
-		"\n" +
-		"    int hidden = 1;\n" +
-		"}\n" +
-		"\n" +
-		"int top = 3;\n" +
-		"\n" +
-		"/* helper */\n" +
-		"int\n" +
-		"helper(int a) = a + 1;\n");
-check ("print all in full",
-       String::substr (all, String::length (all) - String::length (last),
-		       String::length (last)),
-       last);
+string all = run(source + "print ::\n");
+string last = ("/* the namespace */\n" + "namespace N {\n"
+               + "    /* a counter */\n" + "    public int count = 0;\n"
+               + "\n" + "    public void\n" + "    bump()\n" + "    {\n"
+               + "        count++;\n" + "    }\n" + "\n"
+               + "    int hidden = 1;\n" + "}\n" + "\n"
+               + "int top = 3;\n" + "\n" + "/* helper */\n" + "int\n"
+               + "helper(int a) = a + 1;\n");
+check("print all in full",
+      String::substr(all, String::length(all) - String::length(last),
+                     String::length(last)),
+      last);
 
-check ("file summary", run_file (false),
-       "/* the namespace */\n" +
-       "namespace N {\n" +
-       "\n" +
-       "    /* a counter */\n" +
-       "    public int count = 0;\n" +
-       "    public void bump();\n" +
-       "}\n" +
-       "\n" +
-       "int top = 3;\n" +
-       "\n" +
-       "/* helper */\n" +
-       "int helper(int a);\n");
+check("file summary", run_file(false),
+      "/* the namespace */\n" + "namespace N {\n" + "\n"
+      + "    /* a counter */\n" + "    public int count = 0;\n"
+      + "    public void bump();\n" + "}\n" + "\n" + "int top = 3;\n"
+      + "\n" + "/* helper */\n" + "int helper(int a);\n");
 
-check ("file full", run_file (true),
-       "/* the namespace */\n" +
-       "namespace N {\n" +
-       "\n" +
-       "    /* a counter */\n" +
-       "    public int count = 0;\n" +
-       "\n" +
-       "    public void\n" +
-       "    bump()\n" +
-       "    {\n" +
-       "        count++;\n" +
-       "    }\n" +
-       "\n" +
-       "    int hidden = 1;\n" +
-       "}\n" +
-       "\n" +
-       "int top = 3;\n" +
-       "printf(\"ran\\n\");\n" +
-       "\n" +
-       "/* helper */\n" +
-       "int\n" +
-       "helper(int a) = a + 1;\n");
+check("file full", run_file(true),
+      "/* the namespace */\n" + "namespace N {\n" + "\n"
+      + "    /* a counter */\n" + "    public int count = 0;\n" + "\n"
+      + "    public void\n" + "    bump()\n" + "    {\n"
+      + "        count++;\n" + "    }\n" + "\n" + "    int hidden = 1;\n"
+      + "}\n" + "\n" + "int top = 3;\n" + "printf(\"ran\\n\");\n" + "\n"
+      + "/* helper */\n" + "int\n" + "helper(int a) = a + 1;\n");
 
 /* The print command takes file names in quotes, printing them in full */
-check ("print file", run_script (sprintf ("print \"%s\"\n", source_name)),
-       run_file (true));
+check("print file", run_script(sprintf("print \"%s\"\n", source_name)),
+      run_file(true));
 
-/*
- * Printing struct members declared together, with comments
- */
+/* Printing struct members declared together, with comments */
 section("Printing struct members declared together, with comments");
 
-string	pairs = ("typedef struct {\n" +
-		 "    int a, b; /* a pair */\n" +
-		 "    int c;    /* alone */\n" +
-		 "    int d, e; /* own */\n" +
-		 "} pairs;\n");
+string pairs = ("typedef struct {\n" + "    int a, b; /* a pair */\n"
+                + "    int c;    /* alone */\n"
+                + "    int d, e; /* own */\n" + "} pairs;\n");
 
-check ("comments",
-       run ("typedef struct {\n" +
-	    "    int a, b;\t/* a pair */\n" +
-	    "    int c;\t/* alone */\n" +
-	    "    int d /* own */, e;\n" +
-	    "} pairs;\n" +
-	    "print pairs\n"),
-       pairs);
-check ("print again", run (pairs + "print pairs\n"), pairs);
+check("comments",
+      run("typedef struct {\n" + "    int a, b;\t/* a pair */\n"
+          + "    int c;\t/* alone */\n" + "    int d /* own */, e;\n"
+          + "} pairs;\n" + "print pairs\n"),
+      pairs);
+check("print again", run(pairs + "print pairs\n"), pairs);
 
-/*
- * Laying out struct, union, and enum types, with comments
- */
+/* Laying out struct, union, and enum types, with comments */
 section("Laying out struct, union, and enum types, with comments");
 
-string	commented = ("typedef enum {\n" +
-		  "    north,\t/* up */\n" +
-		  "    east, south,\n" +
-		  "    /* the last one */\n" +
-		  "    west\n" +
-		  "} direction;\n" +
-		  "typedef struct {\n" +
-		  "    int\t\tcount;\t/* items so far */\n" +
-		  "    real\tx, y;\t/* position */\n" +
-		  "    string[*]\tnames;\n" +
-		  "    int(int a, int b) compare;\t/* ordering */\n" +
-		  "} state;\n" +
-		  "int area(int width /* in pixels */, real height /* in meters */, string label) { return width; }\n");
+string commented = ("typedef enum {\n" + "    north,\t/* up */\n"
+                    + "    east, south,\n" + "    /* the last one */\n"
+                    + "    west\n" + "} direction;\n" + "typedef struct {\n"
+                    + "    int\t\tcount;\t/* items so far */\n"
+                    + "    real\tx, y;\t/* position */\n"
+                    + "    string[*]\tnames;\n"
+                    + "    int(int a, int b) compare;\t/* ordering */\n"
+                    + "} state;\n"
+                    + "int area(int width /* in pixels */, real height /* in meters */, string label) { return width; }\n");
 
-string	commented_prints = "print direction\nprint state\nprint area\n";
+string commented_prints = "print direction\nprint state\nprint area\n";
 
-string	commented_want = ("typedef enum {\n" +
-		  "    north, /* up */\n" +
-		  "    east, south,\n" +
-		  "    /* the last one */\n" +
-		  "    west\n" +
-		  "} direction;\n" +
-		  "typedef struct {\n" +
-		  "    int               count; /* items so far */\n" +
-		  "    real              x, y;  /* position */\n" +
-		  "    string[*]         names;\n" +
-		  "    int(int a, int b) compare; /* ordering */\n" +
-		  "} state;\n" +
-		  "int\n" +
-		  "area(\n" +
-		  "    int    width,  /* in pixels */\n" +
-		  "    real   height, /* in meters */\n" +
-		  "    string label)\n" +
-		  "{\n" +
-		  "    return width;\n" +
-		  "}\n");
+string commented_want = ("typedef enum {\n" + "    north, /* up */\n"
+                         + "    east, south,\n"
+                         + "    /* the last one */\n" + "    west\n"
+                         + "} direction;\n" + "typedef struct {\n"
+                         + "    int               count; /* items so far */\n"
+                         + "    real              x, y;  /* position */\n"
+                         + "    string[*]         names;\n"
+                         + "    int(int a, int b) compare; /* ordering */\n"
+                         + "} state;\n" + "int\n" + "area(\n"
+                         + "    int    width,  /* in pixels */\n"
+                         + "    real   height, /* in meters */\n"
+                         + "    string label)\n" + "{\n"
+                         + "    return width;\n" + "}\n");
 
-check ("comments", run (commented + commented_prints), commented_want);
-check ("comments again", run (commented_want + commented_prints), commented_want);
+check("comments", run(commented + commented_prints), commented_want);
+check("comments again", run(commented_want + commented_prints), commented_want);
 
 /* A struct joined with '+', in an array type, or in a local declaration lays out too */
-string	composite = ("typedef struct { int id; string name; } base_t;\n" +
-		     "typedef base_t + struct { string label; string font; int color; } label_t;\n" +
-		     "void table() {\n" +
-		     "    const struct { string formats; int base; }[*] fmts = { { formats = \"s\", base = 10 } };\n" +
-		     "}\n" +
-		     "print label_t\n" +
-		     "print table\n");
+string composite = ("typedef struct { int id; string name; } base_t;\n"
+                    + "typedef base_t + struct { string label; string font; int color; } label_t;\n"
+                    + "void table() {\n"
+                    + "    const struct { string formats; int base; }[*] fmts = { { formats = \"s\", base = 10 } };\n"
+                    + "}\n" + "print label_t\n" + "print table\n");
 
-string	composite_want = ("typedef base_t + struct {\n" +
-			  "    string label;\n" +
-			  "    string font;\n" +
-			  "    int    color;\n" +
-			  "} label_t;\n" +
-			  "void\n" +
-			  "table()\n" +
-			  "{\n" +
-			  "    const struct {\n" +
-			  "        string formats;\n" +
-			  "        int    base;\n" +
-			  "    }[*] fmts = { { formats = \"s\", base = 10 } };\n" +
-			  "}\n");
+string composite_want = ("typedef base_t + struct {\n" + "    string label;\n"
+                         + "    string font;\n" + "    int    color;\n"
+                         + "} label_t;\n" + "void\n" + "table()\n" + "{\n"
+                         + "    const struct {\n" + "        string formats;\n"
+                         + "        int    base;\n"
+                         + "    }[*] fmts = { { formats = \"s\", base = 10 } };\n"
+                         + "}\n");
 
-check ("composite", run (composite), composite_want);
+check("composite", run(composite), composite_want);
 
-/*
- * Aligning declarations and trailing comments in function bodies, with comments
- */
+/* Aligning declarations and trailing comments in function bodies, with comments */
 section("Aligning declarations and trailing comments in function bodies, with comments");
 
-string	commented = ("void\n" +
-		      "f()\n" +
-		      "{\n" +
-		      "    int a = 1; /* one */\n" +
-		      "    real bbbbbb; /* two */\n" +
-		      "    /* a comment line */\n" +
-		      "    string c; /* three */\n" +
-		      "    int dd; /* four */\n" +
-		      "    a = 3;\n" +
-		      "    static int eeeeeee; /* five */\n" +
-		      "    int g;\n" +
-		      "    int[*] h = { 1, 2 }; /* six */\n" +
-		      "    int iiiiiiiiiiiiiiiiiiiiiii; /* seven */\n" +
-		      "    a = 1; /* stmt comment */\n" +
-		      "    bbbbbb = 2; /* another stmt comment */\n" +
-		      "    printf(\"%d\\n\", a); /* call */\n" +
-		      "    if (a > 0) {\n" +
-		      "\ta = 2;\n" +
-		      "    } /* closing */\n" +
-		      "    a = 4; /* after if */\n" +
-		      "}\n");
+string commented = ("void\n" + "f()\n" + "{\n" + "    int a = 1; /* one */\n"
+                    + "    real bbbbbb; /* two */\n"
+                    + "    /* a comment line */\n"
+                    + "    string c; /* three */\n" + "    int dd; /* four */\n"
+                    + "    a = 3;\n" + "    static int eeeeeee; /* five */\n"
+                    + "    int g;\n" + "    int[*] h = { 1, 2 }; /* six */\n"
+                    + "    int iiiiiiiiiiiiiiiiiiiiiii; /* seven */\n"
+                    + "    a = 1; /* stmt comment */\n"
+                    + "    bbbbbb = 2; /* another stmt comment */\n"
+                    + "    printf(\"%d\\n\", a); /* call */\n"
+                    + "    if (a > 0) {\n" + "\ta = 2;\n"
+                    + "    } /* closing */\n" + "    a = 4; /* after if */\n"
+                    + "}\n");
 
-string	commented_want = ("void\n" +
-			   "f()\n" +
-			   "{\n" +
-			   "    int    a = 1;  /* one */\n" +
-			   "    real   bbbbbb; /* two */\n" +
-			   "\n" +
-			   "    /* a comment line */\n" +
-			   "    string c;  /* three */\n" +
-			   "    int    dd; /* four */\n" +
-			   "\n" +
-			   "    a = 3;\n" +
-			   "    static int eeeeeee; /* five */\n" +
-			   "    int        g;\n" +
-			   "    int[*]     h = { 1, 2 };            /* six */\n" +
-			   "    int        iiiiiiiiiiiiiiiiiiiiiii; /* seven */\n" +
-			   "    a = 1;                              /* stmt comment */\n" +
-			   "    bbbbbb = 2;                         /* another stmt comment */\n" +
-			   "    printf(\"%d\\n\", a);                  /* call */\n" +
-			   "    if (a > 0) {\n" +
-			   "        a = 2;\n" +
-			   "    }      /* closing */\n" +
-			   "    a = 4; /* after if */\n" +
-			   "}\n");
+string commented_want = ("void\n" + "f()\n" + "{\n"
+                         + "    int    a = 1;  /* one */\n"
+                         + "    real   bbbbbb; /* two */\n" + "\n"
+                         + "    /* a comment line */\n"
+                         + "    string c;  /* three */\n"
+                         + "    int    dd; /* four */\n" + "\n" + "    a = 3;\n"
+                         + "    static int eeeeeee; /* five */\n"
+                         + "    int        g;\n"
+                         + "    int[*]     h = { 1, 2 };            /* six */\n"
+                         + "    int        iiiiiiiiiiiiiiiiiiiiiii; /* seven */\n"
+                         + "    a = 1;                              /* stmt comment */\n"
+                         + "    bbbbbb = 2;                         /* another stmt comment */\n"
+                         + "    printf(\"%d\\n\", a);                  /* call */\n"
+                         + "    if (a > 0) {\n" + "        a = 2;\n"
+                         + "    }      /* closing */\n"
+                         + "    a = 4; /* after if */\n" + "}\n");
 
-check ("comments", run (commented + "print f\n"), commented_want);
-check ("comments again", run (commented_want + "print f\n"), commented_want);
+check("comments", run(commented + "print f\n"), commented_want);
+check("comments again", run(commented_want + "print f\n"), commented_want);

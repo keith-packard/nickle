@@ -1,53 +1,56 @@
 /* Make sure array initalizers work as expected */
 
-void check (poly value, poly correct)
+void
+check(poly value, poly correct)
 {
-    if (is_number (value) && !is_rational (value))
-    {
-	real	error = abs (value - correct);
-	if (error < abs(value) / 1e7)
-	    return;
+    if (is_number(value) && !is_rational(value)) {
+        real error = abs(value - correct);
+        if (error < abs(value) / 1e7)
+            return;
     }
     if (value != correct)
-	abort ("check failed (was %v, should be %v)", value, correct);
+        abort("check failed (was %v, should be %v)", value, correct);
 }
 
-check (([10]) { 1, 2, ... }[9], 2);
-check (([*,*]) { { 1, 2, ...}, { 3, 4, 5, 6}} [0,3], 2);
-check (([*,*,*]) { { { 1, 2, 3 } ... }, { { 4, 5, 6}, {7, 8, 9}, {10, 11, 12}}}[0,1,2], 3);
-check (([10]) { [i] = i ** 2 + 1 }[9], 82);
+check((poly[10]) { 1, 2 ... }[9], 2);
+check((poly[*, *]) { { 1, 2 ... }, { 3, 4, 5, 6 } }[0, 3], 2);
+check((poly[*, *, *]) { { { 1, 2, 3 } ... },
+                        { { 4, 5, 6 }, { 7, 8, 9 }, { 10, 11, 12 } } }[0, 1, 2],
+      3);
+check((poly[10]) { [i] = i ** 2 + 1 }[9], 82);
 
 /* These should all generate compile errors, but shouldn't crash */
-Command::lex_exit_on_error (false);
+Command::lex_exit_on_error(false);
 file save_stderr = stderr;
 stderr = File::open("/dev/null", "w");
-([*,*]) { { [i] = i ** 2 + 1 }, { 4, 5, 6, 7, 8 }};
-([*]) { 1 ... };
-([*,*]) {1};
-int[*,*] x = {1};
-int[] x = {{1},2};
+(poly[*, *]) { { [i] = i ** 2 + 1 }, { 4, 5, 6, 7, 8 } };
+(poly[*]) { 1 ... };
+(poly[*, *]) { 1 };
+int[*, *] x = { 1 };
+int[]     x = { { 1 }, 2 };
 stderr = save_stderr;
-Command::lex_exit_on_error (true);
+Command::lex_exit_on_error(true);
 
 /*
  * An untyped array sized by its initializers has a fixed size, like
  * (poly[*]): the constructor made it resizable, as for poly[...]
  */
-bool resizable (poly a)
+bool
+resizable(poly a)
 {
-    int[*]	d = dims (a);
-    int[dim (d)]	bigger = { [i] = d[i] + 1 };
+    int[*]      d = dims(a);
+    int[dim(d)] bigger = { [i] = d[i] + 1 };
 
     try {
-	setdims (a, bigger);
-    } catch invalid_argument (string msg, int i, poly v) {
-	return false;
+        setdims(a, bigger);
+    } catch invalid_argument(string msg, int i, poly v) {
+        return false;
     }
     return true;
 }
 
-check (resizable (([*]) { 1, 2 }), false);
-check (resizable (([*,*]) { { 1, 2 }, { 3 } }), false);
-check (resizable ((poly[...]) { 1, 2 }), true);
+check(resizable((poly[*]) { 1, 2 }), false);
+check(resizable((poly[*, *]) { { 1, 2 }, { 3 } }), false);
+check(resizable((poly[...]) { 1, 2 }), true);
 
 exit(0);

@@ -38,20 +38,26 @@
  * considered quite good.
  */
 
-rational qbrating (int attempts, int completions, int yards,
-		   int touchdowns, int interceptions)
+rational
+qbrating(int attempts, int completions, int yards,
+         int touchdowns, int interceptions)
 {
     rational cat_max = 2.375;
-    rational cat_score(rational base, rational offset,
-		       rational scale) {
-	rational avg = base / attempts;
-	rational score = (avg * 100 + offset) * scale;
-	if (score < 0)
-	    return 0;
-	if (score > cat_max)
-	    return cat_max;
-	return score;
+
+    rational
+    cat_score(rational base, rational offset,
+              rational scale)
+    {
+        rational avg = base / attempts;
+        rational score = (avg * 100 + offset) * scale;
+
+        if (score < 0)
+            return 0;
+        if (score > cat_max)
+            return cat_max;
+        return score;
     }
+
     rational total = cat_score(completions, -30, 0.05);
     total += cat_score(yards, -300, 0.0025);
     total += cat_score(touchdowns, 0, 0.2);

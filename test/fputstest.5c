@@ -8,10 +8,11 @@
  * that can't take output.
  */
 
-exception not_raised (string what);
-exception wrong (string what, poly got, poly want);
+exception not_raised(string what);
+exception wrong(string what, poly got, poly want);
 
-void check(string what, poly got, poly want)
+void
+check(string what, poly got, poly want)
 {
     if (got != want)
         raise wrong(what, got, want);
@@ -26,7 +27,7 @@ File::putc('!', s);
 check("string file", File::string_string(s), "abcπ ≈ 3.14\n!");
 
 string name = "fputstest.tmp";
-file f = File::open(name, "w");
+file   f = File::open(name, "w");
 
 File::fputs("line one\n", f);
 File::fputs("line two", f);

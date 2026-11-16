@@ -13,78 +13,91 @@
 # this.
 
 namespace Search {
-
     public exception search_failed();
     continuation range_cc;
 
     typedef union {
-	void starting, failure;
-	*continuation process;
+        void          starting, failure;
+        *continuation process;
     } status;
 
-    public void init_search()
-	/* Reset all choice points, and arrange for
-	   appropriate behavior on search termination. */
+    public void
+    init_search()
+        /*
+         * Reset all choice points, and arrange for
+         * appropriate behavior on search termination.
+         */
     {
-	status s = setjmp(&range_cc, status.starting);
-	union switch (s) {
-	case failure:
-	    raise search_failed();
-	    abort("internal error: no exception in failure");
-	    break;
-	case process c:
-	    longjmp(*c, false);
-	    abort("internal error: no longjmp in process");
-	    break;
-	case starting:
-	    break;
-	}
+        status s = setjmp(&range_cc, status.starting);
+        union switch (s) {
+        case failure:
+            raise search_failed();
+            abort("internal error: no exception in failure");
+            break;
+        case process c:
+            longjmp(*c, false);
+            abort("internal error: no longjmp in process");
+            break;
+        case starting:
+            break;
+        }
     }
 
-    public void fail()
-	/* Backtrack to the last choice-point and try again.
-	   If we're out of choice points the search_failed
-	   exception will be raised. */
+    public void
+    fail()
+        /*
+         * Backtrack to the last choice-point and try again.
+         * If we're out of choice points the search_failed
+         * exception will be raised.
+         */
     {
-	longjmp(range_cc, status.failure);
-	abort("internal error: failed to fail");
+        longjmp(range_cc, status.failure);
+        abort("internal error: failed to fail");
     }
 
-    public void proceed()
-	/* Backtrack to the last choice-point and try again.
-	   If we're out of choice points, come back here
-	   and complete. */
+    public void
+    proceed()
+        /*
+         * Backtrack to the last choice-point and try again.
+         * If we're out of choice points, come back here
+         * and complete.
+         */
     {
-	continuation here;
-	if (setjmp(&here, true)) {
-	    longjmp(range_cc, (status.process)(&here));
-	    abort("internal error: failed to proceed");
-	}
+        continuation here;
+        if (setjmp(&here, true)) {
+            longjmp(range_cc, (status.process) (&here));
+            abort("internal error: failed to proceed");
+        }
     }
 
-    public int in_range(int lo, int hi)
-	/* When first called, remember a choice point and
-	   return lo.  On each processive failure that
-	   backtracks to here, return the next-larger
-	   integer, until hi has been returned.  Then fail
-	   back to the parent choice point, if any. */
+    public int
+    in_range(int lo, int hi)
+        /*
+         * When first called, remember a choice point and
+         * return lo.  On each processive failure that
+         * backtracks to here, return the next-larger
+         * integer, until hi has been returned.  Then fail
+         * back to the parent choice point, if any.
+         */
     {
-	continuation old_cc = range_cc;
-	int cur = lo;
-	status s = setjmp(&range_cc, status.failure);
-	if (cur > hi)
-	    longjmp(old_cc, s);
-	return cur++;
+        continuation old_cc = range_cc;
+        int          cur = lo;
+        status       s = setjmp(&range_cc, status.failure);
+
+        if (cur > hi)
+            longjmp(old_cc, s);
+        return cur++;
     }
-
-
 }
 
 import Search;
 
-void right_triangles(bool all_solutions)
-    /* Print integer right triangles
-       with sides in the range 1..10. */
+void
+right_triangles(bool all_solutions)
+    /*
+     * Print integer right triangles
+     * with sides in the range 1..10.
+     */
 {
     init_search();
     int x = in_range(1, 10);
@@ -92,13 +105,14 @@ void right_triangles(bool all_solutions)
     int z = in_range(1, 10);
     if (all_solutions) {
         if (x ** 2 + y ** 2 == z ** 2)
-	    printf("%d + %d == %d\n", x ** 2, y ** 2, z ** 2);
-	proceed();
+            printf("%d + %d == %d\n", x ** 2, y ** 2, z ** 2);
+        proceed();
     } else {
         if (x ** 2 + y ** 2 == z ** 2)
-	    printf("%d + %d == %d\n", x ** 2, y ** 2, z ** 2);
+            printf("%d + %d == %d\n", x ** 2, y ** 2, z ** 2);
         else
-	    fail();
+            fail();
     }
 }
+
 right_triangles(true);

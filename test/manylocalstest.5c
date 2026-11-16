@@ -9,27 +9,29 @@
  * sibling blocks keeps every scope small, so the test compiles quickly.
  */
 
-int nlocal = 33000;
-int nblock = 100;
+int  nlocal = 33000;
+int  nblock = 100;
 
-file src = File::string_write ();
-File::fprintf (src, "int manylocals () {\nint sum = 0;\n");
+file src = File::string_write();
+
+File::fprintf(src, "int manylocals () {\nint sum = 0;\n");
 for (int b = 0; b < nlocal; b += nblock) {
-    File::fprintf (src, "{ int");
+    File::fprintf(src, "{ int");
     for (int i = b; i < b + nblock; i++) {
         if (i != b)
-            File::fprintf (src, ",");
-        File::fprintf (src, " v%d = %d", i, i);
+            File::fprintf(src, ",");
+        File::fprintf(src, " v%d = %d", i, i);
     }
-    File::fprintf (src, "; sum += v%d + v%d; }\n", b, b + nblock - 1);
+    File::fprintf(src, "; sum += v%d + v%d; }\n", b, b + nblock - 1);
 }
-File::fprintf (src, "return sum;\n}\n");
+File::fprintf(src, "return sum;\n}\n");
 
-Command::lex_input (File::string_read (File::string_string (src)), "manylocals", false, false);
+Command::lex_input(
+    File::string_read(File::string_string(src)), "manylocals", false, false);
 
 int expect = 0;
 for (int b = 0; b < nlocal; b += nblock)
     expect += b + b + nblock - 1;
 
-if (manylocals () != expect)
-    raise invalid_argument ("manylocals ()", expect, manylocals ());
+if (manylocals() != expect)
+    raise invalid_argument("manylocals ()", expect, manylocals());

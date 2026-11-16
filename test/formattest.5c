@@ -12,7 +12,8 @@
  * itself, so the comment describing it leads that statement and not
  * the section's code, which would print with it
  */
-void section(string name)
+void
+section(string name)
 {
 }
 
@@ -35,208 +36,173 @@ void section(string name)
  */
 section("Printing a file formatted");
 
-exception wrong (string what, poly got, poly want);
+exception wrong(string what, poly got, poly want);
 
-void function check (string what, poly got, poly want)
+void
+check(string what, poly got, poly want)
 {
     if (got != want)
-	raise wrong (what, got, want);
+        raise wrong(what, got, want);
 }
 
-string	nickle = Environ::get ("NICKLE");
-string	name = "formattest.tmp";
+string nickle = Environ::get("NICKLE");
+string name = "formattest.tmp";
 
 /* Run nickle with args on a file holding text, returning its output */
-string run (string[*] args, string text)
+string
+run(string[*] args, string text)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (text, f);
-    File::close (f);
+    File::fputs(text, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
-    string[...]	argv = { nickle };
+    file[*]     out = File::mkpipe();
+    string[...] argv = { nickle };
 
-    for (int i = 0; i < dim (args); i++)
-	argv[dim (argv)] = args[i];
-    argv[dim (argv)] = name;
-    File::filter (nickle, argv, (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    for (int i = 0; i < dim(args); i++)
+        argv[dim(argv)] = args[i];
+    argv[dim(argv)] = name;
+    File::filter(nickle, argv, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
-string	source = ("#!/usr/bin/env nickle\n" +
-		  "# A file header\n" +
-		  "\n" +
-		  "autoimport Sort;\n" +
-		  "\n" +
-		  "public namespace Shapes {\n" +
-		  "    public exception bad_side(real side /* the side */);\n" +
-		  "    public typedef struct {\n" +
-		  "        real w; /* width */\n" +
-		  "        real h; /* height */\n" +
-		  "    } rect;\n" +
-		  "    public real area(rect r) = r.w * r.h;\n" +
-		  "}\n" +
-		  "\n" +
-		  "extend namespace Shapes {\n" +
-		  "    public real perimeter(rect r) { return 2 * (r.w + r.h); }\n" +
-		  "}\n" +
-		  "\n" +
-		  "string banner = \"a long string that goes on\" + \" and on, past the fifty columns\" + \" that code may span\";\n" +
-		  "Shapes::area((Shapes::rect) { w = .5, h = 0x10 }) # 16\n" +
-		  "/* the end */\n");
+string source = ("#!/usr/bin/env nickle\n" + "# A file header\n" + "\n"
+                 + "autoimport Sort;\n" + "\n" + "public namespace Shapes {\n"
+                 + "    public exception bad_side(real side /* the side */);\n"
+                 + "    public typedef struct {\n"
+                 + "        real w; /* width */\n"
+                 + "        real h; /* height */\n" + "    } rect;\n"
+                 + "    public real area(rect r) = r.w * r.h;\n" + "}\n"
+                 + "\n" + "extend namespace Shapes {\n"
+                 + "    public real perimeter(rect r) { return 2 * (r.w + r.h); }\n"
+                 + "}\n" + "\n"
+                 + "string banner = \"a long string that goes on\" + \" and on, past the fifty columns\" + \" that code may span\";\n"
+                 + "Shapes::area((Shapes::rect) { w = .5, h = 0x10 }) # 16\n"
+                 + "/* the end */\n");
 
-string	want = ("#!/usr/bin/env nickle\n" +
-		  "# A file header\n" +
-		  "\n" +
-		  "autoimport Sort\n" +
-		  "\n" +
-		  "public namespace Shapes {\n" +
-		  "    public exception bad_side(\n" +
-		  "        real side /* the side */);\n" +
-		  "    public typedef struct {\n" +
-		  "        real w; /* width */\n" +
-		  "        real h; /* height */\n" +
-		  "    } rect;\n" +
-		  "\n" +
-		  "    public real\n" +
-		  "    area(rect r) = r.w * r.h;\n" +
-		  "}\n" +
-		  "\n" +
-		  "extend namespace Shapes {\n" +
-		  "\n" +
-		  "    public real\n" +
-		  "    perimeter(rect r) = 2 * (r.w + r.h);\n" +
-		  "}\n" +
-		  "\n" +
-		  "string banner = (\"a long string that goes on\"\n" +
-		  "                 + \" and on, past the fifty columns\" + \" that code may span\");\n" +
-		  "Shapes::area((Shapes::rect) { w = .5, h = 0x10 }) # 16\n" +
-		  "\n" +
-		  "/* the end */\n");
+(string want =
+    "#!/usr/bin/env nickle\n" + "# A file header\n" + "\n" + "autoimport Sort\n"
+    + "\n" + "public namespace Shapes {\n" + "    public exception bad_side(\n"
+    + "        real side /* the side */);\n" + "    public typedef struct {\n"
+    + "        real w; /* width */\n" + "        real h; /* height */\n"
+    + "    } rect;\n" + "\n" + "    public real\n"
+    + "    area(rect r) = r.w * r.h;\n" + "}\n" + "\n"
+    + "extend namespace Shapes {\n" + "\n" + "    public real\n"
+    + "    perimeter(rect r) = 2 * (r.w + r.h);\n" + "}\n" + "\n"
+    + "string banner = (\"a long string that goes on\"\n"
+    + "                 + \" and on, past the fifty columns\" + \" that code may span\");\n"
+    + "Shapes::area((Shapes::rect) { w = .5, h = 0x10 }) # 16\n" + "\n"
+    + "/* the end */\n");
 
-check ("format", run ((string[*]) { "--format" }, source), want);
-check ("format again", run ((string[*]) { "--format" }, want), want);
-check ("run", run ((string[*]) {}, want), "8\n");
+check("format", run((string[*]) { "--format" }, source), want);
+check("format again", run((string[*]) { "--format" }, want), want);
+check("run", run((string[*]) {}, want), "8\n");
 
 /* A '#!' line directly above the code stays first, as written */
-string	script = "#!/usr/bin/env nickle\nint x = 1;\n";
-string	script_want = "#!/usr/bin/env nickle\n\nint x = 1;\n";
+string script = "#!/usr/bin/env nickle\nint x = 1;\n";
+string script_want = "#!/usr/bin/env nickle\n\nint x = 1;\n";
 
-check ("#! line", run ((string[*]) { "--format" }, script), script_want);
-check ("#! line again", run ((string[*]) { "--format" }, script_want), script_want);
+check("#! line", run((string[*]) { "--format" }, script), script_want);
+check(
+    "#! line again", run((string[*]) { "--format" }, script_want), script_want);
 
 /* A nested namespace has blank lines above its leading comment and below it */
-string	nested = ("namespace Outer {\n" +
-		  "    int a = 1;\n" +
-		  "\n" +
-		  "    /* the inner one */\n" +
-		  "    namespace Inner {\n" +
-		  "        int b = 2;\n" +
-		  "    }\n" +
-		  "\n" +
-		  "    int c = 3;\n" +
-		  "}\n");
+string nested = ("namespace Outer {\n" + "    int a = 1;\n" + "\n"
+                 + "    /* the inner one */\n"
+                 + "    namespace Inner {\n" + "        int b = 2;\n"
+                 + "    }\n" + "\n" + "    int c = 3;\n" + "}\n");
 
-check ("nested namespace",
-       run ((string[*]) { "--format" },
-	    "namespace Outer {\n    int a = 1;\n    /* the inner one */\n" +
-	    "    namespace Inner { int b = 2; }\n    int c = 3;\n}\n"),
-       nested);
-check ("nested namespace again", run ((string[*]) { "--format" }, nested), nested);
+check("nested namespace",
+      run((string[*]) { "--format" },
+          "namespace Outer {\n    int a = 1;\n    /* the inner one */\n"
+          + "    namespace Inner { int b = 2; }\n    int c = 3;\n}\n"),
+      nested);
+check(
+    "nested namespace again", run((string[*]) { "--format" }, nested), nested);
 
 /* Imports line up with the declarations around them */
-string	imports = ("autoload Sort\n" +
-		   "\n" +
-		   "namespace N {\n" +
-		   "    import        Sort;\n" +
-		   "    public import String;\n" +
-		   "    int           count = 0;\n" +
-		   "}\n");
+string imports = ("autoload Sort\n" + "\n" + "namespace N {\n"
+                  + "    import        Sort;\n" + "    public import String;\n"
+                  + "    int           count = 0;\n" + "}\n");
 
-check ("imports",
-       run ((string[*]) { "--format" },
-	    "autoload Sort;\nnamespace N {\n    import Sort;\n    public import String;\n" +
-	    "    int count = 0;\n}\n"),
-       imports);
-check ("imports again", run ((string[*]) { "--format" }, imports), imports);
+check("imports",
+      run((string[*]) { "--format" },
+          "autoload Sort;\nnamespace N {\n    import Sort;\n    public import String;\n"
+          + "    int count = 0;\n}\n"),
+      imports);
+check("imports again", run((string[*]) { "--format" }, imports), imports);
 
 /* A global statement that must break gets parentheses to break in */
-string	globals = ("int first_value_in_the_sum = 1, second_value_in_the_sum = 2;\n" +
-		   "int total = (first_value_in_the_sum\n" +
-		   "             + second_value_in_the_sum * 3000000000000000000000000000000\n" +
-		   "             - 4000000000000000000000000000000);\n" +
-		   "(first_value_in_the_sum\n" +
-		   " + second_value_in_the_sum * 3000000000000000000000000000000\n" +
-		   " + 1000000000000000000000000000000000000000000000000000000000000000000)\n");
+string globals = ("int first_value_in_the_sum = 1, second_value_in_the_sum = 2;\n"
+                  + "int total = (first_value_in_the_sum\n"
+                  + "             + second_value_in_the_sum * 3000000000000000000000000000000\n"
+                  + "             - 4000000000000000000000000000000);\n"
+                  + "(first_value_in_the_sum\n"
+                  + " + second_value_in_the_sum * 3000000000000000000000000000000\n"
+                  + " + 1000000000000000000000000000000000000000000000000000000000000000000)\n");
 
-check ("global parentheses",
-       run ((string[*]) { "--format" },
-	    "int first_value_in_the_sum = 1, second_value_in_the_sum = 2;\n" +
-	    "int total = first_value_in_the_sum + second_value_in_the_sum * 3000000000000000000000000000000 - 4000000000000000000000000000000;\n" +
-	    "first_value_in_the_sum + second_value_in_the_sum * 3000000000000000000000000000000 + 1000000000000000000000000000000000000000000000000000000000000000000\n"),
-       globals);
-check ("global parentheses again", run ((string[*]) { "--format" }, globals), globals);
-check ("global parentheses run", run ((string[*]) {}, globals),
-       "1000000000000000000000000000000000006000000000000000000000000000001\n");
+check("global parentheses",
+      run((string[*]) { "--format" },
+          "int first_value_in_the_sum = 1, second_value_in_the_sum = 2;\n"
+          + "int total = first_value_in_the_sum + second_value_in_the_sum * 3000000000000000000000000000000 - 4000000000000000000000000000000;\n"
+          + "first_value_in_the_sum + second_value_in_the_sum * 3000000000000000000000000000000 + 1000000000000000000000000000000000000000000000000000000000000000000\n"),
+      globals);
+check("global parentheses again",
+      run((string[*]) { "--format" }, globals), globals);
+check("global parentheses run", run((string[*]) {}, globals),
+      "1000000000000000000000000000000000006000000000000000000000000000001\n");
 
 /*
  * A declaration too long for its line breaks between its names, under
  * the first, in parentheses at the top level
  */
-string	names = ("int  a = 1;\n" +
-		 "(bool first_condition_to_check = true, second_condition_to_check = false,\n" +
-		 "      third_condition_to_check = true);\n" +
-		 "int  b = 2;\n" +
-		 "\n" +
-		 "void\n" +
-		 "f()\n" +
-		 "{\n" +
-		 "    int first_value_in_the_sum = 1, second_value_in_the_sum = 2,\n" +
-		 "        scale_factor_for_it = 3, another = 4;\n" +
-		 "    printf(\"%d\\n\", first_value_in_the_sum + another);\n" +
-		 "}\n" +
-		 "\n" +
-		 "f();\n" +
-		 "printf(\"%v\\n\", third_condition_to_check);\n");
+string names = ("int  a = 1;\n"
+                + "(bool first_condition_to_check = true, second_condition_to_check = false,\n"
+                + "      third_condition_to_check = true);\n"
+                + "int  b = 2;\n" + "\n" + "void\n" + "f()\n" + "{\n"
+                + "    int first_value_in_the_sum = 1, second_value_in_the_sum = 2,\n"
+                + "        scale_factor_for_it = 3, another = 4;\n"
+                + "    printf(\"%d\\n\", first_value_in_the_sum + another);\n"
+                + "}\n" + "\n" + "f();\n"
+                + "printf(\"%v\\n\", third_condition_to_check);\n");
 
-check ("names",
-       run ((string[*]) { "--format" },
-	    "int a = 1;\n" +
-	    "bool first_condition_to_check = true, second_condition_to_check = false, third_condition_to_check = true;\n" +
-	    "int b = 2;\n" +
-	    "void f() {\n" +
-	    "    int first_value_in_the_sum = 1, second_value_in_the_sum = 2, scale_factor_for_it = 3, another = 4;\n" +
-	    "    printf(\"%d\\n\", first_value_in_the_sum + another);\n" +
-	    "}\n" +
-	    "f();\n" +
-	    "printf(\"%v\\n\", third_condition_to_check);\n"),
-       names);
-check ("names again", run ((string[*]) { "--format" }, names), names);
-check ("names run", run ((string[*]) {}, names), "5\ntrue\n");
+check("names",
+      run((string[*]) { "--format" },
+          "int a = 1;\n"
+          + "bool first_condition_to_check = true, second_condition_to_check = false, third_condition_to_check = true;\n"
+          + "int b = 2;\n" + "void f() {\n"
+          + "    int first_value_in_the_sum = 1, second_value_in_the_sum = 2, scale_factor_for_it = 3, another = 4;\n"
+          + "    printf(\"%d\\n\", first_value_in_the_sum + another);\n" + "}\n"
+          + "f();\n" + "printf(\"%v\\n\", third_condition_to_check);\n"),
+      names);
+check("names again", run((string[*]) { "--format" }, names), names);
+check("names run", run((string[*]) {}, names), "5\ntrue\n");
 
 /*
  * A global declaration whose value passes the end of its line goes in
  * parentheses when its value fits better past its '=' there
  */
-string	moved = ("int    count = 1;\n" +
-		 "(string style =\n" +
-		 "    \":pixelsize=12.3:hintstyle=hintfull:hinting=true:autohint=false:lcdfilter=lcdlegacy:rgba=none\");\n");
+string moved = ("int    count = 1;\n" + "(string style =\n"
+                + "    \":pixelsize=12.3:hintstyle=hintfull:hinting=true:autohint=false:lcdfilter=lcdlegacy:rgba=none\");\n");
 
-check ("moved value",
-       run ((string[*]) { "--format" },
-	    "int count = 1;\n" +
-	    "string style = \":pixelsize=12.3:hintstyle=hintfull:hinting=true:autohint=false:lcdfilter=lcdlegacy:rgba=none\";\n"),
-       moved);
-check ("moved value again", run ((string[*]) { "--format" }, moved), moved);
-check ("moved value run", run ((string[*]) {}, moved + "printf(\"%d\\n\", String::length(style));\n"), "92\n");
+check("moved value",
+      run((string[*]) { "--format" },
+          "int count = 1;\n"
+          + "string style = \":pixelsize=12.3:hintstyle=hintfull:hinting=true:autohint=false:lcdfilter=lcdlegacy:rgba=none\";\n"),
+      moved);
+check("moved value again", run((string[*]) { "--format" }, moved), moved);
+check(
+    "moved value run",
+    run((string[*]) {}, moved + "printf(\"%d\\n\", String::length(style));\n"),
+    "92\n");
 
 /*
  * Formatting its own output again changes nothing
@@ -258,208 +224,137 @@ check ("moved value run", run ((string[*]) {}, moved + "printf(\"%d\\n\", String
  */
 section("Formatting its own output again changes nothing");
 
-string	name = "formatstabletest.tmp";
+string name = "formatstabletest.tmp";
 
 /* Run script in a child nickle, returning its output, stderr included */
-string run (string script)
+string
+run(string script)
 {
-    file	f = File::open (name, "w");
+    file f = File::open(name, "w");
 
-    File::fputs (script, f);
-    File::close (f);
+    File::fputs(script, f);
+    File::close(f);
 
-    file[*]	out = File::mkpipe ();
+    file[*] out = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, name },
-		  (file[3]) { stdin, out[1], out[1] });
-    File::close (out[1]);
+    File::filter(
+        nickle, (string[*]) { nickle, name }, (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
 
-    string	got = "";
-    while (!File::end (out[0]))
-	got += File::fgets (out[0]) + "\n";
-    File::close (out[0]);
-    File::unlink (name);
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(name);
     return got;
 }
 
 /* Format source as a file, read from a string, returning the output */
-string format (string source)
+string
+format(string source)
 {
-    return run (sprintf ("Command::format_file (stdout, File::string_read (%v), " +
-			 "\"source\", true);\n", source));
+    return run(sprintf("Command::format_file (stdout, File::string_read (%v), "
+                       + "\"source\", true);\n",
+                       source));
 }
 
 /* Format source, check the output, and check that formatting it again gives it */
-void stable (string what, string source, string want)
+void
+stable(string what, string source, string want)
 {
-    check (what, format (source), want);
-    check (what + " again", format (want), want);
+    check(what, format(source), want);
+    check(what + " again", format(want), want);
 }
 
-stable ("values",
-	"int x = (\n" +
-	"/* own line */\n" +
-	"1 + 2);\n" +
-	"int y = -(2 ** 62 /* inside */ );\n" +
-	"int z = (func() = 2 /* after the body */ )();\n" +
-	"poly s = (struct { int m; /* member */ }) { m = 1 };\n" +
-	"int w = 10;\n" +
-	"check((--w)\n" +
-	"/* before ! */\n" +
-	"!, 1);\n" +
-	"string long_one = \"a string long enough that the comment\" + \"lands\" " +
-	"/* at the line's end */ + \"when broken\" + \" to fit\";\n" +
-	"int a = 1; /* a short comment */\n" +
-	"int bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb = 2; " +
-	"/* one that won't fit lined up */ /* or this */\n",
-	"int  x = (\n" +
-	"    /* own line */\n" +
-	"    1 + 2);\n" +
-	"int  y = -(2 ** 62 /* inside */);\n" +
-	"int  z = (func() = 2 /* after the body */)();\n" +
-	"poly s = (struct {\n" +
-	"             int m; /* member */\n" +
-	"         }) { m = 1 };\n" +
-	"int  w = 10;\n" +
-	"\n" +
-	"check((--w /* before ! */)!, 1);\n" +
-	"string long_one = (\"a string long enough that the comment\"\n" +
-	"                   + \"lands\" /* at the line's end */ + \"when broken\"\n" +
-	"                   + \" to fit\");\n" +
-	"int    a = 1; /* a short comment */\n" +
-	"\n" +
-	"/* one that won't fit lined up */\n" +
-	"int    bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb = 2; " +
-	"/* or this */\n");
+stable("values",
+       "int x = (\n" + "/* own line */\n" + "1 + 2);\n"
+       + "int y = -(2 ** 62 /* inside */ );\n"
+       + "int z = (func() = 2 /* after the body */ )();\n"
+       + "poly s = (struct { int m; /* member */ }) { m = 1 };\n"
+       + "int w = 10;\n" + "check((--w)\n" + "/* before ! */\n" + "!, 1);\n"
+       + "string long_one = \"a string long enough that the comment\" + \"lands\" "
+       + "/* at the line's end */ + \"when broken\" + \" to fit\";\n"
+       + "int a = 1; /* a short comment */\n"
+       + "int bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb = 2; "
+       + "/* one that won't fit lined up */ /* or this */\n",
+       "int  x = (\n" + "    /* own line */\n" + "    1 + 2);\n"
+       + "int  y = -(2 ** 62 /* inside */);\n"
+       + "int  z = (func() = 2 /* after the body */)();\n"
+       + "poly s = (struct {\n" + "             int m; /* member */\n"
+       + "         }) { m = 1 };\n" + "int  w = 10;\n" + "\n"
+       + "check((--w /* before ! */)!, 1);\n"
+       + "string long_one = (\"a string long enough that the comment\"\n"
+       + "                   + \"lands\" /* at the line's end */ + \"when broken\"\n"
+       + "                   + \" to fit\");\n"
+       + "int    a = 1; /* a short comment */\n" + "\n"
+       + "/* one that won't fit lined up */\n"
+       + "int    bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb = 2; "
+       + "/* or this */\n");
 
-stable ("heading",
-	"/* The heading */\n" +
-	"namespace /* inside */ N {\n" +
-	"    int q = 1;\n" +
-	"}\n",
-	"/* The heading */\n" +
-	"\n" +
-	"/* inside */\n" +
-	"namespace N {\n" +
-	"    int q = 1;\n" +
-	"}\n");
+stable("heading",
+       "/* The heading */\n" + "namespace /* inside */ N {\n"
+       + "    int q = 1;\n" + "}\n",
+       "/* The heading */\n" + "\n" + "/* inside */\n"
+       + "namespace N {\n" + "    int q = 1;\n" + "}\n");
 
-stable ("case label",
-	"void f(int c) {\n" +
-	"    switch (c) {\n" +
-	"    case 1: /* one */\n" +
-	"    case 2: /* two */\n" +
-	"        c++;\n" +
-	"        break;\n" +
-	"    }\n" +
-	"}\n",
-	"void\n" +
-	"f(int c)\n" +
-	"{\n" +
-	"    switch (c) {\n" +
-	"    case 1: /* one */\n" +
-	"    case 2: /* two */\n" +
-	"        c++;\n" +
-	"        break;\n" +
-	"    }\n" +
-	"}\n");
+stable("case label",
+       "void f(int c) {\n" + "    switch (c) {\n"
+       + "    case 1: /* one */\n" + "    case 2: /* two */\n"
+       + "        c++;\n" + "        break;\n" + "    }\n" + "}\n",
+       "void\n" + "f(int c)\n" + "{\n" + "    switch (c) {\n"
+       + "    case 1: /* one */\n" + "    case 2: /* two */\n"
+       + "        c++;\n" + "        break;\n" + "    }\n" + "}\n");
 
-stable ("comment line ends",
-	"string script = /* leads */ ( /* ends the line */\n" +
-	"\"a string long enough to need breaking, \" + \"which a global declaration does \" + " +
-	"\"in parentheses\");\n" +
-	"int run = /* first */ ( /* second */\n" +
-	"1);\n" +
-	"int /* after the type */\n" +
-	"first(int x)\n" +
-	"{\n" +
-	"    return x;\n" +
-	"}\n" +
-	"int /* before the name */ second /* after the name */ (int x);\n",
-	"string script = /* leads */ (/* ends the line */\n" +
-	"    \"a string long enough to need breaking, \"\n" +
-	"    + \"which a global declaration does \" + \"in parentheses\");\n" +
-	"int    run = /* first */ (/* second */\n" +
-	"    1);\n" +
-	"\n" +
-	"int /* after the type */\n" +
-	"first(int x) = x;\n" +
-	"\n" +
-	"int /* before the name */ second /* after the name */(int x);\n");
+stable("comment line ends",
+       "string script = /* leads */ ( /* ends the line */\n"
+       + "\"a string long enough to need breaking, \" + \"which a global declaration does \" + "
+       + "\"in parentheses\");\n" + "int run = /* first */ ( /* second */\n"
+       + "1);\n" + "int /* after the type */\n" + "first(int x)\n" + "{\n"
+       + "    return x;\n" + "}\n"
+       + "int /* before the name */ second /* after the name */ (int x);\n",
+       "string script = /* leads */ (/* ends the line */\n"
+       + "    \"a string long enough to need breaking, \"\n"
+       + "    + \"which a global declaration does \" + \"in parentheses\");\n"
+       + "int    run = /* first */ (/* second */\n" + "    1);\n" + "\n"
+       + "int /* after the type */\n" + "first(int x) = x;\n" + "\n"
+       + "int /* before the name */ second /* after the name */(int x);\n");
 
-stable ("parameters",
-	"exception bad(\n" +
-	"\n" +
-	"    int last_bits, int prec);\n" +
-	"int\n" +
-	"many_parameters(int expire_delta, int notify_delta, bool() lock,\n" +
-	"                bool() unlock, bool() validate,\n" +
-	"                void(int number) notify)\n" +
-	"{\n" +
-	"    return 1;\n" +
-	"}\n",
-	"exception bad(int last_bits, int prec);\n" +
-	"\n" +
-	"int\n" +
-	"many_parameters(int expire_delta, int notify_delta, bool() lock,\n" +
-	"                bool() unlock, bool() validate,\n" +
-	"                void(int number) notify)\n" +
-	"{\n" +
-	"    return 1;\n" +
-	"}\n");
+stable("parameters",
+       "exception bad(\n" + "\n" + "    int last_bits, int prec);\n" + "int\n"
+       + "many_parameters(int expire_delta, int notify_delta, bool() lock,\n"
+       + "                bool() unlock, bool() validate,\n"
+       + "                void(int number) notify)\n" + "{\n"
+       + "    return 1;\n" + "}\n",
+       "exception bad(int last_bits, int prec);\n" + "\n" + "int\n"
+       + "many_parameters(int expire_delta, int notify_delta, bool() lock,\n"
+       + "                bool() unlock, bool() validate,\n"
+       + "                void(int number) notify)\n" + "{\n"
+       + "    return 1;\n" + "}\n");
 
-stable ("case block",
-	"void f(int c) {\n" +
-	"    switch (c) {\n" +
-	"    case 1: {\n" +
-	"        c++;\n" +
-	"    } /* after the block */ break /* after break */ ;\n" +
-	"    }\n" +
-	"}\n",
-	"void\n" +
-	"f(int c)\n" +
-	"{\n" +
-	"    switch (c) {\n" +
-	"    case 1: {\n" +
-	"        c++;\n" +
-	"    } /* after the block */\n" +
-	"        break /* after break */;\n" +
-	"    }\n" +
-	"}\n");
+stable("case block",
+       "void f(int c) {\n" + "    switch (c) {\n"
+       + "    case 1: {\n" + "        c++;\n"
+       + "    } /* after the block */ break /* after break */ ;\n"
+       + "    }\n" + "}\n",
+       "void\n" + "f(int c)\n" + "{\n" + "    switch (c) {\n"
+       + "    case 1: {\n" + "        c++;\n" + "    } /* after the block */\n"
+       + "        break /* after break */;\n" + "    }\n" + "}\n");
 
-stable ("rows",
-	"poly[*][2] v = {\n" +
-	"    { 1, 2 },\n" +
-	"    { (struct { int x, /* member */ y; }) { x = 1, y = 2 }, 3 },\n" +
-	"};\n",
-	"poly[*][2] v = {\n" +
-	"    { 1, 2 },\n" +
-	"    { (struct {\n" +
-	"          int x, y; /* member */\n" +
-	"      }) { x = 1, y = 2 }, 3 },\n" +
-	"};\n");
+stable("rows",
+       "poly[*][2] v = {\n" + "    { 1, 2 },\n"
+       + "    { (struct { int x, /* member */ y; }) { x = 1, y = 2 }, 3 },\n"
+       + "};\n",
+       "poly[*][2] v = {\n" + "    { 1, 2 },\n"
+       + "    { (struct {\n" + "          int x, y; /* member */\n"
+       + "      }) { x = 1, y = 2 }, 3 },\n" + "};\n");
 
-stable ("doc comments",
-	"int h(int x) /* returns x */;\n" +
-	"exception e(int a) /* bad */;\n" +
-	"int f(int x)\n" +
-	"    /* one */\n" +
-	"    /* two */\n" +
-	"{\n" +
-	"    return x;\n" +
-	"}\n",
-	"int h(int x)\n" +
-	"    /* returns x */;\n" +
-	"exception e(int a)\n" +
-	"    /* bad */;\n" +
-	"\n" +
-	"int\n" +
-	"f(int x)\n" +
-	"    /* one */\n" +
-	"    /* two */\n" +
-	"{\n" +
-	"    return x;\n" +
-	"}\n");
+stable("doc comments",
+       "int h(int x) /* returns x */;\n" + "exception e(int a) /* bad */;\n"
+       + "int f(int x)\n" + "    /* one */\n" + "    /* two */\n" + "{\n"
+       + "    return x;\n" + "}\n",
+       "int h(int x)\n" + "    /* returns x */;\n" + "exception e(int a)\n"
+       + "    /* bad */;\n" + "\n" + "int\n" + "f(int x)\n" + "    /* one */\n"
+       + "    /* two */\n" + "{\n" + "    return x;\n" + "}\n");
 
 /*
  * A function definition or namespace starting a block whose '{' ends
@@ -485,19 +380,19 @@ stable("first in a block",
  * changed: printing a file leaves an existing variable's value, and the
  * commands, as they were, and adds no names.
  */
-section ("Formatting a file leaves names as they were");
+section("Formatting a file leaves names as they were");
 
 /* The file printed declares names a session already has */
-string	declares = "formatnamestest.tmp";
-file	f = File::open (declares, "w");
+string declares = "formatnamestest.tmp";
+file   f = File::open(declares, "w");
 
-File::fputs ("int x = 1;\n" + "int f() = 2;\n" + "library \"command.5c\"\n", f);
-File::close (f);
-check ("names kept",
-       run ("int x = 5;\n" + "print \"" + declares + "\"\n" +
-	    "printf(\"%d %v\\n\", x, Command::valid_name((string[*]) { \"f\" }));\n" +
-	    "autoload Sort\n" +
-	    "printf(\"%v\\n\", Command::valid_name((string[*]) { \"Sort\" }));\n"),
-       "int x = 1;\n" + "\n" + "int\n" + "f() = 2;\n" + "\n" +
-       "library \"command.5c\"\n" + "5 false\n" + "true\n");
-File::unlink (declares);
+File::fputs("int x = 1;\n" + "int f() = 2;\n" + "library \"command.5c\"\n", f);
+File::close(f);
+check("names kept",
+      run("int x = 5;\n" + "print \"" + declares + "\"\n"
+          + "printf(\"%d %v\\n\", x, Command::valid_name((string[*]) { \"f\" }));\n"
+          + "autoload Sort\n"
+          + "printf(\"%v\\n\", Command::valid_name((string[*]) { \"Sort\" }));\n"),
+      "int x = 1;\n" + "\n" + "int\n" + "f() = 2;\n" + "\n"
+      + "library \"command.5c\"\n" + "5 false\n" + "true\n");
+File::unlink(declares);

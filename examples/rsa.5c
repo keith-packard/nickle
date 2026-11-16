@@ -30,39 +30,42 @@
 autoimport Numbers
 
 namespace RSA {
+    global int e;     /* encryption exponent */
+    global int n;     /* public key */
+    global int d = 0; /* decryption exponent (0 for encrypt-only) */
 
-  global int e;   /* encryption exponent */
-  global int n;   /* public key */
-  global int d = 0;   /* decryption exponent (0 for encrypt-only) */
+    public int
+    encrypt(int m) = bigpowmod(m, e, n);
 
-  public int encrypt(int m) {
-    return bigpowmod(m, e, n);
-  }
+    public int
+    decrypt(int c)
+    {
+        exception decrypt_public_key();
 
-  public int decrypt(int c) {
-    exception decrypt_public_key();
+        if (d == 0)
+            raise decrypt_public_key();
+        return bigpowmod(c, d, n);
+    }
 
-    if (d == 0)
-        raise decrypt_public_key();
-    return bigpowmod(c, d, n);
-  }
+    public void
+    set_private_key(int p, int q, int e0)
+    {
+        int phi = (p - 1) * (q - 1);
 
-  public void set_private_key(int p, int q, int e0) {
-    int phi = (p - 1) * (q - 1);
+        n = p * q;
+        if (e0 % 2 == 0)
+            e0++;
+        while (gcd(e0, phi) > 1)
+            e0 += 2;
+        e = e0;
+        d = zminv(e, phi);
+    }
 
-    n = p * q;
-    if (e0 % 2 == 0)
-      e0++;
-    while (gcd(e0, phi) > 1)
-      e0 += 2;
-    e = e0;
-    d = zminv(e, phi);
-  }
-
-  public void set_public_key(int n0, int e0) {
-    n = n0;
-    e = e0;
-    d = 0;
-  }
-
+    public void
+    set_public_key(int n0, int e0)
+    {
+        n = n0;
+        e = e0;
+        d = 0;
+    }
 }

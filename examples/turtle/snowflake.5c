@@ -9,27 +9,28 @@
 # where <width> is the curve width in inches
 # and <depth> is the iteration depth
 
-autoimport Turtle;
+autoimport Turtle
 
 void
-do_flake(int depth, rational scale) {
+do_flake(int depth, rational scale)
+{
     if (depth == 0) {
-	stroke_turtle(scale);
-	return;
+        stroke_turtle(scale);
+        return;
     }
     do_flake(depth - 1, scale / 3);
-    turn_turtle(-1/6);
+    turn_turtle(-1 / 6);
     do_flake(depth - 1, scale / 3);
-    turn_turtle(1/3);
+    turn_turtle(1 / 3);
     do_flake(depth - 1, scale / 3);
-    turn_turtle(-1/6);
+    turn_turtle(-1 / 6);
     do_flake(depth - 1, scale / 3);
 }
 
 if (dim(argv) < 3)
     argv = (string[*]) { "snowflake.5c", "3", "3" };
 
-int width = string_to_integer(argv[1]);
+int  width = string_to_integer(argv[1]);
 real height = sqrt((width / 3) ** 2 - (width / 6) ** 2) + 0.05 * width;
 start_turtle("snowflake.eepic", width, height);
 move_turtle(0.0, 0.025);

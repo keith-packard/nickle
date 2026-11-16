@@ -5,54 +5,52 @@
  */
 
 namespace History {
+    poly[...] hist = {};
 
-    poly[...]	hist = {};
-
-    public void insert (poly v)
-	/*
-	 * Insert 'v' in the history list
-	 */
+    public void
+    insert(poly v)
+        /* Insert 'v' in the history list */
     {
-	hist[dim(hist)] = v;
+        hist[dim(hist)] = v;
     }
 
-    public poly fetch (int id)
-	/*
-	 * Fetch history element 'id'
-	 */
+    public poly
+    fetch(int id)
+        /* Fetch history element 'id' */
     {
-	if (dim(hist) == 0)
-	    return <>;
-	if (id <= 0)
-	    return hist[dim(hist)+id-1];
-	else
-	    return hist[id-1];
+        if (dim(hist) == 0)
+            return <>;
+        if (id <= 0)
+            return hist[dim(hist) + id - 1];
+        else
+            return hist[id - 1];
     }
 
-    public void show (string format, int args...)
-	/*
-	 * Show the last 10 history elements, the last 'args[0]', or
-	 * those from 'args[0]' through 'args[1]', in 'format'
-	 */
+    public void
+    show(string format, int args ...)
+        /*
+         * Show the last 10 history elements, the last 'args[0]', or
+         * those from 'args[0]' through 'args[1]', in 'format'
+         */
     {
-	int	from, to = dim(hist);
+        int from, to = dim(hist);
 
-	switch (dim(args)) {
-	case 0:
-	    from = to - 9;
-	    break;
-	case 1:
-	    from = to - args[0] + 1;
-	    break;
-	default:
-	    from = args[0];
-	    to = min(args[1], to);
-	    break;
-	}
-	for (int id = max(from, 1); id <= to; id++) {
-	    printf ("$%-4d\t", id);
-	    printf (format, hist[id-1]);
-	    printf ("\n");
-	}
+        switch (dim(args)) {
+        case 0:
+            from = to - 9;
+            break;
+        case 1:
+            from = to - args[0] + 1;
+            break;
+        default:
+            from = args[0];
+            to = min(args[1], to);
+            break;
+        }
+        for (int id = max(from, 1); id <= to; id++) {
+            printf("$%-4d\t", id);
+            printf(format, hist[id - 1]);
+            printf("\n");
+        }
     }
 }

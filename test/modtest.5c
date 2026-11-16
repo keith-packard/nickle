@@ -1,6 +1,9 @@
-void check(real n, real d) {
+void
+check(real n, real d)
+{
     real q = n // d;
     real r = n % d;
+
     assert(is_int(q), "non-integral quotient %v", q);
     assert(r >= 0, "negative remainder %v", r);
     assert(r < abs(d), "too-large remainder %v", r);
@@ -8,7 +11,9 @@ void check(real n, real d) {
     assert(recons == n, "wrong reconstruction %v", recons);
 }
 
-void all_signs(real n, real d) {
+void
+all_signs(real n, real d)
+{
     check(n, d);
     check(-n, d);
     check(n, -d);
@@ -16,6 +21,6 @@ void all_signs(real n, real d) {
 }
 
 all_signs(7, 3);
-all_signs(7 * (1<<32), 3 * (1<<32));
-all_signs(7/2, 3/2);
-all_signs(imprecise(7/2), imprecise(3/2));
+all_signs(7 * (1 << 32), 3 * (1 << 32));
+all_signs(7 / 2, 3 / 2);
+all_signs(imprecise(7 / 2), imprecise(3 / 2));

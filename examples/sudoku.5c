@@ -6,91 +6,109 @@
 # see the file COPYING in this distribution for license
 # details.
 
-autoimport PRNG;
+autoimport PRNG
 import File;
-autoimport ParseArgs;
+autoimport ParseArgs
 
 int unit, side;
 
 typedef int[*] grid;
 
-void print_grid(file f, grid g) {
+void
+print_grid(file f, grid g)
+{
     for (int i = 0; i < dim(g); i++) {
-	if (g[i] == 0)
-	    fprintf(f, ".");
-	else
-	    fprintf(f, "%d", g[i]);
-	if (i % side == side - 1)
-	    fprintf(f, "\n");
+        if (g[i] == 0)
+            fprintf(f, ".");
+        else
+            fprintf(f, "%d", g[i]);
+        if (i % side == side - 1)
+            fprintf(f, "\n");
     }
 }
 
-
-# return true iff cells p1 and p2
-# may not have the same value
-bool edge(int p1, int p2) {
+/*
+ * return true iff cells p1 and p2
+ * may not have the same value
+ */
+bool
+edge(int p1, int p2)
+{
     if (p1 == p2)
-	return false;
+        return false;
     if (p1 // side == p2 // side)
-	return true;
+        return true;
     if (p1 % side == p2 % side)
-	return true;
-    # XXX if it is in the same horizontal "stripe"
-    # and the same vertical "stripe", it is in the
-    # same "cell"
-    if (p1 // (side * unit) == p2 // (side * unit) &&
-	(p1 % side) // unit == (p2 % side) // unit)
-	return true;
+        return true;
+
+    /*
+     * XXX if it is in the same horizontal "stripe"
+     * and the same vertical "stripe", it is in the
+     * same "cell"
+     */
+    if (p1 // (side * unit) == p2 // (side * unit)
+            && p1 % side // unit == p2 % side // unit)
+        return true;
     return false;
 }
 
-
 bool[*, *] edges;
 
-void init_edges() {
-     edges = (bool[side**2, side**2]){[i, j] = edge(i, j)};
+void
+init_edges()
+{
+    edges = (bool[side ** 2, side ** 2]) { [i, j] = edge(i, j) };
 }
 
-# check whether the value in g at p is consistent with every
-# other value in g
-bool check(&grid g, int p) {
+/*
+ * check whether the value in g at p is consistent with every
+ * other value in g
+ */
+bool
+check(&grid g, int p)
+{
     for (int p2 = 0; p2 < dim(g); p2++)
-	if (g[p2] == g[p] && edges[p, p2])
-	    return false;
+        if (g[p2] == g[p] && edges[p, p2])
+            return false;
     return true;
 }
 
-# simple-minded DFS solver doesnt scale.  assumes it is
-# passed a grid whose filled cells conform to constraints.
-# returns a solution count which is a lower bound on the
-# true number of solutions, accurate if 0 or 1.  the
-# preserve parameter says whether to preserve (true) or
-# clear (false) cells of the solution: if preserve is true,
-# the first solution found is returned.  the randomize
-# parameter says to try the values in random order; this is
-# useful for puzzle construction.
-int solve(&grid g, bool preserve, bool randomize) {
-    int p = 0; 
+/*
+ * simple-minded DFS solver doesnt scale.  assumes it is
+ * passed a grid whose filled cells conform to constraints.
+ * returns a solution count which is a lower bound on the
+ * true number of solutions, accurate if 0 or 1.  the
+ * preserve parameter says whether to preserve (true) or
+ * clear (false) cells of the solution: if preserve is true,
+ * the first solution found is returned.  the randomize
+ * parameter says to try the values in random order; this is
+ * useful for puzzle construction.
+ */
+int
+solve(&grid g, bool preserve, bool randomize)
+{
+    int p = 0;
+
     for (p < dim(g); p++)
         if (g[p] == 0)
-	    break;
+            break;
     if (p >= dim(g))
-	return 1;
+        return 1;
     int[*] vals;
     if (randomize) {
-	vals = (int[side]){ [i] = i + 1 };
-	shuffle(&vals);
+        vals = (int[side]) { [i] = i + 1 };
+        shuffle(&vals);
     }
     int answer = 0;
     int i = 0;
     for (i < side; i++) {
-	if (randomize)
-	    g[p] = vals[i];
-	else
-	    g[p] = i + 1;
-	if (!check(&g, p))
-	    continue;
-	int result = solve(&g, preserve, randomize);
+        if (randomize)
+            g[p] = vals[i];
+        else
+            g[p] = i + 1;
+        if (!check(&g, p))
+            continue;
+        int result = solve(&g, preserve, randomize);
         if (preserve && result > 0)
             return result;
         answer += result;
@@ -101,35 +119,49 @@ int solve(&grid g, bool preserve, bool randomize) {
     return answer;
 }
 
-# deletion-based puzzle creation algorithm
-# suggested by ksudoku.
-# g is assumed to be a partial solution
-void del_soln(&grid g) {
+/*
+ * deletion-based puzzle creation algorithm
+ * suggested by ksudoku.
+ * g is assumed to be a partial solution
+ */
+void
+del_soln(&grid g)
+{
     int[dim(g)] delns = { [i] = i };
+
     shuffle(&delns);
     for (int i = 0; i < dim(delns); i++) {
-	print_grid(stdout, g); printf("\n");
-	&int d = &g[delns[i]];
-	int save = d;
-	d = 0;
-	int s = solve(&g, false, false);
-	if (s >= 2)
-	    d = save;
-	assert (s != 0, "clearing cell removed solutions!");
+        print_grid(stdout, g);
+        printf("\n");
+        &int d = &g[delns[i]];
+        int  save = d;
+        d = 0;
+        int s = solve(&g, false, false);
+        if (s >= 2)
+            d = save;
+        assert(s != 0, "clearing cell removed solutions!");
     }
 }
 
-# start by creating a random solution.  a slight variant
-# of the solver can do this.
-grid create_soln() {
-    grid g = (int[side**2]){0, ...};
-    int nsolns = solve(&g, true, true);
+/*
+ * start by creating a random solution.  a slight variant
+ * of the solver can do this.
+ */
+grid
+create_soln()
+{
+    grid g = (int[side ** 2]) { 0 ... };
+    int  nsolns = solve(&g, true, true);
+
     assert(nsolns > 0, "cannot create puzzle");
     return g;
 }
 
-void make_std_puzzle(file prob, file soln) {
+void
+make_std_puzzle(file prob, file soln)
+{
     grid g = create_soln();
+
     del_soln(&g);
     print_grid(prob, g);
     int nsolns = solve(&g, false, false);
@@ -138,13 +170,16 @@ void make_std_puzzle(file prob, file soln) {
     print_grid(soln, g);
 }
 
-void make_quadrant_puzzle(file prob, file soln) {
+void
+make_quadrant_puzzle(file prob, file soln)
+{
     grid g = create_soln();
-    int xoff = randint(unit);
-    int yoff = randint(unit);
+    int  xoff = randint(unit);
+    int  yoff = randint(unit);
+
     for (int x = 0; x < unit; x++)
-	for (int y = 0; y < unit; y++)
-	    g[x + unit * xoff + (y + unit * yoff) * side] = 0;
+        for (int y = 0; y < unit; y++)
+            g[x + unit * xoff + (y + unit * yoff) * side] = 0;
     print_grid(prob, g);
     int nsolns = solve(&g, false, false);
     assert(nsolns == 1, "found %d solutions", nsolns);
@@ -152,12 +187,16 @@ void make_quadrant_puzzle(file prob, file soln) {
     print_grid(soln, g);
 }
 
-grid read_prob(file prob) {
+grid
+read_prob(file prob)
+{
     int[...] g = {};
-    int i = 0;
+    int      i = 0;
+
     side = 0;
-    while (side == 0 || i < side**2) {
+    while (side == 0 || i < side ** 2) {
         int ch = getc(prob);
+
         if (ch == '\n') {
             if (side == 0) {
                 side = i;
@@ -181,75 +220,68 @@ grid read_prob(file prob) {
 
 if (dim(argv) > 0) {
     argdesc argd = {
-	args = {
-	    { var = (arg_var.arg_flag) &(bool quadrant = false),
-	      name = "quadrant",
-	      abbr = 'q',
-	      desc = "Construct puzzle with missing quadrant"
-	    },
-	    { var = (arg_var.arg_flag) &(bool count_solns = false),
-	      name = "count",
-	      abbr = 'c',
-	      desc = "Count number of solutions to puzzle"
-	    },
-	    { var = (arg_var.arg_int) &unit,
-	      name = "unit",
-	      abbr = 'u',
-	      expr_name = "size",
-	      desc = "Unit cell size"
-	    }
-	},
-	posn_args = {
-	    { var = (arg_var.arg_string) &(string basename),
-	      name = "basename"
-	    }
-	}
+        args = {
+            { var = (arg_var.arg_flag) (&(bool quadrant = false)),
+              name = "quadrant", abbr = 'q',
+              desc = "Construct puzzle with missing quadrant" },
+            { var = (arg_var.arg_flag) (&(bool count_solns = false)),
+              name = "count", abbr = 'c',
+              desc = "Count number of solutions to puzzle" },
+            { var = (arg_var.arg_int) (&unit), name = "unit",
+              abbr = 'u', expr_name = "size", desc = "Unit cell size" }
+        },
+        posn_args = {
+            { var = (arg_var.arg_string) (&(string basename)), name = "basename" }
+        }
     };
+
     parseargs(&argd, &argv);
     dev_srandom(16);
 
     if (count_solns) {
-       twixt(file prob = open(basename + "-prob.txt", "r"); close(prob)) {
-           grid g = read_prob(prob);
-           init_edges();
-           printf("%d\n", solve(&g, false, false));
-       }
-       exit(0);
+        twixt (file prob = open(basename + "-prob.txt", "r"); close(prob)) {
+            grid g = read_prob(prob);
+
+            init_edges();
+            printf("%d\n", solve(&g, false, false));
+        }
+        exit(0);
     }
 
     side = unit ** 2;
     init_edges();
-    twixt((file prob = open(basename + "-prob.txt", "w")),
-          (file soln = open(basename + "-soln.txt", "w"));
-          close(prob),
-          close(soln)) {
+    twixt ((file prob = open(basename + "-prob.txt", "w")),
+           (file soln = open(basename + "-soln.txt", "w"));
+           close(prob), close(soln))
+    {
         if (quadrant)
             make_quadrant_puzzle(prob, soln);
         else
-	    make_std_puzzle(prob, soln);
+            make_std_puzzle(prob, soln);
     }
     exit(0);
 }
 
-
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated
-# documentation files (the "Software"), to deal in the
-# Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to
-# permit persons to whom the Software is furnished to do so,
-# subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall
-# be included in all copies or substantial portions of the
-# Software.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
-# KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-# PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
-# OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+/*
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the
+ * Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall
+ * be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+ * KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+ * WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+ * OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */

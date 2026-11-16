@@ -8,35 +8,35 @@
 
 extend namespace Ctype {
 
-    public bool isascii(int ch)
-	/*
-	 * As with C ctype.h, things outside the ASCII range
-	 * are not handled here.  Unlike C ctype.h, we handle
-	 * this case cleanly.
-	 */
+    public bool
+    isascii(int ch)
+        /*
+         * As with C ctype.h, things outside the ASCII range
+         * are not handled here.  Unlike C ctype.h, we handle
+         * this case cleanly.
+         */
     {
-	return ch >= 0 && ch <= 127;
+        return ch >= 0 && ch <= 127;
     }
 
     /* The characteristic vector of sets of Latin-1 chars. */
     public typedef bool[256] charset;
 
-    public charset make_charset(bool(int) cfun)
-	/*
-	 * Make a characteristic vector from a characteristic function.
-	 */
+    public charset
+    make_charset(bool(int) cfun)
+        /* Make a characteristic vector from a characteristic function. */
     {
-	charset result;
-	for (int i = 0; i < dim(result); i++)
-	    result[i] = cfun(i);
-	return result;
+        charset result;
+
+        for (int i = 0; i < dim(result); i++)
+            result[i] = cfun(i);
+        return result;
     }
 
-    public bool member(charset v, int ch)
-	/*
-	 * Test whether a particular char is in a charset.
-	 */
+    public bool
+    member(charset v, int ch)
+        /* Test whether a particular char is in a charset. */
     {
-	return ch >= 0 && ch < dim(v) && v[ch];
+        return ch >= 0 && ch < dim(v) && v[ch];
     }
 }

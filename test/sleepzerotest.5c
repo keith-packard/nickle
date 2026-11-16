@@ -7,5 +7,5 @@
  * disarms it, so sleep (0) never woke when no other timer was pending.
  */
 
-sleep (0);
-sleep (-5);
+sleep(0);
+sleep(-5);

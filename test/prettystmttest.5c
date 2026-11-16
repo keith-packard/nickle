@@ -14,164 +14,186 @@
  * union switch, and numbers printed as their values, .4 as (2/5).
  */
 
-exception wrong (string what, poly got, poly want);
+exception wrong(string what, poly got, poly want);
 
-void function check (string what, poly got, poly want)
+void
+check(string what, poly got, poly want)
 {
     if (got != want)
-	raise wrong (what, got, want);
+        raise wrong(what, got, want);
 }
 
 /* Return the printed form of the function 'name' */
-string function printed (string name)
+string
+printed(string name)
 {
-    file f = File::string_write ();
-    Command::pretty_print (f, (string[*]) { name });
-    return File::string_string (f);
+    file f = File::string_write();
+
+    Command::pretty_print(f, (string[*]) { name });
+    return File::string_string(f);
 }
 
-void function has (string what, string text, string want)
+void
+has(string what, string text, string want)
 {
-    if (String::index (text, want) < 0)
-	raise wrong (what, text, want);
+    if (String::index(text, want) < 0)
+        raise wrong(what, text, want);
 }
 
-typedef union { int i; string s; void v; } U;
+typedef union {
+    int    i;
+    string s;
+    void   v;
+} U;
 
-int function pick (U u)
+int
+pick(U u)
 {
     union switch (u) {
     case i:
-	return 1;
+        return 1;
     case s x:
-	return String::length (x);
+        return String::length(x);
     default:
-	return 0;
+        return 0;
     }
 }
 
-string p = printed ("pick");
-has ("member", p, "case i:");
-has ("bound name", p, "case s x:");
+string p = printed("pick");
+has("member", p, "case i:");
+has("bound name", p, "case s x:");
 
-namespace N { public exception nx (); }
-
-void function thrower ()
-{
-    raise N::nx ();
+namespace N {
+    public exception nx();
 }
 
-has ("qualified raise", printed ("thrower"), "raise N::nx();");
+void
+thrower()
+{
+    raise N::nx();
+}
+
+has("qualified raise", printed("thrower"), "raise N::nx();");
 
 /* The printed union switch compiles and behaves the same */
-int start = String::index (p, "(");
-string again = String::substr (p, start, String::length (p) - start);
-Command::lex_string ("int function pick_again " + again + "\n" +
-		     "check(\"i\", pick_again((U) { .i = 5 }), pick((U) { .i = 5 }));\n" +
-		     "check(\"s\", pick_again((U) { .s = \"abc\" }), 3);\n" +
-		     "check(\"v\", pick_again(U.v), 0);\n");
+int    start = String::index(p, "(");
+string again = String::substr(p, start, String::length(p) - start);
+Command::lex_string("int function pick_again " + again + "\n"
+                    + "check(\"i\", pick_again((U) { .i = 5 }), pick((U) { .i = 5 }));\n"
+                    + "check(\"s\", pick_again((U) { .s = \"abc\" }), 3);\n"
+                    + "check(\"v\", pick_again(U.v), 0);\n");
 
 /* Declaration qualifiers print with their types, and global persists */
-int function quals ()
+int
+quals()
 {
-    const int c = 9;
-    const k = 3;
+    const int  c = 9;
+    const      k = 3;
     global int gg = 5;
     static int s = 2;
     return c + k + gg++ + s;
 }
 
-string q = printed ("quals");
-has ("const", q, "const int  c = 9;");
-has ("const poly", q, "const      k = 3;");
-has ("global", q, "global int gg = 5;");
-has ("static", q, "static int s = 2;");
-int qstart = String::index (q, "(");
-Command::lex_string ("int function quals_again " +
-		     String::substr (q, qstart, String::length (q) - qstart) + "\n" +
-		     "check(\"first call\", quals_again(), 19);\n" +
-		     "check(\"second call\", quals_again(), 20);\n");
+string q = printed("quals");
+has("const", q, "const int  c = 9;");
+has("const poly", q, "const      k = 3;");
+has("global", q, "global int gg = 5;");
+has("static", q, "static int s = 2;");
+int qstart = String::index(q, "(");
+Command::lex_string("int function quals_again "
+                    + String::substr(q, qstart, String::length(q) - qstart)
+                    + "\n" + "check(\"first call\", quals_again(), 19);\n"
+                    + "check(\"second call\", quals_again(), 20);\n");
 
 /* Printed globals and namespaces read back */
 namespace Outer {
     public int x = 1;
+
     public namespace Inner {
-	public int y = 2;
+        public int y = 2;
     }
 }
-int unset;
 
-file nf = File::string_write ();
-Command::pretty_print (nf, (string[*]) { "Outer" });
-Command::pretty_print (nf, (string[*]) { "unset" });
-string ns = File::string_string (nf);
-has ("nested namespace", ns, "public namespace Inner {");
-has ("uninitialized", ns, "global int unset;");
-Command::lex_string ("namespace Again " + String::substr (ns, String::index (ns, "{"),
-							  String::length (ns) - String::index (ns, "{")) +
-		     "check(\"outer\", Again::x, 1);\n" +
-		     "check(\"inner\", Again::Inner::y, 2);\n");
+int  unset;
+
+file nf = File::string_write();
+Command::pretty_print(nf, (string[*]) { "Outer" });
+Command::pretty_print(nf, (string[*]) { "unset" });
+string ns = File::string_string(nf);
+has("nested namespace", ns, "public namespace Inner {");
+has("uninitialized", ns, "global int unset;");
+Command::lex_string("namespace Again "
+                    + String::substr(ns, String::index(ns, "{"),
+                                     String::length(ns)
+                                     - String::index(ns, "{"))
+                    + "check(\"outer\", Again::x, 1);\n"
+                    + "check(\"inner\", Again::Inner::y, 2);\n");
 
 /* do-while inside if-else, and a comprehension with a block, read back */
-int function dowhile (int a, bool b)
+int
+dowhile(int a, bool b)
 {
     if (b)
-	do
-	    a--;
-	while (a > 0)
+        do
+            a--;
+        while (a > 0);
     else
-	a = 5;
+        a = 5;
     return a;
 }
 
-int[*] function compblock ()
+int[*]
+compblock()
 {
-    return (int[3]) { [i] { int j = i * 2; return j + 1; } };
+    return (int[3]) { [i] {
+        int j = i * 2;
+        return j + 1;
+    } };
 }
 
-string dw = printed ("dowhile");
-string cb = printed ("compblock");
-has ("do-while", dw, "while (a > 0);\n");
-int dws = String::index (dw, "(");
-int cbs = String::index (cb, "(");
-Command::lex_string ("int function dowhile_again " +
-		     String::substr (dw, dws, String::length (dw) - dws) +
-		     "int[*] function compblock_again " +
-		     String::substr (cb, cbs, String::length (cb) - cbs) +
-		     "check(\"do-while true\", dowhile_again(3, true), dowhile(3, true));\n" +
-		     "check(\"do-while false\", dowhile_again(3, false), dowhile(3, false));\n" +
-		     "check(\"comprehension\", compblock_again(), compblock());\n");
+string dw = printed("dowhile");
+string cb = printed("compblock");
+has("do-while", dw, "while (a > 0);\n");
+int dws = String::index(dw, "(");
+int cbs = String::index(cb, "(");
+Command::lex_string("int function dowhile_again "
+                    + String::substr(dw, dws, String::length(dw) - dws)
+                    + "int[*] function compblock_again "
+                    + String::substr(cb, cbs, String::length(cb) - cbs)
+                    + "check(\"do-while true\", dowhile_again(3, true), dowhile(3, true));\n"
+                    + "check(\"do-while false\", dowhile_again(3, false), dowhile(3, false));\n"
+                    + "check(\"comprehension\", compblock_again(), compblock());\n");
 
 /* A return without a value prints without a space before its ';' */
-void function early (int a)
+void
+early(int a)
 {
     if (a > 0)
-	return;
+        return;
     a = 1;
 }
 
-has ("void return", printed ("early"), "        return;\n");
-
+has("void return", printed("early"), "        return;\n");
 
 /* An enum switch prints as one */
 typedef enum { red, green } color;
 
-int function hue (color c)
+int
+hue(color c)
 {
     enum switch (c) {
     case red:
-	return 1;
+        return 1;
     case green:
-	return 2;
+        return 2;
     }
 }
 
-has ("enum switch", printed ("hue"), "enum switch (c) {");
+has("enum switch", printed("hue"), "enum switch (c) {");
 
 /* Numbers print as written */
-real function numbers ()
-{
-    return .4 + 1_000 + 0x1F + 1.5e3 + .{3};
-}
+real
+numbers() = .4 + 1_000 + 0x1F + 1.5e3 + .{3};
 
-has ("numbers", printed ("numbers"), "numbers() = .4 + 1_000 + 0x1F + 1.5e3 + .{3};");
+has("numbers", printed("numbers"),
+    "numbers() = .4 + 1_000 + 0x1F + 1.5e3 + .{3};");

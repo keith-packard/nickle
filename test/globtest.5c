@@ -8,26 +8,27 @@
  * "~" wasn't expanded.
  */
 
-exception wrong (string name, string got, string want);
+exception wrong(string name, string got, string want);
 
-void function check (string name, string want)
+void
+check(string name, string want)
 {
-    string got = Command::glob (name);
+    string got = Command::glob(name);
 
     if (got != want)
-	raise wrong (name, got, want);
+        raise wrong(name, got, want);
 }
 
-check ("", "");
-check ("a", "a");
-check ("~x", "~x");
-check ("a~", "a~");
-check ("a/~/b", "a/~/b");
+check("", "");
+check("a", "a");
+check("~x", "~x");
+check("a~", "a~");
+check("a/~/b", "a/~/b");
 
-if (Environ::check ("HOME")) {
-    string home = Environ::get ("HOME");
+if (Environ::check("HOME")) {
+    string home = Environ::get("HOME");
 
-    check ("~", home);
-    check ("~/", home + "/");
-    check ("~/a/b", home + "/a/b");
+    check("~", home);
+    check("~/", home + "/");
+    check("~/a/b", home + "/a/b");
 }

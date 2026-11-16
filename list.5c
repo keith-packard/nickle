@@ -16,63 +16,80 @@
  */
 
 namespace List {
-	public typedef list_t;
+    public typedef list_t;
 
-	public typedef struct {
-		*list_t	prev;
-		*list_t	next;
-	} list_t;
+    public typedef struct {
+        *list_t prev;
+        *list_t next;
+    } list_t;
 
-	public void init(*list_t l) {
-		l->next = l;
-		l->prev = l;
-	}
+    public void
+    init(*list_t l)
+    {
+        l->next = l;
+        l->prev = l;
+    }
 
-	void add(*list_t entry, *list_t prev, *list_t next) {
-		next->prev = entry;
-		entry->next = next;
-		entry->prev = prev;
-		prev->next = entry;
-	}
+    void
+    add(*list_t entry, *list_t prev, *list_t next)
+    {
+        next->prev = entry;
+        entry->next = next;
+        entry->prev = prev;
+        prev->next = entry;
+    }
 
-	void del(*list_t prev, *list_t next) {
-		next->prev = prev;
-		prev->next = next;
-	}
+    void
+    del(*list_t prev, *list_t next)
+    {
+        next->prev = prev;
+        prev->next = next;
+    }
 
-	public bool is_empty(*list_t head) {
-		return head->next == head;
-	}
+    public bool
+    is_empty(*list_t head) = head->next == head;
 
-	public *list_t first(*list_t head) {
-		assert(!is_empty(head), "empty list");
-		return head->next;
-	}
+    public *list_t
+    first(*list_t head)
+    {
+        assert(!is_empty(head), "empty list");
+        return head->next;
+    }
 
-	public *list_t last(*list_t head) {
-		assert(!is_empty(head), "empty list");
-		return head->prev;
-	}
-		
-	public void insert(*list_t entry, *list_t head) {
-		add(entry, head, head->next);
-	}
+    public *list_t
+    last(*list_t head)
+    {
+        assert(!is_empty(head), "empty list");
+        return head->prev;
+    }
 
-	public void append(*list_t entry, *list_t head) {
-		add(entry, head->prev, head);
-	}
+    public void
+    insert(*list_t entry, *list_t head)
+    {
+        add(entry, head, head->next);
+    }
 
-	public void remove(*list_t entry) {
-		del(entry->prev, entry->next);
-		init(entry);
-	}
+    public void
+    append(*list_t entry, *list_t head)
+    {
+        add(entry, head->prev, head);
+    }
 
-	public iterate(*list_t head, bool (*list_t) f) {
-		*list_t next;
-		for (*list_t pos = head->next; pos != head; pos = next) {
-			next = pos->next;
-			if (!f(pos))
-				break;
-		}
-	}
+    public void
+    remove(*list_t entry)
+    {
+        del(entry->prev, entry->next);
+        init(entry);
+    }
+
+    public poly
+    iterate(*list_t head, bool(*list_t) f)
+    {
+        *list_t next;
+        for (*list_t pos = head->next; pos != head; pos = next) {
+            next = pos->next;
+            if (!f(pos))
+                break;
+        }
+    }
 }

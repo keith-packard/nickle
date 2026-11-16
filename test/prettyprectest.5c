@@ -12,16 +12,17 @@
  * their parentheses.
  */
 
-exception wrong (string what, poly got, poly want);
+exception wrong(string what, poly got, poly want);
 
-void function check (string what, poly got, poly want)
+void
+check(string what, poly got, poly want)
 {
     if (got != want)
-	raise wrong (what, got, want);
+        raise wrong(what, got, want);
 }
 
-int a = 9, b = 3, c = 2;
-bool t = true, u = false;
+int          a = 9, b = 3, c = 2;
+bool         t = true, u = false;
 
 /* Each source expression and how it prints */
 string[*][2] cases = {
@@ -63,16 +64,19 @@ string[*][2] cases = {
     { "t || (u && t)", "t || (u && t)" },
     { "a + b * c", "a + b * c" },
     { "a < b + c", "a < b + c" },
-    { "is_type(a, int) || has_member(a, x)", "is_type(a, int) || has_member(a, x)" },
+    { "is_type(a, int) || has_member(a, x)",
+      "is_type(a, int) || has_member(a, x)" },
     { "max((a, b), c)", "max((a, b), c)" },
     { "(int[3]) { (a, b), c, a = 4 }", "(int[3]) { (a, b), c, a = 4 }" },
     { "(int[2, 2]) { [i, j] = i + j }", "(int[2, 2]) { [i, j] = i + j }" },
     { "(int[int]) { (a, b) => (b, c) }", "(int[int]) { (a, b) => (b, c) }" },
     { "0x1.123456789abcdef0123", "0x1.123456789abcdef0123" },
-    { "0x0.000000000000000000000000000001", "0x0.000000000000000000000000000001" },
+    { "0x0.000000000000000000000000000001",
+      "0x0.000000000000000000000000000001" },
     { "0x0.{5}", "0x0.{5}" },
     { "0o1.000000000000000000000001", "0o1.000000000000000000000001" },
-    { "0b1.0000000000000000000000000000001", "0b1.0000000000000000000000000000001" },
+    { "0b1.0000000000000000000000000000001",
+      "0b1.0000000000000000000000000000001" },
     { "([string])", "(poly[string]) {}" },
     /* A declaration as an operand keeps its parentheses */
     { "(int u = 4) + 1", "(int u = 4) + 1" },
@@ -82,18 +86,19 @@ string[*][2] cases = {
     { "((int u = 2), (int v = 3))", "((int u = 2), (int v = 3))" },
 };
 
-for (int i = 0; i < dim (cases); i++) {
-    string name = sprintf ("prec_%d", i);
-    Command::lex_string (sprintf ("poly %s() { return %s; }\n", name, cases[i][0]));
+for (int i = 0; i < dim(cases); i++) {
+    string name = sprintf("prec_%d", i);
+    Command::lex_string(sprintf("poly %s() { return %s; }\n", name, cases[i][0]));
 }
 
 /* What calling 'f' gives, or the name of the exception it raises */
-poly function result (poly() f)
+poly
+result(poly() f)
 {
     try {
-	return f ();
-    } catch invalid_unop_value (string m, poly v) {
-	return "invalid_unop_value";
+        return f();
+    } catch invalid_unop_value(string m, poly v) {
+        return "invalid_unop_value";
     }
 }
 
@@ -103,35 +108,43 @@ poly function result (poly() f)
  * lex_string runs after this statement, so queue it all at once
  */
 string again = "";
-for (int i = 0; i < dim (cases); i++) {
-    string name = sprintf ("prec_%d", i);
-    file f = File::string_write ();
-    Command::pretty_print (f, (string[*]) { name });
-    string printed = File::string_string (f);
+for (int i = 0; i < dim(cases); i++) {
+    string name = sprintf("prec_%d", i);
+    file   f = File::string_write();
+
+    Command::pretty_print(f, (string[*]) { name });
+    string printed = File::string_string(f);
+
     /* A body returning one value prints as '= value' */
     string want = ") = " + cases[i][1] + ";";
-    if (String::index (printed, want) < 0)
-	raise wrong (cases[i][0], printed, want);
-    again += sprintf ("check(\"%s\", result(prec_%d), result(poly func() { return %s; }));\n",
-		      cases[i][0], i, cases[i][1]);
+    if (String::index(printed, want) < 0)
+        raise wrong(cases[i][0], printed, want);
+    again += sprintf(
+        "check(\"%s\", result(prec_%d), result(poly func() { return %s; }));\n",
+        cases[i][0], i, cases[i][1]);
 }
-Command::lex_string (again);
+Command::lex_string(again);
 
 /* Statements whose values can't be compared print as written */
-void function statements ()
+void
+statements()
 {
     int x = 7;
+
     x //= 3;
-    thread t = fork x + 1;
-    int y = (x, 3);
-    poly[*] z = ([3]);
-    y = abs ((int w = -4));
+    thread  t = fork x + 1;
+    int     y = (x, 3);
+    poly[*] z = (poly[3]) {};
+    y = abs((int w = -4));
 }
-file f = File::string_write ();
-Command::pretty_print (f, (string[*]) { "statements" });
-string printed = File::string_string (f);
-check ("//=", String::index (printed, "x //= 3;") >= 0, true);
-check ("fork", String::index (printed, "thread  t = fork x + 1;") >= 0, true);
-check ("declaration", String::index (printed, "int     y = (x, 3);") >= 0, true);
-check ("uninitialized array", String::index (printed, "poly[*] z = (poly[3]) {};") >= 0, true);
-check ("declaration argument", String::index (printed, "y = abs((int w = -4));") >= 0, true);
+
+file f = File::string_write();
+Command::pretty_print(f, (string[*]) { "statements" });
+string printed = File::string_string(f);
+check("//=", String::index(printed, "x //= 3;") >= 0, true);
+check("fork", String::index(printed, "thread  t = fork x + 1;") >= 0, true);
+check("declaration", String::index(printed, "int     y = (x, 3);") >= 0, true);
+check("uninitialized array",
+      String::index(printed, "poly[*] z = (poly[3]) {};") >= 0, true);
+check("declaration argument",
+      String::index(printed, "y = abs((int w = -4));") >= 0, true);

@@ -6,63 +6,75 @@
 
 int errors = 0;
 
-int fact(int n) {
+int
+fact(int n)
+{
     int r = 1;
+
     while (n > 1) {
-    	r *= n;
-	n--;
+        r *= n;
+        n--;
     }
     return r;
 }
 
-void check_factorial(int max) {
-     for (int n = 0; n < max; n++) {
-	 int is = n!;
-     	 int should = fact(n);
-
-     	 if (is != should) {
-	    printf ("check failed %d! (was %d should be %d)\n",
-	    	    n, is, should);
-	    ++errors;
-	 }
-     }
-}
-
-real stirling (real n)
+void
+check_factorial(int max)
 {
-    n = imprecise (n);
-    return sqrt (2 * pi * n) * (n / Math::e) ** n;
+    for (int n = 0; n < max; n++) {
+        int is = n!;
+        int should = fact(n);
+
+        if (is != should) {
+            printf("check failed %d! (was %d should be %d)\n", n, is, should);
+            ++errors;
+        }
+    }
 }
 
-void check_one_stirling(int v) {
-	real s = stirling(v);
-	real f = v!;
-	real r = f/s;
-	real e = 0.1/v;
-	if (r < 1 || r > (1 + e)) {
-		printf("check failed %d! (was %d should be close to %g)\n",
-		       v, f, s);
-		++errors;
-	}
+real
+stirling(real n)
+{
+    n = imprecise(n);
+    return sqrt(2 * pi * n) * (n / Math::e) ** n;
 }
 
-void check_stirling(int rep) {
-	real v = 13;
-	while (rep-- > 0) {
-		int iv = floor(v);
-		check_one_stirling(iv);
-		v = v * 3 + 2;
-	}
+void
+check_one_stirling(int v)
+{
+    real s = stirling(v);
+    real f = v!;
+    real r = f / s;
+    real e = 0.1 / v;
+    if (r < 1 || r > 1 + e) {
+        printf("check failed %d! (was %d should be close to %g)\n", v, f, s);
+        ++errors;
+    }
+}
+
+void
+check_stirling(int rep)
+{
+    real v = 13;
+    while (rep-- > 0) {
+        int iv = floor(v);
+
+        check_one_stirling(iv);
+        v = v * 3 + 2;
+    }
 }
 
 /* Negative arguments, below and above the small-value cutoff */
-void check_negative(int n) {
-	try {
-		int r = n!;
-		printf("check failed %d! (was %d should raise)\n", n, r);
-		++errors;
-	} catch invalid_unop_value (string m, poly v) {
-	}
+void
+check_negative(int n)
+{
+    try {
+        int r = n!;
+
+        printf("check failed %d! (was %d should raise)\n", n, r);
+        ++errors;
+    } catch invalid_unop_value(string m, poly v) {
+    }
 }
 
 check_stirling(10);
@@ -71,4 +83,4 @@ check_negative(-1);
 check_negative(-19);
 check_negative(-25);
 
-exit (errors);
+exit(errors);

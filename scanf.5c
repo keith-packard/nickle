@@ -1,364 +1,376 @@
-/*
- * Scanf code.  Extend File namespace with reading code
- */
+/* Scanf code.  Extend File namespace with reading code */
 extend namespace File {
     typedef enum {
-	binary, octal, decimal, hex, number, character, word
+        binary,    octal,     decimal,   hex,       number,    character,
+        word
     } conversion_kind_t;
 
     typedef struct {
-	conversion_kind_t   kind;
-	bool		    store;	/* false for '*' */
-	int		    width;	/* -1 when the format gives none */
+        conversion_kind_t kind;
+        bool              store; /* false for '*' */
+        int               width; /* -1 when the format gives none */
     } conversion_t;
 
     typedef union {
-	void		space;
-	int		literal;
-	conversion_t	conversion;
+        void         space;
+        int          literal;
+        conversion_t conversion;
     } directive_t;
 
-    directive_t[...] scan_format (string format, *int stored)
-	/*
-	 * Return the directives in a scanf 'format', setting 'stored'
-	 * to the number of values they store
-	 */
+    directive_t[...]
+    scan_format(string format, *int stored)
+        /*
+         * Return the directives in a scanf 'format', setting 'stored'
+         * to the number of values they store
+         */
     {
-	directive_t[...]    ds = {};
-	int		    len = String::length (format);
-	int		    i = 0;
+        directive_t[...] ds = {};
+        int              len = String::length(format);
+        int              i = 0;
 
-	*stored = 0;
-	while (i < len) {
-	    int c = format[i++];
+        *stored = 0;
+        while (i < len) {
+            int c = format[i++];
 
-	    if (Ctype::isspace (c)) {
-		ds[dim (ds)] = directive_t.space;
-		continue;
-	    }
-	    if (c != '%') {
-		ds[dim (ds)] = (directive_t) { .literal = c };
-		continue;
-	    }
+            if (Ctype::isspace(c)) {
+                ds[dim(ds)] = directive_t.space;
+                continue;
+            }
+            if (c != '%') {
+                ds[dim(ds)] = (directive_t) { literal = c };
+                continue;
+            }
 
-	    conversion_t cv = { .store = true, .width = -1 };
+            conversion_t cv = { store = true, width = -1 };
 
-	    if (i < len && format[i] == '*') {
-		cv.store = false;
-		i++;
-	    }
-	    while (i < len && Ctype::isdigit (format[i]))
-		cv.width = max (cv.width, 0) * 10 + format[i++] - '0';
-	    if (i == len || cv.width == 0)
-		raise invalid_argument ("invalid format", 1, format);
-	    switch (Ctype::tolower (format[i++])) {
-	    case '%':
-		/* Like the conversions, %% skips whitespace */
-		ds[dim (ds)] = directive_t.space;
-		ds[dim (ds)] = (directive_t) { .literal = '%' };
-		continue;
-	    case 'b':
-		cv.kind = conversion_kind_t.binary;
-		break;
-	    case 'o':
-		cv.kind = conversion_kind_t.octal;
-		break;
-	    case 'd':
-		cv.kind = conversion_kind_t.decimal;
-		break;
-	    case 'x':
-		cv.kind = conversion_kind_t.hex;
-		break;
-	    case 'a': case 'e': case 'f': case 'g':
-		cv.kind = conversion_kind_t.number;
-		break;
-	    case 'c':
-		cv.kind = conversion_kind_t.character;
-		break;
-	    case 's':
-		cv.kind = conversion_kind_t.word;
-		break;
-	    default:
-		raise invalid_argument ("invalid format", 1, format);
-	    }
-	    if (cv.store)
-		++*stored;
-	    ds[dim (ds)] = (directive_t) { .conversion = cv };
-	}
-	return ds;
+            if (i < len && format[i] == '*') {
+                cv.store = false;
+                i++;
+            }
+            while (i < len && Ctype::isdigit(format[i]))
+                cv.width = max(cv.width, 0) * 10 + format[i++] - '0';
+            if (i == len || cv.width == 0)
+                raise invalid_argument("invalid format", 1, format);
+            switch (Ctype::tolower(format[i++])) {
+            case '%':
+                /* Like the conversions, %% skips whitespace */
+                ds[dim(ds)] = directive_t.space;
+                ds[dim(ds)] = (directive_t) { literal = '%' };
+                continue;
+            case 'b':
+                cv.kind = conversion_kind_t.binary;
+                break;
+            case 'o':
+                cv.kind = conversion_kind_t.octal;
+                break;
+            case 'd':
+                cv.kind = conversion_kind_t.decimal;
+                break;
+            case 'x':
+                cv.kind = conversion_kind_t.hex;
+                break;
+            case 'a':
+            case 'e':
+            case 'f':
+            case 'g':
+                cv.kind = conversion_kind_t.number;
+                break;
+            case 'c':
+                cv.kind = conversion_kind_t.character;
+                break;
+            case 's':
+                cv.kind = conversion_kind_t.word;
+                break;
+            default:
+                raise invalid_argument("invalid format", 1, format);
+            }
+            if (cv.store)
+                ++*stored;
+            ds[dim(ds)] = (directive_t) { conversion = cv };
+        }
+        return ds;
     }
 
-    public int fscanf (file f, string format, *poly args ...)
-	/*
-	 * According to 'format', read from 'f' to 'args'
-	 */
+    public int
+    fscanf(file f, string format, *poly args ...)
+        /* According to 'format', read from 'f' to 'args' */
     {
-	exception matching_failure();
+        exception matching_failure();
 
-	/* How many more characters the conversion may read, or -1 */
-	int	width = -1;
+        /* How many more characters the conversion may read, or -1 */
+        int width = -1;
 
-	/* Return the next input character without reading it, or -1 */
-	int peek ()
-	{
-	    if (width == 0 || end (f))
-		return -1;
-	    int c = getc (f);
-	    ungetc (c, f);
-	    return c;
-	}
+        /* Return the next input character without reading it, or -1 */
+        int
+        peek()
+        {
+            if (width == 0 || end(f))
+                return -1;
+            int c = getc(f);
+            ungetc(c, f);
+            return c;
+        }
 
-	/* Read the character peek returned */
-	int next ()
-	{
-	    if (width > 0)
-		width--;
-	    return getc (f);
-	}
+        /* Read the character peek returned */
+        int
+        next()
+        {
+            if (width > 0)
+                width--;
+            return getc(f);
+        }
 
-	/* Skip whitespace */
-	void whitespace ()
-	{
-	    int c;
+        /* Skip whitespace */
+        void
+        whitespace()
+        {
+            int c;
 
-	    while (!end (f))
-		if (!Ctype::isspace (c = getc (f))) {
-		    ungetc (c, f);
-		    break;
-		}
-	}
+            while (!end(f))
+                if (!Ctype::isspace(c = getc(f))) {
+                    ungetc(c, f);
+                    break;
+                }
+        }
 
-	/* Match one character of input to 'c' */
-	void literal (int c)
-	{
-	    if (peek () != c)
-		raise matching_failure ();
-	    next ();
-	}
+        /* Match one character of input to 'c' */
+        void
+        literal(int c)
+        {
+            if (peek() != c)
+                raise matching_failure();
+            next();
+        }
 
-	/* Return whether 'c' is a digit in 'base' */
-	bool isbasedigit (int c, int base)
-	{
-	    switch (base) {
-	    case 16:
-		return Ctype::isxdigit (c);
-	    case 10:
-		return Ctype::isdigit (c);
-	    default:
-		return '0' <= c && c < '0' + base;
-	    }
-	}
+        /* Return whether 'c' is a digit in 'base' */
+        bool
+        isbasedigit(int c, int base)
+        {
+            switch (base) {
+            case 16:
+                return Ctype::isxdigit(c);
+            case 10:
+                return Ctype::isdigit(c);
+            default:
+                return '0' <= c && c < '0' + base;
+            }
+        }
 
-	/* Write any digits in 'base' to 's', returning how many */
-	int digits (file s, int base)
-	{
-	    int n = 0;
+        /* Write any digits in 'base' to 's', returning how many */
+        int
+        digits(file s, int base)
+        {
+            int n = 0;
 
-	    while (isbasedigit (peek (), base)) {
-		putc (next (), s);
-		n++;
-	    }
-	    return n;
-	}
+            while (isbasedigit(peek(), base)) {
+                putc(next(), s);
+                n++;
+            }
+            return n;
+        }
 
-	/* Write a sign to 's' if there is one */
-	void sign (file s)
-	{
-	    int c = peek ();
+        /* Write a sign to 's' if there is one */
+        void
+        sign(file s)
+        {
+            int c = peek();
 
-	    if (c == '+' || c == '-')
-		putc (next (), s);
-	}
+            if (c == '+' || c == '-')
+                putc(next(), s);
+        }
 
-	/*
-	 * Return the next integer in input: an optional sign, a 0x
-	 * prefix for base 16 or 0b for base 2, and at least one digit
-	 */
-	int integer (int base)
-	{
-	    file    s = string_write ();
-	    int	    n = 0;
+        /*
+         * Return the next integer in input: an optional sign, a 0x
+         * prefix for base 16 or 0b for base 2, and at least one digit
+         */
+        int
+        integer(int base)
+        {
+            file s = string_write();
+            int  n = 0;
 
-	    sign (s);
-	    if ((base == 16 || base == 2) && peek () == '0') {
-		int	prefix;
+            sign(s);
+            if ((base == 16 || base == 2) && peek() == '0') {
+                int prefix;
 
-		if (base == 16)
-		    prefix = 'x';
-		else
-		    prefix = 'b';
-		putc (next (), s);
-		n++;
-		if (Ctype::tolower (peek ()) == prefix)
-		    next ();
-	    }
-	    n += digits (s, base);
-	    if (n == 0)
-		raise matching_failure ();
-	    return string_to_integer (string_string (s), base);
-	}
+                if (base == 16)
+                    prefix = 'x';
+                else
+                    prefix = 'b';
+                putc(next(), s);
+                n++;
+                if (Ctype::tolower(peek()) == prefix)
+                    next();
+            }
+            n += digits(s, base);
+            if (n == 0)
+                raise matching_failure();
+            return string_to_integer(string_string(s), base);
+        }
 
-	/*
-	 * Return the next number in input, in the syntax of C's
-	 * strtod without infinities and NaNs: decimal with an
-	 * optional e exponent, or 0x hexadecimal with an optional p
-	 * exponent, plus Nickle's repeating fraction, as in 0.{3}
-	 * or 0x0.{5}
-	 */
-	real number ()
-	{
-	    file    s = string_write ();
-	    int	    base = 10;
-	    int	    exponent_letter = 'e';
-	    int	    n = 0;
+        /*
+         * Return the next number in input, in the syntax of C's
+         * strtod without infinities and NaNs: decimal with an
+         * optional e exponent, or 0x hexadecimal with an optional p
+         * exponent, plus Nickle's repeating fraction, as in 0.{3}
+         * or 0x0.{5}
+         */
+        real
+        number()
+        {
+            file s = string_write();
+            int  base = 10;
+            int  exponent_letter = 'e';
+            int  n = 0;
 
-	    sign (s);
-	    if (peek () == '0') {
-		putc (next (), s);
-		n++;
-		if (Ctype::tolower (peek ()) == 'x') {
-		    putc (next (), s);
-		    base = 16;
-		    exponent_letter = 'p';
-		    n = 0;
-		}
-	    }
-	    n += digits (s, base);
-	    if (peek () == '.') {
-		putc (next (), s);
-		n += digits (s, base);
-		if (peek () == '{') {
-		    putc (next (), s);
-		    int r = digits (s, base);
-		    if (r == 0 || peek () != '}')
-			raise matching_failure ();
-		    putc (next (), s);
-		    n += r;
-		}
-	    }
-	    if (n == 0)
-		raise matching_failure ();
-	    if (Ctype::tolower (peek ()) == exponent_letter) {
-		putc (next (), s);
-		sign (s);
-		if (digits (s, 10) == 0)
-		    raise matching_failure ();
-	    }
-	    return string_to_real (string_string (s));
-	}
+            sign(s);
+            if (peek() == '0') {
+                putc(next(), s);
+                n++;
+                if (Ctype::tolower(peek()) == 'x') {
+                    putc(next(), s);
+                    base = 16;
+                    exponent_letter = 'p';
+                    n = 0;
+                }
+            }
+            n += digits(s, base);
+            if (peek() == '.') {
+                putc(next(), s);
+                n += digits(s, base);
+                if (peek() == '{') {
+                    putc(next(), s);
+                    int r = digits(s, base);
+                    if (r == 0 || peek() != '}')
+                        raise matching_failure();
+                    putc(next(), s);
+                    n += r;
+                }
+            }
+            if (n == 0)
+                raise matching_failure();
+            if (Ctype::tolower(peek()) == exponent_letter) {
+                putc(next(), s);
+                sign(s);
+                if (digits(s, 10) == 0)
+                    raise matching_failure();
+            }
+            return string_to_real(string_string(s));
+        }
 
-	/* Return the next run of characters other than whitespace */
-	string word ()
-	{
-	    file    s = string_write ();
-	    int	    n = 0;
+        /* Return the next run of characters other than whitespace */
+        string
+        word()
+        {
+            file s = string_write();
+            int  n = 0;
 
-	    while (peek () >= 0 && !Ctype::isspace (peek ())) {
-		putc (next (), s);
-		n++;
-	    }
-	    if (n == 0)
-		raise matching_failure ();
-	    return string_string (s);
-	}
+            while (peek() >= 0 && !Ctype::isspace(peek())) {
+                putc(next(), s);
+                n++;
+            }
+            if (n == 0)
+                raise matching_failure();
+            return string_string(s);
+        }
 
-	/* Check the whole format first, so errors don't depend on the input */
-	int			stored;
-	directive_t[...]	ds = scan_format (format, &stored);
+        /* Check the whole format first, so errors don't depend on the input */
+        int              stored;
+        directive_t[...] ds = scan_format(format, &stored);
 
-	if (stored > dim (args))
-	    raise too_few_arguments (format, args);
-	if (stored < dim (args))
-	    raise too_many_arguments (format, args);
+        if (stored > dim(args))
+            raise too_few_arguments(format, args);
+        if (stored < dim(args))
+            raise too_many_arguments(format, args);
 
-	int	argc = 0;
+        int argc = 0;
 
-	try {
-	    for (int i = 0; i < dim (ds); i++) {
-		conversion_t	cv;
-		poly		value;
+        try {
+            for (int i = 0; i < dim(ds); i++) {
+                conversion_t cv;
+                poly         value;
 
-		width = -1;
-		union switch (ds[i]) {
-		case space:
-		    whitespace ();
-		    continue;
-		case literal c:
-		    literal (c);
-		    continue;
-		case conversion d:
-		    cv = d;
-		    break;
-		}
-		width = cv.width;
-		if (cv.kind != conversion_kind_t.character)
-		    whitespace ();
-		enum switch (cv.kind) {
-		case binary:
-		    value = integer (2);
-		    break;
-		case octal:
-		    value = integer (8);
-		    break;
-		case decimal:
-		    value = integer (10);
-		    break;
-		case hex:
-		    value = integer (16);
-		    break;
-		case number:
-		    value = number ();
-		    break;
-		case character:
-		    /* One character as an integer, or 'width' as a string */
-		    if (width < 0) {
-			if (peek () < 0)
-			    raise matching_failure ();
-			value = getc (f);
-		    } else {
-			file s = string_write ();
-			while (peek () >= 0)
-			    putc (next (), s);
-			if (width > 0)
-			    raise matching_failure ();
-			value = string_string (s);
-		    }
-		    break;
-		case word:
-		    value = word ();
-		    break;
-		}
-		if (cv.store)
-		    *args[argc++] = value;
-	    }
-	} catch matching_failure () {
-	}
-	return argc;
+                width = -1;
+                union switch (ds[i]) {
+                case space:
+                    whitespace();
+                    continue;
+                case literal c:
+                    literal(c);
+                    continue;
+                case conversion d:
+                    cv = d;
+                    break;
+                }
+                width = cv.width;
+                if (cv.kind != conversion_kind_t.character)
+                    whitespace();
+                enum switch (cv.kind) {
+                case binary:
+                    value = integer(2);
+                    break;
+                case octal:
+                    value = integer(8);
+                    break;
+                case decimal:
+                    value = integer(10);
+                    break;
+                case hex:
+                    value = integer(16);
+                    break;
+                case number:
+                    value = number();
+                    break;
+                case character:
+                    /* One character as an integer, or 'width' as a string */
+                    if (width < 0) {
+                        if (peek() < 0)
+                            raise matching_failure();
+                        value = getc(f);
+                    } else {
+                        file s = string_write();
+
+                        while (peek() >= 0)
+                            putc(next(), s);
+                        if (width > 0)
+                            raise matching_failure();
+                        value = string_string(s);
+                    }
+                    break;
+                case word:
+                    value = word();
+                    break;
+                }
+                if (cv.store)
+                    *args[argc++] = value;
+            }
+        } catch matching_failure() {
+        }
+        return argc;
     }
 
-    public int sscanf (string s, string format, *poly args...)
-	/*
-	 * According to 'format', read from 's' to 'args'
-	 */
+    public int
+    sscanf(string s, string format, *poly args ...)
+        /* According to 'format', read from 's' to 'args' */
     {
         file sf = string_read(s);
-        int n = fscanf (sf, format, args ...);
+        int  n = fscanf(sf, format, args...);
+
         close(sf);
         return n;
     }
 
     public namespace ScanfGlobals {
 
-	public int scanf (string format, *poly args...)
-	    /*
-	     * According to 'format', read from stdin to 'args'
-	     */
-	{
-	    return fscanf (stdin, format, args ...);
-	}
-
+        public int
+        scanf(string format, *poly args ...)
+            /* According to 'format', read from stdin to 'args' */
+        {
+            return fscanf(stdin, format, args...);
+        }
     }
 
     public import ScanfGlobals;
 }
+
 import File::ScanfGlobals;

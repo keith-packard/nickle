@@ -4,56 +4,64 @@ exception bad_seconds(int want, date_t date, int got);
 
 exception bad_date(date_t want, int seconds, date_t got);
 
-void test_round_seconds(int seconds) {
-    date_t	g = gmtime(seconds);
-    date_t	l = localtime(seconds);
-    int		sg = timegm(g);
-    int		sl = timelocal(l);
+void
+test_round_seconds(int seconds)
+{
+    date_t g = gmtime(seconds);
+    date_t l = localtime(seconds);
+    int    sg = timegm(g);
+    int    sl = timelocal(l);
 
     if (seconds != sg)
-	raise bad_seconds(seconds, g, sg);
+        raise bad_seconds(seconds, g, sg);
     if (seconds != sl)
-	raise bad_seconds(seconds, l, sl);
+        raise bad_seconds(seconds, l, sl);
 }
 
-void test_round_date(date_t date) {
-    int		sg = timegm(date);
-    int		sl = timelocal(date);
-    date_t	g = gmtime(sg);
-    date_t	l = localtime(sl);
+void
+test_round_date(date_t date)
+{
+    int    sg = timegm(date);
+    int    sl = timelocal(date);
+    date_t g = gmtime(sg);
+    date_t l = localtime(sl);
 
     if (g != date)
-	raise bad_date(date, sg, g);
+        raise bad_date(date, sg, g);
     if (l != date)
-	raise bad_date(date, sl, l);
+        raise bad_date(date, sl, l);
 }
 
-/* Allow either "UTC" or "GMT" to represent times that are 0 minutes
+/*
+ * Allow either "UTC" or "GMT" to represent times that are 0 minutes
  * from "UTC".
  */
 string
 canonical_zone(string z)
 {
     if (z == "UTC" || z == "NONE")
-	return "GMT";
+        return "GMT";
     return z;
 }
 
 bool
-date_equal(date_t a, date_t b) {
+date_equal(date_t a, date_t b)
+{
     a.zone = canonical_zone(a.zone);
     b.zone = canonical_zone(b.zone);
     return a == b;
 }
 
-void test_utc_seconds(int seconds, date_t date) {
-    date_t	got_date = gmtime(seconds);
-    int		got_seconds = timegm(date);
+void
+test_utc_seconds(int seconds, date_t date)
+{
+    date_t got_date = gmtime(seconds);
+    int    got_seconds = timegm(date);
 
     if (!date_equal(got_date, date))
-	raise bad_date(date, seconds, got_date);
+        raise bad_date(date, seconds, got_date);
     if (got_seconds != seconds)
-	raise bad_seconds(seconds, date, got_seconds);
+        raise bad_seconds(seconds, date, got_seconds);
 }
 
 test_round_seconds(0);
@@ -61,23 +69,15 @@ test_round_seconds(time());
 
 /* Epoch */
 test_utc_seconds(0,
-		 (date_t) {
-		     .sec = 0,
-		     .min = 0,
-		     .hour = 0,
-		     .mday = 1,
-		     .mon = 1,
-		     .wday = 4,
-		     .yday = 0,
-		     .year = 1970,
-		     .isdst = false,
-		     .gmtoff = 0,
-		     .zone = "GMT"
-			 });
+                 (date_t) { sec = 0, min = 0, hour = 0, mday = 1,
+                            mon = 1, wday = 4, yday = 0, year = 1970,
+                            isdst = false, gmtoff = 0, zone = "GMT" });
 
-/* Try the largest possible time for 32-bit systems. Update
+/*
+ * Try the largest possible time for 32-bit systems. Update
  * this test when glibc has been fixed for Y2038
  */
-test_utc_seconds(2**31-1,
-		 (date_t) {sec = 7, min = 14, hour = 3, mday = 19, mon = 1, year = 2038,
-		     wday = 2, yday = 18, isdst = false, gmtoff = 0, zone = "GMT"});
+test_utc_seconds(2 ** 31 - 1,
+                 (date_t) { sec = 7, min = 14, hour = 3, mday = 19,
+                            mon = 1, year = 2038, wday = 2, yday = 18,
+                            isdst = false, gmtoff = 0, zone = "GMT" });

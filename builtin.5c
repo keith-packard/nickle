@@ -8,166 +8,174 @@
 # for bootstrapping
 
 extend namespace Command {
+
     /* actually controls library loading */
     public string nickle_path = nickle_libdir;
 
     if (Environ::check("NICKLEPATH"))
-	nickle_path = Environ::get("NICKLEPATH");
+        nickle_path = Environ::get("NICKLEPATH");
 
-    public bool lex_file (string name)
-	/*
-	 * Push the file 'name' into the lexer and read input
-	 * from there until exhausted.  Then return to the current
-	 * file.
-	 */
+    public bool
+    lex_file(string name)
+        /*
+         * Push the file 'name' into the lexer and read input
+         * from there until exhausted.  Then return to the current
+         * file.
+         */
     {
-	return Command::lex_input (File::open (name, "r"), name, false, false);
+        return Command::lex_input(File::open(name, "r"), name, false, false);
     }
 
     /* currently just does ~ expansion */
-    public string glob(string filename)
-	/*
-	 * Expand a leading ~ or ~/ in 'filename' to the value of the
-	 * HOME environment variable and return the resulting string
-	 */
+    public string
+    glob(string filename)
+        /*
+         * Expand a leading ~ or ~/ in 'filename' to the value of the
+         * HOME environment variable and return the resulting string
+         */
     {
-	int len = String::length(filename);
+        int len = String::length(filename);
 
-	if (len > 0 && filename[0] == '~' && (len == 1 || filename[1] == '/')) {
-	    exception bad_glob();
-	    if (!Environ::check("HOME"))
-		raise bad_glob();
-	    return Environ::get("HOME") +
-		String::substr(filename, 1, len - 1);
-	}
-	return filename;
+        if (len > 0 && filename[0] == '~' && (len == 1 || filename[1] == '/')) {
+            exception bad_glob();
+            if (!Environ::check("HOME"))
+                raise bad_glob();
+            return Environ::get("HOME") + String::substr(filename, 1, len - 1);
+        }
+        return filename;
     }
 
-    string path_first (string path)
+    string
+    path_first(string path)
     {
-	int	i = String::index (path, ":");
+        int i = String::index(path, ":");
 
-	if (i < 0)
-	    return glob(path);
-	if (i == 0)
-	    return ".";
-	return glob(String::substr (path, 0, i));
+        if (i < 0)
+            return glob(path);
+        if (i == 0)
+            return ".";
+        return glob(String::substr(path, 0, i));
     }
 
-    string path_rest (string path)
+    string
+    path_rest(string path)
     {
-	int	i = String::index (path, ":");
-	if (i < 0)
-	    return "";
+        int i = String::index(path, ":");
 
-	int	l = String::length (path);
-	if (i == l-1)
-	    return ".";
-	return String::substr (path, i + 1, l - i - 1);
+        if (i < 0)
+            return "";
+
+        int l = String::length(path);
+        if (i == l - 1)
+            return ".";
+        return String::substr(path, i + 1, l - i - 1);
     }
 
-    bool open_library (string name, *file f, *string found)
-	/*
-	 * Search 'nickle_path' for the file 'name', opening the first
-	 * found and setting 'found' to its path.  Returns whether any
-	 * file was found.
-	 */
+    bool
+    open_library(string name, *file f, *string found)
+        /*
+         * Search 'nickle_path' for the file 'name', opening the first
+         * found and setting 'found' to its path.  Returns whether any
+         * file was found.
+         */
     {
-	for (string path = nickle_path;
-	     path != "";
-	     path = path_rest (path))
-	{
-	    *found = path_first (path) + "/" + name;
-	    try {
-		*f = File::open (*found, "r");
-		return true;
-	    } catch File::open_error (string name,
-				      File::error_type err,
-				      string msg) {
-		;
-	    }
-	}
-	return false;
+        for (string path = nickle_path; path != ""; path = path_rest(path)) {
+            *found = path_first(path) + "/" + name;
+            try {
+                *f = File::open(*found, "r");
+                return true;
+            } catch File::open_error(string name,
+                                     File::error_type err,
+                                     string msg)
+            {
+                ;
+            }
+        }
+        return false;
     }
 
-    public bool lex_library (string name)
-	/*
-	 * Search 'nickle_path' for the file 'name' and push any
-	 * found file into the lexer.  Returns whether any
-	 * file was found and read.
-	 */
+    public bool
+    lex_library(string name)
+        /*
+         * Search 'nickle_path' for the file 'name' and push any
+         * found file into the lexer.  Returns whether any
+         * file was found and read.
+         */
     {
-	file	f;
-	string	found;
+        file   f;
+        string found;
 
-	if (!open_library (name, &f, &found))
-	    return false;
-	return Command::lex_input (f, found, false, false);
+        if (!open_library(name, &f, &found))
+            return false;
+        return Command::lex_input(f, found, false, false);
     }
 
-    public bool lex_string (string s)
-	/*
-	 * Push 's' into the lexer input stack
-	 */
+    public bool
+    lex_string(string s)
+        /* Push 's' into the lexer input stack */
     {
-	return Command::lex_input (File::string_read (s), s, false, false);
+        return Command::lex_input(File::string_read(s), s, false, false);
     }
 
-    void do_library (string name)
-	/*
-	 * library "name"	- read commands from "name", found in
-	 *			  nickle_path
-	 */
+    void
+    do_library(string name)
+        /*
+         * library "name"       - read commands from "name", found in
+         *                        nickle_path
+         */
     {
-	/* printf isn't loaded yet, so report with the print builtin */
-	if (!lex_library (name))
-	    File::print (stderr,
-			 "Cannot load library \"" + name + "\": not found in \"" +
-			 nickle_path + "\"\n",
-			 "s", 10, 0, -1, " ");
+        /* printf isn't loaded yet, so report with the print builtin */
+        if (!lex_library(name))
+            File::print(stderr,
+                        "Cannot load library \"" + name
+                        + "\": not found in \"" + nickle_path + "\"\n",
+                        "s", 10, 0, -1, " ");
     }
 
-    new ("library", do_library);
+    new("library", do_library);
 }
 
+/* Load the prerequisites for the extra commands. */
+library "ctype.5c"
+library "string.5c"
+library "file.5c"
+library "printf.5c"
 
-# Load the prerequisites for the extra commands.
-library "ctype.5c";
-library "string.5c";
-library "file.5c";
-library "printf.5c";
-
-# Get abort() in early, even if this means not autoimporting it
-library "abort.5c";
+/* Get abort() in early, even if this means not autoimporting it */
+library "abort.5c"
 import Abort;
 
-# Note that some libraries extend namespaces, and
-# thus aren't autoload/autoimport candidates.
-library "math.5c";
+/*
+ * Note that some libraries extend namespaces, and
+ * thus aren't autoload/autoimport candidates.
+ */
+library "math.5c"
 library "prime_sieve.5c"
 library "factorial.5c"
 library "gamma.5c"
 library "math-ext.5c"
 import Math;
 
-library "history.5c";
+library "history.5c"
 
-# Now load the extra commands.
-library "parse-args.5c";
-library "command.5c";
+/* Now load the extra commands. */
+library "parse-args.5c"
+library "command.5c"
 
-library "scanf.5c";
-library "socket.5c";
-library "complex.5c";
+library "scanf.5c"
+library "socket.5c"
+library "complex.5c"
 
-# Now autoload/autoimport the bonus stuff
-# (But why?  Let the users do it.)
-#autoload Mutex;
-#autoload ARC4;
-#autoload PRNG;
-#autoload Process;
+/*
+ * Now autoload/autoimport the bonus stuff
+ *  (But why?  Let the users do it.)
+ * autoload Mutex;
+ * autoload ARC4;
+ * autoload PRNG;
+ * autoload Process;
+ */
 
-# parse the command line
+/* parse the command line */
 extend namespace Command {
-      process_args (&argv);
+    process_args(&argv);
 }

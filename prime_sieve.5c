@@ -6,90 +6,109 @@
 
 public namespace PrimeSieve {
 
-       int num_to_pos(int n) = (n - 3) // 2;
-       int pos_to_num(int p) = (p * 2) + 3;
+    int
+    num_to_pos(int n) = (n - 3) // 2;
 
-       /* Generate a list of primes, 2 and those of a boolean array
-	* of composite test results
-	*/
-       int[] sieve_to_array(&bool[] composite, int n_prime) {
-	       int[n_prime + 1] primes = { 2 ... };
-	       int p = 1;
-	       for (int i = 0; i < dim(composite); i++)
-		       if (!composite[i])
-			       primes[p++] = pos_to_num(i);
-	       return primes;
-       }
+    int
+    pos_to_num(int p) = p * 2 + 3;
 
-       /* Use the sieve of Eratosthenes to compute the set of
-	* primes <= max, in increasing order
-	*/
-       public int[] primes (int max)
-       {
-	       if (max < 2)
-		       return (int[0]) {};
-	       if (max < 3)
-		       return (int[1]) { 2 };
+    /*
+     * Generate a list of primes, 2 and those of a boolean array
+     * of composite test results
+     */
+    int[]
+    sieve_to_array(&bool[] composite, int n_prime)
+    {
+        int[n_prime + 1] primes = { 2 ... };
+        int              p = 1;
 
-	       /* The sieve holds the odd numbers from 3 */
-	       int n = num_to_pos(max) + 1;
-	       bool[n] composite = { false ... };
-	       int n_prime = 0;
+        for (int i = 0; i < dim(composite); i++)
+            if (!composite[i])
+                primes[p++] = pos_to_num(i);
+        return primes;
+    }
 
-	       for (int p = 0; p < n; p++) {
-		       if (!composite[p]) {
-			       int prime = pos_to_num(p);
-			       int step = prime;
-			       int init = p + prime;
-			       for (int v = init; v < n; v += step)
-				       composite[v] = true;
-			       n_prime++;
-		       }
-	       }
-	       return sieve_to_array(&composite, n_prime);
-       }
+    /*
+     * Use the sieve of Eratosthenes to compute the set of
+     * primes <= max, in increasing order
+     */
+    public int[]
+    primes(int max)
+    {
+        if (max < 2)
+            return (int[0]) {};
+        if (max < 3)
+            return (int[1]) { 2 };
 
-       public typedef struct {
-	       int	start, end;
-       } range_t;
+        /* The sieve holds the odd numbers from 3 */
+        int     n = num_to_pos(max) + 1;
+        bool[n] composite = { false ... };
+        int     n_prime = 0;
 
-       /* Binary search in an increasing list of numbers for the
-	* last one <= 'v', returning its index, or -1 when there is
-	* none
-	*/
-       public int primes_search(&int[] primes, int v) {
-	       /* One past the answer lies in [lo, hi] */
-	       int lo = 0, hi = dim(primes);
-	       while (lo < hi) {
-		       int mid = (lo + hi) >> 1;
-		       if (primes[mid] <= v)
-			       lo = mid + 1;
-		       else
-			       hi = mid;
-	       }
-	       return lo - 1;
-       }
+        for (int p = 0; p < n; p++) {
+            if (!composite[p]) {
+                int prime = pos_to_num(p);
+                int step = prime;
+                int init = p + prime;
 
-       /* Return the indices within a list of primes of those in
-	* [min, max], from start up to but not including end
-	*/
-       public range_t primes_range(&int[] primes, int min, int max) {
-	       int	start = primes_search(&primes, min - 1) + 1;
-	       int	end = primes_search(&primes, max) + 1;
-	       if (end < start)
-		       end = start;
-	       return (range_t) { start = start, end = end };
-       }
+                for (int v = init; v < n; v += step)
+                    composite[v] = true;
+                n_prime++;
+            }
+        }
+        return sieve_to_array(&composite, n_prime);
+    }
 
-       /*
-	* Multiply all primes between min and max within the
-	* supplied list.
-	*/
-        public int primorial(&int[] primes, int min, int max) {
-	       range_t r = primes_range(&primes, min, max);
-	       int v = 1;
-	       for (int i = r.start; i < r.end; i++)
-		       v *= primes[i];
-	       return v;
-       }
+    public typedef struct { int start, end; } range_t;
+
+    /*
+     * Binary search in an increasing list of numbers for the
+     * last one <= 'v', returning its index, or -1 when there is
+     * none
+     */
+    public int
+    primes_search(&int[] primes, int v)
+    {
+        /* One past the answer lies in [lo, hi] */
+        int lo = 0, hi = dim(primes);
+
+        while (lo < hi) {
+            int mid = (lo + hi) >> 1;
+            if (primes[mid] <= v)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+        return lo - 1;
+    }
+
+    /*
+     * Return the indices within a list of primes of those in
+     * [min, max], from start up to but not including end
+     */
+    public range_t
+    primes_range(&int[] primes, int min, int max)
+    {
+        int start = primes_search(&primes, min - 1) + 1;
+        int end = primes_search(&primes, max) + 1;
+
+        if (end < start)
+            end = start;
+        return (range_t) { start = start, end = end };
+    }
+
+    /*
+     * Multiply all primes between min and max within the
+     * supplied list.
+     */
+    public int
+    primorial(&int[] primes, int min, int max)
+    {
+        range_t r = primes_range(&primes, min, max);
+        int     v = 1;
+
+        for (int i = r.start; i < r.end; i++)
+            v *= primes[i];
+        return v;
+    }
 }

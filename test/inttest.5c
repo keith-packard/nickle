@@ -1,55 +1,62 @@
-autoimport PRNG;
+autoimport PRNG
 
-exception bad_result (int u, int v);
+exception bad_result(int u, int v);
 
-void function int_check (int u, int v)
+void
+int_check(int u, int v)
 {
-    if (v * (u//v) + u%v - -v != u + v)
-	raise bad_result (u, v);
+    if (v * (u // v) + u % v - -v != u + v)
+        raise bad_result(u, v);
 }
 
-void function int_random (int ubits, int vbits)
+void
+int_random(int ubits, int vbits)
 {
-    int	    u = randbits (ubits);
-    int	    v = randbits (vbits);
+    int u = randbits(ubits);
+    int v = randbits(vbits);
 
-    if (v == 0) v = 1;
-    int_check (u, v);
+    if (v == 0)
+        v = 1;
+    int_check(u, v);
 }
 
-void function int_test (int amin, int amax, int bmin, int bmax)
+void
+int_test(int amin, int amax, int bmin, int bmax)
 {
-    int	a, b;
+    int a, b;
 
     for (a = amin; a <= amax; a += randint(200))
-	for (b = bmin; b <= bmax; b += randint(200))
-	    int_random (a, b);
+        for (b = bmin; b <= bmax; b += randint(200))
+            int_random(a, b);
 }
 
-exception bad_width (int n, int w);
+exception bad_width(int n, int w);
 
-void function width_check (int n)
+void
+width_check(int n)
 {
-    int	    w = 0;
+    int w = 0;
 
-    for (int m = abs (n); m != 0; m >>= 1)
-	w++;
-    if (bit_width (n) != w)
-	raise bad_width (n, bit_width (n));
+    for (int m = abs(n); m != 0; m >>= 1)
+        w++;
+    if (bit_width(n) != w)
+        raise bad_width(n, bit_width(n));
+
     /* numerator returns its value as a big integer even when small */
-    if (n % 3 != 0 && bit_width (numerator (n / 3)) != w)
-	raise bad_width (n, bit_width (numerator (n / 3)));
+    if (n % 3 != 0 && bit_width(numerator(n / 3)) != w)
+        raise bad_width(n, bit_width(numerator(n / 3)));
 }
 
-void function width_test ()
+void
+width_test()
 {
-    width_check (0);
+    width_check(0);
     for (int k = 0; k <= 300; k++)
-	for (int d = -1; d <= 1; d++) {
-	    width_check (2**k + d);
-	    width_check (-(2**k + d));
-	}
+        for (int d = -1; d <= 1; d++) {
+            width_check(2 ** k + d);
+            width_check(-(2 ** k + d));
+        }
 }
 
-int_test(2,2000,2,2000)
-width_test ()
+int_test(2, 2000, 2, 2000)
+width_test()

@@ -11,126 +11,123 @@
  * a value read it from the wrong one.
  */
 
-autoimport ParseArgs;
+autoimport ParseArgs
 
-exception bad_parse (string[*] argv, string what);
+exception bad_parse(string[*] argv, string what);
 
-void function check (string[*] argv, bool want_flag, string want_path,
-		     string want_value, string[*] want_rest)
+void
+check(string[*] argv, bool want_flag, string want_path,
+      string want_value, string[*] want_rest)
 {
-    bool	flag = false;
-    string	path = "unset";
-    string	value = "unset";
-    int		unknown = dim (argv);
-    argdesc	argd = {
-	.prog_name = "parseargstest",
-	.args = {
-	    { .var = { .arg_flag = &flag }, .abbr = 'f', .name = "flag",
-	      .desc = "A flag" },
-	    { .var = { .arg_string = &value }, .abbr = 'v', .name = "value",
-	      .expr_name = "value", .desc = "A value" },
-	},
-	.posn_args = {
-	    { .var = { .arg_string = &path }, .name = "file", .optional = <> },
-	},
-	.unknown = &unknown,
+    bool    flag = false;
+    string  path = "unset";
+    string  value = "unset";
+    int     unknown = dim(argv);
+    argdesc argd = {
+        prog_name = "parseargstest",
+        args = {
+            { var = { arg_flag = &flag }, abbr = 'f',
+              name = "flag", desc = "A flag" },
+            { var = { arg_string = &value }, abbr = 'v',
+              name = "value", expr_name = "value", desc = "A value" },
+        },
+        posn_args = {
+            { var = { arg_string = &path }, name = "file", optional = <> },
+        },
+        unknown = &unknown,
     };
 
-    parseargs (&argd, &argv);
+    parseargs(&argd, &argv);
     if (flag != want_flag)
-	raise bad_parse (argv, "flag");
+        raise bad_parse(argv, "flag");
     if (path != want_path)
-	raise bad_parse (argv, "path");
+        raise bad_parse(argv, "path");
     if (value != want_value)
-	raise bad_parse (argv, "value");
-    if (dim (argv) - unknown != dim (want_rest))
-	raise bad_parse (argv, "rest");
-    for (int i = 0; i < dim (want_rest); i++)
-	if (argv[unknown + i] != want_rest[i])
-	    raise bad_parse (argv, "rest");
+        raise bad_parse(argv, "value");
+    if (dim(argv) - unknown != dim(want_rest))
+        raise bad_parse(argv, "rest");
+    for (int i = 0; i < dim(want_rest); i++)
+        if (argv[unknown + i] != want_rest[i])
+            raise bad_parse(argv, "rest");
 }
 
-check ((string[*]) {}, false, "unset", "unset", (string[*]) {});
-check ((string[*]) { "-" }, false, "-", "unset", (string[*]) {});
-check ((string[*]) { "" }, false, "", "unset", (string[*]) {});
-check ((string[*]) { "-f", "-" }, true, "-", "unset", (string[*]) {});
-check ((string[*]) { "--flag", "" }, true, "", "unset", (string[*]) {});
-check ((string[*]) { "-v", "-", "x" }, false, "x", "-", (string[*]) {});
-check ((string[*]) { "--value", "", "-" }, false, "-", "", (string[*]) {});
+check((string[*]) {}, false, "unset", "unset", (string[*]) {});
+check((string[*]) { "-" }, false, "-", "unset", (string[*]) {});
+check((string[*]) { "" }, false, "", "unset", (string[*]) {});
+check((string[*]) { "-f", "-" }, true, "-", "unset", (string[*]) {});
+check((string[*]) { "--flag", "" }, true, "", "unset", (string[*]) {});
+check((string[*]) { "-v", "-", "x" }, false, "x", "-", (string[*]) {});
+check((string[*]) { "--value", "", "-" }, false, "-", "", (string[*]) {});
 
 /* "--" ends the options, but positional arguments still follow it */
-check ((string[*]) { "--", "-f" }, false, "-f", "unset", (string[*]) {});
-check ((string[*]) { "-f", "--", "-v", "x" }, true, "-v", "unset",
-       (string[*]) { "x" });
-check ((string[*]) { "--", "--", "-f" }, false, "--", "unset",
-       (string[*]) { "-f" });
-check ((string[*]) { "a", "--", "-f" }, false, "a", "unset",
-       (string[*]) { "--", "-f" });
-check ((string[*]) { "-f", "--" }, true, "unset", "unset", (string[*]) {});
+check((string[*]) { "--", "-f" }, false, "-f", "unset", (string[*]) {});
+check((string[*]) { "-f", "--", "-v", "x" },
+      true, "-v", "unset", (string[*]) { "x" });
+check((string[*]) { "--", "--", "-f" }, false,
+      "--", "unset", (string[*]) { "-f" });
+check((string[*]) { "a", "--", "-f" }, false,
+      "a", "unset", (string[*]) { "--", "-f" });
+check((string[*]) { "-f", "--" }, true, "unset", "unset", (string[*]) {});
 
 /* Grouped flags, where the rest of the group is a value, as with getopt */
-check ((string[*]) { "-ff", "x" }, true, "x", "unset", (string[*]) {});
-check ((string[*]) { "-fv", "x", "y" }, true, "y", "x", (string[*]) {});
-check ((string[*]) { "-vfoo", "x" }, false, "x", "foo", (string[*]) {});
-check ((string[*]) { "-fv-", "x", "y" }, true, "x", "-", (string[*]) { "y" });
+check((string[*]) { "-ff", "x" }, true, "x", "unset", (string[*]) {});
+check((string[*]) { "-fv", "x", "y" }, true, "y", "x", (string[*]) {});
+check((string[*]) { "-vfoo", "x" }, false, "x", "foo", (string[*]) {});
+check((string[*]) { "-fv-", "x", "y" }, true, "x", "-", (string[*]) { "y" });
 
 /*
  * Usage lists every option by its abbreviation and name. An option
  * with only an abbreviation was shown by its expr_name alone, and one
  * without an expr_name, as a flag usually is, raised uninitialized_value
  */
-void function check_usage ()
+void
+check_usage()
 {
-    string	program =
-	"import ParseArgs;" +
-	"argdesc argd = {" +
-	"    .prog_name = \"p\"," +
-	"    .args = {" +
-	"\t{ .var = { .arg_flag = &(bool g) }, .abbr = 'g'," +
-	"\t  .desc = \"a flag\" }," +
-	"\t{ .var = { .arg_string = &(string v) }, .abbr = 'v'," +
-	"\t  .expr_name = \"val\", .desc = \"a value\" }," +
-	"\t{ .var = { .arg_int = &(int n) }, .name = \"count\"," +
-	"\t  .desc = \"a count\" }," +
-	"\t{ .var = { .arg_flag = &(bool f) }, .abbr = 'f', .name = \"flag\"," +
-	"\t  .desc = \"named flag\" }," +
-	"    }," +
-	"};" +
-	"string[*] av = { \"--help\" };" +
-	"parseargs (&argd, &av);";
-    string[*]	want = {
-	"p: usage: p <options>",
-	"    -g   a flag",
-	"    -v <val>   a value",
-	"    --count <value>   a count",
-	"    -f,--flag   named flag",
+    string    program = "import ParseArgs;" + "argdesc argd = {"
+        + "    .prog_name = \"p\"," + "    .args = {"
+        + "\t{ .var = { .arg_flag = &(bool g) }, .abbr = 'g',"
+        + "\t  .desc = \"a flag\" },"
+        + "\t{ .var = { .arg_string = &(string v) }, .abbr = 'v',"
+        + "\t  .expr_name = \"val\", .desc = \"a value\" },"
+        + "\t{ .var = { .arg_int = &(int n) }, .name = \"count\","
+        + "\t  .desc = \"a count\" },"
+        + "\t{ .var = { .arg_flag = &(bool f) }, .abbr = 'f', .name = \"flag\","
+        + "\t  .desc = \"named flag\" }," + "    }," + "};"
+        + "string[*] av = { \"--help\" };" + "parseargs (&argd, &av);";
+    string[*] want = {
+        "p: usage: p <options>",
+        "    -g   a flag",
+        "    -v <val>   a value",
+        "    --count <value>   a count",
+        "    -f,--flag   named flag",
     };
-    string	nickle = Environ::get ("NICKLE");
-    file[*]	output = File::mkpipe ();
+    string    nickle = Environ::get("NICKLE");
+    file[*]   output = File::mkpipe();
 
-    File::filter (nickle, (string[*]) { nickle, "-e", program },
-		  (file[3]) { stdin, output[1], stderr });
-    File::close (output[1]);
-    for (int i = 0; i < dim (want); i++) {
-	string line = "<eof>";
+    File::filter(nickle, (string[*]) { nickle, "-e", program },
+                 (file[3]) { stdin, output[1], stderr });
+    File::close(output[1]);
+    for (int i = 0; i < dim(want); i++) {
+        string line = "<eof>";
 
-	if (!File::end (output[0]))
-	    line = File::fgets (output[0]);
+        if (!File::end(output[0]))
+            line = File::fgets(output[0]);
 
-	if (line != want[i])
-	    raise bad_parse ((string[*]) { "--help" }, line);
+        if (line != want[i])
+            raise bad_parse((string[*]) { "--help" }, line);
     }
-    if (!File::end (output[0]))
-	raise bad_parse ((string[*]) { "--help" }, File::fgets (output[0]));
+    if (!File::end(output[0]))
+        raise bad_parse((string[*]) { "--help" }, File::fgets(output[0]));
 }
 
-check_usage ();
+check_usage();
 
 /* An option needs an abbreviation or a name */
 try {
-    argdesc argd = { .args = { { .var = { .arg_flag = &(bool x) } } } };
+    argdesc   argd = { args = { { var = { arg_flag = &(bool x) } } } };
     string[*] av = { "p" };
-    parseargs (&argd, &av);
-    raise bad_parse ((string[*]) {}, "bad_argd");
-} catch bad_argd (string reason) {
+
+    parseargs(&argd, &av);
+    raise bad_parse((string[*]) {}, "bad_argd");
+} catch bad_argd(string reason) {
 }

@@ -5,45 +5,48 @@
  */
 library "math-bits.5c"
 
-void check_sin_cos()
+void
+check_sin_cos()
 {
-	printf("Checking sin and cos\n");
-	for (int i = 0; i < dim(sin_cos_table); i++) {
-		real	angle = sin_cos_table[i].angle;
-		real	sin_value = sin_cos_table[i].sin;
-		real	cos_value = sin_cos_table[i].cos;
-		check("sin", sin, angle, sin_value);
-		check("cos", cos, angle, cos_value);
-	}
-	printf("Checking sin and cos are correctly rounded\n");
-	real[*] angles = (real[*]) {
-		-1e4 - 0.3, -6.28, -1e-3, 1e-7, 1.5707963267948966,
-		3.141592653589793, 6.283185307179586, 355, 0x1.da821p+30 };
-	check_rounded("sin", sin, angles);
-	check_rounded("cos", cos, angles);
-	for (int i = 0; i < dim(angles); i++) {
-		real	s, c;
-		real	a = imprecise(angles[i], 100);
-		sin_cos(a, &s, &c);
-		if (s != sin(a) || c != cos(a)) {
-			printf("check failed sin_cos(%.-g) differs from sin and cos\n", a);
-			errors++;
-		}
-	}
-	printf("Checking asin and acos are correctly rounded\n");
-	real[*] ratios = {
-		-1, -0.9999999, -0.7071, -1e-10, 0.3, 0.7071, 0.9999999,
-		1 - 2**-60, 1 };
-	check_rounded("asin", asin, ratios);
-	check_rounded("acos", acos, ratios);
-	printf("Checking asin and acos\n");
-	for (int i = 0; i < dim(asin_acos_table); i++) {
-		real	ratio = asin_acos_table[i].ratio;
-		real	asin_value = asin_acos_table[i].asin;
-		real	acos_value = asin_acos_table[i].acos;
-		check("asin", asin, ratio, asin_value);
-		check("acos", acos, ratio, acos_value);
-	}
+    printf("Checking sin and cos\n");
+    for (int i = 0; i < dim(sin_cos_table); i++) {
+        real angle = sin_cos_table[i].angle;
+        real sin_value = sin_cos_table[i].sin;
+        real cos_value = sin_cos_table[i].cos;
+
+        check("sin", sin, angle, sin_value);
+        check("cos", cos, angle, cos_value);
+    }
+    printf("Checking sin and cos are correctly rounded\n");
+    real[*] angles = (real[*]) {
+        -1e4 - 0.3, -6.28, -1e-3, 1e-7, 1.5707963267948966,
+        3.141592653589793, 6.283185307179586, 355, 0x1.da821p+30 };
+    check_rounded("sin", sin, angles);
+    check_rounded("cos", cos, angles);
+    for (int i = 0; i < dim(angles); i++) {
+        real s, c;
+        real a = imprecise(angles[i], 100);
+
+        sin_cos(a, &s, &c);
+        if (s != sin(a) || c != cos(a)) {
+            printf("check failed sin_cos(%.-g) differs from sin and cos\n", a);
+            errors++;
+        }
+    }
+    printf("Checking asin and acos are correctly rounded\n");
+    real[*] ratios = {
+        -1, -0.9999999, -0.7071, -1e-10, 0.3, 0.7071, 0.9999999, 1 - 2 ** -60, 1 };
+    check_rounded("asin", asin, ratios);
+    check_rounded("acos", acos, ratios);
+    printf("Checking asin and acos\n");
+    for (int i = 0; i < dim(asin_acos_table); i++) {
+        real ratio = asin_acos_table[i].ratio;
+        real asin_value = asin_acos_table[i].asin;
+        real acos_value = asin_acos_table[i].acos;
+
+        check("asin", asin, ratio, asin_value);
+        check("acos", acos, ratio, acos_value);
+    }
 }
 
 check_sin_cos();

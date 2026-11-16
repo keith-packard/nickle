@@ -9,86 +9,100 @@
  * every socket as AF_INET, and sockets from accept had no family.
  */
 
-exception not_raised (string what);
-exception wrong (string what, poly got, poly want);
+exception not_raised(string what);
+exception wrong(string what, poly got, poly want);
 
-void function check (string what, poly got, poly want)
+void
+check(string what, poly got, poly want)
 {
     if (got != want)
-	raise wrong (what, got, want);
+        raise wrong(what, got, want);
 }
 
-void function io_fails (string what, File::error_type want, void() f)
+void
+io_fails(string what, File::error_type want, void() f)
 {
     try {
-	f ();
-	raise not_raised (what);
-    } catch File::io_error (string m, File::error_type e, file f) {
-	check (what, e, want);
+        f();
+        raise not_raised(what);
+    } catch File::io_error(string m, File::error_type e, file f) {
+        check(what, e, want);
     }
 }
 
-void function bad_argument (string what, int want, void() f)
+void
+bad_argument(string what, int want, void() f)
 {
     try {
-	f ();
-	raise not_raised (what);
-    } catch invalid_argument (string m, int i, poly v) {
-	check (what, i, want);
+        f();
+        raise not_raised(what);
+    } catch invalid_argument(string m, int i, poly v) {
+        check(what, i, want);
     }
 }
 
-bad_argument ("family", 0, void func () { Socket::create (9999, Socket::SOCK_STREAM); });
-bad_argument ("type", 1, void func () { Socket::create (Socket::AF_INET, 9999); });
+bad_argument("family", 0,
+             void func() {
+                 Socket::create(9999, Socket::SOCK_STREAM);
+             });
+bad_argument("type", 1,
+             void func() {
+                 Socket::create(Socket::AF_INET, 9999);
+             });
 
 /*
  * Linux reports ENOTSOCK; on the Hurd, /dev/null is a translator that
  * answers socket calls with EPERM
  */
-file null = File::open ("/dev/null", "r");
+file null = File::open("/dev/null", "r");
 try {
-    Socket::listen (null, 5);
-    raise not_raised ("listen on a file");
-} catch File::io_error (string m, File::error_type e, file f) {
+    Socket::listen(null, 5);
+    raise not_raised("listen on a file");
+} catch File::io_error(string m, File::error_type e, file f) {
     if (e != File::error_type.NOTSOCK && e != File::error_type.PERM)
-	raise wrong ("listen on a file", e, File::error_type.NOTSOCK);
+        raise wrong("listen on a file", e, File::error_type.NOTSOCK);
 }
-File::close (null);
+File::close(null);
 
-file s = Socket::create (Socket::SOCK_STREAM);
-io_fails ("shutdown how", File::error_type.INVAL,
-	  void func () { Socket::shutdown (s, 99); });
-File::close (s);
+file s = Socket::create(Socket::SOCK_STREAM);
+io_fails("shutdown how", File::error_type.INVAL,
+         void func() {
+             Socket::shutdown(s, 99);
+         });
+File::close(s);
 
 /* Port 0 binds some free port, which a connection can then reach */
-file l = Socket::create (Socket::SOCK_STREAM);
-Socket::bind (l, "localhost", 0);
-int port = Socket::getsockname (l).port;
+file l = Socket::create(Socket::SOCK_STREAM);
+Socket::bind(l, "localhost", 0);
+int port = Socket::getsockname(l).port;
 if (port <= 0)
-    raise wrong ("bound port", port, 0);
-Socket::listen (l, 1);
-thread t = fork Socket::accept (l);
-file c = Socket::create (Socket::SOCK_STREAM);
-Socket::connect (c, "localhost", port);
-file a = Thread::join (t);
-File::fprintf (c, "port 0\n");
-File::flush (c);
-check ("received", File::fgets (a), "port 0");
+    raise wrong("bound port", port, 0);
+Socket::listen(l, 1);
+thread t = fork Socket::accept(l);
+file   c = Socket::create(Socket::SOCK_STREAM);
+Socket::connect(c, "localhost", port);
+file a = Thread::join(t);
+File::fprintf(c, "port 0\n");
+File::flush(c);
+check("received", File::fgets(a), "port 0");
 
 /* An accepted socket has its listener's family, so bind reaches the system */
 try {
-    Socket::bind (a, "localhost", 0);
-    raise not_raised ("bind accepted");
-} catch File::io_error (string m, File::error_type e, file f) {
+    Socket::bind(a, "localhost", 0);
+    raise not_raised("bind accepted");
+} catch File::io_error(string m, File::error_type e, file f) {
 }
-File::close (a);
-File::close (c);
-File::close (l);
+File::close(a);
+File::close(c);
+File::close(l);
 
 /* getsockname has no address to give for an AF_UNIX socket */
 string path = "socketerrortest.sock";
-file u = Socket::create (Socket::AF_UNIX, Socket::SOCK_STREAM);
-Socket::bind (u, path);
-bad_argument ("getsockname AF_UNIX", 0, void func () { Socket::getsockname (u); });
-File::close (u);
-File::unlink (path);
+file   u = Socket::create(Socket::AF_UNIX, Socket::SOCK_STREAM);
+Socket::bind(u, path);
+bad_argument("getsockname AF_UNIX", 0,
+             void func() {
+                 Socket::getsockname(u);
+             });
+File::close(u);
+File::unlink(path);

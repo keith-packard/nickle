@@ -8,27 +8,26 @@
  * reported.
  */
 
-exception bad_library (string what, string got);
+exception bad_library(string what, string got);
 
-string	nickle = Environ::get ("NICKLE");
-file[*]	output = File::mkpipe ();
-file[*]	errors = File::mkpipe ();
+string  nickle = Environ::get("NICKLE");
+file[*] output = File::mkpipe();
+file[*] errors = File::mkpipe();
 
-File::filter (nickle,
-	      (string[*]) { nickle, "-e",
-			    "Command::nickle_path = \"/nonexistent\";\n" +
-			    "library \"nosuch.5c\"\n" +
-			    "printf (\"after\\n\");\n" },
-	      (file[3]) { stdin, output[1], errors[1] });
-File::close (output[1]);
-File::close (errors[1]);
+File::filter(nickle,
+             (string[*]) { nickle, "-e",
+                           "Command::nickle_path = \"/nonexistent\";\n"
+             + "library \"nosuch.5c\"\n" + "printf (\"after\\n\");\n" },
+             (file[3]) { stdin, output[1], errors[1] });
+File::close(output[1]);
+File::close(errors[1]);
 
-string	out = File::fgets (output[0]);
-string	err = File::fgets (errors[0]);
-File::close (output[0]);
-File::close (errors[0]);
+string out = File::fgets(output[0]);
+string err = File::fgets(errors[0]);
+File::close(output[0]);
+File::close(errors[0]);
 
 if (out != "after")
-    raise bad_library ("output", out);
+    raise bad_library("output", out);
 if (err != "Cannot load library \"nosuch.5c\": not found in \"/nonexistent\"")
-    raise bad_library ("errors", err);
+    raise bad_library("errors", err);

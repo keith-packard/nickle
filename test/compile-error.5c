@@ -6,4 +6,4 @@
  */
 
 int x = "string";
-exit (0);
+exit(0);

@@ -6,105 +6,113 @@
  * for licensing information.
  */
 
-real i0(real x)
+real
+i0(real x)
 {
-    real    ds, d, s;
-    
+    real ds, d, s;
+
     ds = 1;
     d = 0;
     s = 0;
-    do
-    {
-	d = d + 2;
-	ds = ds * x**2 / d**2;
-	s = s + ds;
-#	printf ("ds %g s %g dist %g\n", ds, s,
-#		ds - 0.2e-8 * s);
-    }
-    while (ds - 0.2e-8 * s > 0);
+    do {
+        d = d + 2;
+        ds = ds * x ** 2 / d ** 2;
+        s = s + ds;
+
+        /*
+         * printf ("ds %g s %g dist %g\n", ds, s,
+         * ds - 0.2e-8 * s);
+         */
+    } while (ds - 0.2e-8 * s > 0);
     return s;
 }
 
-real highpass (real n, real m, real wc)
-{
-    real  alpha = m/2;
-    real  dist;
-
-    dist = n - alpha;
-    if (dist == 0)
-	return (pi/2 - wc) / pi;
-    return -sin(dist * (pi/2-wc)) / (pi * dist);
-}
-
-real lowpass (real n, real m, real wc)
-{
-    real  alpha = m/2;
-    real  dist;
-    dist = n - alpha;
-    if (dist == 0)
-	return wc / pi;
-    return sin (wc * dist) / (pi * dist);
-}
-
-real kaiser (real n, real m, real beta)
+real
+highpass(real n, real m, real wc)
 {
     real alpha = m / 2;
-    return i0 (beta * sqrt (1 - ((n - alpha) / alpha)**2)) / i0(beta);
+    real dist;
+
+    dist = n - alpha;
+    if (dist == 0)
+        return (pi / 2 - wc) / pi;
+    return -sin(dist * (pi / 2 - wc)) / (pi * dist);
 }
 
-void write_high (string filename, 
-		       real m, 
-		       real wc, 
-		       real beta, 
-		       real step)
+real
+lowpass(real n, real m, real wc)
 {
-    real    n;
-    file    f;
+    real alpha = m / 2;
+    real dist;
 
-    f = File::open (filename, "w");
-    for (n = 0; n <= m; n += step)
-	File::fprintf (f, "%g,\n", highpass (n, m, wc) * kaiser (n, m, beta));
-    File::close (f);
+    dist = n - alpha;
+    if (dist == 0)
+        return wc / pi;
+    return sin(wc * dist) / (pi * dist);
 }
 
-void write_low (string filename, 
-		    real m, 
-		    real wc, 
-		    real beta, 
-		    real step)
+real
+kaiser(real n, real m, real beta)
 {
-    real    n;
-    file    f;
-
-    f = File::open (filename, "w");
-    for (n = 0; n <= m; n += step)
-	File::fprintf (f, "%g,\n", lowpass (n, m, wc) * kaiser (n, m, beta));
-    File::close (f);
+    real alpha = m / 2;
+    return i0(beta * sqrt(1 - ((n - alpha) / alpha) ** 2)) / i0(beta);
 }
 
-real Beta (real A)
+void
+write_high(string filename,
+           real m,
+           real wc,
+           real beta,
+           real step)
+{
+    real n;
+    file f;
+
+    f = File::open(filename, "w");
+    for (n = 0; n <= m; n += step)
+        File::fprintf(f, "%g,\n", highpass(n, m, wc) * kaiser(n, m, beta));
+    File::close(f);
+}
+
+void
+write_low(string filename,
+          real m,
+          real wc,
+          real beta,
+          real step)
+{
+    real n;
+    file f;
+
+    f = File::open(filename, "w");
+    for (n = 0; n <= m; n += step)
+        File::fprintf(f, "%g,\n", lowpass(n, m, wc) * kaiser(n, m, beta));
+    File::close(f);
+}
+
+real
+Beta(real A)
 {
     if (A > 50)
-	return 0.1102 * (A - 8.7);
+        return 0.1102 * (A - 8.7);
     else if (A >= 21)
-	return 0.5842 * (A - 21) ** 0.4 + 0.07886 * (A - 21);
+        return 0.5842 * (A - 21) ** 0.4 + 0.07886 * (A - 21);
     else
-	return 0.0;
+        return 0.0;
 }
 
-int M (real A, real deltaw)
-{
-    return ceil ((A - 8) / (2.285 * deltaw));
-}
+int
+M(real A, real deltaw) = ceil((A - 8) / (2.285 * deltaw));
 
-real filter (real wpass, real wstop, real error, *int mp)
+real
+filter(real wpass, real wstop, real error, *int mp)
 {
-    real  deltaw = wstop - wpass;
-    real  A = -20 * log10 (error);
-    real  beta;
+    real deltaw = wstop - wpass;
+    real A = -20 * log10(error);
+    real beta;
 
-    beta = Beta (A);
-    *mp = M (A, deltaw);
-    printf ("Beta %g M %g\n", beta, *mp);
+    beta = Beta(A);
+    *mp = M(A, deltaw);
+    printf("Beta %g M %g\n", beta, *mp);
     return beta;
 }

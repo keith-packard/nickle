@@ -7,7 +7,10 @@
  * expects this test to fail
  */
 
-exception boom ();
-exception other ();
-try { raise boom (); } catch other () { }
-exit (0);
+exception boom();
+exception other();
+try {
+    raise boom();
+} catch other() {
+}
+exit(0);

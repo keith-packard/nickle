@@ -5,103 +5,121 @@
  */
 
 extend namespace File {
-    public file stdnull ()
-	/*
-	 * Return a file open on /dev/null for reading and writing,
-	 * the same one each time
-	 */
+
+    public file
+    stdnull()
+        /*
+         * Return a file open on /dev/null for reading and writing,
+         * the same one each time
+         */
     {
-	static bool set = false;
-	static file f;
-	if (!set) {
-	    f = open("/dev/null", "r+");
-	    set = true;
-	}
-	return f;
+        static bool set = false;
+        static file f;
+
+        if (!set) {
+            f = open("/dev/null", "r+");
+            set = true;
+        }
+        return f;
     }
 
     public typedef union {
-	file input;
-	file output;
-	file error;
+        file input;
+        file output;
+        file error;
     } childfd;
 
-    public int mkchild(string path, string[*] argv, childfd fds ...)
-	/*
-	 * Call filter transforming 'fds' into an array of three files.
-	 * This is what happens when you fork()
-	 */
+    public int
+    mkchild(string path, string[*] argv, childfd fds ...)
+        /*
+         * Call filter transforming 'fds' into an array of three files.
+         * This is what happens when you fork()
+         */
     {
-	file[3] filter_fds = { stdnull(), ... };
-	for (int i = 0; i < dim(fds); i++) {
-	    union switch(fds[i]) {
-	    case input f: filter_fds[0] = f; break;
-	    case output f: filter_fds[1] = f; break;
-	    case error f: filter_fds[2] = f; break;
-	    }
-	}
-	return filter(path, argv, filter_fds);
+        file[3] filter_fds = { stdnull() ... };
+
+        for (int i = 0; i < dim(fds); i++) {
+            union switch (fds[i]) {
+            case input f:
+                filter_fds[0] = f;
+                break;
+            case output f:
+                filter_fds[1] = f;
+                break;
+            case error f:
+                filter_fds[2] = f;
+                break;
+            }
+        }
+        return filter(path, argv, filter_fds);
     }
 
     public namespace FileGlobals {
 
-	public int getchar ()
-	    /* return getc (stdin); */
-	{
-	    return getc (stdin);
-	}
+        public int
+        getchar()
+            /* return getc (stdin); */
+        {
+            return getc(stdin);
+        }
 
-	public void ungetchar (int ch)
-	    /* ungetc (ch, stdin); */
-	{
-	    ungetc (ch, stdin);
-	}
+        public void
+        ungetchar(int ch)
+            /* ungetc (ch, stdin); */
+        {
+            ungetc(ch, stdin);
+        }
 
-	public void putchar (int c)
-	    /* putc (c, stdout) */
-	{
-	    putc (c, stdout);
-	}
+        public void
+        putchar(int c)
+            /* putc (c, stdout) */
+        {
+            putc(c, stdout);
+        }
 
-	public int getbyte ()
-	    /* return getb (stdin) */
-	{
-	    return getb (stdin);
-	}
+        public int
+        getbyte()
+            /* return getb (stdin) */
+        {
+            return getb(stdin);
+        }
 
-	public void putbyte (int b)
-	    /* putb (b, stdout) */
-	{
-	    putb (b, stdout);
-	}
+        public void
+        putbyte(int b)
+            /* putb (b, stdout) */
+        {
+            putb(b, stdout);
+        }
 
-	public string fgets (file f)
-	    /*
-	     * Return a line from 'f' as a string.
-	     * The trailing newline will be stripped off.
-	     */
-	{
-	    /* Appending to a string would copy the line for every character */
-	    file	line = string_write ();
-	    int		c;
+        public string
+        fgets(file f)
+            /*
+             * Return a line from 'f' as a string.
+             * The trailing newline will be stripped off.
+             */
+        {
+            /* Appending to a string would copy the line for every character */
+            file line = string_write();
+            int  c;
 
-	    while (!end(f))
-	    {
-		c = getc (f);
-		if (c == '\n')
-		    break;
-		putc (c, line);
-	    }
-	    return string_string (line);
-	}
+            while (!end(f)) {
+                c = getc(f);
+                if (c == '\n')
+                    break;
+                putc(c, line);
+            }
+            return string_string(line);
+        }
 
-	public string gets ()
-	    /* return fgets (stdin); */
-	{
-	    return fgets (stdin);
-	}
+        public string
+        gets()
+            /* return fgets (stdin); */
+        {
+            return fgets(stdin);
+        }
     }
 
     public import FileGlobals;
 }
+
 public import File::FileGlobals;

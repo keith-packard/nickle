@@ -6,89 +6,88 @@
  * Modified 2003/4 to support /dev/random
  */
 
-autoload ARC4;
+autoload ARC4
 
 namespace PRNG {
-  import File;
+    import      File;
 
-  global bool setkey = false;
+    global bool setkey = false;
 
-  public void srandom(int s)
-    /*
-     * Seed the PRNG with 's'; seeds of up to 2016 bits each give
-     * their own stream
-     */
-  {
-    ARC4::nsetkey(10, s);
-    setkey = true;
-  }
-
-  public void dev_srandom(int nbits)
-    /*
-     * Use 'nbits' of /dev/urandom to seed the PRNG
-     */
-  {
-    twixt(file f = open("/dev/urandom", "r"); close(f)) {
-      int seed = 0;
-      while (nbits >= 8) {
-	seed = (seed << 8) | getb(f);
-	nbits -= 8;
-      }
-      if (nbits > 0)
-	seed = (seed << nbits) | (getb(f) & ((1 << nbits) - 1));
-      srandom(seed);
+    public void
+    srandom(int s)
+        /*
+         * Seed the PRNG with 's'; seeds of up to 2016 bits each give
+         * their own stream
+         */
+    {
+        ARC4::nsetkey(10, s);
+        setkey = true;
     }
-  }
 
-  public int randbits(int n)
-    /*
-     * returns an 'n'-*bit* random number in 0..(2**'n')-1
-     */
-  {
-    int q = n >> 3;
-    int r = n & 7;
-    if (!setkey)
-      srandom(0);
-    int acc = ARC4::streambyte() >> (8 - r);
-    while (q > 0) {
-      --q;
-      acc += ARC4::streambyte() << (8 * q + r);
+    public void
+    dev_srandom(int nbits)
+        /* Use 'nbits' of /dev/urandom to seed the PRNG */
+    {
+        twixt (file f = open("/dev/urandom", "r"); close(f)) {
+            int seed = 0;
+
+            while (nbits >= 8) {
+                seed = (seed << 8) | getb(f);
+                nbits -= 8;
+            }
+            if (nbits > 0)
+                seed = (seed << nbits) | (getb(f) & ((1 << nbits) - 1));
+            srandom(seed);
+        }
     }
-    return acc;
-  }
 
-  public int randint(int n)
-    /*
-     * Returns a random integer in the range 0..'n'-1
-     */
-  {
-    if (n == 0)
-      return 0;
+    public int
+    randbits(int n)
+        /* returns an 'n'-*bit* random number in 0..(2**'n')-1 */
+    {
+        int q = n >> 3;
+        int r = n & 7;
 
-    if (n < 0)
-      return -randint(-n);
-
-    int bits = bit_width(n);
-
-    for (;;) {
-      int r = randbits(bits);
-      if (r < n)
-	return r;
+        if (!setkey)
+            srandom(0);
+        int acc = ARC4::streambyte() >> (8 - r);
+        while (q > 0) {
+            --q;
+            acc += ARC4::streambyte() << (8 * q + r);
+        }
+        return acc;
     }
-  }
 
-  public void shuffle(&poly[*] a)
-    /*
-     * Randomly shuffle 'a' in place
-     */
-  {
-    int na = dim(a);
-    for (int i = 0; i < na - 1; i++) {
-      int j = randint(na - i) + i;
-      poly tmp = a[i];
-      a[i] = a[j];
-      a[j] = tmp;
+    public int
+    randint(int n)
+        /* Returns a random integer in the range 0..'n'-1 */
+    {
+        if (n == 0)
+            return 0;
+
+        if (n < 0)
+            return -randint(-n);
+
+        int bits = bit_width(n);
+
+        for (;;) {
+            int r = randbits(bits);
+            if (r < n)
+                return r;
+        }
     }
-  }
 
+    public void
+    shuffle(&poly[*] a)
+        /* Randomly shuffle 'a' in place */
+    {
+        int na = dim(a);
+        for (int i = 0; i < na - 1; i++) {
+            int  j = randint(na - i) + i;
+            poly tmp = a[i];
+
+            a[i] = a[j];
+            a[j] = tmp;
+        }
+    }
 }

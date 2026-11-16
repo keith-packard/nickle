@@ -14,79 +14,85 @@
  * Bart Massey 1999/1
  */
 
-autoload PRNG;
+autoload PRNG
 
 namespace MillerRabin {
+    int[*] primes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 };
+    int    nprimes = dim(primes);
 
-  int[*] primes = {
-    2, 3, 5, 7, 11,
-    13, 17, 19, 23, 29
-  };
-  int nprimes = dim(primes);
+    typedef struct { int pow, wit; } witness_result;
 
-  typedef struct { int pow, wit; } witness_result;
-
-  /*
-   * Modified version of bigpowmod() from numbers.5c.
-   * Computes core of Miller-Rabin test
-   * as suggested by Cormen/Leiserson/Rivest.
-   */
-  witness_result witnessexp(int b, int e, int m) {
-    switch (e) {
-    case 0:
-      return (witness_result){ .pow = 0, .wit = 1};
-    case 1:
-      return (witness_result){ .pow = b % m, .wit = 0};
+    /*
+     * Modified version of bigpowmod() from numbers.5c.
+     * Computes core of Miller-Rabin test
+     * as suggested by Cormen/Leiserson/Rivest.
+     */
+    witness_result
+    witnessexp(int b, int e, int m)
+    {
+        switch (e) {
+        case 0:
+            return (witness_result) { pow = 0, wit = 1 };
+        case 1:
+            return (witness_result) { pow = b % m, wit = 0 };
+        }
+        witness_result tmp = witnessexp(b, e // 2, m);
+        if (tmp.wit != 0)
+            return tmp;
+        int t = tmp.pow * tmp.pow % m;
+        if (t == 1 && tmp.pow != 1 && tmp.pow != m - 1) {
+            tmp.wit = tmp.pow;
+            tmp.pow = t;
+            return tmp;
+        }
+        if (e % 2 == 0)
+            tmp.pow = t;
+        else
+            tmp.pow = t * b % m;
+        return tmp;
     }
-    witness_result tmp = witnessexp(b, e // 2, m);
-    if (tmp.wit != 0)
-      return tmp;
-    int t = (tmp.pow * tmp.pow) % m;
-    if (t == 1 && tmp.pow != 1 && tmp.pow != m - 1) {
-      tmp.wit = tmp.pow;
-      tmp.pow = t;
-      return tmp;
+
+    /* Rest of Miller-Rabin test */
+    bool
+    witness(int a, int n)
+    {
+        witness_result we = witnessexp(a, n - 1, n);
+
+        if (we.wit != 0)
+            return true;
+        if (we.pow != 1)
+            return true;
+        return false;
     }
-    if (e % 2 == 0)
-      tmp.pow = t;
-    else
-      tmp.pow = (t * b) % m;
-    return tmp;
-  }
 
-  /* Rest of Miller-Rabin test */
-  bool witness(int a, int n) {
-    witness_result we = witnessexp(a, n - 1, n);
-    if (we.wit != 0)
-      return true;
-    if (we.pow != 1)
-      return true;
-    return false;
-  }
+    /* Try small primes, then Miller-Rabin */
+    public bool
+    composite(int n, int d)
+    {
+        int i, j;
 
-  /* Try small primes, then Miller-Rabin */
-  public bool composite(int n, int d) {
-    int i, j;
-    for (i = 0; i < nprimes && primes[i] < n; i++)
-      if (n % primes[i] == 0)
-        return true;
-    for (j = 0; j < d; j++) {
-      int a = 1 + PRNG::randint(n - 1);
-      if (witness(a, n))
-        return true;
+        for (i = 0; i < nprimes && primes[i] < n; i++)
+            if (n % primes[i] == 0)
+                return true;
+        for (j = 0; j < d; j++) {
+            int a = 1 + PRNG::randint(n - 1);
+            if (witness(a, n))
+                return true;
+        }
+        return false;
     }
-    return false;
-  }
 
-  /* generate an n-bit prime (with probability 1-(2**-d)) number */
-  public int primebits(int n, int d) {
-    while (true) {
-      int q = PRNG::randbits(n - 1) + 2**(n - 1);
-      bool why = composite(q, d);
-      if (!why)
-        return q;
-#     printf("*\n");
+    /* generate an n-bit prime (with probability 1-(2**-d)) number */
+    public int
+    primebits(int n, int d)
+    {
+        while (true) {
+            int  q = PRNG::randbits(n - 1) + 2 ** (n - 1);
+            bool why = composite(q, d);
+            if (!why)
+                return q;
+
+            /* printf("*\n"); */
+        }
     }
-  }
-
 }

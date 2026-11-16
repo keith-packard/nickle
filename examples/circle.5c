@@ -9,25 +9,24 @@
  * may be off by a multiple of 90 degrees.
  */
 
-typedef struct {
-  real lat, lon;
-} loc;
+typedef struct { real lat, lon; } loc;
 
-typedef struct {
-  real dist, bearing;
-} course;
+typedef struct { real dist, bearing; } course;
 
-course great_circle (loc start, loc end) {
-	real rad = pi / 180;
-	/* real earth_radius = 6371.2 km ; */
-	real earth_radius = 3958.9; /* miles */
-	real a = (90 - start.lat) * rad;
-	real b = (90 - end.lat) * rad;
-	real phi = (end.lon - start.lon) * rad;
-	real cosr = cos(a) * cos(b) + sin(a) * sin(b) * cos(phi);
-	real r = acos(cosr);
-	real rdist = earth_radius * r;
-	real sinth = sin(phi) * sin(b) / sin(r);
-	real th = asin(sinth) / rad;
-	return (course){ .dist = rdist, .bearing = th };
+course
+great_circle(loc start, loc end)
+{
+    real rad = pi / 180;
+
+    /* real earth_radius = 6371.2 km ; */
+    real earth_radius = 3958.9; /* miles */
+    real a = (90 - start.lat) * rad;
+    real b = (90 - end.lat) * rad;
+    real phi = (end.lon - start.lon) * rad;
+    real cosr = cos(a) * cos(b) + sin(a) * sin(b) * cos(phi);
+    real r = acos(cosr);
+    real rdist = earth_radius * r;
+    real sinth = sin(phi) * sin(b) / sin(r);
+    real th = asin(sinth) / rad;
+    return (course) { dist = rdist, bearing = th };
 }

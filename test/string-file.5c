@@ -4,12 +4,13 @@
  * string I/O tests
  */
 
-exception bad_result (poly want, poly got);
+exception bad_result(poly want, poly got);
 
-void check(poly want, poly got)
+void
+check(poly want, poly got)
 {
     if (want != got)
-	raise bad_result(want, got);
+        raise bad_result(want, got);
 }
 
 check("", File::string_string(File::string_write()));
@@ -18,12 +19,12 @@ file f = File::string_write();
 File::fprintf(f, "hello, world");
 check("hello, world", File::string_string(f));
 
-
 /* Output spanning many buffer chunks comes back in order */
 string want = "";
 f = File::string_write();
 for (int i = 0; i < 5000; i++) {
     string line = sprintf("%d\n", i);
+
     File::fprintf(f, "%s", line);
     want += line;
 }
@@ -34,6 +35,7 @@ want = "";
 f = File::string_write();
 for (int i = 0; i < 5000; i++) {
     string line = sprintf("%d\n", i);
+
     File::fputs(line, f);
     want += line;
 }

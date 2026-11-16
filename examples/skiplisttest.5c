@@ -6,114 +6,129 @@
  * for licensing information.
  */
 
-autoload Skiplist;
-autoload PRNG;
+autoload Skiplist
+autoload PRNG
 
 int gt_count = 0;
 
-bool int_gt (int a, int b) {
+bool
+int_gt(int a, int b)
+{
     ++gt_count;
     return a > b;
 }
 
-public int[*] rand_array (int n)
+public int[*]
+rand_array(int n)
 {
     int[n] a = { [i] = i };
-    PRNG::shuffle (&a);
+
+    PRNG::shuffle(&a);
     return a;
 }
 
-public void validate (Sortlist::List l) {
-    bool    first = true;
-    poly    prev;
+public void
+validate(Sortlist::List l)
+{
+    bool first = true;
+    poly prev;
 
-    void visit (poly x)
+    void
+    visit(poly x)
     {
-	if (!first)
-	    assert (int_gt (x, prev), "list out of order");
-	assert (x == Sortlist::search (l, x), "list missing element");
+        if (!first)
+            assert(int_gt(x, prev), "list out of order");
+        assert(x == Sortlist::search(l, x), "list missing element");
     }
 
-    Sortlist::walk (l, visit);
+    Sortlist::walk(l, visit);
 }
 
-public void insert_int (Sortlist::List l, int i) {
-    Sortlist::insert (l, i);
-}
-
-public void insert_ints (Sortlist::List l, int[*] i) {
-    for (int j = 0; j < dim(i); j++)
-	insert_int (l, i[j]);
-}
-
-public Sortlist::List rand_ints (int n)
+public void
+insert_int(Sortlist::List l, int i)
 {
-    Sortlist::List    l = Sortlist::new (int_gt);
-    
-    insert_ints (l, rand_array(n));
+    Sortlist::insert(l, i);
+}
+
+public void
+insert_ints(Sortlist::List l, int[*] i)
+{
+    for (int j = 0; j < dim(i); j++)
+        insert_int(l, i[j]);
+}
+
+public Sortlist::List
+rand_ints(int n)
+{
+    Sortlist::List l = Sortlist::new(int_gt);
+
+    insert_ints(l, rand_array(n));
     return l;
 }
 
-public int search_len (Sortlist::List l, int i)
+public int
+search_len(Sortlist::List l, int i)
 {
-    int	old_count = gt_count;
+    int old_count = gt_count;
 
-    Sortlist::search (l, i);
+    Sortlist::search(l, i);
     return gt_count - old_count;
 }
 
-public void dump (Sortlist::List l)
+public void
+dump(Sortlist::List l)
 {
-    for (bool (&poly) next = Sortlist::iterate (l);
-	 next (&(int value));)
-    {
-	printf ("%4d", value);
-	for (int i = Sortlist::storage (l, value); i > 0; i--)
-	    printf (" |");
-	printf ("\n");
+    for (bool(&poly) next = Sortlist::iterate(l); next(&(int value));) {
+        printf("%4d", value);
+        for (int i = Sortlist::storage(l, value); i > 0; i--)
+            printf(" |");
+        printf("\n");
     }
 }
 
-public void histogram (real[*] l)
+public void
+histogram(real[*] l)
 {
-    int	largest = 0;
-    for (int i = 0; i < dim (l); i++)
-	if (l[i] > largest)
-	    largest = l[i];
+    int largest = 0;
 
-    int width = 80 - 17;
+    for (int i = 0; i < dim(l); i++)
+        if (l[i] > largest)
+            largest = l[i];
+
+    int  width = 80 - 17;
     real scale = width / largest;
 
-    for (int i = 0; i < dim (l); i++)
-    {
-	printf ("%5d %10g ", i, l[i]);
-	int lim = floor (l[i] * scale + 0.5);
-	for (int j = 0; j < lim; j++)
-	    printf ("*");
-	printf ("\n");
+    for (int i = 0; i < dim(l); i++) {
+        printf("%5d %10g ", i, l[i]);
+        int lim = floor(l[i] * scale + 0.5);
+        for (int j = 0; j < lim; j++)
+            printf("*");
+        printf("\n");
     }
 }
 
-public void analyse (Sortlist::List l)
+public void
+analyse(Sortlist::List l)
 {
-    int[...]	store = {};
-    int[...]	search = {};
-    
-    void inc_array(&int[...] a, int i) {
-	while (dim(a) <= i)
-	    a[dim(a)] = 0;
-	a[i]++;
-    }
+    int[...] store = {};
+    int[...] search = {};
 
-    for (bool (&poly) next = Sortlist::iterate (l); next (&(int value));)
+    void
+    inc_array(&int[...] a, int i)
     {
-	inc_array (&store, Sortlist::storage (l, value));
-	inc_array (&search, search_len (l, value));
+        while (dim(a) <= i)
+            a[dim(a)] = 0;
+        a[i]++;
     }
 
-    printf ("storage distribution\n");
-    histogram (store);
-    
-    printf ("search distribution\n");
-    histogram (search);
+    for (bool(&poly) next = Sortlist::iterate(l); next(&(int value));) {
+        inc_array(&store, Sortlist::storage(l, value));
+        inc_array(&search, search_len(l, value));
+    }
+
+    printf("storage distribution\n");
+    histogram(store);
+
+    printf("search distribution\n");
+    histogram(search);
 }

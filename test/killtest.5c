@@ -8,94 +8,102 @@
  * kills the current thread, as documented.
  */
 
-exception wrong (string what, poly got, poly want);
+exception wrong(string what, poly got, poly want);
 
 bool reached = false;
 
-void function killer ()
+void
+killer()
 {
-    Thread::kill ();
+    Thread::kill();
     reached = true;
 }
 
-thread t = fork killer ();
-Thread::join (t);
+thread t = fork killer();
+Thread::join(t);
 if (reached)
-    raise wrong ("code after kill ()", reached, false);
+    raise wrong("code after kill ()", reached, false);
 
 /* Killing a thread counts it once */
-thread s = fork (sleep (100000));
-int first = Thread::kill (s);
-int second = Thread::kill (s);
+thread s = fork sleep(100000);
+int    first = Thread::kill(s);
+int    second = Thread::kill(s);
 if (first != 1 || second != 0)
-    raise wrong ("kill counts", (int[*]) { first, second }, (int[*]) { 1, 0 });
+    raise wrong("kill counts", (int[*]) { first, second }, (int[*]) { 1, 0 });
 
 /*
  * A killed thread runs its twixt leave expressions, as an exception
  * would. kill finished the thread on the spot, skipping them, and a
  * thread that killed itself joined with kill's result
  */
-int leaves = 0;
-semaphore held = Semaphore::new (1);
-semaphore never = Semaphore::new (0);
+int       leaves = 0;
+semaphore held = Semaphore::new(1);
+semaphore never = Semaphore::new(0);
 
-void function blocked ()
+void
+blocked()
 {
-    twixt (Semaphore::wait (held); Semaphore::signal (held)) {
-	twixt (; leaves++) {
-	    try {
-		Semaphore::wait (never);
-	    } catch invalid_argument (string m, int i, poly v) {
-		leaves = -100;
-	    }
-	}
+    twixt (Semaphore::wait(held); Semaphore::signal(held)) {
+        twixt (; leaves++) {
+            try {
+                Semaphore::wait(never);
+            } catch invalid_argument(string m, int i, poly v) {
+                leaves = -100;
+            }
+        }
     }
 }
 
-thread b = fork blocked ();
-sleep (50);
-if (Thread::kill (b) != 1)
-    raise wrong ("kill blocked", 0, 1);
-poly joined = Thread::join (b);
+thread b = fork blocked();
+sleep(50);
+if (Thread::kill(b) != 1)
+    raise wrong("kill blocked", 0, 1);
+poly joined = Thread::join(b);
 if (joined != <> || leaves != 1)
-    raise wrong ("blocked leaves", (poly[*]) { joined, leaves }, (poly[*]) { <>, 1 });
-if (!Semaphore::test (held))
-    raise wrong ("leave released semaphore", false, true);
-Semaphore::signal (held);
+    raise wrong(
+        "blocked leaves", (poly[*]) { joined, leaves }, (poly[*]) { <>, 1 });
+if (!Semaphore::test(held))
+    raise wrong("leave released semaphore", false, true);
+Semaphore::signal(held);
 
-int function self ()
+int
+self()
 {
     twixt (; leaves++)
-	Thread::kill ();
+        Thread::kill();
     reached = true;
     return 3;
 }
 
 leaves = 0;
 reached = false;
-joined = Thread::join (fork self ());
+joined = Thread::join(fork self());
 if (joined != <> || leaves != 1 || reached)
-    raise wrong ("self kill", (poly[*]) { joined, leaves, reached }, (poly[*]) { <>, 1, false });
+    raise wrong("self kill", (poly[*]) { joined, leaves, reached },
+                (poly[*]) { <>, 1, false });
 
 /* A second kill ends a thread whose leave expression blocks, counting it once */
-void function stuck ()
+void
+stuck()
 {
-    twixt (; Semaphore::wait (never))
-	while (true)
-	    sleep (10);
+    twixt (; Semaphore::wait(never))
+        while (true)
+            sleep(10);
 }
 
-thread k = fork stuck ();
-sleep (50);
-first = Thread::kill (k);
-sleep (50);
-second = Thread::kill (k);
-joined = Thread::join (k);
+thread k = fork stuck();
+sleep(50);
+first = Thread::kill(k);
+sleep(50);
+second = Thread::kill(k);
+joined = Thread::join(k);
 if (first != 1 || second != 0 || joined != <>)
-    raise wrong ("second kill", (poly[*]) { first, second, joined }, (poly[*]) { 1, 0, <> });
+    raise wrong(
+        "second kill", (poly[*]) { first, second, joined }, (poly[*]) { 1, 0, <> });
 
 /* Killing the thread running a top-level command ends only that command */
 leaves = 0;
-twixt (; leaves++) Thread::kill ();
+twixt (; leaves++)
+    Thread::kill();
 if (leaves != 1)
-    raise wrong ("top-level kill", leaves, 1);
+    raise wrong("top-level kill", leaves, 1);

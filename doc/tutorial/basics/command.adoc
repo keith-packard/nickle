@@ -151,8 +151,10 @@ global int x = 0;
 
 The `load` command evaluates the file it names, like the `-f` flag, and
 `library` finds the file in Nickle's library path, like the `-l` flag.
-Unlike those flags, an error in such a file, or a file that can't be
-found, is reported and Nickle continues.
+`library` also loads C extensions, shared libraries named like
+`libcairo-5c.so.0`, only the first time. Unlike those flags, an error in
+such a file, or a file that can't be found, is reported and Nickle
+continues.
 
 ----
 

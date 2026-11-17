@@ -1586,7 +1586,8 @@ tests c in that table, returning false above 255.
 .IP Foreign
 .IP "bool function load(string name)"
 Load the shared library name and call its nickle_init function,
-where the system supports it.  Raises File::open_error if the
+where the system supports it, only the first time that library loads.
+Raises File::open_error if the
 library can't be loaded or has no nickle_init.
 .\"
 .SH COMMANDS
@@ -1606,6 +1607,9 @@ Load a library given by the string name E.  See the discussion of the
 NICKLEPATH environment variable in ENVIRONMENT
 below, and the discussion of Command::nickle_path above.
 A library not found there is reported, and execution continues.
+A name ending in .so, or holding .so. as in libfoo.so.1, is a C
+extension: library loads it with Foreign::load, found first in the
+library path, then wherever the system finds shared libraries.
 .IP "autoload NAME {,NAME}"
 Load the library for each namespace NAME, unless it is already
 defined.  The file name is NAME in lower case, with a dash before

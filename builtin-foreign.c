@@ -18,6 +18,14 @@ static NamespacePtr ForeignNamespace;
 #define HAVE_FOREIGN_LOAD 1
 #include <dlfcn.h>
 
+/*
+ * The libraries Foreign::load has initialized, by their dlopen handles,
+ * which are the same however a library is named, so each initializes
+ * only once
+ */
+static void    **foreignLoaded;
+static ptrdiff_t foreignLoadedCount;
+
 static Value
 do_Foreign_load(Value av)
 {
@@ -45,6 +53,15 @@ do_Foreign_load(Value av)
         RETURN(Void);
     }
 
+    /* A library loaded before keeps what its first load set up */
+    for (ptrdiff_t i = 0; i < foreignLoadedCount; i++)
+        if (foreignLoaded[i] == lib) {
+#ifdef HAVE_DLCLOSE
+            dlclose(lib);
+#endif
+            RETURN(TrueVal);
+        }
+
     module_init = (Value (*)(void))dlsym(lib, "nickle_init");
     if (!module_init) {
         char *err = 0;
@@ -60,6 +77,11 @@ do_Foreign_load(Value av)
 #endif
         RETURN(Void);
     }
+    void **loaded = realloc(foreignLoaded, (size_t)(foreignLoadedCount + 1) * sizeof(void *));
+    if (!loaded)
+        MemExhausted();
+    foreignLoaded = loaded;
+    foreignLoaded[foreignLoadedCount++] = lib;
     ret = (*module_init)();
     RETURN(ret);
 }
@@ -67,18 +89,30 @@ do_Foreign_load(Value av)
 
 #endif
 
+#ifndef HAVE_FOREIGN_LOAD
+/* Without dlopen, no library loads, so the library command reports that */
+static Value
+do_Foreign_load(Value av)
+{
+    ENTER();
+    RaiseStandardException(exception_open_error, 3,
+                           NewStrString("loading C extensions isn't supported here"),
+                           FileGetError(ENOSYS), av);
+    RETURN(Void);
+}
+#endif
+
 void
 import_Foreign_namespace(void)
 {
     ENTER();
     static const struct fbuiltin_1 funcs_1[] = {
-#if defined(HAVE_EXTERN_SYMS) && defined(HAVE_FOREIGN_LOAD)
         { do_Foreign_load, "load", "b", "s",
-                                                                   "\n"
+         "\n"
           " bool load (string name)\n"
           "\n"
-          " Load a foreign library into nickle\n" },
-#endif
+          " Load a C extension, a shared library, into nickle,\n"
+          " initializing it only the first time\n" },
         { 0 }
     };
 

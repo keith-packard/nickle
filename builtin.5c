@@ -117,19 +117,57 @@ extend namespace Command {
         return Command::lex_input(File::string_read(s), s, false, false);
     }
 
+    bool
+    is_extension(string name)
+        /* Whether 'name' names a C extension, a shared library */
+    {
+        int l = String::length(name);
+
+        return (l > 3 && String::substr(name, l - 3, 3) == ".so")
+            || String::index(name, ".so.") ≥ 0;
+    }
+
+    void
+    library_error(string name, string why)
+        /* Report why 'name' didn't load; printf isn't loaded yet */
+    {
+        File::fputs("Cannot load library \"" + name + "\": " + why + "\n", stderr);
+    }
+
+    void
+    load_extension(string name)
+        /*
+         * Load the C extension 'name', found first in 'nickle_path',
+         * else wherever the system finds shared libraries. Foreign::load
+         * initializes each library only once.
+         */
+    {
+        file   f;
+        string found;
+
+        if (open_library(name, &f, &found))
+            File::close(f);
+        else
+            found = name;
+        try {
+            Foreign::load(found);
+        } catch File::open_error(string message, File::error_type err, string lib) {
+            library_error(name, message);
+        }
+    }
+
     void
     do_library(string name)
         /*
          * library "name"       - read commands from "name", found in
-         *                        nickle_path
+         *                        nickle_path, or load the C extension
+         *                        "name", a shared library, once
          */
     {
-        /* printf isn't loaded yet, so report with the print builtin */
-        if (!lex_library(name))
-            File::print(stderr,
-                        "Cannot load library \"" + name
-                        + "\": not found in \"" + nickle_path + "\"\n",
-                        "s", 10, 0, -1, " ");
+        if (is_extension(name))
+            load_extension(name);
+        else if (!lex_library(name))
+            library_error(name, "not found in \"" + nickle_path + "\"");
     }
 
     new("library", do_library);

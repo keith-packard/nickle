@@ -377,7 +377,7 @@ run_target('nickle-format',
 	   command : [prog_nickle_format, '--nickle', nickle, nickle_format_files],
 	   env : test_env)
 
-# Check that lex.l's patterns for names' UTF-8 characters leave out
+# Check that lex.l's patterns for names' Unicode characters leave out
 # those its operators use, and 'ninja utf8-names' regenerates them
 prog_mkutf8names = find_program('mkutf8names.py')
 test('check-utf8-names', prog_mkutf8names, args : ['--check', files('lex.l')])

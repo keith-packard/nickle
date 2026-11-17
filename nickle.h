@@ -232,7 +232,7 @@ TwixtPtr TwixtNext(TwixtPtr twixt, TwixtPtr last);
 #define EXPR_ROW  2
 
 /*
- * An operator written in UTF-8 (× for *) prints that way: the lexer adds
+ * An operator spelled in Unicode (× for *) prints that way: the lexer adds
  * LEX_UTF8 to the token's value, which the parser passes on as the
  * node's tag, and ExprBaseInit turns it into EXPR_UTF8
  */

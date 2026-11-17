@@ -1,13 +1,13 @@
 /*
  * Nickle test suite
  *
- * Lexing names next to UTF-8 operators
+ * Lexing names next to Unicode operators
  *
  * Names took every byte past ASCII as a letter, so a name ran on into a
- * UTF-8 operator after it, and an operator before a name became part of
- * it: a⫽b, ¬a, and x² were names. Names now hold any UTF-8 character
+ * Unicode operator after it, and an operator before a name became part of
+ * it: a⫽b, ¬a, and x² were names. Names now hold any Unicode character
  * but those operators use, so those lex as they read, and names may
- * still hold other UTF-8 characters.
+ * still hold other Unicode characters.
  *
  * Don't reformat this file with nickle --format, which puts spaces
  * around binary operators, so the checks of operators touching names
@@ -64,8 +64,8 @@ int[3] z = { 1… };
 
 check("{ 1… }", z, (int[3]) { 1, 1, 1 });
 
-/* Names still hold other UTF-8 characters, and digits after one */
+/* Names still hold other Unicode characters, and digits after one */
 int π = 3, naïve = 4, 中文 = 5, x₁ = 6, café2 = 7;
 
-check("UTF-8 names", π + naïve + 中文 + x₁ + café2, 25);
-check("UTF-8 name and operator", π×naïve, 12);
+check("Unicode names", π + naïve + 中文 + x₁ + café2, 25);
+check("Unicode name and operator", π×naïve, 12);

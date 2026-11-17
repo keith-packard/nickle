@@ -934,7 +934,7 @@ check("declarations again", run(plain_want + "print plain\n"), plain_want);
 /*
  * Operators print as the source spelled them
  *
- * Operators written in UTF-8 printed in ASCII, so formatting a file
+ * Operators spelled in Unicode printed in ASCII, so formatting a file
  * rewrote x² as x ** 2 and ◊ as <>. Names can't hold the characters
  * operators use, so those print against names as their ASCII spellings
  * do: ¬a, a⧺, p→x, and a².

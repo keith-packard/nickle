@@ -837,7 +837,7 @@ PrettyClarifies(int op, int operand)
     }
 }
 
-/* The UTF-8 spelling of the operator of e, when the source wrote it that way, else 0 */
+/* The alternate Unicode spelling of the operator of e, when the source used it, else 0 */
 static const char *
 PrettyUtf8Operator(Expr *e)
 {
@@ -895,7 +895,7 @@ PrettyUtf8Operator(Expr *e)
     }
 }
 
-/* Print the operator of e as the source wrote it, ascii unless that was UTF-8 */
+/* Print the operator of e as the source wrote it, ascii unless that was Unicode */
 static void
 PrettyOperator(Value f, Expr *e, const char *ascii)
 {

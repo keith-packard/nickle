@@ -373,6 +373,24 @@ stable("first in a block",
        + "        g();\n" + "    }\n" + "}\n");
 
 /*
+ * A '#' comment prints with '#' marks, as written, where it keeps a line
+ * of its own; a '#' doc comment ending a declaration puts its ';' on the
+ * next line, and one sharing a line with code prints as a block comment
+ */
+stable("hash comments",
+       "# heading\n" + "\n" + "# leads f\n" + "int f(int a) {\n"
+       + "  # explain\n" + "  #   indented\n" + "  #\n" + "  # after empty\n"
+       + "  #\n" + "  return a;\n" + "}\n" + "exception oops(int a)\n"
+       + "    # documents oops\n" + "    ;\n" + "typedef\n" + "# type comment\n"
+       + "struct {\n" + "# member comment\n" + "    int d;\n" + "} t;\n",
+       "# heading\n" + "\n" + "# leads f\n" + "int\n" + "f(int a)\n"
+       + "{\n" + "    # explain\n" + "    #   indented\n" + "    #\n"
+       + "    # after empty\n" + "    #\n" + "    return a;\n" + "}\n"
+       + "\n" + "exception oops(int a)\n" + "    # documents oops\n"
+       + "    ;\n" + "typedef /* type comment */ struct {\n"
+       + "    # member comment\n" + "    int d;\n" + "} t;\n");
+
+/*
  * Formatting a file leaves names as they were
  *
  * Formatting a file parses its declarations without running them, and

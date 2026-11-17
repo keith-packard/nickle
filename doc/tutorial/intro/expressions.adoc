@@ -285,3 +285,12 @@ fork
 ----
 
 Unlike C, the unary operators bind tighter than `+**+`, so `+-2**2+` is 4.
+
+== Unicode spellings
+
+Many operators also have an alternate Unicode spelling, which means
+the same as the ASCII one: `≠`, `≤`, and `≥` for the comparisons, `×`
+and `÷` for multiplication and division, `⫽` for integer division,
+and superscript digits for constant exponents, as in `x²` or `2¹⁰`.
+Nickle prints code the way it was written, and the manual page lists
+every alternate spelling.

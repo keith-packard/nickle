@@ -905,28 +905,34 @@ PrettyOperator(Value f, Expr *e, const char *ascii)
 }
 
 /*
- * The superscript of a power written x² or x³, whose exponent the
- * parser made, so it has no text, else 0
+ * Whether a power was written with its exponent in superscripts, as x²
+ * or x⁻¹⁰, the exponent's text then holding its digits and any '-'
  */
-static const char *
+static Bool
 PrettySuperscript(Expr *e)
 {
     Expr *exponent;
 
     if (e->base.tag != POW || !(e->base.flags & EXPR_UTF8))
-        return 0;
+        return False;
     exponent = e->tree.right;
-    if (exponent->base.tag != TEN_NUM || exponent->constant.text
-        || !ValueIsInt(exponent->constant.constant))
-        return 0;
-    switch (ValueInt(exponent->constant.constant)) {
-    case 2:
-        return "²";
-    case 3:
-        return "³";
-    default:
-        return 0;
-    }
+    return exponent->base.tag == TEN_NUM && (exponent->base.flags & EXPR_UTF8)
+        && exponent->constant.text;
+}
+
+static const char * const prettySuperscripts[]
+    = { "⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹" };
+
+/* Print a power's exponent in superscripts, as written */
+static void
+PrettySuperscriptText(Value f, Expr *e)
+{
+    Value       text = e->tree.right->constant.text;
+    const char *s = StringChars(&text->string);
+    ptrdiff_t   i;
+
+    for (i = 0; i < text->string.length; i++)
+        FilePuts(f, s[i] == '-' ? "⁻" : prettySuperscripts[s[i] - '0']);
 }
 
 /*
@@ -2418,7 +2424,7 @@ PrettyExprText(Value f, Expr *e, int parentPrec, int level, Bool nest)
         if (PrettySuperscript(e)) {
             /* x² binds as x ** 2, so a power as its operand needs parentheses */
             PrettyExpr(f, e->tree.left, selfPrec + 1, level, nest);
-            FilePuts(f, PrettySuperscript(e));
+            PrettySuperscriptText(f, e);
             break;
         }
         __NICKLE_FALLTHROUGH;

@@ -45,7 +45,7 @@ string[string] spelling = {
 /* The other tokens on the precedence lines, which this doesn't check */
 string[*]      others = {
     "POUND", "COMMA", "ASSIGN", "FORK", "QUEST", "COLON",
-    "STARSTAR", "POW2", "POW3", "UNIONCAST",
+    "STARSTAR", "POWN", "UNIONCAST",
     "UMINUS", "BANG", "FACT", "LNOT", "INC", "DEC", "STAR", "AMPER", "THREADID",
     "OS", "CS", "DOT", "ARROW", "STAROS", "CALL", "OP", "CP",
     "POINTER", "COLONCOLON",

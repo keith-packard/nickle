@@ -381,6 +381,21 @@ is equivalent to
 .BI "x " "=" " x " "<op>" " y"
 .IP "E , E"
 Returns right-hand expression.
+.PP
+Most operators also have an alternate Unicode spelling, which means the same:
+\[mu] for *, \[di] for /, \[u2AFD] for //, \[u2191] for **,
+\[u2260] for !=, \[<=] for <=, \[>=] for >=,
+\[AN] for &&, \[OR] for ||, \[no] for prefix !,
+\[u2AA1] for <<, \[u2AA2] for >>,
+\[u29FA] for ++, \[->] for ->, \[rA] for =>,
+\[u2026] for ..., and \[u25CA] for <>.
+The assignment operators
+\[mu]=, \[di]=, \[u2AFD]=, \[u2191]=, \[u2AA1]=, and \[u2AA2]=
+work the same way.
+An exponent may be written in superscript digits,
+after an optional superscript minus:
+x\[S2] is x ** 2, and 2\[u207B]\[u00B9]\[u2070] is 2 ** -10.
+Printing keeps whichever spelling the source used.
 .\"
 .SH TYPES
 .PP

@@ -31,16 +31,19 @@ def operator_chars(text):
     """
     rules = text.split('\n%%\n')[1]
     chars = {}
+    quoted = r'"((?:[^"\\]|\\.)*)"'
     for line in rules.splitlines():
-        m = re.match(r'"((?:[^"\\]|\\.)*)"(.*)', line)
-        if not m:
+        # A rule's pattern runs to the first blank outside quotes
+        m = re.match(r'((?:' + quoted + r'|[^\s"])+)(.*)', line)
+        if not m or '"' not in m.group(1):
             continue
-        token = re.search(r'\b[A-Z][A-Z0-9_]+\b', m.group(2))
-        for c in m.group(1):
-            if ord(c) > 0x7f:
-                tokens = chars.setdefault(c, [])
-                if token and token.group(0) not in tokens:
-                    tokens.append(token.group(0))
+        token = re.search(r'\b[A-Z][A-Z0-9_]+\b', m.group(3))
+        for q in re.findall(quoted, m.group(1)):
+            for c in q:
+                if ord(c) > 0x7f:
+                    tokens = chars.setdefault(c, [])
+                    if token and token.group(0) not in tokens:
+                        tokens.append(token.group(0))
     return chars
 
 

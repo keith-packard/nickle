@@ -125,6 +125,7 @@ static Expr           *ParseCanonFor(Expr *expr);
 static void            ParseCommand(Atom name, Expr *args, LexLocation location);
 static Value           ParseNumberValue(int tag, Value text);
 static Expr           *ParseNumber(int tag, Value text);
+static Expr           *ParseSuperscript(Value text);
 static LexLocation     ParseSpan(LexLocation first, LexLocation last);
 static Expr           *ParseRow(Expr *comma, LexLocation previous, LexLocation item);
 static Expr           *ParseRows(Expr *init, Bool comma, LexLocation open, LexLocation close);
@@ -223,6 +224,8 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 %token <value>      CHAR_CONST STRING_CONST POLY_CONST THREAD_CONST
 %token <value>      COMMENT_CONST
 %token <value>      BOOLVAL
+%token <ints>       POW STARSTAR
+%token <value>      POWN
 %token <ints>       VOIDVAL DARROW
 %token              ISTYPE HASMEMBER
 
@@ -246,7 +249,7 @@ static SymbolPtr       ParseNewSymbol(Publish publish, Class class, Type *type, 
 %left <ints>     SHIFTL SHIFTR
 %left           PLUS MINUS
 %left <ints>     TIMES DIVIDE DIV MOD
-%right <ints>    POW STARSTAR POW2 POW3
+%right           POW STARSTAR POWN
 %left           UNIONCAST
 %right <ints>    UMINUS BANG FACT LNOT INC DEC STAR AMPER THREADID
 %left <ints>     OS CS DOT ARROW STAROS CALL OP CP
@@ -1365,17 +1368,10 @@ simpleexpr      : simpleexpr assignop simpleexpr                %prec ASSIGN
                         $$ = NewExprTree(POW, BuildName("Math", "pow"),
                                             NewExprTree(POW | ($2 & LEX_UTF8), $1, $3));
                     }
-                | simpleexpr POW2
+                | simpleexpr POWN
                     {
                         $$ = NewExprTree(POW, BuildName("Math", "pow"),
-                                            NewExprTree(POW | ($2 & LEX_UTF8), $1,
-                                                        NewExprConst(TEN_NUM, NewInt(2))));
-                    }
-                | simpleexpr POW3
-                    {
-                        $$ = NewExprTree(POW, BuildName("Math", "pow"),
-                                            NewExprTree(POW | ($2 & LEX_UTF8), $1,
-                                                        NewExprConst(TEN_NUM, NewInt(3))));
+                                            NewExprTree(POW | LEX_UTF8, $1, ParseSuperscript($2)));
                     }
                 | simpleexpr SHIFTL simpleexpr
                     { $$ = NewExprTree($2, $1, $3); }
@@ -1956,6 +1952,25 @@ ParseNumber(int tag, Value text)
     ENTER();
     Expr *e = NewExprConst(tag, ParseNumberValue(tag, text));
 
+    e->constant.text = text;
+    RETURN(e);
+}
+
+/*
+ * An exponent written in superscripts, from its text in ASCII, kept to
+ * print it as written
+ */
+static Expr *
+ParseSuperscript(Value text)
+{
+    ENTER();
+    char *s = StringChars(&text->string);
+    Value v = atov(s[0] == '-' ? s + 1 : s, 10);
+    Expr *e;
+
+    if (s[0] == '-')
+        v = Negate(v);
+    e = NewExprConst(TEN_NUM | LEX_UTF8, v);
     e->constant.text = text;
     RETURN(e);
 }

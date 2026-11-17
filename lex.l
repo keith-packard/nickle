@@ -59,6 +59,37 @@ yylvalNumber(int token)
     return yylvalValue(NewStrString(yytext), token);
 }
 
+/* The superscript digits, then the superscript minus */
+static const char * const lexSuperscripts[]
+    = { "⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹", "⁻" };
+
+/*
+ * A superscript exponent's value is its text in ASCII, its digits and
+ * any '-', which takes fewer bytes, so it replaces yytext
+ */
+static int
+yylvalSuperscript(int token)
+{
+    char *in = yytext, *out = yytext;
+    int   d;
+
+    while (*in) {
+        for (d = 0; d < 11; d++) {
+            size_t len = strlen(lexSuperscripts[d]);
+
+            if (!strncmp(in, lexSuperscripts[d], len)) {
+                *out++ = d < 10 ? (char)('0' + d) : '-';
+                in += len;
+                break;
+            }
+        }
+        if (d == 11)
+            break;
+    }
+    *out = '\0';
+    return yylvalValue(NewStrString(yytext), token);
+}
+
 static inline int
 yylvalClass(Class class, int token)
 {
@@ -588,10 +619,11 @@ unput(char c)
 U8CONT      [\x80-\xbf]
 /*
  * ¬ \xc2\xac: LNOT
- * ² \xc2\xb2: POW2
- * ³ \xc2\xb3: POW3
+ * ² \xc2\xb2: POWN
+ * ³ \xc2\xb3: POWN
+ * ¹ \xc2\xb9: POWN
  */
-U8C2_A      \xc2([\x80-\xab\xad-\xb1\xb4-\xbf])
+U8C2_A      \xc2([\x80-\xab\xad-\xb1\xb4-\xb8\xba-\xbf])
 /*
  * × \xc3\x97: ASSIGNTIMES TIMES
  * ÷ \xc3\xb7: ASSIGNDIVIDE DIVIDE
@@ -600,31 +632,42 @@ U8C3_A      \xc3([\x80-\x96\x98-\xb6\xb8-\xbf])
 /*
  * … \xe2\x80\xa6: DOTDOTDOT
  */
-U8E2_A      \xe2([\x81-\x85\x8a-\x96\x98-\xa6\xa8-\xa9\xac-\xbf]{U8CONT}|\x80[\x80-\xa5\xa7-\xbf])
+U8E2_A      \xe2([\x82-\x85\x8a-\x96\x98-\xa6\xa8-\xa9\xac-\xbf]{U8CONT}|\x80[\x80-\xa5\xa7-\xbf])
 /*
+ * ⁰ \xe2\x81\xb0: POWN
+ * ⁴ \xe2\x81\xb4: POWN
+ * ⁵ \xe2\x81\xb5: POWN
+ * ⁶ \xe2\x81\xb6: POWN
+ * ⁷ \xe2\x81\xb7: POWN
+ * ⁸ \xe2\x81\xb8: POWN
+ * ⁹ \xe2\x81\xb9: POWN
+ * ⁻ \xe2\x81\xbb: POWN
  * ↑ \xe2\x86\x91: ASSIGNPOW STARSTAR
  * → \xe2\x86\x92: ARROW
+ */
+U8E2_B      \xe2(\x81[\x80-\xaf\xb1-\xb3\xba\xbc-\xbf]|\x86[\x80-\x90\x93-\xbf])
+/*
  * ⇒ \xe2\x87\x92: DARROW
  * ∧ \xe2\x88\xa7: AND
  * ∨ \xe2\x88\xa8: OR
  */
-U8E2_B      \xe2(\x86[\x80-\x90\x93-\xbf]|\x87[\x80-\x91\x93-\xbf]|\x88[\x80-\xa6\xa9-\xbf])
+U8E2_C      \xe2(\x87[\x80-\x91\x93-\xbf]|\x88[\x80-\xa6\xa9-\xbf])
 /*
  * ≠ \xe2\x89\xa0: NE
  * ≤ \xe2\x89\xa4: LE
  * ≥ \xe2\x89\xa5: GE
  * ◊ \xe2\x97\x8a: VOIDVAL
  */
-U8E2_C      \xe2(\x89[\x80-\x9f\xa1-\xa3\xa6-\xbf]|\x97[\x80-\x89\x8b-\xbf])
+U8E2_D      \xe2(\x89[\x80-\x9f\xa1-\xa3\xa6-\xbf]|\x97[\x80-\x89\x8b-\xbf])
 /*
  * ⧺ \xe2\xa7\xba: INC
  * ⪡ \xe2\xaa\xa1: ASSIGNSHIFTL SHIFTL
  * ⪢ \xe2\xaa\xa2: ASSIGNSHIFTR SHIFTR
  * ⫽ \xe2\xab\xbd: ASSIGNDIV DIV
  */
-U8E2_D      \xe2(\xa7[\x80-\xb9\xbb-\xbf]|\xaa[\x80-\xa0\xa3-\xbf]|\xab[\x80-\xbc\xbe-\xbf])
+U8E2_E      \xe2(\xa7[\x80-\xb9\xbb-\xbf]|\xaa[\x80-\xa0\xa3-\xbf]|\xab[\x80-\xbc\xbe-\xbf])
 U8LETTER_2  {U8C2_A}|{U8C3_A}|[\xc4-\xdf]{U8CONT}
-U8LETTER_3  {U8E2_A}|{U8E2_B}|{U8E2_C}|{U8E2_D}|[\xe0-\xe1\xe3-\xef]{U8CONT}{U8CONT}
+U8LETTER_3  {U8E2_A}|{U8E2_B}|{U8E2_C}|{U8E2_D}|{U8E2_E}|[\xe0-\xe1\xe3-\xef]{U8CONT}{U8CONT}
 U8LETTER_4  [\xf0-\xf4]{U8CONT}{U8CONT}{U8CONT}
 U8LETTER    {U8LETTER_2}|{U8LETTER_3}|{U8LETTER_4}
 /* End of mkutf8names.py output */
@@ -783,8 +826,7 @@ has_member      { return yylvalInts(HASMEMBER); }
 "?"             { return yylvalInts(QUEST); }
 "::"            { return yylvalInts(COLONCOLON); }
 ":"             { return yylvalInts(COLON); }
-"²"             { return yylvalUtf8(POW2); }
-"³"             { return yylvalUtf8(POW3); }
+"⁻"?("⁰"|"¹"|"²"|"³"|"⁴"|"⁵"|"⁶"|"⁷"|"⁸"|"⁹")+ { return yylvalSuperscript(POWN); }
 " "             ;
 "\t"            ;
 "\r"            ;

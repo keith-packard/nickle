@@ -82,10 +82,11 @@ Numbers print as written. Strings and characters print from their
 values, as UTF-8, escaping only control characters, quotes, and
 backslashes, so an escape such as `\x41` prints as `A`. An operator in
 an expression prints as the source spelled it, in ASCII or in UTF-8
-(`×`, `≤`, `→`, `◊`, `²`, and the rest); one in a type, such as a
-parameter's `...`, prints in ASCII. Names can't hold the characters
+(`×`, `≤`, `→`, `◊`, and the rest); one in a type, such as a
+parameter's `...`, prints in ASCII. An exponent written in superscripts
+prints as written, as in `x²` or `x⁻⁰¹`. Names can't hold the characters
 operators use, so those print against names as their ASCII spellings
-do: `¬a`, `a⧺`, `p→x`, and `a²`.
+do: `¬a`, `a⧺`, `p→x`, and `a¹⁰`.
 
 ### Parentheses
 

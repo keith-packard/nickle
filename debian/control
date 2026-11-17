@@ -3,8 +3,8 @@ Section: interpreters
 Priority: optional
 Maintainer: Keith Packard <keithp@keithp.com>
 Homepage: https://nickle.org
-Build-Depends: debhelper-compat (= 13), libreadline-dev, asciidoctor-pdf,
- bison, flex, meson, ninja-build, pkgconf, bc, libgmp-dev
+Build-Depends: debhelper-compat (= 13), dh-sequence-elpa, libreadline-dev,
+ asciidoctor-pdf, bison, flex, meson, ninja-build, pkgconf, bc, libgmp-dev
 Rules-Requires-Root: no
 Standards-Version: 4.7.4
 Vcs-Git: https://salsa.debian.org/debian/nickle.git
@@ -21,3 +21,15 @@ Description: desk calculator language
  resembles C.  Some things in C which do not translate easily are different,
  some design choices have been made differently, and a very few features are
  simply missing.
+
+Package: elpa-nickle-mode
+Section: editors
+Architecture: all
+Depends: ${elpa:Depends}, ${misc:Depends}
+Recommends: emacs, nickle
+Enhances: emacs
+Description: Emacs major mode for the Nickle language
+ nickle-mode edits Nickle source files in Emacs. It indents code as
+ nickle --format lays it out, knows that only /* */ and a '#' starting a
+ line are comments, '//' being integer division, and reformats a buffer
+ through nickle --pretty.

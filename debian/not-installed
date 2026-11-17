@@ -1,0 +1,2 @@
+# dh_elpa installs nickle-mode.el, in elpa-nickle-mode, from the source
+usr/share/emacs/site-lisp/nickle-mode.el

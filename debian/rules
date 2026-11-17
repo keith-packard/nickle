@@ -6,8 +6,5 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 	dh $@
 
 # Don't install duplicate copyright info from COPYING files
-# Make examples which happen to start with #! executable
-
-override_dh_auto_install:
-	dh_auto_install && (find debian/nickle -name COPYING -print0 | xargs -0 rm)
-	find debian/nickle/usr/share/nickle -type f -print0 | xargs -0 grep -l '^#!.*nickle' | xargs -d '\n' chmod +x
+override_dh_install:
+	dh_install -XCOPYING

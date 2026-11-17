@@ -386,6 +386,15 @@ run_target('utf8-names', command : [prog_mkutf8names, files('lex.l')])
 # nickle-mode.el, the Emacs mode, goes where Emacs finds site libraries
 install_data('nickle-mode.el', install_dir : get_option('datadir') / 'emacs' / 'site-lisp')
 
+# Check nickle-mode.el, the Emacs mode, where Emacs is installed
+prog_emacs = find_program('emacs', required : false)
+if prog_emacs.found()
+  test('nickle-mode', prog_emacs,
+       args : ['--batch', '-Q', '-l', files('nickle-mode.el'), '-l', files('nickle-mode-tests.el'),
+	       '-f', 'ert-run-tests-batch-and-exit'],
+       env : test_env)
+endif
+
 # 'ninja unicode-tables' regenerates Ctype's tables, ctype-class.h and
 # ctype-case.h, from the Unicode Character Database in
 # /usr/share/unicode; the generated files are committed

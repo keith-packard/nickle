@@ -391,16 +391,37 @@ PrettyHasDoc(Expr *c)
     return False;
 }
 
-/* Print a header's doc comments from a list, each on lines of its own under it, one level in */
-static void
+static Bool PrettyHashText(Value text);
+
+/*
+ * Print a header's doc comments from a list, each on lines of its own
+ * under it, one level in, returning whether the last was a '#' comment,
+ * which ends its line
+ */
+static Bool
 PrettyDocComments(Value f, Expr *c, int level)
 {
+    Bool hash = False;
+
     for (; c && c->tree.left; c = c->tree.right)
         if (c->tree.left->base.tag == COMMENT_CONST
             && c->tree.left->comment.comment->place == comment_doc) {
             FilePuts(f, "\n");
             PrettyComment(f, c->tree.left->comment.comment->text, level + 1);
+            hash = PrettyHashText(c->tree.left->comment.comment->text);
         }
+    return hash;
+}
+
+/* End a declaration's doc comments with its ';', under a '#' comment on a line of its own */
+static void
+PrettyDocSemicolon(Value f, Expr *c, int level)
+{
+    if (PrettyDocComments(f, c, level)) {
+        FilePuts(f, "\n");
+        PrettyIndent(f, 0, level + 1);
+    }
+    FilePuts(f, ";");
 }
 
 /* Clear the marks of comment entries */
@@ -1368,6 +1389,13 @@ PrettyTypeToken(const char *s, ptrdiff_t len, ptrdiff_t *skip)
         for (i = 2; i < len - 1 && !(s[i] == '*' && s[i + 1] == '/'); i++)
             ;
         *skip = i + 2 < len ? i + 2 : len;
+        return 0;
+    }
+    /* A '#' in a type starts a member's comment, which runs to the end of its line */
+    if (c == '#') {
+        for (i = 1; i < len && s[i] != '\n'; i++)
+            ;
+        *skip = i;
         return 0;
     }
     if (PrettyNameByte(c)
@@ -4977,8 +5005,9 @@ PrettyStatement(Value f, Expr *e, int level, int blevel, Bool nest)
                     PrettyCommentList(f, decl->comments, comment_after);
                 PrettyArgs(f, t->func.args, level, nest);
                 if (nest)
-                    PrettyDocComments(f, decl->comments, level);
-                FilePuts(f, ";");
+                    PrettyDocSemicolon(f, decl->comments, level);
+                else
+                    FilePuts(f, ";");
             }
         }
         FilePuts(f, "\n");
@@ -5018,8 +5047,10 @@ PrettyStatement(Value f, Expr *e, int level, int blevel, Bool nest)
             PrettyComment(f, symbol->exception.doc, level + 1);
         }
         if (nest)
-            PrettyDocComments(f, e->decl.decl->comments, level);
-        FilePuts(f, ";\n");
+            PrettyDocSemicolon(f, e->decl.decl->comments, level);
+        else
+            FilePuts(f, ";");
+        FilePuts(f, "\n");
         break;
     }
     case IMPORT:
@@ -6082,10 +6113,15 @@ PrettyCommentLines(Value text, PrettyLine **linesp)
             lines[0].indent = base;
     }
 
-    for (first = 0; first < n && lines[first].indent < 0; first++)
-        ;
-    for (last = n; last > first && lines[last - 1].indent < 0; last--)
-        ;
+    /* Blank lines around a block comment's text go; each '#' line was written */
+    first = 0;
+    last = n;
+    if (!hash) {
+        while (first < n && lines[first].indent < 0)
+            first++;
+        while (last > first && lines[last - 1].indent < 0)
+            last--;
+    }
     *linesp = lines + first;
     return last - first;
 }
@@ -6177,10 +6213,25 @@ PrettyCommentOneLine(Value f, Value text, ptrdiff_t width)
     return fits;
 }
 
+/* Whether a comment's text was written with '#' marks */
+static Bool
+PrettyHashText(Value text)
+{
+    const char *s = StringChars(&text->string);
+    const char *end = s + text->string.length;
+
+    while (s < end && (*s == ' ' || *s == '\t'))
+        s++;
+    return s < end && *s == '#';
+}
+
 /*
  * Print a comment at level, starting at the indentation and ending
- * after its closing mark: on one line when its text is one line, and
- * otherwise as a block with ' * ' before each line
+ * after its closing mark: one written with '#' marks as lines starting
+ * with '# ', as it was written, else on one line when its text is one
+ * line, and otherwise as a block with ' * ' before each line. A '#'
+ * comment ends its line, so this prints only comments with lines of
+ * their own
  */
 static void
 PrettyComment(Value f, Value text, int level)
@@ -6190,14 +6241,34 @@ PrettyComment(Value f, Value text, int level)
     ptrdiff_t   n;
     Value       laid;
     const char *s, *e, *end;
+    Bool        hash = PrettyHashText(text);
 
     PrettyIndent(f, 0, level);
-    if (PrettyCommentOneLine(f, text, PTRDIFF_MAX)) {
+    if (!hash && PrettyCommentOneLine(f, text, PTRDIFF_MAX)) {
         EXIT();
         return;
     }
     n = PrettyCommentLines(text, &lines);
     laid = PrettyLayoutComment(lines, n);
+    if (hash) {
+        s = StringChars(&laid->string);
+        end = s + laid->string.length;
+        for (Bool first = True; s < end || first; s = e + 1, first = False) {
+            for (e = s; e < end && *e != '\n'; e++)
+                ;
+            if (!first)
+                PrettyIndent(f, 0, level);
+            FileOutput(f, '#');
+            if (e > s) {
+                FileOutput(f, ' ');
+                FilePutsc(f, s, e - s);
+            }
+            if (e + 1 < end)
+                FileOutput(f, '\n');
+        }
+        EXIT();
+        return;
+    }
     FilePuts(f, "/*\n");
     s = StringChars(&laid->string);
     end = s + laid->string.length;
@@ -6244,7 +6315,7 @@ PrettyBody(Value f, CodePtr code, int level, Bool nest, Bool attach, ptrdiff_t c
         attach = False;
     }
     if (!code->base.builtin && PrettyHasDoc(code->func.code)) {
-        PrettyDocComments(f, code->func.code, level);
+        (void)PrettyDocComments(f, code->func.code, level);
         attach = False;
     }
     if (nest) {
@@ -6612,8 +6683,8 @@ PrettySymbol(Value f, Publish publish, SymbolPtr symbol, int level, Bool nest)
             FilePuts(f, "\n");
             PrettyComment(f, symbol->exception.doc, level + 1);
         }
-        PrettyDocComments(f, symbol->symbol.comments, level);
-        FilePuts(f, ";\n");
+        PrettyDocSemicolon(f, symbol->symbol.comments, level);
+        FilePuts(f, "\n");
         break;
     }
     default: {

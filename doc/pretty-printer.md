@@ -63,9 +63,13 @@ comment marks go: `/*` and `*/` with any extra `*`s next to them, as in
 `/**`, the `*` starting each later line when every line has one, and
 the `#` starting each line of a shell-style comment. Each line is then
 indented from the least indented one as far as it was, with its tabs
-expanded. A comment of one line prints as `/* text */`; others print as
-a block with `*` starting each line. A trailing comment that doesn't
-fit after its code moves above it.
+expanded. A comment written with `#` marks prints with them, `# `
+starting each line, wherever it keeps lines of its own; since `#` can't
+follow code on its line, one that comes to share a line with code, as
+between a type's tokens, prints as a block comment. Any other comment
+of one line prints as `/* text */`, and longer ones as a block with `*`
+starting each line. A trailing comment that doesn't fit after its code
+moves above it.
 
 ## Laying out code
 

@@ -6,7 +6,7 @@ export DEB_VERSION_UPSTREAM
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 %:
-	dh $@
+	dh $@ --with elpa
 
 # Don't install duplicate copyright info from COPYING files
 override_dh_install:

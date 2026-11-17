@@ -1,3 +1,11 @@
+nickle (2.116) unstable; urgency=medium
+
+  * Fix pretty-printing of # comments.
+  * Add emacs mode
+  * debian: Update standards, add URLs. Closes: #1132310.
+
+ -- Keith Packard <keithp@keithp.com>  Tue, 17 Nov 2026 10:11:38 -0800
+
 nickle (2.115) unstable; urgency=medium
 
   * autopkgtest: Run tests from the provided temp directory.

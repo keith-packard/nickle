@@ -2,7 +2,9 @@
 .SH NAME
 nickle \- a desk calculator language
 .SH SYNOPSIS
-nickle [--help|--usage] [-f file] [-l library] [-e expr] [-F source] [-C source] [-V] [ script ] [--] [arg ...]
+nickle [--help|--usage] [-f file] [-l library] [-e expr] [-V] [ script ] [--] [arg ...]
+.br
+nickle -F|-P|-C [file ...]
 .SH DESCRIPTION
 .PP
 \fINickle\fP is a
@@ -51,23 +53,40 @@ Evaluate
 .I expr
 before beginning execution.
 .TP
-.BI "-F,--format " source
-Print
-.I source
-reformatted instead of running it.
+.BI "-F,--format " "file ..."
+Reformat each
+.I file
+in place, rewriting it only when that changes it, without running it.
 Commands that load code, such as
 .B autoimport
 and
 .BR library ,
 still run.
+A file that can't be formatted stays as it was, and nickle exits with
+status 1.
 .TP
-.BI "-C,--check-format " source
-Report the first line of
-.I source
-that reformatting it would change, and exit with status 1 when
-reformatting would change any
-.I source
-given.
+.BI "-P,--pretty " "file ..."
+Print each
+.I file
+reformatted, in order, as
+.B --format
+would write it.
+A
+.I file
+of
+.BR - ,
+or none, reads standard input.
+.TP
+.BI "-C,--check-format " "file ..."
+Report the first line of each
+.I file
+that reformatting would change, and exit with status 1 when it would
+change any.
+A
+.I file
+of
+.BR - ,
+or none, reads standard input.
 .TP
 .BI "-V,--version"
 Print the Nickle version and exit.
@@ -1366,8 +1385,8 @@ than next.  If interactive is true, prompt as for a terminal.
 Read in next, using name in error messages, parsing it without
 running it, and print it to out once it ends: if full is true,
 reformatted as the
-.B --format
-option does; otherwise a summary of the names it declares.
+.B --pretty
+option prints it; otherwise a summary of the names it declares.
 .IP "bool function valid_name(string[*] names)"
 Returns whether the path of namespace names leads to a defined
 name.
@@ -1598,7 +1617,7 @@ Like print NAME, showing a namespace with all its names and code.
 Show all names, with all their code.
 .IP "print \(dqFILE\(dq"
 Read FILE without running it and print it reformatted, as
-.B --format
+.B --pretty
 does.
 .IP "edit NAME"
 Invoke $EDITOR on the named object, and

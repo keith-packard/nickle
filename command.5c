@@ -354,67 +354,112 @@ extend namespace Command {
 
     new("char", do_char);
 
-    /* The files --check-format reads, and the string files formatting them writes */
+    /*
+     * The files --check-format and --format read, the string
+     * files formatting them writes, and whether to write the file back
+     */
     typedef struct {
         string name;
         string source;
         file   formatted;
+        bool   rewrite;
     } format_check_t;
 
     format_check_t[...] format_checks = {};
     int                 format_checks_done = 0;
     bool                format_checks_failed = false;
 
+    /* A source file to format, "-" naming stdin */
+    file
+    format_source(string name)
+    {
+        if (name == "-")
+            return stdin;
+        return File::open(name, "r");
+    }
+
+    /* The name formatting reports a source by */
+    string
+    format_source_name(string name)
+    {
+        if (name == "-")
+            return "<stdin>";
+        return name;
+    }
+
     void
-    format_check(string name)
+    format_check(string name, bool rewrite)
         /*
          * Read the file 'name', and format it into a string file,
-         * stacking beneath it the command comparing the two
+         * stacking beneath it the command comparing the two, or with
+         * 'rewrite', writing the file back when formatting changes it
          */
     {
-        file in = File::open(name, "r");
+        file in = format_source(name);
         file source = File::string_write();
         int  b;
 
         while ((b = File::getb(in)) != -1)
             File::putb(b, source);
-        File::close(in);
+        if (in != stdin)
+            File::close(in);
 
         int i = dim(format_checks);
         format_checks[i] = (format_check_t) {
-            name = name,
+            name = format_source_name(name),
             source = File::string_string(source),
             formatted = File::string_write(),
+            rewrite = rewrite,
         };
         lex_string(sprintf("Command::format_check_done(%d)\n", i));
-        format_file(format_checks[i].formatted,
-                    File::string_read(format_checks[i].source), name, true);
+        format_file(
+            format_checks[i].formatted, File::string_read(format_checks[i].source),
+            format_checks[i].name, true);
     }
 
     public void
     format_check_done(int i)
         /*
-         * Used by --check-format once file 'i' has been formatted:
-         * report it when formatting changes it, and after the last,
-         * exit with status 1 when any changed
+         * Used by --check-format and --format once file 'i'
+         * has been formatted: report it when formatting changes it, or
+         * write it back, and after the last, exit with status 1 when
+         * any check failed or any file couldn't be written
          */
     {
         format_check_t check = format_checks[i];
+        string         formatted = File::string_string(check.formatted);
         file           want = File::string_read(check.source);
-        file           got = File::string_read(File::string_string(check.formatted));
+        file           got = File::string_read(formatted);
         int            line = 1;
 
-        while (!File::end(want) || !File::end(got)) {
-            int c = File::getb(want);
+        if (check.rewrite) {
+            if (formatted != check.source) {
+                try {
+                    file out = File::open(check.name, "w");
 
-            if (c != File::getb(got)) {
-                File::fprintf(
-                    stderr, "%s:%d: formatting changes this line\n", check.name, line);
-                format_checks_failed = true;
-                break;
+                    File::fputs(formatted, out);
+                    File::close(out);
+                } catch File::open_error(string msg,
+                                         File::error_type err,
+                                         string name)
+                {
+                    File::fprintf(stderr, "Cannot write \"%s\": %s\n", name, msg);
+                    format_checks_failed = true;
+                }
             }
-            if (c == '\n')
-                line++;
+        } else {
+            while (!File::end(want) || !File::end(got)) {
+                int c = File::getb(want);
+
+                if (c != File::getb(got)) {
+                    File::fprintf(
+                        stderr, "%s:%d: formatting changes this line\n", check.name, line);
+                    format_checks_failed = true;
+                    break;
+                }
+                if (c == '\n')
+                    line++;
+            }
         }
         if (++format_checks_done == dim(format_checks) && format_checks_failed)
             exit(1);
@@ -439,6 +484,7 @@ extend namespace Command {
             string script;
             string expr;
             string format;
+            string pretty;
             string check_format;
         } lexable;
 
@@ -461,9 +507,55 @@ extend namespace Command {
             save_lexable((lexable.library) arg);
         }
 
+        /* Whether to format, print formatted, or check the files given, not run them */
+        bool format_files = false;
+        bool pretty_files = false;
+        bool check_files = false;
+        bool formatting_files = false;
+
+        /*
+         * Find the libraries a file being formatted loads as a script
+         * would, beside it, or for stdin, "-", in the current directory
+         */
+        void
+        format_path(string arg)
+        {
+            if (arg == "-")
+                nickle_path += ":.";
+            else
+                nickle_path = String::dirname(arg) + ":" + nickle_path;
+        }
+
+        /*
+         * Save a file to format, print formatted, or check, "-" naming
+         * stdin, which formatting can't write back to
+         */
+        void
+        save_formatted(string arg)
+        {
+            if (format_files && arg == "-") {
+                File::fprintf(stderr, "Cannot format stdin in place; use --pretty\n");
+                exit(1);
+            }
+            if (format_files)
+                save_lexable((lexable.format) arg);
+            else if (pretty_files)
+                save_lexable((lexable.pretty) arg);
+            else
+                save_lexable((lexable.check_format) arg);
+            format_path(arg);
+            formatting_files = true;
+            lex_stdin = false;
+        }
+
         void
         save_script(string arg)
         {
+            /* In a formatting mode, the script and its arguments are the files */
+            if (format_files || pretty_files || check_files) {
+                save_formatted(arg);
+                return;
+            }
             script_name = arg;
 
             /* As in Python, "-" reads the script from stdin */
@@ -491,24 +583,6 @@ extend namespace Command {
             lex_stdin = false;
         }
 
-        void
-        save_format(string arg)
-        {
-            save_lexable((lexable.format) arg);
-
-            /* Find the libraries it loads as a script would */
-            nickle_path = String::dirname(arg) + ":" + nickle_path;
-            lex_stdin = false;
-        }
-
-        void
-        save_check_format(string arg)
-        {
-            save_lexable((lexable.check_format) arg);
-            nickle_path = String::dirname(arg) + ":" + nickle_path;
-            lex_stdin = false;
-        }
-
         bool               show_version = false;
 
         ParseArgs::argdesc argd = {
@@ -519,12 +593,12 @@ extend namespace Command {
                   expr_name = "source", desc = "Source file to load." },
                 { var = { arg_lambda = save_expr }, abbr = 'e', name = "expr",
                   expr_name = "expression", desc = "Expression to evaluate." },
-                { var = { arg_lambda = save_format }, abbr = 'F',
-                  name = "format", expr_name = "source",
-                  desc = "Print a source file formatted, without running it." },
-                { var = { arg_lambda = save_check_format }, abbr = 'C',
-                  name = "check-format", expr_name = "source",
-                  desc = "Check that formatting a source file leaves it unchanged." },
+                { var = { arg_flag = &format_files }, abbr = 'F', name = "format",
+                  desc = "Format the source files given, rewriting each that changes." },
+                { var = { arg_flag = &pretty_files }, abbr = 'P', name = "pretty",
+                  desc = "Print the source files given formatted, without running them." },
+                { var = { arg_flag = &check_files }, abbr = 'C', name = "check-format",
+                  desc = "Check that formatting leaves the source files given unchanged." },
                 { var = { arg_flag = &show_version }, abbr = 'V',
                   name = "version", desc = "Print the Nickle version and exit" },
             },
@@ -541,6 +615,37 @@ extend namespace Command {
         if (show_version) {
             printf("Nickle %s\n", version);
             exit(0);
+        }
+
+        /*
+         * Formatting takes the rest of the arguments as files too;
+         * printing or checking with none reads stdin
+         */
+        if (format_files || pretty_files || check_files) {
+            int modes = 0;
+
+            if (format_files)
+                modes++;
+            if (pretty_files)
+                modes++;
+            if (check_files)
+                modes++;
+            if (modes > 1) {
+                File::fprintf(stderr, "Choose one of --format, --pretty, and --check-format\n");
+                exit(1);
+            }
+            if (!is_uninit(&user_argind)) {
+                for (int i = user_argind; i < dim(argv); i++)
+                    save_formatted(argv[i]);
+                user_argind = dim(argv);
+            }
+            if (!formatting_files) {
+                if (format_files) {
+                    File::fprintf(stderr, "--format needs the files to format\n");
+                    exit(1);
+                }
+                save_formatted("-");
+            }
         }
 
         /* Reset argv to hold remaining arguments */
@@ -608,9 +713,19 @@ extend namespace Command {
             case expr arg:
                 lex_string(arg + "\n");
                 break;
+            case pretty arg:
+                try {
+                    format_file(stdout, format_source(arg), format_source_name(arg), true);
+                } catch File::open_error(string msg,
+                                         File::error_type err,
+                                         string name)
+                {
+                    load_fail(name, msg);
+                }
+                break;
             case format arg:
                 try {
-                    format_file(stdout, File::open(arg, "r"), arg, true);
+                    format_check(arg, true);
                 } catch File::open_error(string msg,
                                          File::error_type err,
                                          string name)
@@ -620,7 +735,7 @@ extend namespace Command {
                 break;
             case check_format arg:
                 try {
-                    format_check(arg);
+                    format_check(arg, false);
                 } catch File::open_error(string msg,
                                          File::error_type err,
                                          string name)

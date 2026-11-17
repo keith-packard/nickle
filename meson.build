@@ -245,7 +245,7 @@ nickle_files = [
   'json.5c', 'cha-cha.5c', 'math-ext.5c', 'complex.5c'
 ]
 
-# Every .5c file laid out as nickle --format prints them; each
+# Every .5c file laid out as nickle --format lays them out; each
 # directory adds its own
 nickle_format_files = files(nickle_files, 'check-ignorenl.5c', 'check-precedence.5c')
 
@@ -367,8 +367,8 @@ if prog_clang_format.found()
 			format_srcs, bench_srcs])
 endif
 
-# Check that the Nickle sources are laid out as nickle --format prints
-# them, and 'ninja nickle-format' lays them out that way
+# Check that the Nickle sources are laid out as nickle --format lays
+# them out, and 'ninja nickle-format' lays them out that way
 prog_nickle_format = find_program('nickle-format.py')
 test('nickle-format-check', prog_nickle_format,
      args : ['--check', '--nickle', nickle, nickle_format_files],

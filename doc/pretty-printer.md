@@ -1,10 +1,10 @@
 # Nickle's pretty printer
 
-`print` and `edit` show code, and `nickle --format` (`-F`) prints a
-whole file, as Nickle's pretty printer lays it out: a style close to
-what clang-format makes of C, with the comments the source held kept
-beside the code they describe. This document gives the rules it
-follows.
+`print` and `edit` show code, `nickle --pretty` (`-P`) prints whole
+files, and `nickle --format` (`-F`) rewrites them, as Nickle's pretty
+printer lays them out: a style close to what clang-format makes of C,
+with the comments the source held kept beside the code they describe.
+This document gives the rules it follows.
 
 ## Where comments belong
 
@@ -234,20 +234,24 @@ of the output, and never two in a row.
 
 ## Formatting a file
 
-`nickle --format FILE` prints each top-level command and declaration
-as `print` lays it out, with its comments, after the comments heading
-the file. Commands that load code, such as `autoimport` and `library`,
+`nickle --pretty FILE...` prints each top-level command and declaration
+of each file as `print` lays it out, with its comments, after the
+comments heading the file. Commands that load code, such as `autoimport` and `library`,
 still run, since the code after them needs their names. Declarations
 are parsed without running, so formatting a file, here or with `print
 "file"`, then gives back the names and commands it changed: a variable
 keeps its value, and the file's names and what it loaded are gone.
 
-`nickle --check-format FILE` reports the first line of `FILE` that
-formatting it would change, and exits with status 1 when formatting
-would change any file given. The test `nickle-format-check` checks
-Nickle's own sources so, and `ninja nickle-format` formats them: the
-`.5c` files the meson build lists, except two tests that say why they
-must not be formatted.
+`nickle --format FILE...` formats each file and writes it back when
+formatting changes it, leaving it as it was when it can't be
+formatted. `nickle --check-format FILE...` (`-C`) reports the first
+line of each file that formatting would change, and exits with status
+1 when formatting would change any. To `--pretty` and
+`--check-format`, a `FILE` of `-`, or none, is standard input,
+reported as `<stdin>`. The test `nickle-format-check` checks Nickle's
+own sources so, and `ninja nickle-format` formats them: the `.5c` files
+the meson build lists, except the tests that say why they must not be
+formatted.
 
 Formatting the output again changes nothing. A comment ends a line only
 where it ended one in the source, since reading the output again would
@@ -283,7 +287,7 @@ or in full.
   namespace, and no `global` the source wouldn't have written.
   Variables still show their current values.
 - `print`, and `format_file` with `full` true, format the file as
-  `--format` does. With `full` false, `format_file` shows a summary of
+  `--pretty` prints it. With `full` false, `format_file` shows a summary of
   what the file declares: variables, typedefs, and exceptions as
   written, functions as declarations without bodies, and namespaces
   with their names that aren't private, each with its comments. Other

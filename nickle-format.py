@@ -34,35 +34,19 @@ def main():
         path = os.path.abspath(path)
         by_dir.setdefault(os.path.dirname(path), []).append(os.path.basename(path))
 
+    option = '--check-format' if args.check else '--format'
     failed = False
     for d, names in sorted(by_dir.items()):
-        if args.check:
-            cmd = [nickle]
-            for name in names:
-                cmd += ['--check-format', name]
-            got = subprocess.run(cmd, cwd=d, capture_output=True, text=True)
-            sys.stdout.write(got.stdout)
-            # Name the files with their directories
-            for line in got.stderr.splitlines(keepends=True):
-                if line.split(':', 1)[0] in names:
-                    line = os.path.join(d, line)
-                sys.stderr.write(line)
-            if got.returncode != 0:
-                failed = True
-            continue
-        for name in names:
-            got = subprocess.run([nickle, '--format', name], cwd=d,
-                                 capture_output=True, text=True)
-            if got.returncode != 0:
-                sys.stderr.write(got.stderr)
-                failed = True
-                continue
-            path = os.path.join(d, name)
-            with open(path, encoding='utf-8') as f:
-                text = f.read()
-            if got.stdout != text:
-                with open(path, 'w', encoding='utf-8') as f:
-                    f.write(got.stdout)
+        cmd = [nickle, option] + names
+        got = subprocess.run(cmd, cwd=d, capture_output=True, text=True)
+        sys.stdout.write(got.stdout)
+        # Name the files with their directories
+        for line in got.stderr.splitlines(keepends=True):
+            if line.split(':', 1)[0] in names:
+                line = os.path.join(d, line)
+            sys.stderr.write(line)
+        if got.returncode != 0:
+            failed = True
     if failed:
         sys.exit(1)
 

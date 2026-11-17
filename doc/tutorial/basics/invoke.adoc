@@ -6,10 +6,9 @@
    [`-f` _file_]
    [`-l` _library_]
    [`-e` _expr_]
-   [`-F` _source_]
-   [`-C` _source_]
    [`-V`]
    [_script_] [`--`] [_arg_ ...]
+`nickle` `-F`|`-P`|`-C` [_file_ ...]
 
 `-f` _file_, `--file` _file_::
 Evaluate _file_.
@@ -28,18 +27,19 @@ $ nickle -e 3**4
 $
 ----
 
-`-F` _source_, `--format` _source_::
-Print the file _source_ formatted instead of running it, laying out
+`-P` _file_ ..., `--pretty` _file_ ...::
+Print each _file_ formatted, in order, instead of running it, laying out
 each command and declaration as `print` does, comments and all.
 Commands that load code, such as `autoimport` and `library`, still run,
-as the code after them needs their names.
+as the code after them needs their names. A _file_ of `-`, or none,
+reads standard input.
 +
 ----
 $ cat square.5c
 /* Print a square */
 int square(int x) { return x*x; }
 printf("%d\n", square(3));
-$ nickle --format square.5c
+$ nickle --pretty square.5c
 /* Print a square */
 int
 square(int x) = x * x;
@@ -48,10 +48,15 @@ printf("%d\n", square(3));
 $
 ----
 
-`-C` _source_, `--check-format` _source_::
-Report the first line of the file _source_ that formatting it would
-change, and exit with status 1 if formatting would change any _source_
-given.
+`-F` _file_ ..., `--format` _file_ ...::
+Format each _file_ as `--pretty` prints it, writing it back when that
+changes it. A file that can't be formatted, as one with a syntax error,
+stays as it was, and Nickle exits with status 1.
+
+`-C` _file_ ..., `--check-format` _file_ ...::
+Report the first line of each _file_ that formatting would change, and
+exit with status 1 if formatting would change any. A _file_ of `-`, or
+none, reads standard input.
 +
 ----
 $ nickle --check-format square.5c

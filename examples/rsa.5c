@@ -34,8 +34,7 @@ namespace RSA {
     global int n;     /* public key */
     global int d = 0; /* decryption exponent (0 for encrypt-only) */
 
-    public int
-    encrypt(int m) = bigpowmod(m, e, n);
+    public int encrypt(int m) = bigpowmod(m, e, n);
 
     public int
     decrypt(int c)

@@ -27,8 +27,7 @@ declaration that ends with a semicolon instead of a body declares a
 function to be defined later:
 
 ----
-int
-dbl(int x) = x * 2;
+int dbl(int x) = x * 2;
 
 int fwd(int x);
 ----

@@ -140,10 +140,12 @@ line_numbers(int[*] cs)
 }
 
 bool
-is_space(int c) = c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
+is_space(int c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
+}
 
-bool
-is_digit(int c) = '0' <= c && c <= '9';
+bool is_digit(int c) = '0' <= c && c <= '9';
 
 bool
 is_name_start(int c)
@@ -152,8 +154,7 @@ is_name_start(int c)
         || c == '_' || c == '.' || c == '$';
 }
 
-bool
-is_name(int c) = is_name_start(c) || is_digit(c);
+bool is_name(int c) = is_name_start(c) || is_digit(c);
 
 /* Return the position past the action's closing brace, starting at its opening one */
 int

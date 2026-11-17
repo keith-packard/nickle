@@ -19,8 +19,7 @@ check(string what, poly got, poly want)
         raise wrong(what, got, want);
 }
 
-int
-f(int i, int j, int k) = i * 100 + j * 10 + k;
+int f(int i, int j, int k) = i * 100 + j * 10 + k;
 
 /* Grow each array large, then shrink it, leaving room in every dimension */
 void

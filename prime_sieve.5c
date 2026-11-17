@@ -5,12 +5,9 @@
  */
 
 public namespace PrimeSieve {
+    int num_to_pos(int n) = (n - 3) ⫽ 2;
 
-    int
-    num_to_pos(int n) = (n - 3) ⫽ 2;
-
-    int
-    pos_to_num(int p) = p * 2 + 3;
+    int pos_to_num(int p) = p * 2 + 3;
 
     /*
      * Generate a list of primes, 2 and those of a boolean array

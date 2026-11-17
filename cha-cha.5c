@@ -7,15 +7,11 @@
 /* Implementation of ChaCha20 */
 
 namespace ChaCha {
+    int       rotl(int a, int b) = ((a << b) | (a >> (32 - b))) & 0xffffffff;
 
-    int
-    rotl(int a, int b) = ((a << b) | (a >> (32 - b))) & 0xffffffff;
+    int       plus(int a, int b) = (a + b) & 0xffffffff;
 
-    int
-    plus(int a, int b) = (a + b) & 0xffffffff;
-
-    int
-    xor(int a, int b) = (a ^ b) & 0xffffffff;
+    int       xor(int a, int b) = (a ^ b) & 0xffffffff;
 
     const int ROUNDS = 10;
 

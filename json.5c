@@ -188,7 +188,10 @@ namespace JSON {
     } json_input_t;
 
     json_input_t
-    start_json(string s) = (json_input_t) { f = File::string_read(s), line = 1 };
+    start_json(string s)
+    {
+        return (json_input_t) { f = File::string_read(s), line = 1 };
+    }
 
     public exception json_parse_error(int line, string token);
 
@@ -569,6 +572,5 @@ namespace JSON {
         return ret;
     }
 
-    public poly
-    from_json(string arg) = from_json_file(File::string_read(arg));
+    public poly from_json(string arg) = from_json_file(File::string_read(arg));
 }

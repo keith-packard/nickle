@@ -34,8 +34,7 @@ int(int) third = rational func(int x) = x / 3;
 int(int) twice = func(int x) = x * 2;
 int(int) word = func(int x) = "s";
 
-int
-call(int(int) f, int x) = f(x);
+int      call(int(int) f, int x) = f(x);
 
 check(
     "rational", result(func() = call(third, 1)), "Incompatible type in return");
@@ -44,8 +43,7 @@ check("poly", result(func() = call(twice, 2)), 4);
 check("string", result(func() = call(word, 1)), "Incompatible type in return");
 
 /* A poly function returns whatever its callee does */
-poly
-pass(int(int) f, int x) = f(x);
+poly pass(int(int) f, int x) = f(x);
 
 check("poly caller", pass(third, 1), 1 / 3);
 

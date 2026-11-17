@@ -8,8 +8,7 @@
  * made the compiler fail an assertion. These must be compile errors.
  */
 
-int
-f() = 1;
+int f() = 1;
 
 &int
 h()

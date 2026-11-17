@@ -8,8 +8,7 @@ library "math-bits.5c"
 void
 check_jn()
 {
-    real
-    jn_fixed(real n, real x) = jn(floor(n), x);
+    real jn_fixed(real n, real x) = jn(floor(n), x);
 
     printf("Checking jn\n");
     for (int i = 0; i < dim(jn_table); i++) {

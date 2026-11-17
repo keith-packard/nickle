@@ -141,14 +141,11 @@ extend namespace Complex {
         return round_correctly(min(part_precision(r), part_precision(t)), compute);
     }
 
-    public complex
-    conj(complex z) = new(creal(z), -cimag(z));
+    public complex conj(complex z) = new(creal(z), -cimag(z));
 
-    protected real
-    abs(complex z) = Math::sqrt(creal(z) ** 2 + cimag(z) ** 2);
+    protected real abs(complex z) = Math::sqrt(creal(z) ** 2 + cimag(z) ** 2);
 
-    public real
-    arg(complex z) = Math::atan2(cimag(z), creal(z));
+    public real    arg(complex z) = Math::atan2(cimag(z), creal(z));
 
     real
     log_abs(real x, real y, int prec)

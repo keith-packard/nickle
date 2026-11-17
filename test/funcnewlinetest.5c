@@ -31,9 +31,7 @@ poly g = func(poly x) = x * 5
 check("expression body", g(1), 5)
 
 poly a = func() {
-
-             int
-             h() = 6;
+             int h() = 6;
 
              return h();
          }
@@ -41,16 +39,13 @@ check("nested definition", a(), 6)
 poly b = func() {
              int h();
 
-             int
-             h() = 7;
+             int h() = 7;
 
              return h();
          }
 check("nested forward declaration", b(), 7)
 poly c = func() {
-
-             poly
-             h(poly x) = x;
+             poly h(poly x) = x;
 
              return h(8);
          }

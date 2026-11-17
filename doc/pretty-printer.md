@@ -113,6 +113,19 @@ values, the one closest to square, and otherwise as many columns as fit
 with a short last row. An enum with comments instead fills lines with
 its values, a value with comments starting or ending a line.
 
+### Functions
+
+A function definition prints as clang-format lays out C: its return
+type on a line of its own, its name and parameters on the next, and its
+body as a block. A function whose body only returns a value prints
+instead on one line, as `type name(args) = value;`, when that fits,
+whether written that way or with a block, and a lambda likewise as
+`func(args) = value`. Such a definition prints as a declaration does:
+without blank lines around it, and with its name lined up with those
+of the declarations around it, unless lining up would carry it past
+the end of the line. A comment ending its line between the return type
+and the name keeps the type on a line of its own.
+
 ### Parameters
 
 A function with comments before or after its parameters prints one
@@ -121,7 +134,7 @@ definition's, lambda's, catch's, or exception's parameters break as call
 arguments do, and subscripts break the same way. A parameter that starts
 a line in the source, after its comma, starts one when printed, and a
 function written with one then keeps its block instead of printing as
-`name(args) = value;`. When a catch's or lambda's parameters break, its
+`type name(args) = value;`. When a catch's or lambda's parameters break, its
 `{` goes on a line of its own, as a wrapped header's does. The
 parameters of a function type print on one line, with their comments.
 

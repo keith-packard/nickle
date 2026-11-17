@@ -71,7 +71,10 @@ namespace Factor {
     list_to_array(int_list l)
     {
         int
-        list_length(int_list l) = l != int_list.end ? 1 + list_length(l.ref->next) : 0;
+        list_length(int_list l)
+        {
+            return l != int_list.end ? 1 + list_length(l.ref->next) : 0;
+        }
 
         int[*] a = (int[list_length(l)]) {};
         int    i = 0;

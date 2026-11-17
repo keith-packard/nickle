@@ -185,7 +185,9 @@ static void  PrettyArrayInit(Value f, Expr *e, int level, Bool nest);
 static void  PrettyStatement(Value f, Expr *e, int level, int blevel, Bool nest);
 static void  PrettyBody(Value f, CodePtr code, int level, Bool nest, Bool attach, ptrdiff_t col);
 static void  PrettyWrapArgs(Value f, ArgType *args, int level, ptrdiff_t col, ptrdiff_t tail);
-static Expr *PrettyShortBody(CodePtr code, Atom name, int level);
+static Expr *PrettyShortBody(CodePtr code, Atom name, Value type, int level);
+static Bool  PrettyShortDefinition(Value type, Value rest, CodePtr code, Atom name, Class class,
+                                   Publish publish, int level);
 static void  PrettyArgs(Value f, ArgType *args, int level, Bool comments);
 static void  PrettyTypeLine(Value f, Type *t);
 static void  PrettyComment(Value f, Value text, int level);
@@ -207,8 +209,9 @@ typedef struct _prettyMember {
     Expr *stat;
     Expr *decl; /* a declaration to print as the rest, once its column is known */
     Bool  nest;
-    Bool  blank;  /* whether a blank line goes before it and its comments */
-    Bool  spaced; /* whether leading comments get a blank line above, as in a block */
+    Bool  blank;    /* whether a blank line goes before it and its comments */
+    Bool  spaced;   /* whether leading comments get a blank line above, as in a block */
+    Bool  one_line; /* a definition printing as 'type name(args) = value;' */
 } PrettyMember;
 
 static void PrettyMembers(Value f, PrettyMember *m, ptrdiff_t n, int level, Bool newline);
@@ -542,6 +545,7 @@ PrettyBlock(Value f, Expr *e, int level, Bool nest, Bool cuddled)
                 m[n].type = m[n].rest = m[n].text = 0;
                 m[n].stat = m[n].decl = 0;
                 m[n].nest = nest;
+                m[n].one_line = False;
                 n++;
             }
             break;
@@ -559,6 +563,7 @@ PrettyBlock(Value f, Expr *e, int level, Bool nest, Bool cuddled)
         m[n].type = m[n].rest = m[n].text = 0;
         m[n].decl = 0;
         m[n].nest = nest;
+        m[n].one_line = False;
         /* Printing the statement marks the comments it places */
         ExprVisitPreOrder(statement, PrettyUnmarkComments, 0);
         if (PrettyAlignedDecl(statement)) {
@@ -581,9 +586,20 @@ PrettyBlock(Value f, Expr *e, int level, Bool nest, Bool cuddled)
             m[n].rest = FileStringString(rest);
         } else {
             Value text = FileStringWrite();
+            Value rest = FileStringWrite();
 
-            PrettyStatement(text, statement, level, level, nest);
-            m[n].text = FileStringString(text);
+            /* A one-line definition lines up with declarations, its type as theirs */
+            if (PrettyFunctionDefinition(statement)
+                && PrettyShortDefinition(text, rest, statement->decl.decl->init->code.code,
+                                         statement->decl.decl->name, statement->decl.class,
+                                         statement->decl.publish, level)) {
+                m[n].type = FileStringString(text);
+                m[n].rest = FileStringString(rest);
+                m[n].one_line = True;
+            } else {
+                PrettyStatement(text, statement, level, level, nest);
+                m[n].text = FileStringString(text);
+            }
         }
         m[n].comments = PrettyHoistComments(statement, m[n].comments);
         n++;
@@ -592,7 +608,8 @@ PrettyBlock(Value f, Expr *e, int level, Bool nest, Bool cuddled)
     }
     /*
      * A function definition or namespace has a blank line above its
-     * comments and below it
+     * comments and below it, unless the definition prints on one line,
+     * as a declaration does
      */
     for (i = 0; i < n; i++) {
         m[i].blank = False;
@@ -621,7 +638,7 @@ PrettyBlock(Value f, Expr *e, int level, Bool nest, Bool cuddled)
         if (PrettyHasLeading(m[i].comments) && !PrettyFallThrough(m[i].comments))
             m[i].blank = True;
     for (i = 0; i < n; i++)
-        if (m[i].stat
+        if (m[i].stat && !m[i].one_line
             && (PrettyFunctionDefinition(m[i].stat) || m[i].stat->base.tag == NAMESPACE)) {
             if (i > 0 || cuddled)
                 m[i].blank = True;
@@ -2377,11 +2394,11 @@ PrettyExprText(Value f, Expr *e, int parentPrec, int level, Bool nest)
     case FUNC:
         /* A body printed as '= expr' takes the operators after it, so it needs parentheses then */
         if (nest && parentPrec > PrettyPrecedence(ASSIGN)
-            && PrettyShortBody(e->code.code, 0, level)) {
+            && PrettyShortBody(e->code.code, 0, 0, level)) {
             FilePuts(f, "(");
             PrettyCode(f, e->code.code, 0, class_undef, publish_private, level, nest);
             FilePuts(f, ")");
-        } else if (prettyMarking && !PrettyShortBody(e->code.code, 0, level)) {
+        } else if (prettyMarking && !PrettyShortBody(e->code.code, 0, 0, level)) {
             /* A lambda with a block prints where it lands */
             CodePtr code = e->code.code;
             Value   header = FileStringWrite();
@@ -5290,7 +5307,7 @@ PrettyMembers(Value f, PrettyMember *m, ptrdiff_t n, int level, Bool newline)
 {
     ENTER();
     ptrdiff_t  i, j, k, width;
-    Bool       paren;
+    Bool       paren, left;
     Value     *lines = AllocateTemp((size_t)n * sizeof(Value));
     ptrdiff_t *columns = AllocateTemp((size_t)n * sizeof(ptrdiff_t));
     Bool      *trails = AllocateTemp((size_t)n * sizeof(Bool));
@@ -5318,6 +5335,23 @@ PrettyMembers(Value f, PrettyMember *m, ptrdiff_t n, int level, Bool newline)
                 if (w > width)
                     width = w;
             }
+        /*
+         * A one-line definition that the run's padding would carry past
+         * the end of the line leaves the run, which then lines up again
+         */
+        for (k = i, left = False; k < j; k++)
+            if (m[k].type && m[k].one_line
+                && !PrettyCodeFits((ptrdiff_t)level * 4,
+                                   (ptrdiff_t)level * 4 + width + 1
+                                       + PrettyTextColumns(m[k].rest))) {
+                m[k].text = lines[k] = PrettyMemberLine(&m[k], level, 0, False);
+                m[k].type = 0;
+                left = True;
+            }
+        if (left) {
+            j = i;
+            continue;
+        }
         for (k = i; k < j; k++) {
             if (!m[k].type)
                 continue;
@@ -5479,6 +5513,7 @@ PrettyArgs(Value f, ArgType *args, int level, Bool comments)
         m[i].decl = 0;
         m[i].blank = False;
         m[i].spaced = False;
+        m[i].one_line = False;
         PrettyArgType(type, arg, True);
         if (arg->name)
             FilePuts(rest, AtomName(arg->name));
@@ -5936,6 +5971,7 @@ PrettyType(Value f, Type *t, int level, Bool comments, ptrdiff_t col, ptrdiff_t 
         m[n].decl = 0;
         m[n].blank = False;
         m[n].spaced = False;
+        m[n].one_line = False;
         for (k = i; k < j; k++) {
             if (k > i)
                 FilePuts(rest, ", ");
@@ -6368,6 +6404,24 @@ PrettyCodeType(Value f, CodePtr code, Class class, Publish publish, Bool nest)
 }
 
 /*
+ * Whether comments before a definition's name end their lines, so its
+ * name starts a line under its return type
+ */
+static Bool
+PrettyCodeTypeBreaks(CodePtr code)
+{
+    Expr *c;
+
+    for (c = code->base.name ? code->base.name->base.comments : 0; c; c = c->tree.right) {
+        CommentPtr comment = c->tree.left->comment.comment;
+
+        if (comment->place == comment_before && comment->ends_line)
+            return True;
+    }
+    return False;
+}
+
+/*
  * Print the comments before a definition's name that end their lines,
  * after its return type, or on a line of their own between the two
  */
@@ -6430,13 +6484,14 @@ PrettyCodeName(Value f, CodePtr code, Atom name, Bool nest)
 /*
  * The value a function's body returns when the body is that return
  * alone, without comments or a doc string, and the function then fits
- * on one line as 'name(args) = value;', or for a lambda as
+ * on one line as 'type name(args) = value;', or for a lambda as
  * 'func(args) = value', whether written that way or as a block; 0
  * otherwise, as when a parameter starts a line in the source, and the
- * function prints with a block
+ * function prints with a block. A definition's return type, type,
+ * starts the line, or is 0 when the type takes a line of its own
  */
 static Expr *
-PrettyShortBody(CodePtr code, Atom name, int level)
+PrettyShortBody(CodePtr code, Atom name, Value type, int level)
 {
     ENTER();
     Expr     *body, *value;
@@ -6463,6 +6518,10 @@ PrettyShortBody(CodePtr code, Atom name, int level)
     value = body->tree.left->tree.right;
     text = FileStringWrite();
     prettyMarking = False;
+    if (type) {
+        FilePutsc(text, StringChars(&type->string), type->string.length);
+        FileOutput(text, ' ');
+    }
     if (name)
         PrettyCodeName(text, code, name, True);
     else
@@ -6481,12 +6540,74 @@ PrettyShortBody(CodePtr code, Atom name, int level)
     return value;
 }
 
+/*
+ * Print a definition that fits on one line as 'type name(args) =
+ * value;', its return type to type and the rest of its line to rest,
+ * returning whether it does; a comment ending its line after the type
+ * keeps the type on a line of its own, so the definition doesn't
+ */
+static Bool
+PrettyShortDefinition(Value type, Value rest, CodePtr code, Atom name, Class class, Publish publish,
+                      int level)
+{
+    ENTER();
+    Value text = FileStringWrite();
+    Bool  was = prettyMarking;
+    Expr *value;
+
+    if (code->base.builtin || PrettyCodeTypeBreaks(code)) {
+        EXIT();
+        return False;
+    }
+    PrettyCodeType(text, code, class, publish, True);
+    text = FileStringString(text);
+    value = PrettyShortBody(code, name, text, level);
+    if (!value) {
+        EXIT();
+        return False;
+    }
+    FilePutsc(type, StringChars(&text->string), text->string.length);
+    prettyMarking = False;
+    PrettyCodeName(rest, code, name, True);
+    PrettyShortCode(rest, code, value, level, True);
+    FileOutput(rest, ';');
+    prettyMarking = was;
+    EXIT();
+    return True;
+}
+
+/* Print a definition on one line when it fits there, returning whether it does */
+static Bool
+PrettyShortLine(Value f, CodePtr code, Atom name, Class class, Publish publish, int level)
+{
+    ENTER();
+    Value type = FileStringWrite();
+    Value rest = FileStringWrite();
+
+    if (!PrettyShortDefinition(type, rest, code, name, class, publish, level)) {
+        EXIT();
+        return False;
+    }
+    type = FileStringString(type);
+    rest = FileStringString(rest);
+    FilePutsc(f, StringChars(&type->string), type->string.length);
+    FileOutput(f, ' ');
+    FilePutsc(f, StringChars(&rest->string), rest->string.length);
+    EXIT();
+    return True;
+}
+
 void
 PrettyCode(Value f, CodePtr code, Atom name, Class class, Publish publish, int level, Bool nest)
 {
     ptrdiff_t args = -1, name_cols = 0;
-    Expr     *value = nest ? PrettyShortBody(code, name, level) : 0;
+    Expr     *value = 0;
 
+    if (name && nest && PrettyShortLine(f, code, name, class, publish, level))
+        return;
+    /* A lambda, or a definition whose type ends its line, can still print as '= value' */
+    if (nest && (!name || PrettyCodeTypeBreaks(code)))
+        value = PrettyShortBody(code, name, 0, level);
     if (name) {
         PrettyCodeType(f, code, class, publish, nest);
         /* A definition's name starts a line, as clang-format puts it */
@@ -6566,22 +6687,33 @@ static Bool prettyFirstDeclaration = True;
  */
 static Bool prettyFull, prettyLastBig;
 
-/* Whether a name prints as a function definition or a namespace */
+/*
+ * Whether a name prints as a function definition with a block or a
+ * namespace
+ */
 static Bool
-PrettySymbolBig(SymbolPtr symbol)
+PrettySymbolBig(SymbolPtr symbol, Publish publish, int level)
 {
+    ENTER();
     Value v;
+    Bool  big = False;
 
     switch (symbol->symbol.class) {
     case class_const:
     case class_global:
         v = BoxValueGet(symbol->global.value, 0);
-        return v && ValueIsFunc(v) && !v->func.code->base.builtin;
+        big = v && ValueIsFunc(v) && !v->func.code->base.builtin
+            && !PrettyShortDefinition(FileStringWrite(), FileStringWrite(), v->func.code,
+                                      symbol->symbol.name, class_undef, publish, level);
+        break;
     case class_namespace:
-        return True;
+        big = True;
+        break;
     default:
-        return False;
+        break;
     }
+    EXIT();
+    return big;
 }
 
 /*
@@ -6603,7 +6735,7 @@ PrettyNames(Value f, NamelistPtr names, int level)
             PrettyCommentedSymbol(f, names->publish, names->symbol, level, False);
         return;
     }
-    big = PrettySymbolBig(names->symbol);
+    big = PrettySymbolBig(names->symbol, names->publish, level);
     if (!prettyFirstDeclaration && (big || prettyLastBig)) {
         FileOutput(f, '\n');
         /* The blank line serves the name's leading comments too */

@@ -101,8 +101,7 @@ Beta(real A)
         return 0.0;
 }
 
-int
-M(real A, real deltaw) = ceil((A - 8) / (2.285 * deltaw));
+int M(real A, real deltaw) = ceil((A - 8) / (2.285 * deltaw));
 
 real
 filter(real wpass, real wstop, real error, *int mp)

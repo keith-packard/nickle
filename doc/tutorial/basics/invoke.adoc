@@ -41,8 +41,7 @@ int square(int x) { return x*x; }
 printf("%d\n", square(3));
 $ nickle --pretty square.5c
 /* Print a square */
-int
-square(int x) = x * x;
+int square(int x) = x * x;
 
 printf("%d\n", square(3));
 $

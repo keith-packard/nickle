@@ -192,8 +192,7 @@ hue(color c)
 has("enum switch", printed("hue"), "enum switch (c) {");
 
 /* Numbers print as written */
-real
-numbers() = .4 + 1_000 + 0x1F + 1.5e3 + .{3};
+real numbers() = .4 + 1_000 + 0x1F + 1.5e3 + .{3};
 
 has("numbers", printed("numbers"),
     "numbers() = .4 + 1_000 + 0x1F + 1.5e3 + .{3};");

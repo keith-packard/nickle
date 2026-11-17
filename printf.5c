@@ -57,12 +57,11 @@ extend namespace File {
     {
         /* A private namespace to walk the format string */
         namespace fmt {
-            int i = 0;
-            int len = String::length(format);
+            int         i = 0;
+            int         len = String::length(format);
 
             /* Return whether the end of the string has been reached */
-            public bool
-            done() = i >= len;
+            public bool done() = i >= len;
 
             /*
              * Return current character, raising an exception if

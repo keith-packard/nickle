@@ -220,8 +220,7 @@ extend namespace Math {
             int q;
         } split_t;
 
-        split_t
-        make_split(int p, int q) = (split_t) { p = p, q = q };
+        split_t make_split(int p, int q) = (split_t) { p = p, q = q };
 
         /* Compute e-1 recursively */
 
@@ -798,8 +797,7 @@ extend namespace Math {
 
         a = imprecise(a);
 
-        real
-        compute(int wprec, *real err) = log_w(a, wprec, err);
+        real compute(int wprec, *real err) = log_w(a, wprec, err);
 
         return round_correctly(precision(a), compute);
     }
@@ -842,8 +840,7 @@ extend namespace Math {
 
         x = imprecise(x);
 
-        real
-        compute(int wprec, *real err) = log1p_w(x, wprec, err);
+        real compute(int wprec, *real err) = log1p_w(x, wprec, err);
 
         return round_correctly(precision(x), compute);
     }
@@ -1090,8 +1087,7 @@ extend namespace Math {
     }
 
     /* sin(5x) = 16 * sin**5(x) - 20 * sin**3(x) + 5 * sin(x) */
-    real
-    do_5x(real a) = 16 * a ** 5 - 20 * a ** 3 + 5 * a;
+    real do_5x(real a) = 16 * a ** 5 - 20 * a ** 3 + 5 * a;
 
     real
     big_sin(real a)
@@ -1135,8 +1131,7 @@ extend namespace Math {
     }
 
     /* cos(4x) = 8 * (cos**4(x) - cos**2(x)) + 1 */
-    real
-    do_4x(real c) = 8 * (c ** 4 - c ** 2) + 1;
+    real do_4x(real c) = 8 * (c ** 4 - c ** 2) + 1;
 
     real
     big_cos(real a)
@@ -1213,8 +1208,7 @@ extend namespace Math {
         if (a == 0)
             return 0;
 
-        real
-        compute(int wprec, *real err) = sin_w(a, wprec, err);
+        real compute(int wprec, *real err) = sin_w(a, wprec, err);
 
         return round_correctly(precision(a), compute);
     }
@@ -1227,8 +1221,7 @@ extend namespace Math {
         if (a == 0)
             return 1;
 
-        real
-        compute(int wprec, *real err) = cos_w(a, wprec, err);
+        real compute(int wprec, *real err) = cos_w(a, wprec, err);
 
         return round_correctly(precision(a), compute);
     }
@@ -1360,8 +1353,7 @@ extend namespace Math {
         if (v == 0)
             return v;
 
-        real
-        compute(int wprec, *real err) = atan_w(v, wprec, err);
+        real compute(int wprec, *real err) = atan_w(v, wprec, err);
 
         return round_correctly(precision(v), compute);
     }
@@ -1409,8 +1401,7 @@ extend namespace Math {
         if (y == 0 && x >= 0)
             return 0;
 
-        real
-        compute(int wprec, *real err) = atan2_w(y, x, wprec, err);
+        real compute(int wprec, *real err) = atan2_w(y, x, wprec, err);
 
         return round_correctly(max(precision(y), precision(x)), compute);
     }
@@ -1584,8 +1575,7 @@ extend namespace Math {
          * via binary search
          */
     {
-        global bool
-        mask(int b, int ul) = (b & ((1 << (ul + 1)) - 1)) != 0;
+        global bool mask(int b, int ul) = (b & ((1 << (ul + 1)) - 1)) != 0;
 
         if (b == 0)
             raise lsb_0();

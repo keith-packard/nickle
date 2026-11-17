@@ -237,9 +237,7 @@ public namespace Rijndael {
     public exception bad_key_material(string c);
 
     namespace algorithm {
-
-        int
-        SC(int BC) = (BC - 4) >> 1;
+        int SC(int BC) = (BC - 4) >> 1;
 
         ;
 

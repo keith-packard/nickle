@@ -15,8 +15,7 @@ int chunk_bits = 16;
 int chunk_mask = (1 << chunk_bits) - 1;
 
 /* Two's complement chunk i, extracted without bitwise operators */
-int
-chunk(int x, int i) = x ⫽ 2 ** (chunk_bits * i) % 2 ** chunk_bits;
+int chunk(int x, int i) = x ⫽ 2 ** (chunk_bits * i) % 2 ** chunk_bits;
 
 int
 reference(int a, int b, int(int, int) op)
@@ -34,14 +33,11 @@ reference(int a, int b, int(int, int) op)
     return r;
 }
 
-int
-and(int a, int b) = a & b;
+int and(int a, int b) = a & b;
 
-int
-or(int a, int b) = a | b;
+int or(int a, int b) = a | b;
 
-int
-xor(int a, int b) = a ^ b;
+int xor(int a, int b) = a ^ b;
 
 void
 check(int a, int b)

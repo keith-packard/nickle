@@ -11,8 +11,7 @@ import Complex;
 
 exception bad_result(string name, complex z, complex got, complex want);
 
-complex
-polar_z(complex z) = polar(creal(z), cimag(z));
+complex             polar_z(complex z) = polar(creal(z), cimag(z));
 
 string[*]           names = { "exp", "sin", "cos", "sinh", "cosh", "polar" };
 complex[*](complex) funcs = {

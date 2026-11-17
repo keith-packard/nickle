@@ -49,8 +49,7 @@ list1 one = (list1) { cons = { v = 1, next = list1.end } };
 list2 two = one;
 check("assigned", two.cons.v, 1);
 
-list1
-same(list2 l) = l;
+list1 same(list2 l) = l;
 
 check("passed", same(one).cons.v, 1);
 

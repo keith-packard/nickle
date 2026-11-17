@@ -29,12 +29,10 @@ namespace Turtle {
     }
 
     /* angles used by trig functions */
-    real
-    radians(rational angle) = 2 * pi * (1 - angle) + pi / 2;
+    real radians(rational angle) = 2 * pi * (1 - angle) + pi / 2;
 
     /* for various conversions */
-    int
-    round(real arg) = floor(arg + 0.5);
+    int  round(real arg) = floor(arg + 0.5);
 
     /*
      * Create a new turtle drawing.

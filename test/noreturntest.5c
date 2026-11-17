@@ -32,8 +32,7 @@ positive(int x)
 check("ends in abort", positive(3), 3);
 
 /* It fits where a value is expected */
-int
-pick(bool ok) = ok ? 1 : abort("bad");
+int pick(bool ok) = ok ? 1 : abort("bad");
 
 check("conditional", pick(true), 1);
 

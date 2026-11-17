@@ -127,8 +127,7 @@ extend namespace Math {
             return x - 1;
         x = imprecise(x);
 
-        real
-        compute(int wprec, *real err) = acosh_w(x, wprec, err);
+        real compute(int wprec, *real err) = acosh_w(x, wprec, err);
 
         return round_correctly(precision(x), compute);
     }
@@ -142,8 +141,7 @@ extend namespace Math {
             return x;
         x = imprecise(x);
 
-        real
-        compute(int wprec, *real err) = asinh_w(x, wprec, err);
+        real compute(int wprec, *real err) = asinh_w(x, wprec, err);
 
         return round_correctly(precision(x), compute);
     }
@@ -160,8 +158,7 @@ extend namespace Math {
             return x;
         x = imprecise(x);
 
-        real
-        compute(int wprec, *real err) = atanh_w(x, wprec, err);
+        real compute(int wprec, *real err) = atanh_w(x, wprec, err);
 
         return round_correctly(precision(x), compute);
     }

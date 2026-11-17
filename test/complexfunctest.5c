@@ -20,8 +20,7 @@ modulus(complex z)
     return Math::sqrt(Complex::creal(z) ** 2 + Complex::cimag(z) ** 2);
 }
 
-complex
-c(real re, real im) = Complex::new(re, im);
+complex c(real re, real im) = Complex::new(re, im);
 
 void
 check_value(string name, complex z, complex got, complex want,

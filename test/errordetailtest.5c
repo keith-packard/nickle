@@ -66,8 +66,7 @@ typed("condition", 1,
               ;
       });
 
-int
-returns(poly x) = x;
+int returns(poly x) = x;
 
 typed("return", 0.5,
       void func() {

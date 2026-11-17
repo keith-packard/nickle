@@ -92,8 +92,7 @@ check("%5.0f", -(2 ** 70), "-1180591620717411303424");
  * A tie rounds to an even last digit, as arithmetic and C do; ties
  * rounded away from zero
  */
-real
-f(real x) = imprecise(x, 53);
+real f(real x) = imprecise(x, 53);
 
 check("%.0f", 1 / 2, "0");
 check("%.0f", 3 / 2, "2");

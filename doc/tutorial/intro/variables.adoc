@@ -551,8 +551,7 @@ foo(int x)
 {
     int y = 1;
 
-    int
-    bar(int z) = z + y;
+    int bar(int z) = z + y;
 
     return bar(x);
 }

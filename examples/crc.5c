@@ -49,8 +49,7 @@ update_crc(int crc, int[*] buf)
  * transmitted value is the 1's complement of the final
  * running CRC, per CCITT/ITU recommendations
  */
-int
-crc(int[*] buf) = update_crc(0xffffffff, buf) ^ 0xffffffff;
+int            crc(int[*] buf) = update_crc(0xffffffff, buf) ^ 0xffffffff;
 
 import         String;
 string         s = "hello";

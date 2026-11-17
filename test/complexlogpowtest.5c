@@ -14,8 +14,7 @@ import Complex;
 exception bad_result(string name, complex x, complex y, complex got,
                      complex want);
 
-complex
-c(real r, real i) = cmplx(r, i);
+complex c(real r, real i) = cmplx(r, i);
 
 /* Each part of log is correctly rounded */
 void

@@ -122,5 +122,8 @@ namespace Sort {
     }
 
     protected int[*]
-    randomints(int n, int max) = (int[n]) { [i] = PRNG::randint(max) };
+    randomints(int n, int max)
+    {
+        return (int[n]) { [i] = PRNG::randint(max) };
+    }
 }

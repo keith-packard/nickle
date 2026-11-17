@@ -13,8 +13,7 @@ import Complex;
 
 exception bad_result(string name, complex z, complex got, complex want);
 
-complex
-c(real r, real i) = cmplx(r, i);
+complex c(real r, real i) = cmplx(r, i);
 
 void
 check(string name, complex(complex) f, complex z, int prec)

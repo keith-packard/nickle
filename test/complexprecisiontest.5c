@@ -24,8 +24,7 @@ complex[*](complex) funcs = {
     Complex::atanh,
 };
 
-int
-cprecision(complex v) = max(precision(creal(v)), precision(cimag(v)));
+int cprecision(complex v) = max(precision(creal(v)), precision(cimag(v)));
 
 for (int prec = 24; prec <= 113; prec += 89) {
     real       r = imprecise(0.375, prec);

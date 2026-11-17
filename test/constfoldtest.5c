@@ -42,8 +42,7 @@ try {
 }
 
 /* Never called, so it never raises */
-int
-never() = 1 / 0;
+int never() = 1 / 0;
 
 /* Constants that don't raise still fold to the same values */
 if (2 + 3 != 5 || -(7 / 2) != -7 / 2 || 1 << 10 != 1024 || !(3 >= 2))

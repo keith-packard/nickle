@@ -46,8 +46,7 @@ namespace List {
         prev->next = next;
     }
 
-    public bool
-    is_empty(*list_t head) = head->next == head;
+    public bool is_empty(*list_t head) = head->next == head;
 
     public *list_t
     first(*list_t head)

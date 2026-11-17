@@ -93,10 +93,9 @@ string source = ("#!/usr/bin/env nickle\n" + "# A file header\n" + "\n"
     + "\n" + "public namespace Shapes {\n" + "    public exception bad_side(\n"
     + "        real side /* the side */);\n" + "    public typedef struct {\n"
     + "        real w; /* width */\n" + "        real h; /* height */\n"
-    + "    } rect;\n" + "\n" + "    public real\n"
-    + "    area(rect r) = r.w * r.h;\n" + "}\n" + "\n"
-    + "extend namespace Shapes {\n" + "\n" + "    public real\n"
-    + "    perimeter(rect r) = 2 * (r.w + r.h);\n" + "}\n" + "\n"
+    + "    } rect;\n" + "    public real area(rect r) = r.w * r.h;\n" + "}\n"
+    + "\n" + "extend namespace Shapes {\n"
+    + "    public real perimeter(rect r) = 2 * (r.w + r.h);\n" + "}\n" + "\n"
     + "string banner = (\"a long string that goes on\"\n"
     + "                 + \" and on, past the fifty columns\" + \" that code may span\");\n"
     + "Shapes::area((Shapes::rect) { w = .5, h = 0x10 }) # 16\n" + "\n"
@@ -358,19 +357,24 @@ stable("doc comments",
 
 /*
  * A function definition or namespace starting a block whose '{' ends
- * a line of code has a blank line above it, as a leading comment does
+ * a line of code has a blank line above it, as a leading comment does;
+ * a definition printing on one line, as a declaration, has none
  */
 stable("first in a block",
-       "namespace A {\n" + "    int f() = 1;\n" + "}\n"
+       "namespace A {\n" + "    void f() { h(1); }\n" + "}\n"
        + "namespace O {\n" + "    namespace I { int z = 1; }\n" + "}\n"
        + "void h(int n) {\n" + "    for (int i = 0; i < n; i++) {\n"
-       + "        int g() = i;\n" + "        g();\n" + "    }\n" + "}\n",
-       "namespace A {\n" + "\n" + "    int\n" + "    f() = 1;\n" + "}\n"
-       + "\n" + "namespace O {\n" + "\n" + "    namespace I {\n"
-       + "        int z = 1;\n" + "    }\n" + "}\n" + "\n" + "void\n"
-       + "h(int n)\n" + "{\n" + "    for (int i = 0; i < n; i++) {\n"
-       + "\n" + "        int\n" + "        g() = i;\n" + "\n"
-       + "        g();\n" + "    }\n" + "}\n");
+       + "        void g() { h(i); }\n" + "        g();\n" + "    }\n"
+       + "    if (n > 0) {\n" + "        int k() = n;\n"
+       + "        h(k());\n" + "    }\n" + "}\n",
+       "namespace A {\n" + "\n" + "    void\n" + "    f()\n" + "    {\n"
+       + "        h(1);\n" + "    }\n" + "}\n" + "\n" + "namespace O {\n" + "\n"
+       + "    namespace I {\n" + "        int z = 1;\n" + "    }\n" + "}\n"
+       + "\n" + "void\n" + "h(int n)\n" + "{\n"
+       + "    for (int i = 0; i < n; i++) {\n" + "\n" + "        void\n"
+       + "        g()\n" + "        {\n" + "            h(i);\n" + "        }\n"
+       + "\n" + "        g();\n" + "    }\n" + "    if (n > 0) {\n"
+       + "        int k() = n;\n" + "        h(k());\n" + "    }\n" + "}\n");
 
 /*
  * A '#' comment prints with '#' marks, as written, where it keeps a line
@@ -389,6 +393,35 @@ stable("hash comments",
        + "\n" + "exception oops(int a)\n" + "    # documents oops\n"
        + "    ;\n" + "typedef /* type comment */ struct {\n"
        + "    # member comment\n" + "    int d;\n" + "} t;\n");
+
+/*
+ * A definition printing as 'type name(args) = value;' lines up with the
+ * declarations around it, as one does, leaving their run when lining up
+ * would carry it past the end of the line; a comment ending its line
+ * after the type keeps the type on a line of its own, and a definition
+ * too long for a line with its type prints with a block
+ */
+stable("short definitions",
+       "int f(int a) { return a * 2; }\n"
+       + "public real g(real x) = x * x;\n" + "namespace N {\n"
+       + "    public string greeting(string who) = \"hello, \" + who;\n"
+       + "    int /* the count */ count() = 3;\n"
+       + "    int /* ends the line */\n" + "    h() = 4;\n" + "}\n"
+       + "int long_function_name(int first_argument, int second_argument) = first_argument + second_argument;\n"
+       + "public string label = \"x\";\n"
+       + "int medium_function_name(int first_argument, int second) = first_argument * 2;\n"
+       + "int q(int a) = a;\n" + "poly p = func(int a) = a + 1;\n",
+       "int         f(int a) = a * 2;\n"
+       + "public real g(real x) = x * x;\n" + "\n" + "namespace N {\n"
+       + "    public string greeting(string who) = \"hello, \" + who;\n"
+       + "    int           /* the count */ count() = 3;\n" + "\n"
+       + "    int /* ends the line */\n" + "    h() = 4;\n" + "}\n"
+       + "\n" + "int\n"
+       + "long_function_name(int first_argument, int second_argument)\n"
+       + "{\n" + "    return first_argument + second_argument;\n"
+       + "}\n" + "\n" + "public string label = \"x\";\n"
+       + "int medium_function_name(int first_argument, int second) = first_argument * 2;\n"
+       + "int  q(int a) = a;\n" + "poly p = func(int a) = a + 1;\n");
 
 /*
  * Formatting a file leaves names as they were
@@ -411,7 +444,7 @@ check("names kept",
           + "printf(\"%d %v\\n\", x, Command::valid_name((string[*]) { \"f\" }));\n"
           + "autoload Sort\n"
           + "printf(\"%v\\n\", Command::valid_name((string[*]) { \"Sort\" }));\n"),
-      "int x = 1;\n" + "\n" + "int\n" + "f() = 2;\n" + "\n"
+      "int x = 1;\n" + "int f() = 2;\n"
       + "library \"command.5c\"\n" + "5 false\n" + "true\n");
 File::unlink(declares);
 
@@ -452,7 +485,7 @@ check_format(string text)
     return got;
 }
 
-check("formatted", check_format("int x = 1;\n\nint\nf() = 2;\n"), "0\n");
+check("formatted", check_format("int x = 1;\n\nint f() = 2;\n"), "0\n");
 check("not formatted", check_format("int x = 1;\nint   y=2;\n"),
       name + ":2: formatting changes this line\n" + "1\n");
 
@@ -500,7 +533,7 @@ format_in_place(string text)
 }
 
 check("rewritten", format_in_place("int   x=1;\nint f() { return 2; }\n"),
-      "0\n" + "--\n" + "int x = 1;\n" + "\n" + "int\n" + "f() = 2;\n");
+      "0\n" + "--\n" + "int x = 1;\n" + "int f() = 2;\n");
 check("unchanged", format_in_place("int x = 1;\n"),
       "0\n" + "--\n" + "int x = 1;\n");
 check(
@@ -539,7 +572,7 @@ format_stdin(string option, string text)
 
 check("format stdin",
       format_stdin("--pretty", "int   x=1;\nint f() { return 2; }\n"),
-      "int x = 1;\n" + "\n" + "int\n" + "f() = 2;\n" + "0\n");
+      "int x = 1;\n" + "int f() = 2;\n" + "0\n");
 check("check stdin", format_stdin("--check-format", "int   x=1;\n"),
       "<stdin>:1: formatting changes this line\n" + "1\n");
 check("stdin formatted", format_stdin("--check-format", "int x = 1;\n"), "0\n");

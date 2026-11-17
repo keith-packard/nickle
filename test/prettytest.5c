@@ -73,8 +73,7 @@ exception oops(int code);
 int
 spaced(int a, poly p)
 {
-    int
-    g(int b) = b;
+    int g(int b) = b;
 
     for (int i = 0; i < a; i++)
         while (a > 10)
@@ -106,7 +105,7 @@ has(string want)
 }
 
 has("spaced(int a, poly p)");
-has("    int\n    g(int b) = b;\n");
+has("    int g(int b) = b;\n");
 has("for (int i = 0; i < a; i++)");
 has("while (a > 10)");
 has("a = g(a - 1);");
@@ -176,8 +175,7 @@ Command::lex_string(printed("outer") + "check (\"again\", outer (1), 2);\n");
  * code, and with a block otherwise or when its body has comments; a
  * lambda of that form as an operand is parenthesized
  */
-real
-area(real w, real h) = w * h;
+real area(real w, real h) = w * h;
 
 string
 describe_the_area_of(real width, real height)
@@ -192,11 +190,10 @@ commented(int x)
     return x;
 }
 
-int
-applied(int x) = (int func(int y) = y * 3)(x);
+int applied(int x) = (int func(int y) = y * 3)(x);
 
 check("short",
-      String::index(printed("area"), "real\narea(real w, real h) = w * h;\n")
+      String::index(printed("area"), "real area(real w, real h) = w * h;\n")
       >= 0,
       true);
 check("long",

@@ -516,7 +516,7 @@ string script = ("#!/usr/bin/env nickle\n" + "# file header\n" + "\n"
                  + "print x\n" + "print y\n" + "print N\n" + "print e\n"
                  + "print count_t\n");
 
-string want = ("/* leads f */\n" + "int\n" + "f(int a) = a; /* trails f */\n"
+string want = ("/* leads f */\n" + "int f(int a) = a; /* trails f */\n"
                + "global int x = 1; /* counters */\n"
                + "global int y = 2; /* counters */\n"
                + "/* About the namespace */\n" + "namespace N {\n"
@@ -530,7 +530,7 @@ string want = ("/* leads f */\n" + "int\n" + "f(int a) = a; /* trails f */\n"
 check("print", run(script), want);
 
 /* Printing a function's output again gives the same text */
-string f_text = "/* leads f */\n" + "int\n" + "f(int a) = a; /* trails f */\n";
+string f_text = "/* leads f */\n" + "int f(int a) = a; /* trails f */\n";
 
 check("print again", run(f_text + "print f\n"), f_text);
 
@@ -747,9 +747,9 @@ string short = ("int sg (int i) = /* after eq */ i;\n"
                 + "int sm (int i) = i /* after value */;\n"
                 + "int sh (int i) = i; /* trails the function */\n");
 
-string want_short = ("int\n" + "sg(int i) = /* after eq */ i;\n" + "int\n"
-                     + "sm(int i) = i /* after value */;\n" + "int\n"
-                     + "sh(int i) = i; /* trails the function */\n");
+string want_short = ("int sg(int i) = /* after eq */ i;\n"
+                     + "int sm(int i) = i /* after value */;\n"
+                     + "int sh(int i) = i; /* trails the function */\n");
 
 check("short", run(short + "print sg\nprint sm\nprint sh\n"), want_short);
 
@@ -760,7 +760,7 @@ string funcs = ("int fb /* after name */ (int a)\n" + "{\n"
 
 string want_funcs = ("int\n" + "fb /* after name */(int a)\n" + "{\n"
                      + "    a++;\n" + "    return a;\n" + "}\n"
-                     + "int\n" + "/* before name */ fs(int a) = a;\n");
+                     + "int /* before name */ fs(int a) = a;\n");
 
 check("funcs", run(funcs + "print fb\nprint fs\n"), want_funcs);
 check("funcs again", run(want_funcs + "print fb\nprint fs\n"), want_funcs);
@@ -1010,21 +1010,21 @@ string source = ("int outer (int a)\n" + "{\n" + "    int b = a;\n"
                  + "int h (int a) { int one = a; return one; }\n");
 
 string want = ("int\n" + "outer(int a)\n" + "{\n" + "    int b = a;\n" + "\n"
-               + "    /* leads helper */\n" + "    int\n"
-               + "    helper(int x) = x + 1;\n" + "\n" + "    int\n"
-               + "    other(int y) = y * 2;\n" + "\n" + "    b = helper(b);\n"
-               + "    return other(b);\n" + "}\n" + "int\n" + "first(int a)\n"
-               + "{\n" + "    int\n" + "    inner(int x) = x;\n" + "\n"
-               + "    return inner(a);\n" + "}\n" + "int\n" + "f(int a)\n"
-               + "{\n" + "    int    b = a;\n" + "    string s = \"x\";\n"
-               + "\n" + "    /* comment on the first statement */\n"
-               + "    b++;\n" + "    for (int i = 0; i < 3; i++) {\n"
-               + "        int t = i;\n" + "        b += t;\n" + "    }\n"
-               + "    switch (b) {\n" + "    case 2: {\n"
-               + "        int d = 3;\n" + "        b = d;\n" + "    } break;\n"
-               + "    }\n" + "    return b;\n" + "}\n" + "void\n" + "g(int a)\n"
-               + "{\n" + "    int only = a;\n" + "}\n" + "int\n" + "h(int a)\n"
-               + "{\n" + "    int one = a;\n" + "    return one;\n" + "}\n");
+               + "    /* leads helper */\n" + "    int helper(int x) = x + 1;\n"
+               + "    int other(int y) = y * 2;\n" + "\n"
+               + "    b = helper(b);\n" + "    return other(b);\n" + "}\n"
+               + "int\n" + "first(int a)\n" + "{\n"
+               + "    int inner(int x) = x;\n" + "    return inner(a);\n"
+               + "}\n" + "int\n" + "f(int a)\n" + "{\n" + "    int    b = a;\n"
+               + "    string s = \"x\";\n" + "\n"
+               + "    /* comment on the first statement */\n" + "    b++;\n"
+               + "    for (int i = 0; i < 3; i++) {\n" + "        int t = i;\n"
+               + "        b += t;\n" + "    }\n" + "    switch (b) {\n"
+               + "    case 2: {\n" + "        int d = 3;\n" + "        b = d;\n"
+               + "    } break;\n" + "    }\n" + "    return b;\n" + "}\n"
+               + "void\n" + "g(int a)\n" + "{\n" + "    int only = a;\n" + "}\n"
+               + "int\n" + "h(int a)\n" + "{\n" + "    int one = a;\n"
+               + "    return one;\n" + "}\n");
 
 check("print", run(source + prints), want);
 check("print again", run(want + prints), want);
@@ -1389,9 +1389,8 @@ string last = ("/* the namespace */\n" + "namespace N {\n"
                + "    /* a counter */\n" + "    public int count = 0;\n"
                + "\n" + "    public void\n" + "    bump()\n" + "    {\n"
                + "        count++;\n" + "    }\n" + "\n"
-               + "    int hidden = 1;\n" + "}\n" + "\n"
-               + "int top = 3;\n" + "\n" + "/* helper */\n" + "int\n"
-               + "helper(int a) = a + 1;\n");
+               + "    int hidden = 1;\n" + "}\n" + "\n" + "int top = 3;\n"
+               + "\n" + "/* helper */\n" + "int helper(int a) = a + 1;\n");
 check("print all in full",
       String::substr(all, String::length(all) - String::length(last),
                      String::length(last)),
@@ -1409,7 +1408,7 @@ check("file full", run_file(true),
       + "    public void\n" + "    bump()\n" + "    {\n"
       + "        count++;\n" + "    }\n" + "\n" + "    int hidden = 1;\n"
       + "}\n" + "\n" + "int top = 3;\n" + "printf(\"ran\\n\");\n" + "\n"
-      + "/* helper */\n" + "int\n" + "helper(int a) = a + 1;\n");
+      + "/* helper */\n" + "int helper(int a) = a + 1;\n");
 
 /* The print command takes file names in quotes, printing them in full */
 check("print file", run_script(sprintf("print \"%s\"\n", source_name)),

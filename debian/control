@@ -6,7 +6,9 @@ Homepage: https://nickle.org
 Build-Depends: debhelper-compat (= 13), libreadline-dev, asciidoctor-pdf,
  bison, flex, meson, ninja-build, pkgconf, bc, libgmp-dev
 Rules-Requires-Root: no
-Standards-Version: 4.7.0
+Standards-Version: 4.7.4
+Vcs-Git: https://salsa.debian.org/debian/nickle.git
+Vcs-Browser: https://salsa.debian.org/debian/nickle
 
 Package: nickle
 Architecture: any

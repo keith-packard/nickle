@@ -383,6 +383,9 @@ prog_mkutf8names = find_program('mkutf8names.py')
 test('check-utf8-names', prog_mkutf8names, args : ['--check', files('lex.l')])
 run_target('utf8-names', command : [prog_mkutf8names, files('lex.l')])
 
+# nickle-mode.el, the Emacs mode, goes where Emacs finds site libraries
+install_data('nickle-mode.el', install_dir : get_option('datadir') / 'emacs' / 'site-lisp')
+
 # 'ninja unicode-tables' regenerates Ctype's tables, ctype-class.h and
 # ctype-case.h, from the Unicode Character Database in
 # /usr/share/unicode; the generated files are committed

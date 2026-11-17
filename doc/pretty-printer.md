@@ -253,6 +253,15 @@ own sources so, and `ninja nickle-format` formats them: the `.5c` files
 the meson build lists, except the tests that say why they must not be
 formatted.
 
+`nickle-mode.el` in Nickle's sources is an Emacs mode for these files:
+it indents code as `--format` lays it out, takes `/* */` and a `#`
+starting a line as comments and `//` as integer division, fills a
+comment's paragraph with `M-q` keeping its ` * ` or `#` marks, and
+`C-c C-f` (`nickle-format-buffer`) reformats the buffer through `nickle
+--pretty`. `M-x run-nickle` (`C-c C-z`) runs Nickle in a buffer, to
+which `C-c C-r` and `C-c C-b` send the region or the buffer, and `C-c
+C-l` loads the buffer's file.
+
 Formatting the output again changes nothing. A comment ends a line only
 where it ended one in the source, since reading the output again would
 give it that line end and break the line there: no line breaks just

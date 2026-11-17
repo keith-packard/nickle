@@ -237,9 +237,7 @@ public namespace Rijndael {
     public exception bad_key_material(string c);
 
     namespace algorithm {
-        int SC(int BC) = (BC - 4) >> 1;
-
-        ;
+        int                 SC(int BC) = (BC - 4) >> 1;
 
         global int[3, 4, 2] shifts = { { { 0, 0 }, { 1, 3 }, { 2, 2 }, { 3, 1 } },
                                        { { 0, 0 }, { 1, 5 }, { 2, 4 }, { 3, 3 } },

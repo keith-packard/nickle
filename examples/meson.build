@@ -9,11 +9,20 @@ examples = [
   'initializer.5c', 'is-prime.5c', 'kaiser.5c', 'menace2.5c',
   'miller-rabin.5c', 'mutextest.5c', 'numbers.5c', 'polynomial.5c',
   'prime.5c', 'qbrating.5c', 'randtest.5c', 'restart.5c', 'roman.5c',
-  'rsa-demo.5c', 'rsa.5c', 'skiplisttest.5c', 'sudoku.5c'
+  'rsa-demo.5c', 'rsa.5c', 'skiplisttest.5c'
 ]
 
 install_data(examples + ['COPYING'],
 	     install_dir: nickle_examplesdir)
+
+# Examples starting with '#!', installed to run as commands
+example_scripts = [
+  'sudoku.5c'
+]
+
+install_data(example_scripts,
+	     install_dir: nickle_examplesdir,
+	     install_mode: 'rwxr-xr-x')
 
 # Examples not installed, which are formatted too
 examples_uninstalled = [
@@ -21,7 +30,7 @@ examples_uninstalled = [
   'mplex.5c', 'rijndael.5c', 'search.5c', 'shortpaths.5c'
 ]
 
-nickle_format_files += files(examples + examples_uninstalled)
+nickle_format_files += files(examples + example_scripts + examples_uninstalled)
 
 subdir('smlng')
 subdir('turtle')

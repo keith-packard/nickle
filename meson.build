@@ -295,7 +295,7 @@ lex_c = custom_target(
 # All C code, for the clang-format target, including sources outside
 # the build and the C sections of lex.l and gram.y
 format_srcs = files(nickle_srcs, 'builtin-bsdrandom.c', 'builtin-gcd.c',
-		    'test.c', 'lex.l', 'gram.y')
+		    'test.c', 'test/extension.c', 'lex.l', 'gram.y')
 
 # Built sources, for check-memstack.py
 memstack_srcs = files(nickle_srcs, 'lex.l', 'gram.y')

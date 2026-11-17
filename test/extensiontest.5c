@@ -1,0 +1,47 @@
+/*
+ * Nickle test suite
+ *
+ * Loading C extensions with library
+ *
+ * library read only Nickle source, so loading a C extension took a call
+ * of Foreign::load, guarded to run once, which formatting a file didn't
+ * run. library now loads a shared library, found first in NICKLEPATH,
+ * and Foreign::load initializes each library only once, however it is
+ * named.
+ */
+
+exception wrong(string what, poly got, poly want);
+
+void
+check(string what, poly got, poly want)
+{
+    if (got ≠ want)
+        raise wrong(what, got, want);
+}
+
+library "extension.so"
+
+check("first load", ExtensionTest::inits(), 1);
+
+library "extension.so"
+
+check("library again", ExtensionTest::inits(), 1);
+check("Foreign::load by path", Foreign::load("./extension.so"), true);
+check("after Foreign::load", ExtensionTest::inits(), 1);
+
+/* A child reports a missing extension, so formatting this file doesn't */
+string  nickle = Environ::get("NICKLE");
+file[*] errors = File::mkpipe();
+
+File::filter(
+    nickle, (string[*]) { nickle, "-e", "library \"missing-extension.so\"" },
+    (file[3]) { stdin, stdout, errors[1] });
+File::close(errors[1]);
+
+string reported = File::fgets(errors[0]);
+
+File::close(errors[0]);
+check(
+    "missing extension",
+    String::index(reported, "Cannot load library \"missing-extension.so\": "),
+    0);

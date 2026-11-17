@@ -155,9 +155,20 @@ if cc.sizeof('time_t', prefix: '#include <time.h>') >= 8
   tests += ['datelimittest.5c']
 endif
 
-# Foreign::load exists only where nickle can load shared libraries
+tests += ['foreignloadtest.5c']
+
+# library loads C extensions only where nickle can load shared
+# libraries; extensiontest.5c loads one built here, and neither is
+# installed
 if have_extern_syms and have_dlfcn_h and have_dlopen and have_dlsym
-  tests += ['foreignloadtest.5c']
+  extension = shared_module('extension', 'extension.c',
+			    name_prefix: '',
+			    include_directories: include_directories('..'))
+  test('extensiontest.5c', nickle,
+       args: files('extensiontest.5c'),
+       depends: extension,
+       env: test_env,
+       workdir: meson.current_build_dir())
 endif
 
 extra_files = [
@@ -241,7 +252,7 @@ foreach test : tests + quick_tests + error_tests + extra_files
     nickle_format_files += files(test)
   endif
 endforeach
-foreach test : ['datelimittest.5c', 'foreignloadtest.5c']
+foreach test : ['datelimittest.5c', 'extensiontest.5c']
   if test not in tests
     nickle_format_files += files(test)
   endif

@@ -956,6 +956,7 @@ spelled(int a, int b, *struct { int x; } p, int r ...)
     a++;
     bool     t = (a ≠ b ∧ a ≤ b) ∨ (a ≥ b && a != b);
     int      s = a × b ÷ 2 ⫽ 3 + a ↑ b + a² + (a + 1)³ + a ** 2 + (¬a ⪡ 1 ⪢ 1) + ~a;
+    rational e = a¹⁰ + a⁻¹ + (a + 1)⁻¹⁰ + a⁰⁷ + a ** 10;
     int      u = p→x + p->x;
     int[3]   z = { 1 … };
     int[int] h = { 1 ⇒ 2, 3 => 4 };
@@ -978,6 +979,7 @@ spelled_has("a ×= 2;\n    a ÷= 2;\n    a ⫽= 2;\n    a ↑= 2;\n    a ⪡= 1;
 spelled_has("a⧺;\n    ⧺a;\n    a++;");
 spelled_has("(a ≠ b ∧ a ≤ b) ∨ (a ≥ b && a != b)");
 spelled_has("a × b ÷ 2 ⫽ 3 + a ↑ b + a² + (a + 1)³ + a ** 2 + (¬a ⪡ 1 ⪢ 1) + ~a");
+spelled_has("a¹⁰ + a⁻¹ + (a + 1)⁻¹⁰ + a⁰⁷ + a ** 10");
 spelled_has("p→x + p->x");
 spelled_has("{ 1 … }");
 spelled_has("{ 1 ⇒ 2, 3 => 4 }");

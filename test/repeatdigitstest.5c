@@ -6,7 +6,7 @@
  * The digits after the point were found by multiplying the remainder
  * by base**n, dividing once, and converting the quotient, which took
  * time quadratic in n: the 999982 repeating digits of 1/999983 took
- * 21 seconds, and the ten million printed for 1/(2**127-1) would take
+ * 21 seconds, and the ten million printed for 1/(2¹²⁷-1) would take
  * hours. Long division a chunk at a time is linear.
  */
 
@@ -15,7 +15,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -61,8 +61,8 @@ check(
 check("1/999983 last digits", String::substr(rep, d - 1 - 1000, 1000),
       digits(powmod(10, d - 1 - 1000, d), d, 1000));
 
-/* 2**127-1 is prime, and its period is too long to print in full */
-int p = 2 ** 127 - 1;
+/* 2¹²⁷-1 is prime, and its period is too long to print in full */
+int p = 2¹²⁷ - 1;
 
 s = sprintf("%.-f", 1 / p);
 check("1/(2**127-1) length", String::length(s), 10000003);

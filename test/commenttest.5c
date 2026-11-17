@@ -35,7 +35,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -216,11 +216,11 @@ check("frames", frames, 1);
  *
  * Each '#' line joining the comment of the lines above it copied that
  * comment's text, so reading a run of lines took time quadratic in its
- * length: a run of 2**18 lines took over three minutes.
+ * length: a run of 2¹⁸ lines took over three minutes.
  */
 section("Reading a long run of '#' comment lines");
 
-/* 2**18 comment lines, then code checking that it ran */
+/* 2¹⁸ comment lines, then code checking that it ran */
 string lines = "# a line of a long run of comment lines\n";
 
 for (int i = 0; i < 18; i++)

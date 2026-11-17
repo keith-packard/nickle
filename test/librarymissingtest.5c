@@ -27,7 +27,7 @@ string err = File::fgets(errors[0]);
 File::close(output[0]);
 File::close(errors[0]);
 
-if (out != "after")
+if (out ≠ "after")
     raise bad_library("output", out);
-if (err != "Cannot load library \"nosuch.5c\": not found in \"/nonexistent\"")
+if (err ≠ "Cannot load library \"nosuch.5c\": not found in \"/nonexistent\"")
     raise bad_library("errors", err);

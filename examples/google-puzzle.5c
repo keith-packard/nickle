@@ -220,10 +220,7 @@ autoimport MillerRabin
 void
 puzzle1()
 {
-    for (string ed = edigits;
-         length(ed) >= 10;
-         ed = substr(ed, 1, length(ed) - 1))
-    {
+    for (string ed = edigits; length(ed) ≥ 10; ed = substr(ed, 1, length(ed) - 1)) {
         string nextdigits = substr(ed, 0, 10);
         int    n = atoi(nextdigits, 10);
         if (!MillerRabin::composite(n, 256)) {
@@ -248,14 +245,11 @@ puzzle2()
     }
 
     int k = 1;
-    for (string ed = edigits;
-         length(ed) >= 10;
-         ed = substr(ed, 1, length(ed) - 1))
-    {
+    for (string ed = edigits; length(ed) ≥ 10; ed = substr(ed, 1, length(ed) - 1)) {
         string nextdigits = substr(ed, 0, 10);
         if (sumdigits(nextdigits) == 49) {
             printf("%d %s\n", k, nextdigits);
-            if (k++ >= 5)
+            if (k++ ≥ 5)
                 return;
         }
     }

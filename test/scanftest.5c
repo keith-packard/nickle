@@ -21,7 +21,7 @@ stored(string format)
     for (int i = 0; i < String::length(format) - 1; i++)
         if (format[i] == '%') {
             i++;
-            if (format[i] != '%' && format[i] != '*')
+            if (format[i] ≠ '%' && format[i] ≠ '*')
                 n++;
         }
     return n;
@@ -39,10 +39,10 @@ check(string input, string format, int want_n, poly[*] want)
 
     int n = File::sscanf(input, format, ptrs...);
 
-    if (n != want_n)
+    if (n ≠ want_n)
         raise bad_scan(input, format, n, got);
     for (int i = 0; i < dim(want); i++)
-        if (got[i] != want[i])
+        if (got[i] ≠ want[i])
             raise bad_scan(input, format, n, got);
 }
 

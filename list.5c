@@ -85,7 +85,7 @@ namespace List {
     iterate(*list_t head, bool(*list_t) f)
     {
         *list_t next;
-        for (*list_t pos = head->next; pos != head; pos = next) {
+        for (*list_t pos = head->next; pos ≠ head; pos = next) {
             next = pos->next;
             if (!f(pos))
                 break;

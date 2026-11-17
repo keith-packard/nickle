@@ -20,10 +20,10 @@ string[*][*] good_lines = {
 for (int i = 0; i < dim(good_lines); i++) {
     string[*] got = String::parse_csv(good_lines[i][0]);
 
-    if (dim(got) != dim(good_lines[i]) - 1)
+    if (dim(got) ≠ dim(good_lines[i]) - 1)
         raise bad_csv(good_lines[i][0], "fields");
     for (int j = 0; j < dim(got); j++)
-        if (got[j] != good_lines[i][j + 1])
+        if (got[j] ≠ good_lines[i][j + 1])
             raise bad_csv(good_lines[i][0], got[j]);
 }
 

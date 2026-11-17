@@ -18,7 +18,7 @@ File::fprintf(src, "int manylocals () {\nint sum = 0;\n");
 for (int b = 0; b < nlocal; b += nblock) {
     File::fprintf(src, "{ int");
     for (int i = b; i < b + nblock; i++) {
-        if (i != b)
+        if (i ≠ b)
             File::fprintf(src, ",");
         File::fprintf(src, " v%d = %d", i, i);
     }
@@ -33,5 +33,5 @@ int expect = 0;
 for (int b = 0; b < nlocal; b += nblock)
     expect += b + b + nblock - 1;
 
-if (manylocals() != expect)
+if (manylocals() ≠ expect)
     raise invalid_argument("manylocals ()", expect, manylocals());

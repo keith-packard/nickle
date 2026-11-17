@@ -116,7 +116,7 @@ analyse(Sortlist::List l)
     void
     inc_array(&int[...] a, int i)
     {
-        while (dim(a) <= i)
+        while (dim(a) ≤ i)
             a[dim(a)] = 0;
         a[i]++;
     }

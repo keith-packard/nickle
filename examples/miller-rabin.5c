@@ -37,10 +37,10 @@ namespace MillerRabin {
             return (witness_result) { pow = b % m, wit = 0 };
         }
         witness_result tmp = witnessexp(b, e ⫽ 2, m);
-        if (tmp.wit != 0)
+        if (tmp.wit ≠ 0)
             return tmp;
         int t = tmp.pow * tmp.pow % m;
-        if (t == 1 && tmp.pow != 1 && tmp.pow != m - 1) {
+        if (t == 1 && tmp.pow ≠ 1 && tmp.pow ≠ m - 1) {
             tmp.wit = tmp.pow;
             tmp.pow = t;
             return tmp;
@@ -58,9 +58,9 @@ namespace MillerRabin {
     {
         witness_result we = witnessexp(a, n - 1, n);
 
-        if (we.wit != 0)
+        if (we.wit ≠ 0)
             return true;
-        if (we.pow != 1)
+        if (we.pow ≠ 1)
             return true;
         return false;
     }

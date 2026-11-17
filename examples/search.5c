@@ -104,12 +104,12 @@ right_triangles(bool all_solutions)
     int y = in_range(1, 10);
     int z = in_range(1, 10);
     if (all_solutions) {
-        if (x ** 2 + y ** 2 == z ** 2)
-            printf("%d + %d == %d\n", x ** 2, y ** 2, z ** 2);
+        if (x² + y² == z²)
+            printf("%d + %d == %d\n", x², y², z²);
         proceed();
     } else {
-        if (x ** 2 + y ** 2 == z ** 2)
-            printf("%d + %d == %d\n", x ** 2, y ** 2, z ** 2);
+        if (x² + y² == z²)
+            printf("%d + %d == %d\n", x², y², z²);
         else
             fail();
     }

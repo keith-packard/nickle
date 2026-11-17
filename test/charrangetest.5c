@@ -14,7 +14,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -34,7 +34,7 @@ rejected("String::new (-1)",
          });
 rejected("String::new (2**31)",
          void func() {
-             String::new(2 ** 31);
+             String::new(2³¹);
          });
 rejected("String::new array",
          void func() {

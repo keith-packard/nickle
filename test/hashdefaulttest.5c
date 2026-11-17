@@ -16,7 +16,7 @@ check_all(string what, int[int] h, int n)
     for (int i = 0; i < n; i++)
         if (!hash_test(h, i))
             raise wrong(what, i, "missing");
-    if (dim(hash_keys(h)) != n)
+    if (dim(hash_keys(h)) ≠ n)
         raise wrong(what, dim(hash_keys(h)), n);
 }
 

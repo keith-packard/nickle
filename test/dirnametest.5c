@@ -23,6 +23,6 @@ string[*][2] cases = {
 for (int i = 0; i < dim(cases); i++) {
     string got = String::dirname(cases[i][0]);
 
-    if (got != cases[i][1])
+    if (got ≠ cases[i][1])
         raise bad_dirname(cases[i][0], got, cases[i][1]);
 }

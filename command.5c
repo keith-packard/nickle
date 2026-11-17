@@ -155,7 +155,7 @@ extend namespace Command {
             format_names(stdout, false);
 
         /* Each file queued is read before those queued earlier */
-        for (int i = dim(files) - 1; i >= 0; i--) {
+        for (int i = dim(files) - 1; i ≥ 0; i--) {
             try {
                 format_file(stdout, File::open(files[i], "r"), files[i], true);
             } catch File::open_error(string msg,
@@ -298,10 +298,10 @@ extend namespace Command {
          * The lexer reads what was pushed last first, so push each
          * name's import and then its files, last name first
          */
-        for (int i = loaded - 1; i >= 0; i--) {
+        for (int i = loaded - 1; i ≥ 0; i--) {
             if (do_import)
                 force_import(args[i]);
-            for (int j = dim(libraries[i]) - 1; j >= 0; j--)
+            for (int j = dim(libraries[i]) - 1; j ≥ 0; j--)
                 Command::lex_input(libraries[i][j].f, libraries[i][j].path, false, false);
         }
     }
@@ -399,9 +399,9 @@ extend namespace Command {
         file source = File::string_write();
         int  b;
 
-        while ((b = File::getb(in)) != -1)
+        while ((b = File::getb(in)) ≠ -1)
             File::putb(b, source);
-        if (in != stdin)
+        if (in ≠ stdin)
             File::close(in);
 
         int i = dim(format_checks);
@@ -433,7 +433,7 @@ extend namespace Command {
         int            line = 1;
 
         if (check.rewrite) {
-            if (formatted != check.source) {
+            if (formatted ≠ check.source) {
                 try {
                     file out = File::open(check.name, "w");
 
@@ -451,7 +451,7 @@ extend namespace Command {
             while (!File::end(want) || !File::end(got)) {
                 int c = File::getb(want);
 
-                if (c != File::getb(got)) {
+                if (c ≠ File::getb(got)) {
                     File::fprintf(
                         stderr, "%s:%d: formatting changes this line\n", check.name, line);
                     format_checks_failed = true;
@@ -677,7 +677,7 @@ extend namespace Command {
         }
 
         /* now stack the other arguments, in reverse order */
-        for (int i = dim(lexables) - 1; i >= 0; --i) {
+        for (int i = dim(lexables) - 1; i ≥ 0; --i) {
 
             static noreturn
             load_fail(string name, string msg)
@@ -757,14 +757,14 @@ extend namespace Command {
          * fine, but a missing $NICKLERC gets a warning
          */
         if (lex_stdin && File::isatty(stdin)) {
-            bool   named = Environ::check("NICKLERC") && Environ::get("NICKLERC") != "";
+            bool   named = Environ::check("NICKLERC") && Environ::get("NICKLERC") ≠ "";
             string rc = "";
 
             if (named)
                 rc = Environ::get("NICKLERC");
             else if (Environ::check("HOME"))
                 rc = Environ::get("HOME") + "/.nicklerc";
-            if (rc != "") {
+            if (rc ≠ "") {
                 try {
                     lex_file(rc);
                     lex_exit_on_error(false);

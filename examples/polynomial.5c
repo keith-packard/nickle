@@ -33,7 +33,7 @@ namespace Polynomial {
     {
         int n = dim(p) - 1;
 
-        if (p[n] != 0)
+        if (p[n] ≠ 0)
             return p;
         while (n > 0 && p[n] == 0)
             --n;
@@ -109,24 +109,24 @@ namespace Polynomial {
         coefficient na = dim(a);
         coefficient nb = dim(b);
 
-        if (b[nb - 1] != 1)
+        if (b[nb - 1] ≠ 1)
             abort("leading integer coefficient in divisor should be 1");
         coefficient nq = na - nb + 1;
-        if (nq <= 0)
+        if (nq ≤ 0)
             return (quot_rem) { quot = (polynomial) { 0 }, rem = b };
         coefficient[nq] q = { 0 ... };
 
-        while (na >= nb) {
+        while (na ≥ nb) {
             coefficient xn = na - nb;
             coefficient cx = a[na - 1] / b[nb - 1];
 
             for (int i = 0; i < nb; i++)
                 a[i + xn] -= cx * b[i];
             q[xn] += cx;
-            if (a[na - 1] != 0)
+            if (a[na - 1] ≠ 0)
                 abort("leading coefficient error");
             --na;
-            while (na >= 1 && a[na - 1] == 0)
+            while (na ≥ 1 && a[na - 1] == 0)
                 --na;
         }
         return (quot_rem) { quot = q, rem = normalize(a) };
@@ -155,7 +155,7 @@ namespace Polynomial {
     /*
      * Returns b ** e (mod m) computed using the usual
      * fast algorithm (O(log e) multiplies, each requiring
-     * O(|m|*|b**2|) primitive steps).
+     * O(|m|*|b²|) primitive steps).
      */
     public polynomial
     power_mod(polynomial b, int e, polynomial m)

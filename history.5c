@@ -20,7 +20,7 @@ namespace History {
     {
         if (dim(hist) == 0)
             return <>;
-        if (id <= 0)
+        if (id ≤ 0)
             return hist[dim(hist) + id - 1];
         else
             return hist[id - 1];
@@ -47,7 +47,7 @@ namespace History {
             to = min(args[1], to);
             break;
         }
-        for (int id = max(from, 1); id <= to; id++) {
+        for (int id = max(from, 1); id ≤ to; id++) {
             printf("$%-4d\t", id);
             printf(format, hist[id - 1]);
             printf("\n");

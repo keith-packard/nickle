@@ -48,9 +48,9 @@ extend namespace Math {
                 cur = prev / 2 + vi / (2 * prev);
 
                 /* bail if we take too long */
-                if (--iter <= 0)
+                if (--iter ≤ 0)
                     break;
-            } while (imprecise(cur, prec + 2) != imprecise(prev, prec + 2));
+            } while (imprecise(cur, prec + 2) ≠ imprecise(prev, prec + 2));
             return abs(imprecise(cur, prec));
         }
 
@@ -76,7 +76,7 @@ extend namespace Math {
     protected real
     sqrt_w(real v, int wprec, *real rel)
         /*
-         * Compute sqrt(v), v >= 0, to 'wprec' bits, setting 'rel' to a
+         * Compute sqrt(v), v ≥ 0, to 'wprec' bits, setting 'rel' to a
          * bound on the relative error. An exact square root, as of 0,
          * has none
          */
@@ -90,8 +90,8 @@ extend namespace Math {
         real s = sqrt(imprecise(v, wprec + 2));
 
         /*
-         * sqrt(v) - s = (v - s**2) / (sqrt(v) + s), so the residual,
-         * computed exactly, bounds the error by (v - s**2) / s**2
+         * sqrt(v) - s = (v - s²) / (sqrt(v) + s), so the residual,
+         * computed exactly, bounds the error by (v - s²) / s²
          */
         int  rprec = 2 * precision(s) + precision(v) + 8;
         real se = imprecise(s, rprec);
@@ -145,9 +145,9 @@ extend namespace Math {
                 cur = 0.{6} * prev + 0.{3} * v / (prev * prev);
 
                 /* bail if we take too long */
-                if (--iter <= 0)
+                if (--iter ≤ 0)
                     break;
-            } while (imprecise(cur, prec + 2) != imprecise(prev, prec + 2));
+            } while (imprecise(cur, prec + 2) ≠ imprecise(prev, prec + 2));
             return s * imprecise(abs(cur), prec);
         }
 
@@ -164,7 +164,7 @@ extend namespace Math {
             den_s = real_cbrt(imprecise(den, bit_width(den) + 128));
             num = floor(num_s + 0.5);
             den = floor(den_s + 0.5);
-            if (num ** 3 == numerator(v) && den ** 3 == denominator(v))
+            if (num³ == numerator(v) && den³ == denominator(v))
                 return num / den;
         }
         return real_cbrt(v);
@@ -181,14 +181,14 @@ extend namespace Math {
          * Returns floor(log(n)/log(base)) with no rounding error
          */
     {
-        if (base <= 1)
+        if (base ≤ 1)
             raise invalid_argument("ilog of bad base", 0, base);
-        if (n <= 0)
+        if (n ≤ 0)
             raise invalid_argument("ilog of bad value", 1, n);
         int below = 0;
         int above = 1;
         int k = base;
-        while (k <= n) {
+        while (k ≤ n) {
             k *= k;
             below = above;
             above *= 2;
@@ -199,7 +199,7 @@ extend namespace Math {
             k = base;
             int nbelow = 0;
             int nabove = 1;
-            while (q * k <= n) {
+            while (q * k ≤ n) {
                 k *= k;
                 nbelow = nabove;
                 nabove *= 2;
@@ -378,7 +378,7 @@ extend namespace Math {
 
         /*
          * For v > 1, use e**v = 2**n e**r with v = n log(2) + r and
-         * 0 <= r < log(2). log(2) carries as many more bits as n needs,
+         * 0 ≤ r < log(2). log(2) carries as many more bits as n needs,
          * so r is good to under 2**-(wprec+6) absolute, which is that
          * relative error in the result
          */
@@ -435,7 +435,7 @@ extend namespace Math {
         /*
          * Traditional power series
          *
-         *  exp(n) = 1 + n/1 + n**2/2! + n**3/3!
+         *  exp(n) = 1 + n/1 + n²/2! + n³/3!
          */
         while (iter-- > 0) {
             real term = num / den;
@@ -490,7 +490,7 @@ extend namespace Math {
          * its polynomial R replaced by the series it approximates:
          *
          *      s = f/(2+f), z = s*s, hfsq = f*f/2
-         *      R = 2/3 z + 2/5 z**2 + 2/7 z**3 + ...
+         *      R = 2/3 z + 2/5 z² + 2/7 z³ + ...
          *      log(1+f) = f - (hfsq - s*(hfsq+R))
          *
          * https://netlib.org/fdlibm/s_log1p.c
@@ -564,7 +564,7 @@ extend namespace Math {
     /*
      * log__L(Z)
      *          LOG(1+X) - 2S                          X
-     * RETURN      ---------------  WHERE Z = S*S,  S = ------- , 0 <= Z <= .0294...
+     * RETURN      ---------------  WHERE Z = S*S,  S = ------- , 0 ≤ Z ≤ .0294...
      *                S                              2 + X
      *
      * DOUBLE PRECISION (VAX D FORMAT 56 bits or IEEE DOUBLE 53 BITS)
@@ -575,7 +575,7 @@ extend namespace Math {
      * Method :
      *  1. Polynomial approximation: let s = x/(2+x).
      *     Based on log(1+x) = log(1+s) - log(1-s)
-     *           = 2s + 2/3 s**3 + 2/5 s**5 + .....,
+     *           = 2s + 2/3 s³ + 2/5 s⁵ + .....,
      *
      *     (log(1+x) - 2s)/s is computed by
      *
@@ -632,7 +632,7 @@ extend namespace Math {
      *     where  sqrt(2)/2 < 1+f < sqrt(2) .
      *
      *  2. Let s = f/(2+f) ; based on log(1+f) = log(1+s) - log(1-s)
-     *           = 2s + 2/3 s**3 + 2/5 s**5 + .....,
+     *           = 2s + 2/3 s³ + 2/5 s⁵ + .....,
      *     log(1+f) is computed by
      *
      *                  log(1+f) = 2s + s*log__L(s*s)
@@ -679,7 +679,7 @@ extend namespace Math {
         /* mantissa() is in [0.5, 1); the code below expects [1, 2) */
         k = exponent(x) - 1;
         x = mantissa(x) * 2;
-        if (x >= sqrt2) {
+        if (x ≥ sqrt2) {
             k += 1;
             x *= half;
         }
@@ -717,7 +717,7 @@ extend namespace Math {
 
         int e = 0;
 
-        /* Bring all values within the range of 1 <= a <= 2. */
+        /* Bring all values within the range of 1 ≤ a ≤ 2. */
         if (a > 2) {
             e = exponent(a) - 1;
             a = mantissa(a) * 2;
@@ -735,7 +735,7 @@ extend namespace Math {
         int  maxiter = 0;
         int  rprec = 50;
 
-        while (rprec <= wprec) {
+        while (rprec ≤ wprec) {
             rprec *= 2;
             maxiter++;
         }
@@ -769,7 +769,7 @@ extend namespace Math {
         }
 
         /* Mix in the log of the exponent */
-        if (e != 0) {
+        if (e ≠ 0) {
             int eprec = iprec + ilog(2, e) + 1;
             v += imprecise(e, eprec) * ln2_value(eprec);
         }
@@ -789,7 +789,7 @@ extend namespace Math {
     {
         /* Bounds checking */
 
-        if (a <= 0)
+        if (a ≤ 0)
             raise invalid_argument("log: must be positive", 0, a);
 
         if (a == 1)
@@ -833,7 +833,7 @@ extend namespace Math {
     logp1(real x)
         /* Return natural logarithm of 1 + 'x' */
     {
-        if (x <= -1)
+        if (x ≤ -1)
             raise invalid_argument("logp1: must be greater than -1", 0, x);
         if (x == 0)
             return 0;
@@ -965,7 +965,7 @@ extend namespace Math {
         /*
          * Compute atan near zero
          *
-         * atan(x) = x - x**3/3 + x**5/5 - ...
+         * atan(x) = x - x³/3 + x⁵/5 - ...
          */
         real
         atan(rational den, int digits)
@@ -978,7 +978,7 @@ extend namespace Math {
 
             p = 3;
             q = 5;
-            mden = imprecise(den, digits * 4) ** 4;
+            mden = imprecise(den, digits * 4)⁴;
             l = loops(1 / den, digits) ⫽ 2;
 
             /*
@@ -1028,7 +1028,7 @@ extend namespace Math {
     }
 
     /*
-     * Normalize angle to -π < aa <= π with an absolute error below
+     * Normalize angle to -π < aa ≤ π with an absolute error below
      * 2**(2-wprec), reducing with enough bits of π to cover the
      * magnitude of 'aa'
      */
@@ -1038,7 +1038,7 @@ extend namespace Math {
         aa = imprecise(aa);
         if (aa + pi_value(precision(aa)) == aa)
             raise invalid_argument("argument not precise enough", 0, aa);
-        if (abs(aa) <= 3)
+        if (abs(aa) ≤ 3)
             return imprecise(aa, wprec);
 
         int  rprec = wprec + max(exponent(aa), 0) + 4;
@@ -1050,7 +1050,7 @@ extend namespace Math {
         return imprecise(aa, wprec);
     }
 
-    /* sin(x) = x - x**3/3! + x**5/5! ... */
+    /* sin(x) = x - x³/3! + x⁵/5! ... */
     real
     raw_sin(real a)
     {
@@ -1066,7 +1066,7 @@ extend namespace Math {
         a = imprecise(a, iprec);
         i = 1;
         j = 3;
-        a4 = a ** 4;
+        a4 = a⁴;
         ai = a ** i;
         aj = a ** j;
         iter = prec + 8;
@@ -1087,7 +1087,7 @@ extend namespace Math {
     }
 
     /* sin(5x) = 16 * sin**5(x) - 20 * sin**3(x) + 5 * sin(x) */
-    real do_5x(real a) = 16 * a ** 5 - 20 * a ** 3 + 5 * a;
+    real do_5x(real a) = 16 * a⁵ - 20 * a³ + 5 * a;
 
     real
     big_sin(real a)
@@ -1097,7 +1097,7 @@ extend namespace Math {
         return raw_sin(a);
     }
 
-    /* cos(x) = 1 - x**2/2! + x**4/4! - x**6/6! ... */
+    /* cos(x) = 1 - x²/2! + x⁴/4! - x⁶/6! ... */
 
     real
     raw_cos(real a)
@@ -1113,8 +1113,8 @@ extend namespace Math {
         i = 0;
         j = 2;
         ai = 1;
-        aj = a ** 2;
-        a4 = a ** 4;
+        aj = a²;
+        a4 = a⁴;
         iter = prec + 8;
         v = 0;
         while (iter-- > 0) {
@@ -1131,7 +1131,7 @@ extend namespace Math {
     }
 
     /* cos(4x) = 8 * (cos**4(x) - cos**2(x)) + 1 */
-    real do_4x(real c) = 8 * (c ** 4 - c ** 2) + 1;
+    real do_4x(real c) = 8 * (c⁴ - c²) + 1;
 
     real
     big_cos(real a)
@@ -1263,7 +1263,7 @@ extend namespace Math {
         return round_correctly(precision(a), compute);
     }
 
-    /* atan(x) = x - x**3/3 + x**5/5 - ... */
+    /* atan(x) = x - x³/3 + x⁵/5 - ... */
     real
     raw_atan(real v)
     {
@@ -1279,7 +1279,7 @@ extend namespace Math {
         j = 3;
         vi = v ** i;
         vj = v ** j;
-        v4 = v ** 4;
+        v4 = v⁴;
         a = 0;
         iter = prec + 8;
         while (iter-- > 0) {
@@ -1325,7 +1325,7 @@ extend namespace Math {
 
         /*
          * atan(v) = pi/6 + atan((v*sqrt(3) - 1) / (sqrt(3) + v)). The
-         * argument is good to 2**(2-wprec) and atan' <= 1; pi/6 and the
+         * argument is good to 2**(2-wprec) and atan' ≤ 1; pi/6 and the
          * sum each add under 2**(1-wprec)
          */
         if (v > .268) {
@@ -1333,7 +1333,7 @@ extend namespace Math {
             real t = (v * sqrt3 - 1) / (sqrt3 + v);
             real a = pi_value(wprec) / 6;
 
-            if (t != 0)
+            if (t ≠ 0)
                 a += raw_atan(t);
             *err = 2 ** (4 - wprec);
             return a;
@@ -1361,7 +1361,7 @@ extend namespace Math {
     protected real
     atan2_w(real y, real x, int wprec, *real err)
         /*
-         * Compute atan2(y, x), (x, y) != (0, 0), to 'wprec' bits,
+         * Compute atan2(y, x), (x, y) ≠ (0, 0), to 'wprec' bits,
          * setting 'err' to a bound on the absolute error
          */
     {
@@ -1372,16 +1372,16 @@ extend namespace Math {
 
         /*
          * Rounding y, x and y/x to 'wprec' bits gives q a relative
-         * error under 3 * 2**-wprec, moving atan(q) by q/(1+q**2) of that
+         * error under 3 * 2**-wprec, moving atan(q) by q/(1+q²) of that
          */
         real q = imprecise(y, wprec) / imprecise(x, wprec);
         real a = atan_w(q, wprec, err);
 
-        *err += abs(q) / (1 + q ** 2) * 3 * 2 ** -wprec;
+        *err += abs(q) / (1 + q²) * 3 * 2 ** -wprec;
         if (x < 0) {
             real p = pi_value(wprec);
 
-            if (y >= 0)
+            if (y ≥ 0)
                 a += p;
             else
                 a -= p;
@@ -1398,7 +1398,7 @@ extend namespace Math {
         y = imprecise(y);
         x = imprecise(x);
 
-        if (y == 0 && x >= 0)
+        if (y == 0 && x ≥ 0)
             return 0;
 
         real compute(int wprec, *real err) = atan2_w(y, x, wprec, err);
@@ -1407,31 +1407,31 @@ extend namespace Math {
     }
 
     /*
-     * atan(v) = asin(v/sqrt(1+v**2))
+     * atan(v) = asin(v/sqrt(1+v²))
      *
-     * q = v/sqrt(1+v**2)
-     * q*sqrt(1+v**2) = v
-     * q**2*(1+v**2) = v**2
-     * q**2 + q**2v**2 = v**2
-     * q**2 = v**2 - q**2v**2
-     * q**2 = v**2 * (1 - q**2)
-     * v**2 = q**2/(1-q**2)
-     * v = q/sqrt(1-q**2)
+     * q = v/sqrt(1+v²)
+     * q*sqrt(1+v²) = v
+     * q²*(1+v²) = v²
+     * q² + q²v² = v²
+     * q² = v² - q²v²
+     * q² = v² * (1 - q²)
+     * v² = q²/(1-q²)
+     * v = q/sqrt(1-q²)
      *
-     * asin(q) = atan2(q, sqrt(1-q**2))
+     * asin(q) = atan2(q, sqrt(1-q²))
      */
 
     real
     asin_cos(real v, int wprec, *real s)
         /*
-         * Return v at enough precision that 1 - v**2 is exact near
+         * Return v at enough precision that 1 - v² is exact near
          * |v| = 1, as v has precision(v) bits, and set 's' to
-         * sqrt(1 - v**2), good to under 2**-(wprec+8) relative
+         * sqrt(1 - v²), good to under 2**-(wprec+8) relative
          */
     {
         real x = imprecise(v, max(2 * precision(v), wprec) + 8);
 
-        *s = sqrt(1 - x ** 2);
+        *s = sqrt(1 - x²);
         return x;
     }
 
@@ -1457,10 +1457,10 @@ extend namespace Math {
     }
 
     /*
-     * acos(v) = asin (sqrt (1 - v**2))
-     *          = atan (sqrt(1-v**2) / sqrt (1-(sqrt (1-v**2))**2))
-     *          = atan (sqrt(1-v**2) / sqrt (1-(1-v**2)))
-     *          = atan2 (sqrt(1-v**2), v)
+     * acos(v) = asin (sqrt (1 - v²))
+     *          = atan (sqrt(1-v²) / sqrt (1-(sqrt (1-v²))²))
+     *          = atan (sqrt(1-v²) / sqrt (1-(1-v²)))
+     *          = atan2 (sqrt(1-v²), v)
      */
     public real
     acos(real v)
@@ -1519,19 +1519,19 @@ extend namespace Math {
             int prec = precision(a);
 
             /* Increase precision to avoid dropping bits */
-            if (prec != 0 && b > 0)
+            if (prec ≠ 0 && b > 0)
                 a = imprecise(a, prec + (ilog(2, b) + 1) * 4 + 5);
 
             while (b > 0) {
-                if ((b & 1) != 0)
+                if ((b & 1) ≠ 0)
                     result *= a;
                 b >>= 1;
-                if (b != 0)
+                if (b ≠ 0)
                     a *= a;
             }
             if (flip)
                 result = 1 / result;
-            if (prec != 0)
+            if (prec ≠ 0)
                 result = imprecise(result, prec);
         } else
             switch (b) {
@@ -1575,7 +1575,7 @@ extend namespace Math {
          * via binary search
          */
     {
-        global bool mask(int b, int ul) = (b & ((1 << (ul + 1)) - 1)) != 0;
+        global bool mask(int b, int ul) = (b & ((1 << (ul + 1)) - 1)) ≠ 0;
 
         if (b == 0)
             raise lsb_0();
@@ -1631,7 +1631,7 @@ extend namespace Math {
          * computation.  It probably doesn't matter, but oh
          * well.
          */
-        for (int i = n - k + 1; i <= n; i++)
+        for (int i = n - k + 1; i ≤ n; i++)
             c *= i;
         return c / k!;
     }

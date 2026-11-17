@@ -17,7 +17,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -141,10 +141,10 @@ statements()
 file f = File::string_write();
 Command::pretty_print(f, (string[*]) { "statements" });
 string printed = File::string_string(f);
-check("//=", String::index(printed, "x //= 3;") >= 0, true);
-check("fork", String::index(printed, "thread  t = fork x + 1;") >= 0, true);
-check("declaration", String::index(printed, "int     y = (x, 3);") >= 0, true);
+check("//=", String::index(printed, "x //= 3;") ≥ 0, true);
+check("fork", String::index(printed, "thread  t = fork x + 1;") ≥ 0, true);
+check("declaration", String::index(printed, "int     y = (x, 3);") ≥ 0, true);
 check("uninitialized array",
-      String::index(printed, "poly[*] z = (poly[3]) {};") >= 0, true);
+      String::index(printed, "poly[*] z = (poly[3]) {};") ≥ 0, true);
 check("declaration argument",
-      String::index(printed, "y = abs((int w = -4));") >= 0, true);
+      String::index(printed, "y = abs((int w = -4));") ≥ 0, true);

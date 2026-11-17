@@ -11,7 +11,7 @@ exception wrong(string what);
 
 file f = File::stdnull();
 
-if (File::stdnull() != f)
+if (File::stdnull() ≠ f)
     raise wrong("a second call opened another file");
 
 /* It reads as empty and accepts writes */

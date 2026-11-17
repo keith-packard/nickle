@@ -21,7 +21,7 @@ grade_school_times(int a, int b)
     int r = 0;
     int mask = (1 << piece_bits) - 1;
 
-    for (int shift = 0; b != 0; shift += piece_bits) {
+    for (int shift = 0; b ≠ 0; shift += piece_bits) {
         r += (a * (b & mask)) << shift;
         b >>= piece_bits;
     }
@@ -33,7 +33,7 @@ check_product(int a, int b)
 {
     int should = grade_school_times(a, b);
 
-    if (a * b != should || b * a != should)
+    if (a * b ≠ should || b * a ≠ should)
         raise bad_product(a, b);
 }
 
@@ -44,7 +44,7 @@ check_ones(int abits, int bbits)
     int b = (1 << bbits) - 1;
 
     check_product(a, b);
-    if (a * b != (1 << (abits + bbits)) - (1 << abits) - (1 << bbits) + 1)
+    if (a * b ≠ (1 << (abits + bbits)) - (1 << abits) - (1 << bbits) + 1)
         raise bad_product(a, b);
 }
 

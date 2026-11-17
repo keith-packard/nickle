@@ -38,7 +38,7 @@ extend namespace Math {
         }
 
         /*
-         * asinh(s) = log1p(s + s**2 / (1 + sqrt(s**2 + 1))) for
+         * asinh(s) = log1p(s + s² / (1 + sqrt(s² + 1))) for
          * s = |v|, whose terms are all positive. Rounding s and the
          * steps leave t under 10 roundings from exact, plus the
          * square root's error, and log1p' = 1 / (1 + t)
@@ -60,7 +60,7 @@ extend namespace Math {
     protected real
     acosh_w(real x, int wprec, *real err)
         /*
-         * Compute acosh(x), x >= 1, to 'wprec' bits, setting 'err' to a
+         * Compute acosh(x), x ≥ 1, to 'wprec' bits, setting 'err' to a
          * bound on the absolute error. acosh(1) is an exact 0
          */
     {
@@ -102,7 +102,7 @@ extend namespace Math {
         /*
          * atanh(s) = log1p(2s / (1 - s)) / 2 for s = |x|. Rounding s,
          * and 1 - s, formed exactly, leave q under 3 roundings from
-         * exact, and log1p' <= 1 for q >= 0
+         * exact, and log1p' ≤ 1 for q ≥ 0
          */
         real u = 2 ** -wprec;
         real s = imprecise(abs(x), wprec);
@@ -291,8 +291,8 @@ extend namespace Math {
          * erfc(x) shrinks to about e**-(x*x), so carry enough bits
          * for both, log2(e) being under 1.45
          */
-        int loss = ceil(imprecise(x, 64) ** 2 * 1.45);
-        if (off != 0)
+        int loss = ceil(imprecise(x, 64)² * 1.45);
+        if (off ≠ 0)
             loss *= 2;
         int  obits = bits + loss + 64;
         real factor = 2 / sqrt(pi_value(obits));
@@ -383,7 +383,7 @@ extend namespace Math {
          *
          * Yn(x) = (2/π) (log(x/2) + γ) Jn(x)
          *         - (1/π) (x/2)**-n Σ{k=0..n-1} (n-k-1)!/k! (x/2)**2k
-         *         - (1/π) (x/2)**n Σ{k=0..} (Hk + Hn+k) (-(x/2)**2)**k /
+         *         - (1/π) (x/2)**n Σ{k=0..} (Hk + Hn+k) (-(x/2)²)**k /
          *                                           (k! (n+k)!)
          *
          * where Hk + Hn+k - 2γ = ψ(k+1) + ψ(n+k+1) turns the digamma
@@ -415,7 +415,7 @@ extend namespace Math {
         real t = x_2 ** n / n!;
         real hk = imprecise(0, obits);
         real hnk = imprecise(0, obits);
-        for (int j = 1; j <= n; j++)
+        for (int j = 1; j ≤ n; j++)
             hnk += 1 / j;
 
         real jsum = imprecise(0, obits);
@@ -468,7 +468,7 @@ extend namespace Math {
          *
          * P(n,x) = Σ{k=0..} (-1)**k a2k(n) / x**2k
          * Q(n,x) = Σ{k=0..} (-1)**k a2k+1(n) / x**(2k+1)
-         * ak(n) = (4n**2 - 1**2) (4n**2 - 3**2) ... (4n**2 - (2k-1)**2) /
+         * ak(n) = (4n² - 1²) (4n² - 3²) ... (4n² - (2k-1)²) /
          *         (k! 8**k)
          * χ = x - (n/2 + 1/4) π
          *
@@ -491,10 +491,10 @@ extend namespace Math {
         int  k;
 
         for (k = 1;; k++) {
-            int  f = mu - (2 * k - 1) ** 2;
+            int  f = mu - (2 * k - 1)²;
             real r = f / (k * x8);
 
-            if (f < 0 && abs(r) >= 1)
+            if (f < 0 && abs(r) ≥ 1)
                 return false;
             t *= r;
             tabs += abs(t);
@@ -522,8 +522,8 @@ extend namespace Math {
          * Watson, "A Treatise on the Theory of Bessel Functions" (1922),
          * §7.3, https://archive.org/details/treatiseontheory00watsuoft)
          */
-        real t1 = t * (mu - (2 * k + 1) ** 2) / ((k + 1) * x8);
-        real t2 = t1 * (mu - (2 * k + 3) ** 2) / ((k + 2) * x8);
+        real t1 = t * (mu - (2 * k + 1)²) / ((k + 1) * x8);
+        real t2 = t1 * (mu - (2 * k + 3)²) / ((k + 2) * x8);
 
         /* Reduce χ using enough bits of π to cover the magnitude of x */
         int  cbits = obits + max(exponent(x), 0);
@@ -595,7 +595,7 @@ extend namespace Math {
         /*
          * Power series for Jn (Abramowitz & Stegun 9.1.10):
          *
-         * Jn(x) = (x/2)**n Σ{k=0..} (-(x/2)**2)**k / (k! (n+k)!)
+         * Jn(x) = (x/2)**n Σ{k=0..} (-(x/2)²)**k / (k! (n+k)!)
          *
          * https://en.wikipedia.org/wiki/Bessel_function
          *      ("Bessel functions of the first kind")

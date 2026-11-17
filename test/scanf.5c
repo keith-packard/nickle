@@ -6,14 +6,14 @@ check(string input, string format, int count, poly value)
     poly got_value;
     int  got_count = File::fscanf(File::string_read(input), format, &got_value);
 
-    if (got_count != count) {
+    if (got_count ≠ count) {
         printf(
             "got %d wanted %d. input %s format %s\n", got_count, count, input, format);
         errors++;
         return;
     }
-    if (count != 0) {
-        if (got_value != value) {
+    if (count ≠ 0) {
+        if (got_value ≠ value) {
             printf(
                 "read %v wanted %v. input %s format %s\n", got_value, value, input, format);
             errors++;

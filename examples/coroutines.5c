@@ -62,7 +62,7 @@ import Channel;
         do {
             i = recv(&c, generate);
             printf("got %d\n", i);
-        } while (i != 7);
+        } while (i ≠ 7);
     }
 
     test();

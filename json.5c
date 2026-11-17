@@ -273,7 +273,7 @@ namespace JSON {
                 digits();
                 is_float = true;
             }
-            if (i != l)
+            if (i ≠ l)
                 error();
             return is_float;
         }
@@ -299,10 +299,10 @@ namespace JSON {
         {
             int c = hex4();
 
-            if (0xdc00 <= c && c <= 0xdfff)
+            if (0xdc00 ≤ c && c ≤ 0xdfff)
                 error();
-            if (0xd800 <= c && c <= 0xdbff) {
-                if (ch() != '\\' || ch() != 'u')
+            if (0xd800 ≤ c && c ≤ 0xdbff) {
+                if (ch() ≠ '\\' || ch() ≠ 'u')
                     error();
                 int low = hex4();
                 if (low < 0xdc00 || 0xdfff < low)
@@ -319,7 +319,7 @@ namespace JSON {
 
             for (int i = 1; i < l; i++) {
                 int c = ch();
-                if (keyword[i] != c)
+                if (keyword[i] ≠ c)
                     return false;
             }
             return true;
@@ -463,7 +463,7 @@ namespace JSON {
         void
         expect(term_t t)
         {
-            if (token.token != t)
+            if (token.token ≠ t)
                 raise json_parse_error(f.line, String::new(f.token));
         }
 

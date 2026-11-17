@@ -16,7 +16,7 @@ namespace Comb {
         int sum, i;
 
         sum = 1;
-        for (i = 1; i <= k; i++)
+        for (i = 1; i ≤ k; i++)
             sum += choose(n, i);
         return sum;
     }

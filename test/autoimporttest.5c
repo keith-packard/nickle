@@ -64,15 +64,15 @@ string[*] want_err = {
     "Cannot autoimport from file \"nosuch.5c\", giving up.",
 };
 
-if (dim(out) != dim(want_out))
+if (dim(out) ≠ dim(want_out))
     raise bad_autoimport("output", sprintf("%v", out));
 for (int i = 0; i < dim(out); i++)
-    if (out[i] != want_out[i])
+    if (out[i] ≠ want_out[i])
         raise bad_autoimport("output", out[i]);
-if (dim(err) != dim(want_err))
+if (dim(err) ≠ dim(want_err))
     raise bad_autoimport("errors", sprintf("%v", err));
 for (int i = 0; i < dim(err); i++)
-    if (err[i] != want_err[i])
+    if (err[i] ≠ want_err[i])
         raise bad_autoimport("errors", err[i]);
 
 for (int i = 0; i < dim(written_files); i++)

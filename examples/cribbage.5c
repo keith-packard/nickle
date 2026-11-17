@@ -36,7 +36,7 @@ namespace Cribbage {
         int[n - c - 1] w;
         int            j = 0;
         for (int i = 1; i < n; i++)
-            if (v[i] != v[0])
+            if (v[i] ≠ v[0])
                 w[j++] = v[i];
         return c * (c + 1) ⫽ 2 + countpairs(w, n - c - 1);
     }

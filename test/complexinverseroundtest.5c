@@ -4,7 +4,7 @@
  * Complex log and the inverse functions are correctly rounded
  *
  * The inverse functions added a fixed 32 bits of precision, leaving
- * each part within about 2**-29 ulp of the right value, so it was
+ * each part within about 2⁻²⁹ ulp of the right value, so it was
  * rarely rounded the wrong way. log's real part already rounded
  * correctly, from public functions that each rounded once more
  */
@@ -32,14 +32,14 @@ check(int f, complex z, int prec)
     } catch divide_by_zero(real num, real den) {
 
         /* z rounded onto a pole */
-        if (z != 1 && z != -1 && z != Complex::i && z != -Complex::i)
+        if (z ≠ 1 && z ≠ -1 && z ≠ Complex::i && z ≠ -Complex::i)
             raise bad_result(names[f], z, 0, 0);
         return;
     }
 
     complex want = imprecise(funcs[f](imprecise(z, prec + 600)), prec);
 
-    if (got != want)
+    if (got ≠ want)
         raise bad_result(names[f], z, got, want);
 }
 
@@ -53,9 +53,9 @@ complex[*] special = {
 
 for (int f = 0; f < dim(funcs); f++) {
     for (int i = 0; i < dim(special); i++)
-        for (int prec = 24; prec <= 113; prec += 89)
+        for (int prec = 24; prec ≤ 113; prec += 89)
             check(f, special[i], prec);
-    for (int k = 1; k <= 40; k++) {
+    for (int k = 1; k ≤ 40; k++) {
         complex z = cmplx(k * 7919 % 10007 / 1009 * 2 ** (k % 9 - 4),
                           k * 4441 % 10007 / 1009 * 2 ** (k % 7 - 3));
 

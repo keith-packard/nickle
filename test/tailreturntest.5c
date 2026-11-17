@@ -15,7 +15,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -86,7 +86,7 @@ bool      reported = false;
 
 for (int i = 0; i < dim(err); i++)
     if (String::index(err[i], "Control reaches end of function with type 'int'")
-            >= 0)
+            ≥ 0)
         reported = true;
 check("void call ending int function", reported, true);
 

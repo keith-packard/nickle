@@ -44,7 +44,7 @@ namespace Skiplist {
         int level = 0;
 
         while (++level < MaxLevel) {
-            if ((bits & 3) != 0)
+            if ((bits & 3) ≠ 0)
                 break;
             bits >>= 2;
         }
@@ -72,8 +72,8 @@ namespace Skiplist {
     {
         ElementPtr x = (ElementPtr.element) (&list->header);
 
-        for (int i = list->level; --i >= 0;) {
-            while (x.element->forward[i] != ElementPtr.nil
+        for (int i = list->level; --i ≥ 0;) {
+            while (x.element->forward[i] ≠ ElementPtr.nil
                        && list->greater(value, x.element->forward[i].element->value))
                 x = x.element->forward[i];
         }
@@ -90,8 +90,8 @@ namespace Skiplist {
         ElementPtr[MaxLevel] update = {};
         ElementPtr           x = (ElementPtr.element) (&list->header);
 
-        for (int i = list->level; --i >= 0;) {
-            while (x.element->forward[i] != ElementPtr.nil
+        for (int i = list->level; --i ≥ 0;) {
+            while (x.element->forward[i] ≠ ElementPtr.nil
                        && list->greater(value, x.element->forward[i].element->value))
                 x = x.element->forward[i];
             update[i] = x;
@@ -124,8 +124,8 @@ namespace Skiplist {
         ElementPtr[MaxLevel] update = {};
         ElementPtr           x = (ElementPtr.element) (&list->header);
 
-        for (int i = list->level; --i >= 0;) {
-            while (x.element->forward[i] != ElementPtr.nil
+        for (int i = list->level; --i ≥ 0;) {
+            while (x.element->forward[i] ≠ ElementPtr.nil
                        && list->greater(value, x.element->forward[i].element->value))
                 x = x.element->forward[i];
             update[i] = x;
@@ -151,7 +151,7 @@ namespace Skiplist {
          */
     {
         for (ElementPtr e = list->header.forward[0];
-             e != ElementPtr.nil;
+             e ≠ ElementPtr.nil;
              e = (ElementPtr next))
         {
             next = e.element->forward[0];
@@ -183,7 +183,7 @@ namespace Skiplist {
         int len = 0;
 
         for (ElementPtr e = list->header.forward[0];
-             e != ElementPtr.nil;
+             e ≠ ElementPtr.nil;
              e = e.element->forward[0])
         {
             len++;
@@ -196,8 +196,8 @@ namespace Skiplist {
     {
         ElementPtr x = (ElementPtr.element) (&list->header);
 
-        for (int i = list->level; --i >= 0;) {
-            while (x.element->forward[i] != ElementPtr.nil
+        for (int i = list->level; --i ≥ 0;) {
+            while (x.element->forward[i] ≠ ElementPtr.nil
                        && list->greater(value, x.element->forward[i].element->value))
                 x = x.element->forward[i];
         }

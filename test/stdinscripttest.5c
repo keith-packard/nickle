@@ -26,7 +26,7 @@ check(string[*] args, string want)
 
     string got = File::fgets(output[0]);
     File::close(output[0]);
-    if (got != want)
+    if (got ≠ want)
         raise wrong(sprintf("%v", args), got, want);
 }
 

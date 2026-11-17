@@ -17,7 +17,7 @@ try {
     int x = 1 / 0;
     raise not_raised("1 / 0");
 } catch divide_by_zero(real a, real b) {
-    if (a != 1 || b != 0)
+    if (a ≠ 1 || b ≠ 0)
         raise bad_args("1 / 0", a, b);
 }
 
@@ -25,7 +25,7 @@ try {
     int x = 7 ⫽ 0;
     raise not_raised("7 // 0");
 } catch divide_by_zero(real a, real b) {
-    if (a != 7 || b != 0)
+    if (a ≠ 7 || b ≠ 0)
         raise bad_args("7 // 0", a, b);
 }
 
@@ -45,5 +45,5 @@ try {
 int never() = 1 / 0;
 
 /* Constants that don't raise still fold to the same values */
-if (2 + 3 != 5 || -(7 / 2) != -7 / 2 || 1 << 10 != 1024 || !(3 >= 2))
+if (2 + 3 ≠ 5 || -(7 / 2) ≠ -7 / 2 || 1 << 10 ≠ 1024 || !(3 ≥ 2))
     raise not_raised("folded values");

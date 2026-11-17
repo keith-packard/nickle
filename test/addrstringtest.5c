@@ -19,11 +19,11 @@ string[*][2] good = {
 for (int i = 0; i < dim(good); i++) {
     string got = Socket::addr_to_string(Socket::string_to_addr(good[i][0]));
 
-    if (got != good[i][1])
+    if (got ≠ good[i][1])
         raise bad_addr(good[i][0], got);
 }
 
-if (Socket::string_to_addr("1.2.3.4") != 0x01020304)
+if (Socket::string_to_addr("1.2.3.4") ≠ 0x01020304)
     raise bad_addr("1.2.3.4", Socket::string_to_addr("1.2.3.4"));
 
 string[*] bad = {
@@ -39,7 +39,7 @@ for (int i = 0; i < dim(bad); i++) {
     }
 }
 
-int[*] out_of_range = { -1, 2 ** 32, -(2 ** 40) };
+int[*] out_of_range = { -1, 2³², -(2⁴⁰) };
 
 for (int i = 0; i < dim(out_of_range); i++) {
     try {

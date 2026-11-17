@@ -192,7 +192,7 @@ public namespace Parse {
     clist_show(*c_list c)
     {
         printf("clist show...\n");
-        while (c != c_list_end && c->ctxt != no_context) {
+        while (c ≠ c_list_end && c->ctxt ≠ no_context) {
             context_dump(*c->ctxt);
             printf("\n");
             c = c->prev;
@@ -212,7 +212,7 @@ public namespace Parse {
             printf("lexed: %v\n", t);
             switch (t.id) {
             case Lex::Eof:
-                if (c->ctxt != &root_context)
+                if (c->ctxt ≠ &root_context)
                     raise Syntax("At Eof but not back to root context");
                 return first;
             case Lex::Text:
@@ -234,7 +234,7 @@ public namespace Parse {
                 if (c->ctxt == &root_context)
                     raise Syntax(
                         "Closing tag </" + t.value + "> encountered with no remaining open tags");
-                if (t.value != c->active_tag)
+                if (t.value ≠ c->active_tag)
                     raise Syntax(
                         "Illegal closing tag </" + t.value
                         + "> (expected </" + c->active_tag + ">)");
@@ -247,7 +247,7 @@ public namespace Parse {
     public void
     dump(*element e)
     {
-        if (e != element_end) {
+        if (e ≠ element_end) {
             context_dump(*e->ctxt);
             printf("%v\n", e->data);
             dump(e->next);

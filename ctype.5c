@@ -16,7 +16,7 @@ extend namespace Ctype {
          * this case cleanly.
          */
     {
-        return ch >= 0 && ch <= 127;
+        return ch ≥ 0 && ch ≤ 127;
     }
 
     /* The characteristic vector of sets of Latin-1 chars. */
@@ -37,6 +37,6 @@ extend namespace Ctype {
     member(charset v, int ch)
         /* Test whether a particular char is in a charset. */
     {
-        return ch >= 0 && ch < dim(v) && v[ch];
+        return ch ≥ 0 && ch < dim(v) && v[ch];
     }
 }

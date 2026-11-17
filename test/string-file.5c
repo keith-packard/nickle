@@ -9,7 +9,7 @@ exception bad_result(poly want, poly got);
 void
 check(poly want, poly got)
 {
-    if (want != got)
+    if (want ≠ got)
         raise bad_result(want, got);
 }
 

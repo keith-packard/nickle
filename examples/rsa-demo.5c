@@ -13,7 +13,7 @@ autoimport RSA
 autoimport MillerRabin
 autoload PRNG
 
-nbits = 512; /* number of bits in each prime of key: >= 65 */
+nbits = 512; /* number of bits in each prime of key: ≥ 65 */
 prec = 64;   /* lg probability that some prime is not */
 
 int p = primebits(nbits, prec);

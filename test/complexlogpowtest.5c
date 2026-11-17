@@ -25,13 +25,13 @@ check_log(complex z, int prec)
     complex got = Complex::log(z);
     complex want = imprecise(Complex::log(imprecise(z, 600)), prec);
 
-    if (got != want)
+    if (got ≠ want)
         raise bad_result("log", z, 0, got, want);
 }
 
 complex[*] log_args = {
-    c(1e-10, 1), c(1, 1e-12), c(1 - 2 ** -30, 1e-9), c(1, 2 ** -600),
-    c(0.6, 0.8), c(-1, 1e-20), c(1e300, 1), c(3, 4), c(-2 ** -1000, -1),
+    c(1e-10, 1), c(1, 1e-12), c(1 - 2⁻³⁰, 1e-9), c(1, 2⁻⁶⁰⁰),
+    c(0.6, 0.8), c(-1, 1e-20), c(1e300, 1), c(3, 4), c(-2⁻¹⁰⁰⁰, -1),
 };
 
 for (int i = 0; i < dim(log_args); i++) {
@@ -58,7 +58,7 @@ check_pow(complex x, complex y, int prec)
     real    err = max(
         Math::abs(creal(got) - creal(want)), Math::abs(cimag(got) - cimag(want)));
 
-    if (err > ulp * (1 / 2 + 2 ** -20))
+    if (err > ulp * (1 / 2 + 2⁻²⁰))
         raise bad_result("pow", x, y, got, want);
 }
 

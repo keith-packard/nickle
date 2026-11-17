@@ -80,9 +80,9 @@ for (int i = 0; i < dim(classes); i++) {
 
     for (int n = 0; n < dim(names); n++) {
         bool want =
-            String::index(" " + classes[i].classes + " ", " " + names[n] + " ") >= 0;
+            String::index(" " + classes[i].classes + " ", " " + names[n] + " ") ≥ 0;
 
-        if (tests[n](c) != want)
+        if (tests[n](c) ≠ want)
             raise bad_class(c, names[n], tests[n](c));
     }
 }
@@ -105,9 +105,9 @@ int[*][3] cases = {
 for (int i = 0; i < dim(cases); i++) {
     int c = cases[i][0];
 
-    if (Ctype::tolower(c) != cases[i][1])
+    if (Ctype::tolower(c) ≠ cases[i][1])
         raise bad_case(c, "tolower", Ctype::tolower(c), cases[i][1]);
-    if (Ctype::toupper(c) != cases[i][2])
+    if (Ctype::toupper(c) ≠ cases[i][2])
         raise bad_case(c, "toupper", Ctype::toupper(c), cases[i][2]);
 }
 

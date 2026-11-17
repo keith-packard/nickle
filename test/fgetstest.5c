@@ -6,7 +6,7 @@
  * File::fgets appended each character to the line read so far, copying
  * the line for every character, so a 64 KiB line allocated about 2 GiB
  * and exhausted the address space of a 32-bit nickle built with ASan.
- * A line of 2**20 characters took longer than the test timeout.
+ * A line of 2²⁰ characters took longer than the test timeout.
  */
 
 exception wrong(string what, poly got, poly want);
@@ -14,12 +14,12 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
 string name = "fgetstest.tmp";
-int    n = 2 ** 20;
+int    n = 2²⁰;
 
 file   f = File::open(name, "w");
 for (int i = 0; i < n; i++)

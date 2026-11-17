@@ -26,7 +26,7 @@ complex[*](complex) funcs = {
 
 int cprecision(complex v) = max(precision(creal(v)), precision(cimag(v)));
 
-for (int prec = 24; prec <= 113; prec += 89) {
+for (int prec = 24; prec ≤ 113; prec += 89) {
     real       r = imprecise(0.375, prec);
     complex[*] args = {
         r, -r, cmplx(0, r), cmplx(0, -r), cmplx(1, r), cmplx(r, 2),
@@ -37,15 +37,15 @@ for (int prec = 24; prec <= 113; prec += 89) {
         for (int a = 0; a < dim(args); a++) {
             int p = cprecision(funcs[f](args[a]));
 
-            if (p != prec)
+            if (p ≠ prec)
                 raise bad_precision(names[f], args[a], p);
         }
 
-    if (cprecision(Complex::pow(cmplx(0, r), 3)) != prec
-            || cprecision(polar(2, r)) != prec || cprecision(polar(r, 1)) != prec)
+    if (cprecision(Complex::pow(cmplx(0, r), 3)) ≠ prec
+            || cprecision(polar(2, r)) ≠ prec || cprecision(polar(r, 1)) ≠ prec)
         raise bad_precision("pow or polar", r, 0);
 }
 
 /* With no imprecise part, results take the default precision */
-if (cprecision(Complex::exp(cmplx(1, 2))) != precision(imprecise(0)))
+if (cprecision(Complex::exp(cmplx(1, 2))) ≠ precision(imprecise(0)))
     raise bad_precision("exp", cmplx(1, 2), 0);

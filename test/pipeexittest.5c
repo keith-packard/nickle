@@ -32,5 +32,5 @@ string got = File::fgets(status[0]);
 File::close(status[0]);
 
 /* The broken pipe raises io_error, which goes unhandled */
-if (got != "1")
+if (got ≠ "1")
     raise bad_pipe_exit(got);

@@ -65,7 +65,7 @@ namespace Mutex {
     release(mutex m)
         /* Unlock 'm' */
     {
-        if (m->owner != (mutex_owner.owner) (Thread::current()))
+        if (m->owner ≠ (mutex_owner.owner) (Thread::current()))
             raise notowned(m, Thread::current(), m->owner);
         m->owner = mutex_owner.nobody;
         Semaphore::signal(m->sem);

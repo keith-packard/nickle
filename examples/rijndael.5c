@@ -250,7 +250,7 @@ public namespace Rijndael {
              * multiply two elements of GF(2^m)
              * needed for MixColumn and InvMixColumn
              */
-            if (a != 0 && b != 0)
+            if (a ≠ 0 && b ≠ 0)
                 return Alogtable[(Logtable[a] + Logtable[b]) % 255];
             else
                 return 0;
@@ -386,7 +386,7 @@ public namespace Rijndael {
                 raise bad_block_bits(blockBits);
             }
 
-            switch (keyBits >= blockBits ? keyBits : blockBits) {
+            switch (keyBits ≥ blockBits ? keyBits : blockBits) {
             case 128:
                 ROUNDS = 10;
                 break;
@@ -420,7 +420,7 @@ public namespace Rijndael {
                     tk[i, 0] ^= S[tk[(i + 1) % 4, KC - 1]];
                 tk[0, 0] ^= rcon[rconpointer++];
 
-                if (KC != 8)
+                if (KC ≠ 8)
                     for (j = 1; j < KC; j++)
                         for (i = 0; i < 4; i++)
                             tk[i, j] ^= tk[i, j - 1];
@@ -467,7 +467,7 @@ public namespace Rijndael {
                 raise bad_block_bits(blockBits);
             }
 
-            switch (keyBits >= blockBits ? keyBits : blockBits) {
+            switch (keyBits ≥ blockBits ? keyBits : blockBits) {
             case 128:
                 ROUNDS = 10;
                 break;
@@ -521,7 +521,7 @@ public namespace Rijndael {
                 raise bad_block_bits(blockBits);
             }
 
-            switch (keyBits >= blockBits ? keyBits : blockBits) {
+            switch (keyBits ≥ blockBits ? keyBits : blockBits) {
             case 128:
                 ROUNDS = 10;
                 break;
@@ -543,7 +543,7 @@ public namespace Rijndael {
             KeyAddition(a, rk, 0, BC);
 
             /* at most ROUNDS-1 ordinary rounds */
-            for (r = 1; r <= rounds && r < ROUNDS; r++) {
+            for (r = 1; r ≤ rounds && r < ROUNDS; r++) {
                 Substitution(a, &S, BC);
                 ShiftRow(a, 0, BC);
                 MixColumn(a, BC);
@@ -580,7 +580,7 @@ public namespace Rijndael {
                 raise bad_block_bits(blockBits);
             }
 
-            switch (keyBits >= blockBits ? keyBits : blockBits) {
+            switch (keyBits ≥ blockBits ? keyBits : blockBits) {
             case 128:
                 ROUNDS = 10;
                 break;
@@ -655,7 +655,7 @@ public namespace Rijndael {
                 raise bad_block_bits(blockBits);
             }
 
-            switch (keyBits >= blockBits ? keyBits : blockBits) {
+            switch (keyBits ≥ blockBits ? keyBits : blockBits) {
             case 128:
                 ROUNDS = 10;
                 break;
@@ -722,21 +722,21 @@ public namespace Rijndael {
         key->keyMaterial = keyMaterial;
         for (i = 0; i < key->keyLen ⫽ 8; i++) {
             t = key->keyMaterial[2 * i];
-            if (t >= '0' && t <= '9')
+            if (t ≥ '0' && t ≤ '9')
                 j = (t - '0') << 4;
-            else if (t >= 'a' && t <= 'f')
+            else if (t ≥ 'a' && t ≤ 'f')
                 j = (t - 'a' + 10) << 4;
-            else if (t >= 'A' && t <= 'F')
+            else if (t ≥ 'A' && t ≤ 'F')
                 j = (t - 'A' + 10) << 4;
             else
                 raise bad_key_material(String::new(t));
 
             t = key->keyMaterial[2 * i + 1];
-            if (t >= '0' && t <= '9')
+            if (t ≥ '0' && t ≤ '9')
                 j ^= t - '0';
-            else if (t >= 'a' && t <= 'f')
+            else if (t ≥ 'a' && t ≤ 'f')
                 j ^= t - 'a' + 10;
-            else if (t >= 'A' && t <= 'F')
+            else if (t ≥ 'A' && t ≤ 'F')
                 j ^= t - 'A' + 10;
             else
                 raise bad_key_material(String::new(t));
@@ -762,27 +762,27 @@ public namespace Rijndael {
         else
             raise bad_cipher_mode(mode);
 
-        if (String::length(IV) != 0) {
-            if (String::length(IV) != cipher->blockLen / 8 * 2)
+        if (String::length(IV) ≠ 0) {
+            if (String::length(IV) ≠ cipher->blockLen / 8 * 2)
                 raise bad_cipher_instance(IV);
 
             for (i = 0; i < cipher->blockLen / 8; i++) {
                 t = IV[2 * i];
-                if (t >= '0' && t <= '9')
+                if (t ≥ '0' && t ≤ '9')
                     j = (t - '0') << 4;
-                else if (t >= 'a' && t <= 'f')
+                else if (t ≥ 'a' && t ≤ 'f')
                     j = (t - 'a' + 10) << 4;
-                else if (t >= 'A' && t <= 'F')
+                else if (t ≥ 'A' && t ≤ 'F')
                     j = (t - 'A' + 10) << 4;
                 else
                     raise bad_cipher_instance(String::new(t));
 
                 t = IV[2 * i + 1];
-                if (t >= '0' && t <= '9')
+                if (t ≥ '0' && t ≤ '9')
                     j ^= t - '0';
-                else if (t >= 'a' && t <= 'f')
+                else if (t ≥ 'a' && t ≤ 'f')
                     j ^= t - 'a' + 10;
-                else if (t >= 'A' && t <= 'F')
+                else if (t ≥ 'A' && t ≤ 'F')
                     j ^= t - 'A' + 10;
                 else
                     raise bad_cipher_instance(String::new(t));
@@ -807,15 +807,15 @@ public namespace Rijndael {
         int[4, MAXBC] block = {};
 
         /* check parameter consistency: */
-        if (key->direction != DIR_ENCRYPT
-            || (key->keyLen != 128 && key->keyLen != 192 && key->keyLen != 256))
+        if (key->direction ≠ DIR_ENCRYPT
+            || (key->keyLen ≠ 128 && key->keyLen ≠ 192 && key->keyLen ≠ 256))
         {
             raise bad_key_material("");
         }
-        if ((cipher->mode != MODE_ECB && cipher->mode != MODE_CBC
-             && cipher->mode != MODE_CFB1)
-            || (cipher->blockLen != 128 && cipher->blockLen != 192
-                && cipher->blockLen != 256))
+        if ((cipher->mode ≠ MODE_ECB && cipher->mode ≠ MODE_CBC
+             && cipher->mode ≠ MODE_CFB1)
+            || (cipher->blockLen ≠ 128 && cipher->blockLen ≠ 192
+                && cipher->blockLen ≠ 256))
         {
             raise bad_cipher_state(cipher);
         }
@@ -885,21 +885,21 @@ public namespace Rijndael {
         int           i, j, t, numBlocks;
         int[4, MAXBC] block = {};
 
-        if (key->direction == DIR_ENCRYPT || cipher->blockLen != key->blockLen) {
+        if (key->direction == DIR_ENCRYPT || cipher->blockLen ≠ key->blockLen) {
             raise bad_cipher_state(cipher);
         }
 
         /* check parameter consistency: */
-        if (key->direction != DIR_DECRYPT
-            || (key->keyLen != 128 && key->keyLen != 192 && key->keyLen != 256))
+        if (key->direction ≠ DIR_DECRYPT
+            || (key->keyLen ≠ 128 && key->keyLen ≠ 192 && key->keyLen ≠ 256))
         {
             raise bad_key_material("");
         }
 
-        if ((cipher->mode != MODE_ECB && cipher->mode != MODE_CBC
-             && cipher->mode != MODE_CFB1)
-            || (cipher->blockLen != 128 && cipher->blockLen != 192
-                && cipher->blockLen != 256))
+        if ((cipher->mode ≠ MODE_ECB && cipher->mode ≠ MODE_CBC
+             && cipher->mode ≠ MODE_CFB1)
+            || (cipher->blockLen ≠ 128 && cipher->blockLen ≠ 192
+                && cipher->blockLen ≠ 256))
         {
             raise bad_cipher_state(cipher);
         }
@@ -994,7 +994,7 @@ public namespace Rijndael {
         int           j, t;
         int[4, MAXBC] block = {};
 
-        if (cipher->blockLen != key->blockLen) {
+        if (cipher->blockLen ≠ key->blockLen) {
             raise bad_cipher_state(cipher);
         }
 
@@ -1050,7 +1050,7 @@ public namespace Rijndael {
         string s = "";
         int    i;
 
-        for (i = 0; i < dim(a) && a[i] != 0; i++)
+        for (i = 0; i < dim(a) && a[i] ≠ 0; i++)
             s = s + String::new(a[i]);
         return s;
     }

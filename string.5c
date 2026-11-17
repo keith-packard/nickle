@@ -9,13 +9,13 @@ extend namespace String {
     {
         int pl = length(pattern);
 
-        for (int i = length(target) - pl; i >= 0; --i) {
+        for (int i = length(target) - pl; i ≥ 0; --i) {
 
             bool
             match_here()
             {
                 for (int j = 0; j < pl; j++)
-                    if (target[i + j] != pattern[j])
+                    if (target[i + j] ≠ pattern[j])
                         return false;
                 return true;
             }
@@ -43,7 +43,7 @@ extend namespace String {
             return length(path) > 0 ? "/" : ".";
 
         /* Skip the last component */
-        while (end > 0 && path[end - 1] != '/')
+        while (end > 0 && path[end - 1] ≠ '/')
             end--;
         if (end == 0)
             return ".";
@@ -68,7 +68,7 @@ extend namespace String {
         int         j = 0;
 
         while (j < length(s)) {
-            if (index(sep, new(s[j])) >= 0) {
+            if (index(sep, new(s[j])) ≥ 0) {
                 ss[dim(ss)] = substr(s, i + 1, j - i - 1);
                 i = j;
             }
@@ -99,7 +99,7 @@ extend namespace String {
                 array[to] = array[from];
         }
 
-        if (n >= 0) {
+        if (n ≥ 0) {
             if (n > f)
                 n = f;
             for (int i = 0; i < f - n; i++)
@@ -107,7 +107,7 @@ extend namespace String {
             setdim(array, f - n);
         } else {
             setdim(array, f - n);
-            for (int i = f - 1; i >= 0; i--)
+            for (int i = f - 1; i ≥ 0; i--)
                 move(i - n, i);
             for (int i = 0; i < -n; i++)
                 make_uninit(&array[i]);
@@ -142,7 +142,7 @@ extend namespace String {
         while (i < l && Ctype::isspace(s[i]))
             i++;
         int j = l - 1;
-        while (j >= i && Ctype::isspace(s[j]))
+        while (j ≥ i && Ctype::isspace(s[j]))
             --j;
         return substr(s, i, j - i + 1);
     }
@@ -151,7 +151,7 @@ extend namespace String {
     inchars(int c, string s)
         /* Return whether 'c' is in 's' */
     {
-        return index(s, String::new(c)) >= 0;
+        return index(s, String::new(c)) ≥ 0;
     }
 
     public string[*]
@@ -228,7 +228,7 @@ extend namespace String {
                         continue;
                     }
                     if (inchars(c, q.cq)) {
-                        if (cur != dim(cs) - 1)
+                        if (cur ≠ dim(cs) - 1)
                             raise invalid_argument("trailing garbage", 0, s);
                         t = qstate.normal;
                         continue;
@@ -260,7 +260,7 @@ extend namespace String {
     make_parse_csv(int sep, quote_context q)
         /* Construct a CSV file parsing context from 'q' */
     {
-        if (length(q.oq) != 1 || length(q.cq) != 1 || length(q.qq) > 1)
+        if (length(q.oq) ≠ 1 || length(q.cq) ≠ 1 || length(q.qq) > 1)
             raise invalid_argument("make_parse_csv: quote context" + "has long bits", 0, q);
 
         global bool
@@ -268,7 +268,7 @@ extend namespace String {
         {
             if (is_uninit(&s))
                 return false;
-            if (s[0] != c)
+            if (s[0] ≠ c)
                 return false;
             return true;
         }
@@ -286,7 +286,7 @@ extend namespace String {
             {
                 string t = chomp(String::new(curs));
 
-                if (t != "" && t[0] == q.oq[0]) {
+                if (t ≠ "" && t[0] == q.oq[0]) {
 
                     /* A malformed quoted field is a malformed line */
                     try {

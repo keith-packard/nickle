@@ -12,7 +12,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -21,4 +21,4 @@ poly b = (struct { int y; }) { y = 1 };
 poly c = (struct { int x; }) { x = 1 };
 check("different members", a == b, false);
 check("same members", a == c, true);
-check("not equal", a != b, true);
+check("not equal", a ≠ b, true);

@@ -13,12 +13,12 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
 /* Only a process that isn't root fails to become root */
-if (PID::getuid() != 0) {
+if (PID::getuid() ≠ 0) {
     try {
         PID::setuid(0);
         raise not_raised("PID::setuid");

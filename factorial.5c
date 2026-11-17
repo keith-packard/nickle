@@ -83,7 +83,7 @@ extend namespace Math {
         {
             if (n < 2)
                 return 1;
-            return recursive_factorial(n >> 1) ** 2 * swing(n);
+            return recursive_factorial(n >> 1)² * swing(n);
         }
 
         return recursive_factorial(n) << (n - popcount(n));

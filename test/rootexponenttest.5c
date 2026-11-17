@@ -10,18 +10,18 @@
 
 exception bad_root(string name, real x, real r);
 
-for (int e = 2 ** 20; e <= 2 ** 80; e *= 2 ** 60) {
-    for (int s = -1; s <= 1; s += 2) {
+for (int e = 2²⁰; e ≤ 2⁸⁰; e *= 2⁶⁰) {
+    for (int s = -1; s ≤ 1; s += 2) {
         real x = ldexp(imprecise(1.75, 64), s * e);
         real r = sqrt(x);
 
-        if (imprecise(r * r, 60) != imprecise(x, 60))
+        if (imprecise(r * r, 60) ≠ imprecise(x, 60))
             raise bad_root("sqrt", x, r);
         r = cbrt(x);
-        if (imprecise(r * r * r, 60) != imprecise(x, 60))
+        if (imprecise(r * r * r, 60) ≠ imprecise(x, 60))
             raise bad_root("cbrt", x, r);
         r = cbrt(-x);
-        if (imprecise(r * r * r, 60) != imprecise(-x, 60))
+        if (imprecise(r * r * r, 60) ≠ imprecise(-x, 60))
             raise bad_root("cbrt", -x, r);
     }
 }

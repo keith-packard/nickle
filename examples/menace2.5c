@@ -61,7 +61,7 @@ side_on_move(*position b)
 
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++)
-            if ((*b)[i, j] != piece.none)
+            if ((*b)[i, j] ≠ piece.none)
                 n++;
     if (n == 9)
         return piece.none;
@@ -109,7 +109,7 @@ ttable_lookup(position pos)
     }
 
     /* first, try to look up an old entry */
-    for (ttentref t = ttable; t != ttentref.end; t = t.ref->next)
+    for (ttentref t = ttable; t ≠ ttentref.end; t = t.ref->next)
         for (int i = 0; i < 8; i++)
             if (t.ref->posns[i] == pos)
                 return t;
@@ -172,22 +172,22 @@ menace2(position b)
         for (int i = 0; i < 3; i++) {
             piece w = row(b, 0, 1, i, 0);
 
-            if (w != piece.none)
+            if (w ≠ piece.none)
                 return w;
             piece w = row(b, 1, 0, 0, i);
-            if (w != piece.none)
+            if (w ≠ piece.none)
                 return w;
         }
 
         /* check diagonals */
         piece w = row(b, 1, 1, 0, 0);
-        if (w != piece.none)
+        if (w ≠ piece.none)
             return w;
         return row(b, 1, -1, 0, 2);
     }
 
     piece w = win(&b);
-    if (w != piece.none)
+    if (w ≠ piece.none)
         return w;
     piece us = side_on_move(&b);
     if (us == piece.none)
@@ -199,11 +199,11 @@ menace2(position b)
         for (int j = 0; j < 3; j++) {
             if (b[i, j] == piece.none) {
                 r -= t->val[i, j];
-                if (r <= 0) {
+                if (r ≤ 0) {
                     b[i, j] = us;
                     piece w = menace2(b);
                     b[i, j] = piece.none;
-                    if (t->nmoves <= 1)
+                    if (t->nmoves ≤ 1)
                         return w;
                     rational delta;
                     switch (w) {
@@ -214,7 +214,7 @@ menace2(position b)
                     case piece.none:
                         return w;
                     }
-                    if (t->val[i, j] <= 1)
+                    if (t->val[i, j] ≤ 1)
                         return w;
                     --t->val[i, j];
                     --t->tweight;

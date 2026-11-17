@@ -12,7 +12,7 @@ json_test_val(poly val, string match)
      * Make sure the string representation is correct and parsing
      * matches the input
      */
-    if (json != match || val != t)
+    if (json ≠ match || val ≠ t)
         raise bad_json(val, json, t);
 }
 
@@ -50,7 +50,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 

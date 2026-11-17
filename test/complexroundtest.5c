@@ -27,11 +27,11 @@ check(int f, complex z, int prec)
     complex got = funcs[f](z);
     complex want = imprecise(funcs[f](imprecise(z, prec + 600)), prec);
 
-    if (got != want)
+    if (got ≠ want)
         raise bad_result(names[f], z, got, want);
 }
 
-for (int k = 1; k <= 60; k++) {
+for (int k = 1; k ≤ 60; k++) {
     complex z = cmplx(k * 7919 % 10007 / 1009 * 2 ** (k % 13 - 6),
                       k * 4441 % 10007 / 1009 * 2 ** (k % 11 - 5));
 
@@ -40,13 +40,13 @@ for (int k = 1; k <= 60; k++) {
     if (k % 3 == 0)
         z = cmplx(creal(z), -cimag(z));
     for (int f = 0; f < dim(funcs); f++)
-        for (int prec = 53; prec <= 113; prec += 60)
+        for (int prec = 53; prec ≤ 113; prec += 60)
             check(f, z, prec);
 }
 
 /* Exact zero parts stay exact */
-if (Complex::exp(cmplx(imprecise(1, 53), 0)) != imprecise(Math::e, 53)
+if (Complex::exp(cmplx(imprecise(1, 53), 0)) ≠ imprecise(Math::e, 53)
         || cimag(Complex::sin(cmplx(0, imprecise(2, 53)))) == 0
-        || creal(Complex::sin(cmplx(0, imprecise(2, 53)))) != 0
-        || Complex::exp(0) != 1 || polar(2, 0) != 2)
+        || creal(Complex::sin(cmplx(0, imprecise(2, 53)))) ≠ 0
+        || Complex::exp(0) ≠ 1 || polar(2, 0) ≠ 2)
     raise bad_result("exact", 0, 0, 0);

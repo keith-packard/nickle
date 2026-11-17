@@ -24,7 +24,7 @@ check(string s, rational want)
     for (int i = 0; i < dim(suffixes); i++) {
         rational got = string_to_real(s + suffixes[i]);
 
-        if (got != want)
+        if (got ≠ want)
             raise bad_string_to_real(s + suffixes[i], got, want);
     }
 }

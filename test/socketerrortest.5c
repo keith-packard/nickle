@@ -15,7 +15,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -59,7 +59,7 @@ try {
     Socket::listen(null, 5);
     raise not_raised("listen on a file");
 } catch File::io_error(string m, File::error_type e, file f) {
-    if (e != File::error_type.NOTSOCK && e != File::error_type.PERM)
+    if (e ≠ File::error_type.NOTSOCK && e ≠ File::error_type.PERM)
         raise wrong("listen on a file", e, File::error_type.NOTSOCK);
 }
 File::close(null);
@@ -75,7 +75,7 @@ File::close(s);
 file l = Socket::create(Socket::SOCK_STREAM);
 Socket::bind(l, "localhost", 0);
 int port = Socket::getsockname(l).port;
-if (port <= 0)
+if (port ≤ 0)
     raise wrong("bound port", port, 0);
 Socket::listen(l, 1);
 thread t = fork Socket::accept(l);

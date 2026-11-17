@@ -43,7 +43,7 @@ namespace ParseArgs {
         if (!is_uninit(&a.abbr))
             s = sprintf("-%c", a.abbr);
         if (!is_uninit(&a.name)) {
-            if (s != "")
+            if (s ≠ "")
                 s += ",";
             s += "--" + a.name;
         }
@@ -199,7 +199,7 @@ namespace ParseArgs {
                 var = true;
                 break;
             default:
-                if (argind >= dim(argv)) {
+                if (argind ≥ dim(argv)) {
                     fprintf(stderr, "%s: missing value for %s\n", argd.prog_name, name);
                     usagef(stderr);
                 }
@@ -232,7 +232,7 @@ namespace ParseArgs {
             bool flag = length(a) > 1 && a[0] == '-';
 
             /* process abbreviated (old-style) flags (maybe grouped) */
-            if (flag && a[1] != '-') {
+            if (flag && a[1] ≠ '-') {
                 argind++;
                 for (int i = 1; i < length(a); i++) {
                     if (!hash_test(arg_abbr_hash, a[i])) {
@@ -278,7 +278,7 @@ namespace ParseArgs {
         /* process any positional arguments */
         if (!is_uninit(&argd.posn_args)) {
             for (int i = 0; i < dim(argd.posn_args); i++) {
-                if (argind >= dim(argv)) {
+                if (argind ≥ dim(argv)) {
                     if (!is_uninit(&argd.posn_args[i].optional))
                         break;
                     fprintf(stderr, "%s: missing required argument %s\n",

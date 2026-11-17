@@ -25,7 +25,7 @@ gcd_check(int u, int v)
     int weber = gcd(u, v);
     if (gcd_verify) {
         int euclid = gcd_euclid(u, v);
-        if (weber != euclid)
+        if (weber ≠ euclid)
             raise bad_gcd(u, v);
     } else
         for (int i = 0; i < 100; i++)
@@ -46,8 +46,8 @@ gcd_test(int amin, int amax, int bmin, int bmax)
 {
     int a, b;
 
-    for (a = amin; a <= amax; a += randint(10))
-        for (b = bmin; b <= bmax; b += randint(10))
+    for (a = amin; a ≤ amax; a += randint(10))
+        for (b = bmin; b ≤ bmax; b += randint(10))
             gcd_random(a, b);
 }
 
@@ -60,8 +60,8 @@ gcd_test(2, 200, 2, 200)
 void
 gcd_wide_test()
 {
-    for (int a = 32; a <= 160; a += 32)
-        for (int b = a; b <= 3300; b += 97) {
+    for (int a = 32; a ≤ 160; a += 32)
+        for (int b = a; b ≤ 3300; b += 97) {
             gcd_check(2 ** a + 1, 2 ** b + 1);
             gcd_check(2 ** b + 1, 2 ** a + 1);
         }
@@ -80,18 +80,18 @@ exception bad_gcd_zero(int u, int v, int got);
 void
 gcd_zero_test()
 {
-    int[*] values = { 0, 1, 5, 2 ** 32, 2 ** 100 + 1 };
+    int[*] values = { 0, 1, 5, 2³², 2¹⁰⁰ + 1 };
 
     for (int i = 0; i < dim(values); i++) {
         int v = values[i];
 
-        if (gcd(0, v) != v)
+        if (gcd(0, v) ≠ v)
             raise bad_gcd_zero(0, v, gcd(0, v));
-        if (gcd(v, 0) != v)
+        if (gcd(v, 0) ≠ v)
             raise bad_gcd_zero(v, 0, gcd(v, 0));
-        if (gcd(0, -v) != v)
+        if (gcd(0, -v) ≠ v)
             raise bad_gcd_zero(0, -v, gcd(0, -v));
-        if (gcd(-v, 0) != v)
+        if (gcd(-v, 0) ≠ v)
             raise bad_gcd_zero(-v, 0, gcd(-v, 0));
     }
 }

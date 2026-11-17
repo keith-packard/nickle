@@ -69,7 +69,7 @@ context_set(*context c, string value)
         }
         break;
     default:
-        if (value[0] >= '0' && value[0] <= '9') {
+        if (value[0] ≥ '0' && value[0] ≤ '9') {
             c->size = string_to_integer(value);
         } else {
             c->color = color_index_for_name(value[0]);
@@ -80,11 +80,11 @@ context_set(*context c, string value)
 poly
 context_dump(context c)
 {
-    printf("%s %s %s %s %s %d %s %s ", (c.styles & style_b) != 0 ? "B" : "-",
-           (c.styles & style_em) != 0 ? "EM" : "--",
-           (c.styles & style_i) != 0 ? "I" : "-",
-           (c.styles & style_s) != 0 ? "S" : "-",
-           (c.styles & style_tt) != 0 ? "TT" : "--", c.underline,
-           c.color >= 0 ? String::new(colornames[c.color]) : "-",
-           c.size >= 0 ? String::new(c.size) : "-");
+    printf(
+        "%s %s %s %s %s %d %s %s ", (c.styles & style_b) ≠ 0 ? "B" : "-",
+        (c.styles & style_em) ≠ 0 ? "EM" : "--",
+        (c.styles & style_i) ≠ 0 ? "I" : "-", (c.styles & style_s) ≠ 0 ? "S" : "-",
+        (c.styles & style_tt) ≠ 0 ? "TT" : "--", c.underline,
+        c.color ≥ 0 ? String::new(colornames[c.color]) : "-",
+        c.size ≥ 0 ? String::new(c.size) : "-");
 }

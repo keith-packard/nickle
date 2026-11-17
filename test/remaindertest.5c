@@ -18,15 +18,15 @@ check(int a, int b)
     int r = a % b;
     int want = a - a ⫽ b * b;
 
-    if (r != want || hash(r) != hash(want)
-            || bit_width(r) != bit_width(want) || r < 0 || r >= abs(b))
+    if (r ≠ want || hash(r) ≠ hash(want)
+            || bit_width(r) ≠ bit_width(want) || r < 0 || r ≥ abs(b))
         raise bad_remainder(a, b, r);
 }
 
 /* Divisors just above a power of two make the quotient estimate too big */
-for (int k = 32; k <= 3232; k += 32)
-    for (int c = 1; c <= 3; c++)
-        for (int m = k; m <= k + 200; m += 37) {
+for (int k = 32; k ≤ 3232; k += 32)
+    for (int c = 1; c ≤ 3; c++)
+        for (int m = k; m ≤ k + 200; m += 37) {
             check(2 ** m, 2 ** k + c);
             check(-(2 ** m), 2 ** k + c);
             check(2 ** m - 1, -(2 ** k + c));

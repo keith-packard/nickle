@@ -20,7 +20,7 @@
  * 4.      if ( gcd(n,r) =/= 1 ) output COMPOSITE;
  * 5.      if (r is prime)
  * 6.          let q be the largest prime factor of r - 1;
- * 7.          if (q >= 4 sqrt(r) log(n)) and ((n ** ((r-1)/q)) =/= 1) (mod r))
+ * 7.          if (q ≥ 4 sqrt(r) log(n)) and ((n ** ((r-1)/q)) =/= 1) (mod r))
  * 8.              break;
  * 9.      r = r + 1;
  * 10. }
@@ -44,7 +44,7 @@ max_factor(int n)
 {
     int factor = 1;
 
-    for (int i = 2; i * i <= n; i++) {
+    for (int i = 2; i * i ≤ n; i++) {
         if (n % i == 0) {
             factor = i;
             n /= factor;
@@ -86,7 +86,7 @@ is_small_prime(int n)
     if (n < 2)
         abort("small prime test below 2");
     global int small = 50;
-    if (n >= small)
+    if (n ≥ small)
         return false;
 
     global bool[*]
@@ -120,19 +120,19 @@ is_prime(int n)
         return false;
     int r;
     for (r = 2; r < n; r++) {
-        if (gcd(n, r) != 1)
+        if (gcd(n, r) ≠ 1)
             return false;
         if (!is_prime(r))
             continue;
         int q = max_factor(r - 1);
-        if (q ** 2 >= 16 * r * log2(n) ** 2 && bigpowmod(n, (r - 1) / q, r) != 1)
+        if (q² ≥ 16 * r * log2(n)² && bigpowmod(n, (r - 1) / q, r) ≠ 1)
             break;
     }
     int[r + 1] m1 = { -1, 0 ... };
     m1[r] = 1;
     polynomial mn = m1;
     mn[0] = -n;
-    for (int a = 1; a ** 2 <= 4 * r * log2(n) ** 2; a++) {
+    for (int a = 1; a² ≤ 4 * r * log2(n)²; a++) {
 
         bool
         eqn(polynomial m)

@@ -6,7 +6,7 @@
  * The lexer appended each byte of a doc string to the string read so
  * far as a character of its own, copying the string for every byte and
  * encoding each byte of a UTF-8 character as a character. A doc string
- * of 2**19 characters took over a minute to read.
+ * of 2¹⁹ characters took over a minute to read.
  */
 
 exception wrong(string what, poly got, poly want);
@@ -14,7 +14,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -47,7 +47,7 @@ print_doc(string doc)
 check("utf-8", print_doc(" π ≥ 3 "),
       "int\nf()\n    /* π ≥ 3 */\n{\n    return 1;\n}\n");
 
-int    n = 2 ** 19;
+int    n = 2¹⁹;
 string doc = String::new((int[n]) { [i] = 'a' + i % 26 });
 
 check("long", print_doc(doc),

@@ -38,16 +38,16 @@ check(string[*] argv, bool want_flag, string want_path,
     };
 
     parseargs(&argd, &argv);
-    if (flag != want_flag)
+    if (flag ≠ want_flag)
         raise bad_parse(argv, "flag");
-    if (path != want_path)
+    if (path ≠ want_path)
         raise bad_parse(argv, "path");
-    if (value != want_value)
+    if (value ≠ want_value)
         raise bad_parse(argv, "value");
-    if (dim(argv) - unknown != dim(want_rest))
+    if (dim(argv) - unknown ≠ dim(want_rest))
         raise bad_parse(argv, "rest");
     for (int i = 0; i < dim(want_rest); i++)
-        if (argv[unknown + i] != want_rest[i])
+        if (argv[unknown + i] ≠ want_rest[i])
             raise bad_parse(argv, "rest");
 }
 
@@ -113,7 +113,7 @@ check_usage()
         if (!File::end(output[0]))
             line = File::fgets(output[0]);
 
-        if (line != want[i])
+        if (line ≠ want[i])
             raise bad_parse((string[*]) { "--help" }, line);
     }
     if (!File::end(output[0]))

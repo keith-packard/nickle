@@ -25,7 +25,7 @@ check_factorial(int max)
         int is = n!;
         int should = fact(n);
 
-        if (is != should) {
+        if (is ≠ should) {
             printf("check failed %d! (was %d should be %d)\n", n, is, should);
             ++errors;
         }

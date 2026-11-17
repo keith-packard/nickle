@@ -10,7 +10,7 @@ check_log()
 {
     printf("Checking log precision\n");
     int log_errors = 0;
-    for (int prec = 10; prec <= 1000; prec *= 10) {
+    for (int prec = 10; prec ≤ 1000; prec *= 10) {
         real eval = Math::e_value(prec);
         for (real x = imprecise(0.001, prec); x < 20; x *= 1.5) {
             real lnx = log(x);
@@ -29,7 +29,7 @@ check_log()
             for (real y = imprecise(0.001, prec); y < 20; y *= 1.5) {
                 real lny = log(y);
 
-                if (sign(lnx) != sign(lny))
+                if (sign(lnx) ≠ sign(lny))
                     continue;
 
                 real lnxy = log(x * y);
@@ -39,7 +39,7 @@ check_log()
                 int  plnxy = precision(lnxy);
                 int  plnx_lny = precision(lnx_lny);
 
-                if (plnxy != plnx_lny)
+                if (plnxy ≠ plnx_lny)
                     printf("precision difference %d %d\n", plnxy, plnx_lny);
 
                 int  bitdiff = max(2, ceil(abs(log2(abs(lnx)) - log2(abs(lny)))));
@@ -55,7 +55,7 @@ check_log()
         }
     }
     printf("Checking log at many precisions\n");
-    for (int prec = 52; prec <= 520; prec += 4) {
+    for (int prec = 52; prec ≤ 520; prec += 4) {
         real[] xs = { 0.001, 0.4467884831395837, 1.75, 3, 1000 };
         for (int i = 0; i < dim(xs); i++) {
             real x = imprecise(xs[i], prec);
@@ -73,7 +73,7 @@ check_log()
     printf("Checking log is correctly rounded\n");
     check_rounded("log", log,
                   (real[*]) { 1e-300, 0.001, 0.4468, 0.75, 0.9999999,
-                              1 + 2 ** -20, 1 - 2 ** -40, 1.5, 3, 1e30, 1e300 });
+                              1 + 2⁻²⁰, 1 - 2⁻⁴⁰, 1.5, 3, 1e30, 1e300 });
     printf("Checking logp1 is correctly rounded\n");
     check_rounded(
         "logp1", logp1,

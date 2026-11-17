@@ -15,7 +15,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -73,12 +73,9 @@ contents(string name)
 /* cat finishes once the writer is gone; give it time */
 string got = contents(out);
 
-for (int tries = 0;
-     tries < 100 && String::length(got) != 2 ** 20 + 5;
-     tries++)
-{
+for (int tries = 0; tries < 100 && String::length(got) ≠ 2²⁰ + 5; tries++) {
     sleep(100);
     got = contents(out);
 }
-check("read pipe length", String::length(got), 2 ** 20 + 5);
+check("read pipe length", String::length(got), 2²⁰ + 5);
 File::unlink(out);

@@ -9,7 +9,7 @@ void
 check_exp()
 {
     printf("Checking exp precision\n");
-    for (int prec = 10; prec <= 1000; prec *= 10) {
+    for (int prec = 10; prec ≤ 1000; prec *= 10) {
         real eval = Math::e_value(1000);
 
         for (int x = 0; x < 100; x++) {
@@ -54,13 +54,13 @@ check_exp()
     }
     printf("Checking exp is correctly rounded\n");
     check_rounded("exp", exp,
-                  (real[*]) { -700, -20.5, -1, -1e-9, 1e-30, 0.5, 1, 2.75, 50.3,
-                              700, -2 ** 20, 2 ** 20 + 0.5, -1e6 - 0.25 });
+                  (real[*]) { -700, -20.5, -1, -1e-9, 1e-30, 0.5, 1, 2.75,
+                              50.3, 700, -2²⁰, 2²⁰ + 0.5, -1e6 - 0.25 });
 
     /* reducing by log(2) keeps huge arguments fast */
-    real tiny = exp(imprecise(-2 ** 100001, 64));
-    real huge = exp(imprecise(2 ** 100001, 64));
-    if (abs(tiny * huge - 1) > 2 ** -60 || precision(tiny) != 64) {
+    real tiny = exp(imprecise(-2¹⁰⁰⁰⁰¹, 64));
+    real huge = exp(imprecise(2¹⁰⁰⁰⁰¹, 64));
+    if (abs(tiny * huge - 1) > 2⁻⁶⁰ || precision(tiny) ≠ 64) {
         printf("check failed exp(-2**100001)\n");
         errors++;
     }

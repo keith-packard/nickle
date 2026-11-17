@@ -16,7 +16,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -76,7 +76,7 @@ check("exit",
       String::index(printed("exit"), "public noreturn exit(int)") == 0, true);
 check("longjmp",
       String::index(printed("longjmp"), "public noreturn longjmp") == 0, true);
-check("abort", String::index(printed("abort"), "noreturn\nabort(") >= 0, true);
+check("abort", String::index(printed("abort"), "noreturn\nabort(") ≥ 0, true);
 
 /* A noreturn function may neither return nor reach its end */
 string[*]
@@ -103,12 +103,12 @@ string[*] err = read_lines(errors[0]);
 int       returns_found = 0, ends_found = 0;
 
 for (int i = 0; i < dim(err); i++) {
-    if (String::index(err[i], "return in noreturn function") >= 0)
+    if (String::index(err[i], "return in noreturn function") ≥ 0)
         returns_found++;
     if (String::index(
             err[i], "Control reaches end of function with type 'noreturn'")
-            >= 0)
+            ≥ 0)
         ends_found++;
 }
 check("return error", returns_found, 1);
-check("end errors", ends_found >= 1, true);
+check("end errors", ends_found ≥ 1, true);

@@ -36,7 +36,7 @@ extend namespace File {
                 ds[dim(ds)] = directive_t.space;
                 continue;
             }
-            if (c != '%') {
+            if (c ≠ '%') {
                 ds[dim(ds)] = (directive_t) { literal = c };
                 continue;
             }
@@ -137,7 +137,7 @@ extend namespace File {
         void
         literal(int c)
         {
-            if (peek() != c)
+            if (peek() ≠ c)
                 raise matching_failure();
             next();
         }
@@ -152,7 +152,7 @@ extend namespace File {
             case 10:
                 return Ctype::isdigit(c);
             default:
-                return '0' <= c && c < '0' + base;
+                return '0' ≤ c && c < '0' + base;
             }
         }
 
@@ -241,7 +241,7 @@ extend namespace File {
                 if (peek() == '{') {
                     putc(next(), s);
                     int r = digits(s, base);
-                    if (r == 0 || peek() != '}')
+                    if (r == 0 || peek() ≠ '}')
                         raise matching_failure();
                     putc(next(), s);
                     n += r;
@@ -265,7 +265,7 @@ extend namespace File {
             file s = string_write();
             int  n = 0;
 
-            while (peek() >= 0 && !Ctype::isspace(peek())) {
+            while (peek() ≥ 0 && !Ctype::isspace(peek())) {
                 putc(next(), s);
                 n++;
             }
@@ -303,7 +303,7 @@ extend namespace File {
                     break;
                 }
                 width = cv.width;
-                if (cv.kind != conversion_kind_t.character)
+                if (cv.kind ≠ conversion_kind_t.character)
                     whitespace();
                 enum switch (cv.kind) {
                 case binary:
@@ -330,7 +330,7 @@ extend namespace File {
                     } else {
                         file s = string_write();
 
-                        while (peek() >= 0)
+                        while (peek() ≥ 0)
                             putc(next(), s);
                         if (width > 0)
                             raise matching_failure();

@@ -15,7 +15,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -43,11 +43,11 @@ substr_error("index past end", "substr: index out of range",
 substr_error("count past end", "substr: count out of range",
              func() = String::substr("hello", 1, 5));
 substr_error("huge index", "substr: index out of range",
-             func() = String::substr("hello", 2 ** 62, 1));
+             func() = String::substr("hello", 2⁶², 1));
 substr_error("huge count", "substr: count out of range",
-             func() = String::substr("hello", 1, 2 ** 62));
+             func() = String::substr("hello", 1, 2⁶²));
 substr_error("huge negative count", "substr: count out of range",
-             func() = String::substr("hello", 1, -(2 ** 62)));
+             func() = String::substr("hello", 1, -(2⁶²)));
 
 check("index utf-8", "héllo"[1], 0xe9);
 check("length utf-8", String::length("héllo"), 5);
@@ -58,8 +58,8 @@ check("String::index NUL", String::index(with_nul, String::new(0)), 1);
 check("String::index missing NUL", String::index("ab", String::new(0)), -1);
 
 try {
-    int c = "hello"[2 ** 40];
+    int c = "hello"[2⁴⁰];
     raise not_raised("huge string index");
 } catch invalid_binop_values(string m, poly s, poly i) {
-    check("huge string index", i, 2 ** 40);
+    check("huge string index", i, 2⁴⁰);
 }

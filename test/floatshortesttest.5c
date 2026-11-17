@@ -17,7 +17,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -25,7 +25,7 @@ check("0.1", sprintf("%.-g", imprecise(0.1, 53)), "0.1");
 check("1/3", sprintf("%.-g", imprecise(1 / 3, 53)), "0.3333333333333333");
 check("1e-30", sprintf("%.-g", imprecise(1e-30)), "1e-30");
 check("1e30", sprintf("%.-g", imprecise(1e30)), "1e30");
-check("2**100", sprintf("%.-g", imprecise(2 ** 100)),
+check("2**100", sprintf("%.-g", imprecise(2¹⁰⁰)),
       "1267650600228229401496703205376");
 check("-2.5e-7", sprintf("%.-g", imprecise(-2.5e-7, 53)), "-2.5e-7");
 check("%.-e", sprintf("%.-e", imprecise(1234.5, 53)), "1.2345e3");
@@ -46,7 +46,7 @@ PRNG::srandom(7);
 int[*] precs = { 2, 24, 53, 113, 256 };
 for (int t = 0; t < 2000; t++) {
     int      p = precs[PRNG::randint(dim(precs))];
-    rational r = (PRNG::randint(2 ** 80) + 1) * 2 ** (PRNG::randint(400) - 240)
+    rational r = (PRNG::randint(2⁸⁰) + 1) * 2 ** (PRNG::randint(400) - 240)
         / (PRNG::randint(1000) + 1);
     real     v = imprecise(r, p);
     string   s = sprintf("%.-g", v);

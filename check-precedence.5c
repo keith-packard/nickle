@@ -70,8 +70,8 @@ read_precedence()
 
         if (dim(words) == 0)
             continue;
-        if (words[0] != "%left" && words[0] != "%right"
-                && words[0] != "%nonassoc" && words[0] != "%precedence")
+        if (words[0] ≠ "%left" && words[0] ≠ "%right"
+                && words[0] ≠ "%nonassoc" && words[0] ≠ "%precedence")
             continue;
         n++;
         for (int i = 1; i < dim(words); i++) {
@@ -141,7 +141,7 @@ clarifies(string outer, string inner)
     case "bitwise":
         return kind(inner) == "arithmetic" || kind(inner) == "shift"
             || kind(inner) == "comparison"
-            || (kind(inner) == "bitwise" && inner != outer);
+            || (kind(inner) == "bitwise" && inner ≠ outer);
     case "shift":
         return kind(inner) == "arithmetic";
     case "comparison":
@@ -225,9 +225,9 @@ report()
 
         if (line == "")
             continue;
-        if (n >= dim(wanted))
+        if (n ≥ dim(wanted))
             problems[dim(problems)] = sprintf("extra output %v", line);
-        else if (line != wanted[n] + ";")
+        else if (line ≠ wanted[n] + ";")
             problems[dim(problems)] =
                 sprintf("%s prints as %v, want %v", sources[n], line, wanted[n] + ";");
         n++;

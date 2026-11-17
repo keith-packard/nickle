@@ -16,7 +16,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -41,7 +41,7 @@ rejected("putb -1",
          });
 rejected("putb 2**40",
          void func() {
-             File::putb(2 ** 40, f);
+             File::putb(2⁴⁰, f);
          });
 rejected("putc -1",
          void func() {
@@ -57,7 +57,7 @@ rejected("ungetb 1000",
          });
 rejected("ungetb 2**40",
          void func() {
-             File::ungetb(2 ** 40, r);
+             File::ungetb(2⁴⁰, r);
          });
 rejected("ungetc -1",
          void func() {

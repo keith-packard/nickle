@@ -19,14 +19,14 @@ check_gamma()
         real right = 2 ** (1 - 2 * zi) * sqrt(pi_value(iprec)) * gamma(zi * 2);
 
         real error = left - right;
-        if (error != 0 && exponent(error) > exponent(left) - prec) {
+        if (error ≠ 0 && exponent(error) > exponent(left) - prec) {
             printf("%g: Γ(z)Γ(z+½) (%g) != 2^(1-2z) √π Γ(2z) (%g): prec %d error %g\n",
                    z, left, right, prec, error);
             errors++;
         }
     }
 
-    for (int prec = 10; prec <= 100; prec *= 10) {
+    for (int prec = 10; prec ≤ 100; prec *= 10) {
         for (real z = 1e-38; z < 1e38; z *= 11) {
             bool invalid = false;
 
@@ -36,7 +36,7 @@ check_gamma()
             } catch invalid_argument(string err, int i, real z) {
                 invalid = true;
             }
-            if (invalid != (floor(z) == z)) {
+            if (invalid ≠ (floor(z) == z)) {
                 printf("%g: negative wrong %v\n", z, invalid);
                 errors++;
             }

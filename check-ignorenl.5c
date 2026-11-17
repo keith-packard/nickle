@@ -112,11 +112,11 @@ strip_comments(int[*] cs)
             while (j < n - 1 && !(cs[j] == '*' && cs[j + 1] == '/'))
                 j++;
             for (int k = i; k < j + 2 && k < n; k++)
-                if (cs[k] != '\n')
+                if (cs[k] ≠ '\n')
                     out[k] = ' ';
             i = j + 1;
         } else if (cs[i] == '/' && cs[i + 1] == '/') {
-            while (i < n && cs[i] != '\n')
+            while (i < n && cs[i] ≠ '\n')
                 out[i++] = ' ';
         }
     }
@@ -145,12 +145,12 @@ is_space(int c)
     return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
 }
 
-bool is_digit(int c) = '0' <= c && c <= '9';
+bool is_digit(int c) = '0' ≤ c && c ≤ '9';
 
 bool
 is_name_start(int c)
 {
-    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+    return ('a' ≤ c && c ≤ 'z') || ('A' ≤ c && c ≤ 'Z')
         || c == '_' || c == '.' || c == '$';
 }
 
@@ -166,7 +166,7 @@ action_end(int[*] cs, int i, int end)
         int c = cs[i];
         if (c == '"' || c == '\'') {
             i++;
-            while (i < end && cs[i] != c) {
+            while (i < end && cs[i] ≠ c) {
                 if (cs[i] == '\\')
                     i++;
                 i++;
@@ -233,7 +233,7 @@ parse_rules(int[*] cs, int[*] lines, int from, int to)
             if (cs[end] == '\\')
                 end++;
             end++;
-            while (end < to && cs[end] != '\'')
+            while (end < to && cs[end] ≠ '\'')
                 end++;
             symbols[dim(symbols)] = text(cs, i, end + 1);
             i = end + 1;
@@ -249,7 +249,7 @@ parse_rules(int[*] cs, int[*] lines, int from, int to)
                     i++;
                 while (i < to && !is_space(cs[i]))
                     i++;
-            } else if (directive != "%empty") {
+            } else if (directive ≠ "%empty") {
                 problem(lines[i], sprintf("unexpected %s", directive));
                 return rules;
             }
@@ -263,7 +263,7 @@ parse_rules(int[*] cs, int[*] lines, int from, int to)
             while (after < to && is_space(cs[after]))
                 after++;
             if (after < to && cs[after] == ':') {
-                if (lhs != "") {
+                if (lhs ≠ "") {
                     problem(lines[i], sprintf("%s has no ';' before %s", lhs, name));
                     return rules;
                 }
@@ -279,7 +279,7 @@ parse_rules(int[*] cs, int[*] lines, int from, int to)
             return rules;
         }
     }
-    if (lhs != "")
+    if (lhs ≠ "")
         problem(lines[to - 1], sprintf("%s has no ';' at the end", lhs));
     return rules;
 }
@@ -293,7 +293,7 @@ holds(int[*] cs, int i, string s)
     if (i < 0 || i + dim(want) > dim(cs))
         return false;
     for (int k = 0; k < dim(want); k++)
-        if (cs[i + k] != want[k])
+        if (cs[i + k] ≠ want[k])
             return false;
     return true;
 }
@@ -305,8 +305,8 @@ find_count(int[*] cs, int from, int to)
     int[*]   name = code_points(count_name);
     int[...] found = {};
 
-    for (int i = from; i + dim(name) <= to; i++) {
-        if (cs[i] != name[0] || !holds(cs, i, count_name))
+    for (int i = from; i + dim(name) ≤ to; i++) {
+        if (cs[i] ≠ name[0] || !holds(cs, i, count_name))
             continue;
         if (i > 0 && is_name(cs[i - 1]))
             continue;
@@ -366,7 +366,7 @@ writes(int[*] cs, int from, int to)
 
     for (int f = 0; f < dim(found); f++) {
         string kind = write_kind(cs, found[f]);
-        if (kind != "")
+        if (kind ≠ "")
             kinds[dim(kinds)] = kind;
     }
     return kinds;
@@ -426,12 +426,12 @@ witness(rule_t[*] rules, ints[string] alternatives, int[string] net, &int line)
                     string chain = s;
 
                     line = rules[r].line;
-                    for (int p = q; p >= 0; p = queue[p].parent)
+                    for (int p = q; p ≥ 0; p = queue[p].parent)
                         chain = queue[p].symbol + " -> " + chain;
                     return chain;
                 }
                 string key = sprintf("%s %d", s, at);
-                if (!hash_test(rule_net, s) && !hash_test(seen, key) && at <= dim(rules)) {
+                if (!hash_test(rule_net, s) && !hash_test(seen, key) && at ≤ dim(rules)) {
                     seen[key] = true;
                     queue[dim(queue)] =
                         (state_t) { symbol = s, count = at, parent = q, line = rules[r].line };
@@ -458,13 +458,13 @@ check()
         if ((i == 0 || cs[i - 1] == '\n') && holds(cs, i, "%%")) {
             int end = i + 2;
 
-            while (end < dim(cs) && cs[end] != '\n' && is_space(cs[end]))
+            while (end < dim(cs) && cs[end] ≠ '\n' && is_space(cs[end]))
                 end++;
             if (end == dim(cs) || cs[end] == '\n')
                 marks[dim(marks)] = i;
         }
     }
-    if (dim(marks) != 2) {
+    if (dim(marks) ≠ 2) {
         problem(0, "expected two lines of %%");
         return;
     }
@@ -492,7 +492,7 @@ check()
             int       at = lines[rule.action_starts[a]];
             if (hash_test(rule_net, rule.lhs)) {
                 string expect = rule_write[rule.lhs];
-                if (dim(rule.symbols) != 1 || dim(kinds) != 1 || kinds[0] != expect)
+                if (dim(rule.symbols) ≠ 1 || dim(kinds) ≠ 1 || kinds[0] ≠ expect)
                     problem(at,
                             sprintf("%s should be empty and only %s %s",
                                     rule.lhs, write_words[expect], count_name));
@@ -505,10 +505,10 @@ check()
     for (int f = 0; f < dim(found); f++) {
         int i = found[f];
 
-        if (from <= i && i < to)
+        if (from ≤ i && i < to)
             continue;
         string kind = write_kind(cs, i);
-        if (kind != "" && kind != "clear")
+        if (kind ≠ "" && kind ≠ "clear")
             problem(
                 lines[i], sprintf("C code changes %s other than clearing it", count_name));
     }
@@ -529,7 +529,7 @@ check()
         low[lhs] = min(rule_net[lhs], 0);
     }
     bool changed = true;
-    while (changed && lowest_low >= -dim(rules)) {
+    while (changed && lowest_low ≥ -dim(rules)) {
         changed = false;
         for (int r = 0; r < dim(rules); r++) {
             rule_t rule = rules[r];
@@ -566,29 +566,29 @@ check()
             if (missing == "" && hash_test(alternatives, s) && !hash_test(net, s))
                 missing = s;
         }
-        if (missing != "") {
+        if (missing ≠ "") {
             problem(rule.line, sprintf("%s never derives", missing));
             continue;
         }
         int lowest;
         int count = walk(rule.symbols, net, low, &lowest);
-        if (!hash_test(rule_net, rule.lhs) && count != net[rule.lhs])
+        if (!hash_test(rule_net, rule.lhs) && count ≠ net[rule.lhs])
             problem(rule.line,
                     sprintf("%s alternative changes %s by %s, others by %s", rule.lhs,
                             count_name, signed(count), signed(net[rule.lhs])));
         for (int k = 0; k < dim(rule.symbols); k++) {
-            if (rule.symbols[k] != "reset")
+            if (rule.symbols[k] ≠ "reset")
                 continue;
             string[k] before = { [j] = rule.symbols[j] };
             int       at = walk(before, net, low, &lowest);
-            if (at != 0)
+            if (at ≠ 0)
                 problem(rule.line,
                         sprintf("%s is %s at reset in %s", count_name, signed(at), rule.lhs));
         }
     }
     if (!hash_test(net, start)) {
         problem(0, sprintf("%s never derives", start));
-    } else if (low[start] < 0 || net[start] != 0) {
+    } else if (low[start] < 0 || net[start] ≠ 0) {
         int    line;
         string chain = witness(rules, alternatives, net, &line);
         problem(line, sprintf("%s can fall below zero: %s", count_name, chain));

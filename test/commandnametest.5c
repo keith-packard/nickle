@@ -43,10 +43,10 @@ string[*] want_err = {
 };
 
 /* undefine stops at the first unknown name */
-if (dim(out) != 1 || out[0] != "false true")
+if (dim(out) ≠ 1 || out[0] ≠ "false true")
     raise bad_names("output", out);
-if (dim(err) != dim(want_err))
+if (dim(err) ≠ dim(want_err))
     raise bad_names("errors", err);
 for (int i = 0; i < dim(err); i++)
-    if (err[i] != want_err[i])
+    if (err[i] ≠ want_err[i])
         raise bad_names("errors", err);

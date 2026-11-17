@@ -26,7 +26,7 @@ shown(string command)
         nickle, (string[*]) { nickle }, (file[3]) { input[0], output[1], stderr });
     File::close(input[0]);
     File::close(output[1]);
-    for (int i = 1; i <= 12; i++)
+    for (int i = 1; i ≤ 12; i++)
         File::fprintf(input[1], "%d\n", i);
     File::fprintf(input[1], "%s\n", command);
     File::close(input[1]);
@@ -45,7 +45,7 @@ check(string command, int[*] want)
 {
     int[*] got = shown(command);
 
-    if (got != want)
+    if (got ≠ want)
         raise wrong(command, got, want);
 }
 

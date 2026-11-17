@@ -1,6 +1,6 @@
 /*
  * All-Pairs Shortest Path Computation
- * using Floyd-Warshall O(n**3) method
+ * using Floyd-Warshall O(n³) method
  *  CLR 2nd ed p. 632
  * Copyright © 2004 Bart Massey.
  * All Rights Reserved.  See the file COPYING in this directory
@@ -26,7 +26,7 @@ namespace APSP {
         shortest_path[n, n] path = { { { dist = -1, first_hop = -1 } ... } ... };
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (i != j && adjacencies[i, j] >= 0) {
+                if (i ≠ j && adjacencies[i, j] ≥ 0) {
                     path[i, j].dist = adjacencies[i, j];
                     path[i, j].first_hop = j;
                 }

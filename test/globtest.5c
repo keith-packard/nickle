@@ -15,7 +15,7 @@ check(string name, string want)
 {
     string got = Command::glob(name);
 
-    if (got != want)
+    if (got ≠ want)
         raise wrong(name, got, want);
 }
 

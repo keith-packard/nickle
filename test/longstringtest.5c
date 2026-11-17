@@ -6,7 +6,7 @@
  * The JSON reader, fscanf, String::dequote, and String::parse_csv
  * appended each character to the string read so far, copying it for
  * every character, and the String routines indexed their input, which
- * scans it from the start. Reading a string of 2**18 characters
+ * scans it from the start. Reading a string of 2¹⁸ characters
  * through all four took 96 seconds.
  */
 
@@ -17,11 +17,11 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
-int    n = 2 ** 18;
+int    n = 2¹⁸;
 string x = String::new((int[n]) { [i] = 'x' });
 
 check("from_json", from_json("\"" + x + "\"") == x, true);

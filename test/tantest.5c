@@ -29,8 +29,8 @@ check_tan()
 
     /* an exact y must not limit the precision of the result */
     real a2 = atan2(1, imprecise(-2, 300));
-    if (precision(a2) != 300
-        || a2 != imprecise(atan2(imprecise(1, 700), imprecise(-2, 700)), 300))
+    if (precision(a2) ≠ 300
+        || a2 ≠ imprecise(atan2(imprecise(1, 700), imprecise(-2, 700)), 300))
     {
         printf("check failed atan2(1, -2) at 300 bits\n");
         errors++;

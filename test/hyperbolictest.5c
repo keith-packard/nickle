@@ -21,12 +21,12 @@ check(string name, real(real) f, rational a)
         real got = f(x);
         real want = f(imprecise(x, 2048));
 
-        if (precision(got) != p || abs(got - want) > abs(want) * 2 ** (1 - p))
+        if (precision(got) ≠ p || abs(got - want) > abs(want) * 2 ** (1 - p))
             raise bad_result(name, x, got, want);
     }
 }
 
-rational[*] small = { 1 / 10 ** 30, -1 / 10 ** 8, 1 / 1000, -1 / 2, 3, -40 };
+rational[*] small = { 1 / 10³⁰, -1 / 10⁸, 1 / 1000, -1 / 2, 3, -40 };
 
 for (int i = 0; i < dim(small); i++) {
     check("sinh", sinh, small[i]);
@@ -35,12 +35,12 @@ for (int i = 0; i < dim(small); i++) {
     check("asinh", asinh, small[i]);
 }
 
-rational[*] unit = { 1 / 10 ** 30, -1 / 10 ** 8, 1 / 2, -999999 / 1000000 };
+rational[*] unit = { 1 / 10³⁰, -1 / 10⁸, 1 / 2, -999999 / 1000000 };
 
 for (int i = 0; i < dim(unit); i++)
     check("atanh", atanh, unit[i]);
 
-rational[*] above_one = { 1 + 1 / 10 ** 60, 1 + 1 / 10 ** 8, 3 / 2, 1000 };
+rational[*] above_one = { 1 + 1 / 10⁶⁰, 1 + 1 / 10⁸, 3 / 2, 1000 };
 
 for (int i = 0; i < dim(above_one); i++)
     check("acosh", acosh, above_one[i]);

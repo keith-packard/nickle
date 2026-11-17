@@ -13,7 +13,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -37,7 +37,7 @@ File::fprintf(src, "}\nreturn -1;\n}\n");
 File::fprintf(src, "int count (int a ...) { return dim (a); }\n");
 File::fprintf(src, "int long_call () { return count (");
 for (int i = 0; i < n; i++) {
-    if (i != 0)
+    if (i ≠ 0)
         File::fprintf(src, ", ");
     File::fprintf(src, "%d", i);
 }

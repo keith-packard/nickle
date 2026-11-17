@@ -15,12 +15,12 @@ hash_tests()
     for (int i = 0; i < dim(values); i++)
         h[values[i][0]] = values[i][1];
     for (int i = 0; i < dim(values); i++)
-        if (h[values[i][0]] != values[i][1])
+        if (h[values[i][0]] ≠ values[i][1])
             raise bad_result("wrong value returned", h, values[i][0], values[i][1]);
 
     /* check list of keys */
     poly[*] keys = hash_keys(h);
-    if (dim(keys) != dim(values))
+    if (dim(keys) ≠ dim(values))
         raise bad_result("wrong number of keys", h, dim(keys), dim(values));
     for (int i = 0; i < dim(values); i++) {
         int j;
@@ -35,7 +35,7 @@ hash_tests()
     /* test delete */
     for (int i = 0; i < dim(values); i++)
         hash_del(h, values[i][0]);
-    if (dim(hash_keys(h)) != 0)
+    if (dim(hash_keys(h)) ≠ 0)
         raise bad_result("couldn't delete all keys", h, ◊, ◊);
 
     /* test mutable keys */
@@ -43,12 +43,12 @@ hash_tests()
     int[*] a = { 1, 2, 3 };
     int[*] b = a;
     h[a] = "hello";
-    if (h[b] != "hello")
+    if (h[b] ≠ "hello")
         raise bad_result("couldn't find mutable key", h, a, "hello");
     a[0] = 12;
     if (hash_test(h, a))
         raise bad_result("hash contains mutated key", h, a, h[a]);
-    if (h[b] != "hello")
+    if (h[b] ≠ "hello")
         raise bad_result("couldn't find unmutated key", h, b, h[b]);
 }
 

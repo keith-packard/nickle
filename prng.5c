@@ -31,7 +31,7 @@ namespace PRNG {
         twixt (file f = open("/dev/urandom", "r"); close(f)) {
             int seed = 0;
 
-            while (nbits >= 8) {
+            while (nbits ≥ 8) {
                 seed = (seed << 8) | getb(f);
                 nbits -= 8;
             }

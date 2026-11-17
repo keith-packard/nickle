@@ -21,22 +21,22 @@ check(string name, real(real) f, rational a)
         real got = f(x);
         real want = f(imprecise(x, 2048));
 
-        if (precision(got) != p || abs(got - want) > abs(want) * 2 ** (1 - p))
+        if (precision(got) ≠ p || abs(got - want) > abs(want) * 2 ** (1 - p))
             raise bad_result(name, x, got, want);
     }
 }
 
-rational[*] erf_args = { 1 / 10 ** 30, 1 / 10, -3 / 2, 4, 19, 25, -30 };
+rational[*] erf_args = { 1 / 10³⁰, 1 / 10, -3 / 2, 4, 19, 25, -30 };
 
 for (int i = 0; i < dim(erf_args); i++)
     check("erf", erf, erf_args[i]);
 
-rational[*] erfc_args = { 1 / 10 ** 20, 1 / 2, 1, 3, 10, 20, 27, -2, -30 };
+rational[*] erfc_args = { 1 / 10²⁰, 1 / 2, 1, 3, 10, 20, 27, -2, -30 };
 
 for (int i = 0; i < dim(erfc_args); i++)
     check("erfc", erfc, erfc_args[i]);
 
-if (erf(0) != 0)
+if (erf(0) ≠ 0)
     raise bad_result("erf", 0, erf(0), 0);
-if (erfc(0) != 1)
+if (erfc(0) ≠ 1)
     raise bad_result("erfc", 0, erfc(0), 1);

@@ -82,9 +82,9 @@ uninitialized("union switch",
 /* Valid uses still work */
 U u = { i = 1 };
 u.s = "ok";
-if (u.s != "ok")
+if (u.s ≠ "ok")
     raise wrong("u.s", u.s, "ok");
 U c = u;
 c.s = "copy";
-if (u.s != "ok" || c.s != "copy")
+if (u.s ≠ "ok" || c.s ≠ "copy")
     raise wrong("copy", c, u);

@@ -10,7 +10,7 @@ string s = "hi";
 i = 8;
 
 /* make sure references see changes to the underlying object */
-if (i != ir)
+if (i ≠ ir)
     raise bad_result(i, ir);
 
 *int ip = &i;
@@ -18,10 +18,10 @@ if (i != ir)
 i = 9;
 
 /* make sure pointers see changes to the underlying object */
-if (i != *ip)
+if (i ≠ *ip)
     raise bad_result(i, *ip);
 
-if (ir != *ip)
+if (ir ≠ *ip)
     raise bad_result(ir, *ip);
 
 /* Make sure function return values typecheck correctly */

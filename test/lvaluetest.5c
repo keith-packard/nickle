@@ -36,5 +36,5 @@ g()
 }
 
 *g() = 5;
-if (*g() != 5)
+if (*g() ≠ 5)
     raise invalid_argument("*g () = 5", 0, *g());

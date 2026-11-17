@@ -60,7 +60,7 @@ checked2(real(real, real) f, real a, real b)
 void
 check_rounded(string op, real(real) f, real[*] inputs)
 {
-    for (int prec = 24; prec <= 344; prec += 32) {
+    for (int prec = 24; prec ≤ 344; prec += 32) {
         for (int i = 0; i < dim(inputs); i++) {
             real x = imprecise(inputs[i], prec);
             int  hprec = 2 * prec + 128;
@@ -72,7 +72,7 @@ check_rounded(string op, real(real) f, real[*] inputs)
             } catch invalid_argument(string type, int j, real w) {
                 continue;
             }
-            if (v != ref || (v != 0 && precision(v) != prec)) {
+            if (v ≠ ref || (v ≠ 0 && precision(v) ≠ prec)) {
                 printf("check failed %s(%.-g) at prec %d not correctly rounded (was %.-g, should be %.-g)\n",
                        op, x, prec, v, ref);
                 errors++;
@@ -92,14 +92,14 @@ check_rounded2(string op, real(real, real) f, real[*] as, real[*] bs)
         real v = f(a, b);
         real ref = f(imprecise(a, hprec), imprecise(b, hprec));
 
-        if (v != imprecise(ref, prec)) {
+        if (v ≠ imprecise(ref, prec)) {
             printf("check failed %s(%.-g, %.-g) at prec %d not correctly rounded (was %.-g, should be %.-g)\n",
                    op, a, b, prec, v, imprecise(ref, prec));
             errors++;
         }
     }
 
-    for (int prec = 24; prec <= 344; prec += 64)
+    for (int prec = 24; prec ≤ 344; prec += 64)
         for (int i = 0; i < dim(as); i++)
             for (int j = 0; j < dim(bs); j++)
                 check_one(imprecise(as[i], prec), imprecise(bs[j], prec), prec);
@@ -119,14 +119,14 @@ check_faithful2(string op, real(real, real) f, real[*] as, real[*] bs)
         real v = f(a, b);
         real ref = f(imprecise(a, hprec), imprecise(b, hprec));
 
-        if (abs(v - ref) >= 2 ** (exponent(v) - prec)) {
+        if (abs(v - ref) ≥ 2 ** (exponent(v) - prec)) {
             printf("check failed %s(%.-g, %.-g) at prec %d off by an ulp or more (was %.-g, should be %.-g)\n",
                    op, a, b, prec, v, ref);
             errors++;
         }
     }
 
-    for (int prec = 24; prec <= 344; prec += 64)
+    for (int prec = 24; prec ≤ 344; prec += 64)
         for (int i = 0; i < dim(as); i++)
             for (int j = 0; j < dim(bs); j++)
                 check_one(imprecise(as[i], prec), imprecise(bs[j], prec), prec);
@@ -140,13 +140,13 @@ check(string op, real(real) f, real input, real correct)
     if (is_number(value)) {
         real error = abs(value - correct);
 
-        if (abs(correct) >= 1 && error < abs(correct) * error_bound)
+        if (abs(correct) ≥ 1 && error < abs(correct) * error_bound)
             return;
         if (abs(correct) < 1 && error < error_bound)
             return;
         printf("error %v value %v\n", error, value);
     }
-    if (value != correct) {
+    if (value ≠ correct) {
         printf("check failed %s(%v) (was %.-g, should be %.-g)\n",
                op, input, value, correct);
         errors++;
@@ -161,13 +161,13 @@ check2(string op, real(real, real) f, real input1, real input2, real correct)
     if (is_number(value)) {
         real error = abs(value - correct);
 
-        if (abs(correct) >= 1 && error < abs(correct) * error_bound)
+        if (abs(correct) ≥ 1 && error < abs(correct) * error_bound)
             return;
         if (abs(correct) < 1 && error < error_bound)
             return;
         printf("error %v value %v\n", error, value);
     }
-    if (value != correct) {
+    if (value ≠ correct) {
         printf("check failed %s(%.-g, %.-g) (was %.-g, should be %.-g)\n",
                op, input1, input2, value, correct);
         errors++;

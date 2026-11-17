@@ -16,7 +16,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -43,6 +43,6 @@ File::close(out[1]);
 string hard = File::fgets(out[0]);
 
 /* Skip when the hard limit leaves no room past 1100 */
-if (hard == "unlimited" || string_to_integer(hard) >= 1100)
+if (hard == "unlimited" || string_to_integer(hard) ≥ 1100)
     check("filtered limit", File::fgets(out[0]), "1024");
 File::close(out[0]);

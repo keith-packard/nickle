@@ -25,5 +25,5 @@ try {
 output = File::string_string(stdout);
 stdout = saved;
 
-if (output != "")
+if (output ≠ "")
     raise printed(output);

@@ -37,7 +37,7 @@ check_complex_tan()
         int  hprec = 2 * prec + 128;
         real want_sin = sin(imprecise(2 * angle, hprec));
 
-        if (sign(tiny) != sign(want_sin)) {
+        if (sign(tiny) ≠ sign(want_sin)) {
             printf("check failed %s(%.-g) at prec %d has the wrong sign\n", op, z, prec);
             errors++;
         }

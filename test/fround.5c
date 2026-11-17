@@ -38,13 +38,13 @@ imprecise_check(int last_bits, int prec, int dist)
 
     actual += last_actual_bits * 2 ** -power;
 
-    if (computed != actual) {
+    if (computed ≠ actual) {
         printf("computed %a actual %a\n", computed, actual);
         raise bad_round(last_bits, prec, dist, computed, actual);
     }
 }
 
 for (int last_bits = 0; last_bits < 8; last_bits++)
-    for (prec = 24; prec <= 57; prec++)
-        for (dist = 0; dist <= 64; dist++)
+    for (prec = 24; prec ≤ 57; prec++)
+        for (dist = 0; dist ≤ 64; dist++)
             imprecise_check(last_bits, prec, dist);

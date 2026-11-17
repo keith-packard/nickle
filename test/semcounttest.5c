@@ -17,7 +17,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -31,34 +31,34 @@ rejected(string what, void() f)
     }
 }
 
-semaphore s = Semaphore::new(2 ** 40);
-check("new (2**40)", Semaphore::count(s), 2 ** 40);
+semaphore s = Semaphore::new(2⁴⁰);
+check("new (2**40)", Semaphore::count(s), 2⁴⁰);
 Semaphore::signal(s);
-check("signal", Semaphore::count(s), 2 ** 40 + 1);
+check("signal", Semaphore::count(s), 2⁴⁰ + 1);
 Semaphore::wait(s);
 Semaphore::wait(s);
-check("wait", Semaphore::count(s), 2 ** 40 - 1);
+check("wait", Semaphore::count(s), 2⁴⁰ - 1);
 check("test", Semaphore::test(s), true);
-check("after test", Semaphore::count(s), 2 ** 40 - 2);
+check("after test", Semaphore::count(s), 2⁴⁰ - 2);
 
 /* The ends of the range */
-semaphore top = Semaphore::new(2 ** 63 - 1);
+semaphore top = Semaphore::new(2⁶³ - 1);
 rejected("signal at the top",
          void func() {
              Semaphore::signal(top);
          });
-check("top unchanged", Semaphore::count(top), 2 ** 63 - 1);
+check("top unchanged", Semaphore::count(top), 2⁶³ - 1);
 
-semaphore bottom = Semaphore::new(-(2 ** 63));
+semaphore bottom = Semaphore::new(-(2⁶³));
 rejected("wait at the bottom",
          void func() {
              Semaphore::wait(bottom);
          });
-check("bottom unchanged", Semaphore::count(bottom), -(2 ** 63));
+check("bottom unchanged", Semaphore::count(bottom), -(2⁶³));
 
 rejected("new (2**70)",
          void func() {
-             Semaphore::new(2 ** 70);
+             Semaphore::new(2⁷⁰);
          });
 
 /* Printing shows the whole count */

@@ -5,7 +5,7 @@ autoimport PRNG
 void
 floor_check(int num, int den, int floor)
 {
-    if (num ⫽ den != floor)
+    if (num ⫽ den ≠ floor)
         raise bad_round(num, den, floor);
 }
 
@@ -15,9 +15,9 @@ ceil_check(int num, int den, int ceil)
     int compare;
 
     compare = num ⫽ den;
-    if (num % den != 0)
+    if (num % den ≠ 0)
         compare++;
-    if (compare != ceil)
+    if (compare ≠ ceil)
         raise bad_round(num, den, ceil);
 }
 
@@ -48,8 +48,8 @@ round_test(int amin, int amax, int bmin, int bmax)
 {
     int a, b;
 
-    for (a = amin; a <= amax; a += randint(30))
-        for (b = bmin; b <= bmax; b += randint(30))
+    for (a = amin; a ≤ amax; a += randint(30))
+        for (b = bmin; b ≤ bmax; b += randint(30))
             round_random(a, b);
 }
 

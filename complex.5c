@@ -93,7 +93,7 @@ extend namespace Complex {
         real q = Math::abs(n / d);
 
         /* Too uncertain to bound; ask for more bits */
-        if (Math::abs(d) <= 2 * d_err)
+        if (Math::abs(d) ≤ 2 * d_err)
             return q + 1;
         return (n_err + q * d_err) / (Math::abs(d) - d_err) + 2 * q * 2 ** -wprec;
     }
@@ -131,7 +131,7 @@ extend namespace Complex {
             real c = Math::cos_w(t, wprec, &c_err);
             real s = Math::sin_w(t, wprec, &s_err);
 
-            if (rw != r)
+            if (rw ≠ r)
                 r_err = Math::abs(rw) * 2 ** -wprec;
             *re_err = mul_err(rw, r_err, c, c_err, wprec);
             *im_err = mul_err(rw, r_err, s, s_err, wprec);
@@ -143,13 +143,13 @@ extend namespace Complex {
 
     public complex conj(complex z) = new(creal(z), -cimag(z));
 
-    protected real abs(complex z) = Math::sqrt(creal(z) ** 2 + cimag(z) ** 2);
+    protected real abs(complex z) = Math::sqrt(creal(z)² + cimag(z)²);
 
     public real    arg(complex z) = Math::atan2(cimag(z), creal(z));
 
     real
     log_abs(real x, real y, int prec)
-        /* Return log(sqrt(x**2 + y**2)), correctly rounded to 'prec' bits */
+        /* Return log(sqrt(x² + y²)), correctly rounded to 'prec' bits */
     {
         /* Only these dyadic points lie on the unit circle */
         if ((Math::abs(x) == 1 && y == 0) || (x == 0 && Math::abs(y) == 1))
@@ -246,7 +246,7 @@ extend namespace Complex {
         /*
          * x**y = exp(w), w = y log(x). An absolute error in w becomes
          * that relative error in the result, so compute w with as many
-         * more bits as |w| needs, plus guard bits. With 2**(e-1) <= |x|
+         * more bits as |w| needs, plus guard bits. With 2**(e-1) ≤ |x|
          * < 2**e, |log(x)| is under |e| + 1 + π
          */
         real    log_bound = Math::abs(part_exponent(abs(x))) + 5;
@@ -262,7 +262,7 @@ extend namespace Complex {
         real x = creal(z), y = cimag(z);
 
         if (y == 0) {
-            if (x >= 0)
+            if (x ≥ 0)
                 return Math::sqrt(x);
             return new(0, Math::sqrt(-x));
         }
@@ -272,7 +272,7 @@ extend namespace Complex {
          * y / (2 * larger), avoiding the cancellation in |z| - |x|
          */
         real t = Math::sqrt((abs(z) + Math::abs(x)) / 2);
-        if (x >= 0)
+        if (x ≥ 0)
             return new(t, y / (2 * t));
         if (y > 0)
             return new(y / (2 * t), t);
@@ -292,7 +292,7 @@ extend namespace Complex {
         real r = imprecise(e, wprec);
 
         *err = 0;
-        if (r != e)
+        if (r ≠ e)
             *err = Math::abs(r) * 2 ** -wprec;
         return r;
     }
@@ -312,10 +312,10 @@ extend namespace Complex {
 
         q = imprecise(q, wprec);
 
-        if (p_err != 0) {
+        if (p_err ≠ 0) {
 
             /* Too uncertain to bound; ask for more bits */
-            if (Math::abs(p) <= 2 * p_err) {
+            if (Math::abs(p) ≤ 2 * p_err) {
                 *re_err = *im_err = Math::abs(p) + 1;
                 return 0;
             }
@@ -327,7 +327,7 @@ extend namespace Complex {
             real s = Math::sqrt_w(Math::abs(p), wprec, &s_rel);
             real s_err = s * (p_rel + s_rel);
 
-            if (p >= 0) {
+            if (p ≥ 0) {
                 *re_err = s_err;
                 *im_err = 0;
                 return s;
@@ -339,7 +339,7 @@ extend namespace Complex {
 
         /*
          * Each step adds positive values, so relative errors add up:
-         * |z| from p**2 + q**2, then t from (|z| + |p|) / 2, and the
+         * |z| from p² + q², then t from (|z| + |p|) / 2, and the
          * other part from |q| / 2t
          */
         real m_rel, t_rel;
@@ -353,7 +353,7 @@ extend namespace Complex {
 
         if (q < 0)
             o = -o;
-        if (p >= 0) {
+        if (p ≥ 0) {
             *re_err = t_err;
             *im_err = o_err;
             return new(t, o);
@@ -386,7 +386,7 @@ extend namespace Complex {
          * may be negative and y may take either sign, which crosses
          * the cut; ask for more bits
          */
-        if (r <= 0 || (x <= x_err && ay <= y_err && y_err != 0)) {
+        if (r ≤ 0 || (x ≤ x_err && ay ≤ y_err && y_err ≠ 0)) {
             *err = 8;
             return 0;
         }
@@ -421,7 +421,7 @@ extend namespace Complex {
     asinh_err(real v, real v_err, int wprec, *real err)
         /*
          * Return asinh(v) to 'wprec' bits, setting 'err' to a bound on
-         * its error given the error in 'v'; asinh' <= 1
+         * its error given the error in 'v'; asinh' ≤ 1
          */
     {
         real a = Math::asinh_w(v, wprec, err);
@@ -700,7 +700,7 @@ extend namespace Complex {
             raise divide_by_zero(x, 0);
 
         /*
-         * atanh is odd; computing with x <= 0 puts the cut on the
+         * atanh is odd; computing with x ≤ 0 puts the cut on the
          * positive axis below it and the one on the negative axis
          * above it, as the counterclockwise rule asks
          */
@@ -722,8 +722,8 @@ extend namespace Complex {
             real p = one_plus(x, wprec, &p_err);
 
             /*
-             * Re = log(|1+z|**2 / |1-z|**2) / 4, the ratio being
-             * 1 + 4x / |1-z|**2; log1p keeps the bits of small x, and
+             * Re = log(|1+z|² / |1-z|²) / 4, the ratio being
+             * 1 + 4x / |1-z|²; log1p keeps the bits of small x, and
              * near the pole at -1 the ratio itself keeps those of 1+x.
              * 1+x is exact there, and log1p' and log' are at most 2
              * and 1 / the ratio
@@ -742,7 +742,7 @@ extend namespace Complex {
                 real r = n / d;
                 real r_err = div_err(n, n_err, d, d_err, wprec);
 
-                if (r <= 2 * r_err) {
+                if (r ≤ 2 * r_err) {
                     *re_err = 8;
                     re = 0;
                 } else {
@@ -751,7 +751,7 @@ extend namespace Complex {
                 }
             }
 
-            /* Im = arg((1+z) conj(1-z)) / 2 = atan2(2y, (1-x)(1+x) - y**2) / 2 */
+            /* Im = arg((1+z) conj(1-z)) / 2 = atan2(2y, (1-x)(1+x) - y²) / 2 */
             real e = product_err(m, m_err, p, p_err, -yw, 0, yw, 0, wprec, &e_err);
             real im = atan2_err(2 * yw, 0, e, e_err, wprec, im_err) / 2;
 

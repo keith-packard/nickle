@@ -4,7 +4,7 @@
  * Array sizes and indices
  *
  * Array element counts and indices were ints, and only small integers
- * were accepted as indices, so a product of dimensions over 2**31
+ * were accepted as indices, so a product of dimensions over 2³¹
  * wrapped silently, building an array too small for its dimensions,
  * and growing a multi-dimensional resizable array past that size
  * corrupted memory. Counts and indices are now ptrdiff_t, and arrays
@@ -31,7 +31,7 @@ out_of_bounds(string what, poly index, void() f)
         f();
         raise not_raised(what);
     } catch invalid_array_bounds(string m, poly a, poly i) {
-        if (i != index)
+        if (i ≠ index)
             raise wrong(what, i, index);
     }
 }
@@ -39,41 +39,41 @@ out_of_bounds(string what, poly index, void() f)
 /* Products of small dimensions past any representable size */
 too_large("int[2**20, 2**20, 2**21]",
           void func() {
-              int[2 ** 20, 2 ** 20, 2 ** 21] a;
+              int[2²⁰, 2²⁰, 2²¹] a;
           });
 too_large("int[2**62, 4]",
           void func() {
-              int[2 ** 62, 4] a;
+              int[2⁶², 4] a;
           });
 
 /* Growing a resizable array past any representable size */
 too_large("r[2**61, 0]",
           void func() {
               int[..., ...] r = {};
-              r[2 ** 61, 0] = 1;
+              r[2⁶¹, 0] = 1;
           });
 too_large("setdims",
           void func() {
               int[..., ...] r = {};
-              setdims(r, (int[*]) { 2 ** 31, 2 ** 31 });
+              setdims(r, (int[*]) { 2³¹, 2³¹ });
           });
 
 /* Indices of any size report the index */
 int[3] small = { 1, 2, 3 };
-out_of_bounds("small[2**40]", 2 ** 40,
+out_of_bounds("small[2**40]", 2⁴⁰,
               void func() {
-                  poly x = small[2 ** 40];
+                  poly x = small[2⁴⁰];
               });
-out_of_bounds("small[2**80]", 2 ** 80,
+out_of_bounds("small[2**80]", 2⁸⁰,
               void func() {
-                  poly x = small[2 ** 80];
+                  poly x = small[2⁸⁰];
               });
 
 /* Multi-dimensional resizable arrays grow correctly */
 int[..., ...] g = {};
-g[0, 2 ** 10] = 1;
-g[2 ** 10, 0] = 2;
+g[0, 2¹⁰] = 1;
+g[2¹⁰, 0] = 2;
 g[3, 5] = 7;
-if (dims(g) != (int[*]) { 2 ** 10 + 1, 2 ** 10 + 1 }
-        || g[0, 2 ** 10] != 1 || g[2 ** 10, 0] != 2 || g[3, 5] != 7)
-    raise wrong("grown array", dims(g), (int[*]) { 2 ** 10 + 1, 2 ** 10 + 1 });
+if (dims(g) ≠ (int[*]) { 2¹⁰ + 1, 2¹⁰ + 1 }
+        || g[0, 2¹⁰] ≠ 1 || g[2¹⁰, 0] ≠ 2 || g[3, 5] ≠ 7)
+    raise wrong("grown array", dims(g), (int[*]) { 2¹⁰ + 1, 2¹⁰ + 1 });

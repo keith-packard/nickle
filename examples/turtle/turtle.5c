@@ -24,7 +24,7 @@ namespace Turtle {
     {
         while (theta < 0)
             theta += 1;
-        while (theta >= 1)
+        while (theta ≥ 1)
             theta -= 1;
     }
 

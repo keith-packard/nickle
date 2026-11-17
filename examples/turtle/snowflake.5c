@@ -31,7 +31,7 @@ if (dim(argv) < 3)
     argv = (string[*]) { "snowflake.5c", "3", "3" };
 
 int  width = string_to_integer(argv[1]);
-real height = sqrt((width / 3) ** 2 - (width / 6) ** 2) + 0.05 * width;
+real height = sqrt((width / 3)² - (width / 6)²) + 0.05 * width;
 start_turtle("snowflake.eepic", width, height);
 move_turtle(0.0, 0.025);
 aim_turtle(0.25);

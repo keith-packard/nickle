@@ -85,7 +85,7 @@ parenloop(poly() x, poly() y, poly() z)
                for (;;) {
                    poly v = a[i]();
 
-                   if (v != ◊)
+                   if (v ≠ ◊)
                        return v;
                    if (++i == dim(a)) {
                        i = 0;
@@ -104,13 +104,13 @@ main()
     poly()         f =
         parenloop(binloop(argloop(), argloop()), argloop(), argloop());
 
-    while (((poly value) = f()) != ◊) {
-        if (is_int(value.v) && 1 <= value.v && value.v <= limit) {
+    while (((poly value) = f()) ≠ ◊) {
+        if (is_int(value.v) && 1 ≤ value.v && value.v ≤ limit) {
             if (values[value.v].p < value.p)
                 values[value.v] = value;
         }
     }
-    for (int i = 1; i <= limit; i++)
+    for (int i = 1; i ≤ limit; i++)
         printf("%3d (score %3d) = %s\n", i, values[i].p, values[i].s);
 }
 

@@ -7,7 +7,7 @@ extend namespace Math {
          * of Stirling's series for Binet's function,
          *
          *      J(x) = log Γ(x) - (x - 1/2) log x + x - log(2π)/2
-         *           ~ Σ B(2k)/(2k(2k-1) x^(2k-1)), k >= 1,
+         *           ~ Σ B(2k)/(2k(2k-1) x^(2k-1)), k ≥ 1,
          *
          * computed exactly from the Bernoulli numbers by the
          * Akiyama-Tanigawa algorithm, which cancels too badly
@@ -19,11 +19,11 @@ extend namespace Math {
         rational[len] s;
         int           k = 1;
 
-        for (int m = 2; m <= n; m++) {
+        for (int m = 2; m ≤ n; m++) {
             t[m - 1] = 1 / m;
-            for (int j = m - 1; j >= 1; j--)
+            for (int j = m - 1; j ≥ 1; j--)
                 t[j - 1] = j * (t[j - 1] - t[j]);
-            if ((m & 1) != 0) {
+            if ((m & 1) ≠ 0) {
                 s[k - 1] = t[0] / ((2 * k - 1) * (2 * k));
                 k++;
             }
@@ -38,7 +38,7 @@ extend namespace Math {
     stirling_coefficient(int k)
         /* Return coefficient 'k', from 0, of Stirling's series */
     {
-        if (k >= dim(stirling)) {
+        if (k ≥ dim(stirling)) {
             rational[*] c = stirling_coefficients(max(k + 1, 2 * dim(stirling), 16));
             for (int i = dim(stirling); i < dim(c); i++)
                 stirling[i] = c[i];
@@ -49,7 +49,7 @@ extend namespace Math {
     real
     gamma_large(real x, int wprec, *real rel)
         /*
-         * Return Γ(x) for x >= wprec and x >= 10000 to 'wprec'
+         * Return Γ(x) for x ≥ wprec and x ≥ 10000 to 'wprec'
          * bits, setting 'rel' to a bound on its relative error,
          * from Stirling's formula with Binet's function,
          *
@@ -66,7 +66,7 @@ extend namespace Math {
          * any term leaves an error smaller than the next. Sum
          * terms until the next is below the rounding errors in
          * y. The terms shrink until k is about πx, far past
-         * where this stops for x >= wprec
+         * where this stops for x ≥ wprec
          */
         real target = n * l * u;
         real inv2 = 1 / (n * n);
@@ -76,7 +76,7 @@ extend namespace Math {
 
         for (;;) {
             next = stirling_coefficient(k) * p;
-            if (abs(next) <= target)
+            if (abs(next) ≤ target)
                 break;
             j += next;
             p *= inv2;
@@ -122,7 +122,7 @@ extend namespace Math {
             real pi_w = pi_value(wprec);
             real s = sin(pi_w * imprecise(x - k, wprec));
 
-            if ((k & 1) != 0)
+            if ((k & 1) ≠ 0)
                 s = -s;
             real g = gamma_w(1 - imprecise(x, precision(x) + 2), wprec, rel);
             *rel += 8 * u;
@@ -159,7 +159,7 @@ extend namespace Math {
         /* Return Γ(n), correctly rounded */
     {
         /* For non-positive integers, raise exception */
-        if (n <= 0 && n == floor(n))
+        if (n ≤ 0 && n == floor(n))
             raise invalid_argument("gamma of non-positive integer", 0, n);
 
         /* For positive integers, use factorial */

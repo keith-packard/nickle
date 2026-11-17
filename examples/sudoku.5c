@@ -57,7 +57,7 @@ bool[*, *] edges;
 void
 init_edges()
 {
-    edges = (bool[side ** 2, side ** 2]) { [i, j] = edge(i, j) };
+    edges = (bool[side², side²]) { [i, j] = edge(i, j) };
 }
 
 /*
@@ -92,7 +92,7 @@ solve(&grid g, bool preserve, bool randomize)
     for (p < dim(g); p++)
         if (g[p] == 0)
             break;
-    if (p >= dim(g))
+    if (p ≥ dim(g))
         return 1;
     int[*] vals;
     if (randomize) {
@@ -137,9 +137,9 @@ del_soln(&grid g)
         int  save = d;
         d = 0;
         int s = solve(&g, false, false);
-        if (s >= 2)
+        if (s ≥ 2)
             d = save;
-        assert(s != 0, "clearing cell removed solutions!");
+        assert(s ≠ 0, "clearing cell removed solutions!");
     }
 }
 
@@ -150,7 +150,7 @@ del_soln(&grid g)
 grid
 create_soln()
 {
-    grid g = (int[side ** 2]) { 0 ... };
+    grid g = (int[side²]) { 0 ... };
     int  nsolns = solve(&g, true, true);
 
     assert(nsolns > 0, "cannot create puzzle");
@@ -194,7 +194,7 @@ read_prob(file prob)
     int      i = 0;
 
     side = 0;
-    while (side == 0 || i < side ** 2) {
+    while (side == 0 || i < side²) {
         int ch = getc(prob);
 
         if (ch == '\n') {
@@ -208,7 +208,7 @@ read_prob(file prob)
             g[i++] = 0;
             continue;
         }
-        if (ch >= 'a' && ch <= 'z') {
+        if (ch ≥ 'a' && ch ≤ 'z') {
             g[i++] = 10 + ch - 'a';
             continue;
         }
@@ -248,7 +248,7 @@ if (dim(argv) > 0) {
         exit(0);
     }
 
-    side = unit ** 2;
+    side = unit²;
     init_edges();
     twixt ((file prob = open(basename + "-prob.txt", "w")),
            (file soln = open(basename + "-soln.txt", "w"));

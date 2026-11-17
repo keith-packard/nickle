@@ -79,7 +79,7 @@ extend namespace Command {
          * file was found.
          */
     {
-        for (string path = nickle_path; path != ""; path = path_rest(path)) {
+        for (string path = nickle_path; path ≠ ""; path = path_rest(path)) {
             *found = path_first(path) + "/" + name;
             try {
                 *f = File::open(*found, "r");

@@ -14,12 +14,12 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
 try {
-    Math::ldexp(3, 2 ** 70);
+    Math::ldexp(3, 2⁷⁰);
     raise not_raised("ldexp");
 } catch out_of_memory(string m) {
 }

@@ -14,11 +14,7 @@ exception bad_result(string name, complex z, complex got, complex want);
 
 int[*] precs = { 53, 113 };
 
-real
-modulus(complex z)
-{
-    return Math::sqrt(Complex::creal(z) ** 2 + Complex::cimag(z) ** 2);
-}
+real modulus(complex z) = Math::sqrt(Complex::creal(z)² + Complex::cimag(z)²);
 
 complex c(real re, real im) = Complex::new(re, im);
 
@@ -83,8 +79,8 @@ check("acosh", Complex::acosh, (complex[*]) { 2, 1000, c(0, 2) });
 
 /* Near the branch points and poles of the inverse functions */
 complex[*] near = {
-    c(1, 1e-30), c(1 - 2 ** -40, 0), c(1 + 2 ** -40, 0), c(-1 + 2 ** -40, 0),
-    c(-1, 1e-25), c(2 ** -40, 1), c(0, 1 + 1e-10), c(0.6, 0.8 + 1e-25),
+    c(1, 1e-30), c(1 - 2⁻⁴⁰, 0), c(1 + 2⁻⁴⁰, 0), c(-1 + 2⁻⁴⁰, 0),
+    c(-1, 1e-25), c(2⁻⁴⁰, 1), c(0, 1 + 1e-10), c(0.6, 0.8 + 1e-25),
     c(1e30, 1e-30), c(-1e30, 2), c(1.5, 0), c(-7, 0), c(0, 5), c(0, -5),
 };
 
@@ -159,9 +155,9 @@ for (int i = 0; i < dim(pow_args); i++)
                     Complex::pow(imprecise(x, 2048), imprecise(y, 2048)), precs[j]);
     }
 
-if (Complex::pow(0, 2) != 0)
+if (Complex::pow(0, 2) ≠ 0)
     raise bad_result("pow", 0, Complex::pow(0, 2), 0);
-if (Complex::pow(0, 0) != 1)
+if (Complex::pow(0, 0) ≠ 1)
     raise bad_result("pow", 0, Complex::pow(0, 0), 1);
 try {
     Complex::pow(0, -1);
@@ -179,6 +175,6 @@ complex[*][3] divisions = {
 };
 
 for (int i = 0; i < dim(divisions); i++)
-    if (divisions[i][0] / divisions[i][1] != divisions[i][2])
+    if (divisions[i][0] / divisions[i][1] ≠ divisions[i][2])
         raise bad_result(
             "/", divisions[i][0], divisions[i][0] / divisions[i][1], divisions[i][2]);

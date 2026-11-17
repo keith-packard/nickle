@@ -28,7 +28,7 @@ status()
 
     twixt (acquire(owned_mutex); release(owned_mutex)) {
         for (i = 0; i < nt; i++) {
-            if (owned[i] >= 0)
+            if (owned[i] ≥ 0)
                 File::fputs(mutexes[owned[i]].name, stdout);
             else
                 printf(" ");

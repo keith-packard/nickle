@@ -24,7 +24,7 @@ namespace Factor {
         int limit = floor(sqrt(i)) + 1;
         int f;
 
-        for (f = 3; f <= limit; f++) {
+        for (f = 3; f ≤ limit; f++) {
             if (i % f == 0)
                 return false;
         }
@@ -73,12 +73,12 @@ namespace Factor {
         int
         list_length(int_list l)
         {
-            return l != int_list.end ? 1 + list_length(l.ref->next) : 0;
+            return l ≠ int_list.end ? 1 + list_length(l.ref->next) : 0;
         }
 
         int[*] a = (int[list_length(l)]) {};
         int    i = 0;
-        while (l != int_list.end) {
+        while (l ≠ int_list.end) {
             a[i] = l.ref->v;
             l = l.ref->next;
             i++;
@@ -128,7 +128,7 @@ namespace Factor {
             int limit = floor(sqrt(i)) + 1;
             int f;
 
-            for (f = 3; f <= limit; f += 2) {
+            for (f = 3; f ≤ limit; f += 2) {
                 if (!is_prime(f))
                     continue;
                 if (i % f == 0)

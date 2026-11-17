@@ -12,9 +12,9 @@ test_round_seconds(int seconds)
     int    sg = timegm(g);
     int    sl = timelocal(l);
 
-    if (seconds != sg)
+    if (seconds ≠ sg)
         raise bad_seconds(seconds, g, sg);
-    if (seconds != sl)
+    if (seconds ≠ sl)
         raise bad_seconds(seconds, l, sl);
 }
 
@@ -26,9 +26,9 @@ test_round_date(date_t date)
     date_t g = gmtime(sg);
     date_t l = localtime(sl);
 
-    if (g != date)
+    if (g ≠ date)
         raise bad_date(date, sg, g);
-    if (l != date)
+    if (l ≠ date)
         raise bad_date(date, sl, l);
 }
 
@@ -60,7 +60,7 @@ test_utc_seconds(int seconds, date_t date)
 
     if (!date_equal(got_date, date))
         raise bad_date(date, seconds, got_date);
-    if (got_seconds != seconds)
+    if (got_seconds ≠ seconds)
         raise bad_seconds(seconds, date, got_seconds);
 }
 
@@ -77,7 +77,7 @@ test_utc_seconds(0,
  * Try the largest possible time for 32-bit systems. Update
  * this test when glibc has been fixed for Y2038
  */
-test_utc_seconds(2 ** 31 - 1,
+test_utc_seconds(2³¹ - 1,
                  (date_t) { sec = 7, min = 14, hour = 3, mday = 19,
                             mon = 1, year = 2038, wday = 2, yday = 18,
                             isdst = false, gmtoff = 0, zone = "GMT" });

@@ -19,7 +19,7 @@ exception wrong(string what, poly got, poly want);
 void
 check(string what, poly got, poly want)
 {
-    if (got != want)
+    if (got ≠ want)
         raise wrong(what, got, want);
 }
 
@@ -36,45 +36,45 @@ rejected(string what, void() f)
 /* The last second of the latest year struct tm can hold */
 int    latest = 67767976233532799;
 date_t d = gmtime(latest);
-check("latest year", d.year, 2 ** 31 - 1);
+check("latest year", d.year, 2³¹ - 1);
 check("latest month", d.mon, 12);
 check("latest day", d.mday, 31);
 check("latest round trip", timegm(d), latest);
 
-/* The first second of the year after, whose year is 2**31 */
-check("year 2**31", gmtime(latest + 1).year, 2 ** 31);
+/* The first second of the year after, whose year is 2³¹ */
+check("year 2**31", gmtime(latest + 1).year, 2³¹);
 check("year 2**31 round trip", timegm(gmtime(latest + 1)), latest + 1);
 
 /* Times whose year doesn't fit struct tm */
 rejected("gmtime (2**63 - 1)",
          void func() {
-             gmtime(2 ** 63 - 1);
+             gmtime(2⁶³ - 1);
          });
 rejected("localtime (2**63 - 1)",
          void func() {
-             localtime(2 ** 63 - 1);
+             localtime(2⁶³ - 1);
          });
 rejected("gmtime (-(2**63))",
          void func() {
-             gmtime(-(2 ** 63));
+             gmtime(-(2⁶³));
          });
 rejected("gmtime (2**63)",
          void func() {
-             gmtime(2 ** 63);
+             gmtime(2⁶³);
          });
 
 /* Fields that don't fit struct tm */
 rejected("year too large",
          void func() {
-             timegm((date_t) { year = 2 ** 31 + 1900, mon = 1, mday = 1 });
+             timegm((date_t) { year = 2³¹ + 1900, mon = 1, mday = 1 });
          });
 rejected("sec too large",
          void func() {
-             timegm((date_t) { year = 1970, mon = 1, mday = 1, sec = 2 ** 31 });
+             timegm((date_t) { year = 1970, mon = 1, mday = 1, sec = 2³¹ });
          });
 rejected("year beyond any integer type",
          void func() {
-             timegm((date_t) { year = 2 ** 70 });
+             timegm((date_t) { year = 2⁷⁰ });
          });
 
 /* -1 is a valid time, not an error */

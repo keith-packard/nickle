@@ -25,6 +25,6 @@ for (int i = 0; i < dim(points); i++)
         real got = gamma(x);
         real want = imprecise(gamma(imprecise(x, 512)), precs[j]);
 
-        if (got != want)
+        if (got ≠ want)
             raise bad_gamma(x, got, want);
     }

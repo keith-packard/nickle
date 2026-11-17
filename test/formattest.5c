@@ -3,7 +3,7 @@
  *
  * Formatting files
  *
- * nickle --format, and Command::format_file, print a file formatted
+ * nickle --pretty, and Command::format_file, print a file formatted
  * without running it, and formatting the output again changes nothing.
  */
 
@@ -20,7 +20,7 @@ section(string name)
 /*
  * Printing a file formatted
  *
- * nickle --format prints a file's commands and declarations as print
+ * nickle --pretty prints a file's commands and declarations as print
  * lays them out, with their comments, after the file's header comments,
  * which keep their '#' marks, a '#!' line among them even directly
  * above the code. Commands that load code run; other commands, and
@@ -102,17 +102,17 @@ string source = ("#!/usr/bin/env nickle\n" + "# A file header\n" + "\n"
     + "Shapes::area((Shapes::rect) { w = .5, h = 0x10 }) # 16\n" + "\n"
     + "/* the end */\n");
 
-check("format", run((string[*]) { "--format" }, source), want);
-check("format again", run((string[*]) { "--format" }, want), want);
+check("format", run((string[*]) { "--pretty" }, source), want);
+check("format again", run((string[*]) { "--pretty" }, want), want);
 check("run", run((string[*]) {}, want), "8\n");
 
 /* A '#!' line directly above the code stays first, as written */
 string script = "#!/usr/bin/env nickle\nint x = 1;\n";
 string script_want = "#!/usr/bin/env nickle\n\nint x = 1;\n";
 
-check("#! line", run((string[*]) { "--format" }, script), script_want);
+check("#! line", run((string[*]) { "--pretty" }, script), script_want);
 check(
-    "#! line again", run((string[*]) { "--format" }, script_want), script_want);
+    "#! line again", run((string[*]) { "--pretty" }, script_want), script_want);
 
 /* A nested namespace has blank lines above its leading comment and below it */
 string nested = ("namespace Outer {\n" + "    int a = 1;\n" + "\n"
@@ -121,12 +121,12 @@ string nested = ("namespace Outer {\n" + "    int a = 1;\n" + "\n"
                  + "    }\n" + "\n" + "    int c = 3;\n" + "}\n");
 
 check("nested namespace",
-      run((string[*]) { "--format" },
+      run((string[*]) { "--pretty" },
           "namespace Outer {\n    int a = 1;\n    /* the inner one */\n"
           + "    namespace Inner { int b = 2; }\n    int c = 3;\n}\n"),
       nested);
 check(
-    "nested namespace again", run((string[*]) { "--format" }, nested), nested);
+    "nested namespace again", run((string[*]) { "--pretty" }, nested), nested);
 
 /* Imports line up with the declarations around them */
 string imports = ("autoload Sort\n" + "\n" + "namespace N {\n"
@@ -134,11 +134,11 @@ string imports = ("autoload Sort\n" + "\n" + "namespace N {\n"
                   + "    int           count = 0;\n" + "}\n");
 
 check("imports",
-      run((string[*]) { "--format" },
+      run((string[*]) { "--pretty" },
           "autoload Sort;\nnamespace N {\n    import Sort;\n    public import String;\n"
           + "    int count = 0;\n}\n"),
       imports);
-check("imports again", run((string[*]) { "--format" }, imports), imports);
+check("imports again", run((string[*]) { "--pretty" }, imports), imports);
 
 /* A global statement that must break gets parentheses to break in */
 string globals = ("int first_value_in_the_sum = 1, second_value_in_the_sum = 2;\n"
@@ -150,13 +150,13 @@ string globals = ("int first_value_in_the_sum = 1, second_value_in_the_sum = 2;\
                   + " + 1000000000000000000000000000000000000000000000000000000000000000000)\n");
 
 check("global parentheses",
-      run((string[*]) { "--format" },
+      run((string[*]) { "--pretty" },
           "int first_value_in_the_sum = 1, second_value_in_the_sum = 2;\n"
           + "int total = first_value_in_the_sum + second_value_in_the_sum * 3000000000000000000000000000000 - 4000000000000000000000000000000;\n"
           + "first_value_in_the_sum + second_value_in_the_sum * 3000000000000000000000000000000 + 1000000000000000000000000000000000000000000000000000000000000000000\n"),
       globals);
 check("global parentheses again",
-      run((string[*]) { "--format" }, globals), globals);
+      run((string[*]) { "--pretty" }, globals), globals);
 check("global parentheses run", run((string[*]) {}, globals),
       "1000000000000000000000000000000000006000000000000000000000000000001\n");
 
@@ -175,7 +175,7 @@ string names = ("int  a = 1;\n"
                 + "printf(\"%v\\n\", third_condition_to_check);\n");
 
 check("names",
-      run((string[*]) { "--format" },
+      run((string[*]) { "--pretty" },
           "int a = 1;\n"
           + "bool first_condition_to_check = true, second_condition_to_check = false, third_condition_to_check = true;\n"
           + "int b = 2;\n" + "void f() {\n"
@@ -183,7 +183,7 @@ check("names",
           + "    printf(\"%d\\n\", first_value_in_the_sum + another);\n" + "}\n"
           + "f();\n" + "printf(\"%v\\n\", third_condition_to_check);\n"),
       names);
-check("names again", run((string[*]) { "--format" }, names), names);
+check("names again", run((string[*]) { "--pretty" }, names), names);
 check("names run", run((string[*]) {}, names), "5\ntrue\n");
 
 /*
@@ -194,11 +194,11 @@ string moved = ("int    count = 1;\n" + "(string style =\n"
                 + "    \":pixelsize=12.3:hintstyle=hintfull:hinting=true:autohint=false:lcdfilter=lcdlegacy:rgba=none\");\n");
 
 check("moved value",
-      run((string[*]) { "--format" },
+      run((string[*]) { "--pretty" },
           "int count = 1;\n"
           + "string style = \":pixelsize=12.3:hintstyle=hintfull:hinting=true:autohint=false:lcdfilter=lcdlegacy:rgba=none\";\n"),
       moved);
-check("moved value again", run((string[*]) { "--format" }, moved), moved);
+check("moved value again", run((string[*]) { "--pretty" }, moved), moved);
 check(
     "moved value run",
     run((string[*]) {}, moved + "printf(\"%d\\n\", String::length(style));\n"),
@@ -455,3 +455,132 @@ check_format(string text)
 check("formatted", check_format("int x = 1;\n\nint\nf() = 2;\n"), "0\n");
 check("not formatted", check_format("int x = 1;\nint   y=2;\n"),
       name + ":2: formatting changes this line\n" + "1\n");
+
+/*
+ * Formatting a file in place
+ *
+ * nickle --format formats each file and writes it back when
+ * formatting changes it, leaving a file formatting wouldn't change, or
+ * one it can't format, as it was, and exits with status 1 when any
+ * can't be formatted or written.
+ */
+section("Formatting a file in place");
+
+string name = "formatinplacetest.tmp";
+
+/* Format text in place in a child nickle, returning its output, exit status, and the file */
+string
+format_in_place(string text)
+{
+    file f = File::open(name, "w");
+
+    File::fputs(text, f);
+    File::close(f);
+
+    file[*] out = File::mkpipe();
+
+    File::filter("sh",
+                 (string[*]) { "sh", "-c", "\"$0\" --format \"$1\" 2>&1; echo $?",
+                               nickle, name },
+                 (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
+
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+
+    file   in = File::open(name, "r");
+    string written = "";
+    while (!File::end(in))
+        written += File::fgets(in) + "\n";
+    File::close(in);
+    File::unlink(name);
+    return got + "--\n" + written;
+}
+
+check("rewritten", format_in_place("int   x=1;\nint f() { return 2; }\n"),
+      "0\n" + "--\n" + "int x = 1;\n" + "\n" + "int\n" + "f() = 2;\n");
+check("unchanged", format_in_place("int x = 1;\n"),
+      "0\n" + "--\n" + "int x = 1;\n");
+check(
+    "can't format", format_in_place("int   x = ;\n"),
+    name + ":1: syntax error before \";\"\n"
+    + "1\n" + "--\n" + "int   x = ;\n");
+
+/*
+ * Formatting stdin
+ *
+ * '-' names stdin to --pretty and --check-format, which report it as
+ * <stdin>; --format can't write it back, so it refuses it.
+ */
+section("Formatting stdin");
+
+/* Run nickle with option on text as its stdin, returning its output and exit status */
+string
+format_stdin(string option, string text)
+{
+    file[*] out = File::mkpipe();
+
+    File::filter("sh",
+                 (string[*]) {
+                     "sh", "-c",
+                     "printf '%s' \"$2\" | \"$0\" \"$1\" - 2>&1; echo $?",
+                     nickle, option, text },
+                 (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
+
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    return got;
+}
+
+check("format stdin",
+      format_stdin("--pretty", "int   x=1;\nint f() { return 2; }\n"),
+      "int x = 1;\n" + "\n" + "int\n" + "f() = 2;\n" + "0\n");
+check("check stdin", format_stdin("--check-format", "int   x=1;\n"),
+      "<stdin>:1: formatting changes this line\n" + "1\n");
+check("stdin formatted", format_stdin("--check-format", "int x = 1;\n"), "0\n");
+check("stdin in place", format_stdin("--format", "int x = 1;\n"),
+      "Cannot format stdin in place; use --pretty\n" + "1\n");
+
+/* --pretty prints the files given in order, and --format rewrites each */
+string first = "formatfirsttest.tmp";
+string second = "formatsecondtest.tmp";
+
+string
+several()
+{
+    file f = File::open(first, "w");
+
+    File::fputs("int   a=1;\n", f);
+    File::close(f);
+    f = File::open(second, "w");
+    File::fputs("int   b=2;\n", f);
+    File::close(f);
+
+    file[*] out = File::mkpipe();
+
+    File::filter("sh",
+                 (string[*])
+                 { "sh", "-c",
+                   "\"$0\" --pretty \"$1\" \"$2\"; echo --; \"$0\" --format \"$1\" \"$2\"; "
+                     + "echo $?; cat \"$1\" \"$2\"",
+                   nickle, first, second },
+                 (file[3]) { stdin, out[1], out[1] });
+    File::close(out[1]);
+
+    string got = "";
+    while (!File::end(out[0]))
+        got += File::fgets(out[0]) + "\n";
+    File::close(out[0]);
+    File::unlink(first);
+    File::unlink(second);
+    return got;
+}
+
+check("several", several(),
+      "int a = 1;\n" + "int b = 2;\n" + "--\n"
+      + "0\n" + "int a = 1;\n" + "int b = 2;\n");

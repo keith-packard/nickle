@@ -10,7 +10,7 @@ autoimport PRNG
 import File;
 autoimport ParseArgs
 
-int unit, side;
+int unit = 3, side;
 
 typedef int[*] grid;
 

@@ -5,7 +5,6 @@
 ;; for licensing information.
 
 ;; Author: Keith Packard <keithp@keithp.com>
-;; Version: 1.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: languages
 ;; URL: https://nickle.org

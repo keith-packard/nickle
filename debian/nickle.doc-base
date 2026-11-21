@@ -1,0 +1,10 @@
+Document: nickle-tutorial
+Title: Nickle Tutorial
+Author: Robert Burgess, Keith Packard
+Abstract: An introduction to Nickle, a desk-calculator language with
+ C-like syntax, arbitrary-precision numbers, first-class functions,
+ continuations, threads, and exceptions.
+Section: Programming
+
+Format: PDF
+Files: /usr/share/doc/nickle/nickle-tutorial.pdf

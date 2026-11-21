@@ -1,0 +1,3 @@
+# snowflake.tex is part of the example, which writes the picture it
+# typesets, so it stays with the example's other files
+nickle: package-contains-documentation-outside-usr-share-doc [usr/share/nickle/examples/turtle/snowflake.tex]

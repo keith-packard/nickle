@@ -11,3 +11,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 # Don't install duplicate copyright info from COPYING files
 override_dh_install:
 	dh_install -XCOPYING
+
+# Leave the tutorial uncompressed, so PDF viewers open it directly
+override_dh_compress:
+	dh_compress -X.pdf
